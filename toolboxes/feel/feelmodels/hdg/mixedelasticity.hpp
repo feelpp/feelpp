@@ -46,7 +46,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 1 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
@@ -208,8 +208,8 @@ public:
 
     Vh_element_t fluxField() const { return M_up; }
     Wh_element_t potentialField() const { return M_pp; }
-    model_prop_type modelProperties() { return *M_modelProperties; }
-    model_prop_type modelProperties() const { return *M_modelProperties; }
+    model_prop_ptrtype modelProperties() { return M_modelProperties; }
+    model_prop_ptrtype modelProperties() const { return M_modelProperties; }
     
     integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }
@@ -652,21 +652,21 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleMatrixIBC( int i , s
 
     
     // <lambda, v.n>_Gamma_I
-    bbf( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
+    bbf( 0_c, 3_c, 0, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
     
     // <lambda, tau w>_Gamma_I
-    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
+    bbf( 1_c, 3_c, 1, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
     
     // <sigma.n, m>_Gamma_I
-    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
+    bbf( 3_c, 0_c, i, 0 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
      
 
     // <tau u, m>_Gamma_I
-    bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 3_c, 1_c, i, 1 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                         _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
 
     // -<lambda2, m>_Gamma_I
-    bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 3_c, 3_c, i, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                         _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
     
 
@@ -688,10 +688,10 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::
 
     Feel::cout << "IBC condition: " << g << std::endl; 
 
-    double meas = integrate( _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+    double meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
 
     // <F_target,m>_Gamma_I
-    blf(3_c,i) += integrate( _range=markedfaces(M_mesh,marker), _expr=inner(g,id(nu))/meas);
+    blf(3_c,i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=inner(g,id(nu))/meas);
 
 }
 
@@ -826,20 +826,20 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		auto mu = expr(material.getScalar("mu"));
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
-		bbf( 0_c, 0_c ) +=  integrate(_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-    	bbf( 0_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+		bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+    	bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
 
 
-    bbf( 0_c, 1_c ) += integrate(_range=elements(M_mesh),_expr=(trans(idt(u))*div(v)));
+    bbf( 0_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(trans(idt(u))*div(v)));
 
-    bbf( 0_c, 2_c) += integrate(_range=internalfaces(M_mesh),
+    bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 							    _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
 			    						 trans(idt(uhat))*rightface(id(v)*N())) );
-    bbf( 0_c, 2_c) += integrate(_range=gammaMinusIntegral,
+    bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
 		    					_expr=-trans(idt(uhat))*(id(v)*N()) );
 
-    bbf( 1_c, 0_c) += integrate(_range=elements(M_mesh),
+    bbf( 1_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
 								_expr=(trans(id(w))*divt(sigma)));
 
     // ( d^2u/dt^2, w)_Omega  [only if it is not stationary]
@@ -851,39 +851,39 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 			auto rho = expr(material.getScalar("rho"));
 			// bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
         	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
-			bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+			bbf( 1_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
             	                         _expr = -rho*inner(idt(u),id(w))/(dt*dt) );
 		}
     }
 
     // begin dp: here we need to put the projection of u on the faces
-    bbf( 1_c, 1_c) += integrate(_range=internalfaces(M_mesh),_expr=-tau_constant *
+    bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),_expr=-tau_constant *
 		    ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
 		      rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
 
-    bbf( 1_c, 1_c) += integrate(_range=boundaryfaces(M_mesh),
+    bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=boundaryfaces(M_mesh),
 		    _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
 
-    bbf( 1_c, 2_c) += integrate(_range=internalfaces(M_mesh),
+    bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 		    _expr=tau_constant *
 		    ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
 		      rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
 
-    bbf( 1_c, 2_c) += integrate(_range=gammaMinusIntegral,
+    bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
 		    _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
 
-    bbf( 2_c, 0_c) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 		    _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
 				    rightfacet(idt(sigma)*N())) ) );
 
 
     // BC
-    bbf( 2_c, 1_c) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 			    _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
 				    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
 
-    bbf( 2_c, 2_c) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
     _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
 				    rightface( pow(idv(H),M_tau_order) )));
 
@@ -898,7 +898,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    {
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Dirichlet on " << marker << std::endl;
-			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker),
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    					_expr=trans(idt(uhat)) * id(m) );
 		    }
 	    }
@@ -916,13 +916,13 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    {
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
-			    bbf( 2_c, 0_c) += integrate(_range=markedfaces(M_mesh,marker ),
+			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
-			    bbf( 2_c, 1_c) += integrate(_range=markedfaces(M_mesh,marker),
+			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker), 
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
@@ -933,13 +933,13 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    {
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
-			    bbf( 2_c, 0_c) += integrate(_range=markedfaces(M_mesh,marker ),
+			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
-			    bbf( 2_c, 1_c) += integrate(_range=markedfaces(M_mesh,marker),
+			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
 
-			    bbf( 2_c, 2_c) += integrate(_range=markedfaces(M_mesh,marker), 
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
@@ -973,7 +973,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 auto g = expr<Dim,1,expr_order> (exAtMarker.expression());
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
-				blf( 1_c ) += integrate(_range=elements(M_mesh),
+				blf( 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
                     			  	      _expr=trans(g)*id(w));
             }
         }
@@ -987,7 +987,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
 			cout << "Neumann condition on " << marker << ": " << g << std::endl;
-			blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 									_expr=trans(id(m))* g );
             }
 		}	
@@ -1012,8 +1012,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 				    auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 	    			cout << "Neumann condition computed from displacement on " << marker << std::endl;
-		    		blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-			    						    _expr=trans(id(m)) * sigma_exact *N() );
+		    		blf( 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(id(m)) * sigma_exact *N() );
                 }
             }
 	    }
@@ -1033,8 +1032,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 if ( !this->isStationary() )
                     g.setParameterValues( { {"t", M_nm_mixedelasticity->time()} } );
 				cout << "Dirichlet condition on " << marker << ": " << g << std::endl;
-				blf( 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                		      _expr=trans(id(m))*g);
+				blf( 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(id(m))*g);
             }
         }
     }
@@ -1052,7 +1050,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			auto dt = this-> timeStep();
         	// blf(1_c) += integrate( _range=elements(M_mesh),
         	//                         _expr= rho*inner(idv(this->timeStepNM()->polyDeriv()),id(w)) );
-        	blf(1_c) += integrate( _range=elements(M_mesh), _expr= -rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
+        	blf(1_c) += integrate(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr= -rho*inner( 2*idv(u)-idv(u1) ,id(w))/(dt*dt) );
 		}
     }
 
@@ -1095,21 +1093,21 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
-                auto SXX = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::X)) );
+                auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::X)) );
                 M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXX"), SXX );
 
                 if (Dim > 1)
                 {
-                    auto SYY = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Y)) );
-                    auto SXY = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Y)) );
+                    auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Y)) );
+                    auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Y)) );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYY"), SYY );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXY"), SXY );
                 }
                 if (Dim > 2)
                 {            
-                    auto SZZ = l2p -> project (_expr = idv (M_up.comp(Component::Z, Component::Z)) );
-                    auto SYZ = l2p -> project (_expr = idv (M_up.comp(Component::Y, Component::Z)) );
-                    auto SXZ = l2p -> project (_expr = idv (M_up.comp(Component::X, Component::Z)) );
+                    auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Z, Component::Z)) );
+                    auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::Y, Component::Z)) );
+                    auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_up.comp(Component::X, Component::Z)) );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaZZ"), SZZ );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaYZ"), SYZ );
                     M_exporter->step(time)->add(prefixvm(M_prefix,"sigmaXZ"), SXZ );
@@ -1172,17 +1170,17 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 auto Sh = Pch<Order> (M_mesh);
                 auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
 
-                auto UX = l2p -> project (_expr = idv (M_pp[Component::X]) );     
+                auto UX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::X]) );     
                 M_exporter->step(time)->add(prefixvm(M_prefix, "UX"),UX ) ;  
   	
                 if (Dim > 1)
                 {
-                    auto UY = l2p -> project (_expr = idv (M_pp[Component::Y]) );
+                    auto UY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Y]) );
                     M_exporter->step(time)->add(prefixvm(M_prefix, "UY"),UY ) ;    	
                 }
                 if (Dim > 2)
                 {   
-                    auto UZ = l2p -> project (_expr = idv (M_pp[Component::Z]) );
+                    auto UZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (M_pp[Component::Z]) );
                     M_exporter->step(time)->add(prefixvm(M_prefix, "UZ"),UZ ) ;    	
 	            }
 
@@ -1201,15 +1199,18 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 								if ( !this->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
 
-								auto export_uEX = project( _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
+								auto export_uEX = project(_quad=_Q<expr_order>(), _space=M_Wh, _range=elements( M_mesh ), _expr=u_exact);
 								M_exporter->step(time)->add(prefixvm(M_prefix, "u_exact"), Idh?(*Idh)( export_uEX): export_uEX );		
-
-								auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
-								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+                                
+								auto l2err_u = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact - idv(M_pp) );
+							
+                                auto l2norm_uex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=u_exact );
 								if (l2norm_uex < 1)
 									l2norm_uex = 1.0;	
+                                
 								cout << "----- Computed Errors -----" << std::endl;
-								cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+								// cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+								cout << "||u-u_ex||_L2=\t" << l2err_u << std::endl;
 								// Export the errors
 								M_exporter -> step( time )->add(prefixvm(M_prefix, "u_error_L2"), l2err_u/l2norm_uex );
 							    //------ Sigma 	------//
@@ -1223,26 +1224,26 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 									// EXPORT SIGMA EXACT
-                                    auto export_sigmaEX = project( _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
+                                    auto export_sigmaEX = project(_quad=_Q<expr_order>(), _space=M_Vh, _range=elements(M_mesh), _expr=sigma_exact); 
 				
                                     auto Sh = Pch<Order> (M_mesh);
                                     auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
                                     
-                                    auto SXX = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
+                                    auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::X)) );
                                     M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXX"), SXX );
                                     
                                     if (Dim > 1)
                                     {
-                                        auto SYY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
-                                        auto SXY = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
+                                        auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Y)) );
+                                        auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Y)) );
                                         M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYY"), SYY );
                                         M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXY"), SXY );
                                     }
                                     if (Dim > 2)
                                     {
-                                        auto SYZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
-                                        auto SXZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
-                                        auto SZZ = l2p -> project (_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
+                                        auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Y, Component::Z)) );
+                                        auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::X, Component::Z)) );
+                                        auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (export_sigmaEX.comp(Component::Z, Component::Z)) );
                                         M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactZZ"), SZZ );
                                         M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactYZ"), SYZ );
                                         M_exporter->step(time)->add(prefixvm(M_prefix,"s_exactXZ"), SXZ );
@@ -1250,8 +1251,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 
                 					// M_exporter->add(prefixvm(M_prefix, "sigma_exact"), Idhv?(*Idhv)( export_sigmaEX): export_sigmaEX );
 
-									auto l2err_sigma = normL2( _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
-									auto l2norm_sigmaex = normL2( _range=elements(M_mesh), _expr=sigma_exact );
+									auto l2err_sigma = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact - idv(M_up) );
+									auto l2norm_sigmaex = normL2(_quad=_Q<expr_order>(), _range=elements(M_mesh), _expr=sigma_exact );
 									if (l2norm_sigmaex < 1)
 										l2norm_sigmaex = 1.0;		
 									cout << "||sigma-sigma_ex||_L2=\t" << l2err_sigma/l2norm_sigmaex << std::endl;

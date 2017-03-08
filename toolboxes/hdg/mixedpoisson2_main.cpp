@@ -54,9 +54,14 @@ int main(int argc, char *argv[])
     }
     else
     {
+#ifndef USE_SAME_MAT
 		MP->assembleCstPart();
+#endif
         for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )
         {
+#ifdef USE_SAME_MAT
+			MP->assembleCstPart();
+#endif
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << MP->time() << "s \n";
             Feel::cout << "============================================================\n";

@@ -14,7 +14,7 @@
     },
     "BoundaryConditions":
     {
-        "strain":
+        "stress":
         {
             "SourceTerm":
             {
@@ -22,25 +22,28 @@
                 {
 					"expr":"{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"
 				}
+            },
+            "Neumann_exact":
+            {
+                "int":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                },
+                "ext":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                },
+                "out":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                }
             }
 		},
 		"displacement":
 		{
 	    	"Dirichlet":
 	    	{
-          		"int":
-                {
-					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
-                },
           		"in":
-                {
-					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
-                },
-          		"ext":
-                {
-					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
-                },
-          		"out":
                 {
 					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
                 }
@@ -55,7 +58,7 @@
 					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
 				}
 			}
-		},
+		}/*,
 		"GeometricalTest":
 		{
             "force_F":
@@ -65,11 +68,11 @@
                     "expr":"{-2*Pi,-4}" 
                 }
             }
-		}
+		}*/
      },
     "PostProcess":
     {
-        "Fields":["strain","displacement"]
+        "Fields":["stress","displacement"]
     }
 }
 
