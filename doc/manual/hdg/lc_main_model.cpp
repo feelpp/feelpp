@@ -21,7 +21,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <lc_model.hpp>
+
+#include "lc_model.hpp"
 
 using namespace Feel;
 
@@ -57,10 +58,15 @@ int main(int argc, char *argv[])
 
     lc_type LC ;
     auto mesh = loadMesh( _mesh=new lc_type::mesh_type );
-    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<1>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<1>(mesh) ) ) Idhv;
+    decltype( IPtr( _domainSpace=Pdh<FEELPP_ORDER>(mesh), _imageSpace=Pdh<FEELPP_ORDER>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idhv;
+
+    LC.init(mesh);
+    
+
+    /*
     if ( soption( "mixedpoisson.gmsh.submesh" ).empty() )
-        LC.init(mesh, 1, 1);
+        LC.init(mesh, 1);
     else
     {
         auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedpoisson.gmsh.submesh")), Environment::worldComm() );
@@ -68,26 +74,29 @@ int main(int argc, char *argv[])
         Idhv = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<1>(mesh) );
         LC.init( cmesh, 1, 1, mesh );
     }
-    
+    */
+
     if ( LC.isStationary() )
     {
-        LC.solve();
-	LC.second_step();    
-        LC.exportResults( mesh );
+        Feel::cout << " This model could not be stationary! " << std::endl;
+        return -1;
     }
     else
     {
+        LC.assembleCstPart();
         for ( ; !( LC.timeStepBase()->isFinished() && LC.timeStepBase_statevar()->isFinished() ) ; LC.updateTimeStepBDF() )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << LC.time() << "s \n";
             Feel::cout << "============================================================\n";
-	    // 3D model
+	        // 3D model
+            LC.assembleNonCstPart();
             LC.solve();
-	    // OD model
-	    LC.second_step();
+	        // OD model
+	        LC.second_step();
 
-            LC.exportResults( mesh, Idh, Idhv );
+            LC.exportResults( mesh );
+            // LC.exportResults( mesh, Idh, Idhv );
         }
     }
 
