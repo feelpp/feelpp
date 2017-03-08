@@ -23,7 +23,7 @@
 #
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
+include_directories(${CMAKE_SOURCE_DIR}/toolboxes, ${CMAKE_BINARY_DIR}/toolboxes)
 
 # Laplacian
 foreach( dim 2 3)
@@ -91,12 +91,13 @@ foreach( dim 2 3)
 endforeach() # dim
 # endforeach() # geom
 
-foreach(D RANGE 1 3 1)
+
+foreach(D RANGE 2 3 1)
   foreach(P RANGE 0 4 1) #3
     foreach(N RANGE 1 2 1)
       foreach(E RANGE 2 4 1)
-        feelpp_add_application( conv_${D}DP${P}G${N}E${E}
-                                SRCS conv_main.cpp conv.hpp
+        feelpp_add_application( cvg_mixedpoisson_${D}DP${P}G${N}E${E}
+                                SRCS cvg_mixedpoisson_main.cpp cvg_mixedpoisson.hpp
                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
                                 # INCLUDE_IN_ALL
                                 LINK_LIBRARIES feelpp_modelcore )
@@ -119,5 +120,5 @@ foreach(D RANGE 2 3 2)
   endforeach()
 endforeach()
 
-feelpp_add_testcase(cvg-tests)
+feelpp_add_testcase(cvg-mp-tests)
 feelpp_add_testcase(cvg-el-tests)

@@ -1,4 +1,4 @@
-#include "feel/feelmodels/hdg/mixedpoisson2.hpp"
+#include "feel/feelmodels/hdg/mixedpoisson.hpp"
 
 namespace Feel {
 
