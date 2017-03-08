@@ -810,8 +810,8 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     auto phi = this->phi();
-    //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
-    *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+    *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+    //*M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
     //*M_levelsetGradPhi = vf::project( 
             //_space=this->functionSpaceVectorial(),
             //_range=elements(this->mesh()),
@@ -1281,7 +1281,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto Du = sym( gradv(u) );
         M_modGradPhiAdvection->updateAdvectionVelocity( idv(u) );
         //M_modGradPhiAdvection->updateReactionCoeff( inner(NxN, Du) );
-        auto NxNDu = this->smoother()->project( inner(NxN, Du) );
+        //auto NxNDu = this->smoother()->project( inner(NxN, Du) );
+        auto NxNDu = this->projectorL2()->project( inner(NxN, Du) );
         M_modGradPhiAdvection->updateReactionCoeff( idv(NxNDu) );
         //M_modGradPhiAdvection->updateSourceAdded(
                 //- idv(modGradPhi) * inner( NxN, Du)
@@ -1295,8 +1296,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto u = this->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
+        auto NxNDu = this->projectorL2()->project( inner(NxN, Du) );
         M_stretchAdvection->updateAdvectionVelocity( idv(u) );
-        M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
+        //M_stretchAdvection->updateReactionCoeff( inner(NxN, Du) );
+        M_stretchAdvection->updateReactionCoeff( idv(NxNDu) );
         //auto NxNDu = this->smoother()->project( inner(NxN, Du) );
         //auto NxNDu = vf::project( 
                 //_space=M_stretchAdvection->functionSpace(),
