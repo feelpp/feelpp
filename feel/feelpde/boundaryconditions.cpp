@@ -33,7 +33,7 @@ namespace Feel
 
 BoundaryConditions::BoundaryConditions( WorldComm const& world )
     :
-    M_worldComm( world )
+    BoundaryConditions( "", world )
 {}
 
 BoundaryConditions::BoundaryConditions( std::string const& p, WorldComm const& world )
