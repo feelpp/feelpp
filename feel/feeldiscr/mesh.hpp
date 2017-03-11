@@ -1220,6 +1220,11 @@ private:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
 
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<0> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<1> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<2> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<3> );
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )

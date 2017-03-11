@@ -285,15 +285,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         }
 
         tic();
-        boost::tie( iv, en ) = this->elementsRange();
-        for ( ; iv != en; ++iv )
-        {
-            this->elements().modify( iv,[this]( element_type& e ) { e.setMeshAndGm( this, this->gm(), this->gm1() ); } );
-        }
-        for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-        {
-            this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
-        }
+        this->updateCommonDataInEntities( mpl::int_<nDim>() );
         toc("Mesh::updateForUse update setMesh in elements and faces",FLAGS_v>0);
         VLOG(1) << "[Mesh::updateForUse] update setMesh in elements and faces";
 
@@ -640,6 +632,53 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
                            }
                        }
                    } );
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<0> )
+{
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+    for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
+        this->edges().modify( ite,[&geondEdgeCommon]( edge_type& e ) { e.setCommonData( geondEdgeCommon ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
 }
 
 template<typename Shape, typename T, int Tag>
