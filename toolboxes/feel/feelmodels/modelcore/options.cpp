@@ -425,6 +425,7 @@ levelset_options(std::string const& prefix)
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
+        (prefixvm(prefix,"smooth-gradient").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth gradient (with smoother-vec)")
         (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
         (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
         (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
