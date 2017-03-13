@@ -116,7 +116,9 @@ public :
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
-    //@}
+    static const bool is_tensor2_f = ( is_tensor2_field_v<dual_image_element_type> ||
+                                       is_tensor2symm_field_v<dual_image_element_type> );
+        //@}
     /** @name Constructors, destructor
      */
     //@{
@@ -296,9 +298,19 @@ public :
         de=this->project( rhs_expr );
     }
 
-
     template< typename Expr>
-    domain_element_type derivate( Expr const& expr )
+        domain_element_type derivate( Expr const& expr )
+    {
+        return derivate( expr, mpl::bool_<is_tensor2_f>() );
+    }
+    template< typename Expr>
+        domain_element_type derivate( Expr const& expr,
+                                      mpl::bool_<false> )
+    {
+    }
+    template< typename Expr>
+        domain_element_type derivate( Expr const& expr,
+                                      mpl::bool_<true> )
     {
         auto de = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
@@ -325,7 +337,7 @@ public :
 private :
 
     template<typename T>
-        void initMatrix( typename std::enable_if<is_tensor2_field<T>::value>::type* = nullptr )
+        void initMatrix( typename std::enable_if<is_tensor2_field_v<T> || is_tensor2symm_field_v<T>>::type* = nullptr )
     {
         auto uDomain = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
@@ -338,7 +350,7 @@ private :
                        _expr=inner( idt( uDomain ), id( uImage ) ) );
     }
     template<typename T>
-        void initMatrix( typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value>::type* = nullptr )
+        void initMatrix( typename std::enable_if<!(is_tensor2_field_v<T>||is_tensor2symm_field_v<T>)>::type* = nullptr )
     {
         using namespace vf;
         auto uDomain = this->domainSpace()->element();
@@ -432,7 +444,7 @@ private :
             QuadT quad, Quad1T quad1,
             GeomapStrategyType geomap,
             GradExprT grad_expr, DivExprT div_expr, CurlExprT curl_expr,
-            typename std::enable_if<is_tensor2_field<T>::value>::type* = nullptr )
+            typename std::enable_if<(is_tensor2_field_v<T>||is_tensor2symm_field_v<T>)>::type* = nullptr )
     {
         if( M_proj_type != L2 )
             throw std::logic_error( "Only L2 projection supported for rank-2 tensors" );
@@ -469,7 +481,7 @@ private :
             QuadT quad, Quad1T quad1,
             GeomapStrategyType geomap,
             GradExprT grad_expr, DivExprT div_expr, CurlExprT curl_expr,
-            typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value>::type* = nullptr )
+            typename std::enable_if<!(is_tensor2_field_v<T>||is_tensor2symm_field_v<T>)>::type* = nullptr )
     {
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
