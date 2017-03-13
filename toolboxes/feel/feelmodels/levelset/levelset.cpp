@@ -460,13 +460,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
                 M_reinitializer = this->reinitializerHJ();
             
             double thickness_heaviside;
-            if( Environment::vm().count( prefixvm(prefixvm(this->prefix(), "reinit-hj"), "thickness-heaviside") ) )
+            if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj")).defaulted() )
             {
-                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
+                thickness_heaviside =  M_thicknessInterface;
             }
             else
             {
-                thickness_heaviside =  M_thicknessInterface;
+                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
             boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( M_thicknessInterface );
         }
@@ -633,6 +633,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
+
+    M_doSmoothGradient = boption( _name="smooth-gradient", _prefix=this->prefix() );
 
     if( Environment::vm( _name="smooth-curvature", _prefix=this->prefix()).defaulted() && Order < 2 )
         M_doSmoothCurvature = true;
@@ -812,13 +814,20 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     auto phi = this->phi();
-    //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
-    *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
-    //*M_levelsetGradPhi = vf::project( 
-            //_space=this->functionSpaceVectorial(),
-            //_range=elements(this->mesh()),
-            //_expr=trans(gradv(phi)) 
-            //);
+    if( M_doSmoothGradient )
+    {
+        *M_levelsetGradPhi = this->smootherVectorial()->derivate( idv(phi) );
+    }
+    else
+    {
+        *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+        //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+        //*M_levelsetGradPhi = vf::project( 
+                //_space=this->functionSpaceVectorial(),
+                //_range=elements(this->mesh()),
+                //_expr=trans(gradv(phi)) 
+                //);
+    }
 
     M_doUpdateGradPhi = false;
 }
@@ -1020,12 +1029,14 @@ typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
 {
     if( !M_smoother )
+    {
         M_smoother = projector( 
                 this->functionSpace() , this->functionSpace(), 
                 backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm()), 
                 DIFF, 
                 this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
                 30);
+    }
     return M_smoother; 
 }
 
@@ -1436,7 +1447,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
 
     else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
     {
-        //*phi = *explicitHJ(max_iter, dtau, tol);
+        *phiReinit = *phi;
         // TODO
     } // Hamilton-Jacobi
 
