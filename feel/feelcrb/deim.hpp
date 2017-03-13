@@ -498,6 +498,8 @@ protected :
         else
             T = M_solutions[mu];
 
+        double norm = T->linftyNorm();
+
         vectorN_type coeff = computeCoefficient( T );
 
         auto newT = copyTensor( T );
@@ -505,6 +507,7 @@ protected :
         for ( int i=0; i<M_M; i++ )
             add( newT, -coeff(i), M_bases[i] );
         LOG(INFO) << "DEIM : residual() end";
+        newT->scale( 1./norm );
         return newT;
     }
 
