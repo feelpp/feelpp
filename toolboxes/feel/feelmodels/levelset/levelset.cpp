@@ -1613,6 +1613,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
            << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
            << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
+           << "\n     -- smooth gradient                     : " << std::boolalpha << this->M_doSmoothGradient
            << "\n     -- smooth curvature                    : " << std::boolalpha << this->M_doSmoothCurvature
            << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
            << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
