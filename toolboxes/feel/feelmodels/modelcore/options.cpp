@@ -399,7 +399,7 @@ reinitializer_hj_options(std::string const& prefix)
     reinitializerHJOptions.add_options()
         (prefixvm(prefix,"tol").c_str(), Feel::po::value<double>()->default_value( 0.03 ), "tolerance on residual to \"distance function\" of HJ reinitialized level set")
         (prefixvm(prefix,"max-iter").c_str(), Feel::po::value<int>()->default_value( 15 ), "maximum number of iterations for Hamilton-Jacobi reinitialization")
-        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Heaviside used to compute sign function)")
+        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Heaviside used to compute sign function)")
         ;
 
     reinitializerHJOptions.add( advection_options( prefix ) );
@@ -425,9 +425,10 @@ levelset_options(std::string const& prefix)
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
+        (prefixvm(prefix,"smooth-gradient").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth gradient (with smoother-vec)")
         (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
-        (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
-        (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(1e-2), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(1e-2), "smoothing coefficient for curvature smoothing")
 
         (prefixvm(prefix,"use-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect modGradPhi independently")
         (prefixvm(prefix,"reinit-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Reinit modGradPhi when phi is reinitialized")

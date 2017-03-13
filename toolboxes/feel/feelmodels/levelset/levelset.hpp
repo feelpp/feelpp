@@ -505,6 +505,7 @@ private:
     // Normal, curvature
     mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
+    bool M_doSmoothGradient;
     bool M_doSmoothCurvature;
 
     //--------------------------------------------------------------------//
