@@ -98,7 +98,7 @@ foreach(D RANGE 2 3 1)
       foreach(E RANGE 2 4 1)
         feelpp_add_application( cvg_mixedpoisson_${D}DP${P}G${N}E${E}
                                 SRCS cvg_mixedpoisson_main.cpp cvg_mixedpoisson.hpp
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E} USE_SAME_MAT=1
                                 # INCLUDE_IN_ALL
                                 LINK_LIBRARIES feelpp_modelcore )
       endforeach()
