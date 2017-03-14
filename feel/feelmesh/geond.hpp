@@ -349,7 +349,7 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,rank_type> const& neighbor( uint16_type n ) const
+    size_type neighbor( uint16_type n ) const
     {
         return M_neighbors[n];
     }
@@ -357,20 +357,20 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id )
     {
         if ( M_neighbors.empty() )
         {
             M_neighbors.reserve( numNeighbors );
-            M_neighbors.resize( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) );
+            M_neighbors.resize( numNeighbors, invalid_size_type_value );
         }
-        M_neighbors[n] = std::make_pair( neigh_id, proc_id );
+        M_neighbors[n] = neigh_id;
     }
 
     bool isNeighbor( self_type const& G ) const
     {
         for ( uint16_type i = 0; i< this->nNeighbors() ; ++i )
-            if ( this->neighbor( i ).first==G.id() ) return true;
+            if ( this->neighbor( i ) == G.id() ) return true;
 
         return false;
     }
@@ -1076,7 +1076,7 @@ private:
     mutable std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
 
     //! store neighbor element id
-    std::vector<std::pair<size_type,rank_type> > M_neighbors;
+    std::vector<size_type> M_neighbors;
 
     //! mapping from marker index to marker flag
     std::map<uint16_type,Marker1> M_markers;
