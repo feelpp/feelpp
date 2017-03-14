@@ -1140,9 +1140,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             DVLOG(2) << "------------------------------------------------------------\n";
             DVLOG(2) << "Element id: " << __element.id() << " local face id: " << j << "\n";
 #endif
-            for ( int f = 0; f < face_type::numVertices; ++f )
+            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:/*__element.*/element_type::fToP( j, f );
+                //uint16_type pt_localid = ( nDim==1 )?j:/*__element.*/element_type::fToP( j, f );
                 // lids[f]= __element.point( pt_localid ).id();
                 lids[f]= pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
 
@@ -1430,11 +1430,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
             else
             {
-                element_iterator elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ );
+                element_iterator elt1 = this->elementIterator( f_it->ad_first() );
                 this->elements().modify( elt1, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_first(), *f_it ); } );
                 if ( f_it->isConnectedTo1() )
                 {
-                    element_iterator elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ );
+                    element_iterator elt2 = this->elementIterator( f_it->ad_second() );
                     this->elements().modify( elt2, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_second(), *f_it ); } );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
@@ -1452,7 +1452,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 uint16_type j = std::get<2>( eltDatas );
                 size_type eltId2 = std::get<0>( eltDatas );
                 rank_type eltPid2 = std::get<1>( eltDatas );
-                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2, eltPid2 ); });
+                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2 ); });
             }
         }
     }
@@ -1538,7 +1538,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
                 auto const& data2 = faceDatas[k2];
                 size_type eltId2 = std::get<0>( data2 );
                 rank_type eltPid2 = std::get<1>( data2 );
-                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2, eltPid2 ); });
+                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2 ); });
             }
         }
     }
@@ -1549,70 +1549,89 @@ void
 Mesh<Shape, T, Tag>::updateAdjacencyElements()
 {
     VLOG(2) << "Compute adjacency graph\n";
-    //boost::unordered_map<std::set<int>, size_type > _faces;
-    //typename boost::unordered_map<std::set<int>, size_type >::iterator _faceit;
-    boost::unordered_map<std::set<size_type>, size_type > _faces;
-    typename boost::unordered_map<std::set<size_type>, size_type >::iterator _faceit;
-    //std::map<std::set<size_type>, size_type > _faces;
-    //typename std::map<std::set<size_type>, size_type >::iterator _faceit;
-    //std::vector< std::vector<std::tuple<size_type,rank_type,uint16_type> > > f2e;
-    std::vector< std::tuple<size_type,rank_type,uint16_type> > f2e;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::vector< std::tuple<size_type,uint16_type> >  facetoelement_container_type;
+
+    std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
+    for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
+    {
+        for ( int f = 0; f < face_type::numVertices; ++f )
+            myfToP[j*face_type::numVertices+f] = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
+    }
+
+    facetoelement_container_type f2e;
     size_type next_face = 0;
     bool faceinserted = false;
 
-    boost::unordered_map<size_type, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
+    std::unordered_map<size_type, std::vector<std::tuple<size_type,uint16_type> > > e2e;
+
+    Eigen::Matrix<uint16_type,element_type::numVertices,1> pointIdInElt;
+    std::vector<size_type> lids(face_type::numVertices);
+
+    const uint16_type _numLocalFaces = this->numLocalFaces();
 
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
 
-    const uint16_type _numLocalFaces = this->numLocalFaces();
+    pointstoface_container_type _faces( std::distance(iv,en)*_numLocalFaces );
+    typename pointstoface_container_type::iterator _faceit;
+
     for ( ; iv != en; ++iv )
     {
-        const size_type eltId = iv->id();
-        const rank_type eltPid = iv->processId();
+        element_type const& elt = *iv;
+        const size_type eltId = elt.id();
+        const rank_type eltPid = elt.processId();
+
+        for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+            pointIdInElt[f] = elt.point( f ).id();
+
         for ( uint16_type j = 0; j < _numLocalFaces; j++ )
         {
-            std::set<size_type> s;
-            //std::set<int> s;
             for ( uint16_type f = 0; f < face_type::numVertices; ++f )
-            {
-                if ( nDim == 1 )
-                    s.insert( iv->point( j ).id() );
-                else
-                    s.insert( iv->point( iv->fToP( j, f ) ).id() );
-            }
+                lids[f] = pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
+            std::sort(lids.begin(), lids.end());
 
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
-
-            auto const& faceIdRegistered = _faceit->second;
-            DVLOG(2) << "Connect face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
-
+#if 0
+            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, next_face ) );
+#else
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(next_face) );
+#endif
             if ( faceinserted )
             {
-                f2e.push_back( std::make_tuple(eltId,eltPid,j) );
+                DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
+                f2e.push_back( std::make_tuple( eltId,j ) );
                 ++next_face;
             }
             else // already stored
             {
+                auto const& faceIdRegistered = _faceit->second;
+                DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
+
                 auto const& f2eVal = f2e[faceIdRegistered];
-                e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( eltId, eltPid, std::get<2>(f2eVal) ) );
-                e2e[eltId].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
+                e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( eltId, std::get<1>(f2eVal) ) );
+                e2e[eltId].push_back( std::make_tuple( std::get<0>(f2eVal), j ) );
                 // erase face desc in map (maybe improve other acces)
-                if ( nDim == nRealDim )
-                    _faces.erase( _faceit );
+                // if ( nDim == nRealDim )
+                //    _faces.erase( _faceit );
             }
         } // local face
     } // element loop
+
+    f2e.clear();
+    facetoelement_container_type().swap( f2e );
+    _faces.clear();
+    pointstoface_container_type().swap( _faces );
 
     for ( auto const& eltDatasPair : e2e )
     {
         element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
         for (auto const& eltDatas  : eltDatasPair.second )
         {
-            uint16_type j = std::get<2>( eltDatas );
+            uint16_type j = std::get<1>( eltDatas );
             size_type eltId2 = std::get<0>( eltDatas );
-            rank_type eltPid2 = std::get<1>( eltDatas );
-            this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2, eltPid2 ); });
+            this->elements().modify( eltIt1, [&j,&eltId2]( element_type& elt ) { elt.setNeighbor( j,eltId2 ); });
         }
     }
 }
