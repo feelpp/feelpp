@@ -1551,18 +1551,17 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
                             // const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
-                            size_type neighbor_id = elem.neighbor( ms ).first;
-                            size_type neighbor_process_id = elem.neighbor( ms ).second;
+                            size_type neighbor_id = elem.neighbor( ms );
 
                             // warning ! the last condition is a temporary solution
                             if ( neighbor_id != invalid_size_type_value )
                             {
-                                if ( neighbor_process_id != proc_id )
+                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
+
+                                if ( neighbor->processId() != proc_id )
                                     CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
                                              _M_X2->dof()->buildDofTableMPIExtended() ) )
                                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
-
-                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
@@ -1935,7 +1934,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                     std::vector<size_type> neighbor_ids;
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
                     {
-                        size_type neighbor_id = geoelt2.neighbor( ms ).first;
+                        size_type neighbor_id = geoelt2.neighbor( ms );
 
                         if ( neighbor_id!=invalid_size_type_value )
                             neighbor_ids.push_back( neighbor_id );
@@ -2091,7 +2090,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
                     {
-                        size_type neighbor_id = geoelt2.neighbor( ms ).first;
+                        size_type neighbor_id = geoelt2.neighbor( ms );
 
                         if ( neighbor_id!=invalid_size_type_value ) neighbor_ids.push_back( neighbor_id );
 
