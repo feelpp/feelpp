@@ -472,7 +472,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
 
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
+   	for( int i = 0; i < M_integralCondition; i++ )
+       	M_mup.push_back(M_Ch->element("mup"));
+    
+	M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 
@@ -516,8 +519,8 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     M_up = U(0_c);
     M_pp = U(1_c);
 
-    for( int i = 0; i < M_integralCondition; i++ )
-        M_mup.push_back(U(3_c,i));
+   	for( int i = 0; i < M_integralCondition; i++ )
+       	M_mup[i] = U(3_c,i);
 
 }
 
@@ -579,7 +582,6 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
                                  _expr=idt(phat)*trans(id(v))*N());
 
-#if 1       // NEW VERSION
     // (div(j),q)_Omega
     bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=(id(w)*divt(u)));
 
@@ -616,52 +618,6 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
                                                                                       rightface( pow(idv(H),M_tau_order) )));
-
-
-
-#else
- 
-    // -(j, grad(w))
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh),_expr=(-grad(w)*idt(u)));
-
-    // <j.n,w>_Gamma
-    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
-    bbf( 1_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
-    bbf( 1_c, 0_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                _expr=(id(w)*trans(idt(u))*N())); 
-
-
-     // <tau p, w>_Gamma
-      bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                     _expr=tau_constant *
-                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
-                                     rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
-      bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                   _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
-
-
-    /*/ (1/delta_t p, w)_Omega  [only if it is not stationary]	
-	if ( !this->isStationary() ) 
-	{
-    	bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
-                                      _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
-    }*/
-
-    // <-tau phat, w>_Gamma\Gamma_I
-    bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                  _expr=-tau_constant * idt(phat) *
-                                     ( leftface( pow(idv(H),M_tau_order)*id(w) )+
-                                     rightface( pow(idv(H),M_tau_order)*id(w) )));
-    bbf( 1_c, 2_c ) += integrate(_range=M_gammaMinusIntegral,
-                                  _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
-
-     // <j.n,mu>_Omega/Gamma
-      bbf( 2_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                   _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                                  rightfacet(trans(idt(u))*N())) ) );
-#endif
 
     this->assembleBoundaryCond();
 }
@@ -767,7 +723,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
     if ( !this->isStationary() )
 	{
 		auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
-        this->assemblePotentialRHS( -idv(bdf_poly) , "");
+        this->assemblePotentialRHS( idv(bdf_poly) , "");
 	}
 	
     auto itField = modelProperties().boundaryConditions().find( "potential");
@@ -1301,6 +1257,34 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
     if (!this->doRestart())
     {
         // start time step
+		auto itField = modelProperties().boundaryConditions().find("potential");
+        if ( itField != modelProperties().boundaryConditions().end() )
+        {
+        	auto mapField = (*itField).second;
+            auto itType = mapField.find( "InitialSolution" );
+            if (itType != mapField.end() )
+            {
+            	for (auto const& exAtMarker : (*itType).second )
+                {
+                	if (exAtMarker.isExpression() )
+                    {
+                    	auto p_init = expr(exAtMarker.expression() );
+						auto marker = exAtMarker.marker();
+
+                        if ( !this->isStationary() )
+                        	p_init.setParameterValues( { {"t", this->time() } } );
+						M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
+
+						auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+						auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+
+                    	Feel::cout << "Initial integral value of potential on "
+                      		       << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
+					}
+				}
+			}
+		}
+ 
         M_bdf_mixedpoisson -> start( M_pp );
         // up current time
         this->updateTime( M_bdf_mixedpoisson -> time() );
@@ -1437,6 +1421,12 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                                                   (M_mup[i])[0] );
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_IBCList[i].marker() << " : \t " << (M_mup[i])[0] << std::endl;
+					
+					auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+					auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+
+                    Feel::cout << "Integral value of potential(from pp) on "
+                      		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
@@ -1450,8 +1440,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                             if (exAtMarker.isExpression() )
                             {
                                 auto p_exact = expr(exAtMarker.expression() );
-                                if ( !this->isStationary() )
-                                    p_exact.setParameterValues( { {"t", time } } );
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
@@ -1460,14 +1448,19 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                                 }
                                 auto gradp_exact = grad<Dim>(p_exact);
                                 auto u_exact = expr(-K*trans(gradp_exact));
+
+                                if ( !this->isStationary() )
+                                    p_exact.setParameterValues( { {"t", time } } );
+                                if ( !this->isStationary() )
+                                    u_exact.setParameterValues( { {"t", time } } );
+								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+								// Feel::cout << "u_exactExport: " << u_exactExport << std::endl;
+
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"),
                                                               project( _space=M_Wh,
                                                                        _range=elements(M_mesh),
                                                                        _expr=p_exact) );
-                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"),
-                                                              project( _space=M_Vh,
-                                                                       _range=elements(M_mesh),
-                                                                       _expr=u_exact) );
+                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport);
 
                                 auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up) );
                                 auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
