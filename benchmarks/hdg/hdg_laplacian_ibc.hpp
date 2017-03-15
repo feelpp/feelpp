@@ -108,8 +108,13 @@ public:
     using Wh_ptr_t =  Pdh_ptrtype<mesh_type,OrderP>;
     using Mh_t =  Pdh_type<face_mesh_type,OrderP>;
     using Mh_ptr_t =  Pdh_ptrtype<face_mesh_type,OrderP>;
+#ifdef USE_FACE_MESH
+    using Ch_t = Pch_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
+#else
     using Ch_t = Pch_type<mesh_type,0>;
     using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
+#endif
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -258,7 +263,11 @@ Hdg<Dim, OrderP>::convergence()
         Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
         Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
         Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
+#ifdef USE_FACE_MESH
+        Ch_ptr_t Ch = Pch<0>(face_mesh, true );
+#else
         Ch_ptr_t Ch = Pch<0>(mesh, true );
+#endif
 
         toc("spaces",true);
 
