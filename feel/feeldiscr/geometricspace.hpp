@@ -121,12 +121,15 @@ public :
                 if ( M_meshGeoContext )
                 {
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
-                    if ( !M_meshGeoContext->hasElement( meshEltCtx.id()/*,meshEltCtx.processId()*/ ) )
+                    if ( !M_meshGeoContext->hasElement( meshEltCtx.id() ) )
                     {
-                        meshEltCtx.setMeshAndGm( M_meshGeoContext.get(), M_meshGeoContext->gm(), M_meshGeoContext->gm1() );
+                        auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
+                                                                                                             M_meshGeoContext->gm(),
+                                                                                                             M_meshGeoContext->gm1() );
+                        meshEltCtx.setCommonData( geondEltCommon );
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
-                    auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id()/*,meshEltCtx.processId()*/ );
+                    auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id() );
                     M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
                 }
@@ -300,7 +303,10 @@ public :
                 if ( !M_meshGeoContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     element_type meshEltCtx = modelMeshEltCtx;
-                    meshEltCtx.setMeshAndGm( M_meshGeoContext.get(), M_meshGeoContext->gm(), M_meshGeoContext->gm1() );
+                    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
+                                                                                                         M_meshGeoContext->gm(),
+                                                                                                         M_meshGeoContext->gm1() );
+                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshGeoContext->addElement( meshEltCtx, false );
                 }
             }
