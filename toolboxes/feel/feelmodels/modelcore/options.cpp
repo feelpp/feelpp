@@ -484,10 +484,6 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
 
         (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( true ), "enable surface tension between fluids")
         (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
-
-        (prefixvm(prefix, "enable-inextensibility").c_str(), Feel::po::value<bool>()->default_value( false ), "enable inextensibility of level set")
-        (prefixvm(prefix, "inextensibility-method").c_str(), Feel::po::value<std::string>()->default_value( "penalty" ), "method to impose level set inextensibility (penalty or lagrange-multiplier)")
-        (prefixvm(prefix, "inextensibility-gamma").c_str(), Feel::po::value<double>()->default_value( 5. ), "coeff for inextensibility by penalty method ")
         ;
 
     multifluidOptions
@@ -507,6 +503,10 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
             (prefixvm(levelset_prefix,"reinit-smooth-every").c_str(), Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset smoothly every n iterations (needs to be <= reinit-every)" )
             // Interface forces model
             (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
+            // Inextensibility
+            (prefixvm(levelset_prefix, "enable-inextensibility").c_str(), Feel::po::value<bool>()->default_value( false ), "enable inextensibility of level set")
+            (prefixvm(levelset_prefix, "inextensibility-method").c_str(), Feel::po::value<std::string>()->default_value( "penalty" ), "method to impose level set inextensibility (penalty or lagrange-multiplier)")
+            (prefixvm(levelset_prefix, "inextensibility-gamma").c_str(), Feel::po::value<double>()->default_value( 5. ), "coeff for inextensibility by penalty method ")
             ;
     }
 

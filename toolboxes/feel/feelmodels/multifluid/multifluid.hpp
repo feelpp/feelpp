@@ -126,8 +126,8 @@ public:
     size_type nLocalDof() const override;
 
     //--------------------------------------------------------------------//
-    bool hasInextensibility() const { return M_enableInextensibility; }
-    std::string const& inextensibilityMethod() const { return M_inextensibilityMethod; }
+    bool hasInextensibility( uint16_type n = 0 ) const { return M_hasInextensibility.at(n); }
+    std::string const& inextensibilityMethod( uint16_type n = 0 ) const { return M_inextensibilityMethod.at(n); }
     //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
@@ -193,11 +193,12 @@ private:
 
     //--------------------------------------------------------------------//
     // Inextensibility
+    std::vector<bool> M_hasInextensibility;
     bool M_enableInextensibility;
-    std::string M_inextensibilityMethod;
+    std::vector<std::string> M_inextensibilityMethod;
     space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
     // Penalty method gamma
-    double M_inextensibilityGamma;
+    std::vector<double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
     // Reinitialization
     std::vector<int> M_levelsetReinitEvery;
