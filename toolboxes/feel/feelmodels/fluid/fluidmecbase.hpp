@@ -436,17 +436,17 @@ public:
     backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backend() const { return  M_backend; }
     block_pattern_type blockPattern() const;
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
-    int nBlockMatrixGraph() const;
+    virtual int nBlockMatrixGraph() const;
     indexsplit_ptrtype buildIndexSplit() const;
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    size_type nLocalDof() const;
+    virtual size_type nLocalDof() const;
     std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    virtual void updateBlockVectorSolution();
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -846,7 +846,10 @@ public :
 
 
 protected:
+    virtual size_type initStartBlockIndexFieldsInMatrix();
+    virtual int initBlockVector();
 
+    //___________________________________________________________________________________//
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
     backend_ptrtype M_backend;
