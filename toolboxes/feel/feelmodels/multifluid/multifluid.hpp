@@ -58,7 +58,9 @@ public:
 
     //--------------------------------------------------------------------//
     // Inextensibility
-
+    typedef typename super_type::basis_fluid_p_type basis_fluid_p_type;
+    typedef FunctionSpace< mesh_type, bases<basis_fluid_p_type> > space_inextensibilitylm_type;
+    typedef boost::shared_ptr<space_inextensibilitylm_type> space_inextensibilitylm_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -104,6 +106,7 @@ public:
     space_levelset_ptrtype const& functionSpaceLevelset() const { return M_globalLevelset->functionSpace(); }
     space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_globalLevelset->functionSpaceVectorial(); }
     space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
+    space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const { return M_spaceInextensibilityLM; }
     //--------------------------------------------------------------------//
     // Mesh
     //mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -115,6 +118,16 @@ public:
     uint16_type nLevelsets() const { return M_levelsets.size(); }
 
     levelset_ptrtype const& globalLevelset() const { return M_globalLevelset; }
+
+    //--------------------------------------------------------------------//
+    // Algebraic data
+    int nBlockMatrixGraph() const override;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    size_type nLocalDof() const override;
+
+    //--------------------------------------------------------------------//
+    bool hasInextensibility() const { return M_enableInextensibility; }
+    std::string const& inextensibilityMethod() const { return M_inextensibilityMethod; }
     //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
@@ -137,6 +150,9 @@ public:
     void exportResults() { this->exportResults( this->currentTime() ); }
 
 protected:
+    size_type initStartBlockIndexFieldsInMatrix() override;
+    int initBlockVector() override;
+
     void updateGlobalLevelset();
 
     void updateFluidDensityViscosity();
@@ -179,6 +195,7 @@ private:
     // Inextensibility
     bool M_enableInextensibility;
     std::string M_inextensibilityMethod;
+    space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
     // Penalty method gamma
     double M_inextensibilityGamma;
     //--------------------------------------------------------------------//
