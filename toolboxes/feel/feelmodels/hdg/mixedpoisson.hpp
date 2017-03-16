@@ -847,7 +847,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
         }
     }
 
-    for ( int i = 0; i < M_IBCList.size(); i++ )
+    for ( int i = 0; i < M_integralCondition; i++ )
         this->assembleIBC( i );
 
 }
@@ -952,7 +952,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
 		
     }
 
-    for ( int i = 0; i < M_IBCList.size(); i++ )
+    for ( int i = 0; i < M_integralCondition; i++ )
         this->assembleRhsIBC( i );
 }
 
