@@ -25,7 +25,7 @@
             {
                 "omega":
                 {
-                    "expr":"6*y-4 :x:y:z" // "4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y:z"
+                    "expr":"-6*y+4:x:y:z" // "4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y:z"
                 }
             },
             "Dirichlet":
