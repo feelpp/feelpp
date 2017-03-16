@@ -984,6 +984,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     //-------------------------------------------------//
     // init block vector
     this->initBlockVector();
+    M_blockVectorSolution.buildVector( this->backend() );
+
     //-------------------------------------------------//
     if (buildMethodNum)
     {
@@ -1568,9 +1570,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initBlockVector()
     {
         M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
     }
-
-    // init vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
 
     return cptBlock;
 }

@@ -1963,7 +1963,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
-    myblockGraph.close();
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;
@@ -1976,6 +1975,8 @@ typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
         return blockGraph(0,0);
     else
