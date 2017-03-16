@@ -768,7 +768,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
 
                 if( this->inextensibilityMethod(n) == "penalty" )
                 {
-                    Feel::cout << "Assembling inextensibility (penalty)\n";
+                    this->timerTool("Solve").start();
+
                     if( BuildNonCstPart )
                     {
                         bilinearForm_PatternDefault += integrate(
@@ -777,10 +778,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                                 _geomap=this->geomap()
                                 );
                     }
+
+                    double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateLinearPDEAdditional",
+                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_Penalty).str() );
                 }
-                if( this->inextensibilityMethod(n) == "lagrange-method" )
+                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
                 {
-                    Feel::cout << "Assembling inextensibility (lagrange-multiplier)\n";
+                    this->timerTool("Solve").start();
+
                     size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
                     if( BuildNonCstPart )
@@ -800,6 +807,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                                        _geomap=this->geomap()
                                        );
                     }
+
+                    double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateLinearPDEAdditional",
+                            "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_LagrangeMult).str() );
                 }
             }
         }
