@@ -58,7 +58,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
         this->setGeofileStr( Environment::expand( soption(_prefix=this->prefix(),_name="geofile") ) );
 
+    // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
+    // Deal with lagrange-multiplier inextensibility space
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        M_spaceInextensibilityLM = space_inextensibilitylm_type::New( 
+                _mesh=this->mesh(), 
+                _worldscomm=this->localNonCompositeWorldsComm()
+                );
+    }
 
     M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
@@ -229,7 +238,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("MultiFluid", "init", "start");
 
+    // Initialize FluidMechanics
     super_type::init();
+
+    // Initialize LevelSets
     M_globalLevelset->init();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
@@ -367,6 +379,52 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+int
+MULTIFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+{
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+        return super_type::nBlockMatrixGraph() + 1;
+    else
+        return super_type::nBlockMatrixGraph();
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+{
+    BlocksBaseGraphCSR myBlockGraph = super_type::buildBlockMatrixGraph();
+
+    int indexBlock = super_type::nBlockMatrixGraph();
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        BlocksStencilPattern patCouplingLM(1, super_type::space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        patCouplingLM(0,1) = size_type(Pattern::COUPLED);
+
+        myBlockGraph(indexBlock,0) = stencil(_test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpace(),
+                                             _pattern_block=patCouplingLM,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myBlockGraph(0,indexBlock) = stencil(_test=this->functionSpace(), _trial=this->functionSpaceInextensibilityLM(),
+                                             _pattern_block=patCouplingLM.transpose(),
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+    }
+
+    return myBlockGraph;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+size_type
+MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
+{
+    auto res = super_type::nLocalDof();
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        res += this->functionSpaceInextensibilityLM()->nLocalDofWithGhost();
+    }
+    return res;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
@@ -476,6 +534,35 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     }
 
     this->log("MultiFluid", "exportResults", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+size_type
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
+{
+    size_type currentStartIndex = super_type::initStartBlockIndexFieldsInMatrix();
+
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        // Add inextensibility LM block index
+        this->M_startBlockIndexFieldsInMatrix["inextensibility-lm"] = currentStartIndex++;
+    }
+
+    return currentStartIndex;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+int
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initBlockVector()
+{
+    int currentBlockIndex = super_type::initBlockVector();
+    if( this->hasInextensibility() && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        this->M_blockVectorSolution(currentBlockIndex) = this->backend()->newVector( this->functionSpaceInextensibilityLM() );
+        ++currentBlockIndex;
+    }
+
+    return currentBlockIndex;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -631,11 +718,11 @@ void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( 
         sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const
 {
-    if( this->M_enableInextensibility )
-    {
-        bool BuildNonCstPart = !_BuildCstPart;
-        bool BuildCstPart = _BuildCstPart;
+    bool BuildNonCstPart = !_BuildCstPart;
+    bool BuildCstPart = _BuildCstPart;
 
+    if( this->hasInextensibility() )
+    {
         auto mesh = this->mesh();
         auto Xh = this->functionSpace();
 
@@ -658,13 +745,38 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
         auto NxN = idv(N)*trans(idv(N));
         auto D = this->globalLevelset()->D();
 
-        if( this->M_inextensibilityMethod == "penalty" )
+        if( this->inextensibilityMethod() == "penalty" )
         {
-            bilinearForm_PatternDefault += integrate(
-                    _range=elements(mesh),
-                    _expr=this->M_inextensibilityGamma*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
-                    _geomap=this->geomap()
-                    );
+            if( BuildNonCstPart )
+            {
+                bilinearForm_PatternDefault += integrate(
+                        _range=elements(mesh),
+                        _expr=this->M_inextensibilityGamma*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                        _geomap=this->geomap()
+                        );
+            }
+        }
+        if( this->inextensibilityMethod() == "lagrange-method" )
+        {
+            size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+            auto lambda = this->functionSpaceInextensibilityLM()->element();
+            if( BuildNonCstPart )
+            {
+                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=A,
+                       _rowstart=rowStartInMatrix,
+                       _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
+                    integrate( _range=elements(this->mesh()),
+                               _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                               _geomap=this->geomap()
+                               );
+                form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=A,
+                       _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=elements(this->mesh()),
+                               _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
+                               _geomap=this->geomap()
+                               );
+            }
         }
     }
 }
