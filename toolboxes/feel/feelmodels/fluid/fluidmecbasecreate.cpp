@@ -980,73 +980,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     this->initPostProcess();
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
-    size_type currentStartIndex = 2;// velocity and pressure before
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {
-        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
-    }
-    if (this->hasMarkerDirichletBClm())
-    {
-        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
-    }
-    if ( this->hasMarkerPressureBC() )
-    {
-        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
-        if ( nDim == 3 )
-            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
-    }
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
-    }
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
-        M_thermodynModel->setColStartInMatrix( currentStartIndex );
-        M_thermodynModel->setRowStartInVector( currentStartIndex );
-        ++currentStartIndex;
-    }
+    this->initStartBlockIndexFieldsInMatrix();
     //-------------------------------------------------//
-    // prepare block vector
-    int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
-    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
-    int cptBlock=1;
-    // impose mean pressure by lagrange multiplier
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {
-        M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_XhMeanPressureLM );
-        ++cptBlock;
-    }
-    // lagrange multiplier for Dirichlet BC
-    if (this->hasMarkerDirichletBClm())
-    {
-        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
-        ++cptBlock;
-    }
-    if ( this->hasMarkerPressureBC() )
-    {
-        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
-        if ( nDim == 3 )
-            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
-    }
-    // windkessel outel with implicit scheme
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
-        {
-            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
-            ++cptBlock;
-        }
-    }
-    // thermodynamics model
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
-    }
-
-    // init vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    // init block vector
+    this->initBlockVector();
     //-------------------------------------------------//
     if (buildMethodNum)
     {
@@ -1557,7 +1494,86 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 }
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+size_type
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
+{
+    size_type currentStartIndex = 2;// velocity and pressure before
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
+    }
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        if ( nDim == 3 )
+            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+    }
+    if ( this->hasFluidOutletWindkesselImplicit() )
+    {
+        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
+    }
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
+        M_thermodynModel->setColStartInMatrix( currentStartIndex );
+        M_thermodynModel->setRowStartInVector( currentStartIndex );
+        ++currentStartIndex;
+    }
 
+    return currentStartIndex;
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+int
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initBlockVector()
+{
+    int nBlock = this->nBlockMatrixGraph();
+    M_blockVectorSolution.resize( nBlock );
+    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
+    int cptBlock=1;
+    // impose mean pressure by lagrange multiplier
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_XhMeanPressureLM );
+        ++cptBlock;
+    }
+    // lagrange multiplier for Dirichlet BC
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
+        ++cptBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        if ( nDim == 3 )
+            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
+    }
+    // windkessel outel with implicit scheme
+    if ( this->hasFluidOutletWindkesselImplicit() )
+    {
+        for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
+        {
+            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
+            ++cptBlock;
+        }
+    }
+    // thermodynamics model
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
+    }
+
+    // init vector associated to the block
+    M_blockVectorSolution.buildVector( this->backend() );
+
+    return cptBlock;
+}
 
 
 } // namespace FeelModels
