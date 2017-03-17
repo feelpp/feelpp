@@ -422,7 +422,7 @@ public:
 
         size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.hasMarker(); } );
         size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.hasMarker(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );
@@ -517,7 +517,7 @@ public:
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
         size_type nedmarkedall = 0;
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.hasMarker(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );
@@ -1219,6 +1219,11 @@ private:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
+
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<0> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<1> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<2> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>

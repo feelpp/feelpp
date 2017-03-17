@@ -1064,10 +1064,10 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
         e.setMarker( marker );
         e.setProcessId( partId );// update correctlty for ghost in preparUpdateForUse()
 
-        for (size_type k = 0; k < element_type::numPoints; ++k)
+        for ( uint16_type k = 0; k < element_type::numPoints; ++k)
         {
             size_type ptId = M_uintBuffer[ currentBufferIndex++];
-            CHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
+            DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
             e.setPoint( k, M_meshPartIn->point( ptId ) );
         }
         auto const& eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
@@ -1076,7 +1076,9 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
         {
             mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.id();
         }
+
     }
+
 }
 
 template<typename MeshType>
@@ -1151,7 +1153,9 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
     {
         size_type marker = buffer[currentBufferIndex++];
         size_type id = buffer[currentBufferIndex++];
-        mesh.points().modify( mesh.pointIterator( id ), Feel::detail::UpdateMarker( marker ) );
+        auto itpt = mesh.pointIterator( id );
+        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
+        itpt->second.setMarker( marker );
     }
 }
 template<typename MeshType>
@@ -1178,7 +1182,9 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
     {
         size_type marker = buffer[currentBufferIndex++];
         size_type id = buffer[currentBufferIndex++];
-        mesh.points().modify( mesh.pointIterator( id ), Feel::detail::UpdateMarker( marker ) );
+        auto itpt = mesh.pointIterator( id );
+        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
+        itpt->second.setMarker( marker );
     }
 }
 template<typename MeshType>
@@ -1218,7 +1224,9 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
     {
         size_type marker = buffer[currentBufferIndex++];
         size_type id = buffer[currentBufferIndex++];
-        mesh.points().modify( mesh.pointIterator( id ), Feel::detail::UpdateMarker( marker ) );
+        auto itpt = mesh.pointIterator( id );
+        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
+        itpt->second.setMarker( marker );
     }
 }
 template<typename MeshType>
@@ -1296,7 +1304,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
         {
             size_type vId = ghostelt.point( vLocId ).id();
             pointsToNeihborPart[vId].insert( ghostelt.processId() );
-            M_meshPartIn->points().modify( M_meshPartIn->pointIterator( vId ), Feel::detail::UpdateProcessId( ghostPointPidDetection ) );
+            M_meshPartIn->pointIterator( vId )->second.setProcessId( ghostPointPidDetection );
         }
     }
 
@@ -1329,7 +1337,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
         {
             auto const& thepoint = elt.point( vLocId );
             size_type vId = thepoint.id();
-            M_meshPartIn->points().modify( M_meshPartIn->pointIterator( vId ), Feel::detail::UpdateProcessId( rank ) );
+            M_meshPartIn->pointIterator( vId )->second.setProcessId( rank );
         }
     }
 
@@ -1344,7 +1352,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
             if ( thepoint.processId() == ghostPointPidDetection )
             {
                 size_type vId = thepoint.id();
-                M_meshPartIn->points().modify( M_meshPartIn->pointIterator( vId ), Feel::detail::UpdateProcessId( invalid_rank_type_value ) );
+                M_meshPartIn->pointIterator( vId )->second.setProcessId( invalid_rank_type_value );
             }
         }
     }

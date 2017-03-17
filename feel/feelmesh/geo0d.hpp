@@ -115,7 +115,8 @@ public:
         :
         super( 0, MESH_ENTITY_INTERNAL ),
         super2( Dim ),
-        M_is_vertex( false )
+        M_is_vertex( false ),
+        M_mesh( nullptr )
     {
         this->operator[]( 0 ) = x;
 
@@ -149,7 +150,8 @@ public:
         :
         super( 0, MESH_ENTITY_INTERNAL ),
         super2( __x ),
-        M_is_vertex( false )
+        M_is_vertex( false ),
+        M_mesh( nullptr )
     {
     }
 
@@ -606,6 +608,7 @@ Geo0D<Dim, T>::Geo0D()
     M_master_id( 0 ),
     M_is_vertex( false ),
     M_is_parametric( false ),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -620,6 +623,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     super2( Dim ),
     M_master_id( id ),
     M_is_vertex( is_vertex ),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -636,6 +640,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -659,6 +664,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )

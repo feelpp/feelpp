@@ -29,10 +29,7 @@
 #ifndef __points_H
 #define __points_H 1
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
+#include <unordered_map>
 
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -53,42 +50,13 @@ class Points
 {
 public:
 
-
     /** @name Typedefs
      */
     //@{
 
     typedef GeoElement0D<nDim,SubFaceOfNone,T> point_type;
-    typedef multi_index::multi_index_container<
-    point_type,
-    multi_index::indexed_by<
-    // sort by employee::operator<
-        multi_index::ordered_unique<multi_index::identity<point_type> >
-#if 0
-        // sort by less<int> on marker
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                        multi_index::composite_key<point_type,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              Marker1 const&,
-                                                                                              &point_type::marker>,
-                                                                   multi_index::const_mem_fun<point_type,
-                                                                                              rank_type,
-                                                                                              &point_type::processId> > >,
-        // sort by less<int> on processId
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   rank_type,
-                                                                   &point_type::processId> >,
 
-        // sort by less<int> on boundary
-        multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                        multi_index::const_mem_fun<point_type,
-                                                                   bool,
-                                                                   &point_type::isOnBoundary> >
-#endif
-    >
-    > points_type;
-
+    typedef std::unordered_map<size_type,point_type> points_type;
 
     typedef typename points_type::iterator point_iterator;
     typedef typename points_type::const_iterator point_const_iterator;
@@ -97,21 +65,6 @@ public:
     typedef std::shared_ptr<points_reference_wrapper_type> points_reference_wrapper_ptrtype;
     typedef typename points_reference_wrapper_type::iterator point_reference_wrapper_iterator;
     typedef typename points_reference_wrapper_type::const_iterator point_reference_wrapper_const_iterator;
-
-
-#if 0
-    typedef typename points_type::template index<Feel::detail::by_marker>::type marker_points;
-    typedef typename marker_points::iterator marker_point_iterator;
-    typedef typename marker_points::const_iterator marker_point_const_iterator;
-
-    typedef typename points_type::template index<Feel::detail::by_pid>::type pid_points;
-    typedef typename pid_points::iterator pid_point_iterator;
-    typedef typename pid_points::const_iterator pid_point_const_iterator;
-
-    typedef typename points_type::template index<Feel::detail::by_location>::type location_points;
-    typedef typename location_points::iterator location_point_iterator;
-    typedef typename location_points::const_iterator location_point_const_iterator;
-#endif
 
     //@}
 
@@ -187,27 +140,36 @@ public:
     }
     bool isBoundaryPoint( point_type const & e ) const
     {
-        return M_points.find( e )->isOnBoundary();
+        return this->isBoundaryPoint( e.id() );
     }
     bool isBoundaryPoint( size_type const & id ) const
     {
-        return M_points.find( point_type( id ) )->isOnBoundary();
+        auto itFindPt = M_points.find( id );
+        if ( itFindPt == M_points.end() )
+            return false;
+        return itFindPt->isOnBoundary();
     }
 
 
     point_type const& point( size_type i ) const
     {
-        return *M_points.find( point_type( i ) );
+        auto itFindPt = M_points.find( i );
+        CHECK( itFindPt != M_points.end() ) << " point " << i << "does not found";
+        return itFindPt->second;
     }
 
-    point_iterator pointIterator( size_type i ) const
+    point_const_iterator pointIterator( size_type i ) const
     {
-        return  M_points.find( point_type( i ) );
+        return  M_points.find( i );
     }
+    point_iterator pointIterator( size_type i )
+        {
+            return  M_points.find( i );
+        }
 
     bool hasPoint( size_type i ) const
     {
-        return M_points.find( point_type( i ) ) != M_points.end();
+        return M_points.find( i ) != M_points.end();
     }
 
     point_iterator beginPoint()
@@ -272,7 +234,7 @@ public:
             auto en = this->endPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = *it;
+                auto const& point = it->second;
                 if ( point.processId() != part )
                     continue;
                 if ( !point.hasMarker( markerType ) )
@@ -296,7 +258,7 @@ public:
             auto en = this->endPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = *it;
+                auto const& point = it->second;
                 if ( point.processId() != part )
                     continue;
                 if ( !point.hasMarker( markerType ) )
@@ -347,7 +309,7 @@ public:
             auto en = this->endPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = *it;
+                auto const& point = it->second;
                 if ( point.processId() != part )
                     continue;
                 if ( !point.isInternal() )
@@ -371,7 +333,7 @@ public:
             auto en = this->endPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = *it;
+                auto const& point = it->second;
                 if ( point.processId() != part )
                     continue;
                 if ( !point.isOnBoundary() )
@@ -392,7 +354,7 @@ public:
             auto en = this->endPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = *it;
+                auto const& point = it->second;
                 if ( point.processId() == part )
                     mypoints->push_back(boost::cref(point));
             }
@@ -420,7 +382,8 @@ public:
      */
     point_type const& addPoint( point_type const& f )
     {
-        return *M_points.insert( f ).first;
+        //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
+        return M_points.emplace( std::make_pair( f.id(), f ) ).first->second;
     }
 
     WorldComm const& worldCommPoints() const
