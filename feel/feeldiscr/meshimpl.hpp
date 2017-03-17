@@ -648,6 +648,8 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
     auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
 }
@@ -2643,7 +2645,7 @@ Mesh<Shape, T, Tag>::check() const
             size_type counter = 0;
             for ( uint16_type ms=0; ms < __element.nNeighbors(); ms++ )
             {
-                if ( __element.neighbor( ms ).first != invalid_size_type_value )
+                if ( __element.neighbor( ms ) != invalid_size_type_value )
                     ++counter;
 
             }
