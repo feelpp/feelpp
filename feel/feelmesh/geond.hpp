@@ -72,6 +72,53 @@ public:
 }
 /// \endcond
 
+/**
+ * @class GeoNDCommon
+ * @brief Common data shared in a collection of multi-dimensional geometrical entity.
+ */
+template <typename GeoNDType>
+class GeoNDCommon
+{
+public :
+    typedef GeoNDType geond_type;
+    typedef typename geond_type::gm_ptrtype gm_ptrtype;
+    typedef typename geond_type::gm1_ptrtype gm1_ptrtype;
+
+    GeoNDCommon()
+        :
+        M_mesh( nullptr )
+        {}
+    GeoNDCommon( MeshBase const* mesh )
+        :
+        M_mesh( mesh )
+        {}
+    GeoNDCommon( MeshBase const* mesh, gm_ptrtype const& gm, gm1_ptrtype const& gm1 )
+        :
+        M_mesh( mesh ),
+        M_gm( gm ),
+        M_gm1( gm1 )
+        {}
+    GeoNDCommon( GeoNDCommon const& e ) = default;
+    GeoNDCommon( GeoNDCommon && e ) = default;
+
+    MeshBase const* mesh() const { return M_mesh; }
+    gm_ptrtype const& gm() const { return M_gm; }
+    gm1_ptrtype const& gm1() const { return M_gm1; }
+
+    void setMesh( MeshBase const* mesh ) { M_mesh = mesh; }
+    void setGm( gm_ptrtype const& gm, gm1_ptrtype const& gm1 )
+        {
+            M_gm = gm;
+            M_gm1 = gm1;
+        }
+private :
+    // mesh to which the geond element belongs to
+    MeshBase const* M_mesh;
+    // geometric mapping
+    gm_ptrtype M_gm;
+    gm1_ptrtype M_gm1;
+};
+
 
 /**
  * @class GeoND
@@ -168,10 +215,8 @@ public:
     GeoND()
         :
         super( 0 ),
-        M_points( numPoints ),
-        M_neighbors( 0 ),
-        M_gm(),
-        M_gm1()
+        M_points( numPoints, nullptr ),
+        M_neighbors( 0 )
     {
     }
 
@@ -184,10 +229,8 @@ public:
     explicit GeoND( size_type id )
         :
         super( id ),
-        M_points( numPoints ),
-        M_neighbors( 0 ),
-        M_gm(),
-        M_gm1()
+        M_points( numPoints, nullptr ),
+        M_neighbors( 0 )
     {
     }
 
@@ -198,9 +241,7 @@ public:
         M_points( std::move( e.M_points ) ),
         M_neighbors( std::move( e.M_neighbors ) ),
         M_markers( std::move( e.M_markers ) ),
-        M_mesh( std::move( e.M_mesh ) ),
-        M_gm( std::move( e.M_gm ) ),
-        M_gm1( std::move( e.M_gm1 ) )
+        M_commonData( std::move( e.M_commonData ) )
         {
             //std::cout << "GeoND move ctor\n";
         }
@@ -212,9 +253,7 @@ public:
             M_points = std::move( e.M_points );
             M_neighbors = std::move( e.M_neighbors );
             M_markers = std::move( e.M_markers );
-            M_mesh = std::move( e.M_mesh );
-            M_gm = std::move( e.M_gm );
-            M_gm1 = std::move( e.M_gm1 );
+            M_commonData = std::move( e.M_commonData );
             //std::cout << "GeoND move assign\n";
             return *this;
         }
@@ -227,30 +266,27 @@ public:
     }
 
     /**
-     * set the mesh to which this geometric entity belongs to
+     * set common data
      */
-    void setMeshAndGm( MeshBase const* m, gm_ptrtype const& gm, gm1_ptrtype const& gm1 ) const
+    void setCommonData( boost::shared_ptr<GeoNDCommon<self_type>> const& commonData )
     {
-        M_mesh = m;
-        M_gm = gm;
-        M_gm1 = gm1;
-    }
-
-    void setMesh( MeshBase const* m ) const
-    {
-        M_mesh = m;
+        M_commonData = commonData;
     }
 
     //! return the geometric mapping if a mesh was set
     gm_ptrtype gm() const
     {
-        return M_gm;
+        if ( M_commonData )
+            return M_commonData->gm();
+        return gm_ptrtype();
     }
 
     //! return the geometric mapping if a mesh was set
     gm1_ptrtype gm1() const
     {
-        return M_gm1;
+        if ( M_commonData )
+            return M_commonData->gm1();
+        return gm1_ptrtype();
     }
 
     /**
@@ -258,7 +294,9 @@ public:
      */
     MeshBase const* mesh() const
     {
-        return M_mesh;
+        if ( M_commonData )
+            return M_commonData->mesh();
+        return nullptr;
     }
 
     /**
@@ -311,7 +349,7 @@ public:
      *
      * \return the pair neighbor \p n index and process \p id it belongs to
      */
-    std::pair<size_type,rank_type> const& neighbor( uint16_type n ) const
+    size_type neighbor( uint16_type n ) const
     {
         return M_neighbors[n];
     }
@@ -319,20 +357,20 @@ public:
     /**
      * set the \p n -th neighbor with \p neigh
      */
-    void setNeighbor( uint16_type n, size_type neigh_id, rank_type proc_id )
+    void setNeighbor( uint16_type n, size_type neigh_id )
     {
         if ( M_neighbors.empty() )
         {
             M_neighbors.reserve( numNeighbors );
-            M_neighbors.resize( numNeighbors, std::make_pair( invalid_size_type_value, invalid_rank_type_value ) );
+            M_neighbors.resize( numNeighbors, invalid_size_type_value );
         }
-        M_neighbors[n] = std::make_pair( neigh_id, proc_id );
+        M_neighbors[n] = neigh_id;
     }
 
     bool isNeighbor( self_type const& G ) const
     {
         for ( uint16_type i = 0; i< this->nNeighbors() ; ++i )
-            if ( this->neighbor( i ).first==G.id() ) return true;
+            if ( this->neighbor( i ) == G.id() ) return true;
 
         return false;
     }
@@ -682,11 +720,11 @@ public:
             CHECK( false ) << "normal when nDim != nRealDim is not implemented";
             return _normals;
         }
+        gm1_ptrtype gm1 = this->gm1();
+        if ( !gm1.use_count() )
+            gm1 = gm1_ptrtype( new gm1_type );
 
-        if ( !M_gm1.use_count() )
-            M_gm1 = gm1_ptrtype( new gm1_type );
-
-        auto const& baryOnRefFaces = M_gm1->referenceConvex().barycenterFaces();
+        auto const& baryOnRefFaces = gm1->referenceConvex().barycenterFaces();
         matrix_node_type baryOnRefFace( nRealDim, 1 );
 
         std::vector<std::map<uint16_type,matrix_node_type > > ctxPtsOnRefFaces( numTopologicalFaces );
@@ -697,8 +735,8 @@ public:
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 ctxPtsOnRefFaces[f][__p.value()] = baryOnRefFace;
         }
-        auto pcf =  M_gm1->preComputeOnFaces( M_gm1, ctxPtsOnRefFaces );
-        auto ctx = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, 0 );
+        auto pcf = gm1->preComputeOnFaces( gm1, ctxPtsOnRefFaces );
+        auto ctx = gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, 0 );
         for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
         {
             ctx->update( *this, f );
@@ -718,13 +756,14 @@ public:
             return node_type(0);
         }
 
-        if ( !M_gm1.use_count() )
-            M_gm1 = gm1_ptrtype( new gm1_type );
+        gm1_ptrtype gm1 = this->gm1();
+        if ( !gm1.use_count() )
+            gm1 = gm1_ptrtype( new gm1_type );
 
         matrix_node_type baryOnFace( nRealDim, 1 );
-        ublas::column( baryOnFace, 0 ) = M_gm1->referenceConvex().faceBarycenter(f);
-        auto pcf =  M_gm1->preComputeOnFaces( M_gm1, baryOnFace );
-        auto ctx = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, f );
+        ublas::column( baryOnFace, 0 ) = gm1->referenceConvex().faceBarycenter(f);
+        auto pcf =  gm1->preComputeOnFaces( gm1, baryOnFace );
+        auto ctx = gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this, pcf, f );
         ctx->update( *this, f );
         return ctx->unitNormal( 0 );
     }
@@ -1030,23 +1069,20 @@ private:
     {
         MEAS_ELEMENT          = 0,
         MEAS_FACES            = 1,
-        MEAS_NEIGHBORS_ELEMENT= 2
+        MEAS_NEIGHBORS_ELEMENT= 2 // measure of the set of point element neighbors
     };
 
+    //! store some measures on geometrical entity
     mutable std::map<GEOND_MEASURES,std::vector<value_type> > M_measures;
 
     //! store neighbor element id
-    std::vector<std::pair<size_type,rank_type> > M_neighbors;
+    std::vector<size_type> M_neighbors;
 
-    //! measure of the set of point element neighbors
-    //value_type M_meas_pneighbors;
-
+    //! mapping from marker index to marker flag
     std::map<uint16_type,Marker1> M_markers;
 
-    // mesh to which the geond element belongs to
-    mutable MeshBase const* M_mesh;
-    mutable gm_ptrtype M_gm;
-    mutable gm1_ptrtype M_gm1;
+    //! common data shared in a collection of multi-dimensional geometrical entity
+    mutable boost::shared_ptr<GeoNDCommon<self_type> > M_commonData;
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1123,17 +1159,16 @@ template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
 {
-    if ( !M_gm.use_count() )
-        M_gm = gm_ptrtype( new gm_type );
-
-    if ( !M_gm1.use_count() )
-        M_gm1 = gm1_ptrtype( new gm1_type );
+    gm_ptrtype gm = this->gm();
+    if ( !gm.use_count() )
+        gm = gm_ptrtype( new gm_type );
 
     quad_meas_type thequad;
-    auto pc = M_gm->preCompute( M_gm, thequad.points() );
-    auto pcf =  M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
-
-    updateWithPc( pc, pcf, thequad );
+    auto pc = gm->preCompute( gm, thequad.points() );
+    auto pcf =  gm->preComputeOnFaces( gm, thequad.allfpoints() );
+    auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
+    auto ctxf = gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *this,pcf,0 );
+    this->updateWithCtx( thequad,ctx,ctxf );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1142,8 +1177,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc( typename gm_type::precompute_pt
                                                  typename gm_type::faces_precompute_type& pcf,
                                                  quad_meas_type const& thequad )
 {
-    updateMeasureImpl( M_gm, pc, thequad );
-    updateMeasureFaceImpl( M_gm, pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+    updateMeasureImpl( pc->fePtr(), pc, thequad );
+    updateMeasureFaceImpl( pcf->fePtr(), pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1152,8 +1187,8 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithPc1( typename gm1_type::precompute_
                                                   typename gm1_type::faces_precompute_type & pcf,
                                                   quad_meas1_type const& thequad )
 {
-    updateMeasureImpl( M_gm1, pc, thequad );
-    updateMeasureFaceImpl( M_gm1, pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
+    updateMeasureImpl( pc->fePtr(), pc, thequad );
+    updateMeasureFaceImpl( pcf->fePtr(), pcf, thequad, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1173,7 +1208,6 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateWithCtx1( quad_meas1_type const& thequad,
                                                   boost::shared_ptr<CtxType>& ctx,
                                                   boost::shared_ptr<CtxFaceType>& ctxf ) const
-                                                  
 {
     updateMeasureImpl( thequad, ctx );
     updateMeasureFaceImpl( thequad, ctxf, typename mpl::equal_to<mpl::int_<nDim>, mpl::int_<nRealDim> >::type() );
@@ -1271,7 +1305,7 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureFaceImpl( boost::shared_ptr<GmType> gm,
                                                           typename GmType::faces_precompute_type& pcf,
                                                           QuadType const& thequad,
-                                                          mpl::bool_<false> ) 
+                                                          mpl::bool_<false> )
 {
     // need because M_measurefaces is used in Geomap::Context
     if ( M_measures.find( GEOND_MEASURES::MEAS_FACES ) == M_measures.end() )

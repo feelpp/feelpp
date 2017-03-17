@@ -89,7 +89,7 @@ public:
             auto pt_it = M_mesh->beginPoint();
             auto pt_en = M_mesh->endPoint();
             for( ; pt_it != pt_en; ++pt_it )
-                M_containerPoints[partId].push_back(boost::cref(*pt_it));
+                M_containerPoints[partId].push_back(boost::cref(pt_it->second));
 
             this->updateMarkedSubEntitiesOnePartPerProcess<mesh_type>();
         }
@@ -216,8 +216,8 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
     {
-        if ( !point_it->hasMarker() ) continue;
-        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        if ( !point_it->second.hasMarker() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(point_it->second));
     }
 }
 template<typename MeshType>
@@ -237,8 +237,8 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
     {
-        if ( !point_it->hasMarker() ) continue;
-        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        if ( !point_it->second.hasMarker() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(point_it->second));
     }
 }
 template<typename MeshType>
@@ -251,8 +251,8 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
     {
-        if ( !point_it->hasMarker() ) continue;
-        M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+        if ( !point_it->second.hasMarker() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(point_it->second));
     }
 }
 
@@ -264,7 +264,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
     auto point_it = M_mesh->beginPoint();
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
-        M_mesh->points().modify( point_it, Feel::detail::UpdateProcessId( invalid_rank_type_value ) );
+        point_it->second.setProcessId( invalid_rank_type_value );
 
     rank_type interprocessPointPidDetection = this->numGlobalPartition();
 
@@ -288,7 +288,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
                 auto const& thepoint = elt.point( vLocId );
                 size_type ptPid = thepoint.processId();
                 if ( ptPid == invalid_rank_type_value ) // first time that we see this point
-                    M_mesh->points().modify( M_mesh->pointIterator( thepoint.id() ), Feel::detail::UpdateProcessId( partId ) );
+                    M_mesh->pointIterator( thepoint.id() )->second.setProcessId( partId );
                 else if ( ptPid != partId ) // we found an interprocess point
                 {
                     size_type ptId = thepoint.id();
@@ -296,7 +296,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
                     if ( ptPid != interprocessPointPidDetection ) // special treatment for the first interprocess detection
                     {
                         mapPointInterProcess[ptId].insert( ptPid );
-                        M_mesh->points().modify( M_mesh->pointIterator( ptId ), Feel::detail::UpdateProcessId( interprocessPointPidDetection ) );
+                        M_mesh->pointIterator( ptId )->second.setProcessId( interprocessPointPidDetection );
                     }
                 }
             }
@@ -360,7 +360,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
         }
         for ( size_type ptId : pointIdsInGhost )
         {
-            M_containerPoints[partId].push_back( boost::cref(*M_mesh->pointIterator( ptId ) ) );
+            M_containerPoints[partId].push_back( boost::cref(M_mesh->pointIterator( ptId )->second ) );
         }
     }
 
@@ -454,7 +454,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
     auto point_en = M_mesh->endPoint();
     for ( ; point_it!=point_en ; ++point_it )
     {
-        auto const& thepoint = *point_it;
+        auto const& thepoint = point_it->second;
         if ( !thepoint.hasMarker() ) continue;
         std::set<rank_type> ptPids;
         rank_type ptPid = thepoint.processId();
@@ -469,7 +469,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
         }
         for ( rank_type partId : ptPids )
         {
-            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+            M_containerMarkedPoints[partId].push_back(boost::cref(thepoint));
         }
     }
 
@@ -513,7 +513,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
     auto point_en = M_mesh->endPoint();
     for ( ; point_it!=point_en ; ++point_it )
     {
-        auto const& thepoint = *point_it;
+        auto const& thepoint = point_it->second;
         if ( !thepoint.hasMarker() ) continue;
         std::set<rank_type> ptPids;
         rank_type ptPid = thepoint.processId();
@@ -528,7 +528,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
         }
         for ( rank_type partId : ptPids )
         {
-            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+            M_containerMarkedPoints[partId].push_back(boost::cref(thepoint));
         }
     }
 
@@ -545,7 +545,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
     auto point_en = M_mesh->endPoint();
     for ( ; point_it!=point_en ; ++point_it )
     {
-        auto const& thepoint = *point_it;
+        auto const& thepoint = point_it->second;
         if ( !thepoint.hasMarker() ) continue;
         std::set<rank_type> ptPids;
         rank_type ptPid = thepoint.processId();
@@ -560,7 +560,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesAllPartInOneProcess( std::map
         }
         for ( rank_type partId : ptPids )
         {
-            M_containerMarkedPoints[partId].push_back(boost::cref(*point_it));
+            M_containerMarkedPoints[partId].push_back(boost::cref(thepoint));
         }
     }
 }
