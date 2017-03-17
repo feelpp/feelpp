@@ -234,15 +234,12 @@ Mesh<Shape, T, Tag>::updateForUse()
             //auto& mpts = this->pointsRange();
             for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
             {
-                if ( p_it->hasMarker() )
+                auto & pt = p_it->second;
+                if ( pt.hasMarker() )
                 {
-                    if (!p_it->elements().size())
+                    if (!pt.elements().size())
                     {
-                        this->points().modify( p_it,
-                                               []( point_type& e )
-                                               {
-                                                   e.setProcessId( invalid_rank_type_value );
-                                               });
+                        pt.setProcessId( invalid_rank_type_value );
                     }
                 }
             }
@@ -559,13 +556,8 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<2> )
                        {
                            if ( !f.point( i ).hasMarker() )
                            {
-                               // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( f.point(i) ),
-                                                      [&f] ( point_type& p )
-                                                      {
-                                                          p.setMarker( f.marker().value() );
-                                                      } );
-
+                               // inherit marker from face
+                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
                            }
                        }
                    } );
@@ -587,12 +579,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
                            if ( !e.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( e.point(i) ),
-                                                      [&e] ( point_type& p )
-                                                      {
-                                                          p.setMarker( e.marker().value() );
-                                                      } );
-
+                               this->pointIterator( e.point( i ).id() )->second.setMarker( e.marker().value() );
                            }
                        } } );
 
@@ -609,12 +596,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
                            if ( !f.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( f.point(i) ),
-                                                      [&f] ( point_type& p )
-                                                      {
-                                                          p.setMarker( f.marker().value() );
-                                                      } );
-
+                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
                            }
                        }
                        // update edges
@@ -639,7 +621,7 @@ void
 Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<0> )
 {
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
-        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+        itp->second.setMesh( this );
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -651,7 +633,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
-        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+        itp->second.setMesh( this );
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -664,7 +646,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
-        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+        itp->second.setMesh( this );
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -680,13 +662,14 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
         this->edges().modify( ite,[&geondEdgeCommon]( edge_type& e ) { e.setCommonData( geondEdgeCommon ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
-        this->points().modify( itp,[this]( point_type& p ) { p.setMesh( this ); } );
+        itp->second.setMesh( this );
 }
 
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 {
+#if 0
     size_type next_free_node = 0;
 
     // map old/new ids
@@ -865,7 +848,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
     // should we renumber also the faces and elements ?
 
-
+#endif
 }
 
 template<typename Shape, typename T, int Tag>
@@ -1788,9 +1771,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
                 if ( it->point( f ).isOnBoundary() == false )
                 {
                     auto pit = this->pointIterator( it->point(f).id() );
-                    this->points().modify( pit,
-                                           []( point_type& p )
-                                           {p.setOnBoundary(true, 0 );} );
+                    pit->second.setOnBoundary(true, 0 );
                 }
 
             }
@@ -2128,7 +2109,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( proc, idPointRecv ) );
+                point_it->second.setIdInOtherPartitions( proc, idPointRecv );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
 
             /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
@@ -2592,12 +2573,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, [&idProc,&idPointRecv]( point_type& p )
-                                       {
-                                           p.addNeighborPartitionId( idProc );
-                                           p.setIdInOtherPartitions( idProc, idPointRecv );
-                                       } );
-
+                point_it->second.addNeighborPartitionId( idProc );
+                point_it->second.setIdInOtherPartitions( idProc, idPointRecv );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
     } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
@@ -2943,13 +2920,14 @@ Mesh<Shape, T, Tag>::encode()
     M_enc_pts.clear();
     for( auto pt_it = this->beginPoint(), pt_en = this->endPoint(); pt_it != pt_en; ++pt_it )
     {
+        auto const& pt = pt_it->second;
         std::vector<double> pts(3,0);
-        pts[0] = pt_it->node()[0];
+        pts[0] = pt.node()[0];
         if ( mesh_type::nRealDim >= 2 )
-            pts[1] = pt_it->node()[1];
+            pts[1] = pt.node()[1];
         if ( mesh_type::nRealDim >= 3 )
-            pts[2] = pt_it->node()[2];
-        M_enc_pts[pt_it->id()+1] = boost::make_tuple( pt_it->isOnBoundary(), pt_it->tags(), pts );
+            pts[2] = pt.node()[2];
+        M_enc_pts[pt.id()+1] = boost::make_tuple( pt.isOnBoundary(), pt.tags(), pts );
 
     }
     M_enc_elts.clear();

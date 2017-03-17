@@ -459,7 +459,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
 
     for ( ; itl!=enl ; ++itl )
     {
-        auto const& ptRefMesh = *itl;
+        auto const& ptRefMesh = itl->second;
         size_type __npts = M_gmpc->nPoints();
         uint16_type localIdGeoPc = invalid_uint16_type_value;
 
@@ -747,7 +747,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
         auto const enp = M_p2m.mesh()->endPoint();
         for ( int ptCount=0 ; itp!=enp ; ++itp,++ptCount )
         {
-            mapPointIdToContainerId[itp->id()]=ptCount;
+            mapPointIdToContainerId[itp->second.id()]=ptCount;
         }
 
         //auto const theWorldCommSize = M_mesh->worldComm().size();
@@ -812,7 +812,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 auto const enp = M_p2m.mesh()->endPoint();
                 for ( int ptCount=0 ; itp!=enp ; ++itp,++ptCount )
                 {
-                    uint16_type localptid = itp->id();
+                    uint16_type localptid = itp->second.id();
                     uint16_type localptid_dof = localDof( *theeltIt, localptid );
                     size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( theeltIt->id(),localptid_dof, 0 ) );
                     size_type idInProcAsked = this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid);
