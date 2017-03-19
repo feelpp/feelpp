@@ -63,58 +63,37 @@ struct MeshTraits
     typedef typename mesh_type::element_iterator element_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
 
-    typedef typename mesh_type::marker_element_iterator marker_element_iterator;
-    typedef typename mesh_type::marker_element_const_iterator marker_element_const_iterator;
-
-    typedef typename mesh_type::marker2_element_iterator marker2_element_iterator;
-    typedef typename mesh_type::marker2_element_const_iterator marker2_element_const_iterator;
-
-    typedef typename mesh_type::marker3_element_iterator marker3_element_iterator;
-    typedef typename mesh_type::marker3_element_const_iterator marker3_element_const_iterator;
-
-    typedef typename mesh_type::location_element_iterator location_element_iterator;
-    typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
+    typedef typename mesh_type::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename mesh_type::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef typename mesh_type::element_reference_wrapper_iterator element_reference_wrapper_iterator;
+    typedef typename mesh_type::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
 
     // face iterators
     typedef typename mesh_type::face_iterator face_iterator;
     typedef typename mesh_type::face_const_iterator face_const_iterator;
 
-    typedef typename mesh_type::pid_face_iterator pid_face_iterator;
-    typedef typename mesh_type::pid_face_const_iterator pid_face_const_iterator;
-
-    typedef typename mesh_type::marker_face_iterator marker_face_iterator;
-    typedef typename mesh_type::marker_face_const_iterator marker_face_const_iterator;
-
-    typedef typename mesh_type::marker2_face_iterator marker2_face_iterator;
-    typedef typename mesh_type::marker2_face_const_iterator marker2_face_const_iterator;
-
-    typedef typename mesh_type::marker3_face_iterator marker3_face_iterator;
-    typedef typename mesh_type::marker3_face_const_iterator marker3_face_const_iterator;
-
-    typedef typename mesh_type::location_face_iterator location_face_iterator;
-    typedef typename mesh_type::location_face_const_iterator location_face_const_iterator;
-
-    typedef typename mesh_type::interprocess_face_iterator interprocess_face_iterator;
-    typedef typename mesh_type::interprocess_face_const_iterator interprocess_face_const_iterator;
+    typedef typename mesh_type::faces_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename mesh_type::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef typename mesh_type::face_reference_wrapper_iterator face_reference_wrapper_iterator;
+    typedef typename mesh_type::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
 
     // edge iterators
-    typedef typename mesh_type::marker_edge_iterator marker_edge_iterator;
-    typedef typename mesh_type::marker_edge_const_iterator marker_edge_const_iterator;
+    typedef typename mesh_type::edge_iterator edge_iterator;
+    typedef typename mesh_type::edge_const_iterator edge_const_iterator;
 
-    typedef typename mesh_type::location_edge_iterator location_edge_iterator;
-    typedef typename mesh_type::location_edge_const_iterator location_edge_const_iterator;
-
-    typedef typename mesh_type::pid_edge_iterator pid_edge_iterator;
-    typedef typename mesh_type::pid_edge_const_iterator pid_edge_const_iterator;
+    typedef typename mesh_type::edges_reference_wrapper_type edges_reference_wrapper_type;
+    typedef typename mesh_type::edges_reference_wrapper_ptrtype edges_reference_wrapper_ptrtype;
+    typedef typename mesh_type::edge_reference_wrapper_iterator edge_reference_wrapper_iterator;
+    typedef typename mesh_type::edge_reference_wrapper_const_iterator edge_reference_wrapper_const_iterator;
 
     // point iterators
     typedef typename mesh_type::point_iterator point_iterator;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
-    typedef typename mesh_type::marker_point_iterator marker_point_iterator;
-    typedef typename mesh_type::marker_point_const_iterator marker_point_const_iterator;
-    typedef typename mesh_type::location_point_iterator location_point_iterator;
-    typedef typename mesh_type::location_point_const_iterator location_point_const_iterator;
+    typedef typename mesh_type::points_reference_wrapper_type points_reference_wrapper_type;
+    typedef typename mesh_type::points_reference_wrapper_ptrtype points_reference_wrapper_ptrtype;
+    typedef typename mesh_type::point_reference_wrapper_iterator point_reference_wrapper_iterator;
+    typedef typename mesh_type::point_reference_wrapper_const_iterator point_reference_wrapper_const_iterator;
 
     //@}
 };

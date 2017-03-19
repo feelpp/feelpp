@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
     BOOST_CHECK_NE(nelements(markedfaces( mesh, "inlet" ),true), 0 );
     BOOST_CHECK_NE(nelements(markedfaces( mesh, "outlet" ),true), 0 );
     BOOST_CHECK_NE(nelements(markedelements( mesh, "feel" ),true), 0 );
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginElementWithProcessId(), mesh->endElementWithProcessId() ),
+    BOOST_CHECK_EQUAL( nelements(elements( mesh ),false),
                        nelements(markedelements( mesh, "feel" ),false) );
 }
 
@@ -256,9 +256,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
     BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
     BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,"Neumann") ) );
     BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,"Dirichlet") ) );
-
-    BOOST_WARN_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
-                      std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+    BOOST_WARN_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
                        std::distance( meshimp->beginElement(), meshimp->endElement() ) );
 
@@ -328,8 +326,7 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 	BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"outlet") ),nelements( markedfaces(meshimp,"outlet") ) );
 	BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"wall") ),nelements( markedfaces(meshimp,"wall") ) );
 
-	BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
-			   std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
+	BOOST_CHECK_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
 	BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
 			   std::distance( meshimp->beginElement(), meshimp->endElement() ) );
 	BOOST_CHECK_EQUAL( integrate( elements( mesh ), cst( 1. ) ).evaluate(),
