@@ -44,6 +44,8 @@ using set_value = mpl::bool_<( Contextv | Value )>;
 template<size_type Contextv, size_type Value>
 using clear_value = mpl::bool_<Contextv & ( ~Value )>;
 
+namespace meta
+{
 /*!
   \class Context
  *\ingroup Core
@@ -51,9 +53,11 @@ using clear_value = mpl::bool_<Contextv & ( ~Value )>;
 
   @author Christophe Prud'homme
 */
+template <typename StorageType>
 class Context
 {
 public:
+    typedef StorageType storage_type;
 
     /** @name Constructors, destructor
      */
@@ -64,7 +68,7 @@ public:
      *
      * @param c context
      */
-    explicit Context( size_type c )
+    explicit Context( storage_type c )
         :
         M_context( c )
     {}
@@ -111,7 +115,7 @@ public:
      *
      * @return the context
      */
-    Context& operator=( size_type __c )
+    Context& operator=( storage_type __c )
     {
         M_context = __c;
         return *this;
@@ -122,7 +126,7 @@ public:
      *
      * @return the context
      */
-    size_type operator()() const
+    storage_type operator()() const
     {
         return M_context;
     }
@@ -138,7 +142,7 @@ public:
      *
      * @return the context value
      */
-    size_type context() const
+    storage_type context() const
     {
         return M_context;
     }
@@ -155,7 +159,7 @@ public:
      *
      * @param __v context value
      */
-    void setContext( size_type __v )
+    void setContext( storage_type __v )
     {
         M_context = __v ;
     }
@@ -168,20 +172,20 @@ public:
     //@{
 
 
-    bool test( size_type b ) const
+    bool test( storage_type b ) const
     {
         return ( M_context&b )!=0;
     }
     template<typename T> bool test( T b ) const
     {
-        return ( M_context&size_type( b ) )!=0;
+        return ( M_context&storage_type( b ) )!=0;
     }
-    void set( size_type b )
+    void set( storage_type b )
     {
         M_context |= b;
     }
-    void set( size_type b, bool v );
-    void clear( size_type b )
+    void set( storage_type b, bool v );
+    void clear( storage_type b )
     {
         M_context &= ( uint )( ~b );
     }
@@ -203,8 +207,12 @@ private:
 
 private:
 
-    size_type M_context;
+    storage_type M_context;
 
 };
+
+} // namespace meta
+
+using Context = meta::Context<size_type>;
 }
 #endif /* __Context_H */
