@@ -318,7 +318,7 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
                 //if ( M_geoElementMap[it1->id()].first == invalid_size_type_value ) continue;
 
                 auto const& elem1 = *it1;
-                auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated, procIdRelated );
+                auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated );
 
                 auto mapPoint=buildElementaryMapPoints(elem1,elem2);
                 auto mapEdge=buildElementaryMapEdges(mapPoint);

@@ -71,14 +71,14 @@ namespace Feel
 //! @author Christophe Prud'homme
 //!  @see
 //!
-template <typename Shape>
+template <typename Shape, typename T = double>
 class Mesh2D
     : public VisitableBase<>,
       public MeshBase,
-      public Elements<Shape>,
-      public Points<Shape::nRealDim>,
+      public Elements<Shape,T>,
+      public Points<Shape::nRealDim,T>,
       public Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>::type,
-                   typename Elements<Shape>::element_type>
+                   typename Elements<Shape,T>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 2
     BOOST_STATIC_ASSERT( Shape::nDim == 2 );
@@ -96,14 +96,14 @@ class Mesh2D
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<Shape> super_elements;
+    typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
     typedef typename super_elements::element_const_iterator element_const_iterator;
     typedef typename super_elements::update_element_neighbor_type update_element_neighbor_type;
 
-    typedef Points<Shape::nRealDim> super_points;
+    typedef Points<Shape::nRealDim,T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
@@ -116,14 +116,14 @@ class Mesh2D
     typedef face_type edge_type;
 
     typedef super_faces super_edges;
-    typedef typename super_edges::marker_face_iterator marker_edge_iterator;
-    typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
-    typedef typename super_edges::location_face_iterator location_edge_iterator;
-    typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
-    typedef typename super_edges::pid_face_iterator pid_edge_iterator;
-    typedef typename super_edges::pid_face_const_iterator pid_edge_const_iterator;
+    typedef typename super_edges::face_iterator edge_iterator;
+    typedef typename super_edges::face_const_iterator edge_const_iterator;
+    typedef typename super_edges::faces_reference_wrapper_type edges_reference_wrapper_type;
+    typedef typename super_edges::faces_reference_wrapper_ptrtype edges_reference_wrapper_ptrtype;
+    typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
+    typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
-    typedef Mesh2D<Shape> self_type;
+    typedef Mesh2D<Shape,T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;
