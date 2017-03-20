@@ -1274,12 +1274,14 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
                         if ( !this->isStationary() )
                         	p_init.setParameterValues( { {"t", this->time() } } );
 						M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
+						if (M_integralCondition)
+						{
+							auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+							auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
 
-						auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-						auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
-
-                    	Feel::cout << "Initial integral value of potential on "
-                      		       << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
+                    		Feel::cout << "Initial integral value of potential on "
+                      			       << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
+						}
 					}
 				}
 			}
