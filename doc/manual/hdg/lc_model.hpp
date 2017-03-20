@@ -707,15 +707,16 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::second_step()
 	using namespace boost::numeric::odeint;
     using namespace boost::numeric::ublas;
 
-    // Update the initial solution for Pi1 (for step 2)  
-    M_statevar_solution[0] = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
-    M_statevar_solution[0] = (*M_Y)[0];
-    	
-	auto u_i = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv((this->M_mup)[0]) )(0,0) ;    
-    Feel::cout << "Value of U_I after first step : \t " << u_i << std::endl;
-
     if (M_0dCondition)
     {   
+    	// Update the initial solution for Pi1 (for step 2)  
+    	M_statevar_solution[0] = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
+    	M_statevar_solution[0] = (*M_Y)[0];
+    	
+		auto u_i = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv((this->M_mup)[0]) )(0,0) ;    
+    	Feel::cout << "Value of U_I after first step : \t " << u_i << std::endl;
+
+
     	Feel::cout << "Value of P1 after first step : \t " << (*M_Y)[0] << std::endl;
 
         auto marker = M_0dList[0].marker(); 
