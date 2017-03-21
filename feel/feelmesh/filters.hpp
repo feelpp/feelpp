@@ -1220,30 +1220,33 @@ marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessTyp
 
 template<typename MeshType>
 ext_faces_t<MeshType>
-faces( MeshType const& mesh, EntityProcessType entity )
+faces( MeshType const& imesh, EntityProcessType entity )
 {
-    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    //typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
+    //boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
+    
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : faces(mesh) )
         {
-            myelts->push_back(boost::cref(theface));
+            myelts->push_back( boost::cref( boost::unwrap_ref( theface ) ) );
         }
 
     if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
     {
-        //std::set<size_type> faceGhostDone;
-        auto face_it = mesh->interProcessFaces().first;
-        auto const face_en = mesh->interProcessFaces().second;
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
         for ( ; face_it!=face_en ; ++face_it )
         {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
 
-            for ( size_type f = 0; f < mesh->numLocalFaces(); f++ )
+            for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
             {
                 auto const& theface = eltOffProc.face(f);
                 myelts->push_back(boost::cref(theface));
