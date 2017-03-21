@@ -18,6 +18,9 @@
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
+/* Define to 1 if you have ACUSIM available. */
+#cmakedefine FEELPP_HAS_ACUSIM
+
 /* Define to 1 if you have ANN available. */
 #cmakedefine FEELPP_HAS_ANN
 

@@ -810,24 +810,25 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
         int index = 0;
         for ( ; elt_it != elt_en; ++elt_it )
         {
-            VLOG(3) << "is ghost cell " << elt_it->isGhostCell();
+            auto const& elt = boost::unwrap_ref( *elt_it );
+            VLOG(3) << "is ghost cell " << elt.isGhostCell();
             /* looop on the ccomponents is outside of the loop on the vertices */
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
                 for ( uint16_type p = 0; p < step->mesh()->numLocalVertices(); ++p, ++e )
                 {
-                    size_type ptid = mp.old2new[elt_it->point( p ).id()];
+                    size_type ptid = mp.old2new[elt.point( p ).id()];
                     size_type global_node_id = ptid * nComponents + c;
                     //size_type global_node_id = mp.ids.size()*c + ptid ;
-                    //LOG(INFO) << elt_it->get().point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
-                    DCHECK( ptid < step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
+                    //LOG(INFO) << elt.point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
+                    DCHECK( ptid < step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt.id()
                         << " local pt:" << p
                         << " mesh numPoints: " << step->mesh()->numPoints();
                     DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
                     if ( c < __var->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(), p, c ) );
+                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt.id(), p, c ) );
 
                         __field[global_node_id] = __var->second.globalValue( dof_id );
                         //__field[npts*c + index] = __var->second.globalValue( dof_id );

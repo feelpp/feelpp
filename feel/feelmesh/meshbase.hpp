@@ -53,7 +53,8 @@ enum MeshComponents
     MESH_REMOVE_PERIODIC_FACES_FROM_BOUNDARY = ( 1 << 7 ),
     MESH_NO_UPDATE_MEASURES = ( 1 << 8 ),
     MESH_UPDATE_ELEMENTS_ADJACENCY = ( 1 << 9 ),
-    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 )
+    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 ),
+    MESH_GEOMAP_NOT_CACHED = ( 1 << 11 )
 
 
 };
@@ -631,7 +632,10 @@ public:
         }
 
     /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
+    flag_type markerId( boost::any const& marker ) const;
+
+    /// @return the set of marker id given the marker name \p marker
+    std::set<flag_type> markersId( boost::any const& marker ) const;
 
     //@}
 

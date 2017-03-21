@@ -278,6 +278,17 @@ gmsh_domain_options( std::string const& prefix )
 
 
 po::options_description
+arm_options( std::string const& prefix )
+{
+    po::options_description _options( "Acusim Raw Mesh (ARM) " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"arm.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "ARM filename" )
+        ;
+    return _options;
+
+}
+
+po::options_description
 on_options( std::string const& prefix )
 {
     po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
@@ -912,6 +923,8 @@ feel_options( std::string const& prefix  )
 #endif
 
         .add( mesh_options( prefix ) )
+        /* arm options */
+        .add( arm_options( prefix ) )
         /* gmsh options */
         .add( gmsh_options( prefix ) )
 
