@@ -829,7 +829,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                                _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
                             integrate( _range=elements(this->M_submeshInextensibilityLM),
                                        _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
-                                       //_expr=idt(lambda)*trace((Id-NxN)*grad(v)),
                                        _geomap=this->geomap()
                                        );
                         form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=A,
@@ -837,7 +836,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                                _colstart=colStartInMatrix ) +=
                             integrate( _range=elements(this->M_submeshInextensibilityLM),
                                        _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
-                                       //_expr=id(lambda)*trace((Id-NxN)*gradt(u)),
                                        _geomap=this->geomap()
                                        );
                     }
