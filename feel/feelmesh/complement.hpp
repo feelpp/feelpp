@@ -45,7 +45,7 @@ complement( IteratorType&& it, Predicate pred )
 {
     using entity_t = filter_entity_t<IteratorType>;
     typedef std::vector<boost::reference_wrapper<entity_t const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     auto append = [&myelts,&pred]( entity_t const& e ) { if ( !pred( e ) ) myelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it ), end( it ), append );
