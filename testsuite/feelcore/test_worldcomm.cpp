@@ -165,8 +165,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
         e->add((boost::format("u_%1%")%color).str(),u);
         e->save();
 
-        auto strcase = soption( _name="exporter.format" ) + "/" + e->getPrefix() + "/" + (boost::format("laplacian_%1%.case") % color).str();
-        auto caseFileExist = !(Environment::findFile( strcase )).empty();
+        auto strcase = fs::path(Environment::exportsRepository()) / fs::path( soption( _name="exporter.format" ) ) / fs::path( e->getPrefix() ) / fs::path( (boost::format("laplacian_%1%.case") % color).str() );
+        BOOST_MESSAGE( "Find file on color: "<< color << " strcase: " << strcase << "\n" );
+        auto caseFileExist = !(Environment::findFile( strcase.string() )).empty();
 
         // Check if each communicator has created its ensight .case file.
         if( w.localRank() == 0 )

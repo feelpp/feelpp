@@ -1473,6 +1473,12 @@ endif()
 #
 include(feelpp.module.ipopt)
 
+
+#
+# Acusim
+# 
+include(feelpp.module.altair)
+
 #
 # if Feel++ has been installed on the system
 #

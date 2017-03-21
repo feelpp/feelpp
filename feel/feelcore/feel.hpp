@@ -91,6 +91,7 @@
 #include <boost/foreach.hpp>
 
 #include <boost/hana.hpp>
+#include <boost/ref.hpp>
 
 #include <cmath>
 #include <numeric>
@@ -167,6 +168,8 @@ using google::ERROR;
 using google::INFO;
 using google::FATAL;
 using boost::format;
+
+using boost::unwrap_ref;
 
 //! @cond
 namespace detail
