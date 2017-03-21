@@ -443,10 +443,11 @@ void
 MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
 {
     // Mh only on the faces whitout integral condition
-    auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& e ) {
+    auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& ewrap ) {
+            auto const& e = unwrap_ref( ewrap );
             for( auto exAtMarker : this->M_IBCList)
             {
-                if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
                     return true;
             }
             return false; });
@@ -563,10 +564,11 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
 
     auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),
-                                         [this]( auto const& e ) {
+                                         [this]( auto const& ewrap ) {
+            auto const& e = unwrap_ref( ewrap );
             for( auto exAtMarker : this->M_IBCList)
             {
-                if ( e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
+                if ( e.hasMarker() && e.marker().value() == this->M_mesh->markerName( exAtMarker.marker() ) )
                     return true;
             }
             return false;
