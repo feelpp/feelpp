@@ -106,7 +106,7 @@ public:
     space_levelset_ptrtype const& functionSpaceLevelset() const { return M_globalLevelset->functionSpace(); }
     space_levelset_vectorial_ptrtype const& functionSpaceLevelsetVectorial() const { return M_globalLevelset->functionSpaceVectorial(); }
     space_levelset_markers_ptrtype const& functionSpaceLevelsetMarkers() const { return M_globalLevelset->functionSpaceMarkers(); }
-    space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const { return M_spaceInextensibilityLM; }
+    space_inextensibilitylm_ptrtype const& functionSpaceInextensibilityLM() const;
     //--------------------------------------------------------------------//
     // Mesh
     //mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -176,6 +176,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Solve
+    bool M_doRebuildMatrixVector;
     bool M_usePicardIterations;
 
     //--------------------------------------------------------------------//
@@ -196,7 +197,10 @@ private:
     std::vector<bool> M_hasInextensibility;
     bool M_enableInextensibility;
     std::vector<std::string> M_inextensibilityMethod;
-    space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
+
+    mutable mesh_ptrtype M_submeshInextensibilityLM;
+    mutable space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
+    mutable bool M_doRebuildSpaceInextensibilityLM;
     // Penalty method gamma
     std::vector<double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//

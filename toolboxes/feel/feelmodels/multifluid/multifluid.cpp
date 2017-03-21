@@ -16,6 +16,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& rootRepository )
 : super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
 , M_prefix( prefix )
+, M_doRebuildSpaceInextensibilityLM( true )
 {
     //-----------------------------------------------------------------------------//
     // Load parameters
@@ -60,14 +61,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
-    // Deal with lagrange-multiplier inextensibility space
-    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
-    {
-        M_spaceInextensibilityLM = space_inextensibilitylm_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->localNonCompositeWorldsComm()
-                );
-    }
 
     M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
@@ -238,19 +231,18 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("MultiFluid", "init", "start");
 
-    // Initialize FluidMechanics
-    super_type::init();
-
     // Initialize LevelSets
     M_globalLevelset->init();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i]->init();
     }
-
-    //this->updateTime( this->timeStepBase()->time() );
-
     this->updateGlobalLevelset();
+
+    // Initialize FluidMechanics
+    super_type::init();
+
+    M_doRebuildMatrixVector = false;
 
     this->log("MultiFluid", "init", "finish");
 }
@@ -392,6 +384,24 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::space_inextensibilitylm_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
+{
+    if( !M_spaceInextensibilityLM || M_doRebuildSpaceInextensibilityLM )
+    {
+        // Lagrange-multiplier inextensibility space
+        this->mesh()->updateMarker2( *this->levelsetModel(0)->markerDirac() );
+        M_submeshInextensibilityLM = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_spaceInextensibilityLM = space_inextensibilitylm_type::New( 
+                _mesh=this->M_submeshInextensibilityLM,
+                _worldscomm=this->localNonCompositeWorldsComm()
+                );
+        M_doRebuildSpaceInextensibilityLM = false;
+    }
+    return M_spaceInextensibilityLM;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
@@ -408,8 +418,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     BlocksBaseGraphCSR myBlockGraph = super_type::buildBlockMatrixGraph();
 
     int indexBlock = super_type::nBlockMatrixGraph();
+
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
+        // Matrix stencil
         BlocksStencilPattern patCouplingLM(1, super_type::space_fluid_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingLM(0,1) = size_type(Pattern::COUPLED);
 
@@ -492,6 +504,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 
         Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
         picardIter++;
+
+        if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+        {
+            M_doRebuildMatrixVector = true;
+        }
     } while( M_usePicardIterations && errorVelocityL2 > 0.01);
 
     // Update global levelset
@@ -700,6 +717,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
     this->log("MultiFluid", "solveFluid", "start");
     this->timerTool("Solve").start();
 
+    if( this->M_doRebuildMatrixVector )
+    {
+        this->algebraicFactory()->backend()->clear();
+        // Rebuild algebraic matrix and vector
+        auto graph = this->buildMatrixGraph();
+        this->algebraicFactory()->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
+        // Rebuild solution vector
+        this->buildBlockVector();
+    }
+
     super_type::solve();
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -719,6 +746,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i]->advect( idv(u) );
+    }
+
+    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        M_doRebuildSpaceInextensibilityLM = true;
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -795,15 +827,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=A,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
-                            integrate( _range=elements(this->mesh()),
+                            integrate( _range=elements(this->M_submeshInextensibilityLM),
                                        _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                                       //_expr=idt(lambda)*trace((Id-NxN)*grad(v)),
                                        _geomap=this->geomap()
                                        );
                         form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=A,
                                _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
                                _colstart=colStartInMatrix ) +=
-                            integrate( _range=elements(this->mesh()),
+                            integrate( _range=elements(this->M_submeshInextensibilityLM),
                                        _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
+                                       //_expr=id(lambda)*trace((Id-NxN)*gradt(u)),
                                        _geomap=this->geomap()
                                        );
                     }
@@ -818,7 +852,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","updateLinearPDEAdditional","assembly additional terms in "+(boost::format("%1% s") %timeElapsed).str() );
+    this->log("MultiFluid","updateLinearPDEAdditional","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
