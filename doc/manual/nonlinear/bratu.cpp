@@ -77,6 +77,7 @@ main( int argc, char** argv )
                             ( - trans( id( v ) )*( gradt( u )*N() )
                               - trans( idt( u ) )*( grad( v )*N() )
                               + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
+            J->close();
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
