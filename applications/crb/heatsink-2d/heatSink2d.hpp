@@ -83,7 +83,7 @@ makeHeatSink2DOptions()
     ( "k_fin", Feel::po::value<double>()->default_value( 386 ),
       "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
     ;
-    return heatsink2doptions.add( bdf_options( "heatSink2d" ) );
+    return heatsink2doptions.add( bdf_options( "heatSink2d" ) ).add( ts_options( "heatSink2d" ) );
 }
 AboutData
 makeHeatSink2DAbout( std::string const& str = "heatSink" )

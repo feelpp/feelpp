@@ -329,7 +329,7 @@ idElt( EltType & elt,mpl::size_t<MESH_FACES> )
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = decltype(makeInterpolation<nonconforming_t>(nonconforming_t())) >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
@@ -708,10 +708,11 @@ struct PrecomputeDomainBasisFunction
         M_XhImage( XhImage ),
         M_expr( expr )
     {
-        if ( M_XhDomain->mesh()->beginElementWithProcessId() == M_XhDomain->mesh()->endElementWithProcessId()  )
+        auto itElt = M_XhDomain->mesh()->firstElementIteratorWithProcessId();
+        if ( itElt == M_XhDomain->mesh()->endElement() )
             return;
 
-        this->init( mpl::bool_<DomainSpaceType::nDim == ImageSpaceType::nDim>() );
+        this->init( *itElt, mpl::bool_<DomainSpaceType::nDim == ImageSpaceType::nDim>() );
     }
 
 
@@ -735,9 +736,9 @@ struct PrecomputeDomainBasisFunction
     gmc_ptrtype & gmc() { return M_gmc; }
 
 private :
-    void init( mpl::true_ )
+    void init( geoelement_type const& elt, mpl::true_ )
     {
-        auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+        // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
 
         gm_ptrtype gm = M_XhDomain->gm();
 
@@ -761,12 +762,12 @@ private :
         
         M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
     }
-    void init(mpl::false_ )
+    void init( geoelement_type const& elt,mpl::false_ )
     {
         typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
         new_basis_type newImageBasis;
 
-        auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
+        // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
         gm_ptrtype gm = M_XhDomain->gm();
 
         auto refPts = newImageBasis.dual().points();//M_XhImage->fe()->dual().points();
@@ -1244,7 +1245,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
                                 if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                 {
-                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid, theImageElt.processId() ) );
+                                    MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid ) );
                                     IhLoc = MlocEvalBasisNEW->interpolant();
                                 }
 
@@ -2008,7 +2009,8 @@ OperatorInterpolation<DomainSpaceType,
     matrix_node_type verticesOfEltSearched;
 
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
     auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
@@ -2257,7 +2259,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     // random (just to start)
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
     auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
@@ -2719,7 +2722,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     // random (just to start)
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
     auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
@@ -3265,7 +3269,7 @@ struct opinterprangetype
 /**
  * get the type of an OperatorInterpolation
  * \code
- * operator_interpolation_t<space_1_type,space_2_type,elements_t<typename space_2_type::mesh_type>, >
+ * operator_interpolation_t<space_1_type,space_2_type,elements_pid_t<typename space_2_type::mesh_type>, >
  * \endcode
  */
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
@@ -3277,20 +3281,20 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationNonConforming >
 using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange= elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType =InterpolationNonConforming>
 using I_ptr_t = boost::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
     
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
 using Grad_t = 
 OperatorInterpolation<DomainSpaceType, 
@@ -3300,7 +3304,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
 using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
                                             ImageSpaceType,
@@ -3309,7 +3313,7 @@ using Grad_ptr_t = boost::shared_ptr<Grad_t<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationCurl<nonconforming_t>>
 using Curl_t = 
 OperatorInterpolation<DomainSpaceType, 
@@ -3319,7 +3323,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationCurl<nonconforming_t>>
 using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
                                             ImageSpaceType,
@@ -3328,7 +3332,7 @@ using Curl_ptr_t = boost::shared_ptr<Curl_t<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationDiv<nonconforming_t>>
 using Div_t = 
 OperatorInterpolation<DomainSpaceType, 
@@ -3338,7 +3342,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
          typename InterpType = InterpolationDiv<nonconforming_t>>
 using Div_ptr_t = boost::shared_ptr<Div_t<DomainSpaceType,
                                           ImageSpaceType,

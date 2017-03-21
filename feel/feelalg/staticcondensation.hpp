@@ -33,7 +33,7 @@
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feeltiming/tic.hpp>
-
+#include <feel/feelmesh/iterator.hpp>
 
 namespace Feel {
 
@@ -118,11 +118,19 @@ public:
                 return;
 
             std::map<size_type,rank_type> allghostIdsRow;
-            for ( auto it=rowSpace->mesh()->beginGhostElement(),en=rowSpace->mesh()->endGhostElement();it!=en;++it )
-                allghostIdsRow[ it->id() ] = it->processId();
+            for( auto const& gw : elements( rowSpace->mesh(), EntityProcessType::GHOST_ONLY ) )
+            {
+                //for ( auto it=rowSpace->mesh()->beginGhostElement(),en=rowSpace->mesh()->endGhostElement();it!=en;++it )
+                auto const& g = unwrap_ref(gw);
+                allghostIdsRow[ g.id() ] = g.processId();
+            }
             std::map<size_type,rank_type> allghostIdsCol;
-            for ( auto it=colSpace->mesh()->beginGhostElement(),en=colSpace->mesh()->endGhostElement();it!=en;++it )
-                allghostIdsCol[ it->id() ] = it->processId();
+            //for ( auto it=colSpace->mesh()->beginGhostElement(),en=colSpace->mesh()->endGhostElement();it!=en;++it )
+            for( auto const& gw : elements( colSpace->mesh(), EntityProcessType::GHOST_ONLY ) )
+            {
+                auto const& g = unwrap_ref(gw);
+                allghostIdsCol[ g.id() ] = g.processId();
+            }
 
             std::map< rank_type, std::set< std::tuple<size_type,size_type,size_type,size_type> > > localMatKeysToSynchronize;
 

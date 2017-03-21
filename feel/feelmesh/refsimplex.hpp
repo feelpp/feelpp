@@ -29,6 +29,8 @@
 #ifndef __refsimplex_H
 #define __refsimplex_H 1
 
+#include <feel/feelmesh/marker.hpp>
+
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
@@ -501,6 +503,10 @@ public:
     size_type id() const
     {
         return 0;
+    }
+    std::map<uint16_type,Marker1> markers() const
+    {
+        return std::map<uint16_type,Marker1>();
     }
     flag_type marker() const
     {
