@@ -444,6 +444,7 @@ public:
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
     virtual size_type nLocalDof() const;
     std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
+    void buildBlockVector();
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     virtual void updateBlockVectorSolution();

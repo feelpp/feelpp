@@ -982,9 +982,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // define start dof index ( lm , windkessel )
     this->initStartBlockIndexFieldsInMatrix();
     //-------------------------------------------------//
-    // init block vector
-    this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    // build solution block vector
+    this->buildBlockVector();
 
     //-------------------------------------------------//
     if (buildMethodNum)
@@ -1528,6 +1527,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     }
 
     return currentStartIndex;
+}
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockVector()
+{
+    this->initBlockVector();
+    M_blockVectorSolution.buildVector( this->backend() );
 }
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
