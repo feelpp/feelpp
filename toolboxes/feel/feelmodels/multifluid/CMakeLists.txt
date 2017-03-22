@@ -1,37 +1,21 @@
-# Fluid: PN+1PNG1, levelset : P1G1
+# Fluid: PN+1PNG1, levelset : PKG1
 foreach( _DIM 2 3)
   feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
-  message(STATUS "[feelpp] MULTIFLUID ${_DIM}D PN+1PNG1_P1G1 N=1..${MAX_ORDER}")
+  message(STATUS "[feelpp] MULTIFLUID ${_DIM}D PN+1PNG1_PKG1 N=1..${MAX_ORDER} K=1..${MAX_ORDER}")
   foreach( _FLUID_U_ORDER RANGE 2 ${MAX_ORDER} )
     math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
-    genLibMultifluid(
-      DIM ${_DIM}
-      FLUID_U_ORDER ${_FLUID_U_ORDER}
-      FLUID_P_ORDER ${_FLUID_P_ORDER}
-      FLUID_P_CONTINUITY Continuous
-      LEVELSET_ORDER 1
-      GEO_ORDER  1
-      ADD_CMAKE_INSTALL
-      )
-  set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
-  endforeach()
-endforeach()
-# Fluid: PN+1PNG1, levelset : P2G1
-foreach( _DIM 2 3)
-  feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
-  message(STATUS "[feelpp] MULTIFLUID ${_DIM}D PN+1PNG1_P2G1 N=1..${MAX_ORDER}")
-  foreach( _FLUID_U_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _FLUID_P_ORDER '${_FLUID_U_ORDER}-1')
-    genLibMultifluid(
-      DIM ${_DIM}
-      FLUID_U_ORDER ${_FLUID_U_ORDER}
-      FLUID_P_ORDER ${_FLUID_P_ORDER}
-      FLUID_P_CONTINUITY Continuous
-      LEVELSET_ORDER 2
-      GEO_ORDER  1
-      ADD_CMAKE_INSTALL
-      )
-  set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
+    foreach( _LS_ORDER RANGE 1 ${MAX_ORDER} )
+        genLibMultifluid(
+            DIM ${_DIM}
+            FLUID_U_ORDER ${_FLUID_U_ORDER}
+            FLUID_P_ORDER ${_FLUID_P_ORDER}
+            FLUID_P_CONTINUITY Continuous
+            LEVELSET_ORDER ${_LS_ORDER}
+            GEO_ORDER  1
+            ADD_CMAKE_INSTALL
+            )
+        set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
+    endforeach()
   endforeach()
 endforeach()
 
