@@ -20,13 +20,13 @@ subdirlist( FEELPP_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/feel )
 
 # Script head.
 file( WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-"#!/bin/sh
-printf \"\n
+"#!/usr/bin/env bash
+printf \"\n \e[1m\e[1;31m
  _____ _____ _____ __      _     _
 |   __|   __|   __|  |   _| |_ _| |
 |   __|   __|   __|  |__|_   _|_   _|
 |__|  |_____|_____|_____| |_|   |_|
-
+\e[0m \e[1m\e[1;36m
 Feel++ interpreter (cling based)
 For more infos, see www.feelpp.org
 Type '.help' for help, '.q' to exit
@@ -40,58 +40,7 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "${CLING_BIN} \\"
 )
 
-# Script install include directories.
-file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-"
--I${GMSH_INCLUDE_DIR} \\
--I${PARALUTION_INCLUDE_DIR} \\
--I${MPI_CXX_INCLUDE_PATH} \\
--I${HPDDM_INCLUDE_DIR} \\
--I${CMAKE_SOURCE_DIR} \\
--I${google-glog_SOURCE_DIR}/src \\
--I${gflags_SOURCE_DIR} \\
--I${GiNaC_SOURCE_DIR} \\
--I${GiNaC_SOURCE_DIR}/ginac \\
--I${CMAKE_SOURCE_DIR}/contrib/nlopt/api \\
--I${Eigen3_SOURCE_DIR} \\
--I${Eigen3_SOURCE_DIR}/unsupported \\
--I${METIS_SOURCE_DIR} \\
--I${PETSC_DIR}/include \\
--I${SLEPC_DIR}/include \\
--I${CMAKE_INSTALL_PREFIX}/include/ \\
-"
-)
-
-# Script install include directories.
-file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-"\
--I${google-glog_BINARY_DIR} \\
--I${gflags_BINARY_DIR}/include \\
--I${GiNaC_BINARY_DIR} \\
--I${GiNaC_BINARY_DIR}/ginac \\
--I${Eigen3_BINARY_DIR} \\
--I${Eigen3_BINARY_DIR}/unsupported \\
--I${METIS_BINARY_DIR} \\
--I${CMAKE_BINARY_DIR}/contrib/nlopt/api \\
-"
-)
-
-# Script lib directories.
-file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-"\
--L${CMAKE_SOURCE_DIR}/feel \\
--L${google-glog_BINARY_DIR} \\
--L${gflags_BINARY_DIR} \\
--L${GiNaC_BINARY_DIR} \\
--L${Eigen3_BINARY_DIR} \\
--L${METIS_BINARY_DIR}/libmetis \\
--L${CMAKE_BINARY_DIR}/contrib/nlopt/ \\
--L${PETSC_DIR}/lib \\
--L${SLEPC_DIR}/lib \\
--L${CMAKE_INSTALL_PREFIX}/lib/ \\
-"
-)
-
+# Set environment variables.
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
 -DBOOST_FILESYSTEM_VERSION=3 \\
@@ -124,27 +73,89 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "
 )
 
-## Script source include directories
-#foreach( subdir ${FEELPP_INCLUDE_DIRS} )
-#    file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-#        "-I${CMAKE_SOURCE_DIR}/${subdir} \\\n"
-#        )
-#endforeach()
-
+# Include precompiled headers.
 if( FEELPP_ENABLE_PCH )
-# Script cling binary program.
     file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
--include-pch ${CMAKE_SOURCE_DIR}/feel/feel.hpp.pch \\
+-include-pch ${CMAKE_BINARY_DIR}/feel/cotire/feelpp_CXX_prefix.hxx.pch \\
 "
     )
 endif()
+
+# Include path.
+set( INCDIRS
+    ${MPI_CXX_INCLUDE_PATH}
+    ${Boost_INCLUDE_DIRS}
+    ${GMSH_INCLUDE_DIR}
+    ${PARALUTION_INCLUDE_DIR}
+    ${HPDDM_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${google-glog_SOURCE_DIR}/src
+    ${gflags_SOURCE_DIR}
+    ${GiNaC_SOURCE_DIR}
+    ${GiNaC_SOURCE_DIR}/ginac
+    ${CMAKE_SOURCE_DIR}/contrib/nlopt/api
+    ${Eigen3_SOURCE_DIR}
+    ${Eigen3_SOURCE_DIR}/unsupported
+    ${METIS_SOURCE_DIR}
+    ${PETSC_DIR}/include
+    ${SLEPC_DIR}/include
+    ${CMAKE_INSTALL_PREFIX}/include/
+    ${LIBXML2_INCLUDE_DIR}
+    ${google-glog_BINARY_DIR}
+    ${gflags_BINARY_DIR}/include
+    ${GiNaC_BINARY_DIR}
+    ${GiNaC_BINARY_DIR}/ginac
+    ${Eigen3_BINARY_DIR}
+    ${Eigen3_BINARY_DIR}/unsupported
+    ${METIS_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/nlopt/api
+    ${VTK_INCLUDE_DIRS}
+    ${HDF5_INCLUDE_DIRS}
+)
+
+# Library dirs path or libraries path.
+set( LIBDIRS
+    ${MPI_CXX_LIBRARIES}
+    ${Boost_LIBRARY_DIRS}
+    ${VTK_LIBRARY_DIRS}
+    ${HDF5_LIBRARY_DIRS}
+    ${CMAKE_BINARY_DIR}/feel
+    ${google-glog_BINARY_DIR}
+    ${gflags_BINARY_DIR}
+    ${GiNaC_BINARY_DIR}
+    ${GiNaC_BINARY_DIR}/ginac
+    ${Eigen3_BINARY_DIR}
+    ${METIS_BINARY_DIR}/libmetis
+    ${CMAKE_BINARY_DIR}/contrib/nlopt/
+    ${PETSC_DIR}/lib
+    ${SLEPC_DIR}/lib
+    ${CMAKE_INSTALL_PREFIX}/lib/
+    ${LIBXML2_LIBRARIES}
+)
+
+foreach( incdir ${INCDIRS} )
+file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
+"\
+-I${incdir} \\
+"
+)
+endforeach()
+
+foreach( libdir ${LIBDIRS} )
+file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
+"\
+-L${libdir} \\
+"
+)
+endforeach()
 
 # Script cling options.
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "--std=c++${FEELPP_STD_CPP} \\
 -ftemplate-depth=1024 \\
--stdlib=libstdc++ \\
+${MPI_CXX_COMPILE_FLAGS} \\
+${MPI_CXX_LINK_FLAGS} \\
 -lfeelpp_metis \\
 -lfeelpp_nlopt \\
 -lfeelpp_ginac \\
