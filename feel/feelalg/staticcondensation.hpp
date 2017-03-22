@@ -145,11 +145,11 @@ public:
                 auto itFindId = allghostIdsRow.find( K );
                 if ( itFindId != allghostIdsRow.end() )
                 {
-                    auto const& eltRow = rowSpace->mesh()->element( itFindId->first, itFindId->second );
+                    auto const& eltRow = rowSpace->mesh()->element( itFindId->first );
                     rank_type otherpid = eltRow.processId();
                     auto itFindIdCol = allghostIdsCol.find( K2 );
                     auto const& eltCol = (itFindIdCol != allghostIdsCol.end())?
-                        colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second ) :
+                        colSpace->mesh()->element( itFindIdCol->first ) :
                         colSpace->mesh()->element( K2 );
                     CHECK( eltRow.idInOthersPartitions().find( otherpid ) != eltRow.idInOthersPartitions().end() ) << "aie no idInOtherPartition = " << eltRow.G();
                     CHECK( eltCol.idInOthersPartitions().find( otherpid ) != eltCol.idInOthersPartitions().end() ) << "aie no idInOtherPartition = " << eltCol.G();
@@ -167,7 +167,7 @@ public:
 
                         auto itFindIdCol = allghostIdsCol.find( K2 );
                         auto const& eltCol = ( itFindIdCol != allghostIdsCol.end() )?
-                            colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second ) :
+                            colSpace->mesh()->element( itFindIdCol->first ) :
                             colSpace->mesh()->element( K2 );
                         auto itFindOtherPartitionCol = eltCol.idInOthersPartitions().find( otherpid );
                         if ( itFindOtherPartitionCol != eltCol.idInOthersPartitions().end() )
@@ -186,12 +186,12 @@ public:
                 auto itFindIdCol = allghostIdsCol.find( K2 );
                 if ( itFindIdCol != allghostIdsCol.end() )
                 {
-                    auto const& eltCol = colSpace->mesh()->element( itFindIdCol->first, itFindIdCol->second );
+                    auto const& eltCol = colSpace->mesh()->element( itFindIdCol->first );
                     rank_type otherpid = eltCol.processId();
 
                     auto itFindIdRow = allghostIdsRow.find( K );
                     auto const& eltRow = ( itFindIdRow != allghostIdsRow.end() )?
-                        rowSpace->mesh()->element( itFindIdRow->first, itFindIdRow->second ) :
+                        rowSpace->mesh()->element( itFindIdRow->first ) :
                         rowSpace->mesh()->element( K );
                     CHECK( eltCol.idInOthersPartitions().find( otherpid ) != eltCol.idInOthersPartitions().end() ) << "no idInOtherPartition("<<otherpid<<") with " << eltRow.G();
                     CHECK( eltRow.idInOthersPartitions().find( otherpid ) != eltRow.idInOthersPartitions().end() ) << "no idInOtherPartition("<<otherpid<<") with " << eltRow.G();
@@ -208,7 +208,7 @@ public:
                         rank_type otherpid = otherProcess.first;
                         auto itFindIdRow = allghostIdsRow.find( K );
                         auto const& eltRow = ( itFindIdRow != allghostIdsRow.end() )?
-                            rowSpace->mesh()->element( itFindIdRow->first, itFindIdRow->second ) :
+                            rowSpace->mesh()->element( itFindIdRow->first ) :
                             rowSpace->mesh()->element( K );
                         auto itFindOtherPartitionRow = eltRow.idInOthersPartitions().find( otherpid );
                         if ( itFindOtherPartitionRow != eltRow.idInOthersPartitions().end() )
