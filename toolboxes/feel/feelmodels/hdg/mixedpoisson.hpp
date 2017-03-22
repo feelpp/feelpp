@@ -1443,33 +1443,49 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         {
                             if (exAtMarker.isExpression() )
                             {
-                                auto p_exact = expr(exAtMarker.expression() );
+								auto vars = Symbols{"x","y","z","t"};
+								auto p_exact_g = parse(exAtMarker.expression(), vars);
+                                auto p_exact = expr<expr_order>(p_exact_g, vars, "p_exact" );
+
+								Feel::cout << "p_exact: " << p_exact << std::endl;
+
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
                                 }
-                                auto gradp_exact = grad<Dim>(p_exact);
-                                auto u_exact = expr(-K*trans(gradp_exact));
 
+								// auto s = expr(exAtMarker.expression(),vars);
+								// auto help = expr<1,Dim>( GiNaC::grad(s.expression().expression(),{"x" , "y", "z" }), s.expression().symbols() );
+
+							
+								auto gradp_exact_g = grad(p_exact_g, {vars[0],vars[1],vars[2]} );
+								auto u_exact_g = -K * gradp_exact_g;
+                                auto u_exact = expr<Dim,1,expr_order>(u_exact_g, vars, "u_exact" );
+
+					
+							
+								
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
                                 if ( !this->isStationary() )
                                     u_exact.setParameterValues( { {"t", time } } );
-								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+								
+								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
+								auto u_exactExport = vf::project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
 								// Feel::cout << "u_exactExport: " << u_exactExport << std::endl;
 
-                                M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"),
-                                                              project( _space=M_Wh,
-                                                                       _range=elements(M_mesh),
-                                                                       _expr=p_exact) );
-                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport);
-
-                                auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up) );
-                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+                                M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
+                                
+								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
+								
+								
+                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= u_exact - idv(M_up) );
+                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
+								
 
                                 auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
                                 auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
@@ -1478,14 +1494,12 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                                 Feel::cout << "----- Computed Errors -----" << std::endl;
                                 Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
-                                Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+			                    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
                                 Feel::cout << "---------------------------" << std::endl;
 
                                 // Export the errors
-                                M_exporter -> step( time )->add(prefixvm(prefix(), "p_error_L2"),
-                                                                l2err_p/l2norm_pex );
-                                M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"),
-                                                                l2err_u/l2norm_uex );
+                                M_exporter -> step( time )->add(prefixvm(prefix(), "p_error_L2"), l2err_p/l2norm_pex );
+                                M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
                             }
                         }
                     }
