@@ -176,7 +176,7 @@ using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
 template<typename IteratorType>
 using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
 template<typename IteratorType>
-using filter_entity_t = typename filter_iterator_t<IteratorType>::value_type;
+using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
 template<typename IteratorType>
 using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
                                                   typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
