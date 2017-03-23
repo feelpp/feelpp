@@ -1443,38 +1443,24 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         {
                             if (exAtMarker.isExpression() )
                             {
-								auto vars = Symbols{"x","y","z","t"};
-								auto p_exact_g = parse(exAtMarker.expression(), vars);
-                                auto p_exact = expr<expr_order>(p_exact_g, vars, "p_exact" );
-
-								Feel::cout << "p_exact: " << p_exact << std::endl;
-
+							
+                                auto p_exact = expr(exAtMarker.expression()) ;
+                                if ( !this->isStationary() )
+                                    p_exact.setParameterValues( { {"t", time } } );
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
                                 }
-
-								// auto s = expr(exAtMarker.expression(),vars);
-								// auto help = expr<1,Dim>( GiNaC::grad(s.expression().expression(),{"x" , "y", "z" }), s.expression().symbols() );
-
-							
-								auto gradp_exact_g = grad(p_exact_g, {vars[0],vars[1],vars[2]} );
-								auto u_exact_g = -K * gradp_exact_g;
-                                auto u_exact = expr<Dim,1,expr_order>(u_exact_g, vars, "u_exact" );
-
-					
-							
-								
+                                auto gradp_exact = expr(grad<Dim>(p_exact)) ;
                                 if ( !this->isStationary() )
-                                    p_exact.setParameterValues( { {"t", time } } );
-                                if ( !this->isStationary() )
-                                    u_exact.setParameterValues( { {"t", time } } );
-								
+                                    gradp_exact.setParameterValues( { {"t", time } } );
+                                auto u_exact = expr(-K* trans(gradp_exact)) ;
+                                
+	
 								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
-								auto u_exactExport = vf::project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
-								// Feel::cout << "u_exactExport: " << u_exactExport << std::endl;
+								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
                                 
