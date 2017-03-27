@@ -59,14 +59,9 @@ show-residual=false
 is-model-executed-in-steady-mode=true
 use-ginac-for-beta-expressions=false
 all-procs-have-same-sampling=false
-vary-only-parameter-components=1 100
+#vary-only-parameter-components=1 100
 user-parameters=0.5 0.1
 load-elements-database=true
-[crb.check]
-gs=0
-rb=0
-residual=false
-residual-transient-problems=false
 results-repo-name=HeatShield
 
 #parameter for scm
