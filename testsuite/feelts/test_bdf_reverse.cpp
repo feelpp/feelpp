@@ -92,48 +92,41 @@ public :
         // BDF State is STOPPED here.
     }
 
-    // Test one reverse
-    // Bdf goes from 0->T then T->0.
-    void forwardReverse()
+    void reverseInit()
     {
         auto Xh = Pch<1>( M_mesh );
         auto ts = bdf( _space=Xh, _name="ts" );
+        auto u = Xh->element();
+        u.zero();
 
-        BOOST_TEST_MESSAGE( "Test bdf initial settings" );
+        BOOST_TEST_MESSAGE( "Test bdf reverse settings" );
         ts->setTimeInitial(20);
         ts->setTimeFinal(100);
         ts->setTimeStep(10);
-        ts->start();
-        CHECK( ts->isReverse() == false );
-        BOOST_CHECK_MESSAGE( ts->timeInitial() == 20, "current Ti=" << ts->timeInitial() << "\n");
-        BOOST_CHECK_MESSAGE( ts->timeFinal() == 100, "current Tf" << ts->timeFinal() << "\n");
-        BOOST_CHECK_MESSAGE( ts->timeStep() == 10, "current dt=" << ts->timeStep() << "\n");
-        for ( ; ts->isFinished() == false; ts->next() )
-            ;// Go to end
-
-        // BDF State is STOPPED here.
-
-        BOOST_TEST_MESSAGE( "Test bdf reverse settings" );
         ts->setReverse(true);
-        ts->start();
+        ts->start(u);
         CHECK( ts->isReverse() == true );
         BOOST_CHECK_MESSAGE( ts->timeInitial() == 100, "current Ti=" << ts->timeInitial() << "\n");
         BOOST_CHECK_MESSAGE( ts->timeFinal() == 20, "current Tf=" << ts->timeFinal() << "\n");
         BOOST_CHECK_MESSAGE( ts->timeStep() == -10, "current dt=" << ts->timeStep() << "\n");
-        for ( ; ts->isFinished() == false; ts->next() )
-            ;// Go to end
+        for ( ; ts->isFinished() == false; ts->next(u) )
+        {
+            LOG(INFO) << "BDF reverse iteration: " << ts->iteration() << ", time:" << ts->time();
+            const int iter = ts->iteration();
+            u.on(_range=elements(M_mesh), _expr=cst(iter) );
+        }
 
         // BDF State is STOPPED here.
     }
 
     // Test several successive reverse
     // Bdf goes from 0->T then T->0, N times.
-    void loopForwardReverse()
+    void forwardReverse( int n=1 )
     {
         auto Xh = Pch<1>( M_mesh );
         auto ts = bdf( _space=Xh, _name="ts" );
 
-        for(int i=0;i<2;i++)
+        for(int i=0;i<n;i++)
         {
             BOOST_TEST_MESSAGE( "Test bdf initial settings" );
             ts->setReverse(false);
@@ -230,6 +223,8 @@ public :
              double err= (val-v[k])*(val-v[k]);
              LOG(INFO) << "err = " << err << " val=" << val << "v[" << k << "]=" << v[k];
              BOOST_TEST_MESSAGE( "err = " << err << " val=" << val << "v[" << k << "]=" << v[k] );
+             BOOST_CHECK(  ts->time() <= ts->timeInitial() );
+             BOOST_CHECK(  ts->time() >= ts->timeFinal() );
              BOOST_CHECK(  err < 1e-10 );
         }
 
@@ -250,16 +245,22 @@ BOOST_AUTO_TEST_CASE( test_reverse )
     t.reverse();
 }
 
+BOOST_AUTO_TEST_CASE( test_reverse_init )
+{
+    Test<2> t;
+    t.reverseInit();
+}
+
 BOOST_AUTO_TEST_CASE( test_forward_reverse )
 {
     Test<2> t;
     t.forwardReverse();
 }
 
-BOOST_AUTO_TEST_CASE( test_loop_forward_reverse )
+BOOST_AUTO_TEST_CASE( test_forward_reverse_n )
 {
     Test<2> t;
-    t.loopForwardReverse();
+    t.forwardReverse(2);
 }
 
 BOOST_AUTO_TEST_CASE( test_forward_reverse_h5load )
