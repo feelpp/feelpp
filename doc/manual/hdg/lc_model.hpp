@@ -297,12 +297,18 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initModel(){
                     Feel::cout << " " << marker;
                 else
                     Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
-                M_0dList.push_back(exAtMarker);
+                this->M_IBCList.push_back(exAtMarker);
+				M_0dList.push_back(exAtMarker);
             }
             Feel::cout << std::endl;
         }
     }
  
+    if ( this->M_IBCList.empty() )
+        this->M_integralCondition = 0;
+    else
+        this->M_integralCondition = this->M_IBCList.size();
+
     if ( M_0dList.empty() )
         M_0dCondition = 0;
     else
@@ -312,6 +318,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initModel(){
     M_A0d.resize(3,3);
     M_Cinv.resize(3,3);
     M_g.resize(3);
+
 
     for( auto const& pairMat : this->modelProperties().materials() )
     {
@@ -330,8 +337,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initModel(){
     	M_A0d(1,0) = 1/R12;
     	M_A0d(1,1) = -1/R12 - 1/R23;
     	M_A0d(1,2) = +1/R23;
-		// M_A0d(2,0) = 0;		
-		M_A0d(2,0) = -1/R12;
+		M_A0d(2,0) = 0;		
     	M_A0d(2,1) = 1/R23;
     	M_A0d(2,2) = -1/R23 -1/Rout;
 
@@ -350,13 +356,13 @@ void
 LaminaCribrosa<Dim, Order, G_Order, E_Order>::initSpaces(){
 
     
-    for( int i = 0; i < M_0dCondition; i++)
-        this->M_IBCList.push_back(M_0dList[i]);
+    // for( int i = 0; i < M_0dCondition; i++)
+    //    this->M_IBCList.push_back(M_0dList[i]);
 
     super_type::initSpaces();
 
-    for( int i = 0; i < M_0dCondition; i++)
-        this->M_IBCList.pop_back();
+    // for( int i = 0; i < M_0dCondition; i++)
+    //    this->M_IBCList.pop_back();
 
     for( int i = 0; i < M_0dCondition; i++ )
         (this->M_mup).push_back(this->M_Ch->element("mup"));
@@ -365,7 +371,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initSpaces(){
 	if(M_0dCondition)
 	{
 		Feel::cout << "Number of 0d: " << M_0dCondition << std::endl;
-    	auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( this->integralCondition() + 2*M_0dCondition, this->M_Ch);
+    	auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( this->integralCondition() + M_0dCondition, this->M_Ch);
     	this->M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,this->M_Vh,this->M_Wh,this->M_Mh));
 
 	    this->M_A_cst = this->M_backend->newBlockMatrix(_block=csrGraphBlocks(*(this->M_ps)));
@@ -375,8 +381,52 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::initSpaces(){
 
     // Init for second step
     M_Y = this->constantSpace()->elementPtr( "yy" );
-    M_statevar_solution.fill(0); // initializtion 
 
+	// Initialization variables second step
+    M_statevar_solution.fill(0); 
+	if(M_0dCondition)
+	{ 
+    	auto itField = this->modelProperties().boundaryConditions().find( "InitialCondition_CircuitModel");
+    	if ( itField != this->modelProperties().boundaryConditions().end() )
+    	{
+        	auto mapField = (*itField).second;
+        	auto itType = mapField.find( "Pi1" );
+        	if ( itType != mapField.end() )
+        	{
+            	for ( auto const& exAtMarker : (*itType).second )
+            	{			
+					auto expression =  expr(exAtMarker.expression());
+					expression.setParameterValues( { {"t", this->time() } } );
+					auto P1 = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = expression )(0,0);
+					M_statevar_solution[0] = P1;
+				}
+			}
+        	
+			itType = mapField.find( "Pi2" );
+        	if ( itType != mapField.end() )
+        	{
+            	for ( auto const& exAtMarker : (*itType).second )
+            	{			
+					auto expression =  expr(exAtMarker.expression());
+					expression.setParameterValues( { {"t", this->time() } } );
+					auto P2 = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = expression )(0,0);
+					M_statevar_solution[1] = P2;
+				}
+			}
+        	
+			itType = mapField.find( "Pi3" );
+        	if ( itType != mapField.end() )
+        	{
+            	for ( auto const& exAtMarker : (*itType).second )
+            	{			
+					auto expression =  expr(exAtMarker.expression());
+					expression.setParameterValues( { {"t", this->time() } } );
+					auto P3 = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = expression )(0,0);
+					M_statevar_solution[2] = P3;
+				}
+			}
+		}
+	}
 }
 
 
@@ -441,59 +491,37 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::assemble0d( int i )
 
 
     auto marker = M_0dList[i].marker();
-    int j = this->integralCondition() + 2*i; // index where to start
+    int j = this->integralCondition()+i; // index where to start
    
 	// Feel::cout << "j: " << j << "\t i: " << i << std::endl;
- 
-    // IBC 
-    // <lambda, v.n>_Gamma_I
-    bbf( 0_c, 3_c, 0, j ) += integrate( _range=markedfaces(this->mesh(),marker), _expr= idt(uI) * (trans(id(u))*N()) );
-
-    // <lambda, tau w>_Gamma_I
-    bbf( 1_c, 3_c, 1, j ) += integrate( _range=markedfaces(this->mesh(),marker),
-                                        _expr=-tau_constant * idt(uI) * id(w) * ( pow(idv(H),this->tau_order())) );
-
-    // <j.n, m>_Gamma_I
-    bbf( 3_c, 0_c, j, 0 ) += integrate( _range=markedfaces(this->mesh(),marker), _expr=(trans(idt(u))*N()) * id(nu) );
-
-
-    // <tau p, m>_Gamma_I
-    bbf( 3_c, 1_c, j, 1 ) += integrate( _range=markedfaces(this->mesh(),marker),
-                                        _expr=tau_constant *idt(p)  * id(nu)* ( pow(idv(H),this->tau_order())) );
-
-    // -<tau u_I, m>_Gamma_I
-    bbf( 3_c, 3_c, j, j ) += integrate( _range=markedfaces(this->mesh(),marker),
-                                        _expr=-tau_constant * id(nu) *idt(uI)* (pow(idv(H),this->tau_order())) );
-
-
 
     // 0D EQUATION 
-    j++;
-    double meas = integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);
-    
+    double meas = integrate( _range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);    
+
     // - <j.n, mu3>_Gamma_I
-    bbf ( 3_c, 0_c, j, 0) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr= -trans(idt(u))*N()*id(nu) );
+    bbf ( 3_c, 0_c, j, 0) += integrate( _range=markedfaces(this->mesh(),marker), _expr= -trans(idt(u))*N()*id(nu) );
 
     // - <tau p, mu3>_Gamma_I
-    bbf ( 3_c, 1_c, j, 1) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr= -tau_constant*( pow(idv(H),this->tau_order())*idt(p) )*id(nu) );
+    bbf ( 3_c, 1_c, j, 1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= -tau_constant*( pow(idv(H),this->tau_order())*idt(p) )*id(nu) );
             
     // + <tau u_I, mu3>_Gamma_I
-    bbf ( 3_c, 3_c, j, j-1) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr= tau_constant * (pow(idv(H),this->tau_order())*idt(uI)*id(nu)) );
-            
-    for( auto const& pairMat : this->modelProperties().materials() )
+    bbf ( 3_c, 3_c, j, j-1) += integrate( _range=markedfaces(this->mesh(),marker), _expr= tau_constant * (pow(idv(H),this->tau_order())*idt(uI)*id(nu)) );
+          
+    
+	for( auto const& pairMat : this->modelProperties().materials() )
     {
        	auto material = pairMat.second;
         auto RR = material.getScalar("RR");       // Resistence of the buffer
         auto CC = material.getScalar("CC");       // Capacitance of the buffer
 	        
 	    // -1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
-        bbf ( 3_c, 3_c, j-1, j-1) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr = - idt(uI)*id(nu)/RR/meas ) ;
+        bbf ( 3_c, 3_c, j-1, j-1) += integrate( _range=markedfaces(this->mesh(),marker), _expr = - idt(uI)*id(nu)/RR/meas ) ;
 	
         // +1/(R |Gamma_I|) <Y,mu2>_Gamma_I
-        bbf ( 3_c, 3_c, j-1, j) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr = idt(yy)*id(nu)/RR/meas ) ;
+        bbf ( 3_c, 3_c, j-1, j) += integrate( _range=markedfaces(this->mesh(),marker), _expr = idt(yy)*id(nu)/RR/meas ) ;
 
       	// < C/|Gamma_I| Y/dt, mu3>_Gamma_I
-        bbf ( 3_c, 3_c, j, j) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr= CC*this->timeStepBDF_statevar()->polyDerivCoefficient(0) * idt(yy)*id(nu)/meas );
+        bbf ( 3_c, 3_c, j, j) += integrate( _range=markedfaces(this->mesh(),marker), _expr= CC*this->timeStepBDF_statevar()->polyDerivCoefficient(0) * idt(yy)*id(nu)/meas );
     }
      
     double tElapsed = this->timerTool("Constructor").stop("assembleMatrix0d");
@@ -514,29 +542,24 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::assembleRhs0d( int i )
     auto nu = this->constantSpace()->element( "nu" );
  
 
-    int j = this->integralCondition() + 2*i; // index where to start
+    int j = this->integralCondition() + i; // index where to start
    
  
     auto exAtMarker = M_0dList[i];
     auto marker = exAtMarker.marker();
     auto g = expr(exAtMarker.expression());
 
-    double meas = integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);;
-
-    // IBC PART  
-    // <I_target,m>_Gamma_I
-    blf( 3_c, j ) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(this->mesh(),marker), _expr=g*id(nu)/meas );
-    j++; 
-
-	
-    // 0d PART
+    double meas = integrate( _range=markedfaces(this->mesh(),marker),_expr=cst(1.0)).evaluate()(0,0);;
+    
+	// 0d PART
     for( auto const& pairMat : this->modelProperties().materials() )
     {
         auto material = pairMat.second;
         auto CC = material.getScalar("CC");       // Capacitance of the buffer
-        
-        // < C/|Gamma_I| Yold/dt, mu3>
-        blf( 3_c, j ) += integrate( _quad=_Q<expr_order>(), _range = markedfaces(this->mesh(),marker), _expr = CC*idv(this->timeStepBDF_statevar()->polyDeriv()) * id(nu)/meas);
+       
+        auto bdf_poly = M_bdf_statevariable->polyDeriv();
+		// < C/|Gamma_I| Yold/dt, mu3>
+        blf( 3_c, j ) += integrate( _range = markedfaces(this->mesh(),marker), _expr = CC*idv(bdf_poly) * id(nu)/meas );
     }	
     
 	double tElapsed = this->timerTool("Constructor").stop("assembleRhs0d");
@@ -577,8 +600,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
             			{			
 				           	auto exprP1_exact =  expr(exAtMarker.expression());
 							exprP1_exact.setParameterValues( { {"t", this->time() } } );
-							// auto P1_exact = exprP1_exact.evaluate()(0,0);
-							auto P1_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP1_exact )(0,0);
+							auto P1_exact = exprP1_exact.evaluate();
+							// auto P1_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP1_exact )(0,0);
 	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0]) << std::endl;
 		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0]) );
 						}
@@ -591,8 +614,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
             			{			
 				           	auto exprP2_exact =  expr(exAtMarker.expression());
 							exprP2_exact.setParameterValues( { {"t", this->time() } } );
-							// auto P2_exact = exprP2_exact.evaluate()(0,0);
-							auto P2_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP2_exact )(0,0);
+							auto P2_exact = exprP2_exact.evaluate();
+							// auto P2_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP2_exact )(0,0);
 	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1]) << std::endl;
 		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1]) );
 						}
@@ -605,8 +628,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
             			{			
 				           	auto exprP3_exact =  expr(exAtMarker.expression());
 							exprP3_exact.setParameterValues( { {"t", this->time() } } );
-							// auto P3_exact = exprP3_exact.evaluate()(0,0);
-							auto P3_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP3_exact )(0,0);
+							auto P3_exact = exprP3_exact.evaluate();
+							// auto P3_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP3_exact )(0,0);
 	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2]) << std::endl;
 		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2]) );
 							
@@ -650,13 +673,9 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::solve()
     for( int i = 0; i < this->integralCondition(); i++ )
         (this->M_mup)[i] = U(3_c,i);
 
-    int j = this->integralCondition(); // index where to start
-    for( int i = 0; i < M_0dCondition; i++)
-    {
-        (this->M_mup)[j] = U(3_c,j);
-        *M_Y = U(3_c,j+1);
-        j += 2;
-    }
+	if (M_0dCondition)
+	    *M_Y = U(3_c,this->integralCondition());
+    
 
 }
 
@@ -679,8 +698,8 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::odeForceTermEvaluation( double tim
             {			
 				auto exprPiout = expr(exAtMarker.expression());
                 exprPiout.setParameterValues( { {"t", time } } );
-				// Piout = exprPiout.evaluate()(0,0);
-				Piout = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprPiout )(0,0);
+				Piout = exprPiout.evaluate();
+				// Piout = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprPiout )(0,0);
 			}
 		}
 	} 				
@@ -710,7 +729,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::second_step()
     if (M_0dCondition)
     {   
     	// Update the initial solution for Pi1 (for step 2)  
-    	M_statevar_solution[0] = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
+    	// M_statevar_solution[0] = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv(*M_Y) )(0,0) ;
     	M_statevar_solution[0] = (*M_Y)[0];
     	
 		auto u_i = mean( _quad=_Q<expr_order>(), _range= elements(this->mesh()), _expr=idv((this->M_mup)[0]) )(0,0) ;    
@@ -738,15 +757,20 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::second_step()
 	    boost::numeric::odeint::integrate_const(stepper, ode_model(M_Cinv,M_A0d,M_g), M_statevar_solution, 
 		    	this->time(),		 				// initial time
 		    	this->time()+this->timeStep(), 		// final time
-		    	this->timeStep()/100				// time step 
+		    	this->timeStep()					// time step 
 				);		
 
 	    Feel::cout << "Pi1: \t" << M_statevar_solution[0] << std::endl;
 	    Feel::cout << "Pi2: \t" << M_statevar_solution[1] << std::endl;
     	Feel::cout << "Pi3: \t" << M_statevar_solution[2] << std::endl;
 
-	    // Update the initial solution for Pi1 (for step 1)
-        
+		/*	
+       	auto help = expr("2*t:t"); 
+        help.setParameterValues( { {"t", this->time() } } );
+		M_statevar_solution[0] = help.evaluate();	    
+		*/
+
+		// Update the initial solution for Pi1 (for step 1)
 	    *M_Y = project ( _space = this->M_Ch, _expr = cst(M_statevar_solution[0]) );
 	    M_bdf_statevariable -> setUnknown(0,*M_Y);
         
