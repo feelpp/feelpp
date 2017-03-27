@@ -601,9 +601,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP1_exact =  expr(exAtMarker.expression());
 							exprP1_exact.setParameterValues( { {"t", this->time() } } );
 							auto P1_exact = exprP1_exact.evaluate();
-							// auto P1_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP1_exact )(0,0);
-	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0]) << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0]) );
+	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0])/P1_exact << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0])/P1_exact );
 						}
 					}
 
@@ -615,9 +614,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP2_exact =  expr(exAtMarker.expression());
 							exprP2_exact.setParameterValues( { {"t", this->time() } } );
 							auto P2_exact = exprP2_exact.evaluate();
-							// auto P2_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP2_exact )(0,0);
-	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1]) << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1]) );
+	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1])/P2_exact << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1])/P2_exact );
 						}
 					}
 
@@ -629,9 +627,8 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP3_exact =  expr(exAtMarker.expression());
 							exprP3_exact.setParameterValues( { {"t", this->time() } } );
 							auto P3_exact = exprP3_exact.evaluate();
-							// auto P3_exact = mean( _range = markedfaces(this->mesh(),exAtMarker.marker()), _expr = exprP3_exact )(0,0);
-	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2]) << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2]) );
+	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2])/P3_exact << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2])/P3_exact );
 							
 						}
 					}
