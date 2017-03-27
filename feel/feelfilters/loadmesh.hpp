@@ -208,11 +208,14 @@ BOOST_PARAMETER_FUNCTION(
         cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
 
 #if defined(FEELPP_HAS_HDF5)
-        tic();
+
         if ( savehdf5 )
+        {
+            tic();
             m->saveHDF5( mesh_name.stem().string()+".json" );
-        toc("loadMesh.saveHDF5", FLAGS_v>0);
-        cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
+            toc("loadMesh.saveHDF5", FLAGS_v>0);
+            cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
+        }
 #endif
         return m;
     }

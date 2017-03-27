@@ -71,7 +71,7 @@ makeUnsteadyHeat1DOptions()
     ( "mu4", po::value<double>()->default_value( 0.1 ), "mu4" )
     ( "alpha" , po::value<double>()->default_value( 1 ), "temporal coefficient" )
     ;
-    return unsteadyheat1doptions.add( bdf_options( "unsteadyHeat1d" ) );
+    return unsteadyheat1doptions.add( bdf_options( "unsteadyHeat1d" ) ).add( ts_options( "unsteadyHeat1d" ) );
 }
 AboutData
 makeUnsteadyHeat1DAbout( std::string const& str = "unsteadyHeat1d" )
