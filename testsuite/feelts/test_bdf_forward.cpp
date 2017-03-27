@@ -22,7 +22,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 //#define USE_BOOST_TEST 1
-#define BOOST_TEST_MODULE test_bdf_reverse
+#define BOOST_TEST_MODULE test_bdf_forward
 #include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -72,7 +72,7 @@ public :
                 {}
 
     // Run BDF forward one or several times.
-    void forward( int N, bool restart = true )
+    void forward( int N, bool restart = true, std::string fileformat="hdf5")
     {
         auto Xh = Pch<1>( M_mesh );
         auto ts = bdf( _space=Xh, _name="ts" );
@@ -80,6 +80,7 @@ public :
         for(int i=0;i<N;i++)
         {
             BOOST_TEST_MESSAGE( "Test bdf initial settings" );
+            ts->setfileFormat(fileformat);
             ts->setRestart(restart);
             ts->setTimeInitial(20);
             ts->setTimeFinal(100);
@@ -94,6 +95,38 @@ public :
 
             for ( ; ts->isFinished() == false; ts->next() )
                 ;// Go to end
+        }
+    }
+
+    void forwardLoad( int N, bool restart = true, std::string fileformat="hdf5")
+    {
+        auto Xh = Pch<1>( M_mesh );
+        auto ts = bdf( _space=Xh, _name="ts" );
+        auto u = Xh->element();
+        u.zero();
+
+        for(int i=0;i<N;i++)
+        {
+            BOOST_TEST_MESSAGE( "Test bdf initial settings" );
+            ts->setfileFormat(fileformat);
+            ts->setRestart(restart);
+            ts->setTimeInitial(20);
+            ts->setTimeFinal(100);
+            ts->setTimeStep(10);
+
+            ts->start(u);
+
+            BOOST_CHECK( ts->iteration() < ts->iterationNumber() );
+            BOOST_CHECK( ts->timeInitial() == 20 );
+            BOOST_CHECK( ts->timeFinal() == 100 );
+            BOOST_CHECK( ts->timeStep() == 10 );
+
+            for ( ; ts->isFinished() == false; ts->next() )
+            {
+                LOG(INFO) << "BDF forward iteration: " << ts->iteration() << ", time:" << ts->time();
+                const int iter = ts->iteration();
+                u.on(_range=elements(M_mesh), _expr=cst(iter) );
+            }
         }
     }
 
@@ -118,6 +151,24 @@ BOOST_AUTO_TEST_CASE( test_forward_single_restart)
 }
 
 BOOST_AUTO_TEST_CASE( test_forward_multi_restart )
+{
+    Test<2> t;
+    t.forward(2,true);
+}
+
+BOOST_AUTO_TEST_CASE( test_forward_load_single )
+{
+    Test<2> t;
+    t.forward(1,false);
+}
+
+BOOST_AUTO_TEST_CASE( test_forward_load_single_restart )
+{
+    Test<2> t;
+    t.forward(1,true);
+}
+
+BOOST_AUTO_TEST_CASE( test_forward_load_multi_restart )
 {
     Test<2> t;
     t.forward(2,true);
