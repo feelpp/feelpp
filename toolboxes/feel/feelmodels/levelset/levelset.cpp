@@ -814,12 +814,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     auto phi = this->phi();
     if( M_doSmoothGradient )
     {
-        *M_levelsetGradPhi = this->smootherVectorial()->derivate( idv(phi) );
+        //*M_levelsetGradPhi = this->smootherVectorial()->derivate( idv(phi) );
+        *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
     }
     else
     {
-        *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
-        //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+        //*M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+        *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
         //*M_levelsetGradPhi = vf::project( 
                 //_space=this->functionSpaceVectorial(),
                 //_range=elements(this->mesh()),
