@@ -1255,6 +1255,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
     auto const& phi = this->fieldSolution();
+    auto gradPhi = this->gradPhi();
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),
@@ -1266,7 +1267,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
             on( _range=markedfaces(mesh, bcMarker),
                     _element=phi,
                     _rhs=F,
-                    _expr=(idv(this->timeStepBDF()->polyDeriv())-gradv(phi)*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
+                    _expr=(idv(this->timeStepBDF()->polyDeriv())-trans(idv(gradPhi))*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
               );
     }
 
