@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
                            _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
     					   );
 
-    typedef FeelModels::LaminaCribrosa<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER, FEELPP_E_ORDER> lc_type;
-	// typedef FeelModels::MixedPoisson<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER, FEELPP_E_ORDER> mp_type;
+    typedef FeelModels::LaminaCribrosa<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER> lc_type;
+	// typedef FeelModels::MixedPoisson<FEELPP_DIM,FEELPP_ORDER, FEELPP_G_ORDER> mp_type;
 	
 	auto LC = lc_type::New("mixedpoisson");
 	
