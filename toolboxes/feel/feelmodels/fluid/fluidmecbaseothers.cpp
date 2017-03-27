@@ -2222,11 +2222,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
+        //        auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+        //    auto const& face = boost::unwrap_ref( *__face_it );
+        auto  const& face = boost::unwrap_ref( faceMarked );
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
                 //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             {
@@ -2239,7 +2240,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
                     dofdone[gdofVelFluid] = true;
                 }
             }
-        }
+            //}
     }
 #endif
     M_couplingFSI_RNG_matrix->close();
@@ -2267,11 +2268,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
+        // auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+            // auto const& face = *__face_it;
+            auto const& face = boost::unwrap_ref( faceMarked );
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
             {
                 for (uint16_type c1=0;c1<nDim;c1++)
@@ -2283,7 +2285,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
                     F->add( gdofVelFluid, -thevalue );
                     //dofdone[gdofVelFluid] = true;
                 }
-            }
+            // }
         }
     }
 #else
@@ -2291,12 +2293,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
-            //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
+        // auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+            auto const& face = boost::unwrap_ref( faceMarked );
+            // auto const& face = boost::unwrap_ref( *__face_it );
+           //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
             {
                 for (uint16_type c1=0;c1<nDim;c1++)
@@ -2313,7 +2316,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
                     dofdone[gdofVelFluid] = true;
                 }
             }
-        }
+        // }
     }
 #endif
 

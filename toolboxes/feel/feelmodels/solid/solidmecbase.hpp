@@ -199,12 +199,8 @@ public:
     typedef boost::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
 
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_visu_ho_type>::location_face_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::location_face_const_iterator> range_visu_boundaryfaces_ho_type;
+    typedef elements_reference_wrapper_t<mesh_visu_ho_type> range_visu_ho_type;
+    typedef faces_reference_wrapper_t<mesh_visu_ho_type> range_visu_boundaryfaces_ho_type;
 
     typedef OperatorInterpolation<space_displacement_type,
                                   space_vectorial_visu_ho_type,
@@ -291,15 +287,11 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_face_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_face_type;
     typedef OperatorInterpolation<space_vect_1dreduced_type, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
     typedef boost::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_1dreduced_type>::element_const_iterator,
-                         typename MeshTraits<mesh_1dreduced_type>::element_const_iterator> range_elt1d_reduced_type;
+    typedef elements_reference_wrapper_t<mesh_1dreduced_type> range_elt1d_reduced_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt1d_reduced_type> op_interpolation2dTo1d_normalstress_type;
     typedef boost::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 

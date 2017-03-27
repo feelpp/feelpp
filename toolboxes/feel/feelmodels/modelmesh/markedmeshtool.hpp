@@ -47,15 +47,16 @@ updateP0EltMarkerFromFaceRange( IteratorRange const& range, boost::shared_ptr<Sp
 {
     for ( auto itr = range.template get<1>(), enr = range.template get<2>() ; itr!=enr ; ++itr )
     {
-        if ( itr->isConnectedTo0() )
+        auto const& face = boost::unwrap_ref( *itr );
+        if ( face.isConnectedTo0() )
         {
-            auto const& elt = itr->element0();
+            auto const& elt = face.element0();
             const size_type thedof = XhP0->dof()->localToGlobal(elt,0,0).index();
             markEltVec->add(thedof, 1.);
         }
-        if ( itr->isConnectedTo1() )
+        if ( face.isConnectedTo1() )
         {
-            auto const& elt = itr->element1();
+            auto const& elt = face.element1();
             const size_type thedof = XhP0->dof()->localToGlobal(elt,0,0).index();
             markEltVec->add(thedof, 1.);
         }
