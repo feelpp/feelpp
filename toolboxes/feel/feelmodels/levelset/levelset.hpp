@@ -517,12 +517,21 @@ private:
 
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
+    LevelSetReinitMethod M_reinitMethod;
+    strategy_before_FM_type M_strategyBeforeFM;
+    bool M_useMarkerDiracAsMarkerDoneFM;
+
+    bool M_reinitInitialValue;
+
     bool M_hasReinitialized;
     bool M_hasReinitializedSmooth;
     int M_iterSinceReinit;
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
     //bool M_useSmoothReinitialization;
+    
+    element_levelset_ptrtype M_lastReinitializedPhi;
+    double M_lastReinitializationTime;
 
     //--------------------------------------------------------------------//
     // Backends
@@ -556,16 +565,6 @@ private:
     bool M_useAdaptiveThicknessInterface;
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
-
-    //--------------------------------------------------------------------//
-    // Reinitialization
-    LevelSetReinitMethod M_reinitMethod;
-    strategy_before_FM_type M_strategyBeforeFM;
-    bool M_useMarkerDiracAsMarkerDoneFM;
-    //int M_hjMaxIter;
-    //double M_hjDtau;
-    //double M_hjTol;
-    bool M_reinitInitialValue;
 
     //LevelSetTimeDiscretization M_discrMethod;
 
