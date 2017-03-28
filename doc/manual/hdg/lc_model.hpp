@@ -601,8 +601,11 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP1_exact =  expr(exAtMarker.expression());
 							exprP1_exact.setParameterValues( { {"t", this->time() } } );
 							auto P1_exact = exprP1_exact.evaluate();
-	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0])/P1_exact << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0])/P1_exact );
+							double mean_ex = std::abs(P1_exact);
+							if (mean_ex < 1e-10)
+								 mean_ex = 1;
+	    					Feel::cout << "||P1-P1_ex|=\t" << std::abs(P1_exact - M_statevar_solution[0])/mean_ex << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P1_error"),  std::abs(P1_exact - M_statevar_solution[0])/mean_ex );
 						}
 					}
 
@@ -614,8 +617,11 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP2_exact =  expr(exAtMarker.expression());
 							exprP2_exact.setParameterValues( { {"t", this->time() } } );
 							auto P2_exact = exprP2_exact.evaluate();
-	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1])/P2_exact << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1])/P2_exact );
+							double mean_ex = std::abs(P2_exact);
+							if (mean_ex < 1e-10)
+								 mean_ex = 1;
+	    					Feel::cout << "||P2-P2_ex|=\t" << std::abs(P2_exact - M_statevar_solution[1])/mean_ex << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P2_error"),  std::abs(P2_exact - M_statevar_solution[1])/mean_ex );
 						}
 					}
 
@@ -627,8 +633,11 @@ LaminaCribrosa<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_pt
 				           	auto exprP3_exact =  expr(exAtMarker.expression());
 							exprP3_exact.setParameterValues( { {"t", this->time() } } );
 							auto P3_exact = exprP3_exact.evaluate();
-	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2])/P3_exact << std::endl;
-		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2])/P3_exact );
+							double mean_ex = std::abs(P3_exact);
+							if (mean_ex < 1e-10)
+								 mean_ex = 1;
+	    					Feel::cout << "||P3-P3_ex|=\t" << std::abs(P3_exact - M_statevar_solution[2])/mean_ex << std::endl;
+		   					this->exporterMP() -> step( time )->add(prefixvm(this->prefix(), "P3_error"),  std::abs(P3_exact - M_statevar_solution[2])/mean_ex );
 							
 						}
 					}
@@ -754,7 +763,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::second_step()
 	    boost::numeric::odeint::integrate_const(stepper, ode_model(M_Cinv,M_A0d,M_g), M_statevar_solution, 
 		    	this->time(),		 				// initial time
 		    	this->time()+this->timeStep(), 		// final time
-		    	this->timeStep()					// time step 
+		    	this->timeStep()/50					// time step 
 				);		
 
 	    Feel::cout << "Pi1: \t" << M_statevar_solution[0] << std::endl;
