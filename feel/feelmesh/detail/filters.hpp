@@ -24,6 +24,8 @@
 #ifndef FEELPP_FEELMESH_DETAIL_FILTERS_HPP
 #define FEELPP_FEELMESH_DETAIL_FILTERS_HPP 1
 
+#include <feel/feelcore/unwrapptr.hpp>
+
 namespace Feel {
 
 #pragma GCC visibility push(hidden)
@@ -43,540 +45,344 @@ struct submeshrangetype
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      allelements( MeshType const& mesh, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_const_iterator,
+             typename MeshTraits<MeshType>::element_const_iterator>
+allelements( MeshType const& mesh )
 {
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              mesh.beginElement(),
-                              mesh.endElement() );
+                              Feel::unwrap_ptr( mesh ).beginElement(),
+                              Feel::unwrap_ptr( mesh ).endElement() );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      allelements( MeshType const& mesh,mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+elements( MeshType const& mesh, rank_type pid )
 {
-    return allelements( *mesh, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      elements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
-{
-
+    auto rangeElements = Feel::unwrap_ptr( mesh ).elementsWithProcessId( pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              mesh.beginElementWithProcessId( pid ),
-                              mesh.endElementWithProcessId( pid ) );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      elements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
-{
-    return elements( *mesh, pid, mpl::bool_<false>() );
-}
-
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid, mpl::bool_<false> )
-{
-    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.boundaryElements( entity_min_dim, entity_max_dim, pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid, mpl::bool_<true> )
-{
-    return boundaryelements( *mesh, entity_min_dim, entity_max_dim, pid, mpl::bool_<false>() );
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-      internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid )
 {
-    typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.internalElements( pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::location_element_const_iterator,
-      typename MeshTraits<MeshType>::location_element_const_iterator>
-      internalelements( MeshType const& mesh, rank_type pid, mpl::bool_<true> )
-{
-    return internalelements( *mesh, pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false>  )
-{
-    typedef typename MeshTraits<MeshType>::marker_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.elementsWithMarker( flag, pid );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).boundaryElements( entity_min_dim,entity_max_dim,pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker_element_const_iterator,
-      typename MeshTraits<MeshType>::marker_element_const_iterator>
-      markedelements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
-{
-    return markedelements( *mesh, flag, pid, mpl::bool_<false>() );
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator>
-      marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+internalelements( MeshType const& mesh, rank_type pid )
 {
-    typedef typename MeshTraits<MeshType>::marker2_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.elementsWithMarker2( flag, pid );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).internalElements( pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator,
-      typename MeshTraits<MeshType>::marker2_element_const_iterator>
-      marked2elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
-{
-    return marked2elements( *mesh, flag, pid, mpl::bool_<false>() );
+                              std::get<0>( rangeElements ),
+                              std::get<1>( rangeElements ),
+                              std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator>
-      marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+markedelements( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid  )
 {
-    typedef typename MeshTraits<MeshType>::marker3_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.elementsWithMarker3( flag, pid );
+    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, markersFlag, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              p.first, p.second );
+                              std::get<0>( rangeElementsWithMarker ),
+                              std::get<1>( rangeElementsWithMarker ),
+                              std::get<2>( rangeElementsWithMarker ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator,
-      typename MeshTraits<MeshType>::marker3_element_const_iterator>
-      marked3elements( MeshType const& mesh, flag_type flag, rank_type pid, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid  )
 {
-    return marked3elements( *mesh, flag, pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      idedelements( MeshType const& mesh, size_type id, mpl::bool_<false> )
-{
+    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              mesh.beginElementWithId( id ),
-                              mesh.endElementWithId( id ) );
+                              std::get<0>( rangeElementsWithMarker ),
+                              std::get<1>( rangeElementsWithMarker ),
+                              std::get<2>( rangeElementsWithMarker ) );
 }
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-      typename MeshTraits<MeshType>::element_const_iterator,
-      typename MeshTraits<MeshType>::element_const_iterator>
-      idedelements( MeshType const& mesh, size_type id, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
+idedelements( MeshType const& mesh, size_type id )
 {
-    return idedelements( *mesh, id, mpl::bool_<false>() );
+    auto rangeElementsWithId = Feel::unwrap_ptr( mesh ).elementsWithId( id );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              std::get<0>( rangeElementsWithId ),
+                              std::get<1>( rangeElementsWithId ),
+                              std::get<2>( rangeElementsWithId ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::pid_face_const_iterator,
-      typename MeshTraits<MeshType>::pid_face_const_iterator>
-      faces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+faces( MeshType const& mesh, rank_type __pid )
 {
-    typedef typename MeshTraits<MeshType>::pid_face_const_iterator pid_face_const_iterator;
-    pid_face_const_iterator it,en;
-    boost::tie( it, en ) = mesh.facesWithProcessId( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(), it, en );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::pid_face_const_iterator,
-      typename MeshTraits<MeshType>::pid_face_const_iterator>
-      faces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return faces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::face_const_iterator,
-      typename MeshTraits<MeshType>::face_const_iterator>
-      idedfaces( MeshType const& mesh, size_type id, mpl::bool_<false> )
-{
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).facesWithProcessId( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              mesh.beginFaceWithId( id ),
-                              mesh.endFaceWithId( id ) );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::face_const_iterator,
-      typename MeshTraits<MeshType>::face_const_iterator>
-      idedfaces( MeshType const& mesh, size_type id, mpl::bool_<true> )
-{
-    return idedfaces( *mesh, id, mpl::bool_<false>() );
+                              std::get<0>( rangeFaces ),
+                              std::get<1>( rangeFaces ),
+                              std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker_face_const_iterator,
-      typename MeshTraits<MeshType>::marker_face_const_iterator>
-      markedfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+idedfaces( MeshType const& mesh, size_type id )
 {
-    typedef typename MeshTraits<MeshType>::marker_face_const_iterator iterator;
-    auto beg = mesh.beginFaceWithMarker();
-    auto end = mesh.endFaceWithMarker();
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).facesWithId( id );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              beg, end );
+                              std::get<0>( rangeFaces ),
+                              std::get<1>( rangeFaces ),
+                              std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker_face_const_iterator,
-      typename MeshTraits<MeshType>::marker_face_const_iterator>
-      markedfaces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid )
 {
-    typedef typename MeshTraits<MeshType>::marker_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.facesWithMarker( __marker, __pid );
+    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
+                              std::get<0>( rangeMarkedFaces ),
+                              std::get<1>( rangeMarkedFaces ),
+                              std::get<2>( rangeMarkedFaces ) );
+
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator>
-      marked2faces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
 {
-    typedef typename MeshTraits<MeshType>::marker2_face_const_iterator iterator;
-    auto beg = mesh.beginFaceWithMarker2();
-    auto end = mesh.endFaceWithMarker2();
+    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, markersFlag, pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              beg, end );
+                              std::get<0>( rangeMarkedFaces ),
+                              std::get<1>( rangeMarkedFaces ),
+                              std::get<2>( rangeMarkedFaces ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator>
-      marked2faces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+boundaryfaces( MeshType const& mesh, rank_type __pid  )
 {
-    typedef typename MeshTraits<MeshType>::marker2_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.facesWithMarker2( __marker, __pid );
+    auto rangeBoundaryFaces = Feel::unwrap_ptr( mesh ).facesOnBoundary( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
+                              std::get<0>( rangeBoundaryFaces ),
+                              std::get<1>( rangeBoundaryFaces ),
+                              std::get<2>( rangeBoundaryFaces ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator>
-      marked3faces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+internalfaces( MeshType const& mesh, rank_type __pid )
 {
-    typedef typename MeshTraits<MeshType>::marker3_face_const_iterator iterator;
-    auto beg = mesh.beginFaceWithMarker3();
-    auto end = mesh.endFaceWithMarker3();
+    auto rangeInternalFaces = Feel::unwrap_ptr( mesh ).internalFaces( __pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              beg, end );
+                              std::get<0>( rangeInternalFaces ),
+                              std::get<1>( rangeInternalFaces ),
+                              std::get<2>( rangeInternalFaces ) );
+
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator>
-      marked3faces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
+interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
 {
-    typedef typename MeshTraits<MeshType>::marker3_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.facesWithMarker3( __marker, __pid );
+    auto rangeInterprocessFaces = Feel::unwrap_ptr( mesh ).interProcessFaces( neighbor_pid );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker_face_const_iterator,
-      typename MeshTraits<MeshType>::marker_face_const_iterator>
-      markedfaces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<true> )
-{
-    return markedfaces( *mesh,  __marker, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker_face_const_iterator,
-      typename MeshTraits<MeshType>::marker_face_const_iterator>
-      markedfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return markedfaces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator>
-      marked2faces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<true> )
-{
-    return marked2faces( *mesh,  __marker, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator,
-      typename MeshTraits<MeshType>::marker2_face_const_iterator>
-      marked2faces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return marked2faces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator>
-      marked3faces( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<true> )
-{
-    return marked3faces( *mesh,  __marker, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator,
-      typename MeshTraits<MeshType>::marker3_face_const_iterator>
-      marked3faces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return marked3faces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      boundaryfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<false>  )
-{
-    typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.facesOnBoundary( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      boundaryfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<true>  )
-{
-    return boundaryfaces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
-{
-
-    typedef typename MeshTraits<MeshType>::location_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.internalFaces( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::location_face_const_iterator,
-      typename MeshTraits<MeshType>::location_face_const_iterator>
-      internalfaces( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return internalfaces( *mesh, __pid, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::interprocess_face_const_iterator,
-      typename MeshTraits<MeshType>::interprocess_face_const_iterator>
-      interprocessfaces( MeshType const& mesh, rank_type neighbor_pid, mpl::bool_<false> )
-{
-
-    typedef typename MeshTraits<MeshType>::interprocess_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.interProcessFaces( neighbor_pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_FACES>,
-      typename MeshTraits<MeshType>::interprocess_face_const_iterator,
-      typename MeshTraits<MeshType>::interprocess_face_const_iterator>
-      interprocessfaces( MeshType const& mesh, rank_type neighbor_pid, mpl::bool_<true> )
-{
-    return interprocessfaces( *mesh, neighbor_pid, mpl::bool_<false>() );
-
+                              std::get<0>( rangeInterprocessFaces ),
+                              std::get<1>( rangeInterprocessFaces ),
+                              std::get<2>( rangeInterprocessFaces ) );
 }
 
 template<typename MeshType>
 decltype(auto)
-edges( MeshType const& mesh, rank_type __pid, mpl::bool_<false> )
+edges( MeshType const& mesh, rank_type __pid )
 {
-    auto r = mesh.edgesWithProcessId( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), r.first, r.second );
-}
-template<typename MeshType>
-decltype(auto)
-edges( MeshType const& mesh, rank_type __pid, mpl::bool_<true> )
-{
-    return edges( *mesh, __pid, mpl::bool_<false>() );
+    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithProcessId( __pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                              std::get<0>( rangeMarkedEdges ),
+                              std::get<1>( rangeMarkedEdges ),
+                              std::get<2>( rangeMarkedEdges ) );
 }
 
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::marker_edge_const_iterator,
-      typename MeshTraits<MeshType>::marker_edge_const_iterator>
-      markededges( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+markededges( MeshType const& mesh, uint16_type markerType, rank_type pid )
 {
-    typedef typename MeshTraits<MeshType>::marker_edge_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.edgesWithMarker( __marker, __pid );
+    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              p.first, p.second );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::marker_edge_const_iterator,
-      typename MeshTraits<MeshType>::marker_edge_const_iterator>
-      markededges( MeshType const& mesh, flag_type __marker, rank_type __pid, mpl::bool_<true> )
-{
-    return markededges( *mesh, __marker, __pid, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::location_edge_const_iterator,
-      typename MeshTraits<MeshType>::location_edge_const_iterator>
-      boundaryedges( MeshType const& mesh, mpl::bool_<false> )
-{
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              mesh.beginEdgeOnBoundary(),
-                              mesh.endEdgeOnBoundary() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::location_edge_const_iterator,
-      typename MeshTraits<MeshType>::location_edge_const_iterator>
-      boundaryedges( MeshType const& mesh, mpl::bool_<true> )
-{
-    return boundaryedges( *mesh, mpl::bool_<false>() );
+                              std::get<0>( rangeMarkedEdges ),
+                              std::get<1>( rangeMarkedEdges ),
+                              std::get<2>( rangeMarkedEdges ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::location_edge_const_iterator,
-      typename MeshTraits<MeshType>::location_edge_const_iterator>
-      internaledges( MeshType const& mesh, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+markededges( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
 {
-    return internaledges( mesh, mpl::bool_<false>() );
+    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithMarkerByType( markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                              std::get<0>( rangeMarkedEdges ),
+                              std::get<1>( rangeMarkedEdges ),
+                              std::get<2>( rangeMarkedEdges ) );
 }
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::location_edge_const_iterator,
-      typename MeshTraits<MeshType>::location_edge_const_iterator>
-      internaledges( MeshType const& mesh, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+boundaryedges( MeshType const& mesh )
 {
+    auto rangeBoundaryEdges = Feel::unwrap_ptr( mesh ).edgesOnBoundary();
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              mesh.beginInternalEdge(),
-                              mesh.endInternalEdge() );
+                              std::get<0>( rangeBoundaryEdges ),
+                              std::get<1>( rangeBoundaryEdges ),
+                              std::get<2>( rangeBoundaryEdges ) );
 }
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+internaledges( MeshType const& mesh )
+{
+    auto rangeInternalEdges = Feel::unwrap_ptr( mesh ).internalEdges();
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                              std::get<0>( rangeInternalEdges ),
+                              std::get<1>( rangeInternalEdges ),
+                              std::get<2>( rangeInternalEdges ) );
+}
+
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_const_iterator,
              typename MeshTraits<MeshType>::point_const_iterator>
-points( MeshType const& mesh, mpl::bool_<false> )
+allpoints( MeshType const& mesh )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPoint(),
-                              mesh.endPoint() );
+                              Feel::unwrap_ptr( mesh ).beginPoint(),
+                              Feel::unwrap_ptr( mesh ).endPoint() );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::point_const_iterator,
-      typename MeshTraits<MeshType>::point_const_iterator>
-      points( MeshType const& mesh, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+points( MeshType const& mesh )
 {
-    return points( *mesh, mpl::bool_<false>() );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marker_point_const_iterator,
-      typename MeshTraits<MeshType>::marker_point_const_iterator>
-      markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
-{
+    auto rangePoints = Feel::unwrap_ptr( mesh ).pointsWithProcessId();
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPointWithMarker( flag ),
-                              mesh.endPointWithMarker( flag ) );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marker_point_const_iterator,
-      typename MeshTraits<MeshType>::marker_point_const_iterator>
-      markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<true> )
-{
-    return markedpoints( *mesh, flag, mpl::bool_<false>() );
+                              std::get<0>( rangePoints ),
+                              std::get<1>( rangePoints ),
+                              std::get<2>( rangePoints ) );
 }
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      boundarypoints( MeshType const& mesh, mpl::bool_<false> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, uint16_type markerType, rank_type pid )
 {
+    auto rangePointsWithMarker = Feel::unwrap_ptr( mesh ).pointsWithMarkerByType( markerType, pid );
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginPointOnBoundary( ),
-                              mesh.endPointOnBoundary() );
+                              std::get<0>( rangePointsWithMarker ),
+                              std::get<1>( rangePointsWithMarker ),
+                              std::get<2>( rangePointsWithMarker ) );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      boundarypoints( MeshType const& mesh, mpl::bool_<true> )
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
 {
-    return boundarypoints( *mesh, mpl::bool_<false>() );
-}
-
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      internalpoints( MeshType const& mesh, mpl::bool_<true> )
-{
-    return internalpoints( *mesh, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      internalpoints( MeshType const& mesh, mpl::bool_<false> )
-{
+    auto rangePointsWithMarker = Feel::unwrap_ptr( mesh ).pointsWithMarkerByType( markerType, markersFlag, pid );
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mesh.beginInternalPoint( ),
-                              mesh.endInternalPoint() );
+                              std::get<0>( rangePointsWithMarker ),
+                              std::get<1>( rangePointsWithMarker ),
+                              std::get<2>( rangePointsWithMarker ) );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+boundarypoints( MeshType const& mesh )
+{
+    auto rangeBoundaryPoints = Feel::unwrap_ptr( mesh ).boundaryPoints();
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
+                              std::get<0>( rangeBoundaryPoints ),
+                              std::get<1>( rangeBoundaryPoints ),
+                              std::get<2>( rangeBoundaryPoints ) );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+internalpoints( MeshType const& mesh )
+{
+    auto rangeInternalPoints = Feel::unwrap_ptr( mesh ).internalPoints();
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
+                              std::get<0>( rangeInternalPoints ),
+                              std::get<1>( rangeInternalPoints ),
+                              std::get<2>( rangeInternalPoints ) );
 }
 
 } // detail

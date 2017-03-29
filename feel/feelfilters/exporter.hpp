@@ -37,24 +37,10 @@
 #include <feel/feelcore/singleton.hpp>
 
 #include <feel/feeldiscr/timeset.hpp>
+#include <feel/feelfilters/enums.hpp>
 
 namespace Feel
 {
-enum ExporterGeometry
-{
-    EXPORTER_GEOMETRY_STATIC = 0,
-    EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY = 1,
-    EXPORTER_GEOMETRY_CHANGE = 2
-
-};
-/**
- * \enum
- */
-enum file_type
-{
-    ASCII  = 0,
-    BINARY = 1
-};
 
 /**
  * \class Exporter
@@ -244,7 +230,7 @@ public:
     /**
      * \return the file type format (ASCII or BINARY)
      */
-    file_type fileType() const
+    FileType fileType() const
     {
         return M_ft;
     }
@@ -347,7 +333,7 @@ public:
     /**
      * set the \p file type to \p __ft (binary or ascii)
      */
-    Exporter<MeshType,N>* setFileType( file_type __ft )
+    Exporter<MeshType,N>* setFileType( FileType __ft )
     {
         M_ft = __ft;
         return this;
@@ -531,7 +517,7 @@ protected:
     std::string M_prefix;
     int M_freq;
     mutable int M_cptOfSave;
-    file_type M_ft;
+    FileType M_ft;
     std::string M_path;
     ExporterGeometry M_ex_geometry;
 

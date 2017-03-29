@@ -8592,6 +8592,50 @@ template struct IMTetrahedra<19,double>;
 template struct IMTetrahedra<20,double>;
 template struct IMTetrahedra<21,double>;
 
+template struct IMTriangle<0,float>;
+template struct IMTriangle<1,float>;
+template struct IMTriangle<2,float>;
+template struct IMTriangle<3,float>;
+template struct IMTriangle<4,float>;
+template struct IMTriangle<5,float>;
+template struct IMTriangle<6,float>;
+template struct IMTriangle<7,float>;
+template struct IMTriangle<8,float>;
+template struct IMTriangle<9,float>;
+template struct IMTriangle<10,float>;
+template struct IMTriangle<11,float>;
+template struct IMTriangle<12,float>;
+template struct IMTriangle<13,float>;
+template struct IMTriangle<14,float>;
+template struct IMTriangle<15,float>;
+template struct IMTriangle<16,float>;
+template struct IMTriangle<17,float>;
+template struct IMTriangle<18,float>;
+template struct IMTriangle<19,float>;
+template struct IMTriangle<20,float>;
+
+template struct IMTetrahedra<0,float>;
+template struct IMTetrahedra<1,float>;
+template struct IMTetrahedra<2,float>;
+template struct IMTetrahedra<3,float>;
+template struct IMTetrahedra<4,float>;
+template struct IMTetrahedra<5,float>;
+template struct IMTetrahedra<6,float>;
+template struct IMTetrahedra<7,float>;
+template struct IMTetrahedra<8,float>;
+template struct IMTetrahedra<9,float>;
+template struct IMTetrahedra<10,float>;
+template struct IMTetrahedra<11,float>;
+template struct IMTetrahedra<12,float>;
+template struct IMTetrahedra<13,float>;
+template struct IMTetrahedra<14,float>;
+template struct IMTetrahedra<15,float>;
+template struct IMTetrahedra<16,float>;
+template struct IMTetrahedra<17,float>;
+template struct IMTetrahedra<18,float>;
+template struct IMTetrahedra<19,float>;
+template struct IMTetrahedra<20,float>;
+template struct IMTetrahedra<21,float>;
 
 
 } // detail
