@@ -530,9 +530,6 @@ private:
     std::vector<int> M_vecIterSinceReinit;
     //bool M_useSmoothReinitialization;
     
-    element_levelset_ptrtype M_lastReinitializedPhi;
-    double M_lastReinitializationTime;
-
     //--------------------------------------------------------------------//
     // Backends
     backend_ptrtype M_backend_smooth;
