@@ -60,16 +60,18 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    auto it = M_functionspace->mesh()->beginElementWithProcessId();
-    auto en = M_functionspace->mesh()->endElementWithProcessId();
+    // auto it = M_functionspace->mesh()->beginElementWithProcessId();
+    // auto en = M_functionspace->mesh()->endElementWithProcessId();
 
     // create the first neighbours data structure (M_neighbors)
-    for ( ; it!=en ; ++it )
+    // for ( ; it!=en ; ++it )
+    for ( auto const& eltWrap : elements( M_functionspace->mesh() ) )
         {
+            auto const& elt = boost::unwrap_ref( eltWrap );
             std::vector<size_type> indices( ndofv );
             for ( uint16_type j = 0; j < ndofv;++j )
                 {
-                  size_type index = M_functionspace->dof()->localToGlobal(*it, j, 0).index();
+                  size_type index = M_functionspace->dof()->localToGlobal(elt, j, 0).index();
 
                   if (M_functionspace->dof()->dofGlobalProcessIsGhost( index ))
                   {
@@ -120,7 +122,7 @@ createPeriodicCorrespondanceTable()
     for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( *it, k, 0 ) );
+                const size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
                 const size_type idOnCluster = processorToCluster(index);
                 const node_type coordPointPlusTrans = get<0>( M_functionspace->dof()->dofPoint( index ) ) + M_translation;
 
@@ -163,7 +165,7 @@ createPeriodicCorrespondanceTable()
     for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type indexTag2 = boost::get<0>( M_functionspace->dof()->localToGlobal( *it, k, 0 ) );
+                const size_type indexTag2 = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
                 if ( ! dofTag2Done.count( indexTag2 ) )
                     {
                         const size_type globalIndexTag2 = processorToCluster( indexTag2 );
@@ -352,31 +354,39 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     /* VD, sometime, I need to give myself the elements which are already done, thus use marker2*/
     if (useMarker2AsDoneMarker)
       {
-        auto it_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).first;
-        auto en_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).second;
+        auto rangeMarked2Elements = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank());
+        auto it_marked = std::get<0>( rangeMarked2Elements );
+        auto en_marked = std::get<1>( rangeMarked2Elements );
 
         for ( ; it_marked!=en_marked ; ++it_marked )
+        {
+            auto const& elt = boost::unwrap_ref( *it_marked );
           for ( uint16_type j = 0; j < ndofv; ++j )
             {
-              size_type index = M_functionspace->dof()->localToGlobal(*it_marked, j, 0).index();
+              size_type index = M_functionspace->dof()->localToGlobal( elt, j, 0).index();
               done.insert( index );
               status[index] = DONE;
             }
+        }
       }
 
     else
         {
-          auto it = M_functionspace->mesh()->beginElementWithProcessId();
-          auto en = M_functionspace->mesh()->endElementWithProcessId();
+            auto rangeElements = M_functionspace->mesh()->elementsWithProcessId();
+            auto it = std::get<0>( rangeElements );
+            auto en = std::get<1>( rangeElements );
+          // auto it = M_functionspace->mesh()->beginElementWithProcessId();
+          // auto en = M_functionspace->mesh()->endElementWithProcessId();
 
             for ( ; it!=en ; ++it )
                 {
+                    auto const& elt = boost::unwrap_ref( *it );
                     uint16_type nPlus = 0;
                     uint16_type nMinus = 0;
                     std::vector<size_type> indices( ndofv );
                     for ( uint16_type j = 0; j < ndofv; ++j )
                         {
-                            size_type index = M_functionspace->dof()->localToGlobal(*it, j, 0).index();
+                            size_type index = M_functionspace->dof()->localToGlobal(elt, j, 0).index();
                             indices[j] = index;
                             if ( phi[index] < 0.0 )
                                 ++nMinus;

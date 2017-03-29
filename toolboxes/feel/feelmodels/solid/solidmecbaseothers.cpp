@@ -1021,8 +1021,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     matrixN_type sigma_eigen_matrix;
 
     auto dof = M_XhStressTensor->dof();
-    for ( auto const& elt : elements(this->mesh()) )
+    for ( auto const& eltWrap : elements(this->mesh()) )
     {
+        auto const& elt = boost::unwrap_ref( eltWrap );
         int nLocDofPerComp = dof->nLocalDof( true );
         for ( size_type j =0; j < nLocDofPerComp;++j )
         {

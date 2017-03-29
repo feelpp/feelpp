@@ -37,7 +37,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     :
     M_worldComm( world ),
     M_params( world ),
-    M_bc( world ),
+    M_bc( world, false ),
+    M_ic( world, false ),
     M_postproc( world )
 {
     if ( !fs::exists( filename ) ) 

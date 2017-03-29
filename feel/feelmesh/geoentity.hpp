@@ -43,14 +43,17 @@ namespace Feel
    @author Christophe Prud'homme
    @see
 */
-template<typename Entity>
+template<typename Entity, typename T = double>
 class GeoEntity
     :
-    boost::equality_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity> >,
-    boost::less_than_comparable<GeoEntity<Entity>, size_type>,
+    boost::equality_comparable<GeoEntity<Entity,T> >,
+    boost::less_than_comparable<GeoEntity<Entity,T> >,
+    boost::less_than_comparable<GeoEntity<Entity,T>, size_type>,
     public Entity
 {
+    static const uint16_type nBitShiftedGeoEntityContext = 0;
+    static const uint16_type nBitShiftedReferenceGeometry = 2;
+    static const uint16_type nBitShiftedReferenceShapes = 8;
 public:
 
 
@@ -59,8 +62,9 @@ public:
     //@{
 
     typedef Entity super;
-    typedef GeoEntity<Entity> GeoShape;
-    typedef GeoEntity<Entity> self_type;
+    typedef GeoEntity<Entity,T> GeoShape;
+    typedef GeoEntity<Entity,T> self_type;
+    typedef T value_type;
     typedef typename super::topological_face_type face_type;
     typedef face_type GeoBShape;
     typedef typename Entity::edge_permutation_type edge_permutation_type;
@@ -95,13 +99,13 @@ public:
     /**
      * helper class to construct the associated reference convex.
      */
-    template<typename T = double>
+    template<typename TT = double>
     struct reference_convex
     {
-        typedef Reference<Entity, nDim, nOrder, nRealDim, T> type;
+        typedef Reference<Entity, nDim, nOrder, nRealDim, TT> type;
     };
-    template<typename T = double>
-    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, T>;
+    template<typename TT = double>
+    using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, TT>;
 
     //@}
 
@@ -113,9 +117,7 @@ public:
         :
         super(),
         M_id( 0 ),
-        M_entity( MESH_ENTITY_INTERNAL ),
-        M_geometry( Geometry ),
-        M_shape( Shape ),
+        M_entity( (MESH_ENTITY_INTERNAL<<nBitShiftedGeoEntityContext) | (Geometry<<nBitShiftedReferenceGeometry) | (Shape<<nBitShiftedReferenceShapes) ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
@@ -132,9 +134,7 @@ public:
         :
         super(),
         M_id( i ),
-        M_entity( context ),
-        M_geometry( geometry ),
-        M_shape( shape ),
+        M_entity( (context<<nBitShiftedGeoEntityContext) | (geometry<<nBitShiftedReferenceGeometry) | (shape<<nBitShiftedReferenceShapes) ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
         M_pidInPartition( invalid_rank_type_value ),
@@ -150,8 +150,6 @@ public:
         super( std::move( __me ) ),
         M_id( std::move( __me.M_id ) ),
         M_entity( std::move( __me.M_entity ) ),
-        M_geometry( std::move( __me.M_geometry ) ),
-        M_shape( std::move( __me.M_shape ) ),
         M_boundaryEntityDimension( std::move( __me.M_boundaryEntityDimension ) ),
         M_pid( std::move( __me.M_pid ) ),
         M_pidInPartition( std::move( __me.M_pidInPartition ) ),
@@ -168,8 +166,6 @@ public:
             super::operator=( std::move( __me ) );
             M_id= std::move( __me.M_id );
             M_entity= std::move( __me.M_entity );
-            M_geometry= std::move( __me.M_geometry );
-            M_shape= std::move( __me.M_shape );
             M_boundaryEntityDimension= std::move( __me.M_boundaryEntityDimension );
             M_pid= std::move( __me.M_pid );
             M_pidInPartition= std::move( __me.M_pidInPartition );
@@ -305,7 +301,7 @@ public:
      */
     bool hasShape( size_type __shape ) const
     {
-        return M_shape.test( __shape );
+        return M_entity.test( __shape << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -313,7 +309,7 @@ public:
      */
     bool isAVolume() const
     {
-        return M_geometry.test( GEOMETRY_VOLUME );
+        return M_entity.test( GEOMETRY_VOLUME << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -321,7 +317,7 @@ public:
      */
     bool isASurface() const
     {
-        return M_geometry.test( GEOMETRY_SURFACE );
+        return M_entity.test( GEOMETRY_SURFACE << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -329,7 +325,7 @@ public:
      */
     bool isALine() const
     {
-        return M_geometry.test( GEOMETRY_LINE );
+        return M_entity.test( GEOMETRY_LINE << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -337,7 +333,7 @@ public:
      */
     bool isAPoint() const
     {
-        return M_geometry.test( GEOMETRY_POINT );
+        return M_entity.test( GEOMETRY_POINT << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -345,7 +341,7 @@ public:
      */
     bool isAPointShape() const
     {
-        return M_shape.test( SHAPE_POINT );
+        return M_entity.test( SHAPE_POINT << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -353,7 +349,7 @@ public:
      */
     bool isALineShape() const
     {
-        return M_shape.test( SHAPE_LINE );
+        return M_entity.test( SHAPE_LINE << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -361,7 +357,7 @@ public:
      */
     bool isATriangleShape() const
     {
-        return M_shape.test( SHAPE_TRIANGLE );
+        return M_entity.test( SHAPE_TRIANGLE << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -369,7 +365,7 @@ public:
      */
     bool isAQuadrangleShape() const
     {
-        return M_shape.test( SHAPE_QUAD );
+        return M_entity.test( SHAPE_QUAD << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -377,7 +373,7 @@ public:
      */
     bool isATetrahedraShape() const
     {
-        return M_shape.test( SHAPE_TETRA );
+        return M_entity.test( SHAPE_TETRA << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -385,7 +381,7 @@ public:
      */
     bool isAHexahedraShape() const
     {
-        return M_shape.test( SHAPE_HEXA );
+        return M_entity.test( SHAPE_HEXA << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -393,7 +389,7 @@ public:
      */
     bool isLinear() const
     {
-        return M_shape.test( SHAPE_LINEAR );
+        return M_entity.test( SHAPE_LINEAR << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -401,7 +397,7 @@ public:
      */
     bool isBilinear() const
     {
-        return M_shape.test( SHAPE_BILINEAR );
+        return M_entity.test( SHAPE_BILINEAR << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -409,7 +405,7 @@ public:
      */
     bool isQuadratic() const
     {
-        return M_shape.test( SHAPE_QUADRATIC );
+        return M_entity.test( SHAPE_QUADRATIC << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -417,7 +413,7 @@ public:
      */
     bool isInternal() const
     {
-        return M_entity.test( MESH_ENTITY_INTERNAL );
+        return M_entity.test( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
     }
 
 
@@ -427,7 +423,7 @@ public:
      */
     bool isOnBoundary() const noexcept
     {
-        return M_entity.test( MESH_ENTITY_BOUNDARY );
+        return M_entity.test( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
     }
 
     /**
@@ -605,7 +601,7 @@ public:
     /**
      * \return the measure of the entity
      */
-    virtual double measure() const = 0;
+    virtual value_type measure() const = 0;
 
     //@}
 
@@ -625,13 +621,13 @@ public:
     {
         if ( b )
         {
-            M_entity.set( MESH_ENTITY_BOUNDARY );
-            M_entity.clear( MESH_ENTITY_INTERNAL );
+            M_entity.set( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
+            M_entity.clear( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
         }
         else
         {
-            M_entity.clear( MESH_ENTITY_BOUNDARY );
-            M_entity.set( MESH_ENTITY_INTERNAL );
+            M_entity.clear( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
+            M_entity.set( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
         }
         M_boundaryEntityDimension = ent_d;
     }
@@ -787,12 +783,6 @@ private:
             ar & M_entity;
             DVLOG(2) << "  - entity:" << M_entity.context() << "\n";
             DVLOG(2) << "  - geometry...\n";
-            ar & M_geometry;
-            DVLOG(2) << "  - geometry:" << M_geometry.context() << "\n";
-            DVLOG(2) << "  - shape...\n";
-            ar & M_shape;
-            DVLOG(2) << "  - shape:" << M_shape.context() << "\n";
-            DVLOG(2) << "  - pid...\n";
             ar & M_pid;
             DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
@@ -805,9 +795,8 @@ private:
 
     size_type M_id;
 
-    Context M_entity;
-    Context M_geometry;
-    Context M_shape;
+    //! 2 bits GeoEntityContext, 6 bits ReferenceGeometry, 13 bits ReferenceShapes
+    meta::Context<uint32_type> M_entity;
 
     //! maximum dimension of the entity touching the boundary within the element
     uint16_type M_boundaryEntityDimension;
