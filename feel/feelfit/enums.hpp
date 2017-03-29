@@ -36,12 +36,7 @@ enum InterpolationType
   Akima
 };
 
-std::map<std::string, InterpolationType> InterpolationTypeMap = {
-    {"P0", InterpolationType::P0},
-    {"P1", InterpolationType::P1},
-    {"Spline", InterpolationType::Spline },
-    {"Akima", InterpolationType::Akima }
-};
+extern std::map<std::string, InterpolationType> InterpolationTypeMap;
 
 /*
  * left : f(x_{i-1} < x < x_i     ) = x_i
