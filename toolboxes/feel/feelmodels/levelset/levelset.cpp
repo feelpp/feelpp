@@ -112,10 +112,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     super_type::init( true, this->shared_from_this() );
     M_timeOrder = this->timeStepBDF()->timeOrder(); 
 
-    // Init default "last-reinitialization" data
-    *M_lastReinitializedPhi = *this->phi();
-    M_lastReinitializationTime = this->timeInitial();
-
     // Init modGradPhi advection
     if( M_useGradientAugmented )
     {
@@ -396,8 +392,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
     M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
     M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
-
-    M_lastReinitializedPhi.reset( new element_levelset_type(this->functionSpace(), "LastReinitializedPhi") );
 
     if( M_useGradientAugmented )
     {
@@ -1270,13 +1264,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
 
     for( auto const& bcMarker: this->M_bcMarkersInflow )
     {
-        //Feel::cout << "inflow bc on " << bcMarker << " with t = " << (this->time()-M_lastReinitializationTime) << std::endl;
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, bcMarker),
                     _element=phi,
                     _rhs=F,
-                    //_expr=(idv(this->timeStepBDF()->polyDeriv())-trans(idv(gradPhi))*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
-                    _expr=idv(M_lastReinitializedPhi) - gradv(M_lastReinitializedPhi)*idv(this->fieldAdvectionVelocity())*(this->time()-M_lastReinitializationTime)
+                    _expr=(idv(this->timeStepBDF()->polyDeriv())-trans(idv(gradPhi))*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
               );
     }
 
@@ -1472,9 +1464,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
     }
 
     *phi = M_reinitializer->run( *phiReinit );
-
-    *M_lastReinitializedPhi = *phi;
-    M_lastReinitializationTime = this->time();
 
     //*phiReinit = M_reinitializer->run( *phiReinit );
     //if( useSmoothReinit )
