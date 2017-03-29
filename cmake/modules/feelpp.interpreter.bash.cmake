@@ -21,16 +21,16 @@ subdirlist( FEELPP_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/feel )
 # Script head.
 file( WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "#!/usr/bin/env bash
-printf \"\n \e[1m\e[1;31m
+printf \"\\\n\\e[1m\\e[1;31m\
  _____ _____ _____ __      _     _
 |   __|   __|   __|  |   _| |_ _| |
 |   __|   __|   __|  |__|_   _|_   _|
 |__|  |_____|_____|_____| |_|   |_|
-\e[0m \e[1m\e[1;36m
+\\e[0m \\e[1m\\e[1;36m
 Feel++ interpreter (cling based)
 For more infos, see www.feelpp.org
 Type '.help' for help, '.q' to exit
-
+\\e[0m
 \"
 "
 )
@@ -66,8 +66,8 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 -DFEELPP_HAS_PETSC \\
 -DFEELPP_HAS_PETSC_H \\
 -DGFLAGS_IS_A_DLL=0 \\
--DGOOGLE_GLOG_DLL_DECL="" \\
--DGOOGLE_GLOG_DLL_DECL_FOR_UNITTESTS="" \\
+-DGOOGLE_GLOG_DLL_DECL=\"\" \\
+-DGOOGLE_GLOG_DLL_DECL_FOR_UNITTESTS=\"\" \\
 -DHAVE_LIBDL \\
 -DIN_GINAC \\
 "
@@ -154,8 +154,6 @@ endforeach()
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "--std=c++${FEELPP_STD_CPP} \\
 -ftemplate-depth=1024 \\
-${MPI_CXX_COMPILE_FLAGS} \\
-${MPI_CXX_LINK_FLAGS} \\
 -lfeelpp_metis \\
 -lfeelpp_nlopt \\
 -lfeelpp_ginac \\
