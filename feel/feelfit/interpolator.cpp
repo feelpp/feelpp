@@ -29,6 +29,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Feel
 {
 
+std::map<std::string, InterpolationType> InterpolationTypeMap = {
+    {"P0", InterpolationType::P0},
+    {"P1", InterpolationType::P1},
+    {"Spline", InterpolationType::Spline },
+    {"Akima", InterpolationType::Akima }
+};
+
 std::unique_ptr<Interpolator> Interpolator::New( InterpolationType type, std::vector<pair_type> const& data )
 {
     switch ( type )
