@@ -869,8 +869,9 @@ fit_options( std::string const& prefix )
 {
     po::options_description _options( "Fit " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"fit.datafile" ).c_str(), Feel::po::value<std::string>()->default_value( "$cfgdir/data.txt" ), "X - f(X) data file measures" )
+        ( prefixvm( prefix,"fit.datafile" ).c_str(), Feel::po::value<std::string>(), "X - f(X) data file measures" )
         ( prefixvm( prefix,"fit.kind" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Kind of interpolator : P0 (=0), P1 (=1), Spline (=2), Akima (=3)" )
+        ( prefixvm( prefix,"fit.type" ).c_str(), Feel::po::value<std::string>()->default_value( "Akima" ), "type of interpolator : P0 , P1, Spline, Akima" )
         ( prefixvm( prefix,"fit.P0" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "left = 0, right = 1, center = 2" )
         ( prefixvm( prefix,"fit.P1_right" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "zero = 0, constant = 1, extrapol = 2" )
         ( prefixvm( prefix,"fit.P1_left" ).c_str(), Feel::po::value<int>()->default_value( 1  ), "zero = 0, constant = 1, extrapol = 2" )

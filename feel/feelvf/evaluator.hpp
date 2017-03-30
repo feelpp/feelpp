@@ -91,7 +91,8 @@ public:
 
     typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
     typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
-    typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_type;
+    typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_fromiterator_type;
+    typedef typename boost::remove_const< typename boost::remove_reference< mesh_element_fromiterator_type >::type >::type mesh_element_type;
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_<mpl::bool_<mesh_element_type::is_simplex>,
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
@@ -248,8 +249,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
 
 
-    gm_context_ptrtype __c( new gm_context_type( initElt.gm(),*it,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( initElt.gm1(),*it,__geopc1 ) );
+    gm_context_ptrtype __c( new gm_context_type( initElt.gm(), initElt,__geopc ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( initElt.gm1(),initElt,__geopc1 ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );

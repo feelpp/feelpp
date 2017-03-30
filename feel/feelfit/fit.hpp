@@ -22,7 +22,7 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "interpolator.hpp"
+#include <feel/feelfit/interpolator.hpp>
 
 #ifndef FEELPP_FIT_HPP
 #define FEELPP_FIT_HPP 1
@@ -31,41 +31,62 @@ namespace Feel
 {
 namespace vf
 {
-template<typename ExprT>
-    class Fit
-    {
-    public:
+template<typename ExprT, int InterpOperator>
+class Fit
+{
+public:
     typedef ExprT expression_type;
-    
+
     // list of mathematical objet that has to be precomputed
     static const size_type context = expression_type::context;
     // idv(T) is terminal
     // idv(T)+idv(T) is not
     // That is for optimisation
     // if not know: false
-    static const bool is_terminal = expression_type::is_terminal;
+    static const bool is_terminal = false;//expression_type::is_terminal;
     // im: integration method
     // l'ordre polynomial de la représentaiton
     static const uint16_type imorder = expression_type::imorder;
     // ...
     static const bool imIsPoly = expression_type::imIsPoly;
-    
+
     using test_basis = typename expression_type::test_basis;
     using trial_basis = typename expression_type::trial_basis;
-    
+
     typedef typename expression_type::value_type value_type;
     // scalar, vectorial (to be checked)
     typedef typename expression_type::evaluate_type evaluate_type;
 
-    typedef Fit<ExprT> this_type;
+    typedef Fit<ExprT,InterpOperator> this_type;
 
-    explicit Fit( expression_type const & __expr, std::string aDataFile = soption("fit.datafile"), int T = 3 ) : M_expr(__expr), dataFile(aDataFile), type(T){}
-    Fit(Fit const & te) : M_expr(te.M_expr), dataFile(te.dataFile), type(te.type){}
+    explicit Fit( expression_type const & __expr,
+                  std::string const& dataFile,
+                  InterpolationType interpType,
+                  WorldComm const& worldComm )
+        :
+        M_expr(__expr),
+        M_interpolator( Interpolator::New( interpType, dataFile, worldComm) )
+        {}
+    Fit( expression_type const & expr,
+         std::shared_ptr<Interpolator> const& interpolator )
+        :
+        M_expr( expr ),
+        M_interpolator( interpolator )
+        {}
+    Fit(Fit const & te)
+        :
+        M_expr( te.M_expr ),
+        M_interpolator( te.M_interpolator )
+        {}
+
+
     //~Fit(){}
     expression_type const& expression() const
     {
           return M_expr;
     }
+
+    Interpolator const& interpolator() const { return *M_interpolator; }
 
 
     // geo_t : transformation geométrique
@@ -106,29 +127,26 @@ template<typename ExprT>
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
+            M_exprFit( expr ),
             M_tensor_expr( expr.expression(), geom, fev, feu)
-        {
-            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
-        }
+            {}
 
         // linear form
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
+            M_exprFit( expr ),
             M_tensor_expr( expr.expression(), geom, fev )
-        {
-            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
-        }
+            {}
 
         // evaluation
         tensor( this_type const& expr, Geo_t const& geom )
             :
+            M_exprFit( expr ),
             M_tensor_expr( expr.expression(), geom )
-        {
-            M_interpolator = Interpolator::New(static_cast<InterpolationType>(expr.type), expr.dataFile);
-        }
+            {}
 
-        // IM = 
+        // IM =
         template<typename IM>
         void init( IM const& im )
         {
@@ -161,13 +179,14 @@ template<typename ExprT>
         // c1 : id x, y  z of the first component (= 0 in scalar case)
         // c2 : id x, y  z of the second component (= 0 in scalar and vectorial case)
         // q : id of the current point in the geomap (basically, quadrature point or interpolation point)
-        
-        //local assembling - bilinear form a(i,j) 
-        value_type
-        evalij( uint16_type i, uint16_type j ) const
-        {
-            return 1.; //M_tensor_expr.evalij( i, j );
-        }
+
+        //local assembling - bilinear form a(i,j)
+        // value_type
+        // evalij( uint16_type i, uint16_type j ) const
+        // {
+        //     CHECK( false ) << "not implemented";
+        //     return 1.; //M_tensor_expr.evalij( i, j );
+        // }
 
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -184,36 +203,107 @@ template<typename ExprT>
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            // here : call the interpolator
-            //return M_interpolator(M_tensor_expr.evalq(c1, c2, q));
-            return (*M_interpolator)(M_tensor_expr.evalq(c1, c2, q));
+            return this->evalq( c1,c2,q, mpl::int_<InterpOperator>() );
         }
+    private :
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> /**/ ) const
+            {
+                return M_exprFit.interpolator()( M_tensor_expr.evalq(c1, c2, q) );
+            }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> /**/ ) const
+            {
+                return M_exprFit.interpolator().diff( M_tensor_expr.evalq(c1, c2, q) );
+            }
 
-    private:
+    private :
+        this_type const& M_exprFit;
         tensor_expr_type M_tensor_expr;
-        std::unique_ptr<Interpolator> M_interpolator;
     };
     /// end of tensor
-    private:
-        mutable expression_type  M_expr;
-        std::string dataFile;
-        int type;
-    };
+private:
+    expression_type M_expr;
+    std::shared_ptr<Interpolator> M_interpolator;
+};
 
 /**
  * \brief Fit
  **/
 template<typename ExprT>
 inline
-Expr< Fit<ExprT> >
-fit( ExprT v, 
-        std::string dataFile = soption("fit.datafile"), 
-        int intType = ioption("fit.kind") )
+Expr< Fit<ExprT,0> >
+fit( ExprT const& v, std::string const& dataFile, int intType,
+     WorldComm const& worldComm = Environment::worldComm() )
 {
-    LOG(INFO) << "Fit "<< dataFile << " with " << intType << std::endl;
-    typedef Fit<ExprT> fit_t;
-    return Expr< fit_t >(  fit_t( v, dataFile, intType ) );
+    LOG(INFO) << "Fit "<< dataFile << " with " << intType;
+    typedef Fit<ExprT,0> fit_t;
+    return Expr< fit_t >(  fit_t( v, dataFile, static_cast<InterpolationType>( intType ), worldComm ) );
 }
+
+template<typename ExprT>
+inline
+Expr< Fit<ExprT,0> >
+fit( ExprT const& v,
+     std::string const& dataFile = soption("fit.datafile"),
+     std::string const& type = soption("fit.type"),
+     WorldComm const& worldComm = Environment::worldComm() )
+{
+    auto itFindType = InterpolationTypeMap.find( type );
+    CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
+    InterpolationType interpolatorEnumType = itFindType->second;
+    LOG(INFO) << "Fit "<< dataFile << " with " << type;
+    typedef Fit<ExprT,0> fit_t;
+    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+}
+
+template<typename ExprT>
+inline
+Expr< Fit<ExprT,0> >
+fit( ExprT const& v,
+     std::shared_ptr<Interpolator> const& interpolator )
+{
+    typedef Fit<ExprT,0> fit_t;
+    return Expr< fit_t >(  fit_t( v, interpolator ) );
+}
+
+
+template<typename ExprT>
+inline
+Expr< Fit<ExprT,1> >
+fitDiff( ExprT v, std::string dataFile, int intType,
+         WorldComm const& worldComm = Environment::worldComm() )
+{
+    LOG(INFO) << "Fit Diff "<< dataFile << " with " << intType;
+    typedef Fit<ExprT,1> fit_t;
+    return Expr< fit_t >(  fit_t( v, dataFile, intType, worldComm ) );
+}
+template<typename ExprT>
+inline
+Expr< Fit<ExprT,1> >
+fitDiff( ExprT const& v,
+         std::string const& dataFile = soption("fit.datafile"),
+         std::string const& type = soption("fit.type"),
+         WorldComm const& worldComm = Environment::worldComm() )
+{
+    auto itFindType = InterpolationTypeMap.find( type );
+    CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
+    InterpolationType interpolatorEnumType = itFindType->second;
+    LOG(INFO) << "Fit Diff"<< dataFile << " with " << type;
+    typedef Fit<ExprT,1> fit_t;
+    return Expr< fit_t >(  fit_t( v, dataFile, interpolatorEnumType, worldComm ) );
+}
+
+template<typename ExprT>
+inline
+Expr< Fit<ExprT,1> >
+fitDiff( ExprT const& v,
+         std::shared_ptr<Interpolator> const& interpolator )
+{
+    typedef Fit<ExprT,1> fit_t;
+    return Expr< fit_t >(  fit_t( v, interpolator ) );
+}
+
 
 }
 }
