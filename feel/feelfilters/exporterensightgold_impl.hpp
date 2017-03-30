@@ -1049,7 +1049,8 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
         osss << this->worldComm().rank() << " parts/markers";
         for(std::set<int>::iterator it = M_markersToWrite.begin(); it != M_markersToWrite.end(); it++)
         {
-            osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
+            auto rangeMarkedElements = mesh->elementsWithMarker( *it );
+            osss << " " << *it << " (" << std::distance( std::get<0>( rangeMarkedElements ),std::get<1>( rangeMarkedElements ) ) << ")";
         }
         LOG(INFO) << osss.str() << std::endl;
     }
@@ -1176,12 +1177,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         return;
 
     VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-    auto pairit = mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
-    auto fit = pairit.first;
-    auto fen = pairit.second;
+    auto rangeMarkedFaces = mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+    auto fit = std::get<0>( rangeMarkedFaces );
+    auto fen = std::get<1>( rangeMarkedFaces );
     Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), fit, fen, true, true, true );
     int32_t __ne = std::distance( fit, fen );
-    int nverts = fit->numLocalVertices;
+    if ( __ne == 0 ) return;
+    int nverts = boost::unwrap_ref( *fit ).numLocalVertices;
     DVLOG(2) << "Faces : " << __ne << "\n";
 
     int sizeOfInt32_t;
@@ -1219,8 +1221,9 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     posInFile+=160;
 
     // write points coordinates
-    fit = pairit.first;
-    fen = pairit.second;
+    // fit = pairit.first;
+    // fen = pairit.second;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
 
     size_type __nv = mp.ids.size();
     int32_t gnop = (int32_t)(mp.globalNumberOfPoints());
@@ -1268,8 +1271,9 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
 
     // write connectivity
-    fit = pairit.first;
-    fen = pairit.second;
+    // fit = pairit.first;
+    // fen = pairit.second;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
 
     if( this->worldComm().isMasterRank() )
     {
@@ -1291,11 +1295,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     posInFile += sizeOfInt32_t;
 
     idnode.resize( __ne );
-    fit = pairit.first;
+    // fit = pairit.first;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
     size_type e = 0;
     for ( ; fit != fen; ++fit, ++e )
     {
-        idnode[e] = fit->id() + 1;
+        auto const& face = boost::unwrap_ref( *fit );
+        idnode[e] = face.id() + 1;
     }
     CHECK( e == idnode.size() ) << "Invalid number of face id for part " << m.first;
 
@@ -1316,14 +1322,16 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
 
     idelem.resize( __ne*nverts );
-    fit = pairit.first;
+    // fit = pairit.first;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
     e = 0;
     for( ; fit != fen; ++fit, ++e )
     {
+        auto const& face = boost::unwrap_ref( *fit );
         for ( size_type j = 0; j < nverts; j++ )
         {
             // ensight id start at 1
-            idelem[e*nverts+j] = mp.old2new[fit->point( j ).id()];
+            idelem[e*nverts+j] = mp.old2new[face.point( j ).id()];
         }
     }
     CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
@@ -1838,14 +1846,18 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 if ( m.second[1] != __mesh->nDim-1 )
                     continue;
                 VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-                auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
-                auto fit = pairit.first;
-                auto fen = pairit.second;
+                //auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+                auto rangeMarkedFaces = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+                auto fit = std::get<0>( rangeMarkedFaces );
+                auto fen = std::get<1>( rangeMarkedFaces );
+
+                // auto fit = pairit.first;
+                // auto fen = pairit.second;
 
                 Feel::detail::MeshPoints<float> mp( __mesh.get(), this->worldComm(), fit, fen, true, true, true );
                 int __ne = std::distance( fit, fen );
-
-                int nverts = fit->numLocalVertices;
+                if ( __ne == 0 ) continue;
+                int nverts = boost::unwrap_ref( *fit ).numLocalVertices;
                 DVLOG(2) << "Faces : " << __ne << "\n";
 
                 if( this->worldComm().isMasterRank() )
@@ -1881,9 +1893,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 posInFile+=80;
 
                 // write values
-                fit = pairit.first;
-                fen = pairit.second;
-
+                // fit = pairit.first;
+                // fen = pairit.second;
+                fit = std::get<2>( rangeMarkedFaces )->begin();
                 uint16_type nComponents = __var->second.nComponents;
                 if ( __var->second.is_vectorial )
                     nComponents = 3;
@@ -1896,16 +1908,17 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 std::vector<float> field( nComponents*nfaces, 0.0 );
                 for( ; fit != fen; ++fit )
                 {
+                    auto const& face = boost::unwrap_ref( * fit );
                     for ( uint16_type c = 0; c < nComponents; ++c )
                     {
                         for ( size_type j = 0; j < nverts; j++ )
                         {
-                            size_type pid = mp.old2new[fit->point( j ).id()]-1;
+                            size_type pid = mp.old2new[face.point( j ).id()]-1;
                             size_type global_node_id = nfaces*c + pid ;
                             if ( c < __var->second.nComponents )
                             {
                                 size_type thedof =  __var->second.start() +
-                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
+                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ));
 
                                 field[global_node_id] = __var->second.globalValue( thedof );
                             }

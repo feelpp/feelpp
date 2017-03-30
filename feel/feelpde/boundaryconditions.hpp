@@ -149,7 +149,7 @@ class BoundaryConditions
   public:
     using value_type = typename super::value_type;
 
-    BoundaryConditions( WorldComm const& world = Environment::worldComm() );
+    BoundaryConditions( WorldComm const& world = Environment::worldComm(), bool tryLoadBcFile = true );
     
     /**
      * constructor from an \c initializer_list<>
@@ -161,7 +161,7 @@ class BoundaryConditions
         M_prefix()
         {}
     
-    BoundaryConditions( std::string const& prefix, WorldComm const& world = Environment::worldComm() );
+    BoundaryConditions( std::string const& prefix, WorldComm const& world = Environment::worldComm(), bool tryLoadBcFile = true );
     BoundaryConditions( BoundaryConditions const& b ) = default;
     BoundaryConditions( BoundaryConditions && b ) = default;
     BoundaryConditions& operator=( BoundaryConditions const& bc ) = default;

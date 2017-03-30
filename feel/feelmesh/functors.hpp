@@ -102,7 +102,7 @@ struct UpdateFace
             element.setFace( M_face.pos_first(), M_face );
 
             if ( M_face.isConnectedTo1() )
-                element.setNeighbor( M_face.pos_first(), M_face.ad_second(), M_face.proc_second() );
+                element.setNeighbor( M_face.pos_first(), M_face.ad_second() );
 
             FEELPP_ASSERT( element.facePtr( M_face.pos_first() ) )
             ( M_face.pos_first() )
@@ -112,7 +112,7 @@ struct UpdateFace
         else if ( M_face.ad_second() == element.id() )
         {
             element.setFace( M_face.pos_second(), M_face );
-            element.setNeighbor( M_face.pos_second(), M_face.ad_first(), M_face.proc_first() );
+            element.setNeighbor( M_face.pos_second(), M_face.ad_first() );
             FEELPP_ASSERT( element.facePtr( M_face.pos_second() ) )
             ( M_face.pos_second() )
             ( M_face.ad_second() ).error( "invalid face" );
