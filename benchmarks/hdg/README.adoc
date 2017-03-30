@@ -24,6 +24,19 @@ with static condensation in sequential on one element
 
 NOTE: error should be 0 thanks to exact solution being linear
 
+with IBC condition and the constant space Ch defined on elements
+
+[source,sh]
+----
+./feelpp_benchmarks_hdg_laplacian_ibc_elt_2D_P1 -- --config-file hdg_mp_ibc/hdg_laplacian_ibc.cfg
+----
+
+with IBC condition and the constant space Ch defined on faces
+
+[source,sh]
+----
+./feelpp_benchmarks_hdg_laplacian_ibc_face_2D_P1 -- --config-file hdg_mp_ibc/hdg_laplacian_ibc.cfg
+----
 
 # MixedPoisson
 
