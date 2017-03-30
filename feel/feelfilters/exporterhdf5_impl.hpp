@@ -582,9 +582,9 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
         typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
         for (; p_it != p_en; p_it++ ) 
         {
-            typename mesh_type::marker_element_const_iterator elt_st;
-            typename mesh_type::marker_element_const_iterator elt_en;
-            boost::tie( elt_st, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first, __evar->second.worldComm().localRank() );
+            auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first, __evar->second.worldComm().localRank() );
+            auto elt_st = std::get<0>( rangeMarkedElements );
+            auto const elt_en = std::get<1>( rangeMarkedElements );
 
             std::ostringstream groupName;
             groupName << "/" << this->worldComm().globalRank() << "-" << p_it->first;
@@ -614,12 +614,13 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
             size_type e = 0;
             for ( auto elt_it = elt_st; elt_it != elt_en; ++elt_it, ++e )
             {
+                auto const& elt = boost::unwrap_ref( *elt_it );
                 for ( int c = 0; c < nComponents; ++c )
                 {
                     size_type global_node_id = e * nComponents + c;
                     if ( c < __evar->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt_it->id(), 0, c ) );
+                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(), 0, c ) );
                         realBuffer[global_node_id] = __evar->second.globalValue ( dof_id );
                     }
                     else 
