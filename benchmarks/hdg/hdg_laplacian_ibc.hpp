@@ -238,7 +238,7 @@ Hdg<Dim, OrderP>::convergence()
                 {
                     auto ind = i == 0 ? "" : std::to_string(i+1);
                     std::string marker = boost::str(boost::format("Ibc%1%") % ind );
-                    if ( e.marker().value() == mesh->markerName( marker ) )
+                    if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
                         return true;
                 }
                 return false;
@@ -248,7 +248,7 @@ Hdg<Dim, OrderP>::convergence()
                 {
                     auto ind = i == 0 ? "" : std::to_string(i+1);
                     std::string marker = boost::str(boost::format("Ibc%1%") % ind );
-                    if ( e.marker().value() == mesh->markerName( marker ) )
+                    if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
                         return true;
                 }
                 return false;
