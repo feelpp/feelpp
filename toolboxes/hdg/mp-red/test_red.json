@@ -7,22 +7,22 @@
         "OmegaG":
         {
             "name":"silicium",
-	    	"k":"1" // epsilon= epsR * eps0
+	    	"k":"1e-10" // epsilon= epsR * eps0
         },
         "OmegaS":
         {
             "name":"silicium",
-            "k":"1" // epsilon = epsR * eps0
+            "k":"1e-10" // epsilon = epsR * eps0
         },
         "OmegaB":
         {
             "name":"silicium",
-            "k":"1" // epsilon = epsR * eps0
+            "k":"1e-10" // epsilon = epsR * eps0
         },
         "OmegaD":
         {
             "name":"silicium",
-            "k":"1" // epsilon = epsR * eps0
+            "k":"1e-10" // epsilon = epsR * eps0
         }
     },
     "BoundaryConditions":
@@ -100,7 +100,7 @@
 	    		"Bulk":
         		{
                 	"expr":"5+3*y-2*y^2+y^3 :x:y:z"  
-               	}
+               	} 
 	    	}/*,
             "Neumann":
             {
