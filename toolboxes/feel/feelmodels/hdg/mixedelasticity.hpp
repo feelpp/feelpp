@@ -39,8 +39,8 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
 {
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
-        ( "gmsh.submesh", po::value<std::string>()->default_value( "" ), "submesh extraction" )
-        ( "gmsh.submesh2", po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
+        // ( "gmsh.submesh2", po::value<std::string>()->default_value( "" ), "submesh extraction" )
         ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
@@ -689,6 +689,7 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::
     Feel::cout << "IBC condition: " << g << std::endl; 
 
     double meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+    Feel::cout << "Measure of the ibc: " << meas << std::endl;
 
     // <F_target,m>_Gamma_I
     blf(3_c,i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=inner(g,id(nu))/meas);
