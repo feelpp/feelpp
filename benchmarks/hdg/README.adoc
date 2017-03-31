@@ -1,10 +1,16 @@
 Benchmarks for HDG
 ==================
+:toc: macro
+:toclevels: 3
+
+toc::[]
 
 NOTE: we need to rebuild the backend when we do a convergence analysis to avoid
 petsc crashing because it keeps data(preconditioner) between runs
 
-# Laplacian
+== Laplacian
+
+=== Without IBC 
 
 with static condensation in parallel
 
@@ -24,6 +30,7 @@ with static condensation in sequential on one element
 
 NOTE: error should be 0 thanks to exact solution being linear
 
+=== IBC 
 with IBC condition and the constant space Ch defined on elements
 
 [source,sh]
@@ -38,7 +45,7 @@ with IBC condition and the constant space Ch defined on faces
 ./feelpp_benchmarks_hdg_laplacian_ibc_face_2D_P1 -- --config-file hdg_mp_ibc/hdg_laplacian_ibc.cfg
 ----
 
-# MixedPoisson
+== MixedPoisson
 
 The model file, the geometries and the configuration files are in cvg-tests. +
 The simplest way to launch the tests is with the following command:
@@ -58,7 +65,7 @@ The important options are:
 * `cvg.refine-factor`: factor by which to divide hsize at each iteration
 * `mixedpoisson.use-sc`: use static condensation or not
 
-# Linear elasticity
+== Linear elasticity
 
 with static condensation in parallel
 
@@ -77,7 +84,7 @@ NOTE: error should be 0 thanks to exact solution being quadratic
 
 
 
-# MixedElasticity
+== MixedElasticity
 
 The model file, the geometries and the configuration files are in cvg-el-tests. +
 The simplest way to launch the tests is with the following command:
