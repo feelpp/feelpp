@@ -1157,8 +1157,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     // Retrieve the elements touching the marked faces
     auto mfaces = markedfaces( this->mesh(), marker );
-    for( auto const& face: mfaces )
+    for( auto const& faceWrap: mfaces )
     {
+        auto const& face = unwrap_ref( faceWrap );
         if( face.isConnectedTo0() )
             myelts->push_back(boost::cref(face.element0()));
         if( face.isConnectedTo1() )
@@ -1202,16 +1203,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     // Retrieve the elements touching the marked faces
-    auto mfaces_list = markedfaces( this->mesh(), marker );
-    for( auto const& mfaces: mfaces_list )
+    //auto mfaces_list = markedfaces( this->mesh(), marker );
+    auto mfaces = markedfaces( this->mesh(), marker );
+    for( auto const& faceWrap: mfaces )
     {
-        for( auto const& face: mfaces )
-        {
-            if( face.isConnectedTo0() )
-                myelts->push_back(boost::cref(face.element0()));
-            if( face.isConnectedTo1() )
-                myelts->push_back(boost::cref(face.element1()));
-        }
+        auto const& face = unwrap_ref( faceWrap );
+        if( face.isConnectedTo0() )
+            myelts->push_back(boost::cref(face.element0()));
+        if( face.isConnectedTo1() )
+            myelts->push_back(boost::cref(face.element1()));
     }
 
     auto myrange = boost::make_tuple(
@@ -1231,7 +1231,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
             _range=myrange,
             _expr=h()
             );
-    phi0.on( _range=mfaces_list, _expr=cst(0.) );
+    phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
@@ -1868,18 +1868,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
     mesh_ptrtype const& mesh = this->mesh();
     auto phi = this->phi();
 
-    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
-    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
+    auto rangeElts = mesh->elementsWithProcessId( mesh->worldComm().localRank() );
+    auto it_elt = std::get<0>( rangeElts );
+    auto en_elt = std::get<1>( rangeElts );
     if (it_elt == en_elt) return;
 
     for (; it_elt!=en_elt; it_elt++)
     {
+        auto const& elt = boost::unwrap_ref( *it_elt );
         int nbplus = 0;
         int nbminus = 0;
 
         for (int j=0; j<ndofv ; j++)
         {
-            if (phi->localToGlobal(it_elt->id(), j, 0) >= 0.)
+            if (phi->localToGlobal(elt.id(), j, 0) >= 0.)
                 nbplus++;
             else
                 nbminus++;
@@ -1887,9 +1889,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerInterface()
 
         //if elt crossed by interface
         if ( (nbminus != ndofv) && (nbplus!=ndofv) )
-            M_markerInterface->assign(it_elt->id(), 0, 0, 1);
+            M_markerInterface->assign(elt.id(), 0, 0, 1);
         else
-            M_markerInterface->assign(it_elt->id(), 0, 0, 0);
+            M_markerInterface->assign(elt.id(), 0, 0, 0);
     }
 }
 
@@ -1901,27 +1903,29 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
 
     mesh_ptrtype const& mesh = this->mesh();
 
-    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
-    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
+    auto rangeElts = mesh->elementsWithProcessId( mesh->worldComm().localRank() );
+    auto it_elt = std::get<0>( rangeElts );
+    auto en_elt = std::get<1>( rangeElts );
     if (it_elt == en_elt) return;
 
     double dirac_cut = this->dirac()->max() / 10.;
 
     for (; it_elt!=en_elt; it_elt++)
     {
+        auto const& elt = boost::unwrap_ref( *it_elt );
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( this->dirac()->localToGlobal(it_elt->id(), j, 0) ) > dirac_cut )
+            if ( std::abs( this->dirac()->localToGlobal(elt.id(), j, 0) ) > dirac_cut )
             {
                 mark_elt = true;
                 break; //don't need to do the others dof
             }
         }
         if( mark_elt )
-            M_markerDirac->assign(it_elt->id(), 0, 0, 1);
+            M_markerDirac->assign(elt.id(), 0, 0, 1);
         else
-            M_markerDirac->assign(it_elt->id(), 0, 0, 0);
+            M_markerDirac->assign(elt.id(), 0, 0, 0);
     }
 }//markerDirac
 
@@ -1940,8 +1944,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
 
     mesh_ptrtype const& mesh = this->mesh();
 
-    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
-    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
+    auto rangeElts = mesh->elementsWithProcessId( mesh->worldComm().localRank() );
+    auto it_elt = std::get<0>( rangeElts );
+    auto en_elt = std::get<1>( rangeElts );
     if (it_elt == en_elt) return;
 
     double cut;
@@ -1950,19 +1955,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
 
     for (; it_elt!=en_elt; it_elt++)
     {
+        auto const& elt = boost::unwrap_ref( *it_elt );
         bool mark_elt = false;
         for (int j=0; j<ndofv; j++)
         {
-            if ( std::abs( this->heaviside()->localToGlobal(it_elt->id(), j, 0) ) > cut )
+            if ( std::abs( this->heaviside()->localToGlobal(elt.id(), j, 0) ) > cut )
             {
                 mark_elt = true;
                 break;
             }
         }
         if( mark_elt )
-            M_markerHeaviside->assign(it_elt->id(), 0, 0, (invert)?0:1);
+            M_markerHeaviside->assign(elt.id(), 0, 0, (invert)?0:1);
         else
-            M_markerHeaviside->assign(it_elt->id(), 0, 0, (invert)?1:0);
+            M_markerHeaviside->assign(elt.id(), 0, 0, (invert)?1:0);
     }
 } 
 
@@ -1976,8 +1982,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
 
     mesh_ptrtype const& mesh = this->mesh();
 
-    auto it_elt = mesh->beginElementWithProcessId(mesh->worldComm().localRank());
-    auto en_elt = mesh->endElementWithProcessId(mesh->worldComm().localRank());
+    auto rangeElts = mesh->elementsWithProcessId( mesh->worldComm().localRank() );
+    auto it_elt = std::get<0>( rangeElts );
+    auto en_elt = std::get<1>( rangeElts );
     if (it_elt == en_elt) return;
 
     auto phi = this->phi();
@@ -1989,19 +1996,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
 
     for (; it_elt!=en_elt; it_elt++)
     {
+        auto const& elt = boost::unwrap_ref( *it_elt );
         bool mark_elt = false;
         for (int j=0; j<ndofv ; j++)
         {
-            if (prod.localToGlobal(it_elt->id(), j, 0) <= 0.)
+            if (prod.localToGlobal(elt.id(), j, 0) <= 0.)
             {
                 mark_elt = true;
                 break;
             }
         }
         if( mark_elt )
-            M_markerCrossedElements->assign(it_elt->id(), 0, 0, 1);
+            M_markerCrossedElements->assign(elt.id(), 0, 0, 1);
         else
-            M_markerCrossedElements->assign(it_elt->id(), 0, 0, 0);
+            M_markerCrossedElements->assign(elt.id(), 0, 0, 0);
     }
 }
 
