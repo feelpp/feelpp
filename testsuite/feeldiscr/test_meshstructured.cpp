@@ -204,7 +204,7 @@ class Test_MeshStructured
 
     }
 
-/*
+
     void runParallel ( double pixelsize )
     {
      tic();
@@ -237,7 +237,7 @@ class Test_MeshStructured
      e->save(); 
 
    }
-*/
+
 
 
     private :
