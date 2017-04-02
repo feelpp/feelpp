@@ -92,7 +92,7 @@ class Test_MeshStructured
     {
      tic();
     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                    Environment::worldComm(),"", false, false);
+                                                    Environment::worldComm(),"", false, false, false);
 
      mesh->components().reset();
      mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
@@ -128,7 +128,7 @@ class Test_MeshStructured
     {
 
      auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                    Environment::worldComm(),"", false, false);
+                                                    Environment::worldComm(),"", false, false, false);
      mesh->components().reset();
      mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
      mesh->updateForUse();
@@ -156,8 +156,55 @@ class Test_MeshStructured
     std::cout << " Norm2 " << n << std::endl;
 
     }
+  
+  void runImageHbf  (string hbf1, string hbf2, string solution, double pixelsize) 
+    {
+      x = readHBF( hbf1 );
+      y = readHBF( hbf2 );
+      z = readHBF( solution );
 
+     mesh = boost::make_shared<MeshStructured>( x.rows(),
+                                                x.cols(),
+                                                pixelsize),
+                                                cx,cy,
+                                                /*NULL,*/
+                                                Environment::worldComm(),
+                                                "",
+                                                false,
+                                                false),
+                                                false);
+     mesh->components().reset();
+     mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+     mesh->updateForUse();
+    
+     auto Vh = Pch<1> ( mesh ) ;
+     auto u = Vh->element () ;
+     auto v = Vh->element () ;
+     auto px = Vh->element () ;
+     auto py = Vh->element () ;
+     Hbf2FeelppStruc h2f( nx, ny, Vh );
+     Hbf2FeelppStruc h2fS( z.cols(), z.rows(), Vh );
+     px = h2f( x);
+     py = h2f( y );
+     auto s = h2fS ( z);
+      
+    auto l = form1( _test=Vh );
+    l = integrate(_range=elements(mesh),
+                  _expr=grad(v)*vec(idv(px),idv(py)));
+    
+    auto a = form2( _trial=Vh, _test=Vh);
+    a = integrate( _range=elements(mesh),
+                   //_expr=gradt(u)*trans(grad(v)));
+                   _expr=gradt(u)*trans(grad(v)));
+    
+    a.solve(_rhs=l,_solution=u) ;
+    
+    std::cout << "L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-idv(s) ) << "\n"; 
+    
 
+    }
+
+/*
     void runParallel ( double pixelsize )
     {
      tic();
@@ -190,7 +237,7 @@ class Test_MeshStructured
      e->save(); 
 
    }
-
+*/
 
 
     private :
@@ -213,19 +260,18 @@ BOOST_AUTO_TEST_CASE( test_run0 )
     //tms0.runParallel(ps);
 }
 
-/*
+
 BOOST_AUTO_TEST_CASE( test_run2 )
 {
     Test_MeshStructured tms2(12,24);
     tms2.runParallel(ps);
-}
+
 
 BOOST_AUTO_TEST_CASE( test_run3 )
 {
     Test_MeshStructured tms3(42,18);
     tms3.runParallel(ps);
 }
-*/
 
 /*
 BOOST_AUTO_TEST_CASE( test_run4 )
