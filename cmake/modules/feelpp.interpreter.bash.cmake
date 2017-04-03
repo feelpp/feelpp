@@ -14,7 +14,8 @@ macro(subdirlist result curdir)
     set(${result} ${dirlist})
 endmacro()
 
-subdirlist( FEELPP_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/feel )
+#subdirlist( FEELPP_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/feel )
+feelpp_find_libraries( FEELPP_ALL ${FEELPP_LIBRARIES} )
 
 # Create the script feel++.
 
@@ -77,19 +78,18 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 if( FEELPP_ENABLE_PCH )
     file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
+-fsyntax-only \\
+-femit-all-decls \\
 -include-pch ${CMAKE_BINARY_DIR}/feel/cotire/feelpp_CXX_prefix.hxx.pch \\
 "
     )
 endif()
 
 # Include path.
-set( INCDIRS
-    ${MPI_CXX_INCLUDE_PATH}
-    ${Boost_INCLUDE_DIRS}
-    ${GMSH_INCLUDE_DIR}
-    ${PARALUTION_INCLUDE_DIR}
-    ${HPDDM_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}
+set( FEELPP_INTERPRETER_INCLUDE_DIRS
+    ${FEELPP_INCLUDE_DIR}
+    ${FEELPP_DEPS_INCLUDE_DIR}
+    # contrib source directories.
     ${google-glog_SOURCE_DIR}/src
     ${gflags_SOURCE_DIR}
     ${GiNaC_SOURCE_DIR}
@@ -98,10 +98,7 @@ set( INCDIRS
     ${Eigen3_SOURCE_DIR}
     ${Eigen3_SOURCE_DIR}/unsupported
     ${METIS_SOURCE_DIR}
-    ${PETSC_DIR}/include
-    ${SLEPC_DIR}/include
-    ${CMAKE_INSTALL_PREFIX}/include/
-    ${LIBXML2_INCLUDE_DIR}
+    # contrib binary directories.
     ${google-glog_BINARY_DIR}
     ${gflags_BINARY_DIR}/include
     ${GiNaC_BINARY_DIR}
@@ -110,17 +107,15 @@ set( INCDIRS
     ${Eigen3_BINARY_DIR}/unsupported
     ${METIS_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/contrib/nlopt/api
-    ${VTK_INCLUDE_DIRS}
-    ${HDF5_INCLUDE_DIRS}
 )
+list( REMOVE_DUPLICATES FEELPP_INTERPRETER_INCLUDE_DIRS )
 
-# Library dirs path or libraries path.
-set( LIBDIRS
-    ${MPI_CXX_LIBRARIES}
-    ${Boost_LIBRARY_DIRS}
-    ${VTK_LIBRARY_DIRS}
-    ${HDF5_LIBRARY_DIRS}
+# Library dirs path or libraries path (eg. -L/path/to/lib.so).
+set( FEELPP_INTERPRETER_LIBRARY_DIRS
+    ${CMAKE_INSTALL_PREFIX}/lib
     ${CMAKE_BINARY_DIR}/feel
+    ${FEELPP_DEPS_LINK_DIR}
+    # Contrib binary directories.
     ${google-glog_BINARY_DIR}
     ${gflags_BINARY_DIR}
     ${GiNaC_BINARY_DIR}
@@ -128,13 +123,29 @@ set( LIBDIRS
     ${Eigen3_BINARY_DIR}
     ${METIS_BINARY_DIR}/libmetis
     ${CMAKE_BINARY_DIR}/contrib/nlopt/
-    ${PETSC_DIR}/lib
-    ${SLEPC_DIR}/lib
-    ${CMAKE_INSTALL_PREFIX}/lib/
-    ${LIBXML2_LIBRARIES}
+    # Variable generated from feelpp_find_library
+    ${FEELPP_ALL_LIBRARY_DIRS}
 )
+list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LIBRARY_DIRS )
 
-foreach( incdir ${INCDIRS} )
+
+# Libraries to link (eg. -ltoto).
+set( FEELPP_INTERPRETER_LINK_LIBRARIES
+    ${FEELPP_LINK_LIBRARIES}
+    ${FEELPP_LIBRARY} # -lfeepp
+)
+list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LINK_LIBRARIES )
+
+
+# Shared libraries to link (eg. /path/to/toto.so)
+set( FEELPP_INTERPRETER_LIBRARIES
+    ""
+    #${FEELPP_LIBRARIES}
+)
+list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LIBRARIES )
+
+
+foreach( incdir ${FEELPP_INTERPRETER_INCLUDE_DIRS} )
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
 -I${incdir} \\
@@ -142,10 +153,26 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 )
 endforeach()
 
-foreach( libdir ${LIBDIRS} )
+foreach( libdir ${FEELPP_INTERPRETER_LIBRARY_DIRS} )
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
 -L${libdir} \\
+"
+)
+endforeach()
+
+foreach( lib ${FEELPP_INTERPRETER_LINK_LIBRARIES} )
+file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
+"\
+-l${lib} \\
+"
+)
+endforeach()
+
+foreach( lib ${FEELPP_INTERPRETER_LIBRARIES} )
+file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
+"\
+${lib} \\
 "
 )
 endforeach()
@@ -154,11 +181,6 @@ endforeach()
 file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "--std=c++${FEELPP_STD_CPP} \\
 -ftemplate-depth=1024 \\
--lfeelpp_metis \\
--lfeelpp_nlopt \\
--lfeelpp_ginac \\
--lfeelpp_glog \\
--lfeelpp \\
 --nologo \\
 $1"
 )
