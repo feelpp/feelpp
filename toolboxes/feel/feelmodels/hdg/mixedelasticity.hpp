@@ -991,6 +991,21 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 									_expr=trans(id(m))* g );
             }
+		}
+        	
+		itType = mapField.find("Neumann_scalar");
+		if ( itType != mapField.end() )
+		{
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+				auto marker = exAtMarker.marker();
+                auto g = expr<1,1,expr_order> (exAtMarker.expression());
+				if ( !this->isStationary() )
+                    g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
+			cout << "Neumann condition on " << marker << ": " << g << std::endl;
+			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+									_expr=trans(id(m))* g*eye<Dim,Dim>() * N() );
+            }
 		}	
 	    
         itType = mapField.find("Neumann_exact");
