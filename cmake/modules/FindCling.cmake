@@ -7,6 +7,7 @@
 
 find_path(CLING_INCLUDE_DIR ClingOptions.h
     HINTS
+    $ENV{CLING_PREFIX}/include/cling/Interpreter
     ${CLING_PREFIX}/include/cling/Interpreter
     /usr/include/cling/Interpreter
     /usr/local/include/cling/Interpreter
@@ -16,6 +17,7 @@ find_path(CLING_INCLUDE_DIR ClingOptions.h
 
 find_library(CLING_LIBRARIES cling
     HINTS
+    $ENV{CLING_PREFIX}/lib
     ${CLING_PREFIX}/lib
     /usr/lib
     /usr/local/lib
