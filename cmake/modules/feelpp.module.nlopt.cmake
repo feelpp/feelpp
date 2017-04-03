@@ -114,11 +114,15 @@ if ( FEELPP_ENABLE_NLOPT )
     set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
     #add_subdirectory(contrib/nlopt)
     include_directories(${NLOPT_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+    #FIND_LIBRARY( FEELPP_NLOPT_LIBRARY  NAMES feelpp_nlopt  PATHS  $ENV{FEELPP_DIR}/lib ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/contrib/nlopt/ )
+    #SET(FEELPP_LIBRARIES ${FEELPP_NLOPT_LIBRARY} ${FEELPP_LIBRARIES} )
+    set( FEELPP_NLOPT_LINK_LIBRARIES feelpp_nlopt)
+    set( FEELPP_LINK_LIBRARIES ${FEELPP_NLOPT_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES} )
+    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
     SET(FEELPP_HAS_NLOPT 1)
 
-  else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+  else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+        # Contrib installation.
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
       $ENV{FEELPP_DIR}/include/feel/nlopt
