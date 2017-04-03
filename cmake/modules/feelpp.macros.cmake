@@ -134,21 +134,25 @@ macro(feelpp_add_application)
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
   if ( FEELPP_APP_NO_FEELPP_LIBRARY )
-    target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   else()
-    target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   endif()
 
+  # Use feel++ lib precompiled headers.
+  #if( FEELPP_ENABLE_PCH )
+  #    add_precompiled_header( ${FEELPP_LIBRARY} )
+  #endif()
+  # Create application precompiled headers.
   if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    # add several headers in a list form "one.hpp;two.hpp"
-    add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
+    add_precompiled_header( ${execname} )
   endif()
 
   # install rule if INSTALL if target is marked to be installed
   if ( FEELPP_APP_INSTALL )
     install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
   endif()
-  
+
   if ( NOT FEELPP_APP_NO_TEST )
     IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
       add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
@@ -207,9 +211,9 @@ macro(feelpp_add_application)
       # extract cfg filename  to be copied in binary dir
       #get_filename_component( CFG_NAME ${cfg} NAME )
       #configure_file( ${cfg} ${CFG_NAME} )
-      
+
       file(COPY ${cfg} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      
+
       #INSTALL(FILES "${cfg}"  DESTINATION share/feel/config)
       #      else()
       #        message(WARNING "Executable ${FEELPP_APP_NAME}: configuration file ${cfg} does not exist")
@@ -293,16 +297,16 @@ macro(feelpp_add_test)
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+        feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
     else()
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
     endif()
     #add_executable(${targetname} ${filename})
   else()
      if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} TARGET targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} TARGET targetname LINK_LIBRARIES ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
      else()
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
      endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()
@@ -315,7 +319,7 @@ macro(feelpp_add_test)
   elseif( TARGET testsuite )
     add_dependencies(testsuite ${targetname})
   endif()
-  
+
 
   if ( NOT FEELPP_TEST_NO_TEST )
       # split command line options by whitespace into cmake list
@@ -521,3 +525,46 @@ macro(feel_append_src DIRNAME FILES)
   set(FEELPP_SRCS ${FEELPP_SRCS};${LIST} PARENT_SCOPE)
   set(FEELPP_DIRS ${FEELPP_DIRS};${DIRNAME} PARENT_SCOPE)
 endmacro(feel_append_src)
+
+# This function set two variables
+# <prefix_name>_LIBRARIES
+# <prefix_name>_LIBRARY_DIRS
+# from a target
+# Usage example:
+#     feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES})
+#
+macro( feelpp_find_libraries prefix_name)
+    set( ${prefix_name}_LIBRARIES )
+    set( ${prefix_name}_LIBRARY_DIRS )
+    # Search VTK_LIBRARIES full path (for cling).
+    foreach(LIB ${ARGN})
+        # We check if it is a path to the shared lib.
+        string( FIND "${LIB}" "/" ISPATH )
+        if( "${ISPATH}" STRGREATER "-1") # is a path
+            list( APPEND ${prefix_name}_LIBRARIES ${LIB} )
+            get_filename_component( LIBDIR ${LIB} DIRECTORY )
+            list( APPEND ${prefix_name}_LIBRARY_DIRS ${LIBDIR} )
+        else() # not a path
+            get_target_property( LIBSO ${LIB} LOCATION )
+            if(NOT LIBSO)
+                message( STATUS "Shared library not found: -${LIB}")
+                if( $ENV{VERBOSE} )
+                    message( STATUS "-${LIB} => ${LIBSO}")
+                endif()
+                list( APPEND ${prefix_name}_LIBRARIES ${LIB} )
+            else()
+                list( APPEND ${prefix_name}_LIBRARIES ${LIBSO} )
+                get_filename_component( LIBDIR ${LIBSO} DIRECTORY )
+                list( APPEND ${prefix_name}_LIBRARY_DIRS ${LIBDIR} )
+            endif()
+        endif()
+    endforeach()
+    list( REMOVE_DUPLICATES ${prefix_name}_LIBRARIES )
+    list( REMOVE_DUPLICATES ${prefix_name}_LIBRARY_DIRS )
+    if( $ENV{VERBOSE} )
+        message( "-----------------------------------------------------------" )
+        message( "FEELPP_VTK_LIBRARY_DIRS=${${prefix_name}_LIBRARY_DIRS}" )
+        message( "FEELPP_VTK_LIBRARIES=${${prefix_name}_LIBRARIES}" )
+        message( "-----------------------------------------------------------" )
+    endif()
+endmacro()
