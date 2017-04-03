@@ -1,8 +1,8 @@
 #ifndef _MIXEDPOISSONELASTICITY_HPP
 #define _MIXEDPOISSONELASTICITY_HPP
 
-#include "mixedpoisson2.hpp"
-#include "mixedelasticity.hpp"
+#include <toolboxes/feel/feelmodels/hdg/mixedpoisson.hpp>
+#include <toolboxes/feel/feelmodels/hdg/mixedelasticity.hpp>
 
 namespace Feel
 {
@@ -34,6 +34,7 @@ makeMixedPoissonElasticityLibOptions( std::string prefix = "mixedpoissonelastici
 template <int Dim, int Order,int G_Order=1, int E_Order=4>
 class MixedPoissonElasticity
 {
+
  public:
 	typedef double 						value_type;
 	typedef MixedPoisson<Dim,Order,G_Order,E_Order> 	mp_type;
@@ -146,6 +147,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 
 	auto blf = blockform1 ( ps, M_ElasticityModel->getF() );
 	auto v = M_ElasticityModel->fluxSpace()->element( "v" );
+    auto m = M_ElasticityModel->traceSpace()->element( "m" );
 
 	// Get data from Poisson model
 	auto pressure = M_PoissonModel->potentialField();
@@ -153,8 +155,20 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 	// Feel::cout << "Pressure: " << pressure << std::endl;
 	// - < pI , v>
 	blf( 0_c ) += integrate( _range=elements(M_mesh), 
-	 						 _expr= - inner( idv(M_PoissonModel->potentialField())*eye<Dim,Dim>(),  id(v)) );
+	 						 _expr= - inner( idv(pressure)*eye<Dim,Dim>(),  id(v)) );
 
+    // Adding extra-term for special Neumann 
+    // - <pI n, m>
+    std::string marker = "";
+    for( auto const& pairMat : M_ElasticityModel->modelProperties()->materials() )
+    {
+        auto material = pairMat.second;
+        marker = material.getString("special_neumann");
+    }
+    if (!marker.empty())
+        blf( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
+                                 _expr= - inner( idv(pressure)*eye<Dim,Dim>() * N(), id(m)) );
+    
 }
 
 template <int Dim, int Order,int G_Order, int E_Order>
