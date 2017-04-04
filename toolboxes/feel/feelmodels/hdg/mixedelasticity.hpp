@@ -481,6 +481,21 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initModel()
             }
             cout << std::endl;
         }
+        
+        itType = mapField.find( "Neumann_scalar" );
+        if ( itType != mapField.end() )
+        {
+            cout << "Neumann scalar:";
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                if ( M_mesh->hasFaceMarker(marker) )
+                    cout << " " << marker;
+                else
+                    cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+            }
+            cout << std::endl;
+        }
 	 
         itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
@@ -927,6 +942,23 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
 		    }
 	    }
+	    itType = mapField.find( "Neumann_scalar" );
+	    if ( itType != mapField.end() )
+	    {
+		    for ( auto const& exAtMarker : (*itType).second )
+		    {
+			    std::string marker = exAtMarker.marker();
+		    	cout << "Neumann on " << marker << std::endl;
+			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+
+			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+
+			    bbf( 2_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker), 
+					    _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+		    }
+	    }
 	    itType = mapField.find( "Neumann_exact" );
 	    if ( itType != mapField.end() )
 	    {
@@ -987,9 +1019,9 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                 auto g = expr<Dim,1,expr_order> (exAtMarker.expression());
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
-			cout << "Neumann condition on " << marker << ": " << g << std::endl;
-			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-									_expr=trans(id(m))* g );
+			    cout << "Neumann condition on " << marker << ": " << g << std::endl;
+			    blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+					    				_expr=trans(id(m))* g );
             }
 		}
         	
@@ -999,12 +1031,12 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
             for ( auto const& exAtMarker : (*itType).second )
             {
 				auto marker = exAtMarker.marker();
-                auto g = expr<1,1,expr_order> (exAtMarker.expression());
+                auto g = expr<expr_order> (exAtMarker.expression());
 				if ( !this->isStationary() )
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
-			cout << "Neumann condition on " << marker << ": " << g << std::endl;
-			blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-									_expr=trans(id(m))* g*eye<Dim,Dim>() * N() );
+			    cout << "Neumann condition on " << marker << ": " << g << std::endl;
+			    blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
+				    					_expr= inner(expr(g)*N(), id(m)) );
             }
 		}	
 	    
