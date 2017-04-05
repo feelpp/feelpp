@@ -1232,9 +1232,6 @@ if ( FEELPP_ENABLE_VTK )
     if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
-        # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS from linker
-        feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
-
         # trying to load a minimal vtk
         IF (TARGET vtkParallelMPI)
         FIND_PACKAGE(ParaView QUIET COMPONENTS vtkParallelMPI NO_MODULE
@@ -1250,6 +1247,7 @@ if ( FEELPP_ENABLE_VTK )
         FIND_PACKAGE(ParaView COMPONENTS vtkPVPythonCatalyst NO_MODULE
           PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
           message(STATUS "[ParaView] Loading vtkPVPythonCatalyst module")
+  endif( TRILINOS_FOUND )
         ENDIF ()
 
         # Enable VTK exporter and insitu in config
@@ -1273,6 +1271,8 @@ if ( FEELPP_ENABLE_VTK )
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
+        # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS from linker
+        feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
         #set(FEELPP_LINK_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
         set( FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES} )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
@@ -1286,8 +1286,6 @@ if ( FEELPP_ENABLE_VTK )
         FIND_PACKAGE(VTK QUIET)
         if( VTK_FOUND )
             include(${VTK_USE_FILE})
-            # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS
-            feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
 
             set(FEELPP_HAS_VTK 1)
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
@@ -1354,6 +1352,8 @@ if ( FEELPP_ENABLE_VTK )
             #   endif()
             # endif()
 
+            # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS
+            feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
             #SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
