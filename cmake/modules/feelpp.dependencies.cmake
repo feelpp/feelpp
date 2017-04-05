@@ -1247,7 +1247,6 @@ if ( FEELPP_ENABLE_VTK )
         FIND_PACKAGE(ParaView COMPONENTS vtkPVPythonCatalyst NO_MODULE
           PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
           message(STATUS "[ParaView] Loading vtkPVPythonCatalyst module")
-  endif( TRILINOS_FOUND )
         ENDIF ()
 
         # Enable VTK exporter and insitu in config
