@@ -1,5 +1,8 @@
 # - Find Feel
-
+if (POLICY CMP0045)
+    # error on non-existent target in get_target_property
+    cmake_policy(SET CMP0045 OLD)
+endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
@@ -89,7 +92,7 @@ macro(feelpp_add_application)
     if ( PROJECT_NAME AND
         ( NOT PROJECT_NAME STREQUAL "Feel++" )
         )
-      
+
       if ( PROJECT_SHORTNAME )
         #message(STATUS "project: ${PROJECT_NAME} shortname: ${PROJECT_SHORTNAME}")
         set(execname feelpp_${PROJECT_SHORTNAME}_${FEELPP_APP_NAME})
@@ -104,7 +107,7 @@ macro(feelpp_add_application)
   if  (FEELPP_APP_EXEC )
     set( ${FEELPP_APP_EXEC} ${execname} )
   endif()
-  
+
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Feel++ application ${FEELPP_APP_NAME}")
     MESSAGE("    Sources: ${FEELPP_APP_SRCS}")
@@ -287,8 +290,6 @@ macro(feelpp_add_test)
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
-  
-  
 
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
@@ -299,7 +300,7 @@ macro(feelpp_add_test)
     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
         feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
     else()
-      feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+        feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
     endif()
     #add_executable(${targetname} ${filename})
   else()
@@ -375,7 +376,6 @@ macro(feelpp_add_test)
         endif(DEFINED ENV{FEELPP_WORKDIR})
       endforeach()
     endif(FEELPP_TEST_GEO)
-
 
 endmacro(feelpp_add_test)
 
@@ -547,11 +547,11 @@ macro( feelpp_find_libraries prefix_name)
         else() # not a path
             get_target_property( LIBSO ${LIB} LOCATION )
             if(NOT LIBSO)
+                list( APPEND ${prefix_name}_LIBRARIES ${LIB} )
                 message( STATUS "Shared library not found: -${LIB}")
                 if( $ENV{VERBOSE} )
                     message( STATUS "-${LIB} => ${LIBSO}")
                 endif()
-                list( APPEND ${prefix_name}_LIBRARIES ${LIB} )
             else()
                 list( APPEND ${prefix_name}_LIBRARIES ${LIBSO} )
                 get_filename_component( LIBDIR ${LIBSO} DIRECTORY )
