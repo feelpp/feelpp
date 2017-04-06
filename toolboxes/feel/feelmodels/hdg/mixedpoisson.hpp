@@ -1441,6 +1441,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
             if ( field == "flux" )
             {
                 LOG(INFO) << "exporting flux at time " << time;
+            
                 M_exporter->step( time )->add(prefixvm(prefix(), "flux"),
                                               Idhv?(*Idhv)( M_up):M_up );
                 if (M_integralCondition)
@@ -1462,6 +1463,17 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralVelocity"), j_integral/meas);
                 }
             }
+            else if (field == "scaled_flux" )
+            {
+                for( auto const& pairMat : modelProperties().materials() )
+                {
+                    auto material = pairMat.second;
+                    auto kk = material.getDouble( "scale_flux" );
+                    auto scaled_flux = M_up;
+                    scaled_flux.scale(kk);
+                    M_exporter->step( time )->add(prefixvm(prefix(), "scaled_flux"), Idhv?(*Idhv)( scaled_flux ):scaled_flux );
+                }
+            }
             else if ( field == "potential" )
             {
                 LOG(INFO) << "exporting potential at time " << time;
@@ -1481,6 +1493,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                     Feel::cout << "Integral value of potential(from pp) on "
                       		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
+                    
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
@@ -1540,7 +1553,20 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         }
                     }
                 }
-            } else if ( field != "state variable" )
+            
+            } 
+            else if (field == "scaled_potential" )
+            {
+                for( auto const& pairMat : modelProperties().materials() )
+                {
+                    auto material = pairMat.second;
+                    auto kk = material.getDouble( "scale_potential" );
+                    auto scaled_potential = M_pp;
+                    scaled_potential.scale(kk);
+                    M_exporter->step( time )->add(prefixvm(prefix(), "scaled_potential"), Idh?(*Idh)( scaled_potential ):scaled_potential );
+                }
+            }
+            else if ( field != "state variable" )
             {
                 // Import data
                 LOG(INFO) << "importing " << field << " at time " << time;
