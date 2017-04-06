@@ -1465,14 +1465,18 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
             }
             else if (field == "scaled_flux" )
             {
+                auto scaled_flux = M_Vh->element("scaled_flux");
                 for( auto const& pairMat : modelProperties().materials() )
                 {
+                    auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = material.getDouble( "scale_flux" );
-                    auto scaled_flux = M_up;
-                    scaled_flux.scale(kk);
-                    M_exporter->step( time )->add(prefixvm(prefix(), "scaled_flux"), Idhv?(*Idhv)( scaled_flux ):scaled_flux );
+                    auto kk = expr(material.getScalar( "scale_flux" ) );
+
+                    scaled_flux.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
+
                 }
+
+                M_exporter->step( time )->add(prefixvm(prefix(), "scaled_flux"), Idhv?(*Idhv)( scaled_flux ):scaled_flux );
             }
             else if ( field == "potential" )
             {
@@ -1557,14 +1561,19 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
             } 
             else if (field == "scaled_potential" )
             {
+                auto scaled_potential = M_Wh->element("scaled_potential");
                 for( auto const& pairMat : modelProperties().materials() )
                 {
+                    auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = material.getDouble( "scale_potential" );
-                    auto scaled_potential = M_pp;
-                    scaled_potential.scale(kk);
-                    M_exporter->step( time )->add(prefixvm(prefix(), "scaled_potential"), Idh?(*Idh)( scaled_potential ):scaled_potential );
+                    auto kk = expr(material.getScalar( "scale_potential" ) );
+
+                    scaled_potential.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
+
                 }
+
+                M_exporter->step( time )->add(prefixvm(prefix(), "scaled_potential"), Idh?(*Idh)( scaled_potential ):scaled_potential );
+
             }
             else if ( field != "state variable" )
             {
