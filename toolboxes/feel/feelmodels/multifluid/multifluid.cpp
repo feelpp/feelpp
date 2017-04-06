@@ -390,10 +390,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
     if( !M_spaceInextensibilityLM || M_doRebuildSpaceInextensibilityLM )
     {
         // Lagrange-multiplier inextensibility space
-        this->mesh()->updateMarker2( *this->levelsetModel(0)->markerDirac() );
-        M_submeshInextensibilityLM = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
-        M_spaceInextensibilityLM = space_inextensibilitylm_type::New( 
-                _mesh=this->M_submeshInextensibilityLM,
+        M_spaceInextensibilityLM = space_inextensibilitylm_type::New(
+                _mesh=this->levelsetModel(0)->submeshDirac(),
                 _worldscomm=this->localNonCompositeWorldsComm()
                 );
         M_doRebuildSpaceInextensibilityLM = false;
@@ -821,20 +819,22 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                     this->timerTool("Solve").start();
 
                     size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
+
                     if( BuildNonCstPart )
                     {
                         form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=A,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
-                            integrate( _range=elements(this->M_submeshInextensibilityLM),
+                            integrate( _range=elements(submeshInextensibilityLM),
                                        _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
                                        _geomap=this->geomap()
                                        );
                         form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=A,
                                _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
                                _colstart=colStartInMatrix ) +=
-                            integrate( _range=elements(this->M_submeshInextensibilityLM),
+                            integrate( _range=elements(submeshInextensibilityLM),
                                        _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
                                        _geomap=this->geomap()
                                        );

@@ -27,6 +27,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
     M_doUpdateModGradPhi(true),
+    M_doUpdateSubmeshDirac(true),
     M_doUpdateMarkers(true),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
@@ -1059,52 +1060,52 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
 // Markers accessors
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerInterface()
+LEVELSET_CLASS_TEMPLATE_TYPE::markerInterface() const
 {
     if( !M_markerInterface )
         M_markerInterface.reset( new element_markers_type(M_spaceMarkers, "MarkerInterface") );
 
     if( M_doUpdateMarkers )
-       this->updateMarkerInterface(); 
+       const_cast<self_type*>(this)->updateMarkerInterface(); 
 
     return M_markerInterface;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac()
+LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac() const
 {
     if( !M_markerDirac )
         M_markerDirac.reset( new element_markers_type(M_spaceMarkers, "MarkerDirac") );
 
     if( M_doUpdateMarkers )
-       this->updateMarkerDirac(); 
+       const_cast<self_type*>(this)->updateMarkerDirac(); 
 
     return M_markerDirac;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half)
+LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half) const
 {
     if( !M_markerHeaviside )
         M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
 
     if( M_doUpdateMarkers )
-       this->updateMarkerHeaviside( invert, cut_at_half );
+       const_cast<self_type*>(this)->updateMarkerHeaviside( invert, cut_at_half );
 
     return M_markerHeaviside;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements()
+LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements() const
 {
     if( !M_markerCrossedElements )
         M_markerCrossedElements.reset( new element_markers_type(M_spaceMarkers, "MarkerCrossedElements") );
 
     if( M_doUpdateMarkers )
-       this->updateMarkerCrossedElements(); 
+       const_cast<self_type*>(this)->updateMarkerCrossedElements(); 
 
     return M_markerCrossedElements;
 }
@@ -1382,6 +1383,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateMarkers = true;
     M_doUpdateGradPhi = true;
     M_doUpdateModGradPhi = true;
+    M_doUpdateSubmeshDirac = true;
 }
 
 //----------------------------------------------------------------------------//
@@ -1700,6 +1702,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n\n";
 
     return _ostr;
+}
+
+//----------------------------------------------------------------------------//
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::mesh_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::submeshDirac() const
+{
+    if( M_doUpdateSubmeshDirac )
+    {
+        this->mesh()->updateMarker2( *this->markerDirac() );
+        M_submeshDirac = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_doUpdateSubmeshDirac = false;
+    }
+    return M_submeshDirac;
 }
 
 //----------------------------------------------------------------------------//

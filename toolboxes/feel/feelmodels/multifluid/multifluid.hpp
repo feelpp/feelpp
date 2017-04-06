@@ -198,7 +198,6 @@ private:
     bool M_enableInextensibility;
     std::vector<std::string> M_inextensibilityMethod;
 
-    mutable mesh_ptrtype M_submeshInextensibilityLM;
     mutable space_inextensibilitylm_ptrtype M_spaceInextensibilityLM;
     mutable bool M_doRebuildSpaceInextensibilityLM;
     // Penalty method gamma
