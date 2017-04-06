@@ -277,8 +277,7 @@ public:
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
-    //mesh_ptrtype const& mesh() const { return M_advection->mesh(); }
-    mesh_ptrtype const& submesh() const { return M_submesh; }
+    mesh_ptrtype const& submeshDirac() const;
 
     //--------------------------------------------------------------------//
     // Mesh adaptation
@@ -320,10 +319,10 @@ public:
 
     //--------------------------------------------------------------------//
     // Markers
-    element_markers_ptrtype const& markerInterface();
-    element_markers_ptrtype const& markerDirac();
-    element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false);
-    element_markers_ptrtype const& markerCrossedElements();
+    element_markers_ptrtype const& markerInterface() const;
+    element_markers_ptrtype const& markerDirac() const;
+    element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false) const;
+    element_markers_ptrtype const& markerCrossedElements() const;
 
     //--------------------------------------------------------------------//
     // Utility distances
@@ -466,9 +465,9 @@ protected:
 
 private:
     //--------------------------------------------------------------------//
-    // Mesh 
-    //mesh_ptrtype M_mesh;
-    mesh_ptrtype M_submesh;
+    // Meshes 
+    mutable mesh_ptrtype M_submeshDirac;
+    mutable bool M_doUpdateSubmeshDirac;
 
     //--------------------------------------------------------------------//
     // Periodicity
@@ -484,10 +483,10 @@ private:
 
     //--------------------------------------------------------------------//
     // Markers
-    element_markers_ptrtype M_markerDirac;
-    element_markers_ptrtype M_markerHeaviside;
-    element_markers_ptrtype M_markerCrossedElements;
-    element_markers_ptrtype M_markerInterface;
+    mutable element_markers_ptrtype M_markerDirac;
+    mutable element_markers_ptrtype M_markerHeaviside;
+    mutable element_markers_ptrtype M_markerCrossedElements;
+    mutable element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
     //--------------------------------------------------------------------//
     // Projectors
