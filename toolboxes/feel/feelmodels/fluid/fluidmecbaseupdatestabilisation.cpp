@@ -128,7 +128,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
-        auto stab_test = trans(grad(p));
+        auto stab_test = -trans(grad(p));
         if ( !fluidmec.isStationary() )
         {
             auto stab_residual_bilinear_u = idv(rho)*(idt(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) + gradt(u)*idv(betaU) ) - myViscosity*laplaciant(u);
