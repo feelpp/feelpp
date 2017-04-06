@@ -78,10 +78,10 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 if( FEELPP_ENABLE_PCH )
     file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "\
--fsyntax-only \\
--femit-all-decls \\
 -include-pch ${CMAKE_BINARY_DIR}/feel/cotire/feelpp_CXX_prefix.hxx.pch \\
 "
+#-fsyntax-only \\
+#-femit-all-decls \\
     )
 endif()
 
@@ -112,26 +112,26 @@ list( REMOVE_DUPLICATES FEELPP_INTERPRETER_INCLUDE_DIRS )
 
 # Library dirs path or libraries path (eg. -L/path/to/lib.so).
 set( FEELPP_INTERPRETER_LIBRARY_DIRS
-    ${CMAKE_INSTALL_PREFIX}/lib
-    ${CMAKE_BINARY_DIR}/feel
-    ${FEELPP_DEPS_LINK_DIR}
+       ${CMAKE_INSTALL_PREFIX}/lib
+       ${CMAKE_BINARY_DIR}/feel
+    #   ${FEELPP_DEPS_LINK_DIR}
     # Contrib binary directories.
-    ${google-glog_BINARY_DIR}
-    ${gflags_BINARY_DIR}
-    ${GiNaC_BINARY_DIR}
-    ${GiNaC_BINARY_DIR}/ginac
-    ${Eigen3_BINARY_DIR}
-    ${METIS_BINARY_DIR}/libmetis
-    ${CMAKE_BINARY_DIR}/contrib/nlopt/
+    #   ${google-glog_BINARY_DIR}
+    #   ${gflags_BINARY_DIR}
+    #   ${GiNaC_BINARY_DIR}
+    #   ${GiNaC_BINARY_DIR}/ginac
+    #   ${Eigen3_BINARY_DIR}
+    #   ${METIS_BINARY_DIR}/libmetis
+    #   ${CMAKE_BINARY_DIR}/contrib/nlopt/
     # Variable generated from feelpp_find_library
-    ${FEELPP_ALL_LIBRARY_DIRS}
+    #   ${FEELPP_ALL_LIBRARY_DIRS}
 )
 list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LIBRARY_DIRS )
 
 
 # Libraries to link (eg. -ltoto).
 set( FEELPP_INTERPRETER_LINK_LIBRARIES
-    ${FEELPP_LINK_LIBRARIES}
+    #${FEELPP_LINK_LIBRARIES}
     ${FEELPP_LIBRARY} # -lfeepp
 )
 list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LINK_LIBRARIES )
@@ -139,7 +139,7 @@ list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LINK_LIBRARIES )
 
 # Shared libraries to link (eg. /path/to/toto.so)
 set( FEELPP_INTERPRETER_LIBRARIES
-    ""
+    "" #empty
     #${FEELPP_LIBRARIES}
 )
 list( REMOVE_DUPLICATES FEELPP_INTERPRETER_LIBRARIES )
