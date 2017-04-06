@@ -1,7 +1,5 @@
 #############################################################################
 
-
-
 SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_PARAMETERS "10" CACHE STRING "number of parameters" )
 SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_GEOPARAMETERS "10" CACHE STRING "number of geometric parameters" )
 SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_GINACEXPR "10" CACHE STRING "number of ginac expr" )
@@ -23,6 +21,9 @@ add_library(feelpp_modelcore
   markermanagement.cpp modelmeasures.cpp
   )
 target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
+if( FEELPP_ENABLE_PCH_MODELS )
+    add_precompiled_header( feelpp_modelcore )
+endif()
 INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
 
 include(feelpp.models.macros.cmake)
