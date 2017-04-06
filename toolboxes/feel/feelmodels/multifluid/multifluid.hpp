@@ -159,6 +159,9 @@ protected:
     void updateInterfaceForces();
     void solveFluid();
     void advectLevelsets();
+
+    void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
+    bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
     // Linear solve
     void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const;
     // Non-linear solve
