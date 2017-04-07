@@ -52,7 +52,9 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
 
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
+  # more idiomatic (fix issue with Qt5)
+  #set (CMAKE_CXX_STANDARD_LIBRARY  -l:<full-library-path>)
+  set (CMAKE_CXX_STANDARD ${FEELPP_STD_CPP} )
 
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
