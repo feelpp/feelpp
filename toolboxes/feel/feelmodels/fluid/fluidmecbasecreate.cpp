@@ -216,6 +216,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // stabilisation options
+    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
+    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+
     M_applyCIPStabOnlyOnBoundaryFaces=false;
     M_doCIPStabConvection = boption(_name="stabilisation-cip-convection",_prefix=this->prefix());
     M_doCIPStabDivergence = boption(_name="stabilisation-cip-divergence",_prefix=this->prefix());
@@ -971,7 +974,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
-
+    //-------------------------------------------------//
+    // init stabilization
+    if ( M_stabilizationGLS )
+    {
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameter->init();
+    }
     //-------------------------------------------------//
     this->initFluidOutlet();
     // init function defined in json
