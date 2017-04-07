@@ -840,8 +840,12 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		auto lambda = expr(material.getScalar("lambda"));
 		Feel::cout << "Lambda: " << lambda << std::endl;
 		auto mu = expr(material.getScalar("mu"));
+		Feel::cout << "Mu: " << mu << std::endl;
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
+        Feel::cout << "c1: " << mean(_range=elements(M_mesh),_expr=c1) << std::endl;
+        Feel::cout << "c2: " << mean(_range=elements(M_mesh),_expr=c2) << std::endl;
+
 		bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     	bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
     }
@@ -1163,8 +1167,6 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 
          		// M_exporter->step(time)->add(prefixvm(M_prefix, "stress"), Idhv?(*Idhv)( M_up):M_up );
          
-
-
                if (M_integralCondition)
                 {
 
@@ -1209,6 +1211,85 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                     Feel::cout << force_integral[i] << std::endl;
                     M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
                 }
+            }
+            else if ( field == "scaled_displacement" )
+            {
+                auto scaled_displ = M_Wh->element("scaled_displacement");
+                for( auto const& pairMat : modelProperties()->materials() )
+                {
+                    auto marker = pairMat.first;
+                    auto material = pairMat.second;
+                    auto kk = expr(material.getScalar( "scale_displacement" ) );
+
+                    scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
+                }
+
+                M_exporter->step(time)->add(prefixvm(M_prefix, "displacement"),Idh?(*Idh)( scaled_displ):scaled_displ ) ;    	
+
+
+
+            }
+            else if ( field == "scaled_stress" )
+            {
+                auto scaled_stress = M_Vh->element("scaled_stress");
+                for( auto const& pairMat : modelProperties()->materials() )
+                {
+                    auto marker = pairMat.first;
+                    auto material = pairMat.second;
+                    auto kk = expr(material.getScalar( "scale_stress" ) );
+
+                    scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
+                }
+                
+                // Exporting the scaled stress component by component
+                auto Sh = Pch<Order> (M_mesh);
+                auto l2p = opProjection(_domainSpace=Sh, _imageSpace=Sh);
+
+                auto SXX = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::X)) );
+                M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXX"), SXX );
+
+                if (Dim > 1)
+                {
+                    auto SYY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Y)) );
+                    auto SXY = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Y)) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYY"), SYY );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXY"), SXY );
+                }
+                if (Dim > 2)
+                {            
+                    auto SZZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Z, Component::Z)) );
+                    auto SYZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::Y, Component::Z)) );
+                    auto SXZ = l2p -> project (_quad=_Q<expr_order>(),_expr = idv (scaled_stress.comp(Component::X, Component::Z)) );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaZZ"), SZZ );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaYZ"), SYZ );
+                    M_exporter->step(time)->add(prefixvm(M_prefix,"scaled_sigmaXZ"), SXZ );
+                }
+               
+                // Exporting scaled stress integral
+                if (M_integralCondition)
+                {
+                    for( auto exAtMarker : this->M_IBCList)
+                    {
+                        std::vector<double> force_integral(Dim);
+                        std::string stringForce = "scaled_integralForce_";
+                        auto marker = exAtMarker.marker();
+                        LOG(INFO) << "exporting scaled integral flux at time "
+                                  << time << " on marker " << marker;
+                        auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=trans(idv(scaled_stress))*N());
+                    
+                        Feel::cout << "Force computed: " << std::endl;
+                        for( auto i=0;i < Dim;i++ )
+                        {
+                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            force_integral[i] = j_integral.evaluate()(i,0);
+                            Feel::cout << force_integral[i] << std::endl;
+                            M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
+                        }
+                    }
+
+                }
+
+
             }
             else if ( field == "displacement" )
         	{
