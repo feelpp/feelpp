@@ -24,10 +24,10 @@
 
 #feelpp_add_application( hdg_darcy main.cpp )
 
-foreach(D RANGE 2 3 1)
-    foreach(P RANGE 0 4 1) #3 
-        feelpp_add_application( mixed-poisson2-model_${D}DP${P}
-                                SRCS mixedpoisson2_main.cpp
+foreach(D 3)
+    foreach(P RANGE 0 4 0) #3 
+        feelpp_add_application( mixed-poisson-model_${D}DP${P}
+                                SRCS mixedpoisson_main.cpp
                                 LINK_LIBRARIES feelpp_modelcore
                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P})
   endforeach()
@@ -50,3 +50,4 @@ feelpp_add_testcase(cylinder)
 feelpp_add_testcase(testDarcy)
 feelpp_add_testcase(mixed-poisson)
 feelpp_add_testcase(mixed-elasticity)
+feelpp_add_testcase(mp-red)
