@@ -210,15 +210,25 @@ if ( NOT TARGET install-feelpp-base )
   #
   # this target installs the libraries, header files, cmake files and sample applications
   #
+  if ( FEELPP_HAS_ACUSIM )
+    set(FEELPP_DATABASES_APPS  feelpp_databases_converter_acusim     feelpp_databases_export     feelpp_databases_pod)
+  else()
+    set(FEELPP_DATABASES_APPS  feelpp_databases_export     feelpp_databases_pod)
+  endif()
+  MESSAGE(STATUS "toto ${FEELPP_DATABASES_APPS}")
+
   add_custom_target(install-feelpp-base
     DEPENDS
     install-feelpp-lib
     install-quickstart
+    install-app-databases
     COMMAND
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
     -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
     -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Databases
+    -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake"
     )
 endif()
 

@@ -1794,9 +1794,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
     size_type pat_uu = size_type(Pattern::COUPLED);
     size_type pat_pp = size_type(Pattern::ZERO);
 
-    bool doStabPSPG = boption(_prefix=this->prefix(),_name="stabilisation-pspg");
-    bool doStabGLS = boption(_prefix=this->prefix(),_name="stabilisation-gls");
-    if ( doStabPSPG || doStabGLS ||
+    bool doStabPSPG = M_stabilizationGLS &&
+        ( this->stabilizationGLSType()== "pspg" ||
+          this->stabilizationGLSType()== "supg-pspg" ||
+          this->stabilizationGLSType() == "gls" );
+    if ( doStabPSPG ||
          (this->definePressureCst() && this->definePressureCstMethod() == "penalisation") ||
          (this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "nitsche" ) )
          )
