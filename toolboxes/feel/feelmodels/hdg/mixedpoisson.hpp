@@ -1574,6 +1574,25 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                 M_exporter->step( time )->add(prefixvm(prefix(), "scaled_potential"), Idh?(*Idh)( scaled_potential ):scaled_potential );
 
+
+                for( int i = 0; i < M_integralCondition; i++ )
+                {
+                    auto scaled_ibc = M_mup[i];
+                    for( auto const& pairMat : modelProperties().materials() )
+                    {
+                        auto material = pairMat.second;
+                        auto kk_ibc = expr(material.getScalar( "scale_potential" ) ).evaluate();
+                        scaled_ibc.scale(kk_ibc);
+                    }                    
+                    
+                    LOG(INFO) << "exporting IBC scaled potential " << i << " at time "
+                              << time << " value " << scaled_ibc[0];
+                    M_exporter->step( time )->add(prefixvm(prefix(), "scaled_cstPotential_1"),
+                                                  scaled_ibc[0] );
+                    Feel::cout << "Integral value of potential(mup) on "
+                               << M_IBCList[i].marker() << " : \t " << scaled_ibc[0] << std::endl;
+                    
+                }
             }
             else if ( field != "state variable" )
             {
