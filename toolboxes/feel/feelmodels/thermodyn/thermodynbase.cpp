@@ -857,7 +857,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         if ( M_stabilizationGLSParameter->method() == "eigenvalue" )
             updateLinearPDEStabilizationGLS<0>( *this, data );
         else if ( M_stabilizationGLSParameter->method() == "doubly-asymptotic-approximation" )
-            updateLinearPDEStabilizationGLS<1>( *this, data );
+            updateLinearPDEStabilizationGLS<2>( *this, data );
     }
 
     // update bc
