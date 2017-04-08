@@ -2,4 +2,7 @@
 add_library( feelpp_modelalg SHARED
   modelalgebraicfactory.cpp )
 target_link_libraries (feelpp_modelalg ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} feelpp_modelcore )
+if( FEELPP_ENABLE_PCH_MODELS )
+    add_precompiled_header( feelpp_modelalg )
+endif()
 INSTALL(TARGETS feelpp_modelalg DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
