@@ -121,6 +121,11 @@ public:
         }
     ~IMGeneral() = default;
 
+    IMGeneral( IMGeneral const& i ) = default;
+    IMGeneral( IMGeneral && i ) = default;
+    IMGeneral& operator=( IMGeneral const& ) = default;
+    IMGeneral& operator=( IMGeneral && ) = default;
+    
     quadrature_data_type data() const
     {
         return boost::make_tuple( this->points(), this->weights() );
@@ -157,6 +162,10 @@ public:
     };
     IM() : super( IMORDER ) {}
     IM( uint16_type o ) : super( o ) {}
+    IM( IM const& ) = default;
+    IM( IM && ) = default;
+    IM& operator=( IM const& ) = default;
+    IM& operator=( IM && ) = default;
 };
 
 template<uint16_type IMORDER = invalid_uint16_type_value,
@@ -166,10 +175,11 @@ struct _Q
     static const int order = IMORDER;
     static const uint16_type CompileTimeOrder = IMORDER;
 
+    
     template<int DIM,
              typename T,
              template<uint16_type, uint16_type, uint16_type> class Entity>
-    struct apply
+    struct Apply
     {
         typedef IMGeneral<DIM, T, Entity> type;
     };
@@ -177,14 +187,70 @@ struct _Q
     template<int DIM,
              typename T,
              template<uint16_type, uint16_type, uint16_type> class Entity>
-    struct applyIMGeneral
+    typename Apply<DIM,T,Entity>::type apply( uint16_type O ) const
+        {
+            return typename Apply<DIM,T,Entity>::type( O );
+        }
+
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename Apply<DIM,T,Entity>::type apply() const
+        {
+            return typename Apply<DIM,T,Entity>::type( this->order() );
+        }
+
+
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename Apply<DIM,T,Entity>::type get() const
+        {
+            return typename Apply<DIM,T,Entity>::type( this->order() );
+        }
+
+    template< typename T,
+              int DIM,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename Apply<DIM,T,Entity>::type get( Entity<DIM,1,DIM> const& e ) const
+        {
+            return typename Apply<DIM,T,Entity>::type( this->order() );
+        }
+    template< typename T,
+              int DIM,
+              template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename Apply<DIM,T,Entity>::type get( Entity<DIM,1,DIM> && e ) const
+        {
+            return typename Apply<DIM,T,Entity>::type( this->order() );
+        }
+
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    struct ApplyIMGeneral
     {
         //typedef IMGeneral<DIM, IMORDER, T, Entity,QPS> type;
         typedef IMGeneral<DIM, T, Entity> type;
     };
 
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename ApplyIMGeneral<DIM,T,Entity>::type applyIMGeneral( uint16_type O ) const 
+        {
+            return typename ApplyIMGeneral<DIM,T,Entity>::type( O );
+        }
+
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    typename ApplyIMGeneral<DIM,T,Entity>::type applyIMGeneral() const 
+        {
+            return typename ApplyIMGeneral<DIM,T,Entity>::type( this->order() );
+        }
+    
     template<typename ContextType>
-    struct applyContext
+    struct ApplyContext
     {
         static const int DIM = ContextType::PDim;
         typedef typename ContextType::value_type T;
@@ -201,15 +267,26 @@ struct _Q
                                   mpl::identity<IMGeneral<DIM, T, Hypercube> > >::type::type type;
 #endif
     };
-
+    template<typename ContextType>
+    typename ApplyContext<ContextType>::type applyContext( uint16_type O ) const
+        {
+            return typename ApplyContext<ContextType>::type( O );
+        }
+    template<typename ContextType>
+    typename ApplyContext<ContextType>::type applyContext() const
+        {
+            return typename ApplyContext<ContextType>::type( this->order() );
+        }
+    
     _Q()
         :
-        M_order( CompileTimeOrder )
+        M_order( (CompileTimeOrder!=invalid_uint16_type_value)?CompileTimeOrder:1 )
         {}
     _Q( uint16_type M_order )
         :
         M_order( M_order )
         {}
+
 private:
     uint16_type M_order;
 };
@@ -222,7 +299,17 @@ template<int IMORDER,
          typename T>
 struct IMGeneric
 {
-    typedef typename _Q<IMORDER,QPS>::template apply<DIM,T,Entity>::type type;
+    typedef typename _Q<IMORDER,QPS>::template Apply<DIM,T,Entity>::type type;
+
+    type apply( uint16_type O ) const
+        {
+            return type( O );
+        }
+
+    type apply() const
+        {
+            return type( IMORDER );
+        }
 };
 
 

@@ -132,7 +132,7 @@ public:
         M_element1( std::move( sf.M_element1 ) )
         {
         }
-    SubFaceOf( SubFaceOfNone const& /*sf*/ )
+    SubFaceOf( SubFaceOfNone<nDim> const& /*sf*/ )
         :
         M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
         M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
@@ -140,17 +140,8 @@ public:
     }
     virtual ~SubFaceOf() {}
 
-    SubFaceOf& operator=( SubFaceOf const& sf )
-    {
-        if ( this != &sf )
-        {
-            M_element0 = sf.M_element0;
-            M_element1 = sf.M_element1;
+    SubFaceOf& operator=( SubFaceOf const& sf ) = default;
 
-        }
-
-        return *this;
-    }
     SubFaceOf& operator=( SubFaceOf && sf )
         {
             M_element0 = std::move(sf.M_element0);
@@ -158,10 +149,7 @@ public:
             ///std::cout << "move assigned SubFaceOf\n";
             return *this;
         }
-    SubFaceOf& operator=( SubFaceOfNone const& /*sf*/ )
-    {
-        return *this;
-    }
+
     entity_type const& element( uint16_type e ) const
     {
         if ( e == 0 )

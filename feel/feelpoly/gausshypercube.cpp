@@ -50,12 +50,25 @@ public :
     //static const uint32_type Npoints = this->numberOfPoints();
 
     GaussHypercube() = default;
+    GaussHypercube( GaussHypercube const& ) = default;
+    GaussHypercube( GaussHypercube && ) = default;
+    GaussHypercube& operator=( GaussHypercube const& ) = default;
+    GaussHypercube& operator=( GaussHypercube && ) = default;
 
+    //! @return the degree of the quadrature given the order of the
+    //! polynomial degree to integrate
+    constexpr uint16_type gaussdegree( uint16_type o ) noexcept { return (o+1)/2+1; }
+    
+    //!
+    //! create a Gauss quadrature on hypercube integrating up to order o
+    //!
     GaussHypercube( uint16_type o )
                     
         :
-        super( D, o, (o+1)/2+1 )
+        super( D, gaussdegree(o), ipow(gaussdegree(o), D) )
         {}
+    ~GaussHypercube() = default;
+
     IMBase<T>* operator()()
     {
         return operator()( mpl::int_<D>() );
@@ -73,7 +86,7 @@ public :
                 VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
 #endif
                 this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0; i < this->numberOfPoints(); ++i )
+                for ( int i = 0; i < this->degree(); ++i )
                 {
                     // computes the weight of the k-th node
                     this->q[(D+1)*i] = px[i];
@@ -95,18 +108,14 @@ public :
             if ( this->M_created == false )
             {
                 // build rules in x and y direction
-                std::vector<T> wx( this->numberOfPoints() );
-                std::vector<T> px( this->numberOfPoints() );
-                Feel::details::dyna::gaussjacobi( this->numberOfPoints(), wx, px, 0.0, 0.0 );
-#if 0
-                VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-                VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
-#endif
+                std::vector<T> wx( this->degree() );
+                std::vector<T> px( this->degree() );
+                Feel::details::dyna::gaussjacobi( this->degree(), wx, px, 0.0, 0.0 );
 
                 this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->numberOfPoints(); ++i )
+                for ( int i = 0,  k = 0; i < this->degree(); ++i )
                 {
-                    for ( int j = 0; j < this->numberOfPoints(); ++j, ++k )
+                    for ( int j = 0; j < this->degree(); ++j, ++k )
                     {
                         // computes the weight of the k-th node
                         this->q[(D+1)*k] = px[i];
@@ -115,10 +124,9 @@ public :
                     }
                 }
 
-#if 0
-                VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
-                VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
-#endif
+
+                //DVLOG(2) << "[quadrature] q = " << *this << "\n";
+
                 this->M_created = true;
             }
             return this;
@@ -129,16 +137,16 @@ public :
             if ( this->M_created == false )
             {
                 // build rules in x and y direction
-                std::vector<T> wx( this->numberOfPoints() );
-                std::vector<T> px( this->numberOfPoints() );
-                Feel::details::dyna::gaussjacobi( this->numberOfPoints(), wx, px, 0.0, 0.0 );
+                std::vector<T> wx( this->degree() );
+                std::vector<T> px( this->degree() );
+                Feel::details::dyna::gaussjacobi( this->degree(), wx, px, 0.0, 0.0 );
 
                 this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->numberOfPoints(); ++i )
+                for ( int i = 0,  k = 0; i < this->degree(); ++i )
                 {
-                    for ( int j = 0; j < this->numberOfPoints(); ++j )
+                    for ( int j = 0; j < this->degree(); ++j )
                     {
-                        for ( int l = 0; l < this->numberOfPoints() ; ++l, ++k )
+                        for ( int l = 0; l < this->degree() ; ++l, ++k )
                         {
                             // computes the weight of the k-th node
                             this->q[(D+1)*k] = px[i];
@@ -215,7 +223,6 @@ public :
                 }
             }
 #endif
-    ~GaussHypercube() = default;
     
 };
 

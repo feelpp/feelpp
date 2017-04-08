@@ -6,7 +6,7 @@
        Date: 2006-12-30
 
   Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
-  Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2011-2017 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
+#include <feel/feelpoly/expansions.hpp>
 
 namespace Feel
 {

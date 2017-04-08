@@ -132,6 +132,7 @@ void QK_find_N_opt()
     if ( i-2 < 2*Q-1  )
         QK_log << "Q = " << Q << " ; i = " << i << " ; Error" << error << std::endl;
 
+    BOOST_TEST_MESSAGE( "Q=" << Q );
     BOOST_CHECK( i-2 >= 2*Q-1  );
 }
 
@@ -391,18 +392,28 @@ void PK_Monom_N_opt_3D()
 /*
  * Testsuite
  */
+#if 0
 typedef boost::mpl::list<boost::mpl::int_<2>,
         boost::mpl::int_<4>,
         boost::mpl::int_<8>,
         boost::mpl::int_<16>,
         boost::mpl::int_<32>,
         boost::mpl::int_<40> > test_types;
+#else
+typedef boost::mpl::list<boost::mpl::int_<2>//,
+                         //boost::mpl::int_<4>,
+                         //boost::mpl::int_<8>,
+                         //boost::mpl::int_<16>,
+                         //boost::mpl::int_<32>,
+                         //boost::mpl::int_<40>
+                         > test_types;
+#endif
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK_find_N_opt_double, T, test_types )
 {
     QK_find_N_opt<T::value,double>();
 }
-
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK_find_N_opt_3D_double, T, test_types )
 {
     QK_find_N_opt_3D<T::value,double>();
@@ -421,3 +432,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_3D_double, T, test_types )
 {
     PK_Monom_N_opt_3D<T::value,double>();
 }
+#endif

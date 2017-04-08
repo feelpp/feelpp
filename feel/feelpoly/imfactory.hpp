@@ -46,11 +46,22 @@ public:
         M_npoints(np)
         {}
     IMBase( IMBase const& ) = default;
+    IMBase( IMBase && ) = default;
+    IMBase& operator=( IMBase const& i ) = default;
+    IMBase& operator=( IMBase && i ) = default;
     virtual ~IMBase() = default;
+    
+    uint16_type dimension() const noexcept { return M_dim; }
+    uint16_type integrationDegree() const noexcept{ return M_order; }
+    //!
+    //! @return the degree of the quadrature
+    //!
+    uint16_type degree() const noexcept{ return M_order; }
 
-    uint16_type dimension() const { return M_dim; }
-    uint16_type integrationDegree() const { return M_order; }
-    uint16_type numberOfPoints() const { return M_npoints; }
+    //!
+    //! @return the number of quadrature points and weights
+    //!
+    uint16_type numberOfPoints() const noexcept { return M_npoints; }
     
         
     // structure that holds both points and weights
