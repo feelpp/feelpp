@@ -1,36 +1,57 @@
-= Feel++ : Finite Element Embedded Library in C++
+:feelpp: Feel++
+:cpp: C++
+= {feelpp}: Finite Element Embedded Library in {cpp}
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
 :toc:
 :toc-placement: preamble
 :toclevels: 1
-:feelpp: Feel++
-:cpp: C++
 
 toc::[]
 
+
+image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[caption="{feelpp} Book",link=http://book.feelpp.org,float=right]
+
 == Gitter Discussion Forum 
 
-If you find errors or omissions in this document, please don’t hesitate to
-link:https://github.com/feelpp/feelpp/issues[submit an issue or open a pull
-request] with a fix. We also encourage you to ask questions and discuss any
-aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
-Gitter forum]. New contributors are always welcome!
+We encourage you to ask questions and discuss any aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
+  Gitter forum].
+New contributors are always welcome!
 
 image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
 
+
+
 == Continuous Integration
 
+{feelpp} maintains various branches.
+At the core, the development model is greatly inspired by existing models out there. 
+The central repo holds two main branches with an infinite lifetime: `master` and `develop`
+
+`master`:: 
+Main branch where the source code of HEAD always reflects a _production-ready_ state.
+
+`develop`:: 
+Main branch where the source code of HEAD always reflects a state with the latest delivered development changes for the next release. 
+Some would call this the “integration branch”. This is where any automatic nightly builds are built from.
+
+`feature/*`::
+Feature branches (or sometimes called topic branches) are used to develop new features for the upcoming or a distant future release. 
+When starting development of a feature, the target release in which this feature will be incorporated may well be unknown at that point. 
+The essence of a feature branch is that it exists as long as the feature is in development, but will eventually be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment).
+
 |===
-| Platform & Compiler | `master` | `develop` | `feature/hdg-sc`
+| Platform & Compiler | `master` | `develop` | `feature/hdg-sc` | `feature/quad`
 
 | Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/hdg-c["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/hdg-sc["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+| image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/quad["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 
 | Buildkite Ubuntu 16.10 
 |  
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/hdg-sc["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/quad["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
 |===
 
@@ -54,10 +75,6 @@ Here are the latest releases of {feelpp}
  image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.45132"]
 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
-
-== Documentation
-
-image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[caption="{feelpp} Book",link=http://book.feelpp.org]
 
 == Features
 
