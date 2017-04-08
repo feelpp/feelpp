@@ -501,6 +501,7 @@ template< class Convex >
 void
 MeshALE<Convex>::exportResults(double time)
 {
+    std::string exportRepository = (fs::path(this->rootRepository()) / prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"))).string();
     if (!M_exporter_ref)
     {
         //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
@@ -509,7 +510,8 @@ MeshALE<Convex>::exportResults(double time)
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ref"),
                                    _geo=geoExportType,
-                                   _worldcomm=this->worldComm() );
+                                   _worldcomm=this->worldComm(),
+                                   _path=exportRepository );
     }
 
     M_exporter_ref->step( time )->add( prefixvm(this->prefix(),"ref_displacement"), *M_displacement_ref );
@@ -527,7 +529,8 @@ MeshALE<Convex>::exportResults(double time)
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ho"),
                                    _geo=geoExportType,
-                                   _worldcomm=this->worldComm() );
+                                   _worldcomm=this->worldComm(),
+                                   _path=exportRepository );
         }
 
         //M_exporter->step( time )->setMesh( M_movingMesh );

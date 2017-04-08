@@ -215,6 +215,11 @@ public:
     typedef typename space_vectorial_PN_type::element_type element_vectorial_PN_type;
     typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
     //___________________________________________________________________________________//
+    // stabilization
+    static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
+    typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+    typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
+    //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // algebraic tools
@@ -232,9 +237,10 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
+    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator,
+    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_marked_face_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
@@ -257,12 +263,12 @@ public:
     typedef boost::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
     typedef typename space_fluidoutlet_windkessel_mesh_disp_type::element_type element_fluidoutlet_windkessel_mesh_disp_type;
     typedef boost::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<trace_mesh_type>::element_const_iterator,
-                         typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
+    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator,
+    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
     typedef OperatorInterpolation<space_mesh_disp_type,
-                                  space_fluidoutlet_windkessel_mesh_disp_type,
-                                  range_fluidoutlet_windkessel_type> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
+                                  space_fluidoutlet_windkessel_mesh_disp_type/*,
+                                                                              range_fluidoutlet_windkessel_type*/> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
     typedef boost::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
 #endif
     //___________________________________________________________________________________//
@@ -301,31 +307,31 @@ public:
     typedef boost::shared_ptr<element_vectorialdisc_visu_ho_type> element_vectorialdisc_visu_ho_ptrtype;
     //___________________________________________________________________________________//
     //
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
+    // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
+    //                      typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
+    //                      typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
     //___________________________________________________________________________________//
 
     typedef OperatorInterpolation<space_fluid_velocity_type,
-                                  space_vectorial_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_vectorial_type;
+                                  space_vectorial_visu_ho_type/*,
+                                                               range_visu_ho_type*/> op_interpolation_visu_ho_vectorial_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_vectorial_type> op_interpolation_visu_ho_vectorial_ptrtype;
 
     typedef OperatorInterpolation<space_fluid_pressure_type,
-                                  space_scalar_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_scalar_type;
+                                  space_scalar_visu_ho_type/*,
+                                                            range_visu_ho_type*/> op_interpolation_visu_ho_scalar_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_scalar_type> op_interpolation_visu_ho_scalar_ptrtype;
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     typedef OperatorInterpolation<space_mesh_disp_type,
-                                  space_vectorial_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_meshdisp_type;
+                                  space_vectorial_visu_ho_type/*,
+                                                               range_visu_ho_type*/> op_interpolation_visu_ho_meshdisp_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_meshdisp_type> op_interpolation_visu_ho_meshdisp_ptrtype;
 #endif
 
     typedef OperatorInterpolation<space_stress_type,
-                                  space_vectorialdisc_visu_ho_type,
-                                  range_visu_ho_type> op_interpolation_visu_ho_vectorialdisc_type;
+                                  space_vectorialdisc_visu_ho_type/*,
+                                                                   range_visu_ho_type*/> op_interpolation_visu_ho_vectorialdisc_type;
     typedef boost::shared_ptr<op_interpolation_visu_ho_vectorialdisc_type> op_interpolation_visu_ho_vectorialdisc_ptrtype;
     //___________________________________________________________________________________//
 
@@ -548,7 +554,11 @@ public :
     void couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const;
 
     //___________________________________________________________________________________//
-    // stabilisation parameters
+    // stabilization
+    bool stabilizationGLS() const { return M_stabilizationGLS; }
+    std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
     bool doCIPStabConvection() const { return M_doCIPStabConvection; }
@@ -599,6 +609,15 @@ public :
         this->densityViscosityModel()->updateDynamicViscosity( __expr );
     }
     //___________________________________________________________________________________//
+    // boundary conditions + body forces
+    map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
+    std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
+    map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
+    map_scalar_field<2> const& bcPressure() const { return M_bcPressure; }
+    map_vector_field<nDim,1,2> const& bcNeumannVectorial() const { return M_bcNeumannVectorial; }
+    map_matrix_field<nDim,nDim,2> const& bcNeumannTensor2() const { return M_bcNeumannTensor2; }
+    map_vector_field<nDim,1,2> const& bodyForces() const { return M_volumicForcesProperties; }
+
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
@@ -824,9 +843,7 @@ public :
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
-    void updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                   sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const;
-
+    void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
     virtual void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const = 0;
@@ -892,6 +909,13 @@ protected:
     //----------------------------------------------------
     // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;
+    // boundary conditions + body forces
+    map_vector_field<nDim,1,2> M_bcDirichlet;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
+    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
+    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
+    map_vector_field<nDim,1,2> M_volumicForcesProperties;
     //----------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
@@ -918,6 +942,11 @@ protected:
     bool M_startBySolveNewtonian, M_hasSolveNewtonianAtKickOff;
     bool M_startBySolveStokesStationary, M_hasSolveStokesStationaryAtKickOff;
     //----------------------------------------------------
+    // stabilization
+    bool M_stabilizationGLS;
+    std::string M_stabilizationGLSType;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
     bool M_doCIPStabConvection,M_doCIPStabDivergence,M_doCIPStabPressure;

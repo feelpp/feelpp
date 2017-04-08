@@ -19,62 +19,18 @@ namespace test_wire_basket
 {
 
 using namespace Feel;
-using namespace Feel::vf;
-
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-/*_________________________________________________*
- * Options
- *_________________________________________________*/
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description desc_options( "test_wire_basket options" );
-    desc_options.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.075 ), "mesh size" )
-        ;
-    return desc_options.add( Feel::feel_options() );
-}
-
-/*_________________________________________________*
- * About
- *_________________________________________________*/
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "Test_Wire_Basket" ,
-                     "Test_Wire_Basket" ,
-                     "0.1",
-                     "test wire basket for three fields domain decomposition method ",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier" );
-
-    about.addAuthor( "Abdoulaye Samake", "developer", "Abdoulaye.Samake@imag.fr", "" );
-    return about;
-}
-
 /*_________________________________________________*
  * Run
  *_________________________________________________*/
 
 template <uint16_type OrderPoly>
-void run( Application_ptrtype & theApp )
+void run()
 {
 
     /* change parameters below */
     const int nDim = 3;
     const int nOrderPoly = OrderPoly;
-    double meshSize = theApp->vm()["hsize"].as<double>();
-
-    theApp->changeRepository( boost::format( "testsuite/feeldiscr/%1%/P%2%/h_%3%/" )
-                              % theApp->about().appName()
-                              % OrderPoly
-                              % meshSize );
+    double meshSize = doption(_name="gmsh.hsize");
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -138,7 +94,6 @@ void run( Application_ptrtype & theApp )
     //auto op_lift = opLift( _domainSpace=Xh,_backend=backend );
     auto op_lift = opLift( _domainSpace=Xh,_backend=backend,_penaldir=100. );
     auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
-
 
     double boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
     //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
@@ -217,41 +172,12 @@ void run( Application_ptrtype & theApp )
  * Main
  *_________________________________________________*/
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_wire_basket::makeAbout(), test_wire_basket::makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( wire_basket )
 
-typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-
-
 BOOST_AUTO_TEST_CASE( wire_basket1 )
 {
-    auto theApp = Application_ptrtype( new Application_type );
-
-    test_wire_basket::run<2>( theApp );
-
+    test_wire_basket::run<2>();
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-
-#if 0
-int
-main( int argc, char** argv )
-{
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_wire_basket::makeAbout(),
-                                       test_wire_basket::makeOptions() ) );
-
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    test_wire_basket::run<2>( theApp );
-
-}
-#endif

@@ -922,7 +922,7 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
         for ( int k=0; k<nDataRecv; ++k )
         {
            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k],idProc );
+            auto eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ );
 #if 0
             std::cout << "k = " << k << std::endl;
             std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;

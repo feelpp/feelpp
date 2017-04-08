@@ -117,7 +117,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 for ( uint16_type ms=0; ms < elt.nNeighbors(); ms++ )
                 {
                     element_type const* neighbor = NULL;
-                    size_type neighbor_id = elt.neighbor( ms ).first;
+                    size_type neighbor_id = elt.neighbor( ms );
                     if ( neighbor_id != invalid_size_type_value )
                     {
                         num_neighbors++;
@@ -147,7 +147,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 for ( uint16_type ms=0; ms < elt.nNeighbors(); ms++ )
                 {
                     element_type const* neighbor = NULL;
-                    size_type neighbor_id = elt.neighbor( ms ).first;
+                    size_type neighbor_id = elt.neighbor( ms );
                     if ( neighbor_id != invalid_size_type_value )
                     {
                         csr_graph(gid, connection++) = global_index_map[neighbor_id].first;
@@ -192,7 +192,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         dof_id_type gid = pairElt.second.first;
         rank_type initialPid = pairElt.second.second;
         rank_type newPid = static_cast<rank_type>(part[gid]);
-        auto eltToUpdate = mesh->elementIterator( eltId,initialPid );
+        auto eltToUpdate = mesh->elementIterator( eltId );
         mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
     }
 
