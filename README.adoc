@@ -7,8 +7,12 @@ Feel++ Consortium <https://github.com/feelpp[@feelpp]>
 
 toc::[] 
 
-.{feelpp} Book web site
-image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org,float=right]
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite element method and spectral element methods) continuous or discontinuous in 1D 2D and 3D. 
+
+== {feelpp} Documentation
+
+.link:http://book.feelpp.org[{feelpp} Book web site]
+image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org]
 
 == Gitter Discussion Forum 
 
@@ -54,7 +58,7 @@ The essence of a feature branch is that it exists as long as the feature is in d
 
 |===
 
-== Introduction
+== What is {feelpp}?
 
 link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
 
