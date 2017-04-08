@@ -57,7 +57,7 @@ Here are the latest releases of {feelpp}
 
 == Documentation
 
-link:http://book.feelpp.org[Feel++ Book]
+image::https://www.dropbox.com/s/kds0k1v8ddvz6c9/cover_small.jpg?dl=0[caption="{feelpp} Book",link=http://book.feelpp.org]
 
 == Features
 
