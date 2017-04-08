@@ -2,14 +2,13 @@
 :cpp: C++
 = {feelpp}: Finite Element Embedded Library in {cpp}
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
-:toc:
-:toc-placement: preamble
+:toc: macro
 :toclevels: 1
 
-toc::[]
+toc::[] 
 
-
-image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[caption="{feelpp} Book",link=http://book.feelpp.org,float=right]
+.{feelpp} Book web site
+image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org,float=right]
 
 == Gitter Discussion Forum 
 
