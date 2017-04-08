@@ -107,7 +107,7 @@ struct strip_comments_grammar : spirit::qi::grammar<Iterator>
                               *token(IDANY) >> tok.endcomment 
                           ]
                   |   tok.cppcomment
-                          |   qi::token(IDANY)   [ ostr << _1 ]
+                          |   qi::token(IDANY)   [ ostr << boost::spirit::_1 ]
                           )
                 ;
         }

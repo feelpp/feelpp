@@ -241,16 +241,17 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
 
-            else
-            {
-                imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
-                                          lambda::bind( &element_type::applyDisplacementG,
-                                                        lambda::_1,
-                                                        l,
-                                                        val ) );
-            }
+            // else
+            // {
+            //     imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
+            //                               lambda::bind( &element_type::applyDisplacementG,
+            //                                             lambda::_1,
+            //                                             l,
+            //                                             val ) );
+            // }
         }
 
+#if 0
         // update internal data point of faces attached on this elt
         for ( size_type j = 0; j < imesh->numLocalFaces(); j++ )
         {
@@ -274,6 +275,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         }
 
         // Todo : edges
+#endif
     }
 
     //imesh->updateForUse();
@@ -282,8 +284,12 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         imesh->updateMeasures();
 
     // reset geomap cache
-    imesh->gm()->initCache( imesh.get() );
-    imesh->gm1()->initCache( imesh.get() );
+    if ( imesh->gm()->isCached() )
+    {
+        imesh->gm()->initCache( imesh.get() );
+        if ( mesh_type::nOrder > 1 )
+            imesh->gm1()->initCache( imesh.get() );
+    }
 
     // reset localisation tool
     imesh->tool_localization()->reset();

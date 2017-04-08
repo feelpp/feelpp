@@ -23,6 +23,7 @@
 #
 project(crb)
 
+
 # with this it is possible to compile applications/crb from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
@@ -32,6 +33,10 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   if(NOT FEELPP_FOUND)
     message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
+endif()
+
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
+  cmake_policy(SET CMP0064 OLD)
 endif()
 
 add_custom_target(crb)
@@ -45,6 +50,8 @@ include_directories(${FEELPP_CRB_BINARY_DIR})
 OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" OFF)
 OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_HEAT2D "enable HEAT2D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_HEAT3D "enable HEAT3D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_LINEARELASTICITY "enable LINEARELASTICITY testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_RBHEAT "enable RBHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_CABINEHEAT "enable CABINEHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_FINALCABINEHEAT "enable FINALCABINEHEAT testcases" OFF)
@@ -63,6 +70,8 @@ if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_EADS ON)
   set(FEELPP_ENABLE_CRB_HEAT1D ON)
   set(FEELPP_ENABLE_CRB_HEAT2D ON)
+  set(FEELPP_ENABLE_CRB_HEAT3D ON)
+  set(FEELPP_ENABLE_CRB_LINEARELASTICITY ON)
   set(FEELPP_ENABLE_CRB_RBHEAT OFF)
   set(FEELPP_ENABLE_CRB_CABINEHEAT OFF)
   set(FEELPP_ENABLE_CRB_FINALCABINEHEAT OFF)
@@ -86,10 +95,18 @@ IF ( FEELPP_ENABLE_CRB_HEAT2D )
   add_subdirectory(heat2d)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_HEAT3D )
+  add_subdirectory(heat3d)
+ENDIF()
+
 IF ( FEELPP_ENABLE_CRB_HEAT1D )
   add_subdirectory(heat1d)
   add_subdirectory(unsteady_heat1d)
 ENDIF()
+
+if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
+    add_subdirectory(linearelasticity3d)
+endif()
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)

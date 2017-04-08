@@ -120,6 +120,7 @@ endif()
 # These are IMPORTED targets created by FooBarTargets.cmake
 set(FEELPP_LIBRARY "feelpp")
 set(FEELPP_LIBRARIES "@FEELPP_LIBRARIES@")
+set(FEELPP_LINK_LIBRARIES "@FEELPP_LINK_LIBRARIES@")
 
 # Feel++ mesh configuration
 set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
