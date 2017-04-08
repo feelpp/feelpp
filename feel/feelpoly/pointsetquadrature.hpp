@@ -88,6 +88,7 @@ public :
           M_quad(),
           M_w(), M_prod(), M_exprq()
         {
+            DLOG(INFO) << "Quad name: " << M_name << std::endl;
             if ( nDim > 0 )
             {
                 M_quad = *IMFactory<double>::instance().createObject( M_name );

@@ -1828,8 +1828,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
             order_2d_type,
             order_3d_type >::type>::type order_used_type;
     typedef typename mpl::if_<mpl::bool_<test_mesh_type::element_type::is_simplex>,
-            mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
-                mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
+            mpl::identity<typename _Q<order_used_type::value>::template ApplyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
+                mpl::identity<typename _Q<order_used_type::value>::template ApplyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
     >::type::type theim_type;
 
     typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;
