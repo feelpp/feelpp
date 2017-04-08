@@ -63,7 +63,10 @@ set_property(TARGET feelpp PROPERTY LABELS feel++)
 
 
 #target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-target_link_libraries(feelpp ${FEELPP_LIBRARIES})
+target_link_libraries(feelpp ${FEELPP_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
+if( FEELPP_ENABLE_PCH )
+    add_precompiled_header( feelpp )
+endif()
 
 # Install feelpp
 INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
