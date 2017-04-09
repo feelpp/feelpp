@@ -49,3 +49,4 @@ FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 #   UseLATEX.cmake )
 
 INSTALL(FILES ${modules} DESTINATION share/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feel/cmake/modules COMPONENT Devel)
