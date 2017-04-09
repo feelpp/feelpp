@@ -94,6 +94,7 @@ BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , i
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
+    vec.close();
 }
 
 template <typename T>
