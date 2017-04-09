@@ -51,7 +51,7 @@ The essence of a feature branch is that it exists as long as the feature is in d
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/quad["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 
 | Buildkite Ubuntu 16.10 
-|  
+|  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/hdg-sc["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/quad["Build Status", link="https://buildkite.com/feelpp/feelpp"]
