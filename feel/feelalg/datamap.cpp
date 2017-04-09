@@ -922,8 +922,8 @@ DataMap::buildIndexSplit()
 void
 DataMap::buildIndexSplitWithComponents( uint16_type nComp )
 {
-    CHECK( ( this->nLocalDofWithoutGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
-    CHECK( ( this->nLocalDofWithGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
+    CHECK( ( this->nLocalDofWithoutGhost() % nComp) == 0 ) << "invalid nComp " << nComp <<  " with  this->nLocalDofWithoutGhost()=" << this->nLocalDofWithoutGhost();
+    CHECK( ( this->nLocalDofWithGhost() % nComp) == 0 ) << "invalid nComp " << nComp << " with this->nLocalDofWithGhost()=" << this->nLocalDofWithGhost();
 
     M_indexSplitWithComponents.reset( new indexsplit_type( nComp ) );
     size_type nLocalDofCompWithoutGhost = this->nLocalDofWithoutGhost() / nComp;

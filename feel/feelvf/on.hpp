@@ -197,7 +197,8 @@ public:
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
                       size_type __on,
-                      double value_on_diag )
+                      double value_on_diag,
+                      Component comp)
         :
         M_elts(),
         M_eltbegin( __elts.template get<1>() ),
@@ -206,7 +207,8 @@ public:
         M_rhs( __rhs ),
         M_expr( __expr ),
         M_on_strategy( __on ),
-        M_value_on_diagonal( value_on_diag )
+        M_value_on_diagonal( value_on_diag ),
+        M_comp( comp )
     {
         M_elts.push_back( __elts );
     }
@@ -215,14 +217,16 @@ public:
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
                       size_type __on,
-                      double value_on_diag )
+                      double value_on_diag,
+                      Component comp )
         :
         M_elts( __elts ),
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
         M_on_strategy( __on ),
-        M_value_on_diagonal( value_on_diag )
+        M_value_on_diagonal( value_on_diag ),
+        M_comp( comp )
     {
         if ( __elts.size() )
         {
@@ -315,6 +319,7 @@ private:
     expression_type M_expr;
     Context M_on_strategy;
     double M_value_on_diagonal { 1.0 };
+    Component M_comp;
 };
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
@@ -385,7 +390,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     //
     // start
     //
-    DVLOG(2)  << "assembling Dirichlet conditions\n";
+    VLOG(2)  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
     std::vector<int> dofs;
@@ -440,7 +445,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         typedef typename geoelement_type::permutation_type permutation_type;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+        VLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
         std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
 
         for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
@@ -449,7 +454,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                   __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-                //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+                //VLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
                 FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
             }
         }
@@ -461,9 +466,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         t_expr_type expr( M_expr, mapgmc );
 
 
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        VLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                 << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                 << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
         size_type nbFaceDof = invalid_size_type_value;
 
@@ -474,82 +479,92 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         else
             nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-        DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
+        VLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
-        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        int compDofShift = 0;
+        if (is_comp_space)
+            compDofShift = (int)M_u.component();
+        if (M_comp != Component::NO_COMPONENT )
+            compDofShift = (int)M_comp;
+        VLOG(2)  << "compDofShift = " << compDofShift << "\n";
         auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
-        for ( ;
-              __face_it != __face_en;//this->endElement();
-              ++__face_it )
-        {
-            auto const& theface = boost::unwrap_ref( *__face_it );
-
-            if ( !theface.isConnectedTo0() )
+            __face_it = lit.template get<1>();
+            __face_en = lit.template get<2>();
+            for ( ;
+                  __face_it != __face_en;//this->endElement();
+                  ++__face_it )
             {
-                LOG( WARNING ) << "face not connected" << theface;
+                auto const& theface = boost::unwrap_ref( *__face_it );
 
-                continue;
-            }
-            // do not process the face if it is a ghost face: belonging to two
-            // processes and being in a process id greater than the one
-            // corresponding face
-            if ( theface.isGhostFace() )
-            {
-                LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
-                continue;
-            }
-
-            DVLOG(2) << "FACE_ID = " << theface.id()
-                     << " element id= " << theface.ad_first()
-                     << " pos in elt= " << theface.pos_first()
-                     << " marker: " << theface.marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
-
-            uint16_type __face_id = theface.pos_first();
-            __c->update( theface.element( 0 ), __face_id );
-
-            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
-
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-            t_expr_type expr( M_expr, mapgmc );
-            expr.update( mapgmc );
-
-            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
-                                                                      M_u.functionSpace()->nDof() ) );
-            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
-
-            //use interpolant
-            __fe->faceInterpolate( expr, IhLoc );
-
-            for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
+                if ( !theface.isConnectedTo0() )
                 {
-                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
-                    thedof = trialDofIdToContainerId[ thedof ];
+                    LOG( WARNING ) << "face not connected" << theface;
 
-                    DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
+                    continue;
+                }
+                // do not process the face if it is a ghost face: belonging to two
+                // processes and being in a process id greater than the one
+                // corresponding face
+                if ( theface.isGhostFace() )
+                {
+                    LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
+                    continue;
+                }
+
+                VLOG(2) << "FACE_ID = " << theface.id()
+                        << " element id= " << theface.ad_first()
+                        << " pos in elt= " << theface.pos_first()
+                        << " marker: " << theface.marker() << "\n";
+                VLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
+
+                uint16_type __face_id = theface.pos_first();
+                __c->update( theface.element( 0 ), __face_id );
+
+                VLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
+                VLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
+
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+                t_expr_type expr( M_expr, mapgmc );
+                expr.update( mapgmc );
+
+                std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
+                                                                          M_u.functionSpace()->nDof() ) );
+                VLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+                VLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+
+                //use interpolant
+                __fe->faceInterpolate( expr, IhLoc );
+
+                auto on_dof = [&]( auto const& ldof )
+                    {
+                        size_type thedof = ldof.index();
+                        if ( is_comp_space )
+                            thedof = compDofShift+Elem1::nComponents*ldof.index();
+                        else if ( M_comp != Component::NO_COMPONENT )
+                            thedof = compDofShift+Elem1::nComponents*ldof.index();
+
+                        thedof = trialDofIdToContainerId[ thedof ];
+                        
+                        DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
-                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
-                    DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
-                             << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
-                    if ( std::find( dofs.begin(),
-                                    dofs.end(),
-                                    thedof ) != dofs.end() )
-                        continue;
+                        double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                        VLOG(2) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
+                        << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
+                        if ( std::find( dofs.begin(),
+                                        dofs.end(),
+                                        thedof ) != dofs.end() )
+                            return;
 
-                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
                         {
-                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                            VLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
                             // this can be quite expensive depending on the
                             // matrix storage format.
@@ -565,14 +580,26 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             //M_rhs.set( thedof, __value );
                         }
 
-                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
-                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                                   !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
                         }
+                    };
+
+                if ( M_comp != Component::NO_COMPONENT )
+                {
+                    LOG(INFO) << "component wise setup of on: " << (int)M_comp;
+                    for( auto const& ldof : M_u.compSpace()->dof()->faceLocalDof( theface.id() ) )
+                        on_dof( ldof );
                 }
-        }// __face_it != __face_en
+                else
+                    for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
+                    {
+                        on_dof( ldof );
+                    }
+            }// __face_it != __face_en
         } // for( auto& lit : M_elts )
     }// findAFace
 
@@ -977,6 +1004,8 @@ BOOST_PARAMETER_FUNCTION(
       ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
       ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
       ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
+      ( component,  *, Component::NO_COMPONENT )
+
         )
     )
 {
@@ -985,7 +1014,8 @@ BOOST_PARAMETER_FUNCTION(
                                                             Feel::vf::detail::getRhsVector(rhs),
                                                             expr,
                                                             size_type(ContextOnMap[type]),
-                                                            value_on_diagonal );
+                                                            value_on_diagonal,
+                                                            component );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
