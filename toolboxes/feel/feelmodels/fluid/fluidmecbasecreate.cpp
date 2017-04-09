@@ -1074,6 +1074,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         }
 #endif
     }
+    //-------------------------------------------------//
+    this->updateBoundaryConditionsForUse();
+    //-------------------------------------------------//
     M_isUpdatedForUse = true;
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");

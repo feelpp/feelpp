@@ -618,6 +618,15 @@ public :
     map_matrix_field<nDim,nDim,2> const& bcNeumannTensor2() const { return M_bcNeumannTensor2; }
     map_vector_field<nDim,1,2> const& bodyForces() const { return M_volumicForcesProperties; }
 
+    bool hasDirichletBC() const
+        {
+            return ( !M_bcDirichlet.empty() ||
+                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+        }
+
+    
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
@@ -825,10 +834,8 @@ public :
     void updateResidualModel( element_fluid_external_storage_type const& U, vector_ptrtype& R,
                               bool BuildCstPart, bool UseJacobianLinearTerms ) const;
 
-    virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
-    virtual void updateBCStrongDirichletResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
@@ -856,6 +863,8 @@ public :
 
     //___________________________________________________________________________________//
 
+private :
+    void updateBoundaryConditionsForUse();
 
 protected:
 
@@ -1025,6 +1034,8 @@ protected:
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     // block vector solution
     BlocksBaseVector<double> M_blockVectorSolution;
+    // dof used with string Dirichlet on velocity
+    std::set<size_type> M_dofUsedWithBCStrongDirichletOnVelocity;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

@@ -2326,7 +2326,159 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    auto XhVelocity = this->functionSpaceVelocity();
+    auto XhCompVelocity = XhVelocity->compSpace();
+    static const uint16_type nDofComponentsVelocity = XhVelocity->dof()->nDofComponents();
+    auto mesh = this->mesh();
 
+    std::set<std::string> velocityMarkers;
+    std::map<ComponentType,std::set<std::string> > compVelocityMarkers;
+    M_dofUsedWithBCStrongDirichletOnVelocity.clear();
+
+    //-------------------------------------//
+    // strong Dirichlet bc on velocity from fsi coupling
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
+        velocityMarkers.insert( this->markersNameMovingBoundary().begin(), this->markersNameMovingBoundary().end() );
+#endif
+    // strong Dirichlet bc on velocity from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        velocityMarkers.insert( listMark.begin(), listMark.end() );
+        // auto listMark2 = this->markerDirichletBCByNameId( "lm",marker(d) );
+        // velocityMarkers.insert( listMark2.begin(), listMark2.end() );
+    }
+    // strong Dirichlet bc on velocity component from expression
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
+            auto listMark2 = this->markerDirichletBCByNameId( "lm",marker(d), comp );
+            compVelocityMarkers[comp].insert( listMark2.begin(), listMark2.end() );
+        }
+    }
+    // strong Dirichlet bc on velocity from inlet bc
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        velocityMarkers.insert( marker );
+    }
+
+    //-------------------------------------//
+    // distribute mesh markers by entity
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
+    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
+    std::list<std::string> velocityMarkersList( velocityMarkers.begin(), velocityMarkers.end() );
+    meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkersList );
+    for ( auto const& compMarkerPair : compVelocityMarkers )
+    {
+        std::list<std::string> compvelocityMarkersList( compMarkerPair.second.begin(), compMarkerPair.second.end() );
+        meshMarkersCompVelocityByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compvelocityMarkersList );
+    }
+    //-------------------------------------//
+    // on topological faces
+    auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesVelocity ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhVelocity->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        {
+            M_dofUsedWithBCStrongDirichletOnVelocity.insert( it->index() );
+        }
+    }
+    //-------------------------------------//
+    // on marked edges (only 3d)
+    auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
+    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesVelocity ) )
+    {
+        auto const& edge = unwrap_ref( edgeWrap );
+        auto itEltInfo = edge.elements().begin();
+        if ( itEltInfo == edge.elements().end() )
+            continue;
+        size_type eid = itEltInfo->first;
+        uint16_type edgeid_in_element = itEltInfo->second;
+        for( auto const& ldof : XhVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+        {
+            M_dofUsedWithBCStrongDirichletOnVelocity.insert( ldof.index() );
+        }
+    }
+    //-------------------------------------//
+    // on marked points
+    auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
+    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsVelocity ) )
+    {
+        auto const& point = unwrap_ref( pointWrap );
+        auto itPointInfo = point.elements().begin();
+        if ( itPointInfo == point.elements().end() )
+            continue;
+        size_type eid = itPointInfo->first;
+        uint16_type ptid_in_element = itPointInfo->second;
+        for( uint16_type c = 0; c < nDofComponentsVelocity; ++c )
+        {
+            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+            M_dofUsedWithBCStrongDirichletOnVelocity.insert( index );
+        }
+    }
+    //-------------------------------------//
+    // on velocity components
+    for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
+    {
+        ComponentType comp = meshMarkersPair.first;
+        int compDofShift = ((int)comp);
+        // topological faces
+        auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
+        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompVelocity ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = XhCompVelocity->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                size_type compdof = it->index();
+                size_type thedof = compDofShift +  nDofComponentsVelocity*compdof;
+                M_dofUsedWithBCStrongDirichletOnVelocity.insert( thedof );
+            }
+        }
+        // edges (only 3d)
+        auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
+        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompVelocity ) )
+        {
+            auto const& edge = unwrap_ref( edgeWrap );
+            auto itEltInfo = edge.elements().begin();
+            if ( itEltInfo == edge.elements().end() )
+                continue;
+            size_type eid = itEltInfo->first;
+            uint16_type edgeid_in_element = itEltInfo->second;
+            for( auto const& ldof : XhCompVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type compdof = ldof.index();
+                size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
+                M_dofUsedWithBCStrongDirichletOnVelocity.insert( ldof.index() );
+            }
+        }
+        // points
+        auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
+        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompVelocity ) )
+        {
+            auto const& point = unwrap_ref( pointWrap );
+            auto itPointInfo = point.elements().begin();
+            if ( itPointInfo == point.elements().end() )
+                continue;
+            size_type eid = itPointInfo->first;
+            uint16_type ptid_in_element = itPointInfo->second;
+            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
+            M_dofUsedWithBCStrongDirichletOnVelocity.insert( index );
+        }
+    }
+}
 
 
 } // namespace FeelModels
