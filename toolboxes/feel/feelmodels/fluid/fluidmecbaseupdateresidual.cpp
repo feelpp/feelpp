@@ -764,22 +764,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     {
         R->close();
 
-        if (this->hasMarkerDirichletBCelimination() )
-            this->updateBCStrongDirichletResidual(R);
+        auto resFeView = Xh->element(R,rowStartInVector);
+        auto resFeViewVelocity = resFeView.template element<0>();
+        for ( size_type thedof : M_dofUsedWithBCStrongDirichletOnVelocity )
+            resFeViewVelocity.set( thedof,0. );
+        sync( resFeViewVelocity, "=", M_dofUsedWithBCStrongDirichletOnVelocity );
 
-        std::list<std::string> markerDirichletEliminationOthers;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-        {
-            for (std::string const& marker : this->markersNameMovingBoundary() )
-                markerDirichletEliminationOthers.push_back( marker );
-        }
-#endif
-        for ( auto const& inletbc : M_fluidInletDesc )
-        {
-            std::string const& marker = std::get<0>( inletbc );
-            markerDirichletEliminationOthers.push_back( marker );
-        }
 
         if ( this->hasMarkerPressureBC() )
         {
@@ -794,14 +784,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                 lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
                                    _expr=vf::zero<1,1>() );
             }
-        }
-
-        if ( !markerDirichletEliminationOthers.empty() )
-        {
-            auto up = Xh->element(R,rowStartInVector);
-            auto u = up.template element<0>();
-            u.on(_range=markedfaces(mesh,markerDirichletEliminationOthers),
-                 _expr=vf::zero<nDim,1>() );
         }
 
         if ( M_useThermodynModel && M_useGravityForce )
@@ -826,11 +808,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     this->log("FluidMechanics","updateNewtonInitialGuess","start");
 
     size_type rowStartInVector = this->rowStartInVector();
-    //auto const& u = this->fieldVelocity();
     auto Xh = this->functionSpace();
     auto up = Xh->element( U, rowStartInVector );
     auto u = up.template element<0>();
     auto mesh = this->mesh();
+
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
     {
@@ -839,15 +821,83 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
              _expr=idv(this->meshVelocity2()) );
     }
 #endif
-    this->updateInitialNewtonSolutionBCDirichlet(U);
+
+    if ( this->hasMarkerDirichletBCelimination() )
+    {
+        // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+        std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+        for( auto const& d : M_bcDirichlet )
+        {
+            mapMarkerBCToEntitiesMeshMarker[marker(d)] =
+                detail::distributeMarkerListOnSubEntity( mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        }
+        std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+        for ( auto const& bcDirComp : M_bcDirichletComponents )
+        {
+            ComponentType comp = bcDirComp.first;
+            for( auto const& d : bcDirComp.second )
+            {
+                mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
+                    detail::distributeMarkerListOnSubEntity(mesh, this->markerDirichletBCByNameId( "elimination",marker(d), comp )   );
+            }
+        }
+
+        // strong Dirichlet bc with vectorial velocity
+        for( auto const& d : M_bcDirichlet )
+        {
+            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( marker(d) );
+            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                continue;
+            auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+            if ( !listMarkerFaces.empty() )
+                u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                     _expr=expression(d) );
+            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+            if ( !listMarkerEdges.empty() )
+                u.on(_range=markededges(mesh,listMarkerEdges ),
+                     _expr=expression(d) );
+            auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+            if ( !listMarkerPoints.empty() )
+                u.on(_range=markedpoints(mesh,listMarkerPoints ),
+                     _expr=expression(d) );
+        }
+        // strong Dirichlet bc with velocity components
+        for ( auto const& bcDirComp : M_bcDirichletComponents )
+        {
+            ComponentType comp = bcDirComp.first;
+            for( auto const& d : bcDirComp.second )
+            {
+                auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) );
+                if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                    continue;
+                auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+                if ( !listMarkerFaces.empty() )
+                    u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                               _expr=expression(d) );
+                auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+                if ( !listMarkerEdges.empty() )
+                    u[comp].on(_range=markededges(mesh,listMarkerEdges ),
+                               _expr=expression(d) );
+                auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+                if ( !listMarkerPoints.empty() )
+                    u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
+                               _expr=expression(d) );
+            }
+        }
+    }
 
     for ( auto const& inletbc : M_fluidInletDesc )
     {
         std::string const& marker = std::get<0>( inletbc );
-        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+        auto itFindMark = M_fluidInletVelocityInterpolated.find(marker);
+        if ( itFindMark == M_fluidInletVelocityInterpolated.end() )
+            continue;
+        auto const& inletVel = std::get<0>( itFindMark->second );
         u.on(_range=markedfaces(mesh, marker),
              _expr=-idv(inletVel)*N() );
     }
+    // synchronize velocity dof on interprocess
+    sync( u, "=", M_dofUsedWithBCStrongDirichletOnVelocity );
 
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
@@ -863,8 +913,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     {
         M_thermodynModel->updateNewtonInitialGuess( U );
     }
-
-    //U->close();
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");
 }
