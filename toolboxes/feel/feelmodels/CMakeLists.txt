@@ -43,6 +43,7 @@ option(FEELPP_MODELS_ENABLE_FSI "Enable/Disable FSI" ON)
 option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" OFF)
 option(FEELPP_MODELS_ENABLE_LEVELSET "Enable/Disable LevelSet" OFF)
 option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
+option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
 
 
 add_subdirectory(modelcore)

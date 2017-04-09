@@ -3,6 +3,8 @@
 # it will define the following values
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
+#  FEELPP_LIBRARIES = list of depend libraries
+#  FEELPP_LINK_LIBRARIES = list of libraries to link
 
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
@@ -609,10 +611,13 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 
   # GLog
   INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
-  SET(FEELPP_LIBRARIES feelpp_glog ${FEELPP_LIBRARIES})
+  #find_library( FEELPP_GLOG_LIBRARY feelpp_glog PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/glog)
+  set(FEELPP_GLOG_LINK_LIBRARIES feelpp_glog)
+  #SET(FEELPP_LIBRARIES ${FEELPP_GLOG_LIBRARY} ${FEELPP_LIBRARIES})
+  set(FEELPP_LINK_LIBRARIES ${FEELPP_GLOG_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES} )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GLog" )
   set(FEELPP_HAS_GLOG 1)
-  
+
   #
   # cln and ginac
   #
@@ -620,10 +625,12 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
   link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
-
   INCLUDE_DIRECTORIES(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
   #SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+  #find_library( FEELPP_GINAC_LIBRARY feelpp_ginac PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+  set(FEELPP_GINAC_LIBRARY feelpp_ginac)
+  set(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} )
+  set(FEELPP_LINK_LIBRARIES ${FEELPP_GINAC_LIBRARY} ${CMAKE_DL_LIBS} ${FEELPP_LINK_LIBRARIES} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   set(FEELPP_HAS_GINAC 1)
 endif()
@@ -1218,13 +1225,13 @@ if ( FEELPP_ENABLE_VTK )
     # FIND_PACKAGE(ParaView QUIET
     #    COMPONENTS vtkParallelMPI vtkPVCatalyst vtkPVPythonCatalyst
     #    PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR})
+
     FIND_PACKAGE(ParaView NO_MODULE
         PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
 
     if(ParaView_FOUND)
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
-
         # trying to load a minimal vtk
         IF (TARGET vtkParallelMPI)
         FIND_PACKAGE(ParaView QUIET COMPONENTS vtkParallelMPI NO_MODULE
@@ -1259,16 +1266,14 @@ if ( FEELPP_ENABLE_VTK )
           # MESSAGE("VTK_HAS_PARALLEL=${VTK_HAS_PARALLEL}")
         endif()
 
-        # MESSAGE("ParaView_INCLUDE_DIRS=${ParaView_INCLUDE_DIRS}")
-        # MESSAGE("ParaView_LIBRARIES=${ParaView_LIBRARIES}")
-        # MESSAGE("VTK_INCLUDE_DIRS=${VTK_INCLUDE_DIRS}")
-        # MESSAGE("VTK_LIBRARIES=${VTK_LIBRARIES}")
-
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
-        SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+        # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS from linker
+        feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
+        #set(FEELPP_LINK_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
+        set( FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES} )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
 
         message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
@@ -1346,7 +1351,10 @@ if ( FEELPP_ENABLE_VTK )
             #   endif()
             # endif()
 
-            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+            # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS
+            feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
+            #SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+            SET(FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
         endif()
    endif()
@@ -1530,6 +1538,35 @@ else()
 endif()
 
 
+# Enable precompiled headers (PCH)
+option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
+option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
+
+if( FEELPP_ENABLE_PCH )
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH" )
+endif()
+if( FEELPP_ENABLE_PCH_APPLICATIONS )
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH_Apps" )
+endif()
+
+# Enable Feel++ interpreter using cling.
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
+else()
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
+endif()
+
+if( FEELPP_ENABLE_INTERPRETER )
+    find_package(Cling)
+    if(NOT Cling_FOUND)
+        set( FEELPP_ENABLE_INTERPRETER OFF)
+        message( WARNING "[cling] software was not found (feel++ interpreter preriquisite)!\n
+        (See https://root.cern.ch/cling)\n
+        Feel++ interpreter has been disabled automatically!")
+    else()
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
+    endif()
+endif()
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
@@ -1568,7 +1605,22 @@ feelpp_clean_variable("${FEELPP_DEPS_LINK_DIR}" _FEELPP_DEPS_LINK_DIR_NEW )
 set(FEELPP_DEPS_LINK_DIR ${_FEELPP_DEPS_LINK_DIR_NEW})
 unset(_FEELPP_DEPS_LINK_DIR_NEW)
 
+# Cleaning variables.
+set( varstoclean
+     FEELPP_DEPS_INCLUDE_DIR
+     FEELPP_DEPS_LINK_DIR
+     FEELPP_LINK_LIBRARIES
+     FEELPP_LIBRARIES )
+
+# Do remove duplicated variable entries.
+foreach( varname ${varstoclean})
+    if( NOT "${${varname}}" STREQUAL "")
+        list( REMOVE_DUPLICATES ${varname})
+    endif()
+endforeach()
+
 MARK_AS_ADVANCED(FEELPP_DEPS_INCLUDE_DIR)
 MARK_AS_ADVANCED(FEELPP_DEPS_LINK_DIR)
 
+MARK_AS_ADVANCED(FEELPP_LINK_LIBRARIES)
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
