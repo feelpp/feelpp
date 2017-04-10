@@ -43,10 +43,31 @@ if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
-add_subdirectory(laplacian)
-add_subdirectory(adr)
-add_subdirectory(stokes)
+#
+# Laplacian
+#
+feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST)
+feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TEST)
+feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D}  )
+add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} )
+ 
+#
+# ADR
+#
+feelpp_add_application( adr_2d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ADR_2D INSTALL TEST)
+feelpp_add_application( adr_3d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ADR_3D INSTALL TEST)
+feelpp_add_testcase( adr PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_ADR_2D} ${QS_ADR_3D}  )
+add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 
+#
+# Stokes
+#
+feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST)
+feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_STOKES_2D} )
+add_dependencies(check ${QS_STOKES_2D} )
 
 add_custom_target(install-quickstart
   DEPENDS
