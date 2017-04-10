@@ -368,6 +368,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     if (!M_isHOVisu)
     {
         this->exportResultsImpl( time );
+
+        if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC &&
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC ) )
+        {
+            std::string geoExportType="static";//change_coords_only, change, static
+            if ( !M_exporterLagrangeMultiplierPressureBC )
+                M_exporterLagrangeMultiplierPressureBC = exporter( _mesh=M_spaceLagrangeMultiplierPressureBC->mesh(),
+                                                                   _name="ExportLagrangeMultiplierPressureBC",
+                                                                   _geo=geoExportType,
+                                                                   _worldcomm=M_spaceLagrangeMultiplierPressureBC->worldComm(),
+                                                                   _path=this->exporterPath() );
+            M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda1"),
+                                                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda1")),
+                                                                       *M_fieldLagrangeMultiplierPressureBC1 );
+            if ( nDim == 3 )
+                M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda2"),
+                                                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda2")),
+                                                                           *M_fieldLagrangeMultiplierPressureBC2 );
+            M_exporterLagrangeMultiplierPressureBC->save();
+        }
     }
     else
     {
@@ -2337,7 +2357,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     std::set<std::string> velocityMarkers;
     std::map<ComponentType,std::set<std::string> > compVelocityMarkers;
-    M_dofUsedWithBCStrongDirichletOnVelocity.clear();
+
+    auto & dofsWithValueImposedVelocity = M_dofsWithValueImposed["velocity"];
+    dofsWithValueImposedVelocity.clear();
 
     //-------------------------------------//
     // strong Dirichlet bc on velocity from fsi coupling
@@ -2350,8 +2372,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     {
         auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
         velocityMarkers.insert( listMark.begin(), listMark.end() );
-        // auto listMark2 = this->markerDirichletBCByNameId( "lm",marker(d) );
-        // velocityMarkers.insert( listMark2.begin(), listMark2.end() );
     }
     // strong Dirichlet bc on velocity component from expression
     for ( auto const& bcDirComp : M_bcDirichletComponents )
@@ -2361,8 +2381,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         {
             auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
             compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
-            auto listMark2 = this->markerDirichletBCByNameId( "lm",marker(d), comp );
-            compVelocityMarkers[comp].insert( listMark2.begin(), listMark2.end() );
         }
     }
     // strong Dirichlet bc on velocity from inlet bc
@@ -2374,14 +2392,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
     //-------------------------------------//
     // distribute mesh markers by entity
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
-    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
-    std::list<std::string> velocityMarkersList( velocityMarkers.begin(), velocityMarkers.end() );
-    meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkersList );
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
+    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
+    meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkers );
     for ( auto const& compMarkerPair : compVelocityMarkers )
     {
-        std::list<std::string> compvelocityMarkersList( compMarkerPair.second.begin(), compMarkerPair.second.end() );
-        meshMarkersCompVelocityByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compvelocityMarkersList );
+        meshMarkersCompVelocityByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
     }
     //-------------------------------------//
     // on topological faces
@@ -2392,10 +2408,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         auto facedof = XhVelocity->dof()->faceLocalDof( face.id() );
         for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
         {
-            M_dofUsedWithBCStrongDirichletOnVelocity.insert( it->index() );
+            dofsWithValueImposedVelocity.insert( it->index() );
         }
     }
-    //-------------------------------------//
     // on marked edges (only 3d)
     auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
     for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesVelocity ) )
@@ -2408,10 +2423,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         uint16_type edgeid_in_element = itEltInfo->second;
         for( auto const& ldof : XhVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
         {
-            M_dofUsedWithBCStrongDirichletOnVelocity.insert( ldof.index() );
+            dofsWithValueImposedVelocity.insert( ldof.index() );
         }
     }
-    //-------------------------------------//
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
     for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsVelocity ) )
@@ -2425,7 +2439,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         for( uint16_type c = 0; c < nDofComponentsVelocity; ++c )
         {
             size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-            M_dofUsedWithBCStrongDirichletOnVelocity.insert( index );
+            dofsWithValueImposedVelocity.insert( index );
         }
     }
     //-------------------------------------//
@@ -2444,7 +2458,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             {
                 size_type compdof = it->index();
                 size_type thedof = compDofShift +  nDofComponentsVelocity*compdof;
-                M_dofUsedWithBCStrongDirichletOnVelocity.insert( thedof );
+                dofsWithValueImposedVelocity.insert( thedof );
             }
         }
         // edges (only 3d)
@@ -2461,7 +2475,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             {
                 size_type compdof = ldof.index();
                 size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
-                M_dofUsedWithBCStrongDirichletOnVelocity.insert( ldof.index() );
+                dofsWithValueImposedVelocity.insert( ldof.index() );
             }
         }
         // points
@@ -2475,9 +2489,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             size_type eid = itPointInfo->first;
             uint16_type ptid_in_element = itPointInfo->second;
             size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
-            M_dofUsedWithBCStrongDirichletOnVelocity.insert( index );
+            dofsWithValueImposedVelocity.insert( index );
         }
     }
+
+    if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
+    {
+        auto & dofsWithValueImposedPressureBC = M_dofsWithValueImposed["pressurebc-lm"];
+        dofsWithValueImposedPressureBC.clear();
+        for ( auto const& faceWrap : boundaryfaces(M_meshLagrangeMultiplierPressureBC) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_spaceLagrangeMultiplierPressureBC->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                dofsWithValueImposedPressureBC.insert( it->index() );
+        }
+    }
+
 }
 
 
