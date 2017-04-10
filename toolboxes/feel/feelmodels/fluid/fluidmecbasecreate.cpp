@@ -181,6 +181,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
         }
 
     //--------------------------------------------------------------//

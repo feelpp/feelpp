@@ -63,7 +63,7 @@ namespace FeelModels
 {
 enum class FluidMechanicsPostProcessFieldExported
 {
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
 };
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
@@ -870,7 +870,7 @@ protected:
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
-    backend_ptrtype M_backend;
+    
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -912,9 +912,6 @@ protected:
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
 #endif
-    //----------------------------------------------------
-    // tool solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_algebraicFactory;
     //----------------------------------------------------
     // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;
@@ -1002,6 +999,7 @@ protected:
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
+    export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
 #if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
@@ -1030,12 +1028,13 @@ protected:
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
-    // start dof index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
-    // block vector solution
+    //----------------------------------------------------
+    // algebraic data/tools
+    backend_ptrtype M_backend;
+    model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    // dof used with string Dirichlet on velocity
-    std::set<size_type> M_dofUsedWithBCStrongDirichletOnVelocity;
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

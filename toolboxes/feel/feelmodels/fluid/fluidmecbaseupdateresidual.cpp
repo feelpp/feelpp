@@ -766,24 +766,46 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
         auto resFeView = Xh->element(R,rowStartInVector);
         auto resFeViewVelocity = resFeView.template element<0>();
-        for ( size_type thedof : M_dofUsedWithBCStrongDirichletOnVelocity )
+
+        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
+        auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+        for ( size_type thedof : dofsWithValueImposedVelocity )
             resFeViewVelocity.set( thedof,0. );
-        sync( resFeViewVelocity, "=", M_dofUsedWithBCStrongDirichletOnVelocity );
+        sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
 
 
         if ( this->hasMarkerPressureBC() )
         {
+#if 0
             size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM1 );
+            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
             lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
                                _expr=vf::zero<1,1>() );
             if ( nDim == 3 )
             {
                 size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
+                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
                 lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
                                    _expr=vf::zero<1,1>() );
             }
+#else
+            auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
+            auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
+            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+            for ( size_type thedof : dofsWithValueImposedPressureBC )
+                lambdaPressure1.set( thedof,0. );
+            sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
+            if ( nDim == 3 )
+            {
+                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+                for ( size_type thedof : dofsWithValueImposedPressureBC )
+                    lambdaPressure2.set( thedof,0. );
+                sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
+            }
+
+#endif
         }
 
         if ( M_useThermodynModel && M_useGravityForce )
@@ -825,13 +847,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
     if ( this->hasMarkerDirichletBCelimination() )
     {
         // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-        std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+        std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
         for( auto const& d : M_bcDirichlet )
         {
             mapMarkerBCToEntitiesMeshMarker[marker(d)] =
                 detail::distributeMarkerListOnSubEntity( mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) );
         }
-        std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+        std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
         for ( auto const& bcDirComp : M_bcDirichletComponents )
         {
             ComponentType comp = bcDirComp.first;
@@ -897,7 +919,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype&
              _expr=-idv(inletVel)*N() );
     }
     // synchronize velocity dof on interprocess
-    sync( u, "=", M_dofUsedWithBCStrongDirichletOnVelocity );
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
+    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
+        sync( u, "=", itFindDofsWithValueImposed->second );
 
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {

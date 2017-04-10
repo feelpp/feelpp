@@ -306,6 +306,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
 
             if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
+            if ( o == "pressurebc" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
         }
 }
 
@@ -579,13 +580,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
-    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : this->M_bcDirichlet )
     {
         mapMarkerBCToEntitiesMeshMarker[marker(d)] =
             detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
     }
-    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
     {
         ComponentType comp = bcDirComp.first;
@@ -596,68 +597,50 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
         }
     }
 
-    // apply on() with bc define on topological faces
+    // apply strong Dirichle bc on velocity field
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto const& listMarkerFaces = std::get<0>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( marker(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
         if ( !listMarkerFaces.empty() )
             bilinearForm +=
                 on( _range=markedfaces( mesh, listMarkerFaces ),
                     _element=u, _rhs=F, _expr=expression(d) );
+        auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerEdges ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+        auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm +=
+                on( _range=markedpoints( mesh, listMarkerPoints ),
+                    _element=u, _rhs=F, _expr=expression(d) );
     }
+    // apply strong Dirichle bc on velocity component
     for ( auto const& bcDirComp : this->M_bcDirichletComponents )
     {
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto const& listMarkerFaces = std::get<0>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) );
+            if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                continue;
+            auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
             if ( !listMarkerFaces.empty() )
                 bilinearFormComp +=
                     on( _range=markedfaces( mesh, listMarkerFaces ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
                         _rhs=F, _expr=expression(d) );
-        }
-    }
-
-    // apply on() with bc define on edges (only 3d)
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto const& listMarkerEdges = std::get<1>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
-        if ( !listMarkerEdges.empty() )
-            bilinearForm +=
-                on( _range=markedfaces( mesh, listMarkerEdges ),
-                    _element=u, _rhs=F, _expr=expression(d) );
-    }
-    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto const& listMarkerEdges = std::get<1>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
                 bilinearFormComp +=
                     on( _range=markedfaces( this->mesh(), listMarkerEdges ),
                         _element=this->M_Solution->template element<0>()[comp], //u[comp],
                         _rhs=F, _expr=expression(d) );
-        }
-    }
-
-    // apply on() with bc define on points
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto const& listMarkerPoints = std::get<2>( mapMarkerBCToEntitiesMeshMarker.find( marker(d) )->second );
-        if ( !listMarkerPoints.empty() )
-            bilinearForm +=
-                on( _range=markedpoints( mesh, listMarkerPoints ),
-                    _element=u,
-                    _rhs=F, _expr=expression(d) );
-    }
-    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto const& listMarkerPoints = std::get<2>(  mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) )->second );
+            auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
             if ( !listMarkerPoints.empty() )
                 bilinearFormComp +=
                     on( _range=markedpoints( mesh, listMarkerPoints ),
@@ -665,7 +648,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
                         _rhs=F, _expr=expression(d) );
         }
     }
-
 
     double t1=timerBClinear.elapsed();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE",
@@ -774,18 +756,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
         auto const& v = this->fieldVelocity();
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= inner( expression(d),id(v) ),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= inner( expression(d),id(v) ),
-                               _geomap=this->geomap() );
+            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
         }
-
     }
 }
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -805,16 +781,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& F 
     auto const& v = this->fieldVelocity();
     for( auto const& d : this->M_volumicForcesProperties )
     {
-        if ( marker(d).empty() )
-            myLinearForm +=
-                integrate( _range=elements(this->mesh()),
-                           _expr= -inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
-        else
-            myLinearForm +=
-                integrate( _range=markedelements(this->mesh(),marker(d)),
-                           _expr= -inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
+        auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+        myLinearForm +=
+            integrate( _range=rangeBodyForceUsed,
+                       _expr= -inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
     }
 }
 
