@@ -279,6 +279,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
         this->updateTime( M_bdfTemperature->time() );
     }
 
+    this->updateBoundaryConditionsForUse();
+
     // post-process
     this->initPostProcess();
 
@@ -462,6 +464,36 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
+}
+
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    auto mesh = this->mesh();
+    auto XhTemperature = this->spaceTemperature();
+    //auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
+    auto & dofsWithValueImposedTemperature = M_dofsWithValueImposed["temperature"];
+    dofsWithValueImposedTemperature.clear();
+    std::set<std::string> temperatureMarkers;
+
+    // strong Dirichlet bc on temperature from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        temperatureMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
+
+    // on topological faces
+    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesTemperature ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhTemperature->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            dofsWithValueImposedTemperature.insert( it->index() );
+    }
 }
 
 
@@ -887,6 +919,10 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype
         u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=expression(d) );
     }
+    // synchronize velocity dof on interprocess
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
+    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
+        sync( u, "=", itFindDofsWithValueImposed->second );
 
     this->log("ThermoDynamics","updateNewtonInitialGuess","finish" );
 }
@@ -1090,6 +1126,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","start" );
 
     auto mesh = this->mesh();
+#if 0
     auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
 
     for( auto const& d : this->M_bcDirichlet )
@@ -1097,7 +1134,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_
         u.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=cst(0.) );
     }
-
+#else
+    auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
+    auto const& dofsWithValueImposedTemperature = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedTemperature )
+        u.set( thedof,0. );
+    sync( u, "=", dofsWithValueImposedTemperature );
+#endif
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","finish" );
 }
 
