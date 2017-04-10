@@ -23,11 +23,3 @@
 #
 
 
-feelpp_add_application( adr_2d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ADR_2D INSTALL TEST)
-feelpp_add_application( adr_3d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ADR_3D INSTALL TEST)
-feelpp_add_testcase( circle PREFIX qs_adr CATEGORY quickstart )
-feelpp_add_testcase( feelpp2d PREFIX qs_adr CATEGORY quickstart )
-feelpp_add_testcase( feelpp3d PREFIX qs_adr CATEGORY quickstart )
-
-add_dependencies(quickstart ${QS_ADR_2D} ${QS_ADR_3D}  )
-add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
