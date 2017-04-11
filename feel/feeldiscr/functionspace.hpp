@@ -2406,6 +2406,19 @@ public:
                 return d;
 
             }
+        std::vector<int> dofs( std::vector<size_type> const& e, DataMap const& dm, int block  ) const
+            {
+                std::vector<int> d;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            d.push_back( dm.dofIdToContainerId( block, ldof.second.index() ) );
+                        }
+                    });
+                return d;
+
+            }
         template<typename Tloc>
         void assignE( size_type e, Tloc&& loc, bool symm = true )
             {

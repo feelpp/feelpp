@@ -4333,7 +4333,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-
+        DCHECK( idEltTestInit != invalid_size_type_value ) << "invalid element id getting correspondance from "<< idEltRangeInit;
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();

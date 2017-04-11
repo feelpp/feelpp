@@ -352,9 +352,13 @@ public:
             {
                 return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*super::operator()(int(n1),0));
             }
-
+        
         functionspace_type& functionSpace() { return M_fspace; }
         functionspace_type const& functionSpace() const { return M_fspace; }
+        template<typename N>
+        decltype(auto)  functionSpace( N const& n ) { return M_fspace[n]; }
+        template<typename N>
+        decltype(auto) functionSpace( N const& n ) const { return M_fspace[n]; }
         //void zero() { super::zero(); }
         functionspace_type& M_fspace;
     };

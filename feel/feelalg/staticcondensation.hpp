@@ -336,6 +336,8 @@ public:
             M_block_row = row;
         }
 
+    void setDim4( int dim4 ) { M_dim4 = dim4; }
+    
     using local_vector_t = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
     using local_matrix_t = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     using local_index_t = Eigen::Matrix<int,Eigen::Dynamic,1>;
@@ -375,6 +377,7 @@ private:
     std::unordered_map<int,Feel::detail::ElementFaces> M_dK;
     block_index_t M_block_rowcol;
     int M_block_row;
+    int M_dim4;
 };
 
 
@@ -524,16 +527,16 @@ void
 extractBlock( A02_t const& A02K, Key1_t const& key2,
               A20_t const& A20K, Key2_t const& key3,
               BK_t& BK, CK_t& CK, int n,
-              E1 const& e1, E3 const& e3,
+              E1 const& e1, E3 const& e3, int start = 0,
               std::enable_if_t<!is_tensor2symm_field_v<E1>>* = nullptr )
 {
     int N0 = e1.dof()->nLocalDof();
     int N2 = e3.dof()->nLocalDof();
     if ( A02K.count(key2) )
-        BK.block(0, n*N2, N0, N2 ) = A02K.at(key2);
+        BK.block(0, start+n*N2, N0, N2 ) = A02K.at(key2).block(0,0,N0,N2);
 
     if ( A20K.count(key3) )
-        CK.block(n*N2, 0, N2, N0 ) = A20K.at(key3);
+        CK.block(start+n*N2, 0, N2, N0 ) = A20K.at(key3).block(0,0,N2,N0);
 
 }
 
@@ -747,12 +750,21 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     //LOG(INFO) << "A21K.size=" << A21K.size();
     auto const& A22K = M_local_matrices[std::make_pair(2,2)];
     //LOG(INFO) << "A22K.size=" << A22K.size();
+    auto const& A30K = M_local_matrices[std::make_pair(3,0)];
+    auto const& A03K = M_local_matrices[std::make_pair(0,3)];
+    //LOG(INFO) << "A20K.size=" << A20K.size();
+    auto const& A31K = M_local_matrices[std::make_pair(3,1)];
+    auto const& A13K = M_local_matrices[std::make_pair(1,3)];
+    //LOG(INFO) << "A21K.size=" << A21K.size();
+    auto const& A33K = M_local_matrices[std::make_pair(3,3)];
+    //LOG(INFO) << "A22K.size=" << A22K.size();
     auto A4K = [this]( int i, int j ) { return this->M_local_matrices[std::make_pair(i,j)]; };
     auto const& F0K = rhs->M_local_vectors[0];
     //LOG(INFO) << "F0K.size=" << F0K.size();
     auto const& F1K = rhs->M_local_vectors[1];
     //LOG(INFO) << "F1K.size=" << F1K.size();
     auto const& F2K = rhs->M_local_vectors[2];
+    auto const& F3K = rhs->M_local_vectors[3];
     //LOG(INFO) << "F2K.size=" << F2K.size();
     auto F4K = [&rhs]( int i ) { return rhs->M_local_vectors[i]; };
 
@@ -765,18 +777,25 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     int N = N0+N1;
     int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
+
+    int N41 = N2*(e1.mesh()->numLocalTopologicalFaces());
+    int N42 = 0;
     
-    int N41 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
-    int N42 = e(3_c,0).dof()->nLocalDof();
+    if ( e.functionSpace(3_c)->numberOfSpaces() > 0 )
+    {
+        N41 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
+        N42 = e(3_c,0).dof()->nLocalDof();
+    }
     int N4 = N41+N42;
-    cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
+    cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " N4=" << N4 << "(" << N41 << "+" << N42 << ")" << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1), A20(N3,N0), A21(N3,N1), A22(N3,N3);
     local_matrix_t A03(N0,N42),A30(N42,N0), A13(N1,N42),A31(N42,N1), A23(N2,N42),A32(N42,N2), A33(N42,N42);
     local_matrix_t BK( N, N3 ),BK3( N,N4);
     local_matrix_t CK( N3, N ),CK3( N4,N);
     local_matrix_t DK( N3, N3 ), DK3( N4,N4);
     local_vector_t FK( N );
-    local_vector_t DKF( N3 ), DKF3(N4,N4);
+    local_vector_t DKF( N3 );
+    local_vector_t DKF3(N4);
     local_vector_t F2( N3 ), F3(N4);
     for( ; it != en ; ++it )
     {
@@ -788,7 +807,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         DVLOG(2) << "A01K=" << A01K.at(key);
         DVLOG(2) << "A10K=" << A10K.at(key);
 
-
+        tic();
         extractBlock( A00K.at(key), A01K.at(key), A10K.at(key), AK, e1, e2 );
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
 
@@ -798,19 +817,25 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         {
             auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
             decltype(dK) dK1;
-            
+            dK_it = M_dK.end();
             if ( dK.second ) // there are missing
             {
-                for ( int i = 0; i < e(3_c).functionSpace().numberOfSpaces(); ++i )
+                LOG(INFO) << "missing faces" << key.first << ":" << dK;
+                for ( int i = 0; i < 1/*M_dim4*/; ++i )
                 {
+                    
                     dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
+                    DLOG(INFO) << "possibly adding faces from space " << i << " element " << key.first << ":" << dK1 << " fIds" << e1.mesh()->element(key.first).facesId();
                     if ( !dK1.first.empty() )
                     {
+                        DLOG(INFO) << " . added face from space index " << i;
                         index = i;
                         dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first), std::move(dK1.first), index ) ).first;
                         break;
                     }
+                    
                 }
+                DCHECK( dK_it != M_dK.end() ) << "could not find missing faces";
             }
             else
                 dK_it = M_dK.emplace( K, Feel::detail::ElementFaces( std::move(dK.first) ) ).first;
@@ -910,6 +935,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             int n = 0;
             std::for_each( dK.faces1().begin(), dK.faces1().end(), [&]( auto dKi )
                            {
+                               //std::cout << "face1 key.first=" << key.first << " dKi=" << dKi << std::endl;
                                auto key2 = std::make_pair(key.first, dKi );
                                auto key3 = std::make_pair(dKi,key.first);
                                auto key4 = std::make_pair(dKi, dKi);
@@ -921,14 +947,14 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
                                DVLOG(2) << "A22.count(" << key4 << ")"  << A22K.count(key4);
                                DVLOG(2) << "F2.count(" << dKi << ")"  << F2K.count(dKi);
 
-                               extractBlock( A02K, key2, A20K, key3, BK, CK, n, e1, e3 );
-
+                               extractBlock( A02K, key2, A20K, key3, BK3, CK, n, e1, e3 );
+                               //std::cout << "a CK=" << CK << std::endl;
                                if ( A12K.count(key2) )
-                                   BK.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
+                                   BK3.block(N0,n*N2, N1, N2 ) = A12K.at(key2);
 
                                if ( A21K.count(key3) )
                                    CK.block(n*N2, N0, N2, N1 ) = A21K.at(key3);
-
+                               //std::cout << "d CK=" << CK << std::endl;
                                if ( A22K.count(key4) )
                                    A22.block(n*N2, n*N2, N2, N2 ) = A22K.at(key4);
 
@@ -939,34 +965,47 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 
                                ++n;
                            } );
+            if ( VLOG_IS_ON(2) )
+            {
+                cout<< "A22=" << A22 << std::endl;
+                cout<< "BK3=" << BK3 << std::endl;
+                cout<< "CK=" << CK << std::endl;
+                cout<< "CK.T=" << CK.transpose() << std::endl;
+                cout<< "FK=" << FK << std::endl;
+                cout<< "F2=" << F2 << std::endl;
+                std::cout << "AK=" << AK << std::endl;
+            }
             int n2 = 0;
             std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                            {
+                               //std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
                                auto key2 = std::make_pair(key.first, dKi );
                                auto key3 = std::make_pair(dKi,key.first);
                                auto key4 = std::make_pair(dKi, dKi);
 
-                               DVLOG(2) << "A02.count(" << key2 << ")"  << A02K.count(key2);
-                               DVLOG(2) << "A20.count(" << key3 << ")"  << A20K.count(key3);
-                               DVLOG(2) << "A12.count(" << key2 << ")"  << A12K.count(key2);
-                               DVLOG(2) << "A21.count(" << key3 << ")"  << A21K.count(key3);
-                               DVLOG(2) << "A22.count(" << key4 << ")"  << A22K.count(key4);
-                               DVLOG(2) << "F2.count(" << dKi << ")"  << F2K.count(dKi);
+                               DVLOG(2) << "A03.count(" << key2 << ")"  << A02K.count(key2);
+                               DVLOG(2) << "A30.count(" << key3 << ")"  << A20K.count(key3);
+                               DVLOG(2) << "A13.count(" << key2 << ")"  << A12K.count(key2);
+                               DVLOG(2) << "A31.count(" << key3 << ")"  << A21K.count(key3);
+                               DVLOG(2) << "A33.count(" << key4 << ")"  << A22K.count(key4);
+                               DVLOG(2) << "F3.count(" << dKi << ")"  << F3K.count(dKi);
 
-                               extractBlock( A02K, key2, A20K, key3, BK, CK, n, e1, e3 );
+                               //std::cout << "d BK=" << BK3 << std::endl;
+                               extractBlock( A03K, key2, A30K, key3, BK3, CK, n2, e1, e(3_c,index), n*e3.dof()->nLocalDof() );
+                               //std::cout << "e CK=" << CK << std::endl;
+                               //std::cout << "e BK=" << BK3 << std::endl;
+                               if ( A13K.count(key2) )
+                                   BK3.block(N0,n*N2+n2*N42, N1, N42 ) = A13K.at(key2);
+                               //std::cout << "g BK=" << BK3 << std::endl;
+                               if ( A31K.count(key3) )
+                                   CK.block(n*N2+n2*N42, N0, N42, N1 ) = A31K.at(key3);
+                               //std::cout << "f CK=" << CK << std::endl;
+                               if ( A33K.count(key4) )
+                                   A22.block(n*N2+n2*N42, n*N2, N42, N42 ) = A33K.at(key4);
 
-                               if ( A12K.count(key2) )
-                                   BK.block(N0,n*N2+n2*N42, N1, N42 ) = A12K.at(key2);
-
-                               if ( A21K.count(key3) )
-                                   CK.block(n*N2+n2*N42, N0, N42, N1 ) = A21K.at(key3);
-
-                               if ( A22K.count(key4) )
-                                   A22.block(n*N2+n2*N42, n*N2, N42, N42 ) = A22K.at(key4);
-
-                               if ( F2K.count(dKi) )
+                               if ( F3K.count(dKi) )
                                {
-                                   F2.segment(n*N2+n2*N42,N42)=F2K.at(dKi);
+                                   F2.segment(n*N2+n2*N42,N42)=F3K.at(dKi);
                                }
 
                                ++n2;
@@ -976,48 +1015,80 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             if ( VLOG_IS_ON(2) )
             {
                 cout<< "A22=" << A22 << std::endl;
-                cout<< "BK=" << BK << std::endl;
+                cout<< "BK3=" << BK3 << std::endl;
                 cout<< "CK=" << CK << std::endl;
                 cout<< "CK.T=" << CK.transpose() << std::endl;
                 cout<< "FK=" << FK << std::endl;
                 cout<< "F2=" << F2 << std::endl;
+                std::cout << "AK=" << AK << std::endl;
             }
 
 
 #if 1
             auto Aldlt = AK.ldlt();
-            ////LOG(INFO) << "Aldlt=" << Aldlt;
 #else
             auto Aldlt = AK.lu();
 #endif
-            auto AinvB = Aldlt.solve( BK );
+#if 0
+            local_vector_t pK(N4);
+            pK=local_vector_t::Constant(N4,1);
+            Eigen::VectorXd upK( N0 + N1 );
+            upK.segment(0,N0)=local_vector_t::Zero(N0);
+            upK.segment(N0,N1)=local_vector_t::Constant(N1,1.);
+            
+            std::cout << "AK*U=" << AK*upK << std::endl;
+            std::cout << "BK*K=" << BK3*pK << std::endl;
+            std::cout << "FK=" << FK << std::endl;
+#endif
+            auto AinvB = Aldlt.solve( BK3 );
             auto AinvF = Aldlt.solve( FK );
 
             // local assemble DK and DKF
-            DK=-CK*AinvB+A22 ;
-            DKF=-CK*AinvF+F2;
+            DK3=-CK*AinvB+A22 ;
+            DKF3=-CK*AinvF+F2;
 
+#if 0
+            std::cout << "DK3 = " << DK3 << std::endl;
+            std::cout << "DKF3 = " << DKF3 << std::endl;
+            std::cout << "DK3*pK=" << DK3*pK << std::endl;
+
+            std::cout << "AinvB = " << AinvB << std::endl;
+            std::cout << "AinvF = " << AinvF << std::endl;
+            auto Dldlt = DK3.lu();
+            auto p  = Dldlt.solve( DKF3);
+            std::cout << "pdK=" << p  << std::endl;
+            std::cout << "uK = " << -AinvB*p + AinvF << std::endl;
+#endif            
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
             toc("sc.condense.localassembly", FLAGS_v>0);
             tic();
-            auto dofs1 = e3.dofs(dK.faces1());
-            auto dofs2 = e(3_c,dK.spaceIndex()).dofs(dK.faces2());
+            auto dofs1 = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
+
+            auto dofs2 = e(3_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),1);
+
             decltype(dofs1) dofs( dofs1.size()+dofs2.size() );
             std::copy(dofs1.begin(), dofs1.end(), dofs.begin() );
             std::copy(dofs2.begin(), dofs2.end(), dofs.begin()+dofs1.size() );
-            local_matrix_t DK00( DK.block( 0, 0, N41, N41 ) );
-            local_matrix_t DK01( DK.block( 0, N41, N41, N42 ) );
-            local_matrix_t DK10( DK.block( N41, 0, N42, N41 ) );
-            local_matrix_t DK11( DK.block( N41, N41, N42, N42 ) );
-            local_vector_t DKF1( DKF.head( N41 ) );
-            local_vector_t DKF2( DKF.tail( N42 ) );
+
+            local_matrix_t DK00( DK3.block( 0, 0, N41, N41 ) );
+            local_matrix_t DK01( DK3.block( 0, N41, N41, N42 ) );
+            local_matrix_t DK10( DK3.block( N41, 0, N42, N41 ) );
+            local_matrix_t DK11( DK3.block( N41, N41, N42, N42 ) );
+            local_vector_t DKF1( DKF3.head( N41 ) );
+            local_vector_t DKF2( DKF3.tail( N42 ) );
             S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_size_type_value, invalid_size_type_value );
+            //S.matrixPtr()->printMatlab("S1.m");
             S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_size_type_value, invalid_size_type_value );
+            //S.matrixPtr()->printMatlab("S2.m");
             S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_size_type_value, invalid_size_type_value );
+            //S.matrixPtr()->printMatlab("S3.m");
             S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_size_type_value, invalid_size_type_value );
+            //S.matrixPtr()->printMatlab("S4.m");
             V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_size_type_value, invalid_size_type_value );
+            //V.vectorPtr()->printMatlab("g1.m");
             V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
+            //V.vectorPtr()->printMatlab("g2.m");
             toc("sc.condense.globalassembly", FLAGS_v>0);
 
         }
@@ -1072,13 +1143,18 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     int N1 = e2.dof()->nLocalDof();
     cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
     int N2 = e3.dof()->nLocalDof();
-    int N4 = e(3_c,0).dof()->nLocalDof();
+    int N4 = 0;
+    int N4d1 = N2*(e1.mesh()->numLocalTopologicalFaces());
+    int N4d11 = N2*(e1.mesh()->numLocalTopologicalFaces());
+    if ( e.functionSpace( 3_c )->numberOfSpaces() > 0 )
+    {
+        N4 = e(3_c,0).dof()->nLocalDof();
+        N4d1 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
+    }
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    //! we suppose that there is only one face with a special trace 
-    int N4d1 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
-    int N4d2 = N4;
     Eigen::VectorXd upK( N0 + N1 );
-    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK( N4d1+N4d2 );
+    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK1( N4d11 );
+    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK2( N4d1+N4 );
     
     for( auto const& m : M_AinvB )
     {
@@ -1089,16 +1165,25 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         auto & dK = M_dK[K];
         if ( dK.hasSameTrace() )
         {
-            e3.element( dK.faces1(), pdK );
-            upK.noalias() = -A*pdK + F;
+            e3.element( dK.faces1(), pdK1 );
+            upK.noalias() = -A*pdK1 + F;
             e1.assignE( K, upK.head( N0 ) );
             e2.assignE( K, upK.tail( N1 ) );
         }
         else
         {
-            e3.element( dK.faces1(), pdK.topLeftCorner(N4d1,1) );
-            e(3_c,dK.spaceIndex()).element( dK.faces2(), pdK.bottomLeftCorner(N4d2,1) );
-            upK.noalias() = -A*pdK + F;
+            e3.element( dK.faces1(), pdK2.topLeftCorner(N4d1,1) );
+            e(3_c,dK.spaceIndex()).element( dK.faces2(), pdK2.bottomLeftCorner(N4,1) );
+            //std::cout << "pdK2=" << pdK2 << std::endl;
+            //std::cout << "A=" << A << std::endl;
+            //std::cout << "F=" << F << std::endl;
+            upK.noalias() = -A*pdK2 + F;
+            //std::cout << "upK = " << upK << std::endl;
+            //pdK2 = local_vector_t::Constant( pdK2.size(), 1. );
+            //pdK2( pdK2.size()-1)=1;
+            //std::cout << "pdK2=" << pdK2 << std::endl;
+            //upK.noalias() = -A*pdK2 + F;
+            //std::cout << "upK2 = " << upK  << std::endl;
             e1.assignE( K, upK.head( N0 ) );
             e2.assignE( K, upK.tail( N1 ) );
         }
