@@ -168,14 +168,15 @@ protected:
     void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const;
     void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const;
 
+    //--------------------------------------------------------------------//
+    uint16_type M_nFluids;
+
 private:
     std::string M_prefix;
     //--------------------------------------------------------------------//
     //mesh_ptrtype M_mesh;
     levelset_ptrtype M_globalLevelset;
     std::vector<levelset_ptrtype> M_levelsets;
-
-    uint16_type M_nFluids;
 
     //--------------------------------------------------------------------//
     // Solve
