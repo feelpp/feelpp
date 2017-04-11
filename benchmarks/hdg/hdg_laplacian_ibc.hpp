@@ -112,8 +112,10 @@ public:
     using Ch_t = Pch_type<face_mesh_type,0>;
     using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
 #else
-    using Ch_t = Pch_type<mesh_type,0>;
-    using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
+    using Ch_t = Pch_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
+    //using Ch_t = Pch_type<mesh_type,0>;
+    //using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
 #endif
 
     //! the exporter factory type
@@ -254,6 +256,14 @@ Hdg<Dim, OrderP>::convergence()
                 return false;
             });
         auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+        std::vector<std::string> ibc_markers(ioption("nb_ibc"));
+        for( int i = 0; i < ioption("nb_ibc"); ++i )
+        {
+            auto ind = i == 0 ? "" : std::to_string(i+1);
+            std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+            ibc_markers.push_back( marker );
+        }
+        auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh,ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
         toc("mesh",true);
 
         // ****** Hybrid-mixed formulation ******
@@ -264,9 +274,10 @@ Hdg<Dim, OrderP>::convergence()
         Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
         Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
 #ifdef USE_FACE_MESH
-        Ch_ptr_t Ch = Pch<0>(face_mesh, true );
+        Ch_ptr_t Ch = Pch<0>(ibc_mesh, true );
 #else
-        Ch_ptr_t Ch = Pch<0>(mesh, true );
+        Ch_ptr_t Ch = Pch<0>(ibc_mesh, true );
+        //Ch_ptr_t Ch = Pch<0>(mesh, true );
 #endif
 
         toc("spaces",true);
@@ -303,7 +314,7 @@ Hdg<Dim, OrderP>::convergence()
         tic();
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
         auto ps = product2( ibcSpaces, Vh, Wh, Mh );
-        auto a = blockform2( ps );
+        auto a = blockform2( ps );//, boption("sc.condense")?Pattern::HDG:Pattern::COUPLED );
         auto rhs = blockform1( ps );
 
         auto K = expr(soption("k"));
@@ -436,7 +447,7 @@ Hdg<Dim, OrderP>::convergence()
 
             // <lambda, tau w>_Gamma_I
             a( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(mesh,"Ibc"),
-                                              _expr=-tau_constant * idt(uI) * id(w) * ( pow(h(),M_tau_order)) );
+                                              _expr=tau_constant * idt(uI) * id(w) * ( pow(h(),M_tau_order)) );
 
             cout << "a(2,4[" << i << "]) works fine" << std::endl;
 

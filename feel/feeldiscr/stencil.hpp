@@ -1550,8 +1550,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                 element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
 
             // Get the global indices of the DOFs with support on this element
-            _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
-
+            bool is_empty = _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
+            if ( is_empty )
+                continue;
             // We can be more efficient if we sort the element DOFs
             // into increasing order
             //std::sort(element_dof1.begin(), element_dof1.end());

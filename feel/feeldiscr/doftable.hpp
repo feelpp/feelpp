@@ -487,22 +487,27 @@ public:
         }
 
 
-    void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
+    bool getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
         {
+            bool is_empty = false;
             for( localdof_type const& ldof: this->localDofSet( id_el ) )
             {
                 auto it = M_el_l2g.left.find( ldof );
-                DCHECK( it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
-                ind[ldof.localDof()] =this->mapGlobalProcessToGlobalCluster()[ it->second.index() ];
+                DLOG_IF( WARNING, it == M_el_l2g.left.end() ) << "Invalid element id " << id_el;
+                is_empty = is_empty || it == M_el_l2g.left.end();
+                if ( it != M_el_l2g.left.end() )
+                    ind[ldof.localDof()] =this->mapGlobalProcessToGlobalCluster()[ it->second.index() ];
 
             }
+            return is_empty;
         }
 
     std::vector<size_type> getIndicesOnGlobalCluster( size_type id_el ) const
         {
             const size_type s = getIndicesSize( id_el );
-            std::vector<size_type> ind( s );
-            getIndicesSetOnGlobalCluster( id_el, ind );
+            std::vector<size_type> ind(s);
+            bool is_empty = getIndicesSetOnGlobalCluster( id_el, ind );
+            if ( is_empty ) ind.clear();
             return ind;
         }
 

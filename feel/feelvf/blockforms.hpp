@@ -247,7 +247,7 @@ public :
             auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
 #else
             auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::HDG)  );
-            MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+            //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto V = form1( _test=e3.functionSpace() );
 
 #endif
@@ -295,7 +295,7 @@ public :
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,4>,
                        std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
         {
-            auto& e4 = solution(3_c);
+            //auto& e4 = solution(3_c,0);
             auto& e3 = solution(2_c);
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
@@ -309,7 +309,7 @@ public :
             auto Th = product2( M_ps[3_c], M_ps[2_c] );
             auto S = blockform2(Th, Pattern::HDG);
             auto V = blockform1(Th);
-            MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+            //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto U = Th.element();
             //e3.printMatlab("phat.m");
             tic();
@@ -320,7 +320,7 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            auto r = S.solve( _solution=U, _rhs=V, _name="sc",_rebuild=rebuild, _condense=true );
+            auto r = S.solve( _solution=U, _rhs=V, _name="sc",_rebuild=true );//, _condense=true );
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
@@ -336,6 +336,7 @@ public :
 #endif
             tic();
             cout << " . starting local Solve" << std::endl;
+            sc->setDim4( M_ps[3_c]->numberOfSpaces());
             sc->localSolve ( rhs.vectorPtr()->sc(), solution );
             cout << " . local Solve done" << std::endl;
             toc("blockform.sc.localsolve",FLAGS_v>0);
