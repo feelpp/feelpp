@@ -181,6 +181,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
         }
 
     //--------------------------------------------------------------//
@@ -1074,6 +1075,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         }
 #endif
     }
+    //-------------------------------------------------//
+    this->updateBoundaryConditionsForUse();
+    //-------------------------------------------------//
     M_isUpdatedForUse = true;
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");

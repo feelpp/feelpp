@@ -174,7 +174,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdate
         if ( M_stabilizationGLSParameter->method() == "eigenvalue" )
             FluidMechanicsDetail::updateLinearPDEStabilizationGLS<0>( *this, data );
         else if ( M_stabilizationGLSParameter->method() == "doubly-asymptotic-approximation" )
-            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<1>( *this, data );
+            FluidMechanicsDetail::updateLinearPDEStabilizationGLS<2>( *this, data );
     }
 
     //using namespace Feel::vf;

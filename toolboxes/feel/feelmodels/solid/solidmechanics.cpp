@@ -91,46 +91,46 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerRobinBC();
 
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
-    M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
-    for( auto const& d : M_bcDirichlet )
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
+    for( auto const& d : this->M_bcDirichlet )
         this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
         std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
-        M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
-        for( auto const& d : M_bcDirichletComponents.find(comp)->second )
+        this->M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
+        for( auto const& d : this->M_bcDirichletComponents.find(comp)->second )
             this->addMarkerDirichletBC( dirichletbcType, marker(d), comp );
     }
 
-    M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
-    for( auto const& d : M_bcNeumannScalar )
+    this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
+    for( auto const& d : this->M_bcNeumannScalar )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
-    M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_vectorial" );
-    for( auto const& d : M_bcNeumannVectorial )
+    this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_vectorial" );
+    for( auto const& d : this->M_bcNeumannVectorial )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d));
-    M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_tensor2" );
-    for( auto const& d : M_bcNeumannTensor2 )
+    this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_tensor2" );
+    for( auto const& d : this->M_bcNeumannTensor2 )
         this->addMarkerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d));
 
-    M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
-    for( auto const& d : M_bcInterfaceFSI )
+    this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
+    for( auto const& d : this->M_bcInterfaceFSI )
         this->addMarkerFluidStructureInterfaceBC( marker(d) );
 
-    M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<super_type::nDim>( "displacement", "robin" );
-    for( auto const& d : M_bcRobin )
+    this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<super_type::nDim>( "displacement", "robin" );
+    for( auto const& d : this->M_bcRobin )
         this->addMarkerRobinBC( marker(d) );
 
-    M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
-    for( auto const& d : M_bcNeumannEulerianFrameScalar )
+    this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
         this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::SCALAR,marker(d));
-    M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_eulerian_vectorial" );
-    for( auto const& d : M_bcNeumannEulerianFrameVectorial )
+    this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_eulerian_vectorial" );
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
         this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::VECTORIAL,marker(d));
-    M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_eulerian_tensor2" );
-    for( auto const& d : M_bcNeumannEulerianFrameTensor2 )
+    this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_eulerian_tensor2" );
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
         this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::TENSOR2,marker(d));
 
-    M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
 
 }
 
@@ -190,134 +190,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->modelProperties().parameters().updateParameterValues();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : M_bcDirichletComponents )
+    this->M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : this->M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
-    M_bcNeumannScalar.setParameterValues( paramValues );
-    M_bcNeumannVectorial.setParameterValues( paramValues );
-    M_bcNeumannTensor2.setParameterValues( paramValues );
-    M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
-    M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
-    M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
-    M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
+    this->M_bcNeumannScalar.setParameterValues( paramValues );
+    this->M_bcNeumannVectorial.setParameterValues( paramValues );
+    this->M_bcNeumannTensor2.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
+    this->M_bcRobin.setParameterValues( paramValues );
+    this->M_volumicForcesProperties.setParameterValues( paramValues );
 
     super_type::solve( upVelAcc );
 }
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
-{
-    if ( !this->hasDirichletBC() ) return;
-
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
-                                               this->worldComm(),this->verboseAllProc());
-
-    auto Xh = this->functionSpace();
-    auto mesh = this->mesh();
-
-    if ( !Xh->worldsComm()[0].isActive()) // only on Displacement Proc
-        return;
-
-    auto u = Xh->element( U, this->rowStartInVector() );
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-        if ( !listMarkerFaces.empty() )
-            u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                 _expr=expression(d) );
-        if ( !listMarkerEdges.empty() )
-            u.on(_range=markededges(mesh,listMarkerEdges),
-                 _expr=expression(d) );
-        if ( !listMarkerPoints.empty() )
-            u.on(_range=markedpoints(mesh,listMarkerPoints),
-                 _expr=expression(d) );
-    }
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                           _expr=expression(d) );
-            if ( !listMarkerEdges.empty() )
-                u[comp].on(_range=markededges(mesh,listMarkerEdges),
-                           _expr=expression(d) );
-            if ( !listMarkerPoints.empty() )
-                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
-                           _expr=expression(d) );
-        }
-    }
-
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
-                                               this->worldComm(),this->verboseAllProc());
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual(vector_ptrtype& R) const
-{
-    if ( !this->hasDirichletBC() ) return;
-
-    R->close();
-    if ( !this->functionSpaceDisplacement()->worldsComm()[0].isActive() ) // only on Displacement Proc
-        return;
-
-    auto u = this->functionSpace()->element( R,this->rowStartInVector() );
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-
-        auto exprUsed = vf::zero<super_type::nDim,1>();// 0*vf::one();
-        if ( !listMarkerFaces.empty() )
-            u.on(_range=markedfaces(this->mesh(),listMarkerFaces),
-                 _expr=exprUsed );
-        if ( !listMarkerEdges.empty() )
-            u.on(_range=markededges(this->mesh(),listMarkerEdges),
-                 _expr=exprUsed );
-        if ( !listMarkerPoints.empty() )
-            u.on(_range=markedpoints(this->mesh(),listMarkerPoints),
-                 _expr=exprUsed );
-    }
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            auto exprUsed = vf::cst(0.);
-            if ( !listMarkerFaces.empty() )
-                u[comp].on(_range=markedfaces(this->mesh(),listMarkerFaces),
-                           _expr=exprUsed );
-            if ( !listMarkerEdges.empty() )
-                u[comp].on(_range=markededges(this->mesh(),listMarkerEdges),
-                           _expr=exprUsed );
-            if ( !listMarkerPoints.empty() )
-                u[comp].on(_range=markedpoints(this->mesh(),listMarkerPoints),
-                           _expr=exprUsed );
-        }
-    }
-
-}
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const
@@ -330,7 +219,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldDisplacement();
-    for( auto const& d : M_bcDirichlet )
+    for( auto const& d : this->M_bcDirichlet )
     {
         auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
         auto const& listMarkerFaces = std::get<0>( ret );
@@ -352,7 +241,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matr
                     _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
                     _prefix=this->prefix() );
     }
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
     {
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
@@ -393,7 +282,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                                    _rowstart=this->rowStartInMatrix(),
                                    _colstart=this->colStartInMatrix() );
         auto const& u = this->fieldDisplacement();
-        for( auto const& d : M_bcDirichlet )
+        for( auto const& d : this->M_bcDirichlet )
         {
             auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
             auto const& listMarkerFaces = std::get<0>( ret );
@@ -415,7 +304,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                         _element=u,_rhs=F,_expr=expression(d),
                         _prefix=this->prefix() );
         }
-        for ( auto const& bcDirComp : M_bcDirichletComponents )
+        for ( auto const& bcDirComp : this->M_bcDirichletComponents )
         {
             ComponentType comp = bcDirComp.first;
             for( auto const& d : bcDirComp.second )
@@ -444,7 +333,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
     }
     else if ( this->is1dReducedModel() )
     {
-        if ( M_bcDirichlet.empty() ) return;
+        if ( this->M_bcDirichlet.empty() ) return;
 
         auto Xh = this->functionSpace1dReduced();
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -452,7 +341,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                                    _colstart=this->colStartInMatrix() );
         auto const& u = this->fieldDisplacementScal1dReduced();
         //WARNING : fixed at zero
-        for( auto const& d : M_bcDirichlet )
+        for( auto const& d : this->M_bcDirichlet )
             bilinearForm +=
                 on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
                     _element=u, _rhs=F, _expr=cst(0.),
@@ -465,23 +354,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) const
 {
-    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
+    if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
                                _rowstart=this->rowStartInVector() );
     auto const& v = this->fieldDisplacement();
 
-    for( auto const& d : M_bcNeumannScalar )
+    for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= -expression(d)*inner( N(),id(v) ),
                        _geomap=this->geomap() );
-    for( auto const& d : M_bcNeumannVectorial )
+    for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
                        _expr= -inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
-    for( auto const& d : M_bcNeumannTensor2 )
+    for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
                        _expr= -inner( expression(d)*N(),id(v) ),
@@ -492,23 +381,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
 {
-    if ( M_bcNeumannScalar.empty() && M_bcNeumannVectorial.empty() && M_bcNeumannTensor2.empty() ) return;
+    if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=F,
                                _rowstart=this->rowStartInVector() );
     auto const& v = this->fieldDisplacement();
 
-    for( auto const& d : M_bcNeumannScalar )
+    for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= expression(d)*inner( N(),id(v) ),
                         _geomap=this->geomap() );
-    for( auto const& d : M_bcNeumannVectorial )
+    for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
                        _expr= inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
-    for( auto const& d : M_bcNeumannTensor2 )
+    for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
                        _expr= inner( expression(d)*N(),id(v) ),
@@ -521,13 +410,13 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R) const
 {
 
-    if ( M_bcRobin.empty() ) return;
+    if ( this->M_bcRobin.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
                                _rowstart=this->rowStartInVector() );
 
     // Warning : take only first component of expression1
-    for( auto const& d : M_bcRobin )
+    for( auto const& d : this->M_bcRobin )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
                        _expr= inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
@@ -539,7 +428,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype& J) const
 {
-    if ( M_bcRobin.empty() ) return;
+    if ( this->M_bcRobin.empty() ) return;
 
     auto Xh = this->functionSpaceDisplacement();
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
@@ -548,7 +437,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype
     auto const& u = this->fieldDisplacement();
 
     // Warning : take only first component of expression1
-    for( auto const& d : M_bcRobin )
+    for( auto const& d : this->M_bcRobin )
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
                        _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
@@ -560,7 +449,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
 {
-    if ( M_bcRobin.empty() ) return;
+    if ( this->M_bcRobin.empty() ) return;
 
     auto Xh = this->functionSpaceDisplacement();
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -571,7 +460,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtyp
     auto const& u = this->fieldDisplacement();
 
     // Warning : take only first component of expression1
-    for( auto const& d : M_bcRobin )
+    for( auto const& d : this->M_bcRobin )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
@@ -592,13 +481,13 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R ) const
 {
 
-    if ( M_volumicForcesProperties.empty() ) return;
+    if ( this->M_volumicForcesProperties.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
                                _rowstart=this->rowStartInVector() );
     auto const& v = this->fieldDisplacement();
 
-    for( auto const& d : M_volumicForcesProperties )
+    for( auto const& d : this->M_volumicForcesProperties )
     {
         if ( marker(d).empty() )
             myLinearForm +=
@@ -617,13 +506,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F ) const
 {
-    if ( M_volumicForcesProperties.empty() ) return;
+    if ( this->M_volumicForcesProperties.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=F,
                                _rowstart=this->rowStartInVector() );
     auto const& v = this->fieldDisplacement();
 
-    for( auto const& d : M_volumicForcesProperties )
+    for( auto const& d : this->M_volumicForcesProperties )
     {
         if ( marker(d).empty() )
             myLinearForm +=
@@ -642,25 +531,25 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
 {
-    if ( M_bcNeumannEulerianFrameScalar.empty() && M_bcNeumannEulerianFrameVectorial.empty() && M_bcNeumannEulerianFrameTensor2.empty() ) return;
+    if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
     auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
                                _rowstart=this->rowStartInVector() );
-    for( auto const& d : M_bcNeumannEulerianFrameScalar )
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
                        _expr= -expression(d)*inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
-    for( auto const& d : M_bcNeumannEulerianFrameVectorial )
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
                        _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
-    for( auto const& d : M_bcNeumannEulerianFrameTensor2 )
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)),
@@ -673,28 +562,28 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
 {
-    if ( M_bcNeumannEulerianFrameScalar.empty() && M_bcNeumannEulerianFrameVectorial.empty() && M_bcNeumannEulerianFrameTensor2.empty() ) return;
+    if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 
     auto Xh = this->functionSpaceDisplacement();
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    for( auto const& d : M_bcNeumannEulerianFrameScalar )
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
                        _expr= -expression(d)*inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
                        _geomap=this->geomap() );
     }
-    for( auto const& d : M_bcNeumannEulerianFrameVectorial )
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
                        _expr= -inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
                        _geomap=this->geomap() );
     }
-    for( auto const& d : M_bcNeumannEulerianFrameTensor2 )
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),marker(d)) ,
