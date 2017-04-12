@@ -31,14 +31,15 @@ int main(int argc, char**argv )
     using Feel::cout;
 	po::options_description adroptions( "Advection Diffusion Reaction options" );
 	adroptions.add_options()
+        ( "stabilisation", po::value<bool>()->default_value( false ), "enable/disable stabilisation disable=0, enable=1" )
         ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
 		;
 
 	Environment env( _argc=argc, _argv=argv,
-                   _desc=adroptions,
-                   _about=about(_name="qs_adr",
-                                _author="Feel++ Consortium",
-                                _email="feelpp-devel@feelpp.org"));
+                     _desc=adroptions,
+                     _about=about(_name="qs_adr",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
     // end::env[]
 
     // tag::mesh_space[]
@@ -74,6 +75,20 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
                   _expr=grad(v)*(sigma*trans(gradt(u))) + (gradt(u)*beta)*id(v) + gamma*idt(u)*id(v) );
+
+    // tag::stab[]
+    if ( boption("stabilisation") )
+    {
+        auto stable = expr( soption(_name="delta",_prefix="functions") );
+        auto epsilon=(trace(sigma)/FEELPP_DIM);
+        auto delta = stable*constant(1.0)/(1.0/h() + epsilon/(h()*h()));
+        auto  L = -epsilon*laplacian(v)+ grad(v)*beta + gamma*id(v);
+        auto  Lt = -epsilon*laplaciant(u)+ gradt(u)*beta + gamma*idt(u);
+
+        a+= integrate(_range=elements(mesh), _expr=delta*L*Lt );
+    }
+    // end::stab[]
+    
     a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
     a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
