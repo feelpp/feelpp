@@ -151,7 +151,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -divt(u)*id(q),
+                       _expr= -idv(rho)*divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 

@@ -144,7 +144,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     {
         linearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -divv(u)*id(q),
+                       _expr= -idv(rho)*divv(u)*id(q),
                        _geomap=this->geomap() );
     }
 
