@@ -85,16 +85,19 @@ enum class LevelSetFieldsExported
     GradPhi, ModGradPhi
 };
 
-template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
+template<typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity>
 class LevelSet 
-    : public AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType >
-    , public boost::enable_shared_from_this< LevelSet<ConvexType, Order, PeriodicityType> >
+    : public AdvectionBase< ConvexType, BasisType, PeriodicityType >
+    , public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
 {
 public:
-    typedef AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType > super_type;
-    typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
+    typedef AdvectionBase< ConvexType, BasisType, PeriodicityType > super_type;
+    typedef LevelSet<ConvexType, BasisType, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    static_assert( super_type::is_scalar, "LevelSet function basis must be scalar" );
+
+    static const uint16_type Order = BasisType::nOrder;
     typedef double value_type;
 
     //--------------------------------------------------------------------//
@@ -112,6 +115,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Space levelset
+    typedef typename super_type::basis_advection_type basis_levelset_type;
     typedef typename super_type::space_advection_type space_levelset_type;
     typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
@@ -119,7 +123,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Space vectorial levelset
-    typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
+    //typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
+    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_levelset_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
     typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
@@ -179,10 +184,12 @@ public:
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
-    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
+    typedef basis_levelset_type basis_modgradphi_advection_type;
+    typedef Advection<ConvexType, basis_modgradphi_advection_type, PeriodicityType> modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
     // Stretch advection
-    typedef Advection<ConvexType, Lagrange<Order, Scalar, Continuous>, PeriodicityType> stretch_advection_type;
+    typedef basis_levelset_type basis_stretch_advection_type;
+    typedef Advection<ConvexType, basis_stretch_advection_type, PeriodicityType> stretch_advection_type;
     typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -566,10 +573,10 @@ private:
 
 }; //class LevelSet
 
-template<typename ConvexType, int Order, typename PeriodicityType>
+template<typename ConvexType, typename BasisType, typename PeriodicityType>
 template<typename ExprT>
 void 
-LevelSet<ConvexType, Order, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
+LevelSet<ConvexType, BasisType, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();
