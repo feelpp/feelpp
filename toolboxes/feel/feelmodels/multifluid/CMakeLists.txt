@@ -12,6 +12,18 @@ foreach( _DIM 2 3)
             FLUID_P_CONTINUITY Continuous
             LEVELSET_ORDER ${_LS_ORDER}
             GEO_ORDER  1
+            POINT_SET PointSetEquiSpaced
+            ADD_CMAKE_INSTALL
+            )
+        set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
+        genLibMultifluid(
+            DIM ${_DIM}
+            FLUID_U_ORDER ${_FLUID_U_ORDER}
+            FLUID_P_ORDER ${_FLUID_P_ORDER}
+            FLUID_P_CONTINUITY Continuous
+            LEVELSET_ORDER ${_LS_ORDER}
+            GEO_ORDER  1
+            POINT_SET PointSetFekete
             ADD_CMAKE_INSTALL
             )
         set(FEELPP_MODELS_LIBRARIES_MULTIFLUID  ${FEELPP_MODELS_LIBRARIES_MULTIFLUID} ${LIBBASE_NAME}  )
