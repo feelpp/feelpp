@@ -109,8 +109,8 @@ public:
     using Mh_element_t = typename Mh_t::element_type;
     using Mh_element_ptr_t = typename Mh_t::element_ptrtype;
     // Ch
-    using Ch_t = Pch_type<mesh_type,0>;
-    using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
+    using Ch_t = Pch_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
     using Ch_element_vector_type = std::vector<Ch_element_t>;
@@ -474,8 +474,17 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     M_Vh = Pdhv<Order>( M_mesh, true);
     M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
-    M_Ch = Pch<0>( M_mesh, true );
+    // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
+
+	std::vector<std::string> ibc_markers(M_integralCondition);
+	for( int i = 0; i < M_integralCondition; i++)
+	{
+		ibc_markers.push_back(M_IBCList[i].marker());
+	}
+
+    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );	
+    M_Ch = Pch<0>( ibc_mesh, true );
 
     Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
          << "Wh<" << Order << "> : " << M_Wh->nDof() << std::endl
