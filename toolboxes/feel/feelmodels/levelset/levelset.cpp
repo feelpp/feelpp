@@ -28,6 +28,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateGradPhi(true),
     M_doUpdateModGradPhi(true),
     M_doUpdateSubmeshDirac(true),
+    M_doUpdateSubmeshOuter(true),
     M_doUpdateMarkers(true),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
@@ -1384,6 +1385,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateGradPhi = true;
     M_doUpdateModGradPhi = true;
     M_doUpdateSubmeshDirac = true;
+    M_doUpdateSubmeshOuter = true;
 }
 
 //----------------------------------------------------------------------------//
@@ -1716,6 +1718,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::submeshDirac() const
         M_doUpdateSubmeshDirac = false;
     }
     return M_submeshDirac;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::mesh_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::submeshOuter() const
+{
+    if( M_doUpdateSubmeshOuter )
+    {
+        this->mesh()->updateMarker2( *this->markerHeaviside() );
+        M_submeshOuter = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
+        M_doUpdateSubmeshOuter = false;
+    }
+    return M_submeshOuter;
 }
 
 //----------------------------------------------------------------------------//
