@@ -2,6 +2,7 @@
 #define _PARAMETERS_MAP_HPP 1
 
 #include <boost/any.hpp>
+#include <map>
 
 namespace Feel {
 
@@ -37,21 +38,6 @@ T parameter_map::get( std::string const& param, T const& defaultValue ) const
     return defaultValue;
 }
 
-int parameter_map::iget( std::string const& param, int defaultValue) const
-{
-    return this->get<int>( param, int(defaultValue) );
-}
-
-double parameter_map::dget( std::string const& param, double defaultValue ) const
-{
-    return this->get<double>( param, double(defaultValue) );
-}
-
-std::string parameter_map::sget( std::string const& param, std::string const& defaultValue ) const
-{
-    return this->get<std::string>( param, defaultValue );
-}
-
 template<typename T>
 std::pair<bool, T>
 parameter_map::param( std::string const& param, T const& defaultValue ) const
@@ -64,23 +50,6 @@ parameter_map::param( std::string const& param, T const& defaultValue ) const
 
     // default
     return std::make_pair( false, defaultValue );
-}
-
-std::pair<bool, int> 
-parameter_map::iparam( std::string const& param, int defaultValue ) const
-{
-    return this->param<int>( param, int(defaultValue) );
-}
-
-std::pair<bool, double> 
-parameter_map::dparam( std::string const& param, double defaultValue ) const
-{
-    return this->param<double>( param, double(defaultValue) );
-}
-std::pair<bool, std::string> 
-parameter_map::sparam( std::string const& param, std::string const& defaultValue ) const
-{
-    return this->param<std::string>( param, defaultValue );
 }
 
 } // namespace Feel
