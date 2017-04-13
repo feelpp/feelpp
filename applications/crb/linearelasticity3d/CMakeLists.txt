@@ -6,3 +6,4 @@ INSTALL(TARGETS feelpp-applications-crb-linearelasticity3d DESTINATION lib/ COMP
 crb_add_model(linearelasticity3d LinearElasticity3d HDRS linearelasticity3d.hpp
   LINK_LIBRARIES feelpp-applications-crb-linearelasticity3d )
 
+feelpp_add_testcase(linearelasticity3d PREFIX feelpp_crb CATEGORY CRB)
