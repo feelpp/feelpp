@@ -23,7 +23,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 
-//#define USE_SAME_MAT 1
+#define USE_SAME_MAT 1
 
 namespace Feel {
 
@@ -534,13 +534,14 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 
     auto U = M_ps->element();
 
-    
+
     tic();
+    Feel::cout << "Start solving" << std::endl;
     bbf.solve(_solution=U, _rhs=blf, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
     toc("MixedPoisson : static condensation");
     
     toc("solve");
-    
+     
     
     M_up = U(0_c);
     M_pp = U(1_c);
@@ -610,25 +611,25 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
                                  _expr=idt(phat)*trans(id(v))*N());
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=(id(w)*divt(u)));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=- (id(w)*divt(u)));
 
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant *
+                                 _expr=-tau_constant *
                                  ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
                                    rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+                                 _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant * idt(phat) *
+                                 _expr=tau_constant * idt(phat) *
                                  ( leftface( pow(idv(H),M_tau_order)*id(w) )+
                                    rightface( pow(idv(H),M_tau_order)*id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=-tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -691,7 +692,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
 	// (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
-                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+                                     _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
 
 }
@@ -734,7 +735,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm( bool isNL)
 	// (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
-                                     _expr = (this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
+                                     _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
 
 }
@@ -815,12 +816,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     if ( marker.empty() )
 	{
         blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=elements(M_mesh),
-                              _expr=inner(expr,id(w)) );
+                              _expr=-inner(expr,id(w)) );
     }
 	else
 	{
         blf(1_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_mesh,marker),
-                              _expr=inner(expr,id(w)) );
+                              _expr=-inner(expr,id(w)) );
 	}
 }
 
@@ -1013,7 +1014,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> ex
     auto l = M_Mh->element( "lambda" );
 
     // <g_D, mu>_Gamma_D
-    blf(2_c) += integrate(_quad=_Q<expr_order>(), _range=markedelements(M_Mh->mesh(),marker),
+    blf(2_c) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                           _expr=id(l)*expr);
 }
 
@@ -1027,7 +1028,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr
     auto l = M_Mh->element( "lambda" );
     
 	// <g_N,mu>_Gamma_N
-    blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_Mh->mesh(), marker),
+    blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr);
 }
 
@@ -1162,7 +1163,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleDirichlet( std::string marke
     auto l = M_Mh->element( "lambda" );
 
     // <phat, mu>_Gamma_D
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedelements(M_Mh->mesh(),marker),
+    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=idt(phat) * id(l) );
 }
 
@@ -1198,7 +1199,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
     bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
     // <-tau phat, mu>_Gamma_N
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedelements(M_Mh->mesh(),marker),
+    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
 }
 
@@ -1292,7 +1293,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
 
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * idt(uI) * id(w) * ( pow(idv(H),M_tau_order)) );
+                                        _expr=tau_constant * idt(uI) * id(w) * ( pow(idv(H),M_tau_order)) );
 
     // <j.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=(trans(idt(u))*N()) * id(nu) );
