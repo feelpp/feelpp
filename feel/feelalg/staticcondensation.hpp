@@ -481,7 +481,7 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
               A20_t const& A20K, Key2_t const& key3,
               BK_t& BK, CK_t& CK,
               int n,
-              E1 const& e1, E3 const& e3,
+              E1 const& e1, E3 const& e3, int start = 0,
               std::enable_if_t<is_tensor2symm_field_v<E1>>* = nullptr )
 {
     uint16_type N0 = e1.dof()->nRealLocalDof( false );
@@ -495,11 +495,11 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
             for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
             {
                 const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-                BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N2 );
-                BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c2e1*e1.nComponents1+c1e1), 0, N0c, N2 );
+                BK.block(N0c*k1, start+n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c2e1), 0, N0c, N2 );
+                BK.block(N0c*k1, start+n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c2e1*e1.nComponents1+c1e1), 0, N0c, N2 );
             }
             const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
-            BK.block(N0c*k1, n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N2 );
+            BK.block(N0c*k1, start+n*N2, N0c, N2 ) += A02K.at(key2).block( N0c*(c1e1*e1.nComponents1+c1e1), 0, N0c, N2 );
         }
     }
 
@@ -510,11 +510,11 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
             for( int c2e1 = c1e1+1; c2e1 < e1.nComponents1; ++c2e1 )
             {
                 const int k1 = Feel::detail::symmetricIndex(c1e1,c2e1,e1.nComponents1);
-                CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c2e1), N2, N0c );
-                CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c2e1*e1.nComponents1+c1e1), N2, N0c );
+                CK.block(start+n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c2e1), N2, N0c );
+                CK.block(start+n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c2e1*e1.nComponents1+c1e1), N2, N0c );
             }
             const int k1 = Feel::detail::symmetricIndex(c1e1,c1e1,e1.nComponents1);
-            CK.block(n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c1e1), N2, N0c );
+            CK.block(start+n*N2, N0c*k1, N2, N0c ) += A20K.at(key3).block(0, N0c*(c1e1*e1.nComponents1+c1e1), N2, N0c );
         }
     }
 
