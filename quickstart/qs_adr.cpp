@@ -86,6 +86,7 @@ int main(int argc, char**argv )
         auto  Lt = -epsilon*laplaciant(u)+ gradt(u)*beta + gamma*idt(u);
 
         a+= integrate(_range=elements(mesh), _expr=delta*L*Lt );
+        l+= integrate(_range=elements(mesh), _expr=delta*f*L );
     }
     // end::stab[]
     
