@@ -285,6 +285,7 @@ public:
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     mesh_ptrtype const& submeshDirac() const;
+    mesh_ptrtype const& submeshOuter() const;
 
     //--------------------------------------------------------------------//
     // Mesh adaptation
@@ -475,6 +476,8 @@ private:
     // Meshes 
     mutable mesh_ptrtype M_submeshDirac;
     mutable bool M_doUpdateSubmeshDirac;
+    mutable mesh_ptrtype M_submeshOuter;
+    mutable bool M_doUpdateSubmeshOuter;
 
     //--------------------------------------------------------------------//
     // Periodicity
