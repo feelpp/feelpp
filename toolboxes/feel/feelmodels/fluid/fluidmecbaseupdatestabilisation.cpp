@@ -194,6 +194,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
+    this->updateResidualStabilisationGLS( data, U );
+
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateResidualStabilisation", "start" );
@@ -371,6 +373,8 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
+
+    this->updateJacobianStabilisationGLS( data, U );
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;
