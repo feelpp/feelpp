@@ -825,14 +825,12 @@ public :
     //___________________________________________________________________________________//
 
     // non linear (newton)
-    void updateNewtonInitialGuess(vector_ptrtype& U) const;
+    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
-    void updateJacobianModel( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                              bool BuildCstPart ) const;
-    void updateResidualModel( element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                              bool BuildCstPart, bool UseJacobianLinearTerms ) const;
+    void updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
 
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
@@ -841,16 +839,16 @@ public :
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCPressureResidual( vector_ptrtype& R ) const = 0;
 
-    void updateResidualStabilisation( element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                                      bool BuildCstPart, bool UseJacobianLinearTerms) const;
-    void updateJacobianStabilisation( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                      bool BuildCstPart ) const;
-
+    void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
     virtual void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const = 0;

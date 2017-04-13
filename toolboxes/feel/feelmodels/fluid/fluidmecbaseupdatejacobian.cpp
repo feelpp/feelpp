@@ -160,7 +160,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    this->updateJacobianModel(U, J, RBis, _BuildCstPart);
+    this->updateJacobianModel( data, U );
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
@@ -227,7 +227,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateJacobianStabilisation(U, J, RBis, _BuildCstPart);
+    this->updateJacobianStabilisation( data, U );
 
     //--------------------------------------------------------------------------------------------------//
 
