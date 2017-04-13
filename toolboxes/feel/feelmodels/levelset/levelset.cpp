@@ -1092,7 +1092,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half) con
     if( !M_markerHeaviside )
         M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
 
-    if( M_doUpdateMarkers )
+    //if( M_doUpdateMarkers )
        const_cast<self_type*>(this)->updateMarkerHeaviside( invert, cut_at_half );
 
     return M_markerHeaviside;
