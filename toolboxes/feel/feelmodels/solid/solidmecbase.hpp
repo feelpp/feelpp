@@ -374,6 +374,14 @@ public :
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
     mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
 
+    bool hasDirichletBC() const
+        {
+            return ( !M_bcDirichlet.empty() ||
+                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+        }
+
     boost::shared_ptr<TSBase> timeStepBase()
     {
         if (this->isStandardModel())
@@ -591,7 +599,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     // assembly methods
-    virtual void updateNewtonInitialGuess(vector_ptrtype& U) const = 0;
+    void updateNewtonInitialGuess(vector_ptrtype& U) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
@@ -607,7 +615,6 @@ public :
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
 
-    virtual void updateBCDirichletStrongResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
@@ -621,6 +628,9 @@ public :
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
     virtual void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const = 0;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F ) const = 0;
+
+private :
+    void updateBoundaryConditionsForUse();
 
 protected:
 
@@ -636,6 +646,18 @@ protected:
     //model parameters
     space_scalar_P0_ptrtype M_XhScalarP0;
     mechanicalproperties_ptrtype M_mechanicalProperties;
+
+    // boundary conditions
+    map_vector_field<nDim,1,2> M_bcDirichlet;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
+    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
+    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
+    map_vector_fields<nDim,1,2> M_bcRobin;
+    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
+    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
+    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
+    map_vector_field<nDim,1,2> M_volumicForcesProperties;
 
     //-------------------------------------------//
     // standard model
@@ -668,14 +690,14 @@ protected:
     // time discretisation
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
-    // algebraic solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    // start block index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
-    // backend
+
+    // algebraic data/tools
     backend_ptrtype M_backend;
-    // block vector solution
+    model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
     element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;

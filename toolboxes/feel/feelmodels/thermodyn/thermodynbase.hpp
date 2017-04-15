@@ -225,8 +225,9 @@ class ThermoDynamicsBase : public ModelNumerical,
             M_fieldVelocityConvection->on(_range=elements(this->mesh()), _expr=expr );
         }
 
+    private :
+        void updateBoundaryConditionsForUse();
 
-        //private :
     protected :
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -261,6 +262,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         backend_ptrtype M_backend;
         model_algebraic_factory_ptrtype M_algebraicFactory;
         BlocksBaseVector<double> M_blockVectorSolution;
+        std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
         // post-process
         export_ptrtype M_exporter;
