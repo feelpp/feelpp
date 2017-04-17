@@ -3,18 +3,51 @@
 = {feelpp}: Finite Element Embedded Library in {cpp}
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
 :toc: macro
-:toclevels: 1
+:toclevels: 2
+:uri-rel-file-base: link:
+:uri-rel-tree-base: link:
+ifdef::env-site[]
+:uri-rel-file-base: {uri-repo}/blob/develop/
+:uri-rel-tree-base: {uri-repo}/tree/develop/
+endif::[]
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:outfilesuffix: .adoc
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+ifdef::env-github,env-browser[:outfilesuffix: .adoc]
+// URIs:
+:uri-org: https://github.com/feelpp
+:uri-repo: {uri-org}/feelpp
+:uri-www: http://www.feelpp.org
+:uri-project: http://book.feelpp.org
+:uri-help-base: https://help.github.com/articles
+:uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
+:uri-license: {uri-rel-file-base}LICENSE.adoc
+:uri-issues: {uri-repo}/issues
+:uri-contributors: {uri-repo}/graphs/contributors
+:uri-fork-help: {uri-help-base}/fork-a-repo
+:uri-branch-help: {uri-fork-help}#create-branches
+:uri-pr-help: {uri-help-base}/using-pull-requests
+:uri-gist: https://gist.github.com
+:uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
 
-toc::[] 
 
-link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite element method and spectral element methods) continuous or discontinuous in 1D 2D and 3D. 
+toc::[]
+
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite element method and spectral element methods) continuous or discontinuous in 1D 2D and 3D.
 
 == {feelpp} Documentation
 
 .link:http://book.feelpp.org[{feelpp} Book web site]
 image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org]
 
-== Gitter Discussion Forum 
+== Gitter Discussion Forum
 
 We encourage you to ask questions and discuss any aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
   Gitter forum].
@@ -27,19 +60,19 @@ image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitte
 == Continuous Integration
 
 {feelpp} maintains various branches.
-At the core, the development model is greatly inspired by existing models out there. 
+At the core, the development model is greatly inspired by existing models out there.
 The central repo holds two main branches with an infinite lifetime: `master` and `develop`
 
-`master`:: 
+`master`::
 Main branch where the source code of HEAD always reflects a _production-ready_ state.
 
-`develop`:: 
-Main branch where the source code of HEAD always reflects a state with the latest delivered development changes for the next release. 
+`develop`::
+Main branch where the source code of HEAD always reflects a state with the latest delivered development changes for the next release.
 Some would call this the “integration branch”. This is where any automatic nightly builds are built from.
 
 `feature/*`::
-Feature branches (or sometimes called topic branches) are used to develop new features for the upcoming or a distant future release. 
-When starting development of a feature, the target release in which this feature will be incorporated may well be unknown at that point. 
+Feature branches (or sometimes called topic branches) are used to develop new features for the upcoming or a distant future release.
+When starting development of a feature, the target release in which this feature will be incorporated may well be unknown at that point.
 The essence of a feature branch is that it exists as long as the feature is in development, but will eventually be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment).
 
 |===
@@ -50,7 +83,7 @@ The essence of a feature branch is that it exists as long as the feature is in d
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/hdg-sc["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/quad["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 
-| Buildkite Ubuntu 16.10 
+| Buildkite Ubuntu 16.10
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/hdg-sc["Build Status", link="https://buildkite.com/feelpp/feelpp"]
@@ -74,7 +107,7 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 Here are the latest releases of {feelpp}
 
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0] 
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
@@ -92,8 +125,65 @@ Here are the latest releases of {feelpp}
  * interfaced with link:http://www.grycap.upv.es/slepc/[SLEPc] for large-scale sparse standard and generalized eigenvalue  solvers
  * supports link:http://www.geuz.org/gmsh[Gmsh] for mesh generation
  * supports link:http://www.geuz.org/gmsh[Gmsh] for post-processing (including on high order geometries)
- * supports link:http://www.paraview.org[Paraview] and CEI/Ensight for post-processing and the following file formats: ensight gold, gmsh, xdmf
+ * supports link:http://www.paraview.org[Paraview] and CEI/Ensight for post-processing and the following file formats: ensight gold, gmsh, xdmf.
 
+
+== Contributing
+
+In the spirit of {uri-freesoftware}[free software], _everyone_ is encouraged to help improve this project.
+If you discover errors or omissions in the source code, documentation, or website content, please don't hesitate to submit an issue or open a pull request with a fix.
+ New contributors are always welcome!
+
+Here are some ways *you* can contribute:
+
+* by using develop versions
+* by {uri-issues}[reporting bugs]
+* by {uri-issues}[suggesting new features]
+ * by writing or editing documentation
+ * by writing specifications
+ * by writing code -- _No patch is too small._
+ ** fix typos
+ ** add comments
+ ** write examples!
+ ** write tests!
+ * by refactoring code
+ * by fixing {uri-issues}[issues]
+ * by reviewing Pull Requests
+
+The {uri-contribute}[Contributing] guide provides information on how to create, style, and submit issues, feature requests, code, and documentation to the {feelpp} Project.
+
+== Getting Help
+
+The {feelpp} project is developed to help you easily do _(i)_ modelisation simulation and optimisation and _(ii)_ high performance computing.
+But we can't do it without your feedback!
+We encourage you to ask questions and discuss any aspects of the project on the discussion list, on Twitter or in the chat room.
+
+Twitter:: #feelpp hashtag or @feelpp mention
+Chat (Gitter):: image:https://badges.gitter.im/Join%20In.svg[Gitter, link=https://gitter.im/feelpp/feelpp]
+
+ifdef::env-github[]
+Further information and documentation about {feelpp} can be found on the project's website.
+
+{uri-project}/[Home] | {uri-news}[News] | {uri-docs}[Docs]
+endif::[]
+
+The {feelpp} organization on GitHub hosts the project's source code, issue tracker, and sub-projects.
+
+Source repository (git):: {uri-repo}
+Issue tracker:: {uri-issues}
+{feelpp} organization on GitHub:: {uri-org}
+
+== Copyright and Licensing
+
+Copyright (C) 2011-2017 {feelpp} Consortium.
+Free use of this software is granted under the terms of the GPL License.
+
+See the {uri-license}[LICENSE] file for details.
+
+== Authors
+
+{feelpp} is led by https://github.com/prudhomm[Christophe Prud'homme] and has received contributions from {uri-contributors}[many other individuals].
+The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud'homme] and based initially on link:https://cmcsforge.epfl.ch/projects/lifev/[lifeV] and completely re-written since then.
 
 == Examples
 
@@ -109,7 +199,7 @@ $$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
 int main(int argc, char**argv )
 {
     using namespace Feel;
-	Environment env( _argc=argc, _argv=argv,
+    Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
@@ -175,7 +265,7 @@ main( int argc, char** argv )
 {
 
     using namespace Feel;
-	Environment env( _argc=argc, _argv=argv,
+    Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=about(_name="bratu",
                                   _author="Christophe Prud'homme",
@@ -215,5 +305,3 @@ main( int argc, char** argv )
     e->save();
 }
 ----
-
-
