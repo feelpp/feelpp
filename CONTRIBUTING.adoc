@@ -68,7 +68,7 @@ As {Feelpp} is built using {cpp}, it requires some knowledge about {cpp} and som
 The following resources provide a good starting point for contributors who may not be completely comfortable with these tools:
 
 * link:http://book.feelpp.org/math[The Mathematics of {feelpp}] provides the mathematical background of {feelpp} and in particular the
-** link:http://book.feelpp.org/math[{feelpp} Finite Element manual]
+** link:http://book.feelpp.org/math/fem[{feelpp} Finite Element manual]
 * link:http://gmsh.info[Gmsh Web site] provides a lot of information regarding Gmsh and in particular
 ** An extensive link:http://gmsh.info/doc/texinfo/gmsh.html[Documentation]
 ** A link:http://gmsh.info/doc/texinfo/gmsh.html#Tutorial[Tutorial]
