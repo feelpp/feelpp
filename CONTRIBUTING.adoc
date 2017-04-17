@@ -40,7 +40,7 @@ We use the {uri-issues}[issue tracker on GitHub] associated with this project to
 Before submitting a bug report or feature request, check to make sure it hasn't already been submitted.
 When submitting a bug report, please include a {uri-gist}[Gist] that includes any details that may help reproduce the bug, including your {cpp} compiler and operating system.
 
-Most importantly, since {feelpp} provides a DSEL based on the variational formulation,  a testcase with a variational formu.
+Most importantly, since {feelpp} provides a DSEL based on the embedded Galerkin type language,  provide as short as possible testcase to replicate the issue and using the {feelpp} mathematical concepts.
 
 An ideal bug report would include a pull request with failing specs.
 
