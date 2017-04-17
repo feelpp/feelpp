@@ -24,15 +24,18 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 // URIs:
 :uri-org: https://github.com/feelpp
 :uri-repo: {uri-org}/feelpp
+:uri-www: http://www.feelpp.org
+:uri-project: http://book.feelpp.org
 :uri-help-base: https://help.github.com/articles
 :uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
 :uri-license: {uri-rel-file-base}LICENSE.adoc
 :uri-issues: {uri-repo}/issues
+:uri-contributors: {uri-repo}/graphs/contributors
 :uri-fork-help: {uri-help-base}/fork-a-repo
 :uri-branch-help: {uri-fork-help}#create-branches
 :uri-pr-help: {uri-help-base}/using-pull-requests
 :uri-gist: https://gist.github.com
-
+:uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
 
 
 toc::[]
