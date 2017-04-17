@@ -1,4 +1,4 @@
-= Copyright
+= Copyright (C) 2011-2017 Feel++ Consortium 
 :feelpp: Feel++
 :cpp: C++
 
@@ -33,4 +33,4 @@ See the <<License.adoc#GPLv3,License>>.
 
 Eigen is used for some linear algebra operations.
 
-see contrib/eigen/COPYING.README
+see <<contrib/eigen/COPYING.README>>
