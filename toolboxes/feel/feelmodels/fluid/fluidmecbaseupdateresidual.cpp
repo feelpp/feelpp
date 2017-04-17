@@ -135,7 +135,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateResidualModel(U/*XVec*/, R, BuildCstPart, UseJacobianLinearTerms);
+    this->updateResidualModel( data, U );
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -465,7 +465,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     //------------------------------------------------------------------------------------//
 
-    this->updateResidualStabilisation(U/*XVec*/, R, BuildCstPart, UseJacobianLinearTerms);
+    this->updateResidualStabilisation( data, U );
 
     //------------------------------------------------------------------------------------//
     if (this->hasMarkerDirichletBClm())

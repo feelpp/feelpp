@@ -68,10 +68,38 @@ runCrbOnline( std::string const& filename )
     bool print_rb_matrix = false;//boption(_name="crb.print-rb-matrix");
     auto muspace = crb->Dmu();
 
+    std::ostringstream ostrmumin,ostrmumax;
+    auto mumin=muspace->min();
+    auto mumax=muspace->max();
+    for ( uint16_type d=0;d<muspace->dimension();++d)
+    {
+        ostrmumin << mumin(d) << " ";
+        ostrmumax << mumax(d) << " ";
+    }
+    std::cout << "dimension of parameter space : " << muspace->dimension() << "\n";
+    std::cout << "min element in parameter space : "<< ostrmumin.str() << "\n";
+    std::cout << "max element in parameter space : "<< ostrmumax.str() << "\n";
+
+
     auto mysampling = muspace->sampling();
-    int nSample = ioption(_name="sampling.size");
-    std::string sampler = soption("sampling.type");
-    mysampling->sample( nSample, sampler );
+
+    std::vector<double> inputParameter;
+    if ( Environment::vm().count("parameter"))
+        inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
+    if ( !inputParameter.empty() )
+    {
+        CHECK( inputParameter.size() == muspace->dimension() ) << "paramter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension();
+        auto mu = muspace->element();
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            mu(d)=inputParameter[d];
+        mysampling->push_back( mu );
+    }
+    else
+    {
+        int nSample = ioption(_name="sampling.size");
+        std::string sampler = soption("sampling.type");
+        mysampling->sample( nSample, sampler );
+    }
 
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
     boost::shared_ptr<Exporter<typename ModelType::mesh_type> > fieldExporter;
@@ -88,8 +116,6 @@ runCrbOnline( std::string const& filename )
             ostrmu << mu(d) << " ";
         std::cout << "--------------------------------------\n";
         std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
-        // std::cout << "parameterSpace->min: "<< muspace->min() << "\n";
-        // std::cout << "parameterSpace->max: "<< muspace->max() << "\n";
         //auto mu = crb->Dmu()->element();
         //std::cout << "input mu\n" << mu << "\n";
         auto crbResult = crb->run( mu, time_crb, online_tol, -1, print_rb_matrix);
@@ -122,6 +148,7 @@ int main(int argc, char**argv )
 	po::options_description crbonlinerunoptions( "crb online run options" );
 	crbonlinerunoptions.add_options()
         ( "db.filename", po::value<std::string>()->default_value( "" ), "database filename" )
+        ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
 	 	;
