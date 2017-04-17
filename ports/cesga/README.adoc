@@ -1,6 +1,6 @@
-# Building
+= Building
 
-## Full install.
+== Full install.
 
 To compile all librairies just type
 
@@ -20,7 +20,7 @@ The `modules` files contains all modules to be loaded.
 You can source this file in your bashrc.
 
 
-## Install per library
+== Install per library
 
 To install by hand a library do for example for petsc
 
