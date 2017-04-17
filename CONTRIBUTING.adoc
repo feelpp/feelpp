@@ -4,6 +4,7 @@
 :idseparator: -
 :source-language: cpp
 :language: {source-language}
+:toc: left
 ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 ifndef::env-github[:icons: font]
 ifdef::env-github[]
