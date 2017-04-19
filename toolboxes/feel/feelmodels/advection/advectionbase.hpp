@@ -85,7 +85,8 @@ enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionReactionType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type
+    typename BasisDiffusionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type,
+    typename BasisReactionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type
         >
 class AdvectionBase : 
     public ModelNumerical,
@@ -96,7 +97,8 @@ class AdvectionBase :
 public :
     typedef ModelNumerical super_type;
 
-    typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType > self_type;
+    typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, 
+            BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -146,11 +148,14 @@ public :
 
     //--------------------------------------------------------------------//
     // Diffusion-reaction model
-    typedef BasisDiffusionReactionType basis_diffusionreaction_type;
-    static const uint16_type nOrderDiffusionReaction = BasisDiffusionReactionType::nOrder;
-    typedef FunctionSpace< mesh_type, bases<basis_diffusionreaction_type> > space_diffusionreaction_type;
+    typedef BasisDiffusionCoeffType basis_diffusioncoeff_type;
+    typedef BasisReactionCoeffType basis_reactioncoeff_type;
+    static const uint16_type nOrderDiffusionCoeff = BasisDiffusionCoeffType::nOrder;
+    static const uint16_type nOrderReactionCoeff = BasisReactionCoeffType::nOrder;
+    typedef FunctionSpace< mesh_type, bases<basis_diffusioncoeff_type> > space_diffusioncoeff_type;
+    typedef FunctionSpace< mesh_type, bases<basis_reactioncoeff_type> > space_reactioncoeff_type;
 
-    typedef DiffusionReactionModel<space_diffusionreaction_type> diffusionreaction_model_type;
+    typedef DiffusionReactionModel<space_diffusioncoeff_type, space_reactioncoeff_type> diffusionreaction_model_type;
     typedef boost::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -399,11 +404,12 @@ protected:
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType,
-    typename BasisDiffusionReactionType
+    typename BasisDiffusionCoeffType,
+    typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void
-AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateAdvectionVelocity(
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
     M_exprAdvectionVelocity.reset(); // remove symbolic expr
@@ -415,11 +421,12 @@ AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionRea
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType,
-    typename BasisDiffusionReactionType
+    typename BasisDiffusionCoeffType,
+    typename BasisReactionCoeffType
         >
 template<typename ExprT>
 void 
-AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>::updateSourceAdded(
+AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
         vf::Expr<ExprT> const& f_expr)
 {
     if (!M_fieldSource)
