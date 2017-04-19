@@ -701,6 +701,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     //----------------------------------------------------------------------------//
     // update rho, mu, nu,...
     M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_densityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     //----------------------------------------------------------------------------//
