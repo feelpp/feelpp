@@ -774,21 +774,25 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     auto blf = blockform1(*M_ps, M_F);
 
 
-    tic();
-    if ( !boption(prefixvm(prefix(), "use-sc")) )
-    {
-        auto M_U = M_backend->newBlockVector(_block=U, _copy_values=false);
-        backend(_rebuild=true, _name=prefix())->solve( _matrix=M_A_cst, _rhs=M_F, _solution=M_U);
-        U.localize(M_U);
-    }
+    std::string solver_string = "MixedElasticity : ";
+    if( boption(prefixvm(prefix(), "use-sc")) )
+        solver_string += "static condensation";
     else
-    {
-       bbf.solve( _solution=U, _rhs=blf, _rebuild=true, _condense=boption("sc.condense"));    
-    }
-  
-    toc("MixedElasticity : static condensation");
+        solver_string += "monolithic";
+    
+    tic();
+    bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
+    toc(solver_string);
+    
     M_up = U(0_c);
     M_pp = U(1_c);
+
+    if ( VLOG_IS_ON(2) )
+    {
+        cout << "u_hat=" << U(2_c) << std::endl;
+        cout << "u=" << U(1_c) << std::endl;
+        cout << "sigma=" << U(0_c) << std::endl;
+    }
 
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(U(3_c,i));
