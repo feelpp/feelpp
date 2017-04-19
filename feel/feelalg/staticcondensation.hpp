@@ -1024,7 +1024,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             }
 
 
-#if 1
+#if 0
             auto Aldlt = AK.ldlt();
 #else
             auto Aldlt = AK.lu();
