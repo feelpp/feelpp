@@ -624,7 +624,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=idv(D)*inner(gradt(phi),grad(psi)),
+                _expr=inner(trans(gradt(phi)),idv(D)*trans(grad(psi))),
                 _geomap=this->geomap()
                 );
 
@@ -641,7 +641,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=idv(R)*inner(idt(phi), id(psi)),
+                _expr=inner(idv(R)*idt(phi), id(psi)),
                 _geomap=this->geomap()
                 );
 
