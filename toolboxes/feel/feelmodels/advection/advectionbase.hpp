@@ -153,7 +153,9 @@ public :
     static const uint16_type nOrderDiffusionCoeff = BasisDiffusionCoeffType::nOrder;
     static const uint16_type nOrderReactionCoeff = BasisReactionCoeffType::nOrder;
     typedef FunctionSpace< mesh_type, bases<basis_diffusioncoeff_type> > space_diffusioncoeff_type;
+    typedef boost::shared_ptr<space_diffusioncoeff_type> space_diffusioncoeff_ptrtype;
     typedef FunctionSpace< mesh_type, bases<basis_reactioncoeff_type> > space_reactioncoeff_type;
+    typedef boost::shared_ptr<space_reactioncoeff_type> space_reactioncoeff_ptrtype;
 
     typedef DiffusionReactionModel<space_diffusioncoeff_type, space_reactioncoeff_type> diffusionreaction_model_type;
     typedef boost::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
@@ -233,6 +235,8 @@ public :
 
     space_advection_ptrtype const& functionSpace() const { return M_Xh; }
     space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_XhAdvectionVelocity; }
+    space_diffusioncoeff_ptrtype const& functionSpaceDiffusionCoeff() const { return this->diffusionReactionModel()->functionSpaceDiffusion(); }
+    space_reactioncoeff_ptrtype const& functionSpaceReactionCoeff() const { return this->diffusionReactionModel()->functionSpaceReaction(); }
     
     bool useExtendedDofTable() const;
 
