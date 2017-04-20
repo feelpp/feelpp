@@ -232,6 +232,7 @@ public :
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
     space_advection_ptrtype const& functionSpace() const { return M_Xh; }
+    space_advection_velocity_ptrtype const& functionSpaceAdvectionVelocity() const { return M_XhAdvectionVelocity; }
     
     bool useExtendedDofTable() const;
 
