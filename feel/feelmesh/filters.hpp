@@ -42,6 +42,7 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
 #include <feel/feelmesh/detail/filters.hpp>
+#include <feel/feelvf/expr.hpp>
 
 namespace Feel
 {
@@ -249,6 +250,57 @@ elements_pid_t<MeshType>
 elements( MeshType const& mesh )
 {
     return Feel::detail::elements( mesh, rank( mesh ) );
+}
+
+/**
+ *
+ * \ingroup MeshIterators
+ * \return a pair of iterators to iterate over elements with pid \p flag and
+ *  verified expr > 0 for all nodes of the element
+ */
+template<typename MeshType,typename ExprType>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
+{
+    rank_type pid = rank( mesh );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& imesh = Feel::unwrap_ptr( mesh );
+    typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
+    auto it = imesh.beginElement();
+    auto en = imesh.endElement();
+    if ( it != en )
+    {
+        auto gm = imesh.gm();
+        auto const& initElt = *it;
+        typename mesh_type::reference_convex_type refConvex;
+        auto geopc = gm->preCompute( refConvex.points() );
+        const size_type context = ExprType::context|vm::POINT;
+        auto ctx = gm->template context<context>( initElt, geopc );
+        auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = *it;
+            if ( elt.processId() != pid )
+                continue;
+            ctx->update( elt );
+            expr_evaluator.update( vf::mapgmc( ctx ) );
+            bool addElt = true;
+            for ( uint16_type q=0;q<ctx->nPoints();++q )
+            {
+                double val = expr_evaluator.evalq( 0,0,q );
+                if ( val < 1e-9 )
+                {
+                    addElt = false;
+                    break;
+                }
+            }
+            if ( addElt )
+                myelts->push_back(boost::cref(elt));
+        }
+    }
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(), myelts->end(),
+                              myelts );
 }
 
 /**
