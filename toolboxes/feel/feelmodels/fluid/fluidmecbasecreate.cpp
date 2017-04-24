@@ -983,6 +983,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     {
         M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
         M_stabilizationGLSParameter->init();
+        if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
+        {
+            std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh(),expr(locationExpression));
+        }
+        else
+        {
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh());
+        }
+        M_stabilizationGLSEltRangePressure = elements(this->mesh());
     }
     //-------------------------------------------------//
     this->initFluidOutlet();
