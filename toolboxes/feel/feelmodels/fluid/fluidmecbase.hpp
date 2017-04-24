@@ -237,10 +237,8 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator,
-    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
-    typedef faces_reference_wrapper_t<mesh_type> range_marked_face_type;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
@@ -249,7 +247,7 @@ public:
     typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
     typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
     typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
-                                  range_marked_face_type> op_interpolation_fluidinlet_type;
+                                  range_faces_type> op_interpolation_fluidinlet_type;
     typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
@@ -558,6 +556,8 @@ public :
     bool stabilizationGLS() const { return M_stabilizationGLS; }
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
+    range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -950,6 +950,8 @@ protected:
     bool M_stabilizationGLS;
     std::string M_stabilizationGLSType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
+    range_elements_type M_stabilizationGLSEltRangePressure;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
