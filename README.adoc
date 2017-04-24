@@ -26,6 +26,9 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 :uri-repo: {uri-org}/feelpp
 :uri-www: http://www.feelpp.org
 :uri-project: http://book.feelpp.org
+:uri-docs: {uri-project}/
+:uri-news: {uri-www}/news
+:uri-manpage: {uri-project}/man/asciidoctor
 :uri-help-base: https://help.github.com/articles
 :uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
 :uri-license: {uri-rel-file-base}LICENSE.adoc
