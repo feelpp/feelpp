@@ -286,6 +286,7 @@ public:
 
     mesh_ptrtype const& submeshDirac() const;
     mesh_ptrtype const& submeshOuter( double cut = 0.999 ) const;
+    mesh_ptrtype const& submeshInner( double cut = 1e-3 ) const;
 
     //--------------------------------------------------------------------//
     // Mesh adaptation
@@ -480,6 +481,8 @@ private:
     mutable bool M_doUpdateSubmeshDirac;
     mutable mesh_ptrtype M_submeshOuter;
     mutable bool M_doUpdateSubmeshOuter;
+    mutable mesh_ptrtype M_submeshInner;
+    mutable bool M_doUpdateSubmeshInner;
 
     //--------------------------------------------------------------------//
     // Periodicity
