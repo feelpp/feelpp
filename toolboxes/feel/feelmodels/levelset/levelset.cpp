@@ -1087,15 +1087,34 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerDirac() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::markerHeaviside(bool invert, bool cut_at_half) const
+LEVELSET_CLASS_TEMPLATE_TYPE::markerOuter( double cut ) const
 {
-    if( !M_markerHeaviside )
-        M_markerHeaviside.reset( new element_markers_type(M_spaceMarkers, "MarkerHeaviside") );
+    if( !M_markerOuter )
+        M_markerOuter.reset( new element_markers_type(M_spaceMarkers, "MarkerOuter") );
 
-    //if( M_doUpdateMarkers )
-       const_cast<self_type*>(this)->updateMarkerHeaviside( invert, cut_at_half );
+    if( M_doUpdateMarkers || cut != M_markerOuterCut )
+    {
+       const_cast<self_type*>(this)->markerHeavisideImpl( M_markerOuter, false, cut );
+       M_markerOuterCut = cut;
+    }
 
-    return M_markerHeaviside;
+    return M_markerOuter;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_markers_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::markerInner( double cut ) const
+{
+    if( !M_markerInner )
+        M_markerInner.reset( new element_markers_type(M_spaceMarkers, "MarkerInner") );
+
+    if( M_doUpdateMarkers || cut != M_markerInnerCut )
+    {
+       const_cast<self_type*>(this)->markerHeavisideImpl( M_markerInner, true, cut );
+       M_markerInnerCut = cut;
+    }
+
+    return M_markerInner;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1722,11 +1741,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::submeshDirac() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::mesh_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::submeshOuter() const
+LEVELSET_CLASS_TEMPLATE_TYPE::submeshOuter( double cut ) const
 {
-    if( M_doUpdateSubmeshOuter )
+    if( M_doUpdateSubmeshOuter || cut != M_markerOuterCut )
     {
-        this->mesh()->updateMarker2( *this->markerHeaviside() );
+        this->mesh()->updateMarker2( *this->markerOuter( cut ) );
         M_submeshOuter = createSubmesh( this->mesh(), marked2elements( this->mesh(), 1 ) );
         M_doUpdateSubmeshOuter = false;
     }
@@ -1963,7 +1982,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerDirac()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_half)
+LEVELSET_CLASS_TEMPLATE_TYPE::markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut )
 {
     /* returns P0 element having :
     if invert == true : 1 on elements inside Heaviside function (where H is smaller than epsilon on at least 1 dof)
@@ -1980,10 +1999,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
     auto en_elt = std::get<1>( rangeElts );
     if (it_elt == en_elt) return;
 
-    double cut;
-    if (cut_at_half) cut = 0.5;
-    else             cut = invert ? 1e-3 : 0.999;
-
     for (; it_elt!=en_elt; it_elt++)
     {
         auto const& elt = boost::unwrap_ref( *it_elt );
@@ -1997,9 +2012,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerHeaviside(bool invert, bool cut_at_hal
             }
         }
         if( mark_elt )
-            M_markerHeaviside->assign(elt.id(), 0, 0, (invert)?0:1);
+            marker->assign(elt.id(), 0, 0, (invert)?0:1);
         else
-            M_markerHeaviside->assign(elt.id(), 0, 0, (invert)?1:0);
+            marker->assign(elt.id(), 0, 0, (invert)?1:0);
     }
 } 
 
