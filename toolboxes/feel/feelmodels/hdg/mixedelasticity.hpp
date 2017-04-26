@@ -119,8 +119,8 @@ public:
     using M0h_element_t = typename M0h_t::element_type;
     using M0h_element_ptr_t = typename M0h_t::element_ptrtype;    
 // ---- //
-    using Ch_t = Pchv_type<mesh_type,0>;
-    using Ch_ptr_t = Pchv_ptrtype<mesh_type,0>;
+    using Ch_t = Pchv_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pchv_ptrtype<face_mesh_type,0>;
     using Ch_element_t = typename Ch_t::element_type;
     using Ch_element_ptr_t = typename Ch_t::element_ptrtype;
     using Ch_element_vector_type = std::vector<Ch_element_t>;
@@ -607,8 +607,17 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::initSpaces()
     M_Vh = Pdhms<Order>( M_mesh, true );
     M_Wh = Pdhv<Order>( M_mesh, true );
     M_Mh = Pdhv<Order>( face_mesh, true );
-    M_M0h = Pdh<0>( face_mesh ); 
-    M_Ch = Pchv<0>( M_mesh, true );
+    M_M0h = Pdh<0>( face_mesh );
+
+	std::vector<std::string> ibc_markers(M_integralCondition);
+	for( int i = 0; i < M_integralCondition; i++)
+	{
+		ibc_markers.push_back(M_IBCList[i].marker());
+	}
+
+    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );	
+    M_Ch = Pchv<0>( ibc_mesh, true ); 
+    // M_Ch = Pchv<0>( M_mesh, true );
 
     auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
     M_ps = boost::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
