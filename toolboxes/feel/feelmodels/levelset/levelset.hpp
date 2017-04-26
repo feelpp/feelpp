@@ -285,7 +285,7 @@ public:
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     mesh_ptrtype const& submeshDirac() const;
-    mesh_ptrtype const& submeshOuter() const;
+    mesh_ptrtype const& submeshOuter( double cut = 0.999 ) const;
 
     //--------------------------------------------------------------------//
     // Mesh adaptation
@@ -329,7 +329,9 @@ public:
     // Markers
     element_markers_ptrtype const& markerInterface() const;
     element_markers_ptrtype const& markerDirac() const;
-    element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false) const;
+    element_markers_ptrtype const& markerOuter( double cut = 0.999 ) const;
+    element_markers_ptrtype const& markerInner( double cut = 1e-3 ) const;
+    element_markers_ptrtype const& markerHeaviside( double cut = 0.999 ) const { return this->markerOuter(cut); }
     element_markers_ptrtype const& markerCrossedElements() const;
 
     //--------------------------------------------------------------------//
@@ -424,7 +426,7 @@ protected:
     void updateCurvature();
 
     void updateMarkerDirac();
-    void updateMarkerHeaviside(bool invert, bool cut_at_half);
+    void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
     void updateMarkerCrossedElements();
     void updateMarkerInterface();
 
@@ -494,7 +496,10 @@ private:
     //--------------------------------------------------------------------//
     // Markers
     mutable element_markers_ptrtype M_markerDirac;
-    mutable element_markers_ptrtype M_markerHeaviside;
+    mutable element_markers_ptrtype M_markerOuter;
+    mutable double M_markerOuterCut;
+    mutable element_markers_ptrtype M_markerInner;
+    mutable double M_markerInnerCut;
     mutable element_markers_ptrtype M_markerCrossedElements;
     mutable element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
