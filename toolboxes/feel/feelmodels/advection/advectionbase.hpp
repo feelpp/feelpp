@@ -332,6 +332,7 @@ public :
     void exportMeasures( double time );
 
     exporter_ptrtype getExporter() { return M_exporter; }
+    exporter_ptrtype const& getExporter() const { return M_exporter; }
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
