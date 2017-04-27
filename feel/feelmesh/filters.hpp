@@ -173,9 +173,9 @@ using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::
 
 
 template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
+using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
 template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
+using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
 template<typename IteratorType>
 using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
 template<typename IteratorType>
