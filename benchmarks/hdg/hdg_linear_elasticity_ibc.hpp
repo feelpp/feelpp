@@ -28,6 +28,7 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelmesh/complement.hpp>
 
 namespace Feel {
 
@@ -57,6 +58,7 @@ makeOptions()
         ( "use_hypercube", po::value<bool>()->default_value( false ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "nb_ibc", po::value<int>()->default_value( 1 ), "number of integral boundary condition" )
         ;
     return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
@@ -118,6 +120,10 @@ public:
     using Mh_ptr_t =  Pdhv_ptrtype<face_mesh_type,OrderP>;
     using M0h_t =  Pdh_type<face_mesh_type,0>;
     using M0h_ptr_t =  Pdh_ptrtype<face_mesh_type,0>;
+    using Ch_t = Pchv_type<face_mesh_type,0>;
+    using Ch_ptr_t = Pchv_ptrtype<face_mesh_type,0>;
+
+
 
     using product_space_type = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
     using product_space_ptrtype = boost::shared_ptr<product_space_type>;
@@ -153,6 +159,7 @@ public:
                                 % doption("hsize")
                                 );
     }
+
 
     /**
      * run the application
@@ -255,6 +262,37 @@ Hdg<Dim, OrderP, OrderG>::convergence()
                                  _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         }
 
+
+        auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) {
+            for( int i = 0; i < ioption("nb_ibc"); ++i )
+            {
+                auto ind = i == 0 ? "" : std::to_string(i+1);
+                std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+                if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
+                    return true;
+            }
+            return false;
+        });
+        auto gammaMinusIntegral = complement(boundaryfaces(mesh), [&mesh]( auto const& e ) {
+            for( int i = 0; i < ioption("nb_ibc"); ++i )
+            {
+                auto ind = i == 0 ? "" : std::to_string(i+1);
+                std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+                if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
+                    return true;
+            }
+            return false;
+        });
+        auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+        std::vector<std::string> ibc_markers(ioption("nb_ibc"));
+        for( int i = 0; i < ioption("nb_ibc"); ++i )
+        {
+            auto ind = i == 0 ? "" : std::to_string(i+1);
+            std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+            ibc_markers.push_back( marker );
+        }
+        auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh,ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+
         toc("mesh",true);
 
         // ****** Hybrid-mixed formulation ******
@@ -263,11 +301,10 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         Vh_ptr_t Vh = Pdhms<OrderP>( mesh, true );
         Wh_ptr_t Wh = Pdhv<OrderP>( mesh, true );
-        auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
         Mh_ptr_t Mh = Pdhv<OrderP>( face_mesh,true );
+        Ch_ptr_t Ch = Pchv<0>(ibc_mesh, true);
 
         toc("spaces",true);
-
 
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
         CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
@@ -277,7 +314,8 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
              << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
-             << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
+             << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl
+             << "Ch<" << 0 << "> : " << Ch->nDof() << std::endl;
 		/*
          auto sigmap = Vh->elementPtr( "sigma" );
          auto up     = Wh->elementPtr( "u" );
@@ -290,6 +328,9 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         auto w     = Wh->element( "w" );
         auto uhat  = Mh->element( "uhat" );
         auto m     = Mh->element( "m" );
+        auto nu    = Ch->element( "nu" );
+        auto uI    = Ch->element( "uI" );
+
 
         // Number of dofs associated with each space
         auto nDofsigma = sigma.functionSpace()->nDof();
@@ -305,9 +346,12 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
 
 		tic();
-        auto ps = product( Vh, Wh, Mh );
+        auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
+        auto ps = product2( ibcSpaces, Vh, Wh, Mh );
+
 		auto a = blockform2( ps );
 		auto rhs = blockform1( ps );
+
 
 
         // Building the RHS
@@ -336,8 +380,7 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
 
         cout << "rhs3 works fine" << std::endl;
-
-        // Building the matrix
+        
         a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
@@ -393,6 +436,36 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         toc("matrices",true);
 
+    
+        tic();
+        for( int i = 0; i < ioption("nb_ibc"); ++i )
+        {
+            // <lambda, v.n>_Gamma_I
+            a( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(mesh, "Ibc"), _expr=-trans(idt(uI))*(id(v)*N()) );
+ 
+            // <lambda, tau w>_Gamma_I
+            a( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(mesh, "Ibc"), 
+                                    _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );  
+ 
+            // <sigma.n, m>_Gamma_I
+            a( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(mesh, "Ibc"), _expr= inner(idt(v)*N(),id(nu)) );
+ 
+ 
+            // <tau u, m>_Gamma_I
+            a( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(mesh, "Ibc"), _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
+ 
+            // -<lambda2, m>_Gamma_I
+            a( 3_c, 3_c, i, i ) += integrate(_range=markedfaces(mesh, "Ibc"), _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
+       
+
+            double meas = integrate( _range=markedfaces(mesh,"Ibc" ), _expr=cst(1.0)).evaluate()(0,0);
+            // <F_target,m>_Gamma_I
+            rhs(3_c,i) += integrate( _range=markedfaces(mesh,"Ibc"), _expr=inner(sigma_exact*N(),id(nu))/meas);
+ 
+        }
+        toc("assembled ibc", true);
+
+
         tic();
         auto U = ps.element();
         auto Ue = ps.element();
@@ -444,6 +517,7 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         std::string uName = ( boost::format( "displacement-refine-%1%" ) % i ).str();
         std::string u_exName = ( boost::format( "displacement-ex-refine-%1%" ) % i ).str();
 
+
         v.on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
         w.on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
         export_ptrtype exporter_cvg( export_type::New( exportName ) );
@@ -466,3 +540,18 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
 
 } // Feel
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
