@@ -807,6 +807,10 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         DVLOG(2) << "A01K=" << A01K.at(key);
         DVLOG(2) << "A10K=" << A10K.at(key);
 
+        AK = local_matrix_t::Zero( N, N );
+        BK = local_matrix_t::Zero( N, N3 );
+        CK = local_matrix_t::Zero( N3, N );
+        
         tic();
         extractBlock( A00K.at(key), A01K.at(key), A10K.at(key), AK, e1, e2 );
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
