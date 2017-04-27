@@ -55,6 +55,11 @@ BOOST_AUTO_TEST_CASE( test_concatenate_elements )
 
     auto submesh2 = createSubmesh( mesh, markedelements(mesh,{"left","right"}) );
     BOOST_CHECK_EQUAL( nelements(elements(submesh2)), nelements(elements(mesh)) );
+
+    auto e4 = concatenate( markedelements(mesh,"left"), elements(mesh) );
+    BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(e4) );
+    auto e5 = concatenate( markedelements(mesh,"left"), markedelements(mesh,"right"), elements(mesh) );
+    BOOST_CHECK_EQUAL( nelements(elements(mesh)), nelements(e5) );
 }
 
 BOOST_AUTO_TEST_CASE( test_intersect_elements )
