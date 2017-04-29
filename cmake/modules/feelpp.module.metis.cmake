@@ -37,15 +37,18 @@ if ( FEELPP_ENABLE_METIS )
     #
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/contrib/metis/include)
 
+    add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/metis)
+    add_dependencies(contrib feelpp_metis)
+    list(APPEND FEELPP_LIBRARIES feelpp_metis)
+
     SET(FEELPP_HAS_METIS 1)
-    ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
+### TEST
+    #ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
+    
     #ADD_DEFINITIONS( -fPIC )
 
     #find_library( FEELPP_METIS_LIBRARY feelpp_metis PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/metis/libmetis)
-    set(FEELPP_METIS_LINK_LIBRARIES feelpp_metis )
-    #SET(FEELPP_LIBRARIES ${FEELPP_METIS_LIBRARY} ${FEELPP_LIBRARIES})
-    set(FEELPP_LINK_LIBRARIES ${FEELPP_METIS_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis/Contrib" )
-    #add_subdirectory(contrib/metis)
+
   endif()
 endif()
