@@ -37,5 +37,5 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 
 add_executable(test_ad EXCLUDE_FROM_ALL test_ad.cpp )
-target_link_libraries(test_ad feelpp ${FEELPP_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
+target_link_libraries(test_ad feelpp ${FEELPP_LIBRARIES} )
 
