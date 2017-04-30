@@ -42,13 +42,6 @@ if ( FEELPP_ENABLE_METIS )
     list(APPEND FEELPP_LIBRARIES feelpp_metis)
 
     SET(FEELPP_HAS_METIS 1)
-### TEST
-    #ADD_DEFINITIONS( -DFEELPP_HAS_METIS )
-    
-    #ADD_DEFINITIONS( -fPIC )
-
-    #find_library( FEELPP_METIS_LIBRARY feelpp_metis PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/metis/libmetis)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis/Contrib" )
-
   endif()
 endif()
