@@ -157,10 +157,20 @@ SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templat
 
 # enable host specific
 include(feelpp.host)
-find_package(Threads REQUIRED)
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
-SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
-
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads REQUIRED)
+  if ( THREADS_HAVE_PTHREAD_ARG )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+  endif()
+  if ( CMAKE_THREAD_LIBS_INIT )
+    list(APPEND FEELPP_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  endif()
+else()
+  find_package(Threads REQUIRED)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
+endif()
 
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
