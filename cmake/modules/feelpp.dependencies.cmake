@@ -133,6 +133,12 @@ OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
+if(FEELPP_MINIMAL_BUILD)
+  set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION OFF)
+else()
+  set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
+endif()
+
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
@@ -399,12 +405,7 @@ endif(FEELPP_ENABLE_MKL)
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF )
-else()
-    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ON )
-endif()
-
+option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
   find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND )
@@ -621,8 +622,8 @@ if ( FEELPP_HAS_GINAC )
   find_package(CLN)
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-#TEST
-  link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+
+  link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
   include_directories(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
   set(DL_LIBS ${CMAKE_DL_LIBS})
@@ -667,11 +668,8 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_FFTW "Enable fftw Support" OFF )
-else()
-    option( FEELPP_ENABLE_FFTW "Enable fftw Support" ON )
-endif()
+
+option( FEELPP_ENABLE_FFTW "Enable fftw Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_FFTW)
   find_package(FFTW)
   if( FFTW_FOUND )
@@ -770,12 +768,7 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 # Ann
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_ANN "Enable ANN Support" OFF )
-else()
-    option( FEELPP_ENABLE_ANN "Enable ANN Support" ON )
-endif()
-
+option( FEELPP_ENABLE_ANN "Enable ANN Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_ANN)
 FIND_PACKAGE(ANN)
   if ( ANN_FOUND )
@@ -861,11 +854,7 @@ endif( FEELPP_ENABLE_DDT )
 
 
 # xml
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" OFF )
-else()
-    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" ON )
-endif()
+option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_LIBXML2)
   find_package(LibXml2 2.6.27)
   if ( LIBXML2_FOUND )
@@ -878,13 +867,7 @@ if(FEELPP_ENABLE_LIBXML2)
 endif()
 
 # Python libs
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PYTHON "Enable Python Support" OFF )
-else()
-    option( FEELPP_ENABLE_PYTHON "Enable Python Support" ON )
-endif()
-
+option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
   FIND_PACKAGE(PythonLibs)
   if ( PYTHONLIBS_FOUND )
@@ -913,25 +896,14 @@ endif()
 #
 # Petsc
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF )
-else()
-    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" ON )
-endif()
-
+option( FEELPP_ENABLE_PETSC "Enable PETSc Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PETSC)
-include(feelpp.module.petsc)
+  include(feelpp.module.petsc)
 endif()
 
 
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_METIS "Enable Metis Support" OFF )
-else()
-    option( FEELPP_ENABLE_METIS "Enable Metis Support" ON )
-endif()
-
+option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
   include(feelpp.module.metis)
 endif()
@@ -1128,11 +1100,7 @@ endif()
 #
 # parpack
 #
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" OFF )
-else()
-    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" ON )
-endif()
+option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PARPACK)
   FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
   if (PARPACK_LIBRARY)
@@ -1146,13 +1114,7 @@ endif()
 #
 # SLEPc
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF )
-else()
-    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" ON )
-endif()
-
+option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -1180,13 +1142,7 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" OFF )
-else()
-    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" ON )
-endif()
-
+option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -1202,13 +1158,7 @@ endif()
 #
 # VTK
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_VTK "Enable VTK Support" OFF )
-else()
-    option( FEELPP_ENABLE_VTK "Enable VTK Support" ON )
-endif()
-
+option( FEELPP_ENABLE_VTK "Enable VTK Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_VTK )
     # MESSAGE("Finding VTK:")
     # MESSAGE("PARAVIEW_DIR=$ENV{PARAVIEW_DIR}")
@@ -1404,11 +1354,7 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_GSL "Enable GSL Support" OFF )
-else()
-    option( FEELPP_ENABLE_GSL "Enable GSL Support" ON )
-endif()
+option( FEELPP_ENABLE_GSL "Enable GSL Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if( FEELPP_ENABLE_GSL )
   FIND_PACKAGE(GSL)
@@ -1427,12 +1373,7 @@ endif(FEELPP_ENABLE_GSL)
 # Gmsh
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF )
-else()
-    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ON )
-endif()
-
+option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_GMSH )
   if(FEELPP_USE_GMSH_PACKAGE)
 	FIND_PACKAGE(Gmsh)
@@ -1499,12 +1440,7 @@ if( FEELPP_ENABLE_PCH_APPLICATIONS )
 endif()
 
 # Enable Feel++ interpreter using cling.
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-else()
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-endif()
-
+option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_INTERPRETER )
     find_package(Cling)
     if(NOT Cling_FOUND)
