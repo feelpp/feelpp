@@ -684,7 +684,12 @@ endif()
 # submodules
 #
 include(feelpp.module.hpddm)
-include(feelpp.module.nlopt)
+
+option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_NLOPT )
+  include(feelpp.module.nlopt)
+endif()
+
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
