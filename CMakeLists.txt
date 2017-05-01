@@ -31,10 +31,10 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	cmake_policy(SET CMP0038 NEW)
 	message(STATUS "[feelpp] use NEW policy CMP0042" )
 	cmake_policy(SET CMP0042 NEW)
-    if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
-      message(STATUS "[feelpp] use OLD policy CMP0064" )
-      cmake_policy(SET CMP0064 OLD)
-    endif()
+    # if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
+    #   message(STATUS "[feelpp] use OLD policy CMP0064" )
+    #   cmake_policy(SET CMP0064 OLD)
+    # endif()
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
@@ -313,9 +313,8 @@ MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 include( feelpp.macros )
 
 # Find feel++ dependencies 
-include( feelpp.dependencies )
 add_custom_target(contrib)
-add_subdirectory(contrib)
+include( feelpp.dependencies )
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :

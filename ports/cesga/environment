@@ -1,0 +1,4 @@
+SOFTDIR=$HOME/softwares
+SRCDIR=$SOFTDIR/src
+INSDIR=$SOFTDIR/install
+ARCDIR=$SOFTDIR/archives

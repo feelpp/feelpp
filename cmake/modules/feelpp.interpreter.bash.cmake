@@ -15,7 +15,7 @@ macro(subdirlist result curdir)
 endmacro()
 
 #subdirlist( FEELPP_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/feel )
-feelpp_find_libraries( FEELPP_ALL ${FEELPP_LIBRARIES} )
+feelpp_expand_target_libraries( FEELPP_ALL ${FEELPP_LIBRARIES} )
 
 # Create the script feel++.
 
