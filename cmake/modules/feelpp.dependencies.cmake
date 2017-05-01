@@ -4,7 +4,6 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 #  FEELPP_LIBRARIES = list of depend libraries
-#  FEELPP_LINK_LIBRARIES = list of libraries to link
 
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
@@ -158,7 +157,6 @@ SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templat
 
 # enable host specific
 include(feelpp.host)
-
 find_package(Threads REQUIRED)
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
 SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
@@ -567,7 +565,66 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
 #ENDIF()
 
-add_definitions(-DHAVE_LIBDL)
+#add_definitions(-DHAVE_LIBDL)
+
+set(FEELPP_HAS_GFLAGS 1)
+set(FEELPP_HAS_GLOG 1)
+set(FEELPP_HAS_GINAC 1)
+
+if ( FEELPP_HAS_GFLAGS )
+  set(GFLAGS_IS_SUBPROJECT TRUE)
+  set(GFLAGS_NAMESPACE "google;gflags")
+  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/gflags)
+  list(APPEND FEELPP_LIBRARIES feelpp_gflags)
+
+  add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
+  #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
+
+  set( FEELPP_GFLAGS_LIBRARIES feelpp_gflags_shared feelpp_gflags_nothreads_shared )
+  #get_target_property( FEELPP_GFLAGS_ALIASED_LIB feelpp_gflags ALIASED_TARGET )
+  #target_include_directories(${FEELPP_GFLAGS_ALIASED_LIB} BEFORE PRIVATE ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
+  foreach( gflaglib ${FEELPP_GFLAGS_LIBRARIES} )
+    target_include_directories(${gflaglib} BEFORE PRIVATE ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
+  endforeach()
+  include_directories(${FEELPP_BINARY_DIR}/contrib/gflags/include )#${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
+
+  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFlags/Contrib" )
+  
+  # for GLog
+  set(gflags_LIBRARIES feelpp_gflags)
+  set(gflags_FOUND 1)
+endif()
+
+if ( FEELPP_HAS_GLOG )
+    #     INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
+  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/glog)
+  list(APPEND FEELPP_LIBRARIES feelpp_glog)
+  add_dependencies(contrib feelpp_glog)
+  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLog/Contrib" )
+endif()
+
+
+if ( FEELPP_HAS_GINAC )
+  #
+  # cln and ginac
+  #
+  find_package(CLN)
+
+  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+#TEST
+  link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+
+  include_directories(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+
+
+  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ginac)
+  add_dependencies(contrib feelpp_ginac ginsh)
+  list(APPEND FEELPP_LIBRARIES feelpp_ginac)
+endif()
+
+
+
 
 OPTION( FEELPP_ENABLE_NT2 "Enable the numerical toolkit tmplate library" OFF )
 if ( FEELPP_ENABLE_NT2 )
@@ -596,43 +653,8 @@ endif( FEELPP_ENABLE_NT2 )
 
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
 
-  # Gflags
-  set(GFLAGS_IS_SUBPROJECT TRUE)
-  set(GFLAGS_NAMESPACE "google;gflags")
-  INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-  # gflags is added by glog and currently there is a conflict between the
-  #threaded and not threaded version, -> comment out next line
-  # SET(FEELPP_LIBRARIES feelpp_gflags ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GFlags" )
-  set(FEELPP_HAS_GFLAGS 1)
-  # for GLog
-  set(gflags_LIBRARIES feelpp_gflags)
-  set(gflags_FOUND 1)
 
-  # GLog
-  INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
-  #find_library( FEELPP_GLOG_LIBRARY feelpp_glog PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/glog)
-  set(FEELPP_GLOG_LINK_LIBRARIES feelpp_glog)
-  #SET(FEELPP_LIBRARIES ${FEELPP_GLOG_LIBRARY} ${FEELPP_LIBRARIES})
-  set(FEELPP_LINK_LIBRARIES ${FEELPP_GLOG_LINK_LIBRARIES} ${FEELPP_LINK_LIBRARIES} )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} contrib/GLog" )
-  set(FEELPP_HAS_GLOG 1)
 
-  #
-  # cln and ginac
-  #
-  find_package(CLN)
-
-  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-  link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
-  INCLUDE_DIRECTORIES(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
-  #SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-  #find_library( FEELPP_GINAC_LIBRARY feelpp_ginac PATHS ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
-  set(FEELPP_GINAC_LIBRARY feelpp_ginac)
-  set(FEELPP_LIBRARIES ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} )
-  set(FEELPP_LINK_LIBRARIES ${FEELPP_GINAC_LIBRARY} ${CMAKE_DL_LIBS} ${FEELPP_LINK_LIBRARIES} )
-  set(DL_LIBS ${CMAKE_DL_LIBS})
-  set(FEELPP_HAS_GINAC 1)
 endif()
 
 if(FEELPP_MINIMAL_BUILD)
@@ -654,11 +676,6 @@ endif()
 # submodules
 #
 include(feelpp.module.hpddm)
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_NLOPT "Enable NlOpt Support" OFF )
-else()
-    option( FEELPP_ENABLE_NLOPT "Enable NlOpt Support" ON )
-endif()
 include(feelpp.module.nlopt)
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
@@ -712,8 +729,8 @@ if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CM
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   
-  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported
-      ${INCLUDE_INSTALL_DIR} ${INCLUDE_INSTALL_DIR}/unsupported)
+  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported )
+
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
@@ -726,6 +743,9 @@ else()
 endif()
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
 SET(FEELPP_HAS_EIGEN3 1)
+if ( FEELPP_HAS_EIGEN3 )
+  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/eigen)
+endif()
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 
 
@@ -1270,10 +1290,11 @@ if ( FEELPP_ENABLE_VTK )
         INCLUDE_DIRECTORIES(${ParaView_INCLUDE_DIRS})
         INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
         SET(FEELPP_LIBRARIES ${ParaView_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
         # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS from linker
-        feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
+        #feelpp_expand_target_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
         #set(FEELPP_LINK_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LINK_LIBRARIES})
-        set( FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES} )
+        #set( FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES} )
         SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ParaView/VTK" )
 
         message(STATUS "Found ParaView ${PARAVIEW_VERSION_FULL}/VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")
@@ -1352,9 +1373,9 @@ if ( FEELPP_ENABLE_VTK )
             # endif()
 
             # Generate FEELPP_VTK_LIBRARY and FEELPP_VTK_DIRS
-            feelpp_find_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
-            #SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
-            SET(FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+            SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
+            #feelpp_expand_target_libraries( FEELPP_VTK ${VTK_LIBRARIES} )
+            #SET(FEELPP_LIBRARIES ${FEELPP_VTK_LIBRARIES} ${FEELPP_LIBRARIES})
             SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} VTK" )
         endif()
    endif()
@@ -1487,6 +1508,49 @@ include(feelpp.module.ipopt)
 # 
 include(feelpp.module.altair)
 
+
+
+# Enable precompiled headers (PCH)
+option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
+option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
+
+if( FEELPP_ENABLE_PCH )
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH" )
+endif()
+if( FEELPP_ENABLE_PCH_APPLICATIONS )
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH_Apps" )
+endif()
+
+# Enable Feel++ interpreter using cling.
+if(FEELPP_MINIMAL_BUILD)
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
+else()
+    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
+endif()
+
+if( FEELPP_ENABLE_INTERPRETER )
+    find_package(Cling)
+    if(NOT Cling_FOUND)
+        set( FEELPP_ENABLE_INTERPRETER OFF)
+        message( WARNING "[cling] software was not found (feel++ interpreter preriquisite)!\n
+        (See https://root.cern.ch/cling)\n
+        Feel++ interpreter has been disabled automatically!")
+    else()
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
+    endif()
+endif()
+
+LINK_DIRECTORIES(
+  ${VTK_LIBRARY_DIRS}
+  ${BOOST_LIBRARY_PATH}
+  ${MPI_LIBRARY_PATH}
+  )
+
+get_directory_property( FEELPP_DEFINITIONS DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
+get_property( FEELPP_DEPS_INCLUDE_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+
+
 #
 # if Feel++ has been installed on the system
 #
@@ -1538,78 +1602,9 @@ else()
 endif()
 
 
-# Enable precompiled headers (PCH)
-option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
-option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
-
-if( FEELPP_ENABLE_PCH )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH" )
-endif()
-if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH_Apps" )
-endif()
-
-# Enable Feel++ interpreter using cling.
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-else()
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-endif()
-
-if( FEELPP_ENABLE_INTERPRETER )
-    find_package(Cling)
-    if(NOT Cling_FOUND)
-        set( FEELPP_ENABLE_INTERPRETER OFF)
-        message( WARNING "[cling] software was not found (feel++ interpreter preriquisite)!\n
-        (See https://root.cern.ch/cling)\n
-        Feel++ interpreter has been disabled automatically!")
-    else()
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
-    endif()
-endif()
-
-LINK_DIRECTORIES(
-  ${VTK_LIBRARY_DIRS}
-  ${BOOST_LIBRARY_PATH}
-  ${MPI_LIBRARY_PATH}
-  )
-
-get_directory_property( FEELPP_DEFINITIONS DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
-get_property( FEELPP_DEPS_INCLUDE_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-get_property( FEELPP_DEPS_LINK_DIR DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_DIRECTORIES)
-
-# From the variables FEELPP_DEPS_INCLUDE_DIR and FEELPP_DEPS_LINK_DIR, We remove every path that references
-# the build directory or the git clone. Those variables are meant for building external modules that
-# depend on Feel++, we cannot reference the original build directory or git clone, as they might not be present
-# on the server we build the module, e.g. if we install Feel++ with the tarball, we don't have those directories
-# (ex: travis-ci)
-set(_FEELPP_DEPS_INCLUDE_DIR_NEW "")
-feelpp_clean_variable("${FEELPP_DEPS_INCLUDE_DIR}" _FEELPP_DEPS_INCLUDE_DIR_NEW )
-
-#message("${FEELPP_DEPS_INCLUDE_DIR}")
-#message("")
-#message("${_FEELPP_DEPS_INCLUDE_DIR_NEW}")
-#message(FATAL_ERROR "")
-set(FEELPP_DEPS_INCLUDE_DIR ${_FEELPP_DEPS_INCLUDE_DIR_NEW})
-
-unset(_FEELPP_DEPS_INCLUDE_DIR_NEW)
-
-set(_FEELPP_DEPS_LINK_DIR_NEW "")
-feelpp_clean_variable("${FEELPP_DEPS_LINK_DIR}" _FEELPP_DEPS_LINK_DIR_NEW )
-
-#message("${FEELPP_DEPS_LINK_DIR}")
-#message("")
-#message("${_FEELPP_DEPS_LINK_DIR_NEW}")
-#message(FATAL_ERROR "")
-
-set(FEELPP_DEPS_LINK_DIR ${_FEELPP_DEPS_LINK_DIR_NEW})
-unset(_FEELPP_DEPS_LINK_DIR_NEW)
-
 # Cleaning variables.
 set( varstoclean
      FEELPP_DEPS_INCLUDE_DIR
-     FEELPP_DEPS_LINK_DIR
-     FEELPP_LINK_LIBRARIES
      FEELPP_LIBRARIES )
 
 # Do remove duplicated variable entries.
@@ -1620,7 +1615,37 @@ foreach( varname ${varstoclean})
 endforeach()
 
 MARK_AS_ADVANCED(FEELPP_DEPS_INCLUDE_DIR)
-MARK_AS_ADVANCED(FEELPP_DEPS_LINK_DIR)
-
-MARK_AS_ADVANCED(FEELPP_LINK_LIBRARIES)
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
+
+# write file which contains libraries
+set( FEELPP_LIBRARIES_WITH_SPACE )
+foreach( THELIB ${FEELPP_LIBRARIES} )
+  if ( TARGET ${THELIB} )
+    list(APPEND FEELPP_LIBRARIES_WITH_SPACE  " $<TARGET_FILE:${THELIB}> ")
+  else()
+    list(APPEND FEELPP_LIBRARIES_WITH_SPACE " ${THELIB} " )
+  endif()
+endforeach()
+set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY $<TARGET_FILE:feelpp> )\nset(FEELPP_LIBRARIES ${FEELPP_LIBRARIES_WITH_SPACE})" )
+string(REPLACE ";" "" FEELPP_LIBRARIES_TEXT ${FEELPP_LIBRARIES_TEXT} )
+file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.libraries.config.cmake
+  CONTENT ${FEELPP_LIBRARIES_TEXT} )
+unset(FEELPP_LIBRARIES_WITH_SPACE)
+unset(FEELPP_LIBRARIES_TEXT)
+
+# write file which contains include dir
+set(FEELPP_INCLUDE_DIR_WITH_SPACE)
+foreach( THEINC ${FEELPP_INCLUDE_DIR} )
+  list(APPEND FEELPP_INCLUDE_DIR_WITH_SPACE " ${THEINC} ")
+endforeach()
+set(FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE)
+foreach( THEINC ${FEELPP_DEPS_INCLUDE_DIR} )
+  list(APPEND FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE " ${THEINC} ")
+endforeach()
+set(FEELPP_INCLUDE_DIR_TEXT "set(FEELPP_INCLUDE_DIR ${FEELPP_INCLUDE_DIR_WITH_SPACE}) \nset(FEELPP_DEPS_INCLUDE_DIR ${FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE})" )
+string(REPLACE ";" "" FEELPP_INCLUDE_DIR_TEXT ${FEELPP_INCLUDE_DIR_TEXT} )
+file( WRITE ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.include.config.cmake
+  ${FEELPP_INCLUDE_DIR_TEXT} )
+unset(FEELPP_INCLUDE_DIR_WITH_SPACE)
+unset(FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE)
+unset(FEELPP_INCLUDE_DIR_TEXT)
