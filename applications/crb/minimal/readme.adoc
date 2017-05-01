@@ -1,0 +1,7 @@
+= Minimal example of a crb application
+
+It is based on the heat conduction example from https://hal-univ-diderot.archives-ouvertes.fr/hal-01223456/document[Certified Reduced Basis Methods for Parametrized Partial Differential Equations].
+
+The only change is the way the Dirichlet condition is imposed on the top boundary. In the book, they impose it strongly, whereas in this application, we use a penalization method.
+
+Currently, the basis is not constructed correctly.

@@ -1376,7 +1376,7 @@ protected:
     scm_ptrtype M_scmM;
 
     //export
-    export_ptrtype M_exporter;
+    mutable export_ptrtype M_exporter;
 
 #if 0
     array_2_type M_C0_pr;
