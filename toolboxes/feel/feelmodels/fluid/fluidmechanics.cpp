@@ -528,6 +528,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->modelProperties().parameters().updateParameterValues();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    //this->modelProperties().materials().setParameterValues( paramValues );
     this->M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : this->M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );

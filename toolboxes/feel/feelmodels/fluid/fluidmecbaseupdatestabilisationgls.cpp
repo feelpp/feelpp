@@ -3,6 +3,7 @@
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+#include <feel/feelmesh/intersect.hpp>
 
 namespace Feel
 {
@@ -169,6 +170,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
     auto tau = fluidmec.stabilizationGLSParameter()->tau( uconv,myViscosity, mpl::int_<StabParamType>() );
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
         //auto stab_test = grad(u)*uconv - myViscosity*laplacian(u);
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(betaU),u, mpl::int_<StabGLSType>() );
         if (!fluidmec.isStationary())
@@ -176,14 +178,14 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
             //auto stab_residual_bilinear_u = idv(rho)*(idt(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) + gradt(u)*idv(betaU) ) - myViscosity*laplaciant(u);
             auto stab_residual_bilinear_u = residualTransientLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
             auto rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto stab_residual_linear = idv(rho)*idv(rhsTimeDerivative);
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr= val(tau)*inner(stab_residual_linear,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -192,19 +194,19 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
             //auto stab_residual_bilinear_u = idv(rho)*gradt(u)*idv(betaU) - myViscosity*laplaciant(u);
             auto stab_residual_bilinear_u = residualStationaryLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         auto stab_residual_bilinear_p = trans(gradt(p));
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeEltConvectionDiffusion,
                        _expr=val(tau)*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=fluidmec.geomap() );
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,marker(d)),rangeEltConvectionDiffusion);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=val(tau)*inner(expression(d),stab_test),
@@ -214,20 +216,21 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
         auto stab_test = -idv(rho)*trans(grad(p));
         if ( !fluidmec.isStationary() )
         {
             //auto stab_residual_bilinear_u = idv(rho)*(idt(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) + gradt(u)*idv(betaU) ) - myViscosity*laplaciant(u);
             auto stab_residual_bilinear_u = residualTransientLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
             auto rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
             auto stab_residual_linear = idv(rho)*idv(rhsTimeDerivative);
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr= val(tau)*inner(stab_residual_linear,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -236,19 +239,19 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
             //auto stab_residual_bilinear_u = idv(rho)*gradt(u)*idv(betaU) - myViscosity*laplaciant(u);
             auto stab_residual_bilinear_u = residualStationaryLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         auto stab_residual_bilinear_p = trans(gradt(p));
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeEltPressure,
                        _expr=val(tau)*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=fluidmec.geomap() );
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,marker(d)),rangeEltPressure);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=val(tau)*inner(expression(d),stab_test),
@@ -285,6 +288,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
         //auto stab_test = grad(u)*uconv - myViscosity*laplacian(u);
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
         if (!fluidmec.isStationary())
@@ -294,7 +298,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
             auto stab_residual_u = residualTransientResidualExpr_u( idv(rho),myViscosity,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() );
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -302,14 +306,14 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         {
             auto stab_residual_u = residualStationaryResidualExpr_u( idv(rho),myViscosity,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() );
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltConvectionDiffusion : intersect(markedelements(mesh,marker(d)),rangeEltConvectionDiffusion);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-val(tau)*inner(expression(d),stab_test),
@@ -319,6 +323,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
         auto stab_test = -idv(rho)*trans(grad(p));
         if ( !fluidmec.isStationary() )
         {
@@ -327,7 +332,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
             auto dudt = idv(u)*fluidmec.timeStepBDF()->polyDerivCoefficient(0) - idv(rhsTimeDerivative);
             auto stab_residual_u = residualTransientResidualExpr_u( idv(rho),myViscosity,idv(u),dudt,u,p,fluidmec, mpl::int_<StabResidualType>() );
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -335,14 +340,14 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         {
             auto stab_residual_u = residualStationaryResidualExpr_u( idv(rho),myViscosity,idv(u),u,p,fluidmec, mpl::int_<StabResidualType>() );
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         // bodyforces
         for( auto const& d : fluidmec.bodyForces() )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? rangeEltPressure : intersect(markedelements(mesh,marker(d)),rangeEltPressure);
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr=-val(tau)*inner(expression(d),stab_test),
@@ -382,12 +387,13 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
     if ( fluidmec.stabilizationGLSType() != "pspg" )
     {
+        auto rangeEltConvectionDiffusion = fluidmec.stabilizationGLSEltRangeConvectionDiffusion();
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
         if (!fluidmec.isStationary())
         {
             auto stab_residual_bilinear_u = residualTransientJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -395,25 +401,26 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         {
             auto stab_residual_bilinear_u = residualStationaryJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltConvectionDiffusion,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         auto stab_residual_bilinear_p = trans(gradt(p));
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeEltConvectionDiffusion,
                        _expr=val(tau)*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=fluidmec.geomap() );
     }
 
     if ( fluidmec.stabilizationGLSType() == "pspg" || fluidmec.stabilizationGLSType() == "supg-pspg" || fluidmec.stabilizationGLSType() == "gls" )
     {
+        auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
         auto stab_test = -idv(rho)*trans(grad(p));
         if ( !fluidmec.isStationary() )
         {
             auto stab_residual_bilinear_u = residualTransientJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
@@ -421,13 +428,13 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         {
             auto stab_residual_bilinear_u = residualStationaryJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=rangeEltPressure,
                            _expr=val(tau)*inner(stab_residual_bilinear_u,stab_test ),
                            _geomap=fluidmec.geomap() );
         }
         auto stab_residual_bilinear_p = trans(gradt(p));
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=rangeEltPressure,
                        _expr=val(tau)*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=fluidmec.geomap() );
     }
