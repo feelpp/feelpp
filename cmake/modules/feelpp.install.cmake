@@ -180,8 +180,7 @@ add_custom_target(install-libs-models-fluid
   install-feelpp-lib
   install-feelpp-models-common
   install-libs-models-thermodyn
-  #feelpp_model_fluidmechanics
-  install-feelpp_model_fluidmec2dP2P1G1  install-feelpp_model_fluidmec3dP2P1G1
+  feelpp_model_fluidmechanics
   COMMAND
   "${CMAKE_COMMAND}"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fluid/cmake_install.cmake"
@@ -202,11 +201,7 @@ add_custom_target(install-libs-models-solid
   DEPENDS
   install-feelpp-lib
   install-feelpp-models-common
-  # feelpp_model_solid
-  install-feelpp_model_solidmec2dP1G1
-  install-feelpp_model_solidmec2dP2G1
-  install-feelpp_model_solidmec2dP1G1
-  install-feelpp_model_solidmec3dP2G1
+  feelpp_model_solidmechanics
   COMMAND
   "${CMAKE_COMMAND}"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/solid/cmake_install.cmake"
@@ -227,9 +222,7 @@ add_custom_target(install-libs-models-fsi
   DEPENDS
   install-feelpp-lib
   install-feelpp-models-common
-  # feelpp_model_fsi
-  install-feelpp_model_fsi_2dP2P1G1_2dP1G1
-  install-feelpp_model_fsi_3dP2P1G1_3dP1G1
+  feelpp_model_fsi
   COMMAND
   "${CMAKE_COMMAND}"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fsi/cmake_install.cmake"
