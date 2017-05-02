@@ -547,7 +547,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("MultiFluid","exportResults", "start");
 
