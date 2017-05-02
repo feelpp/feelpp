@@ -38,5 +38,5 @@ feelpp_add_application( submesh SRCS submesh.cpp INCLUDE_IN_ALL PROJECT mesh )
 endif(NOT FEELPP_MINIMAL_BUILD)
 
 if (FEELPP_HAS_HDF5)
-  feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL)
+  feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL MAN partitioner )
 endif (FEELPP_HAS_HDF5)
