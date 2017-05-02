@@ -66,10 +66,15 @@ private:
     markers_type M_markersDirichlet;
     markers_type M_markersNeumann;
 
+    double M_assembleTime;
+    double M_solveTime;
+    double M_totalTime;
+
 public:
     ConvergenceElasticityTest();
     void assembleExact();
     void run();
+    
 };
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -151,24 +156,37 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     cvg_sigma.open( "convergence_sigma.dat", std::ios::out | std::ios::trunc);
     cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
-    boost::format fmter2("%1% %|28t|%2% %|28t|%3% \n");
+    // format: hsize | error_U | error_sigma | time assembling matrix | time solver | total time 
+    boost::format fmter2("%1% %|28t|%2% %|28t|%3% %|28t|%4% %|28t|%5% %|28t|%6%\n");
     boost::format fmterOut;
 
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
+        M_assembleTime = 0;
+        M_solveTime = 0;
+        M_totalTime = 0;    
+
+        tic();
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
+        
+        tic();
         M_model -> init(M_mesh); // inside here assembleSTD
+        M_assembleTime = toc("assembleTime");
 
         auto nDofSigma = M_model->fluxSpace()->nDof();
         auto nDofU = M_model->potentialSpace()->nDof();
 
+        tic();
 		M_model->solve();	// inside here assembleF
-		
+		M_solveTime = toc("solveTime");
+
 		// M_model->exportResults(M_mesh);
 
         M_sigma = M_model->fluxField();
         M_u = M_model->potentialField();
+
+        M_totalTime = toc("totalTime");
 
         // Data
         double mu = 1;
@@ -205,7 +223,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         // cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
         cvg_sigma << fmter % h % nDofSigma % errSigma;
         cvg_u << fmter % h % nDofU % errU;
-        cvg_tot << fmter2 % h % errU % errSigma;
+        cvg_tot << fmter2 % h % errU % errSigma % M_assembleTime % M_solveTime % M_totalTime ;
 		
 /*
         sigma_ex.on( elements(M_mesh), sigma_exact);
