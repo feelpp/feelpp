@@ -25,6 +25,8 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/toolboxes ${CMAKE_BINARY_DIR}/toolboxes)
 
+###################################################
+
 # Laplacian
 foreach( dim 2 3)
   foreach( orderP 0 1 2 3 4)
@@ -96,6 +98,8 @@ foreach( dim 2 3)
   endforeach() # order
 endforeach() # dim
 
+###################################################
+
 # Linear elasticity
 #foreach( geom 1 2 )
 foreach( dim 2 3)
@@ -133,7 +137,7 @@ endforeach() # dim
 # Linear elasticity - IBC
 #foreach( geom 1 2 )
 foreach( dim 3)# 3
-  foreach( orderP 0 1 ) #2 3 4
+  foreach( orderP 0 1 2 3 4)
     set(modulename "hdg_linear_elasticity_ibc")
     set(BENCH "${modulename}_${dim}D_P${orderP}" )
     set(targetname bench_${BENCH})
@@ -164,6 +168,9 @@ foreach( dim 3)# 3
 endforeach() # dim
 # endforeach() # geom
 
+
+###################################################
+
 foreach(D RANGE 2 3 1)
   foreach(P RANGE 0 4 1) #3
     foreach(N RANGE 1 2 1)
@@ -177,6 +184,9 @@ foreach(D RANGE 2 3 1)
     endforeach() 
   endforeach()
 endforeach()
+
+
+###################################################
 
 foreach(D RANGE 2 3 2)
   foreach(P RANGE 0 4 1) #3
