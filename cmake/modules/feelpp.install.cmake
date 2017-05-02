@@ -120,7 +120,8 @@ endif()
 
 
 add_custom_target(install-feelpp-models-common
-  DEPENDS ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS}
+  DEPENDS
+  feelpp-models-common
   COMMAND
   "${CMAKE_COMMAND}"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/modelcore/cmake_install.cmake"
