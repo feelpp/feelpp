@@ -135,9 +135,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
         this->build();
 
     // Vector solution
-    M_blockVectorSolution.resize(1);
-    M_blockVectorSolution(0) = this->fieldSolutionPtr();
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->buildBlockVector();
 
     // Time step
     this->initTimeStep();
@@ -333,6 +331,15 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
     // Diffusion-reaction model
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockVector()
+{
+    M_blockVectorSolution.resize(1);
+    M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    M_blockVectorSolution.buildVector( this->backend() );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS

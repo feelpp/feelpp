@@ -346,6 +346,7 @@ protected:
     void createTimeDiscretization();
     void createExporters();
     void createOthers();
+    void buildBlockVector();
 
     virtual void exportResultsImpl( double time );
     virtual void exportMeasuresImpl( double time );
