@@ -23,7 +23,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 
-#define USE_SAME_MAT 1
+// #define USE_SAME_MAT 1
 
 namespace Feel {
 
@@ -1126,8 +1126,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
             double d = 0;
             if ( !this->isStationary() )
             {
-                Feel::cout << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
-                LOG(INFO) << "use data file to set rhs for Dirichlet BC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                Feel::cout << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
+                LOG(INFO) << "use data file to set rhs for IBC at time " << M_bdf_mixedpoisson->time() << std::endl;
 
                 // data may depend on time
                 d = exAtMarker.data(M_bdf_mixedpoisson->time());
