@@ -146,7 +146,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Export
-    void exportResults( double time );
+    void exportResults( double time ) { this->exportResultsImpl( time ); }
     void exportResults() { this->exportResults( this->currentTime() ); }
 
 protected:
@@ -167,6 +167,9 @@ protected:
     // Non-linear solve
     void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const;
     void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const;
+    //--------------------------------------------------------------------//
+    // Export
+    virtual void exportResultsImpl( double time );
 
     //--------------------------------------------------------------------//
     uint16_type M_nFluids;
