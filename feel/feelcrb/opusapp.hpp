@@ -381,8 +381,7 @@ public:
             parameter_type mu;
             for( int i=0; i<mu.size(); i++)
             {
-                std::string mu_str = (boost::format("mu%1%") %i).str();
-                mu(i)=mu_map[mu_str];
+                mu(i) = mu_map[crb->Dmu->parameterName(i)];
             }
             auto o = crb->run( mu, time_crb, online_tol, N, print_rb_matrix);
             auto solutions = o.template get<2>();

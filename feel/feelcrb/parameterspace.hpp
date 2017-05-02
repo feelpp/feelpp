@@ -132,6 +132,24 @@ public:
                 return super::operator=( other );
             }
 
+        /**
+         * access element by name
+         */
+        double const& parameterNamed( std::string name ) const
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                return this->operator()( it - paramNames.begin() );
+            }
+
+        void setParameterNamed( std::string name, double value )
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                if( it != paramNames.end() )
+                    this->operator()( it - paramNames.begin() ) = value;
+            }
+
         void setParameterSpace( parameterspace_ptrtype const& space )
             {
                 M_space = space;
@@ -1334,6 +1352,14 @@ public:
     std::string const& parameterName( uint16_type d ) const
         {
             return M_parameterNames[d];
+        }
+
+    /**
+     * \brief name of the parameters
+     */
+    std::vector<std::string> const& parameterNames() const
+        {
+            return M_parameterNames;
         }
 
     //@}
