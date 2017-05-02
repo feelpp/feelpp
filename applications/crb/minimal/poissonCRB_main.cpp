@@ -40,23 +40,19 @@ int main( int argc, char** argv)
     auto muMin = paramSpace->min();
     auto muMax = paramSpace->max();
     auto mu = paramSpace->element();
-    // if( kappa < muMin.parameterNamed("kappa") || kappa > muMax.parameterNamed("kappa") )
-    //     kappa = muMin.parameterNamed("kappa");
-    // mu.setParameterNamed("kappa", kappa);
-    // if( flux < muMin.parameterNamed("flux") || flux > muMax.parameterNamed("flux") )
-    //     flux = muMin.parameterNamed("flux");
-    // mu.setParameterNamed("flux", flux);
     mu << kappa, flux;
     Feel::cout << "using parameter:" << std::endl << mu << std::endl;
-               // << " kappa: " << kappa << std::endl
-               // << " flux : " << flux << std::endl;
 
     // online
-    std::vector<vectorN_type> uNs, uNolds, uNdus, uNduOlds;
-    crb->lb(ioption("poisson.N"), mu, uNs, uNdus, uNolds, uNduOlds);
+    int N = ioption("poisson.N");
+    if( N > crb->dimension() || N < 1 )
+        N = crb->dimension();
+    int timeSteps = 1;
+    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
+    std::vector<double> outputs(timeSteps, 0);
+    crb->fixedPointPrimal(N, mu, uNs, uNolds, outputs);
     vectorN_type uN = uNs[0];
-    Feel::cout << "uN:" << std::endl
-               << uN << std::endl;
+    Feel::cout << "uN:" << std::endl << uN << std::endl;
 
     // export basis
     wn_type WN = crb->wn();
