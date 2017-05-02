@@ -314,8 +314,13 @@ Hdg<Dim, OrderP>::convergence()
         tic();
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
         auto ps = product2( ibcSpaces, Vh, Wh, Mh );
-        auto a = blockform2( ps );//, boption("sc.condense")?Pattern::HDG:Pattern::COUPLED );
-        auto rhs = blockform1( ps );
+
+        auto M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+        auto M_F = M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+        M_F->zero();
+
+        auto a = blockform2( ps, M_A_cst );//, boption("sc.condense")?Pattern::HDG:Pattern::COUPLED );
+        auto rhs = blockform1( ps , M_F);
 
         auto K = expr(soption("k"));
         auto lambda = cst(1.)/K;
@@ -474,8 +479,12 @@ Hdg<Dim, OrderP>::convergence()
         toc("matrices",true);
 
         tic();
+        auto bbf = blockform2(ps, M_A_cst);
+        auto blf = blockform1(ps, M_F);
         auto U=ps.element();
-        a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _name="hdg");
+
+        bbf.solve( _solution=U, _rhs=blf, _condense=boption("sc.condense"), _name="hdg");
+        // a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _name="hdg");
         toc("solve",true);
 
         cout << "[Hdg] solve done" << std::endl;
