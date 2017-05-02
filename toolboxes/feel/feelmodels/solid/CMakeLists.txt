@@ -35,6 +35,7 @@ endforeach()
 
 add_library(feelpp_model_solidmechanics SHARED libsolidmechanics.cpp )
 target_link_libraries(feelpp_model_solidmechanics ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})
+install(TARGETS feelpp_model_solidmechanics DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/solid COMPONENT Devel)

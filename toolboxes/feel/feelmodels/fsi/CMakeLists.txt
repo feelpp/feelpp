@@ -78,6 +78,7 @@ endforeach()
 
 add_library(feelpp_model_fsi SHARED libfsi.cpp)
 target_link_libraries(feelpp_model_fsi ${FEELPP_MODELS_LIBRARIES_FSI})
+install(TARGETS feelpp_model_fsi DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/fsi COMPONENT Devel)
