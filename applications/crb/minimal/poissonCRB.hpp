@@ -57,7 +57,6 @@ public:
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
     boost::tuple<beta_vector_light_type, std::vector<beta_vector_light_type> >
     computeBetaQ( parameter_type const& mu );
-    affine_decomposition_light_type computeAffineDecompositionLight(){ return boost::make_tuple( M_Aq, M_Fq ); }
 
 }; // Poisson class
 
@@ -75,7 +74,7 @@ int Poisson::Ql( int l)
 {
     switch(l) {
     case 0:
-        return 2;
+        return 1;
     default:
         return 0;
     }
@@ -91,14 +90,6 @@ void Poisson::initModel()
                    << parameterSpace()->dimension() << ")";
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
-    // int i = 0;
-    // for( auto const& parameterPair : parameters )
-    // {
-    //     mu_min(i) = parameterPair.second.min();
-    //     mu_max(i) = parameterPair.second.max();
-    //     Dmu->setParameterName(i, parameterPair.first);
-    //     i++;
-    // }
     mu_min << 0.1, -1;
     mu_max << 10, 1;
     Dmu->setMin(mu_min);
@@ -120,50 +111,35 @@ void Poisson::initModel()
     auto u = Xh->element();
     auto v = Xh->element();
     auto gamma = doption("poisson.gamma");
-    auto kappa = doption("poisson.kappa");
-    auto flux = doption("poisson.flux");
 
     // Omega 1 (ext)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] ) +=
-        integrate( markedelements(M_mesh, "omega1"),
-                   inner(gradt(u),grad(v)) );
+    auto a1 = form2(_test=Xh, _trial=Xh);
+    a1 = integrate( markedelements(M_mesh, "omega1"),
+                    inner(gradt(u),grad(v)) );
     // Dirichlet condition
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] ) +=
-        integrate( markedfaces(M_mesh, "top"),
-                   gamma/hFace()*inner(idt(u),id(v))
-                   -inner(gradt(u)*N(),id(v))
-                   -inner(grad(v)*N(),idt(u)) );
+    a1 += integrate( markedfaces(M_mesh, "top"),
+                     gamma/hFace()*inner(idt(u),id(v))
+                     -inner(gradt(u)*N(),id(v))
+                     -inner(grad(v)*N(),idt(u)) );
+    M_Aq[0] = a1.matrixPtr();
 
     // Omega 0 (int)
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1] ) +=
-        integrate( markedelements(M_mesh, "omega0"),
-                   inner(gradt(u),grad(v)) );
-                   // kappa*inner(gradt(u),grad(v)) );
+    auto a2 = form2( _test=Xh, _trial=Xh);
+    a2 = integrate( markedelements(M_mesh, "omega0"),
+                    inner(gradt(u),grad(v)) );
+    M_Aq[1] = a2.matrixPtr();
 
     // Energy matrix
-    auto m = form2( _test=Xh, _trial=Xh );
+    auto m = form2(_test=Xh, _trial=Xh);
     m = integrate( elements(M_mesh),
                    inner(gradt(u),grad(v)) );
-    // m += integrate( markedfaces(M_mesh, "top"),
-    //                 gamma/hFace()*inner(idt(u),id(v))
-    //                 -inner(gradt(u)*N(),id(v))
-    //                 -inner(grad(v)*N(),idt(u)) );
-    this->addEnergyMatrix( m );
-
-    // Dirichlet condition
-    form1(_test=Xh, _vector=M_Fq[0][0] ) =
-        integrate( markedfaces(M_mesh, "top"),
-                   gamma/hFace()*id(v)
-                   -grad(v)*N() );
+    M_energy_matrix = m.matrixPtr();
 
     // Neumann condition
-    form1(_test=Xh, _vector=M_Fq[0][1] ) =
-        integrate( markedfaces(M_mesh, "base"),
-                   id(v) );
-
-    // auto a = form2(_test=Xh, _trial=Xh, _matrix=M_Aq[0]);
-    // auto f = form1(_test=Xh, _vector=M_Fq[0][0]);
-    // a += on( markedfaces(M_mesh, "top"), _element=u, _rhs=f, _expr=cst(0.) );
+    auto f1 = form1(_test=Xh);
+    f1 = integrate( markedfaces(M_mesh, "base"),
+                    id(v) );
+    M_Fq[0][0] = f1.vectorPtr();
 }
 
 double Poisson::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
@@ -188,15 +164,10 @@ double Poisson::output( int output_index, parameter_type const& mu , element_typ
 auto Poisson::computeBetaQ( parameter_type const& mu ) ->
     boost::tuple<beta_vector_light_type, std::vector<beta_vector_light_type> >
 {
-    auto kappa = doption("poisson.kappa");
-    auto flux = doption("poisson.flux");
-
     M_betaAq[0] = 1;
-    M_betaAq[1] = mu(0);//mu.parameterNamed("kappa");
-    // M_betaAq[1] = 1;
-    // M_betaAq[1] = kappa;
+    M_betaAq[1] = mu(0);
     M_betaFq[0][0] = 1;
-    M_betaFq[0][1] = mu(1);//mu.parameterNamed("flux");
+    M_betaFq[0][1] = mu(1);
     return boost::make_tuple( M_betaAq, M_betaFq );
 }
 

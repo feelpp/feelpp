@@ -4,8 +4,6 @@ It is based on the heat conduction example from https://hal-univ-diderot.archive
 
 The only change is the way the Dirichlet condition is imposed on the top boundary. In the book, they impose it strongly, whereas in this application, we use a penalization method.
 
-Currently, the basis is not constructed correctly.
-
 == Applications
 
 There is two applications: `feelpp_crb_poissonFE` and `feelpp_crb_poissonCRB`. The former is the finite element version of the same problem, whereas the latter is the reduced basis version.
