@@ -90,8 +90,13 @@ void Poisson::initModel()
                    << parameterSpace()->dimension() << ")";
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
-    mu_min << 0.1, -1;
-    mu_max << 10, 1;
+    int i = 0;
+    for( auto const& parameterPair : parameters )
+    {
+        mu_min(i) = parameterPair.second.min();
+        mu_max(i) = parameterPair.second.max();
+        Dmu->setParameterName(i++, parameterPair.first );
+    }
     Dmu->setMin(mu_min);
     Dmu->setMax(mu_max);
 
@@ -165,9 +170,9 @@ auto Poisson::computeBetaQ( parameter_type const& mu ) ->
     boost::tuple<beta_vector_light_type, std::vector<beta_vector_light_type> >
 {
     M_betaAq[0] = 1;
-    M_betaAq[1] = mu(0);
+    M_betaAq[1] = mu.parameterNamed("kappa");
     M_betaFq[0][0] = 1;
-    M_betaFq[0][1] = mu(1);
+    M_betaFq[0][1] = mu.parameterNamed("flux");
     return boost::make_tuple( M_betaAq, M_betaFq );
 }
 

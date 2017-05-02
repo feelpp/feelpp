@@ -37,10 +37,9 @@ int main( int argc, char** argv)
     double kappa = doption("poisson.kappa");
     double flux = doption("poisson.flux");
     auto paramSpace = crbModel->parameterSpace();
-    auto muMin = paramSpace->min();
-    auto muMax = paramSpace->max();
     auto mu = paramSpace->element();
-    mu << kappa, flux;
+    mu.setParameterNamed("kappa", kappa);
+    mu.setParameterNamed("flux", flux);
     Feel::cout << "using parameter:" << std::endl << mu << std::endl;
 
     // online
