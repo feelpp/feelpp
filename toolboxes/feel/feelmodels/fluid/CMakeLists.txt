@@ -54,3 +54,6 @@ endforeach()
 
 add_library(feelpp_model_fluidmechanics SHARED libfluidmechanics.cpp)
 target_link_libraries(feelpp_model_fluidmechanics ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/fluid COMPONENT Devel)
