@@ -66,13 +66,6 @@ set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS  feelpp_modelcore feelpp_modelmesh )
 if( FEELPP_MODELS_HAS_MESHALE )
   set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS feelpp_modelmeshale ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS} )
 endif()
-add_custom_target(install-feelpp-models-common
-  DEPENDS ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS}
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=LibsFeelppModelsCommon
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-)
-
 
 # generate models lib
 if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )
