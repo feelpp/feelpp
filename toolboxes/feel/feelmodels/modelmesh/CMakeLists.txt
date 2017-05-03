@@ -60,4 +60,4 @@ if( FEELPP_MODELS_HAS_MESHALE )
 endif( FEELPP_MODELS_HAS_MESHALE )
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/modelmesh COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelmesh COMPONENT Devel)

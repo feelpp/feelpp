@@ -72,4 +72,4 @@ target_link_libraries(feelpp_model_fluidmechanics ${FEELPP_MODELS_LIBRARIES_FLUI
 install(TARGETS feelpp_model_fluidmechanics DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/fluid COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fluid COMPONENT Devel)
