@@ -21,9 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" OFF )
 
-if ( FEELPP_ENABLE_NLOPT )
 
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
 
@@ -119,6 +117,9 @@ if ( FEELPP_ENABLE_NLOPT )
     add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/nlopt)
     list(APPEND FEELPP_LIBRARIES feelpp_nlopt)
     add_dependencies(contrib feelpp_nlopt)
+    if (TARGET _nlopt )
+      add_dependencies(contrib _nlopt)
+    endif()
 
   else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
         # Contrib installation.
@@ -156,4 +157,4 @@ if ( FEELPP_ENABLE_NLOPT )
 
   endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt  )
 
-endif()
+
