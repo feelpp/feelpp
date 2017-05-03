@@ -318,7 +318,7 @@ add_custom_target(install-feelpp-apps
 )
 
 # install feel++ interpreter
-if( FEELPP_ENABLE_INTERPRETER )
+if( FEELPP_HAS_CLING_INTERPRETER )
     # We create the feel++ interpreter bash script in the binary dir.
     set( CLING_INSTALL_PREFIX ${CMAKE_BINARY_DIR} )
     include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
