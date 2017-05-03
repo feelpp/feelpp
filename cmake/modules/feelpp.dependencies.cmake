@@ -1449,16 +1449,12 @@ if( FEELPP_ENABLE_PCH_APPLICATIONS )
 endif()
 
 # Enable Feel++ interpreter using cling.
-option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if( FEELPP_ENABLE_INTERPRETER )
+option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_CLING_INTERPRETER )
     find_package(Cling)
-    if(NOT Cling_FOUND)
-        set( FEELPP_ENABLE_INTERPRETER OFF)
-        message( WARNING "[cling] software was not found (feel++ interpreter preriquisite)!\n
-        (See https://root.cern.ch/cling)\n
-        Feel++ interpreter has been disabled automatically!")
-    else()
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
+    if(Cling_FOUND)
+      set(FEELPP_HAS_CLING_INTERPRETER 1)
+      set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
     endif()
 endif()
 
