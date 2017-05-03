@@ -36,4 +36,4 @@ target_link_libraries(feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THER
 install(TARGETS feelpp_model_thermoelectric DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/thermoelectric COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermoelectric COMPONENT Devel)

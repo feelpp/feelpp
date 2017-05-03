@@ -36,4 +36,4 @@ target_link_libraries(feelpp_model_thermodynamics ${FEELPP_MODELS_LIBRARIES_THER
 install(TARGETS feelpp_model_thermodynamics DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/thermodyn COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermodyn COMPONENT Devel)
