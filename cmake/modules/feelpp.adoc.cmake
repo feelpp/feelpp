@@ -57,7 +57,11 @@ if ( ASCIIDOCTOR_FOUND )
     #set(FEELPP_HTMLS ${FEELPP_HTMLS} ${NAME}.${SECT}.html)
     add_dependencies(man ${NAME}.${SECT})
     add_dependencies(html ${NAME}.${SECT}.html)
-
+    if ( TARGET ${NAME} )
+      add_dependencies(${NAME} ${NAME}.${SECT})
+      add_dependencies(${NAME} ${NAME}.${SECT}.html)
+    endif()
+      
     install (
       FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
       DESTINATION ${CMAKE_INSTALL_DOCDIR}
