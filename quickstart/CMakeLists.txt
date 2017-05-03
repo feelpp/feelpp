@@ -38,22 +38,36 @@ enable_testing()
 if ( NOT TARGET check )
   add_custom_target(check)
 endif()
-
+ 
 if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
-
-
+#
+# Laplacian
+#
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TEST)
 feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D}  )
+add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} )
+ 
+#
+# ADR
+#
+feelpp_add_application( adr_2d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ADR_2D INSTALL TEST)
+feelpp_add_application( adr_3d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ADR_3D INSTALL TEST)
+feelpp_add_testcase( adr PREFIX qs CATEGORY quickstart )
+add_dependencies(quickstart ${QS_ADR_2D} ${QS_ADR_3D}  )
+add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 
+#
+# Stokes
+#
 feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST)
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
-
-add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D} )
-add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} ${QS_STOKES_2D} )
+add_dependencies(quickstart ${QS_STOKES_2D} )
+add_dependencies(check ${QS_STOKES_2D} )
 
 add_custom_target(install-quickstart
   DEPENDS
@@ -62,9 +76,12 @@ add_custom_target(install-quickstart
   "${CMAKE_COMMAND}"
   -DCMAKE_INSTALL_COMPONENT=testcases  -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Quickstart -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake"
   )
 
 if ( NOT TARGET install-feelpp-base )
   add_custom_target( install-feelpp-base DEPENDS install-quickstart)
+  else()
+  add_dependencies(install-feelpp-base install-quickstart)
 endif()
 

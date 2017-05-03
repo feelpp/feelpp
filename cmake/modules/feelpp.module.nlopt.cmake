@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ON )
+option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" OFF )
 
 if ( FEELPP_ENABLE_NLOPT )
 
@@ -112,13 +112,16 @@ if ( FEELPP_ENABLE_NLOPT )
     #   message(STATUS "NLOpt: nlopt.hpp is generated")
     # endif()
     set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
-    #add_subdirectory(contrib/nlopt)
     include_directories(${NLOPT_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
     SET(FEELPP_HAS_NLOPT 1)
 
-  else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+    add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/nlopt)
+    list(APPEND FEELPP_LIBRARIES feelpp_nlopt)
+    add_dependencies(contrib feelpp_nlopt)
+
+  else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+        # Contrib installation.
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
       $ENV{FEELPP_DIR}/include/feel/nlopt

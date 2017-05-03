@@ -199,12 +199,8 @@ public:
     typedef boost::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
 
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::element_const_iterator> range_visu_ho_type;
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_visu_ho_type>::location_face_const_iterator,
-                         typename MeshTraits<mesh_visu_ho_type>::location_face_const_iterator> range_visu_boundaryfaces_ho_type;
+    typedef elements_reference_wrapper_t<mesh_visu_ho_type> range_visu_ho_type;
+    typedef faces_reference_wrapper_t<mesh_visu_ho_type> range_visu_boundaryfaces_ho_type;
 
     typedef OperatorInterpolation<space_displacement_type,
                                   space_vectorial_visu_ho_type,
@@ -291,15 +287,11 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator,
-                         typename MeshTraits<mesh_type>::marker_face_const_iterator> range_face_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_face_type;
     typedef OperatorInterpolation<space_vect_1dreduced_type, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
     typedef boost::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
 
-    typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-                         typename MeshTraits<mesh_1dreduced_type>::element_const_iterator,
-                         typename MeshTraits<mesh_1dreduced_type>::element_const_iterator> range_elt1d_reduced_type;
+    typedef elements_reference_wrapper_t<mesh_1dreduced_type> range_elt1d_reduced_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt1d_reduced_type> op_interpolation2dTo1d_normalstress_type;
     typedef boost::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 
@@ -381,6 +373,14 @@ public :
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
     mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
+
+    bool hasDirichletBC() const
+        {
+            return ( !M_bcDirichlet.empty() ||
+                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+        }
 
     boost::shared_ptr<TSBase> timeStepBase()
     {
@@ -599,7 +599,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     // assembly methods
-    virtual void updateNewtonInitialGuess(vector_ptrtype& U) const = 0;
+    void updateNewtonInitialGuess(vector_ptrtype& U) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
@@ -615,7 +615,6 @@ public :
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
 
-    virtual void updateBCDirichletStrongResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
     virtual void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
@@ -629,6 +628,9 @@ public :
     virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
     virtual void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const = 0;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F ) const = 0;
+
+private :
+    void updateBoundaryConditionsForUse();
 
 protected:
 
@@ -644,6 +646,18 @@ protected:
     //model parameters
     space_scalar_P0_ptrtype M_XhScalarP0;
     mechanicalproperties_ptrtype M_mechanicalProperties;
+
+    // boundary conditions
+    map_vector_field<nDim,1,2> M_bcDirichlet;
+    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
+    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
+    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
+    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
+    map_vector_fields<nDim,1,2> M_bcRobin;
+    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
+    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
+    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
+    map_vector_field<nDim,1,2> M_volumicForcesProperties;
 
     //-------------------------------------------//
     // standard model
@@ -676,14 +690,14 @@ protected:
     // time discretisation
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
-    // algebraic solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    // start block index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
-    // backend
+
+    // algebraic data/tools
     backend_ptrtype M_backend;
-    // block vector solution
+    model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
     element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;

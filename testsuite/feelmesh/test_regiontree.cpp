@@ -74,7 +74,7 @@ int main( int argc,  char** argv )
 
     for ( auto const& elt : elements(aMesh) )
     {
-        bb.make( elt.G() );
+        bb.make( boost::unwrap_ref( elt ).G() );
 
         for ( unsigned k=0; k < min.size(); ++k )
         {
@@ -82,7 +82,7 @@ int main( int argc,  char** argv )
             bb.max[k]+=EPS;
         }
 
-        __rt.addBox( bb.min, bb.max, elt.id() );
+        __rt.addBox( bb.min, bb.max, boost::unwrap_ref( elt ).id() );
     }
 
     __rt.dump();

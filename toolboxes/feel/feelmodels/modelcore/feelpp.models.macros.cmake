@@ -67,6 +67,10 @@ macro(genLibBase)
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
 
+  if( FEELPP_ENABLE_PCH_MODELS )
+      add_precompiled_header( ${LIB_APPLICATION_NAME} )
+  endif()
+
   # install process
   if ( FEELMODELS_GENLIB_BASE_ADD_CMAKE_INSTALL )
     INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT LibsFeelppModels-${LIB_APPLICATION_NAME})
@@ -368,6 +372,7 @@ macro(genLibFluidMechanics)
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidual_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisation_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisationgls_inst.cpp
       ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
       )
     set(CODEGEN_SOURCES
@@ -381,6 +386,7 @@ macro(genLibFluidMechanics)
       ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
       ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
+      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisationgls_inst.cpp
       ${LIBBASE_DIR}/fluidmechanics_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
