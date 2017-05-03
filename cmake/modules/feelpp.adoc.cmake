@@ -31,7 +31,4 @@ if ( ASCIIDOCTOR_FOUND )
   set (FEELPP_A2M ${ASCIIDOCTOR_EXECUTABLE} -b manpage -amanmanual='${FEELPP_TITLE}')
   set (FEELPP_A2H ${ASCIIDOCTOR_EXECUTABLE} -d manpage -b html5 -a stylesheeet=${FEELPP_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${FEELPP_PACKAGE_VERSION})
   set (FEELPP_HAS_ASCIIDOCTOR 1)
-
-  add_custom_target (man)
-  add_custom_target (html)
 endif( ASCIIDOCTOR_FOUND )
