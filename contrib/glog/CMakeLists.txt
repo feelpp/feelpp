@@ -421,7 +421,7 @@ set_target_properties (feelpp_glog PROPERTIES PUBLIC_HEADER "${GLOG_PUBLIC_H}")
 target_include_directories (feelpp_glog BEFORE PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-  "$<INSTALL_INTERFACE:include/feel/glog>"
+  "$<INSTALL_INTERFACE:include/feelpp/glog>"
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -561,7 +561,7 @@ endif (0) #BUILD_TESTING)
 install (TARGETS feelpp_glog
   #EXPORT glog-targets
   RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include/feel/glog
+  PUBLIC_HEADER DESTINATION include/feelpp/glog
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 

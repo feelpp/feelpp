@@ -375,16 +375,16 @@ if(EIGEN_INCLUDE_INSTALL_DIR AND NOT INCLUDE_INSTALL_DIR)
       CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed")
 else()
   set(INCLUDE_INSTALL_DIR
-      "${CMAKE_INSTALL_INCLUDEDIR}/feel"
+      "${CMAKE_INSTALL_INCLUDEDIR}/feelpp/eigen"
       CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed"
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/feel/cmake"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/pkgconfig"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen/pkgconfig"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
     )
 

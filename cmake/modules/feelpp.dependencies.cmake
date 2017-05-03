@@ -564,7 +564,6 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR} ${BOOST_INCLUDE_PATH})
 
 SET(FEELPP_LIBRARIES ${Boost_LIBRARIES} ${FEELPP_LIBRARIES})
 
-set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
 
 INCLUDE_DIRECTORIES(BEFORE contrib/)
 
@@ -591,12 +590,6 @@ if ( FEELPP_HAS_GFLAGS )
   add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
   #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
 
-  set( FEELPP_GFLAGS_LIBRARIES feelpp_gflags_shared feelpp_gflags_nothreads_shared )
-  #get_target_property( FEELPP_GFLAGS_ALIASED_LIB feelpp_gflags ALIASED_TARGET )
-  #target_include_directories(${FEELPP_GFLAGS_ALIASED_LIB} BEFORE PRIVATE ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-  foreach( gflaglib ${FEELPP_GFLAGS_LIBRARIES} )
-    target_include_directories(${gflaglib} BEFORE PRIVATE ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-  endforeach()
   include_directories(${FEELPP_BINARY_DIR}/contrib/gflags/include )#${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
 
   set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFlags/Contrib" )
@@ -740,7 +733,6 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
 endif()
 if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   
   set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported )
 
