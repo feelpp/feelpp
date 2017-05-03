@@ -6,7 +6,7 @@ endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
-include( feelpp.adoc )
+
 
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)

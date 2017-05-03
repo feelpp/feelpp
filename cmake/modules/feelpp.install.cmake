@@ -122,6 +122,7 @@ endif()
 if ( FEELPP_HAS_GINAC )
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ginac/cmake_install.cmake")
 endif()
+set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake")
 if(FEELPP_ENABLE_METIS)
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
 endif()
@@ -135,7 +136,6 @@ endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"  
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
