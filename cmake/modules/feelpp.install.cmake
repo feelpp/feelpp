@@ -110,28 +110,37 @@ INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT 
 #
 set(_INSTALL_FEELPP_LIB_COMMAND ${CMAKE_COMMAND})
 
+set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
+  -P "${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake")
+
+if ( FEELPP_HAS_GFLAGS )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/gflags/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_GLOG )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/glog/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_GINAC )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ginac/cmake_install.cmake")
+endif()
 if(FEELPP_ENABLE_METIS)
-    set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
 endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-  -P "${CMAKE_BINARY_DIR}/contrib/cmake_install.cmake"
   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+  )
 
-if ( FEELPP_MINIMAL_BUILD )
-  add_custom_target(install-feelpp-lib
-    DEPENDS contrib tools feelpp 
-    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-    )
-else()
-  add_custom_target(install-feelpp-lib
-    DEPENDS contrib tools feelpp feelpp_mesh_partitioner
-    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-    )
+set( FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET contrib tools feelpp )
+if ( TARGET feelpp_mesh_partitioner )
+  list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET feelpp_mesh_partitioner )
 endif()
+  add_custom_target(install-feelpp-lib
+    DEPENDS ${FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET}
+    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
+    )
 
 add_custom_target(install-libs-models-thermodyn
   DEPENDS
@@ -240,15 +249,25 @@ if ( NOT TARGET install-feelpp-base )
   #
   # this target installs the libraries, header files, cmake files and sample applications
   #
+  if ( FEELPP_HAS_ACUSIM )
+    set(FEELPP_DATABASES_APPS  feelpp_databases_converter_acusim     feelpp_databases_export     feelpp_databases_pod)
+  else()
+    set(FEELPP_DATABASES_APPS  feelpp_databases_export     feelpp_databases_pod)
+  endif()
+  MESSAGE(STATUS "toto ${FEELPP_DATABASES_APPS}")
+
   add_custom_target(install-feelpp-base
     DEPENDS
     install-feelpp-lib
     install-quickstart
+    install-app-databases
     COMMAND
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
     -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
     -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
+    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Databases
+    -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake"
     )
 endif()
 
@@ -270,3 +289,17 @@ add_custom_target(install-feelpp-apps
   install-apps-models-solid
   install-apps-models-fsi
 )
+
+# install feel++ interpreter
+if( FEELPP_ENABLE_INTERPRETER )
+    # We create the feel++ interpreter bash script in the binary dir.
+    set( CLING_INSTALL_PREFIX ${CMAKE_BINARY_DIR} )
+    include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+    # We recreate the feel++ interpreter bash script for the cmake prefix.
+    install( CODE
+        "
+        set( CLING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+        include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+        "
+        )
+endif()

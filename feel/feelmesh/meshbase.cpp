@@ -79,7 +79,7 @@ MeshBase::isPartitioned() const
 }
 
 flag_type
-MeshBase::markerId ( boost::any const& __marker )
+MeshBase::markerId ( boost::any const& __marker ) const
 {
     flag_type theflag = -1;
     if ( boost::any_cast<flag_type>( &__marker ) )
@@ -110,5 +110,63 @@ MeshBase::markerId ( boost::any const& __marker )
         CHECK( theflag != -1 ) << "invalid flag type\n";
     return theflag;
 }
+
+
+std::set<flag_type>
+MeshBase::markersId( boost::any const& markerAny ) const
+{
+    std::set<flag_type> theflags;
+    if ( boost::any_cast<std::vector<flag_type> >( &markerAny ) )
+    {
+        for ( flag_type const& marker : boost::any_cast< std::vector<flag_type> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::list<flag_type> >( &markerAny ) )
+    {
+        for ( flag_type const& marker : boost::any_cast< std::list<flag_type> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::set<flag_type> >( &markerAny ) )
+    {
+        for ( flag_type const& marker : boost::any_cast< std::set<flag_type> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::vector<int> >( &markerAny ) )
+    {
+        for ( int const& marker : boost::any_cast< std::vector<int> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::list<int> >( &markerAny ) )
+    {
+        for ( int const& marker : boost::any_cast< std::list<int> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::set<int> >( &markerAny ) )
+    {
+        for ( int const& marker : boost::any_cast< std::set<int> >( markerAny) )
+            theflags.insert( marker );
+    }
+    else if ( boost::any_cast<std::vector<std::string> >( &markerAny ) )
+    {
+        for ( std::string const& marker : boost::any_cast< std::vector<std::string> >( markerAny) )
+            theflags.insert( this->markerId( marker ) );
+    }
+    else if ( boost::any_cast<std::list<std::string> >( &markerAny ) )
+    {
+        for ( std::string const& marker : boost::any_cast< std::list<std::string> >( markerAny) )
+            theflags.insert( this->markerId( marker ) );
+    }
+    else if ( boost::any_cast<std::set<std::string> >( &markerAny ) )
+    {
+        for ( std::string const& marker : boost::any_cast< std::set<std::string> >( markerAny) )
+            theflags.insert( this->markerId( marker ) );
+    }
+    else
+    {
+        theflags.insert( this->markerId( markerAny ) );
+    }
+    return theflags;
+}
+
 
 } // Feel

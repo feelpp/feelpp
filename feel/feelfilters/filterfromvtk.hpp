@@ -260,7 +260,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
         point_type __pt( __i,__nd, false );
-        __pt.marker() = 0;
+        __pt.setMarker( 0 );
         __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
         __pt.setProcessId( mesh->worldComm().localRank() );
 
@@ -402,13 +402,13 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
         {
             __pt.setOnBoundary( true );
-            __pt.marker() = 0;
+            __pt.setMarker( 0 );
         }
 
         else
         {
             __pt.setOnBoundary( false );
-            __pt.marker() = 1;
+            __pt.setMarker( 1 );
         }
 
         mesh->addPoint( __pt );

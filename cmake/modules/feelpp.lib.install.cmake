@@ -74,3 +74,16 @@ endif()
 # feel++ config headers
 FILE(GLOB files "${CMAKE_BINARY_DIR}/feel/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+
+# feel++ precompiled headers.
+if( FEELPP_ENABLE_PCH )
+    file(GLOB files
+        "${CMAKE_BINARY_DIR}/feel/cotire/*.pch"
+        "${CMAKE_BINARY_DIR}/feel/cotire/*.cxx"
+        "${CMAKE_BINARY_DIR}/feel/cotire/*.hxx"
+        )
+    foreach(f IN LISTS files)
+        install( FILES ${f} DESTINATION include/feel/cotire COMPONENT Libs)
+    endforeach()
+endif()
+

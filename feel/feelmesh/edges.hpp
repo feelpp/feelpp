@@ -58,9 +58,9 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef typename FaceType::value_type value_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType> > >,
+                              mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;
 
 
@@ -68,7 +68,8 @@ public:
         edge_type,
         multi_index::indexed_by<
             // sort by employee::operator<
-            multi_index::ordered_unique<multi_index::identity<edge_type> >,
+            multi_index::ordered_unique<multi_index::identity<edge_type> >
+#if 0
             // sort by less<int> on marker
             multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::composite_key<
@@ -92,24 +93,18 @@ public:
                                             multi_index::const_mem_fun<edge_type,
                                                                        bool,
                                                                        &edge_type::isOnBoundary> >
+#endif
             >
         > edges_type;
 
 
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
-    typedef typename edges_type::template index<Feel::detail::by_marker>::type marker_edges;
 
-    typedef typename marker_edges::iterator marker_edge_iterator;
-    typedef typename marker_edges::const_iterator marker_edge_const_iterator;
-
-    typedef typename edges_type::template index<Feel::detail::by_pid>::type pid_edges;
-    typedef typename pid_edges::iterator pid_edge_iterator;
-    typedef typename pid_edges::const_iterator pid_edge_const_iterator;
-
-    typedef typename edges_type::template index<Feel::detail::by_location>::type location_edges;
-    typedef typename location_edges::iterator location_edge_iterator;
-    typedef typename location_edges::const_iterator location_edge_const_iterator;
+    typedef std::vector<boost::reference_wrapper<edge_type const> > edges_reference_wrapper_type;
+    typedef std::shared_ptr<edges_reference_wrapper_type> edges_reference_wrapper_ptrtype;
+    typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
+    typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
     //@}
 
@@ -223,223 +218,145 @@ public:
     }
 
     /**
-     * \return the range of iterator \c (begin,end) over the faces
-     * with marker \p m on processor \p p
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
      */
-    
-    std::pair<marker_edge_iterator, marker_edge_iterator>
-    edgesWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
-    }
-
-    marker_edge_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                if ( !edge.hasMarker( markerType ) )
+                    continue;
+                if ( edge.marker().isOff() )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
-    marker_edge_const_iterator beginEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                if ( !edge.hasMarker( markerType ) )
+                    continue;
+                if ( edge.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( edge.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
-    marker_edge_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value )
+
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->edgesWithMarkerByType( markerType, p );
+            else
+                return this->edgesWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the edges
+     * with \c Marker1 \p m on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->edgesWithMarkerByType( 1, m, p );
+        }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the boundary
+     *  edges on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesOnBoundary( rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                if ( !edge.isOnBoundary() )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
-    marker_edge_const_iterator endEdgeWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
+
+    /**
+     * \return the range of iterator \c (begin,end) over the internal edges
+     * on processor \p p
+     */
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    internalEdges( rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-            return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                if ( !edge.isInternal() )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
 
     /**
-     * get the edges container by id
-     *
-     *
-     * @return the edge container by id
+     * \return the range of iterator \c (begin,end) over the edges
+     * on processor \p p
      */
-    typename edges_type::template nth_index<0>::type &
-    edgesById()
-    {
-        return M_edges.template get<0>();
-    }
-
-    /**
-     * get the edges container by id
-     *
-     *
-     * @return the edge container by id
-     */
-    typename edges_type::template nth_index<0>::type const&
-    edgesById() const
-    {
-        return M_edges.template get<0>();
-    }
-
-    /**
-     * get the edges container using the marker view
-     *
-     *
-     * @return the edge container using marker view
-     */
-    marker_edges &
-    edgesByMarker()
-    {
-        return M_edges.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the edges container using the marker view
-     *
-     *
-     * @return the edge container using marker view
-     */
-    marker_edges const&
-    edgesByMarker() const
-    {
-        return M_edges.template get<Feel::detail::by_marker>();
-    }
-    /**
-     * get the edges container using the location view
-     *
-     *
-     * @return the edge container using location view
-     */
-    location_edges &
-    edgesByLocation()
-    {
-        return M_edges.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the edges container using the location view
-     *
-     *
-     * @return the edge container using location view
-     */
-    location_edges const&
-    edgesByLocation() const
-    {
-        return M_edges.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the begin() iterator on all the internal edges
-     *
-     * @return the begin() iterator on all the internal edges
-     */
-    location_edge_iterator beginInternalEdge()
-    {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
-    }
-    /**
-     * get the end() iterator on all the internal edges
-     *
-     * @return the end() iterator on all the internal edges
-     */
-    location_edge_iterator endInternalEdge()
-    {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
-    }
-
-    /**
-     * get the begin() iterator on all the internal edges
-     *
-     * @return the begin() iterator on all the internal edges
-     */
-    location_edge_const_iterator beginInternalEdge() const
-    {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
-    }
-
-    /**
-     * get the end() iterator on all the internal edges
-     *
-     * @return the end() iterator on all the internal edges
-     */
-    location_edge_const_iterator endInternalEdge() const
-    {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary edges
-     *
-     * @return the begin() iterator on all the boundary edges
-     */
-    location_edge_iterator beginEdgeOnBoundary()
-    {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
-    }
-    /**
-     * get the end() iterator on all the boundary edges
-     *
-     * @return the end() iterator on all the boundary edges
-     */
-    location_edge_iterator endEdgeOnBoundary()
-    {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary edges
-     *
-     * @return the begin() iterator on all the boundary edges
-     */
-    location_edge_const_iterator beginEdgeOnBoundary() const
-    {
-        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
-    }
-
-    /**
-     * get the end() iterator on all the boundary edges
-     *
-     * @return the end() iterator on all the boundary edges
-     */
-    location_edge_const_iterator endEdgeOnBoundary() const
-    {
-        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
-    }
-
-    /**
-     * \return the range of iterator \c (begin,end) over the faces
-     * with processor \p p
-     */
-    std::pair<pid_edge_iterator, pid_edge_iterator>
-    edgesWithProcessId( rank_type p )
-    {
-        return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
-    }
-    std::pair<pid_edge_const_iterator, pid_edge_const_iterator>
-    edgesWithProcessId( rank_type p ) const
-    {
-        return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
-    }
-
-    pid_edge_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_edge_const_iterator beginEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_edge_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
-    pid_edge_const_iterator endEdgeWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
-        return M_edges.template get<Feel::detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
-    }
-
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesWithProcessId( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
+            edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
+            auto it = this->beginEdge();
+            auto en = this->endEdge();
+            for ( ; it!=en;++it )
+            {
+                auto const& edge = *it;
+                if ( edge.processId() != part )
+                    continue;
+                myedges->push_back( boost::cref( edge ) );
+            }
+            return std::make_tuple( myedges->begin(), myedges->end(), myedges );
+        }
 
     //@}
 
