@@ -208,7 +208,7 @@ macro(feelpp_add_application)
 
   # add manual page
   if ( FEELPP_APP_MAN )
-    feelpp_add_man( ${FEELPP_APP_MAN} 1 )
+    feelpp_add_man( ${execname} ${FEELPP_APP_MAN} 1 )
   endif( FEELPP_APP_MAN )
   
   # include schedulers

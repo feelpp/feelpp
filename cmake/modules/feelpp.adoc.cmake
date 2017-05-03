@@ -33,20 +33,23 @@ if ( ASCIIDOCTOR_FOUND )
 
   add_custom_target (man)
   add_custom_target (html)
-  macro (feelpp_add_man NAME SECT)
+  macro (feelpp_add_man NAME MAN SECT)
+    message(STATUS "building manual page ${NAME}.${SECT}")
+    add_custom_target(${NAME}.${SECT})
+    add_custom_target(${NAME}.${SECT}.html)
     add_custom_command (
       TARGET ${NAME}.${SECT}
       #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
-      COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.adoc
-      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.adoc
+      COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
       )
     #add_custom_target(${NAME}.${SECT} DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
     add_custom_command (
       TARGET ${NAME}.${SECT}.html
       #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-      COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.adoc
+      COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
       DEPENDS ${FEELPP_STYLESHEET}
-      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}.adoc
+      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
       )
     #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
     
@@ -58,10 +61,12 @@ if ( ASCIIDOCTOR_FOUND )
     install (
       FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
       DESTINATION ${CMAKE_INSTALL_DOCDIR}
+      COMPONENT Bin
       )
     install (
       FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
       DESTINATION ${CMAKE_INSTALL_MANDIR}/man${SECT}
+      COMPONENT Bin
       )
 
   endmacro (feelpp_add_man)
