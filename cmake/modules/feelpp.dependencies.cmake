@@ -1432,7 +1432,9 @@ include(feelpp.module.ipopt)
 include(feelpp.module.altair)
 
 # Asciidoctor
-include( feelpp.adoc )
+if (0)
+  include( feelpp.adoc )
+endif()
 
 # Enable precompiled headers (PCH)
 option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
