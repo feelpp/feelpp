@@ -33,7 +33,7 @@ if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
     list(APPEND FEELPP_LIBRARIES_WITH_SPACE " ${THELIB} ")
   endforeach()
   set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY ${FEELPP_LIBRARY} )\nset(FEELPP_LIBRARIES ${FEELPP_LIBRARIES_WITH_SPACE})" )
-  file( WRITE ${FEELPP_INSTALL_DIR}/share/feel/cmake/modules/feelpp.libraries.config.cmake
+  file( WRITE ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/feelpp.libraries.config.cmake
     ${FEELPP_LIBRARIES_TEXT} )
 
   set(FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE)
@@ -57,7 +57,7 @@ if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
   endif()
   set(FEELPP_INCLUDE_DIR_TEXT "set(FEELPP_INCLUDE_DIR ${FEELPP_INSTALL_DIR}/include/feelpp)\nset(FEELPP_DEPS_INCLUDE_DIR ${FEELPP_DEPS_INCLUDE_DIR_WITH_SPACE})")
   string(REPLACE ";" "" FEELPP_INCLUDE_DIR_TEXT ${FEELPP_INCLUDE_DIR_TEXT} )
-  file( WRITE ${FEELPP_INSTALL_DIR}/share/feel/cmake/modules/feelpp.include.config.cmake
+  file( WRITE ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/feelpp.include.config.cmake
     ${FEELPP_INCLUDE_DIR_TEXT} )
 
 endif()
