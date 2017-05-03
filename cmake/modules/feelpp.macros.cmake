@@ -608,6 +608,10 @@ endmacro()
     if (TARGET html)
       add_dependencies(html ${NAME}.${SECT}.html)
     endif()
+    if ( TARGET ${NAME} )
+      add_dependencies(${NAME} ${NAME}.${SECT})
+      add_dependencies(${NAME} ${NAME}.${SECT}.html)
+    endif()
 
     install (
       FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
