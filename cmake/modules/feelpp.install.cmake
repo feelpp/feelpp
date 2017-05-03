@@ -21,12 +21,42 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+#-----------------------------------------------------------------------
+# Values whose defaults are relative to DATAROOTDIR.
+# Store empty values in the cache and store the defaults in local
+# variables if the cache values are not set explicitly. This auto-updates
+# the defaults as DATAROOTDIR changes.
+#
+if(NOT CMAKE_INSTALL_DATADIR)
+  set(CMAKE_INSTALL_DATADIR "" CACHE PATH "read-only architecture-independent data (DATAROOTDIR)")
+  set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}")
+endif()
+
+if(NOT CMAKE_INSTALL_MANDIR)
+  set(CMAKE_INSTALL_MANDIR "" CACHE PATH "man documentation (DATAROOTDIR/man)")
+  set(CMAKE_INSTALL_MANDIR "${CMAKE_INSTALL_DATAROOTDIR}/man")
+endif()
+
+if(NOT CMAKE_INSTALL_DOCDIR)
+  set(CMAKE_INSTALL_DOCDIR "" CACHE PATH "documentation root (DATAROOTDIR/doc/PROJECT_NAME)")
+  set(CMAKE_INSTALL_DOCDIR "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}")
+endif()
+
+mark_as_advanced(
+  CMAKE_INSTALL_BINDIR
+  CMAKE_INSTALL_LIBDIR
+  CMAKE_INSTALL_INCLUDEDIR
+  CMAKE_INSTALL_DATAROOTDIR
+  CMAKE_INSTALL_DATADIR
+  CMAKE_INSTALL_MANDIR
+  CMAKE_INSTALL_DOCDIR
+  )
+
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
 if (NOT FEELPP_DATADIR )
   set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
 endif()
-
 
 FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
 INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
@@ -106,6 +136,8 @@ endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"  
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake/modules/cmake_install.cmake"

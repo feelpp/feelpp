@@ -6,6 +6,8 @@ endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
+include( feelpp.adoc )
+
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -80,7 +82,7 @@ endmacro(feelpp_add_testcase)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC;MAN"
     "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
@@ -204,6 +206,11 @@ macro(feelpp_add_application)
     endforeach(l)
   endif()
 
+  # add manual page
+  if ( FEELPP_APP_MAN )
+    feelpp_add_man( ${execname} ${FEELPP_APP_MAN} 1 )
+  endif( FEELPP_APP_MAN )
+  
   # include schedulers
   include( feelpp.schedulers )
 
