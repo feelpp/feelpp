@@ -133,6 +133,12 @@ OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
+if(FEELPP_MINIMAL_BUILD)
+  set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION OFF)
+else()
+  set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
+endif()
+
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
@@ -157,10 +163,20 @@ SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templat
 
 # enable host specific
 include(feelpp.host)
-find_package(Threads REQUIRED)
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
-SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
-
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 )
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads REQUIRED)
+  if ( THREADS_HAVE_PTHREAD_ARG )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+  endif()
+  if ( CMAKE_THREAD_LIBS_INIT )
+    list(APPEND FEELPP_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  endif()
+else()
+  find_package(Threads REQUIRED)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
+endif()
 
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
@@ -389,12 +405,7 @@ endif(FEELPP_ENABLE_MKL)
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" OFF )
-else()
-    option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ON )
-endif()
-
+option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
   find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND )
@@ -611,8 +622,8 @@ if ( FEELPP_HAS_GINAC )
   find_package(CLN)
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-#TEST
-  link_directories(${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+
+  link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
   include_directories(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
   set(DL_LIBS ${CMAKE_DL_LIBS})
@@ -657,11 +668,8 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
 
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_FFTW "Enable fftw Support" OFF )
-else()
-    option( FEELPP_ENABLE_FFTW "Enable fftw Support" ON )
-endif()
+
+option( FEELPP_ENABLE_FFTW "Enable fftw Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_FFTW)
   find_package(FFTW)
   if( FFTW_FOUND )
@@ -676,7 +684,12 @@ endif()
 # submodules
 #
 include(feelpp.module.hpddm)
-include(feelpp.module.nlopt)
+
+option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_NLOPT )
+  include(feelpp.module.nlopt)
+endif()
+
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
@@ -760,12 +773,7 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 # Ann
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_ANN "Enable ANN Support" OFF )
-else()
-    option( FEELPP_ENABLE_ANN "Enable ANN Support" ON )
-endif()
-
+option( FEELPP_ENABLE_ANN "Enable ANN Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_ANN)
 FIND_PACKAGE(ANN)
   if ( ANN_FOUND )
@@ -851,11 +859,7 @@ endif( FEELPP_ENABLE_DDT )
 
 
 # xml
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" OFF )
-else()
-    option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" ON )
-endif()
+option( FEELPP_ENABLE_LIBXML2 "Enable libxml2 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_LIBXML2)
   find_package(LibXml2 2.6.27)
   if ( LIBXML2_FOUND )
@@ -868,13 +872,7 @@ if(FEELPP_ENABLE_LIBXML2)
 endif()
 
 # Python libs
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PYTHON "Enable Python Support" OFF )
-else()
-    option( FEELPP_ENABLE_PYTHON "Enable Python Support" ON )
-endif()
-
+option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
   FIND_PACKAGE(PythonLibs)
   if ( PYTHONLIBS_FOUND )
@@ -900,65 +898,63 @@ if(FEELPP_ENABLE_PYTHON)
   endif()
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_METIS "Enable Metis Support" OFF )
-else()
-    option( FEELPP_ENABLE_METIS "Enable Metis Support" ON )
+#
+# Petsc
+#
+option( FEELPP_ENABLE_PETSC "Enable PETSc Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if(FEELPP_ENABLE_PETSC)
+  include(feelpp.module.petsc)
 endif()
 
+
+
+option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
   include(feelpp.module.metis)
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF )
-else()
-    option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" ON )
+if ( NOT FEELPP_HAS_PARMETIS )
+  option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF )
+  if(FEELPP_ENABLE_PARMETIS)
+    FIND_LIBRARY(PARMETIS_LIBRARY
+      NAMES
+      parmetis
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      )
+    IF( PARMETIS_LIBRARY )
+      message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
+      SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_PARMETIS 1)
+    ENDIF()
+  endif()
 endif()
 
-if(FEELPP_ENABLE_PARMETIS)
-  FIND_LIBRARY(PARMETIS_LIBRARY
-    NAMES
-    parmetis
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    )
-
-  IF( PARMETIS_LIBRARY )
-    message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
-    SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
-  ENDIF()
+if ( NOT FEELPP_HAS_SCOTCH )
+  option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF )
+  if(FEELPP_ENABLE_SCOTCH)
+    FIND_PACKAGE(Scotch)
+    IF( SCOTCH_FOUND )
+      message(STATUS "[feelpp] SCOTCH: ${SCOTCH_LIBRARIES}" )
+      SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_SCOTCH 1)
+    ENDIF()
+  endif()
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF )
-else()
-    option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" ON )
-endif()
-
-if(FEELPP_ENABLE_SCOTCH)
-  FIND_PACKAGE(Scotch)
-  IF( SCOTCH_FOUND )
-    message(STATUS "[feelpp] SCOTCH: ${SCOTCH_LIBRARIES}" )
-    SET(FEELPP_LIBRARIES ${SCOTCH_LIBRARIES} ${FEELPP_LIBRARIES})
-  ENDIF()
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_ML "Enable ML Support" OFF )
-else()
-    option( FEELPP_ENABLE_ML "Enable ML Support" ON )
-endif()
-
-if(FEELPP_ENABLE_ML)
-  find_package(ML)
-  message(STATUS "[feelpp] ML: ${ML_LIBRARY}" )
-  IF ( ML_FOUND )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
-    INCLUDE_DIRECTORIES(${ML_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
-  ENDIF()
+if ( NOT FEELPP_HAS_ML )
+  option( FEELPP_ENABLE_ML "Enable ML Support" OFF )
+  if(FEELPP_ENABLE_ML)
+    find_package(ML)
+    message(STATUS "[feelpp] ML: ${ML_LIBRARY}" )
+    IF ( ML_FOUND )
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
+      INCLUDE_DIRECTORIES(${ML_INCLUDE_DIR})
+      SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_ML 1)
+    ENDIF()
+  endif()
 endif()
 
 if ( NOT GFORTRAN_LIBRARY )
@@ -972,190 +968,144 @@ if ( NOT GFORTRAN_LIBRARY )
     PATH_SUFFIXES
     gcc6 gcc5 gcc49 gcc48 gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
     )
-endif()
-
-message(STATUS "[feelpp] gfortran lib: ${GFORTRAN_LIBRARY} ")
-if ( GFORTRAN_LIBRARY )
-  set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_MUMPS "Enable MUMPS Support" OFF )
-else()
-    option( FEELPP_ENABLE_MUMPS "Enable MUMPS Support" ON )
-endif()
-
-if( FEELPP_ENABLE_MUMPS)
-  FIND_PACKAGE(MUMPS)
-  if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
-    set( FEELPP_HAS_MUMPS 1 )
-    set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
+  message(STATUS "[feelpp] gfortran lib: ${GFORTRAN_LIBRARY} ")
+  if ( GFORTRAN_LIBRARY )
+    set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
   endif()
 endif()
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" OFF )
-else()
-    option( FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" ON )
-endif()
-
-if(FEELPP_ENABLE_SUITESPARSE)
-  FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
-    NAMES
-    suitesparseconfig
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    )
-  IF ( SUITESPARSECONFIG_LIBRARY )
-    SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
-  endif()
-  message(STATUS "[feelpp] SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_AMD "Enable AMD Library Support" OFF )
-else()
-    option( FEELPP_ENABLE_AMD "Enable AMD Library Support" ON )
-endif()
-
-if(FEELPP_ENABLE_AMD)
-  FIND_LIBRARY(AMD_LIBRARY
-    NAMES
-    amd
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    )
-
-  IF ( AMD_LIBRARY )
-    SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
-  endif()
-  message(STATUS "[feelpp] Amd: ${AMD_LIBRARY}" )
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" OFF )
-else()
-    option( FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" ON )
-endif()
-
-if(FEELPP_ENABLE_COLAMD)
-  FIND_LIBRARY(COLAMD_LIBRARY
-    NAMES
-    colamd
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    )
-  IF ( COLAMD_LIBRARY )
-    SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
-  endif()
-  message(STATUS "[feelpp] ColAmd: ${COLAMD_LIBRARY}" )
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" OFF )
-else()
-    option( FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" ON )
-endif()
-
-if(FEELPP_ENABLE_CHOLMOD)
-  FIND_LIBRARY(CHOLMOD_LIBRARY
-    NAMES
-    cholmod
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    )
-  message(STATUS "[feelpp] Cholmod: ${CHOLMOD_LIBRARY}" )
-endif()
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" OFF )
-else()
-    option( FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" ON )
-endif()
-
-if(FEELPP_ENABLE_UMFPACK)
-  FIND_LIBRARY(UMFPACK_LIBRARY
-    NAMES
-    umfpack
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    )
-  message(STATUS "[feelpp] Umfpack: ${UMFPACK_LIBRARY}" )
-endif()
-
-if ( AMD_LIBRARY AND CHOLMOD_LIBRARY AND UMFPACK_LIBRARY )
-  SET(FEELPP_LIBRARIES ${UMFPACK_LIBRARY} ${CHOLMOD_LIBRARY} ${FEELPP_LIBRARIES})
-endif()
-
-FIND_LIBRARY(YAML_LIBRARY
-  NAMES
-  yaml
-  PATHS
-  $ENV{PETSC_DIR}/lib
-  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-  $ENV{SUITESPARSE_DIR}/lib
-  /opt/local/lib
-  )
-if ( YAML_LIBRARY )
-  SET(FEELPP_LIBRARIES ${YAML_LIBRARY} ${FEELPP_LIBRARIES})
-endif()
-
-#
-# Petsc
-#
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" OFF )
-else()
-    option( FEELPP_ENABLE_PETSC "Enable PETSc Support" ON )
-endif()
-
-if(FEELPP_ENABLE_PETSC)
-  FIND_PACKAGE( PETSc REQUIRED)
-  if ( PETSC_FOUND )
-    add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
-    set(FEELPP_HAS_PETSC 1)
-    set(FEELPP_HAS_PETSC_H 1)
-
-    SET(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
-    SET(FEELPP_LIBRARIES ${PETSC_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(BACKEND_PETSC petsc)
-    INCLUDE_DIRECTORIES(${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PETSc" )
-  endif( PETSC_FOUND )
-endif()
-
-# ML was already searched for, if it was not found then try again to look for it
-# in PETSC_DIR
-if( FEELPP_ENABLE_ML )
-  if ( NOT ML_FOUND )
-    find_package(ML)
-    message(STATUS "[feelpp] ML(PETSc): ${ML_LIBRARY}" )
-    IF ( ML_LIBRARY )
-      SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
-      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} ML" )
-    ENDIF()
+if ( NOT FEELPP_HAS_MUMPS )
+  option( FEELPP_ENABLE_MUMPS "Enable MUMPS Support" OFF )
+  if( FEELPP_ENABLE_MUMPS)
+    FIND_PACKAGE(MUMPS)
+    if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
+      set( FEELPP_HAS_MUMPS 1 )
+      set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
+    endif()
   endif()
 endif()
+
+
+if (NOT FEELPP_HAS_SUITESPARSE)
+  option( FEELPP_ENABLE_SUITESPARSE "Enable SuiteSparse Support" OFF )
+  if(FEELPP_ENABLE_SUITESPARSE)
+    FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
+      NAMES
+      suitesparseconfig
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      )
+    IF ( SUITESPARSECONFIG_LIBRARY )
+      message(STATUS "[feelpp] SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
+      SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_SUITESPARSE 1)
+    endif()
+  endif()
+endif()
+
+if (NOT FEELPP_HAS_AMD_LIB)
+  option( FEELPP_ENABLE_AMD "Enable AMD Library Support" OFF )
+  if(FEELPP_ENABLE_AMD)
+    FIND_LIBRARY(AMD_LIBRARY
+      NAMES
+      amd
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      )
+    IF ( AMD_LIBRARY )
+      message(STATUS "[feelpp] Amd: ${AMD_LIBRARY}" )
+      SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_AMD_LIB 1)
+    endif()
+  endif()
+endif()
+
+if (NOT FEELPP_HAS_COLAMD_LIB)
+  option( FEELPP_ENABLE_COLAMD "Enable COLAMD Library Support" OFF )
+  if(FEELPP_ENABLE_COLAMD)
+    FIND_LIBRARY(COLAMD_LIBRARY
+      NAMES
+      colamd
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      )
+    IF ( COLAMD_LIBRARY )
+      message(STATUS "[feelpp] ColAmd: ${COLAMD_LIBRARY}" )
+      SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_COLAMD_LIB 1)
+    endif()
+  endif()
+endif()
+
+if (NOT FEELPP_HAS_CHOLMOD_LIB)
+  option( FEELPP_ENABLE_CHOLMOD "Enable CHOLMOD Library Support" OFF )
+  if(FEELPP_ENABLE_CHOLMOD)
+    FIND_LIBRARY(CHOLMOD_LIBRARY
+      NAMES
+      cholmod
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      )
+    if ( CHOLMOD_LIBRARY )
+      message(STATUS "[feelpp] Cholmod: ${CHOLMOD_LIBRARY}" )
+      SET(FEELPP_LIBRARIES ${UMFPACK_LIBRARY} ${CHOLMOD_LIBRARY} ${FEELPP_LIBRARIES})
+       set(FEELPP_HAS_CHOLMOD_LIB 1)
+    endif()
+  endif()
+endif()
+
+if (NOT FEELPP_HAS_UMFPACK_LIB)
+  option( FEELPP_ENABLE_UMFPACK "Enable UMFPACK Library Support" OFF )
+  if(FEELPP_ENABLE_UMFPACK)
+    FIND_LIBRARY(UMFPACK_LIBRARY
+      NAMES
+      umfpack
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      )
+    if ( UMFPACK_LIBRARY )
+      message(STATUS "[feelpp] Umfpack: ${UMFPACK_LIBRARY}" )
+      SET(FEELPP_LIBRARIES ${UMFPACK_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_UMFPACK_LIB 1)
+    endif()
+  endif()
+endif()
+
+if (NOT FEELPP_HAS_YAML)
+  option( FEELPP_ENABLE_YAML "Enable YAML Library Support" OFF )
+  if ( FEELPP_ENABLE_YAML )
+    FIND_LIBRARY(YAML_LIBRARY
+      NAMES
+      yaml
+      PATHS
+      $ENV{PETSC_DIR}/lib
+      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+      $ENV{SUITESPARSE_DIR}/lib
+      /opt/local/lib
+      )
+    if ( YAML_LIBRARY )
+       message(STATUS "[feelpp] YAML: ${YAML_LIBRARY}" )
+      SET(FEELPP_LIBRARIES ${YAML_LIBRARY} ${FEELPP_LIBRARIES})
+      set(FEELPP_HAS_YAML 1)
+    endif()
+  endif()
+endif()
+
 
 #
 # parpack
 #
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" OFF )
-else()
-    option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" ON )
-endif()
+option( FEELPP_ENABLE_PARPACK "Enable ParPack Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PARPACK)
   FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
   if (PARPACK_LIBRARY)
@@ -1169,13 +1119,7 @@ endif()
 #
 # SLEPc
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" OFF )
-else()
-    option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" ON )
-endif()
-
+option( FEELPP_ENABLE_SLEPC "Enable SLEPc Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -1203,13 +1147,7 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" OFF )
-else()
-    option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" ON )
-endif()
-
+option( FEELPP_ENABLE_OPENTURNS "Enable OpenTurns Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -1225,13 +1163,7 @@ endif()
 #
 # VTK
 #
-
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_VTK "Enable VTK Support" OFF )
-else()
-    option( FEELPP_ENABLE_VTK "Enable VTK Support" ON )
-endif()
-
+option( FEELPP_ENABLE_VTK "Enable VTK Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_VTK )
     # MESSAGE("Finding VTK:")
     # MESSAGE("PARAVIEW_DIR=$ENV{PARAVIEW_DIR}")
@@ -1427,11 +1359,7 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_GSL "Enable GSL Support" OFF )
-else()
-    option( FEELPP_ENABLE_GSL "Enable GSL Support" ON )
-endif()
+option( FEELPP_ENABLE_GSL "Enable GSL Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if( FEELPP_ENABLE_GSL )
   FIND_PACKAGE(GSL)
@@ -1450,12 +1378,7 @@ endif(FEELPP_ENABLE_GSL)
 # Gmsh
 #
 
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" OFF )
-else()
-    option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ON )
-endif()
-
+option( FEELPP_ENABLE_GMSH "Enable Gmsh Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_GMSH )
   if(FEELPP_USE_GMSH_PACKAGE)
 	FIND_PACKAGE(Gmsh)
@@ -1508,7 +1431,10 @@ include(feelpp.module.ipopt)
 # 
 include(feelpp.module.altair)
 
-
+# Asciidoctor
+if (0)
+  include( feelpp.adoc )
+endif()
 
 # Enable precompiled headers (PCH)
 option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
@@ -1522,12 +1448,7 @@ if( FEELPP_ENABLE_PCH_APPLICATIONS )
 endif()
 
 # Enable Feel++ interpreter using cling.
-if(FEELPP_MINIMAL_BUILD)
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-else()
-    option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" OFF )
-endif()
-
+option( FEELPP_ENABLE_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_INTERPRETER )
     find_package(Cling)
     if(NOT Cling_FOUND)

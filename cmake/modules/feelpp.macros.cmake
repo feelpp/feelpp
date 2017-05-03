@@ -6,6 +6,8 @@ endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
+
+
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -80,7 +82,7 @@ endmacro(feelpp_add_testcase)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC;MAN"
     "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
@@ -204,6 +206,11 @@ macro(feelpp_add_application)
     endforeach(l)
   endif()
 
+  # add manual page
+  if ( FEELPP_APP_MAN )
+    feelpp_add_man( ${execname} ${FEELPP_APP_MAN} 1 )
+  endif( FEELPP_APP_MAN )
+  
   # include schedulers
   include( feelpp.schedulers )
 
@@ -568,3 +575,53 @@ macro( feelpp_expand_target_libraries prefix_name)
         message( "-----------------------------------------------------------" )
     endif()
 endmacro()
+
+
+ macro (feelpp_add_man NAME MAN SECT)
+   if (NOT FEELPP_HAS_ASCIIDOCTOR )
+     return()
+   endif()
+    message(STATUS "building manual page ${NAME}.${SECT}")
+    add_custom_target(${NAME}.${SECT})
+    add_custom_target(${NAME}.${SECT}.html)
+    add_custom_command (
+      TARGET ${NAME}.${SECT}
+      #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
+      COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+      )
+    #add_custom_target(${NAME}.${SECT} DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
+    add_custom_command (
+      TARGET ${NAME}.${SECT}.html
+      #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
+      COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+      DEPENDS ${FEELPP_STYLESHEET}
+      MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+      )
+    #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+
+    #set(FEELPP_MANS ${FEELPP_MANS} ${NAME}.${SECT})
+    #set(FEELPP_HTMLS ${FEELPP_HTMLS} ${NAME}.${SECT}.html)
+    if (TARGET man)
+      add_dependencies(man ${NAME}.${SECT})
+    endif()
+    if (TARGET html)
+      add_dependencies(html ${NAME}.${SECT}.html)
+    endif()
+    if ( TARGET ${NAME} )
+      add_dependencies(${NAME} ${NAME}.${SECT})
+      add_dependencies(${NAME} ${NAME}.${SECT}.html)
+    endif()
+
+    install (
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
+      DESTINATION ${CMAKE_INSTALL_DOCDIR}
+      COMPONENT Bin
+      )
+    install (
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
+      DESTINATION ${CMAKE_INSTALL_MANDIR}/man${SECT}
+      COMPONENT Bin
+      )
+
+  endmacro (feelpp_add_man)

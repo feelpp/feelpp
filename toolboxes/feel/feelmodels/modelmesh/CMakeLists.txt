@@ -17,7 +17,7 @@ target_link_libraries(feelpp_modelmesh
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
 endif()
-INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
+INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT Libs)
 
 #######################################################
 # meshale lib
@@ -55,7 +55,9 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}
     )
-  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT LibsFeelppModelsCommon)
+  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs)
   
 endif( FEELPP_MODELS_HAS_MESHALE )
 
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/modelmesh COMPONENT Devel)
