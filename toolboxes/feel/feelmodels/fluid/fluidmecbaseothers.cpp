@@ -516,6 +516,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
                                            this->meshDisplacementOnInterface() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity")),
+                                           this->meshVelocity() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity-interface"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity-interface")),
+                                           this->meshVelocity2() );
             hasFieldToExport = true;
         }
 #endif
@@ -1453,6 +1459,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
         //_range=elements(this->mesh()),
         _expr=vf::idv(M_meshALE->velocity()),
         _geomap=this->geomap() );
+    sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 #else
     // with mpi comm
     auto vectVelInterface = backend()->newVector( M_meshVelocityInterface->functionSpace() );
@@ -2506,6 +2513,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         }
     }
 
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if ( this->isMoveDomain() )
+    {
+        for ( auto const& faceWrap : markedfaces(mesh,this->markersNameMovingBoundary() ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_XhMeshVelocityInterface->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                M_dofsVelocityInterfaceOnMovingBoundary.insert( it->index() );
+            }
+        }
+    }
+#endif
 }
 
 
