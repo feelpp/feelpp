@@ -1446,11 +1446,7 @@ endif()
 # Enable Feel++ interpreter using cling.
 option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if( FEELPP_ENABLE_CLING_INTERPRETER )
-    find_package(Cling)
-    if(Cling_FOUND)
-      set(FEELPP_HAS_CLING_INTERPRETER 1)
-      set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Cling/Interpreter" )
-    endif()
+  include(feelpp.module.cling.interpreter)
 endif()
 
 LINK_DIRECTORIES(

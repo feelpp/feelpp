@@ -183,7 +183,7 @@ if ( NOT TARGET install-feelpp-base )
 endif()
 
 # install feel++ interpreter
-if( FEELPP_HAS_CLING_INTERPRETER )
+if( 0 )#FEELPP_HAS_CLING_INTERPRETER )
     # We create the feel++ interpreter bash script in the binary dir.
     set( CLING_INSTALL_PREFIX ${CMAKE_BINARY_DIR} )
     include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
