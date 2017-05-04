@@ -30,7 +30,6 @@
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 
 #include <feel/feelmodels/modelvf/solidmecgeomapeulerian.hpp>
-#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {

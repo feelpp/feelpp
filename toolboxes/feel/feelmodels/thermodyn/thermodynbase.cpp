@@ -7,7 +7,7 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/modelalg/functionSup.cpp>
+
 namespace Feel
 {
 namespace FeelModels
