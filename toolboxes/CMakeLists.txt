@@ -22,10 +22,7 @@
 #
 #
 
-if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
-  message(STATUS "[feelpp] use OLD policy CMP0064" )
-  cmake_policy(SET CMP0064 OLD)
-endif()
+cmake_minimum_required(VERSION 2.8)
 
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
