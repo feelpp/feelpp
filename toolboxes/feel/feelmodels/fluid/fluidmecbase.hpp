@@ -909,6 +909,7 @@ protected:
     element_stress_ptrtype M_normalStressFromStruct;
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
+    std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space

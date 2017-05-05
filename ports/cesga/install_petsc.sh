@@ -77,23 +77,28 @@ if [ ! -d "$PREFIX" ]; then
     tar -xvzf petsc-lite-${VERSION}.tar.gz
     cd petsc-${VERSION}
 
-    ./configure --with-shared-libraries=1 \
+    ./configure  COPTFLAGS='-O3' FOPTFLAGS='-O3' \
+        --with-shared-libraries=1 \
         --with-debugging=0 \
-        COPTFLAGS='-O3' FOPTFLAGS='-O3' \
         --prefix=$PREFIX \
-        --download-suitesparse=1 \
+        --with-cc=mpicc \
+        --with-cxx=mpicxx \
+        --with-fc=mpifort \
+        --with-cxx-dialect=C++11 \
+        --CFLAGS="-mtune=haswell -O3 -mfma -malign-data=cacheline -finline-functions -fopenmp -lc" \
+        --CXXFLAGS="-march=haswell -O3 -mfma -malign-data=cacheline -finline-functions -std=c11 -fopenmp -lc" \
+        --FFLAGS="-march=haswell -O3 -mfma -malign-data=cacheline -finline-functions -fopenmp -lc" \
         --download-ml \
-        --download-blacs \
-        --download-scalapack \
-        --download-fblaslapack \
         --download-mumps \
         --download-pastix \
-        --download-ptscotch
-    #--with-mpi-dir=$MPI_ROOT \
-    #--download-metis \
-        #--download-parmetis \
+        --download-ptscotch \
+        --download-suitesparse=1 \
+        --with-blas-lapack-lib="-L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+        --with-scalapack-lib="-L/opt/cesga/intel/compilers_and_libraries_2016.3.210/linux/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl-gnu"
+
+
     make all
-    #make test
+#    make test
     make install
 
     # Create an archive.
@@ -106,3 +111,5 @@ else
     printf "Install or cache file already exist for this profile. You should
     remove them before going further.\n$SRCDIR\n$PREFIX\n";
 fi
+
+

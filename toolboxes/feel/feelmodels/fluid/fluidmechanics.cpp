@@ -29,7 +29,6 @@
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
-#include <feel/feelmodels/modelalg/functionSup.cpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelpde/preconditionerblockns.hpp>
 

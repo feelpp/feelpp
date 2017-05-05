@@ -7,3 +7,4 @@ module load hdf5/1.8.18
 module load paraview/5.2.0
 module load openblas/0.2.19
 module load flex/2.6.0
+module load mkl/11.3
