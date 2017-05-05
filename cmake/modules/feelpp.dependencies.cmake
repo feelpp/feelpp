@@ -1547,4 +1547,4 @@ file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.include.c
 
 # write file which contains compile definitions
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
-  CONTENT "set(FEELPP_COMPILE_DEFINITIONS $<TARGET_PROPERTY:feelpp,COMPILE_DEFINITIONS>)" )
+  CONTENT "set(FEELPP_COMPILE_DEFINITIONS \"$<TARGET_PROPERTY:feelpp,COMPILE_DEFINITIONS>\")" )
