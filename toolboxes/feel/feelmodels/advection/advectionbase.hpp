@@ -264,7 +264,7 @@ public :
     bdf_ptrtype const& timeStepBDF() const { return M_bdf; }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
-    void updateTimeStepBDF();
+    virtual void updateTimeStepBDF();
     void updateTimeStep() { this->updateTimeStepBDF(); }
     void initTimeStep();
 
@@ -278,8 +278,8 @@ public :
     // Algebraic model updates
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart) const;
-    virtual void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const {}
+    virtual void updateLinearPDEStabilization( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
+    virtual void updateSourceTermLinearPDE( element_advection_ptrtype& fieldSource, bool buildCstPart ) const {}
     virtual bool hasSourceTerm() const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const =0;
@@ -348,6 +348,9 @@ protected:
     void createOthers();
     void buildBlockVector();
 
+    virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
+
+    virtual std::string geoExportType() const { return "static"; }
     virtual void exportResultsImpl( double time );
     virtual void exportMeasuresImpl( double time );
 
