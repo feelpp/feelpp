@@ -516,6 +516,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
                                            this->meshDisplacementOnInterface() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity")),
+                                           this->meshVelocity() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity-interface"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity-interface")),
+                                           this->meshVelocity2() );
             hasFieldToExport = true;
         }
 #endif
@@ -1441,29 +1447,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     //-------------------------------------------------------------------//
     // up mesh velocity on interface from mesh velocity
-#if 1
-    // no mpi comm
-    /**M_meshVelocityInterface = vf::project( _space=M_meshVelocityInterface->functionSpace(),
-     _range=markedfaces(this->mesh(),this->markersNameMovingBoundary().front()),
-     _expr=vf::idv(M_meshALE->velocity()),
-     _geomap=this->geomap() );*/
-    M_meshVelocityInterface->on(//_range=boundaryelements(this->mesh()),
-        _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-        //_range=boundaryfaces(this->mesh()),
-        //_range=elements(this->mesh()),
-        _expr=vf::idv(M_meshALE->velocity()),
-        _geomap=this->geomap() );
-#else
-    // with mpi comm
-    auto vectVelInterface = backend()->newVector( M_meshVelocityInterface->functionSpace() );
-    modifVec(markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-             *M_meshVelocityInterface,
-             vectVelInterface,
-             vf::idv(M_meshALE->velocity()) );
-
-    vectVelInterface->close();
-    *M_meshVelocityInterface = *vectVelInterface;
-#endif
+    M_meshVelocityInterface->on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                 _expr=vf::idv(M_meshALE->velocity()),
+                                 _geomap=this->geomap() );
+    sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 
     //-------------------------------------------------------------------//
     // semi implicit optimisation
@@ -2506,6 +2493,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         }
     }
 
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if ( this->isMoveDomain() )
+    {
+        for ( auto const& faceWrap : markedfaces(mesh,this->markersNameMovingBoundary() ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_XhMeshVelocityInterface->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                M_dofsVelocityInterfaceOnMovingBoundary.insert( it->index() );
+            }
+        }
+    }
+#endif
 }
 
 
