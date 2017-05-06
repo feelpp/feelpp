@@ -35,6 +35,7 @@ endforeach()
 
 add_library(feelpp_model_solidmechanics SHARED libsolidmechanics.cpp )
 target_link_libraries(feelpp_model_solidmechanics ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})
+set_property(TARGET feelpp_model_solidmechanics PROPERTY MACOSX_RPATH ON)
 install(TARGETS feelpp_model_solidmechanics DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
