@@ -23,6 +23,7 @@ add_library(feelpp_modelcore
   markermanagement.cpp modelmeasures.cpp
   )
 target_link_libraries(feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
+set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelcore )
 endif()
