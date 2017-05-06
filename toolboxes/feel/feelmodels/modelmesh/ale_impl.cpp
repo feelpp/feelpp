@@ -46,7 +46,6 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/on.hpp>
 
-#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {
@@ -217,6 +216,29 @@ typename ALE<Convex,Order>::mesh_ptrtype
 ALE<Convex,Order>::referenceMesh()
 {
     return M_reference_mesh;
+}
+
+//-------------------------------------------------------------------------------------------//
+
+template < class Convex, int Order >
+void
+ALE<Convex,Order>::init()
+{
+    M_dofsHighOnBoundary.clear();
+    if ( M_fspaceHigh )
+    {
+        for ( std::string const& bctype : std::vector<std::string>( { "moving","fixed" } ) )
+        {
+            auto & dofsHighOnBoundary = M_dofsHighOnBoundary[bctype];
+            for ( auto const& faceWrap : markedfaces(M_fspaceHigh->mesh(),this->flagSet(bctype) ) )
+            {
+                auto const& face = unwrap_ref( faceWrap );
+                auto facedof = M_fspaceHigh->dof()->faceLocalDof( face.id() );
+                for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                    dofsHighOnBoundary.insert( it->index() );
+            }
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -556,36 +578,24 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
     //auto correction = idv(dispOnBoundary) - idv(M_displacementLow);
     auto correction = idv(dispOnBoundary) - idv(M_displacementHigh);
     auto zero = 0*one();
-#if 1
 
     auto dispHighAux = M_fspaceHigh->element();
-    auto vecDisp = M_bHigh->newVector( M_fspaceHigh );
-
-    for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
-        modifVec(markedfaces(M_fspaceHigh->mesh(), this->flagSet("moving",i)),
-                 dispHighAux,
-                 vecDisp,
-                 correction );
-    for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
-        modifVec(markedfaces(M_fspaceHigh->mesh(), this->flagSet("fixed",i)),
-                 dispHighAux,
-                 vecDisp,
-                 correction/*zero*//*idv(dispOnBoundary)*/ );
-#if 0
-    for ( uint16_type i=0; i < this->flagSet("free").size(); ++i )
-        modifVec(markedfaces(M_fspaceHigh->mesh(), this->flagSet("free",i)),
-                 dispHighAux,
-                 vecDisp,
-                 correction/*zero*//*idv(dispOnBoundary)*/ );
-#endif
-    vecDisp->close();
-
-    dispHighAux = *vecDisp;
-
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("moving")),
+                   _expr=correction);
+    // also at fixed boundary (if boundary is ho, else is zero)
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("fixed")),
+                   _expr=correction);
+    // synch values
+    auto itFindDofsMoving = M_dofsHighOnBoundary.find( "moving" );
+    CHECK( itFindDofsMoving != M_dofsHighOnBoundary.end() ) << "dofsHighOnBoundary moving not initialized";
+    auto itFindDofsFixed = M_dofsHighOnBoundary.find( "fixed" );
+    CHECK( itFindDofsFixed != M_dofsHighOnBoundary.end() ) << "dofsHighOnBoundary fixed not initialized";
+    std::set<size_type> dofsHighOnBoundaryMovingAndFixed;
+    dofsHighOnBoundaryMovingAndFixed.insert( itFindDofsMoving->second.begin(),itFindDofsMoving->second.end() );
+    dofsHighOnBoundaryMovingAndFixed.insert( itFindDofsFixed->second.begin(),itFindDofsFixed->second.end() );
+    sync( dispHighAux, "=", dofsHighOnBoundaryMovingAndFixed );
     *M_displacementHigh += dispHighAux;
-#else
-    //M_displacementHigh = vf::project(_space=M_fspaceHigh,_range=
-#endif
+
     *M_aleHigh = *M_identityHigh;
     *M_aleHigh += *M_displacementHigh;
 
