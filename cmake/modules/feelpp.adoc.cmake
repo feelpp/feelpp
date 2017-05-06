@@ -31,9 +31,9 @@ if ( ASCIIDOCTOR_FOUND )
   set (FEELPP_A2M ${ASCIIDOCTOR_EXECUTABLE} -b manpage -amanmanual='${FEELPP_TITLE}')
   set (FEELPP_A2H ${ASCIIDOCTOR_EXECUTABLE} -d manpage -b html5 -a stylesheeet=${FEELPP_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${FEELPP_PACKAGE_VERSION})
 
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/check.asciidoc "")
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/check.asciidoc.man.adoc "= toto(1)\n\n== NAME\n\nabc - def")
   execute_process(
-    COMMAND ${FEELPP_A2M} check.asciidoc
+    COMMAND ${FEELPP_A2M} check.asciidoc.man.adoc
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}
     OUTPUT_FILE check.asciidoc.manpage.log
     ERROR_FILE check.asciidoc.manpage.err
@@ -44,8 +44,9 @@ if ( ASCIIDOCTOR_FOUND )
   else()
     unset(FEELPP_HAS_ASCIIDOCTOR_MANPAGE)
   endif()
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/check.asciidoc.html.adoc "")
   execute_process(
-    COMMAND ${FEELPP_A2H} check.asciidoc
+    COMMAND ${FEELPP_A2H} check.asciidoc.html.adoc
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}
     OUTPUT_FILE check.asciidoc.html5.log
     ERROR_FILE check.asciidoc.html5.err
