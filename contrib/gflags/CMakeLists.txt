@@ -412,8 +412,8 @@ else ()
   gflags_define (PATH LIBRARY_INSTALL_DIR "Directory of installed libraries, e.g., \"lib64\"" "lib${LIB_SUFFIX}")
   gflags_property (LIBRARY_INSTALL_DIR ADVANCED TRUE)
   set (INCLUDE_INSTALL_DIR include/feelpp)
-  set (CONFIG_INSTALL_DIR  ${LIBRARY_INSTALL_DIR}/cmake/${PACKAGE_NAME})
-  set (PKGCONFIG_INSTALL_DIR ${LIBRARY_INSTALL_DIR}/pkgconfig)
+  set (CONFIG_INSTALL_DIR  share/feelpp/${PACKAGE_NAME}/cmake)
+  set (PKGCONFIG_INSTALL_DIR share/feelpp/${PACKAGE_NAME}/pkgconfig)
 endif ()
 
 # ----------------------------------------------------------------------------
