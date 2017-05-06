@@ -571,7 +571,7 @@ endif (gflags_FOUND)
 
 configure_package_config_file (glog-config.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config.cmake
-  INSTALL_DESTINATION lib/cmake/glog
+  INSTALL_DESTINATION share/feelpp/glog/cmake
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
 write_basic_package_version_file (glog-config-version.cmake VERSION
@@ -583,6 +583,6 @@ write_basic_package_version_file (glog-config-version.cmake VERSION
 install (FILES
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config-version.cmake
-  DESTINATION lib/cmake/glog)
+  DESTINATION share/feelpp/glog/cmake )
 
 #install (EXPORT glog-targets NAMESPACE glog:: DESTINATION lib/cmake/glog)
