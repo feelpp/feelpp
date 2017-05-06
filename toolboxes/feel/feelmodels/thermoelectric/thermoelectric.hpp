@@ -182,6 +182,9 @@ public:
     void updateElectricField();
 
 private :
+    void updateBoundaryConditionsForUse();
+
+private :
     thermodyn_model_ptrtype M_thermodynModel;
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -205,6 +208,7 @@ private :
     backend_ptrtype M_backendMonolithic;
     model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
     BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     // start dof index fields in matrix (temperature,electric-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 
