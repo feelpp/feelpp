@@ -221,6 +221,8 @@ MeshALE<Convex>::init()
             M_dofsOnMovingBoundary_HO.insert( it->index() );
     }
 
+    M_aleFactory->init();
+
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
 }
 
