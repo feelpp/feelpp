@@ -95,11 +95,16 @@ public :
     /**
      * set values of VectorBlock from subvector
      */
-    void setVector( vector_type & vec, vector_type const& subvec , int blockId ) const;
+    void setVector( vector_type & vec, vector_type const& subvec , int blockId, bool closeVector = true ) const;
     /**
      * set values of subvector from global vector build with VectorBlock
      */
     void setSubVector( vector_type & subvec, vector_type const& vec , int blockId ) const;
+
+    /**
+     * update values of monolithic vector from each subvector
+     */
+    void updateVectorFromSubVectors();
 
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }

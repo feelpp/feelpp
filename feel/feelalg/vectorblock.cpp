@@ -81,7 +81,7 @@ BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
 
 template <typename T>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , int blockId ) const
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int blockId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
@@ -94,7 +94,8 @@ BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , i
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
-    vec.close();
+    if ( closeVector )
+        vec.close();
 }
 
 template <typename T>
@@ -113,6 +114,18 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
     }
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::updateVectorFromSubVectors()
+{
+    if ( !M_vector )
+        return;
+    int nBlock = this->nRow();
+    for ( int k = 0 ; k<nBlock ;++k )
+        this->setVector( *M_vector, *(this->operator()(k)), k, false );
+    M_vector->close();
 }
 
 
