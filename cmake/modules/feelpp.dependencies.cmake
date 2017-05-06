@@ -1427,7 +1427,7 @@ include(feelpp.module.ipopt)
 include(feelpp.module.altair)
 
 # Asciidoctor
-option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" OFF ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_ASCIIDOCTOR )
   include( feelpp.adoc )
 endif()
