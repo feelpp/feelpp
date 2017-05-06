@@ -105,6 +105,7 @@ public:
     std::vector<flag_type> const& flagSet(std::string key) const;
     flag_type flagSet(std::string key, int k) const;
 
+    virtual void init() = 0;
 
     virtual ale_map_functionspace_ptrtype const& functionSpace() const = 0;
     virtual ale_map_element_type const& displacement() const = 0;
