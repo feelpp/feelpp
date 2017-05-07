@@ -136,6 +136,10 @@ if ( TARGET feelpp_mesh_partitioner )
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake")
 endif()
 
+if ( TARGET app-databases )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake")
+endif()
+
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
   -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
@@ -148,6 +152,9 @@ set( FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET contrib tools feelpp )
 if ( TARGET feelpp_mesh_partitioner )
   list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET feelpp_mesh_partitioner )
 endif()
+if ( TARGET app-databases )
+  list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET app-databases )
+endif()
   add_custom_target(install-feelpp-lib
     DEPENDS ${FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET}
     COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
@@ -156,28 +163,16 @@ endif()
 
 
 if ( NOT TARGET install-feelpp-base )
-  #
-  # this target installs the libraries, header files, cmake files and sample applications
-  #
-  if ( FEELPP_HAS_ACUSIM )
-    set(FEELPP_DATABASES_APPS  feelpp_databases_converter_acusim     feelpp_databases_export     feelpp_databases_pod)
-  else()
-    set(FEELPP_DATABASES_APPS  feelpp_databases_export     feelpp_databases_pod)
-  endif()
-  MESSAGE(STATUS "toto ${FEELPP_DATABASES_APPS}")
 
   add_custom_target(install-feelpp-base
     DEPENDS
     install-feelpp-lib
     install-quickstart
-    install-app-databases
     COMMAND
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Geo
     -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
     "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Quickstart
     -P "${CMAKE_BINARY_DIR}/quickstart/cmake_install.cmake"
-    "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Databases
-    -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake"
     )
 endif()
 
