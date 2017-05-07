@@ -34,6 +34,7 @@
 #include <feel/feeldiscr/odh.hpp>
 #include <feel/feeldiscr/moch.hpp>
 #include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/p2ch.hpp>
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/dhpdh.hpp>
 
