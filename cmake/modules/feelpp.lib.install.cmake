@@ -30,22 +30,22 @@ feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR})
 foreach(includedir ${feeldirs})
   FILE(GLOB files "${includedir}/*.hpp" )
   FILE(GLOB cppfiles "${includedir}/*.cpp" )
-  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
+  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feelpp/feel/${includedir} COMPONENT Devel)
   
   feelpp_list_subdirs(feelsubdirs ${CMAKE_CURRENT_SOURCE_DIR}/${includedir})
   #message(STATUS "====== subdir ${includedir} : ${feelsubdirs}")
   foreach(subincludedir ${feelsubdirs})
     FILE(GLOB details "${includedir}/${subincludedir}/*.hpp")
     #message(STATUS "subdir ${includedir}/${subincludedir}: ${details}")
-    INSTALL(FILES ${details} DESTINATION include/feel/${includedir}/${subincludedir}/ COMPONENT Devel)
+    INSTALL(FILES ${details} DESTINATION include/feelpp/feel/${includedir}/${subincludedir}/ COMPONENT Devel)
   endforeach()
 endforeach()
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/feel COMPONENT Devel)
 
 # install cln headers
 FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/cln/include/cln/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/cln COMPONENT Devel)
 FILE(GLOB files "${CMAKE_BINARY_DIR}/contrib/cln/lib/lib*" "${CMAKE_BINARY_DIR}/contrib/cln/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Libs)
 
@@ -67,13 +67,13 @@ if(FEELPP_HAS_CEREAL)
     FOREACH(fl IN LISTS files)
         string(REGEX REPLACE "${CMAKE_SOURCE_DIR}/contrib/cereal/include" "include/feel" fl1 ${fl})
         get_filename_component(dir ${fl1} DIRECTORY)
-        INSTALL(FILES ${fl1} DESTINATION include/feel/cereal COMPONENT Devel)
+        INSTALL(FILES ${fl1} DESTINATION include/feelpp/cereal COMPONENT Devel)
     ENDFOREACH()
 endif()
 
 # feel++ config headers
 FILE(GLOB files "${CMAKE_BINARY_DIR}/feel/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/feel COMPONENT Devel)
 
 # feel++ precompiled headers.
 if( FEELPP_ENABLE_PCH )
@@ -83,7 +83,7 @@ if( FEELPP_ENABLE_PCH )
         "${CMAKE_BINARY_DIR}/feel/cotire/*.hxx"
         )
     foreach(f IN LISTS files)
-        install( FILES ${f} DESTINATION include/feel/cotire COMPONENT Libs)
+        install( FILES ${f} DESTINATION include/feelpp/feel/cotire COMPONENT Devel)
     endforeach()
 endif()
 

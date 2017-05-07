@@ -24,4 +24,4 @@
 
 configure_file(feelpp_build.sh.in ${CMAKE_CURRENT_SOURCE_DIR}/feelpp_build.sh @ONLY)
 
-install(PROGRAMS list.sh ${CMAKE_CURRENT_SOURCE_DIR}/feelpp_build.sh   DESTINATION share/feel/scripts)
+install(PROGRAMS list.sh ${CMAKE_CURRENT_SOURCE_DIR}/feelpp_build.sh   DESTINATION share/feelpp/feel/scripts)
