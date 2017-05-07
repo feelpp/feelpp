@@ -44,7 +44,10 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 
-namespace Feel { namespace detail {
+
+namespace Feel {
+#if 0
+namespace detail {
 /// \cond DETAIL
 template <typename ElementSpaceType>
 void
@@ -152,7 +155,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 
 } // namespace detail
 /// \endcond
-
+#endif
 /**
    \brief straighten the internal faces of a high order mesh
 
@@ -178,12 +181,24 @@ straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bo
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
 
+    std::set<size_type> dofsWithValueImposed;
+    for ( auto const& faceWrap : boundaryfaces( mesh, entityProcess ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = Xh->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            dofsWithValueImposed.insert( it->index() );
+    }
+    sync( xHoBdy, "=", dofsWithValueImposed );
+    sync( xLoBdy, "=", dofsWithValueImposed );
+
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
 
+#if 0
     if (worldcomm.localSize()>1)
         Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
-
+#endif
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate(true,worldcomm).norm();
 
     if ( norm_mean_value > 1e-12 )
