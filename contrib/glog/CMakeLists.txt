@@ -421,7 +421,7 @@ set_target_properties (feelpp_glog PROPERTIES PUBLIC_HEADER "${GLOG_PUBLIC_H}")
 target_include_directories (feelpp_glog BEFORE PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-  "$<INSTALL_INTERFACE:include/feel/glog>"
+  "$<INSTALL_INTERFACE:include/feelpp/glog>"
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -561,7 +561,7 @@ endif (0) #BUILD_TESTING)
 install (TARGETS feelpp_glog
   #EXPORT glog-targets
   RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include/feel/glog
+  PUBLIC_HEADER DESTINATION include/feelpp/glog
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 
@@ -571,7 +571,7 @@ endif (gflags_FOUND)
 
 configure_package_config_file (glog-config.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config.cmake
-  INSTALL_DESTINATION lib/cmake/glog
+  INSTALL_DESTINATION share/feelpp/glog/cmake
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
 write_basic_package_version_file (glog-config-version.cmake VERSION
@@ -583,6 +583,6 @@ write_basic_package_version_file (glog-config-version.cmake VERSION
 install (FILES
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/glog-config-version.cmake
-  DESTINATION lib/cmake/glog)
+  DESTINATION share/feelpp/glog/cmake )
 
 #install (EXPORT glog-targets NAMESPACE glog:: DESTINATION lib/cmake/glog)

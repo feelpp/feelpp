@@ -14,6 +14,7 @@ add_library(
 target_link_libraries(feelpp_modelmesh
   feelpp_modelcore
   ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+set_property(TARGET feelpp_modelmesh PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
 endif()
@@ -55,9 +56,10 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}
     )
+  set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
   INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs)
   
 endif( FEELPP_MODELS_HAS_MESHALE )
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/modelmesh COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelmesh COMPONENT Devel)
