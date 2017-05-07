@@ -7,7 +7,7 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/modelalg/functionSup.cpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -496,7 +496,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     }
 }
 
-
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
@@ -506,9 +505,10 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
     this->updateParameterValues();
 
-    //M_algebraicFactory->linearSolver(this->blockVectorSolution().vector());
-    M_algebraicFactory->solve( "LinearSystem", this->blockVectorSolution().vector() );
-    //M_algebraicFactory->solve( "Newton", this->blockVectorSolution().vector() );
+    M_blockVectorSolution.updateVectorFromSubVectors();
+
+    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vector() );
+    //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vector() );
 
     M_blockVectorSolution.localize();
 
@@ -919,7 +919,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype
         u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=expression(d) );
     }
-    // synchronize velocity dof on interprocess
+    // synchronize temperature dof on interprocess
     auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
     if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
         sync( u, "=", itFindDofsWithValueImposed->second );

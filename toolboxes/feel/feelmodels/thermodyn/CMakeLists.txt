@@ -33,7 +33,8 @@ endforeach()
 
 add_library(feelpp_model_thermodynamics SHARED libthermodynamics.cpp )
 target_link_libraries(feelpp_model_thermodynamics ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS})
+set_property(TARGET feelpp_model_thermodynamics PROPERTY MACOSX_RPATH ON)
 install(TARGETS feelpp_model_thermodynamics DESTINATION lib/ COMPONENT Libs)
 
 FILE(GLOB files "*.hpp")
-INSTALL(FILES ${files} DESTINATION include/toolboxes/feel/feelmodels/thermodyn COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermodyn COMPONENT Devel)
