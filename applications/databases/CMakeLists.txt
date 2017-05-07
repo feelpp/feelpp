@@ -43,10 +43,5 @@ if (FEELPP_HAS_HDF5 )
     -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
 
 
-  if ( NOT TARGET install-feelpp-base )
-    add_custom_target( install-feelpp-base DEPENDS install-app-databases)
-  else()
-    add_dependencies(install-feelpp-base install-app-databases)
-  endif()
 
 endif()
