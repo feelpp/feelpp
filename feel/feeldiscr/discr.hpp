@@ -43,6 +43,7 @@
 #include <feel/feeldiscr/elementproduct.hpp>
 #include <feel/feeldiscr/measureofelementsatpoints.hpp>
 #include <feel/feeldiscr/createsubmesh.hpp>
+#include <feel/feeldiscr/makemesh.hpp>
 
 // operators
 #include <feel/feeldiscr/operatorinterpolation.hpp>
