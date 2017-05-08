@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -143,9 +143,9 @@ Laplacian<Dim, BasisU, Entity>::run()
     using namespace Feel::vf;
 
     int nparts = Environment::worldComm().size();
-    bool prepare = option(_name="benchmark.prepare").template as<bool>();
+    bool prepare = boption(_name="benchmark.prepare");
     if ( prepare )
-        nparts = option(_name="benchmark.partitions").template as<int>();
+        nparts = ioption(_name="benchmark.partitions");
 
     this->changeRepository( boost::format( "%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
                             % this->about().appName()
@@ -205,7 +205,7 @@ Laplacian<Dim, BasisU, Entity>::run()
     //
     std::string dim_str =  boost::str( boost::format( "%1%D" ) % Dim );
     auto vars=symbols<Dim>();
-    auto u_exact_g = parse( option(_name="exact",_prefix=dim_str).template as<std::string>(), vars );
+    auto u_exact_g = parse( soption(_name="exact",_prefix=dim_str), vars );
     LOG(INFO) << "u_exact=" << u_exact_g;
     auto u_exact = expr<3>( u_exact_g, vars, "u_exact" );
 	auto f_g = -mu*laplacian( u_exact_g, vars );

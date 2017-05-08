@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -59,6 +59,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
@@ -76,9 +82,25 @@ public:
     {
     }
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef UnaryPlus<typename ExprT::template Lambda<TheExpr...>::type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
+
+
     expression_type const& expression() const
     {
         return M_expr;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -132,10 +154,10 @@ public:
         {
             M_t_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type
@@ -220,6 +242,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
@@ -254,9 +282,24 @@ public:
         return *this;
     }
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef UnaryMinus<typename ExprT::template Lambda<TheExpr...>::type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
+
     expression_type const& expression() const
     {
         return M_expr;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -311,10 +354,10 @@ public:
             M_t_expr.update( geom, face );
         }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_t_expr.updateContext( ctx );
+            M_t_expr.updateContext( ctx... );
         }
 
         value_type

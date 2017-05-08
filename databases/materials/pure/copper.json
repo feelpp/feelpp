@@ -1,0 +1,12 @@
+// Copper
+{
+    //"name": "Copper, Cu; Annealed",
+    "name": "Copper",
+    "beta":"0.00001640",//[1/K]
+    "C":385.0,//[J/(kg*K)]
+    "E":1.100e+11,//[Pa]
+    "k11":385.0,//[W/(m*K)]
+    "nu":0.3430,
+    "rho":8930,//[kg/m^3]
+    "sigma":5.882e+7//[S/m]
+}

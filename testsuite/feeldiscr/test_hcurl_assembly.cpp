@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -150,8 +150,7 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        meshSize( doption("gmsh.hsize") ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        meshSize( doption("gmsh.hsize") )
     {
         std::cout << "[TestHCurl]\n";
         std::cout << "hsize = " << meshSize << std::endl;
@@ -173,9 +172,6 @@ private:
 
     //! mesh characteristic size
     double meshSize;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 }; //TestHCurl
 
@@ -303,8 +299,7 @@ TestHCurl::twoElementsMesh()
     a_pb1f.solve( _solution=u_pb1f, _rhs=f_pb1f, _rebuild=true);
 
     // Check exportation of these Hcurl elements
-    export_ptrtype exporterProj( export_type::New( this->vm(),std::string("test_L2proj_2elts")) );
-    exporterProj->step( 0 )->setMesh( refined_mesh );
+    auto exporterProj = exporter( _mesh=refined_mesh,_name="test_L2proj_2elts" );
     exporterProj->step( 0 )->add( "vec_cst_proj_2elts", u_cst );
     exporterProj->step( 0 )->add( "vec_yx_proj_2elts", u_yx );
     exporterProj->step( 0 )->add( "vec_pb1_coarse_proj_2elts", u_pb1 );
@@ -397,8 +392,7 @@ TestHCurl::eightElementsMesh()
     a_pb1f.solve( _solution=u_pb1f, _rhs=f_pb1f, _rebuild=true);
 
     // Check exportation of these Hcurl elements
-    export_ptrtype exporterProj( export_type::New( this->vm(),std::string("test_L2proj_8elts")) );
-    exporterProj->step( 0 )->setMesh( refined_mesh );
+    auto exporterProj = exporter( _mesh=refined_mesh,_name="test_L2proj_8elts" );
     exporterProj->step( 0 )->add( "vec_cst_proj_8elts", u_cst );
     exporterProj->step( 0 )->add( "vec_yx_proj_8elts", u_yx );
     exporterProj->step( 0 )->add( "vec_pb1_coarse_proj_8elts", u_pb1 );

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,9 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 
@@ -42,8 +44,9 @@ namespace Feel {
 template<int Ngeo=1>
 inline
 boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
-unitSphere( double h = option(_name="gmsh.hsize").template as<double>() )
+unitSphere( double h = doption(_name="gmsh.hsize") )
 {
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
                           _desc=domain( _name="sphere",
                                         _shape="ellipsoid",
@@ -52,6 +55,10 @@ unitSphere( double h = option(_name="gmsh.hsize").template as<double>() )
                                         _ymin=-1,
                                         _zmin=-1,
                                         _h= h ) );
+#else
+    LOG(WARNING) << "unitSphere: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Simplex<3, Ngeo> > >();
+#endif
 }
 
 }

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-11-22
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file drivencavity_impl.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-11-22
  */
 #ifndef FEELPP_DRIVENCAVITY_IMPL_HPP_H
@@ -183,7 +183,7 @@ void DrivenCavity<Dim>::run()
     backend(_name="newtonns")->nlSolver()->jacobian = boost::bind( &DrivenCavity::Jacobian,
                                                                    boost::ref( *this ), _1, _2 );
 
-    if ( option(_name="continuation" ).template as<bool>() )
+    if ( boption(_name="continuation" ) )
     {
         double ReTarget = Re;
         int N = std::ceil( std::log( Re ) );

@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-16
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -27,9 +27,29 @@ option(FEELPP_ENABLE_ML_LIBRARY "Enables ML library in Feel++" ON )
 if ( FEELPP_ENABLE_ML_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
-  FIND_LIBRARY(ML_LIBRARY
-    NAMES
-    ml
+  FIND_PATH(ML_INCLUDE_DIR ml_include.h
+    PATHS
+    $ENV{PETSC_DIR}/include
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include
+    ${PETSC_DIR}/include
+    NO_DEFAULT_PATH
+    )
+
+  IF (NOT ML_INCLUDE_DIR)
+    FIND_PATH(ML_INCLUDE_DIR ml_include.h
+      PATHS
+      /opt/local/lib/petsc/lib
+      )
+  ENDIF()
+    
+  IF (NOT ML_INCLUDE_DIR)
+  FIND_PATH(ML_INCLUDE_DIR ml_include.h
+    PATHS
+    /usr/include/trilinos
+    )
+  ENDIF()
+
+  FIND_LIBRARY(ML_LIBRARY NAMES ml
     PATHS
     $ENV{PETSC_DIR}/lib
     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
@@ -37,18 +57,19 @@ if ( FEELPP_ENABLE_ML_LIBRARY )
     NO_DEFAULT_PATH
     )
 
-  FIND_LIBRARY(ML_LIBRARY
-    NAMES
-    ml
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    ${PETSC_DIR}/lib
-    /opt/local/lib/petsc/lib
+  IF (NOT ML_LIBRARY)
+    FIND_LIBRARY(ML_LIBRARY NAMES ml
+      PATHS
+      /opt/local/lib/petsc/lib
     )
+  ENDIF()
+  
+  IF (NOT ML_LIBRARY)
+    FIND_LIBRARY(ML_LIBRARY NAMES trilinos_ml)
+  ENDIF()
 endif()
 
-FIND_PACKAGE_HANDLE_STANDARD_ARGS (ML DEFAULT_MSG  ML_INCLUDE_DIR ML_LIBRARIES )
+FIND_PACKAGE_HANDLE_STANDARD_ARGS (ML DEFAULT_MSG  ML_INCLUDE_DIR ML_LIBRARY )
 
 mark_as_advanced( ML_INCLUDE_DIR )
 mark_as_advanced( ML_LIBRARY )

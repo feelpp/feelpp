@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -146,25 +146,29 @@ struct test_mesh_filters
         // location faces
         {
 
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator it = mesh->beginFaceOnBoundary();
-            Feel::MeshTraits<Feel::detail::mesh_type>::location_face_const_iterator en = mesh->endFaceOnBoundary();
+            auto rangeBoundaryFaces = mesh->facesOnBoundary();
+            auto it = std::get<0>( rangeBoundaryFaces );
+            auto en = std::get<1>( rangeBoundaryFaces );
 
             BOOST_TEST_MESSAGE( "Checking " << std::distance( it, en ) << " boundary faces...\n" );
 
             for ( ; it != en; ++it )
             {
+                auto const& bface = boost::unwrap_ref( *it );
 #if defined(USE_BOOST_TEST)
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             !it->isConnectedTo1() );
-                BOOST_CHECK( it->marker().value() == 31 ||
-                             it->marker().value() == 32 ||
-                             it->marker().value() == 33 );
+
+                BOOST_CHECK( bface.isConnectedTo0() &&
+                             !bface.isConnectedTo1() );
+                BOOST_CHECK( bface.marker().value() == 31 ||
+                             bface.marker().value() == 32 ||
+                             bface.marker().value() == 33 );
 #endif
             }
 
 
-            it = mesh->beginInternalFace();
-            en = mesh->endInternalFace();
+            auto rangeInternalFaces = mesh->internalFaces();
+            it = std::get<0>( rangeInternalFaces );
+            en = std::get<1>( rangeInternalFaces );
             std::cout << "Checking " << std::distance( it, en ) << " internal faces...\n";
 
 #if defined(USE_BOOST_TEST)
@@ -173,24 +177,25 @@ struct test_mesh_filters
 
             for ( ; it != en; ++it )
             {
+                auto const& iface = boost::unwrap_ref( *it );
 #if defined(USE_BOOST_TEST)
                 // the face must be connected with two elements
-                BOOST_CHECK( it->isConnectedTo0() &&
-                             it->isConnectedTo1() );
+                BOOST_CHECK( iface.isConnectedTo0() &&
+                             iface.isConnectedTo1() );
 #endif
                 // check that the points coordinates are the same for the face vertices
-                int face_0 = it->pos_first();
-                int face_1 = it->pos_second();
-                Feel::node<double>::type n00 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n10 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                int face_0 = iface.pos_first();
+                int face_1 = iface.pos_second();
+                Feel::node<double>::type n00 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n10 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 0 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 0 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( iface.element( 1 ).fToP( face_1, 0 ) )
                 ( n00 )
                 ( n10 )
                 ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
@@ -204,23 +209,23 @@ struct test_mesh_filters
 #if defined(USE_BOOST_TEST)
                 BOOST_CHECK_SMALL( ublas::norm_2( n00 - n10 ), 1e-15 );
 #endif
-                //FEELPP_ASSERT( it->element(0).nGeometricFaces() == 2 )( it->element(0).nGeometricFaces() ).error( "invalid number of faces" );
-                Feel::node<double>::type n01 = it->element( 0 ).point( it->element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n11 = it->element( 1 ).point( it->element( 1 ).fToP( face_1, 0 ) ).node();
+                //FEELPP_ASSERT( iface.element(0).nGeometricFaces() == 2 )( iface.element(0).nGeometricFaces() ).error( "invalid number of faces" );
+                Feel::node<double>::type n01 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+                Feel::node<double>::type n11 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
                 FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
-                ( it->id() )
-                ( it->element( 0 ).G() )
+                ( iface.id() )
+                ( iface.element( 0 ).G() )
                 ( face_0 )
-                ( it->element( 0 ).fToP( face_0, 0 ) )
-                ( it->element( 1 ).G() )
+                ( iface.element( 0 ).fToP( face_0, 0 ) )
+                ( iface.element( 1 ).G() )
                 ( face_1 )
-                ( it->element( 1 ).fToP( face_1, 0 ) )
+                ( iface.element( 1 ).fToP( face_1, 0 ) )
                 ( face_1 )
                 ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
 #if defined(USE_BOOST_TEST)
                 BOOST_CHECK_SMALL( ublas::norm_2( n01 - n11 ), 1e-15 );
 
-                BOOST_CHECK_EQUAL( it->marker().value(), 3 );
+                BOOST_CHECK_EQUAL( iface.marker().value(), 3 );
 #endif
             }
         }

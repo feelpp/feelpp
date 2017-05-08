@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-01-28
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -63,6 +63,21 @@ message(STATUS "PTScotcherr: ${PTSCOTCHERR_LIBRARY}" )
 IF( PTSCOTCHERR_LIBRARY )
   #message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
   SET(SCOTCH_LIBRARIES ${PTSCOTCHERR_LIBRARY} ${SCOTCH_LIBRARIES})
+ENDIF()
+
+FIND_LIBRARY(SCOTCH_LIBRARY
+  NAMES
+  scotch
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
+  $ENV{SCOTCH_DIR}/lib
+  /usr/local/opt/scotch5/lib
+  )
+message(STATUS "Scotch: ${SCOTCH_LIBRARY}" )
+IF( SCOTCH_LIBRARY )
+  SET(SCOTCH_LIBRARIES ${SCOTCH_LIBRARY} ${SCOTCH_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PTSCOTCH_LIBRARY

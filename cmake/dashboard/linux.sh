@@ -1,50 +1,73 @@
 #!/bin/bash
+
 #set -x
 
+function run {
+  echo $boost
+  echo $petsc
+  echo $ccomp
+  if [[ $ccomp == "gcc"* ]]; then
+    cxx=`echo $ccomp | sed 's/gcc/g++/g'`
+  else
+    cxx=`echo $ccomp | sed 's/clang/clang++/g'`
+  fi
+  export FEELPP_WORKDIR=/tmp/feel-$ccomp
+  rm -rf $FEELPP_WORKDIR
+  $COMMON,FEELPP_CXXNAME=$ccomp,FEELPP_CXX=`which $cxx`,FEELPP_C=`which $ccomp`
+  rm -rf $FEELPP_WORKDIR
+}
+
+function petsc {
+  # Set the petsc_dir
+  for petsc in ${petsc_dir[@]}; do
+    if [ "$petsc" != "default" ]
+    then
+      if [ -d $petsc ]; then
+        echo "\texport PETSC_DIR=$petsc"
+        run
+      fi
+    else
+      echo "\tunset PETSC_DIR"
+      run
+    fi
+  done
+}
+
+
+function boost {
+  ## Set the boost_root
+  for boost in ${boost_dir[@]}; do
+    if [ "$boost" == "default" ]
+    then
+      echo "\tunset BOOST_ROOT"
+      petsc 
+    else
+      if [ -d $boost ] ;
+      then
+        echo "\texport BOOST_ROOT=$boost"
+        petsc
+      fi
+    fi # boost = default ?
+  done # boost
+}
 
 # $1 provides the path to the toplevel source Feel++ directory
 # e.g. $HOME/Devel/FEEL/feelpp.git
 COMMON="ctest -VV -S $1/cmake/dashboard/testsuite.cmake,FEELPP_CTEST_CONFIG=$1/cmake/dashboard/feelpp.site.`hostname -s`.cmake,FEELPP_MODE=$2"
 
-#To make available specific compilation instead of "whatever is available"
-compiler_list=${3:-"gcc47,gcc48,gcc49,clang"}
-#do_gcc46=`echo $compiler_list | grep gcc46`
-do_gcc47=`echo $compiler_list | grep gcc47`
-do_gcc48=`echo $compiler_list | grep gcc48`
-do_gcc49=`echo $compiler_list | grep gcc49`
-do_clang=`echo $compiler_list | grep clang`
+## Where are installed the custom libraries ?
+lib_dir=${4:-"/data/software/install"}
+## List of compiler (installed in the PATH) to test
+compiler=("gcc-4.9 gcc-5.0 gcc-5 gcc-6 clang-3.6 clang-3.7 clang-3.8 clang-3.9");
+## List of petsc installation to test (default = system one)
+petsc_dir=("$lib_dir/petsc-3.6.3 $lib_dir/petsc-3.6.1 $lib_dir/petsc-3.7.0 default")
+## List of boost installation to test (default = system one)
+boost_dir=("$lib_dir/boost-1.58 $lib_dir/boost-1.59.0 default")
 
-export FEELPP_SCRATCHDIR=/tmp/feel-logs/
-rm -rf $FEELPP_SCRATCHDIR
-#if [ ! -z "$do_gcc46" -a -x /usr/bin/g++-4.6 ]; then
-#    export FEELPP_WORKDIR=/tmp/feel-gcc46
-#    rm -rf $FEELPP_WORKDIR 
-#    $COMMON,FEELPP_CXXNAME=gcc-4.6,FEELPP_CXX=/usr/bin/g++-4.6 
-#    rm -rf $FEELPP_WORKDIR 
-#fi
-if [ ! -z "$do_gcc47" -a -x /usr/bin/g++-4.7 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc47
-    rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.7,FEELPP_CXX=/usr/bin/g++-4.7
-    rm -rf $FEELPP_WORKDIR 
-fi
-if [ ! -z "$do_gcc48" -a -x /usr/bin/g++-4.8 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc48
-    rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/bin/g++-4.8 
-    rm -rf $FEELPP_WORKDIR 
-fi
-if [ ! -z "$do_gcc49" -a -x /usr/bin/g++-4.9 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-gcc49
-    rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=gcc-4.9,FEELPP_CXX=/usr/bin/g++-4.9 
-    rm -rf $FEELPP_WORKDIR 
-fi
-if [ ! -z "$do_clang" -a -x /usr/bin/clang++-3.5 ]; then
-    export FEELPP_WORKDIR=/tmp/feel-clang
-    rm -rf $FEELPP_WORKDIR 
-    clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
-    $COMMON,FEELPP_CXXNAME=clang-$clang_version,FEELPP_CXX=/usr/bin/clang++-3.5
-    rm -rf $FEELPP_WORKDIR 
-fi
-rm -rf $FEELPP_SCRATCHDIR
+for ccomp in ${compiler[@]}; do
+  echo "**"
+  which $ccomp
+  if [[ $? == 0 ]]; then
+    boost
+  fi
+done #Compiler

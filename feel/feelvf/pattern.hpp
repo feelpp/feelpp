@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,7 +35,7 @@ enum  Pattern
     DEFAULT   = 1 << 0,
     EXTENDED  = 1 << 1,
     COUPLED   = 1 << 2,
-    SYMMETRIC = 1 << 3,
+    PATTERN_SYMMETRIC = 1 << 3,
     ZERO      = 1 << 4,
     HAS_NO_BLOCK_PATTERN = 1 << 5
 };

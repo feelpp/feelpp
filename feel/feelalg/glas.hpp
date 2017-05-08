@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2005-08-17
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -33,6 +34,8 @@
 #include <sstream>
 #include <fstream>
 
+#include <Eigen/Core>
+
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/uniform_real.hpp>
@@ -59,6 +62,24 @@ namespace Feel
 {
 const double Pi = 3.14159265358979323846264338328;
 const double TGV = 1e20;
+
+/**
+ * @return true is the matrix has no Inf, false otherwise
+ */
+template<typename Derived>
+inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+{
+    return ( (x - x).array() == (x - x).array()).all();
+}
+
+/**
+ * @return true is matrix has no NaN, false otherwise
+ */
+template<typename Derived>
+inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+{
+    return ((x.array() == x.array())).all();
+}
 
 template <class T>
 inline T Min ( const T &a, const T &b )
@@ -127,18 +148,7 @@ struct node
     //typedef ublas::vector<T, ublas::bounded_array<T, S> >  type;
     typedef ublas::vector<T>  type;
 };
-#if 0
-/*!
-  \typedef Vector node_type
-  type for nodes. Typically \c node_type will be of size 1,2,...,3
-*/
-typedef node<double, 3>::type node_type;
 
-/*!
-  gradient type
-*/
-typedef node<double, 3>::type  gradient_node_type;
-#endif
 /*!
   hessian type
 */
@@ -160,13 +170,22 @@ struct matrix_node
     typedef ublas::matrix<T, ublas::column_major>  type;
 };
 
-#if 0
-typedef matrix_node<double>::type matrix_node_type;
-#endif
+//! Eigen type to map matrix_type (row major)
+template<typename T = double>
+using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
 
-inline
+//! Eigen type to map matrix_node<>::type
+template<typename T = double>
+using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+
+//! Eigen type to map node_type
+template<typename T = double>
+using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
+
+
+inline FEELPP_DEPRECATED
 DebugStream&
-operator<<( DebugStream& __os, node<real64_type>::type const& __n )
+operator<<( DebugStream& __os, node<real64_type>::type const& __n ) 
 {
     if ( __os.doPrint() )
     {
@@ -179,9 +198,9 @@ operator<<( DebugStream& __os, node<real64_type>::type const& __n )
 
     return __os;
 }
-inline
+inline FEELPP_DEPRECATED
 NdebugStream&
-operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ )
+operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ ) 
 {
     return os;
 }
@@ -189,8 +208,8 @@ operator<<( NdebugStream& os, node<real64_type>::type const& /*n*/ )
 
 #if defined( FEELPP_HAS_QD_QD_H )
 inline
-DebugStream&
-operator<<( DebugStream& __os, node<dd_real>::type const& __n )
+DebugStream& FEELPP_DEPRECATED
+operator<<( DebugStream& __os, node<dd_real>::type const& __n ) 
 {
     if ( __os.doPrint() )
     {
@@ -203,16 +222,16 @@ operator<<( DebugStream& __os, node<dd_real>::type const& __n )
 
     return __os;
 }
-inline
+inline FEELPP_DEPRECATED
 NdebugStream&
-operator<<( NdebugStream& __os, node<dd_real>::type const& __n )
+operator<<( NdebugStream& __os, node<dd_real>::type const& __n ) 
 {
     return __os;
 }
 
 inline
-DebugStream&
-operator<<( DebugStream& __os, node<qd_real>::type const& __n )
+DebugStream& FEELPP_DEPRECATED
+operator<<( DebugStream& __os, node<qd_real>::type const& __n ) 
 {
     if ( __os.doPrint() )
     {
@@ -225,9 +244,9 @@ operator<<( DebugStream& __os, node<qd_real>::type const& __n )
 
     return __os;
 }
-inline
+inline FEELPP_DEPRECATED
 NdebugStream&
-operator<<( NdebugStream& __os, node<qd_real>::type const& __n )
+operator<<( NdebugStream& __os, node<qd_real>::type const& __n ) 
 {
     return __os;
 }
@@ -236,9 +255,9 @@ operator<<( NdebugStream& __os, node<qd_real>::type const& __n )
 #endif /* FEELPP_HAS_QD_QD_H */
 
 template<typename T>
-inline
+inline FEELPP_DEPRECATED
 DebugStream&
-operator<<( DebugStream& __os, ublas::vector<T> const& __n )
+operator<<( DebugStream& __os, ublas::vector<T> const& __n ) 
 {
     if ( __os.doPrint() )
     {
@@ -252,16 +271,16 @@ operator<<( DebugStream& __os, ublas::vector<T> const& __n )
     return __os;
 }
 template<typename T>
-inline
+inline FEELPP_DEPRECATED
 NdebugStream&
-operator<<( NdebugStream& __os, ublas::vector<T> const& /*__n*/ )
+operator<<( NdebugStream& __os, ublas::vector<T> const& /*__n*/ ) 
 {
     return __os;
 }
 template<typename T, typename Orient>
-inline
+inline FEELPP_DEPRECATED
 DebugStream&
-operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n )
+operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n ) 
 {
     if ( __os.doPrint() )
     {
@@ -275,9 +294,9 @@ operator<<( DebugStream& __os, ublas::matrix<T, Orient> const& __n )
     return __os;
 }
 template<typename T,typename Orient>
-inline
+inline FEELPP_DEPRECATED
 NdebugStream&
-operator<<( NdebugStream& __os, ublas::matrix<T,Orient> const& /*__n*/ )
+operator<<( NdebugStream& __os, ublas::matrix<T,Orient> const& /*__n*/ ) 
 {
     return __os;
 }

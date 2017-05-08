@@ -1,8 +1,8 @@
-/*  -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/*  -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-08-26
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file laplacian_dirac.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-08-26
  */
 

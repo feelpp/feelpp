@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -155,7 +155,8 @@ struct IM
     };
 };
 
-template<int IMORDER>
+template<int IMORDER,
+         template<class Convex, uint16_type O, typename T2> class QPS = Gauss>
 struct _Q
 {
     static const int order = IMORDER;
@@ -166,12 +167,12 @@ struct _Q
     struct apply
     {
         typedef typename mpl::if_<mpl::and_<mpl::or_<mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
-                mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
-                mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
-                mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
-                mpl::identity<IMSimplex<DIM, IMORDER, T> >,
-                mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type type;
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<2> > >,
+                                                     mpl::and_<mpl::less_equal<mpl::int_<IMORDER>,mpl::int_<20> >,
+                                                               mpl::equal_to<mpl::int_<DIM>,mpl::int_<3> > > >,
+                                            mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
+                                  mpl::identity<IMSimplex<DIM, IMORDER, T> >,
+                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Entity,QPS> > >::type::type type;
     };
 
     template<int DIM,
@@ -179,7 +180,7 @@ struct _Q
              template<uint16_type, uint16_type, uint16_type> class Entity>
     struct applyIMGeneral
     {
-        typedef IMGeneral<DIM, IMORDER, T, Entity> type;
+        typedef IMGeneral<DIM, IMORDER, T, Entity,QPS> type;
     };
 
     template<typename ContextType>
@@ -194,9 +195,20 @@ struct _Q
                 mpl::bool_<ContextType::element_type::is_simplex> >,
                 mpl::identity<IMSimplex<DIM, IMORDER, T> >,
                 typename mpl::if_<mpl::bool_<ContextType::element_type::is_simplex>,
-                mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex> >,
-                mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube> > >::type>::type::type type;
+                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Simplex,QPS> >,
+                                  mpl::identity<IMGeneral<DIM, IMORDER, T, Hypercube,QPS> > >::type>::type::type type;
     };
+};
+
+
+template<int IMORDER,
+         int DIM,
+         template<uint16_type, uint16_type, uint16_type> class Entity,
+         template<class Convex, uint16_type O, typename T2> class QPS,
+         typename T>
+struct IMGeneric
+{
+    typedef typename _Q<IMORDER,QPS>::template apply<DIM,T,Entity>::type type;
 };
 
 

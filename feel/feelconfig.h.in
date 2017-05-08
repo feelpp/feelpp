@@ -18,6 +18,12 @@
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
+/* Define to 1 if you have ACUSIM available. */
+#cmakedefine FEELPP_HAS_ACUSIM
+
+/* Define to 1 if you have ANN available. */
+#cmakedefine FEELPP_HAS_ANN
+
 /* Define to 1 if you have the ANN headers are available. */
 #cmakedefine FEELPP_HAS_ANN_H
 
@@ -30,11 +36,17 @@
 /* Define to 1 if you have the <Eigen/Eigen> header file. */
 #cmakedefine FEELPP_HAS_EIGEN_EIGEN
 
+/* Define to 1 if you have FFTW available. */
+#cmakedefine FEELPP_HAS_FFTW
+
 /* Define to 1 if you have GINAC available. */
 #cmakedefine FEELPP_HAS_GINAC
 
 /* Define to 1 if you have the GLPK headers available. */
 #cmakedefine FEELPP_HAS_GLPK_H
+
+/* define the maximum polynomial order to instantiate */
+#cmakedefine FEELPP_INSTANTIATION_ORDER_MAX @FEELPP_INSTANTIATION_ORDER_MAX@
 
 /* Define executable to launch MPI mode. */
 #cmakedefine MPIEXEC @MPIEXEC@
@@ -54,11 +66,17 @@
 /* Define to 1 if you have the gperftools library available. */
 #cmakedefine FEELPP_HAS_GPERFTOOLS
 
+/* Define to 1 if you have METIS available. */
+#cmakedefine FEELPP_HAS_METIS
+
 /* Define to 1 if you have HDF5 available. */
 #cmakedefine FEELPP_HAS_HDF5
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine FEELPP_HAS_INTTYPES_H
+
+/* Define if the superlu library can be used. */
+#cmakedefine FEELPP_HAS_LIBXML2
 
 /* Define if the superlu library can be used. */
 #cmakedefine FEELPP_HAS_LIBSUPERLU
@@ -135,6 +153,9 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
+/* Define to 1 if you have ipopt. */
+#cmakedefine FEELPP_HAS_IPOPT
+
 /* Define to 1 if you have nlopt. */
 #cmakedefine FEELPP_HAS_NLOPT
 
@@ -167,6 +188,9 @@
 
 /* Define to 1 if you have VTK . */
 #cmakedefine FEELPP_HAS_VTK
+
+/* Define to 1 if you have ParaView . */
+#cmakedefine FEELPP_HAS_PARAVIEW
 
 /* Define to 1 if you the insitu part is enabled for VTK . */
 #cmakedefine FEELPP_VTK_INSITU_ENABLED

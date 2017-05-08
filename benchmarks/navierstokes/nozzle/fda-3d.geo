@@ -1,5 +1,5 @@
-hmax = 0.0008;
-hmin = 0.00017;
+hmax = 0.001;
+hmin = 0.0005;
 lo = 0.18;  //0.18;0.144 
 
 Mesh.CharacteristicLengthMin=hmin;

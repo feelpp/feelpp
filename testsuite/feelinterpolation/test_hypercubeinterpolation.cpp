@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Abdoulaye Samake <abdoulaye.samake1@e.ujf-grenoble.fr>
        Date: 2013-11-15
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ Test<Dim,Order>::run()
                                    % convex_type::name()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -113,7 +113,7 @@ Test<Dim,Order>::run()
                                               _usenames=false,
                                               _shape="hypercube",
                                               _dim=Dim,
-                                              _h=option(_name="gmsh.hsize").template as<double>() ,
+                                              _h=doption(_name="gmsh.hsize") ,
                                               _convex="Hypercube",
                                               //_convex=convex_type::name(),
                                               _xmin=0.,

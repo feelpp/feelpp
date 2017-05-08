@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -22,9 +22,9 @@
 #
 #
 set(SRC
-  hdf5.cpp
   info.cpp
   feel.cpp
+  feelio.cpp
   application.cpp
   environment.cpp
   simget.cpp
@@ -35,8 +35,12 @@ set(SRC
   pslogger.cpp
   worldcomm.cpp
   debug.cpp
-  
- )
+  utility.cpp
+  removecomments.cpp
+  )
+if(FEELPP_HAS_HDF5)
+    set(SRC hdf5.cpp ${SRC})
+endif()
 if (NOT FEELPP_HAS_STDIO_FMEMOPEN )
   set( SRC fmemopen.c ${SRC})
 endif()

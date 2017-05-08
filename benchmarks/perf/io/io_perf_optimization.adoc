@@ -1,0 +1,32 @@
+IO PERF OPTIMIZATION - (Yacine OULD ROUIS, MdlS yacine.ould-rouis@cea.fr)
+
+ENSIGHTGOLD EXPORTER
+The IO perf tests revealed serious problems on the ensightgold exporter execution times. 
+As an example, on [512 procs, 7e6 dof](*), factor 15 to 30 or more between ensightgold export and single-file-per-proc ensight format
+
+further analysis, through score-p instrumentation and profiling, allowed to identify the bottlenecks : The problem was the choice and use of the MPIIO writing procedure.
+
+The MPIIO procedure used was the collective operation, with collective implicit pointer MPI_File_write_ordered. In IO, it is recommended to use collective operations, but in our code, more than 60% of the calls, only the Master rank has something to write. This uselessly multiplied the accesses to the writing pointers. 
+
+I - A first step consisted in benchmarking the IOs, using different MPIIO options at file opening (collective buffering, data sieving, striping factor and striping unit). The results showed an improvement of 10 or 20% when collective buffering option is enabled. When reading is not necessary, the execution is also a little faster when using a write only mode. This was not enough to solve the problem. 
+
+II - A second step consisted in refactoring some contiguous writing calls where "only master rank had something to write". This confirmed the observations, making the code 10% faster. This kind of optimization is limited, and a lot of time was still wasted.
+
+III - A third step consisted in reconsidering the choice of writing operation : individual operations clearly fit better the writing algorithm. Choice was then : 
+1 - individual operation, with individual explicit pointers MPI_File_write_at
+2 - individual operation, with a shared implicit pointer MPI_File_write_shared
+3 - a mix between individual and global pointers (not sure it works)
+
+The solution 1 was implemented, with an explicit management of the offsets for each process. The resulting writing times are much better : 
+- overall improvement of factor *10
+- as an example, writeGeoHeader() where only the master rank writes, is improved, on the use case (*), from 7 seconds (2.8 after step II) to 0.00 seconds
+- on the use case (*), the resulting exporter, compared to single-file-per-proc ensight format, has now an average factor of 2
+
+The modifications were applied in : 
+feelfilters/exporterensightgold.hpp
+feelfilters/exporterensightgold_impl.hpp
+feelfilters/detail/fileindex.cpp
+  
+Some tests are still needed, especially on multi-timestep cases that I did not try.
+
+

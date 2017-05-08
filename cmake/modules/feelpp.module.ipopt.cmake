@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-19
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -25,86 +25,51 @@ OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" OF
 
 if ( FEELPP_ENABLE_IPOPT )
 
-  if ( GIT_FOUND )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/ipopt )
 
-    execute_process(
-      COMMAND git submodule update --init --recursive contrib/ipopt
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      )
-    MESSAGE(STATUS "Git submodule contrib/ipopt updated.")
-  else()
-    if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/ )
-      message( FATAL_ERROR "Please make sure that git submodule contrib/ipopt is available")
-      message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/ipopt`")
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+
+      execute_process(
+        COMMAND git submodule update --init --recursive contrib/ipopt
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE ${CMAKE_BUILD_DIR}/git.ipopt.log
+        ERROR_FILE ${CMAKE_BUILD_DIR}/git.ipopt.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "Git submodule contrib/ipopt updated.")
+      else()
+        MESSAGE(WARNING "Git submodule contrib/ipopt failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/ )
+        message( WARNING "Please make sure that git submodule contrib/ipopt is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/ipopt`")
+      endif()
+    endif()
+
+    if ( EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/CMakeLists.txt )
+
+      message(STATUS "[feelpp] use contrib/ipopt : ${CMAKE_SOURCE_DIR}/contrib/ipopt/")
+      SET(FEELPP_HAS_IPOPT 1)
+      #ADD_DEFINITIONS( -DFEELPP_HAS_IPOPT )
+      #ADD_DEFINITIONS( -fPIC )
+
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
+      #add_subdirectory(contrib/ipopt)
+
+      #SET(IPOPT_INCLUDE_DIR
+      #          ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
+      #)
+
+      # Compile/copy header in cmake binary dirs.
+      include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
+
+      add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ipopt)
+      list(APPEND FEELPP_LIBRARIES feelpp_ipopt)
+      add_dependencies(contrib feelpp_ipopt)
+
     endif()
   endif()
-
-  # if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/api/ipopt.hpp )
-
-  #   execute_process(
-  #     COMMAND  touch  swig/ipopt.scm.in
-  #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/ipopt/
-  #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-touch"
-  #     #ERROR_FILE "ipopt-touch-errors"
-  #     )
-  #   execute_process(
-  #     COMMAND autoreconf --verbose --install --force
-  #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/ipopt/
-  #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-autoreconf"
-  #     #ERROR_FILE "ipopt-autoreconf-errors"
-  #     )
-  #   execute_process(
-  #     COMMAND autoreconf --verbose --install --force
-  #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/ipopt/
-  #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-autoreconf"
-  #     #ERROR_FILE "ipopt-autoreconf-errors"
-  #     )
-
-  #   if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/configure )
-  #     message(FATAL_ERROR "configure not available")
-  #   endif()
-
-  #   # ensure that build dir is created
-  #   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/ipopt)
-
-  #   if ( FEELPP_ENABLE_BUILD_STATIC )
-  #     execute_process(
-  #       COMMAND ${FEELPP_HOME_DIR}/contrib/ipopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
-  #       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/ipopt
-  #       #OUTPUT_QUIET
-  #       OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-configure"
-  #       #ERROR_FILE "ipopt-configure-errors"
-  #       )
-  #   else()
-  #     execute_process(
-  #       COMMAND ${FEELPP_HOME_DIR}/contrib/ipopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
-  #       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/ipopt
-  #       #      OUTPUT_QUIET
-  #       OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-configure"
-  #       #ERROR_FILE "ipopt-configure-errors"
-  #       )
-  #   endif()
-  #   execute_process(
-  #     COMMAND make ipopt.hpp
-  #     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/ipopt/api
-  #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-ipopthpp" )
-
-  #   # delete all Makefiles before Cmake generate its own
-  #   execute_process(
-  #     COMMAND make distclean
-  #     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/ipopt
-  #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/ipopt-distclean"
-  #     )
-  # endif()
-  #if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/api/ipopt.hpp )
-  #  message(FATAL_ERROR "NLOpt: ipopt.hpp was not generated")
-  #else()
-  #  message(STATUS "NLOpt: ipopt.hpp is generated")
-  #endif()
-  #include_directories(${FEELPP_SOURCE_DIR}/contrib/ipopt/api)
-  #add_subdirectory(contrib/ipopt)
-  #SET(FEELPP_LIBRARIES feelpp_ipopt ${FEELPP_LIBRARIES} )
-  #SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
-  #SET(FEELPP_HAS_IPOPT 1)
-
 endif()
+

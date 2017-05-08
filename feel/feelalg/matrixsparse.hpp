@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -119,7 +119,12 @@ public:
      */
     MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+        :
+        MatrixSparse( dmRow, dmCol, dmRow->worldComm() )
+        {}
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -247,6 +252,11 @@ public:
         M_graph = graph;
     }
 
+    //!
+    //! @return the number of allocated non-zero entries
+    //!
+    virtual std::size_t nnz() const = 0;
+    
     /**
      * set matrix properties, @see MatrixProperties
      */
@@ -255,6 +265,22 @@ public:
         M_mprop = ( size_type )p;
         checkProperties();
     }
+    /**
+     * \return true is matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric( bool check = false ) const
+        {
+            checkProperties();
+            return M_mprop.test( SYMMETRIC );
+        }
+    /**
+     * \return true is matrix is symmetric struturally, false otherwise
+     */
+    bool isStructurallySymmetric() const
+        {
+            checkProperties();
+            return M_mprop.test( STRUCTURALLY_SYMMETRIC );
+        }
     /**
      * \return true if matrix is hermitian, false otherwise
      */
@@ -272,6 +298,15 @@ public:
         checkProperties();
         return M_mprop.test( NON_HERMITIAN );
     }
+
+    /**
+     * \return true if matrix is symmetric positive definite(SPD), false otherwise
+     */
+    bool isSPD() const
+        {
+            checkProperties();
+            return M_mprop.test( SYMMETRIC | POSITIVE_DEFINITE );
+        }
 
     /**
      * \return true if matrix is positive definite, false otherwise
@@ -292,7 +327,7 @@ public:
     }
 
     /**
-     * \return true if matrix is singular, false otherwise
+     * \return true if matrix is positive definite, false otherwise
      */
     bool isPositiveDefinite() const
     {
@@ -300,21 +335,38 @@ public:
         return M_mprop.test( POSITIVE_DEFINITE );
     }
 
+    /**
+     * \return true if matrix is negative definite, false otherwise
+     */
+    bool isNegativeDefinite() const
+    {
+        checkProperties();
+        return M_mprop.test( NEGATIVE_DEFINITE );
+    }
+
+    /**
+     * \return true if matrix is negative definite, false otherwise
+     */
+    bool isIndefinite() const
+        {
+            checkProperties();
+            return M_mprop.test( INDEFINITE );
+        }
+    
     bool haveConsistentProperties() const
     {
         bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
         bool p2 = M_mprop.test( HERMITIAN ) && M_mprop.test( NON_HERMITIAN );
-        return ( p1 == false ) && ( p2 == false );
+        bool p3 = M_mprop.test( SYMMETRIC ) && M_mprop.test( STRUCTURALLY_SYMMETRIC );
+        bool p4 = ( M_mprop.test( INDEFINITE ) &&
+                    ( M_mprop.test( POSITIVE_DEFINITE ) ||
+                      M_mprop.test( NEGATIVE_DEFINITE ) ) );
+        return ( p1 == false ) && ( p2 == false ) && ( p3 == false ) && ( p4 == false );
     }
     bool isDense() const
     {
         return M_mprop.test( DENSE );
     }
-
-    /**
-     * \return true if matrix is symmetric, false otherwise
-     */
-    virtual bool isSymmetric() const;
 
     /**
      * \return true if \p this is the transpose of Trans, false otherwise
@@ -328,11 +380,16 @@ public:
         {
             std::ostringstream ostr;
             ostr << "Invalid matrix properties:\n"
-                 << "           HERMITIAN: " << isHermitian() << "\n"
-                 << "       NON_HERMITIAN: " << isNonHermitian() << "\n"
-                 << "            SINGULAR: " << isSingular() << "\n"
-                 << "   POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
-                 << "               DENSE: " << isDense() << "\n";
+                 << "                   SPD: " << isSPD() << "\n"                
+                 << "             SYMMETRIC: " << this->isSymmetric() << "\n"
+                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"                
+                 << "             HERMITIAN: " << isHermitian() << "\n"
+                 << "         NON_HERMITIAN: " << isNonHermitian() << "\n"
+                 << "              SINGULAR: " << isSingular() << "\n"
+                 << "     POSITIVE_DEFINITE: " << isPositiveDefinite() << "\n"
+                 << "     NEGATIVE_DEFINITE: " << isNegativeDefinite() << "\n"
+                 << "            INDEFINITE: " << isIndefinite() << "\n"
+                 << "                 DENSE: " << isDense() << "\n";
             throw std::logic_error( ostr.str() );
         }
     }
@@ -446,14 +503,14 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    virtual void addMatrix ( const T, MatrixSparse<T> & ) = 0;
+    virtual void addMatrix ( const T, MatrixSparse<T> const& ) = 0;
 
     /**
      * Add a Sparse matrix \p _X, scaled with \p _a, to \p this,
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > & m )
+    void addMatrix ( const T& s, boost::shared_ptr<MatrixSparse<T> > const& m )
     {
         this->addMatrix( s, *m );
     }
@@ -464,8 +521,8 @@ public:
      * Multiplies the matrix with \p arg and stores the result in \p
      * dest.
      */
-    void multVector ( const Vector<T>& arg,
-                      Vector<T>& dest ) const;
+    virtual void multVector ( const Vector<T>& arg, Vector<T>& dest,
+                              bool transpose = false ) const;
 
     /**
      * Multiplies the matrix with \p arg and stores the result in \p
@@ -483,6 +540,35 @@ public:
     void multAddVector ( const Vector<T>& arg,
                          Vector<T>& dest ) const;
 
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    virtual void setDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * set diagonal entries from vector vecDiag
+     */
+    void setDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->setDiagonal( *vecDiag );
+        }
+
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    virtual void addDiagonal( Vector<T> const& vecDiag )
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+    /**
+     * add diagonal entries from vector vecDiag
+     */
+    void addDiagonal( boost::shared_ptr<Vector<T> > const& vecDiag )
+        {
+            this->addDiagonal( *vecDiag );
+        }
 
     /**
      * Return the value of the entry \p (i,j).  This may be an
@@ -518,6 +604,15 @@ public:
     }
 
     /**
+     * Return copy vector of the diagonal part of the matrix.
+     */
+    virtual boost::shared_ptr<Vector<T> > diagonal() const
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return boost::shared_ptr<Vector<T>>();
+    }
+
+    /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed
@@ -527,8 +622,9 @@ public:
     /**
      * \return the transpose of the matrix
      */
-    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
+    virtual boost::shared_ptr<MatrixSparse<T> > transpose( size_type options = MATRIX_TRANSPOSE_ASSEMBLED ) const
     {
+        CHECK( false ) << "Not Implemented in base class!";
         boost::shared_ptr<MatrixSparse<T> > Mt;
         transpose( *Mt, options );
         return Mt;
@@ -607,10 +703,22 @@ public:
     virtual real_type linftyNorm () const = 0;
 
     /**
-     * see if Sparse matrix has been closed
-     * and fully assembled yet
+     * @returns true if the matrix is closed (ready for
+     * computation), false otherwise.
      */
-    virtual bool closed() const = 0;
+    virtual bool closed() const
+    {
+        return M_is_closed;
+    }
+
+    /**
+     * @ set false if the matrix is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b ) const
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Print the contents of the matrix to the screen
@@ -668,6 +776,19 @@ public:
     }
 
     /**
+     * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
+     * row and column indices given in the "rows" and "cols" entries.
+     */
+    virtual
+    void
+    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                     std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols, bool doClose = true )
+    {
+        CHECK( false ) << "invalid call : Not Implemented in base class";
+    }
+
+    /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
@@ -699,18 +820,22 @@ public:
     }
 
     /**
-     * eliminate rows without change pattern, and put 1 on the diagonal
+     * eliminate rows without change pattern, and put \c value_on_diagonal on the diagonal
      * entry
      *
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
+    virtual void zeroRows( std::vector<int> const& rows, 
+                           Vector<value_type> const& values, 
+                           Vector<value_type>& rhs, 
+                           Context const& on_context,
+                           value_type value_on_diagonal ) = 0;
 
     /**
      * update a block matrix
      */
-    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j ) = 0;
+    virtual void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) = 0;
 
 
     /**
@@ -720,29 +845,7 @@ public:
     {
         M_is_initialized = _init;
     }
-#if 0
-    template<typename DomainSpace, typename ImageSpace>
-    void updateIndexSplit( DomainSpace const& dm, ImageSpace const& im )
-    {
-        auto nSpace = DomainSpace::element_type::nSpaces;
 
-        if ( nSpace>1 )
-        {
-            //std::cout << "\n Debug : nSpace " << nSpace << "\n";
-            std::vector < std::vector<int> > is( nSpace );
-            uint cptSpaces=0;
-            uint start=0;
-            auto result = boost::make_tuple( cptSpaces,start );
-
-            std::vector < std::vector<int> > indexSplit( nSpace );
-            //detail::computeNDofForEachSpace cndof(nSpace);
-            detail::computeNDofForEachSpace cndof( indexSplit );
-            boost::fusion::fold( dm->functionSpaces(), result,  cndof );
-
-            this->setIndexSplit( indexSplit );
-        }
-    }
-#endif
     virtual void sqrt( MatrixSparse<value_type>& _m ) const;
 
     void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
@@ -750,11 +853,54 @@ public:
         sqrt(*_m);
     }
 
-    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    virtual void matMatMult( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const;
 
+    /**
+     * Creates the matrix product C = P^T * A * P with A the current matrix
+     */
+    virtual void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     * Creates the matrix product C = P * A * P^T with A the current matrix
+     */
+    virtual void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const
+        {
+            CHECK( false ) << "Not Implemented in base class!";
+        }
+
+    /**
+     *
+     */
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
+    /**
+     *
+     */
     virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
+
+    /**
+     * Get informations (filling, nnz, ...)
+     * Implemented in MatrixPetsc
+     */
+    virtual void getMatInfo( std::vector<double> &) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
+    virtual void threshold( void ) 
+    {
+        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
+        FEELPP_ASSERT( 0 ).error( "invalid call" );
+    }
+
 
 protected:
     /**
@@ -766,14 +912,12 @@ protected:
                                  const std::vector<size_type>& ,
                                  const std::vector<size_type>& ,
                                  const bool ) const
-    {
-        std::cerr << "Error! This function is not yet implemented in the base class!"
-                  << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
-    }
+        {
+            CHECK(0) << "getSubMatrix is not implemented in the base class MatrixSparse!"
+                     << std::endl;
+        }
 
     //! mpi communicator
-    //mpi::communicator M_comm;
     WorldComm M_worldComm;
 
     /**
@@ -782,16 +926,23 @@ protected:
      */
     bool M_is_initialized;
 
+    /**
+     * Flag to see if the Numeric
+     * assemble routines have been called yet
+     */
+    mutable bool M_is_closed;
+
+    //! non zero entries representation
     graph_ptrtype M_graph;
 
+    //! matrix properties
     Context M_mprop;
 
     indexsplit_ptrtype M_indexSplit;
 
-    /**
-     * data distribution map of the vector over the processors
-     */
+    //! row data distribution in matrix
     datamap_ptrtype M_mapRow;
+    //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
 
@@ -809,6 +960,7 @@ inline
 MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
 {}
 
@@ -817,6 +969,7 @@ inline
 MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
+    M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
     M_mapCol( dmCol )
@@ -845,8 +998,8 @@ void MatrixSparse<T>::print( std::ostream& os ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::multVector ( const Vector<T>& arg,
-                                   Vector<T>& dest ) const
+void MatrixSparse<T>::multVector ( const Vector<T>& arg, Vector<T>& dest,
+                                   bool transpose ) const
 {
     dest.zero();
     this->multAddVector( arg,dest );
@@ -927,7 +1080,7 @@ void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
 }
 
 template <typename T>
-void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res ) const
 {
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;
@@ -948,16 +1101,6 @@ void MatrixSparse<T>::applyInverseSqrt( Vector<value_type>& vec_in, Vector<value
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;
     FEELPP_ASSERT( 0 ).error( "invalid call" );
-}
-
-template <typename T>
-bool MatrixSparse<T>::isSymmetric () const
-{
-    std::cerr << "Error! This function is not yet implemented in the base class!"
-              << std::endl;
-    FEELPP_ASSERT( 0 ).error( "invalid call" );
-
-    return 0;
 }
 
 template <typename T>

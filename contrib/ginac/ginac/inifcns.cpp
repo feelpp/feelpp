@@ -3,7 +3,7 @@
  *  Implementation of GiNaC's initially known functions. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "ex.h"
 #include "constant.h"
 #include "lst.h"
+#include "fderivative.h"
 #include "matrix.h"
 #include "mul.h"
 #include "power.h"
@@ -66,6 +67,19 @@ static ex conjugate_conjugate(const ex & arg)
 	return arg;
 }
 
+// If x is real then U.diff(x)-I*V.diff(x) represents both conjugate(U+I*V).diff(x) 
+// and conjugate((U+I*V).diff(x))
+static ex conjugate_expl_derivative(const ex & arg, const symbol & s)
+{
+	if (s.info(info_flags::real))
+		return conjugate(arg.diff(s));
+	else {
+		exvector vec_arg;
+		vec_arg.push_back(arg);
+		return fderivative(ex_to<function>(conjugate(arg)).get_serial(),0,vec_arg).hold()*arg.diff(s);
+	}
+}
+
 static ex conjugate_real_part(const ex & arg)
 {
 	return arg.real_part();
@@ -76,13 +90,51 @@ static ex conjugate_imag_part(const ex & arg)
 	return -arg.imag_part();
 }
 
+static bool func_arg_info(const ex & arg, unsigned inf)
+{
+	// for some functions we can return the info() of its argument
+	// (think of conjugate())
+	switch (inf) {
+		case info_flags::polynomial:
+		case info_flags::integer_polynomial:
+		case info_flags::cinteger_polynomial:
+		case info_flags::rational_polynomial:
+		case info_flags::real:
+		case info_flags::rational:
+		case info_flags::integer:
+		case info_flags::crational:
+		case info_flags::cinteger:
+		case info_flags::even:
+		case info_flags::odd:
+		case info_flags::prime:
+		case info_flags::crational_polynomial:
+		case info_flags::rational_function:
+		case info_flags::positive:
+		case info_flags::negative:
+		case info_flags::nonnegative:
+		case info_flags::posint:
+		case info_flags::negint:
+		case info_flags::nonnegint:
+		case info_flags::has_indices:
+			return arg.info(inf);
+	}
+	return false;
+}
+
+static bool conjugate_info(const ex & arg, unsigned inf)
+{
+	return func_arg_info(arg, inf);
+}
+
 REGISTER_FUNCTION(conjugate_function, eval_func(conjugate_eval).
                                       evalf_func(conjugate_evalf).
+                                      expl_derivative_func(conjugate_expl_derivative).
+                                      info_func(conjugate_info).
                                       print_func<print_latex>(conjugate_print_latex).
                                       conjugate_func(conjugate_conjugate).
                                       real_part_func(conjugate_real_part).
                                       imag_part_func(conjugate_imag_part).
-                                      set_name("conjugate","conjugate"));
+                                      set_name("conjugate","conjugate"))
 
 //////////
 // real part
@@ -121,13 +173,26 @@ static ex real_part_imag_part(const ex & arg)
 	return 0;
 }
 
+// If x is real then Re(e).diff(x) is equal to Re(e.diff(x)) 
+static ex real_part_expl_derivative(const ex & arg, const symbol & s)
+{
+	if (s.info(info_flags::real))
+		return real_part_function(arg.diff(s));
+	else {
+		exvector vec_arg;
+		vec_arg.push_back(arg);
+		return fderivative(ex_to<function>(real_part(arg)).get_serial(),0,vec_arg).hold()*arg.diff(s);
+	}
+}
+
 REGISTER_FUNCTION(real_part_function, eval_func(real_part_eval).
                                       evalf_func(real_part_evalf).
+                                      expl_derivative_func(real_part_expl_derivative).
                                       print_func<print_latex>(real_part_print_latex).
                                       conjugate_func(real_part_conjugate).
                                       real_part_func(real_part_real_part).
                                       imag_part_func(real_part_imag_part).
-                                      set_name("real_part","real_part"));
+                                      set_name("real_part","real_part"))
 
 //////////
 // imag part
@@ -166,13 +231,26 @@ static ex imag_part_imag_part(const ex & arg)
 	return 0;
 }
 
+// If x is real then Im(e).diff(x) is equal to Im(e.diff(x)) 
+static ex imag_part_expl_derivative(const ex & arg, const symbol & s)
+{
+	if (s.info(info_flags::real))
+		return imag_part_function(arg.diff(s));
+	else {
+		exvector vec_arg;
+		vec_arg.push_back(arg);
+		return fderivative(ex_to<function>(imag_part(arg)).get_serial(),0,vec_arg).hold()*arg.diff(s);
+	}
+}
+
 REGISTER_FUNCTION(imag_part_function, eval_func(imag_part_eval).
                                       evalf_func(imag_part_evalf).
+                                      expl_derivative_func(imag_part_expl_derivative).
                                       print_func<print_latex>(imag_part_print_latex).
                                       conjugate_func(imag_part_conjugate).
                                       real_part_func(imag_part_real_part).
                                       imag_part_func(imag_part_imag_part).
-                                      set_name("imag_part","imag_part"));
+                                      set_name("imag_part","imag_part"))
 
 //////////
 // absolute value
@@ -194,10 +272,56 @@ static ex abs_eval(const ex & arg)
 	if (arg.info(info_flags::nonnegative))
 		return arg;
 
+	if (arg.info(info_flags::negative) || (-arg).info(info_flags::nonnegative))
+		return -arg;
+
 	if (is_ex_the_function(arg, abs))
 		return arg;
 
+	if (is_ex_the_function(arg, exp))
+		return exp(arg.op(0).real_part());
+
+	if (is_exactly_a<power>(arg)) {
+		const ex& base = arg.op(0);
+		const ex& exponent = arg.op(1);
+		if (base.info(info_flags::positive) || exponent.info(info_flags::real))
+			return pow(abs(base), exponent.real_part());
+	}
+
+	if (is_ex_the_function(arg, conjugate_function))
+		return abs(arg.op(0));
+
+	if (is_ex_the_function(arg, step))
+		return arg;
+
 	return abs(arg).hold();
+}
+
+static ex abs_expand(const ex & arg, unsigned options)
+{
+	if ((options & expand_options::expand_transcendental)
+		&& is_exactly_a<mul>(arg)) {
+		exvector prodseq;
+		prodseq.reserve(arg.nops());
+		for (const_iterator i = arg.begin(); i != arg.end(); ++i) {
+			if (options & expand_options::expand_function_args)
+				prodseq.push_back(abs(i->expand(options)));
+			else
+				prodseq.push_back(abs(*i));
+		}
+		return dynallocate<mul>(prodseq).setflag(status_flags::expanded);
+	}
+
+	if (options & expand_options::expand_function_args)
+		return abs(arg.expand(options)).hold();
+	else
+		return abs(arg).hold();
+}
+
+static ex abs_expl_derivative(const ex & arg, const symbol & s)
+{
+	ex diff_arg = arg.diff(s);
+	return (diff_arg*arg.conjugate()+arg*diff_arg.conjugate())/2/abs(arg);
 }
 
 static void abs_print_latex(const ex & arg, const print_context & c)
@@ -212,7 +336,7 @@ static void abs_print_csrc_float(const ex & arg, const print_context & c)
 
 static ex abs_conjugate(const ex & arg)
 {
-	return abs(arg);
+	return abs(arg).hold();
 }
 
 static ex abs_real_part(const ex & arg)
@@ -227,21 +351,54 @@ static ex abs_imag_part(const ex& arg)
 
 static ex abs_power(const ex & arg, const ex & exp)
 {
-	if (arg.is_equal(arg.conjugate()) && is_a<numeric>(exp) && ex_to<numeric>(exp).is_even())
-		return power(arg, exp);
-	else
+	if ((is_a<numeric>(exp) && ex_to<numeric>(exp).is_even()) || exp.info(info_flags::even)) {
+		if (arg.info(info_flags::real) || arg.is_equal(arg.conjugate()))
+			return pow(arg, exp);
+		else
+			return pow(arg, exp/2) * pow(arg.conjugate(), exp/2);
+	} else
 		return power(abs(arg), exp).hold();
+}
+
+bool abs_info(const ex & arg, unsigned inf)
+{
+	switch (inf) {
+		case info_flags::integer:
+		case info_flags::even:
+		case info_flags::odd:
+		case info_flags::prime:
+			return arg.info(inf);
+		case info_flags::nonnegint:
+			return arg.info(info_flags::integer);
+		case info_flags::nonnegative:
+		case info_flags::real:
+			return true;
+		case info_flags::negative:
+			return false;
+		case info_flags::positive:
+			return arg.info(info_flags::positive) || arg.info(info_flags::negative);
+		case info_flags::has_indices: {
+			if (arg.info(info_flags::has_indices))
+				return true;
+			else
+				return false;
+		}
+	}
+	return false;
 }
 
 REGISTER_FUNCTION(abs, eval_func(abs_eval).
                        evalf_func(abs_evalf).
+                       expand_func(abs_expand).
+                       expl_derivative_func(abs_expl_derivative).
+                       info_func(abs_info).
                        print_func<print_latex>(abs_print_latex).
                        print_func<print_csrc_float>(abs_print_csrc_float).
                        print_func<print_csrc_double>(abs_print_csrc_float).
                        conjugate_func(abs_conjugate).
                        real_part_func(abs_real_part).
                        imag_part_func(abs_imag_part).
-                       power_func(abs_power));
+                       power_func(abs_power))
 
 //////////
 // Step function
@@ -295,9 +452,8 @@ static ex step_series(const ex & arg,
 	    && !(options & series_options::suppress_branchcut))
 		throw (std::domain_error("step_series(): on imaginary axis"));
 	
-	epvector seq;
-	seq.push_back(expair(step(arg_pt), _ex0));
-	return pseries(rel,seq);
+	epvector seq { expair(step(arg_pt), _ex0) };
+	return pseries(rel, std::move(seq));
 }
 
 static ex step_conjugate(const ex& arg)
@@ -320,7 +476,7 @@ REGISTER_FUNCTION(step, eval_func(step_eval).
                         series_func(step_series).
                         conjugate_func(step_conjugate).
                         real_part_func(step_real_part).
-                        imag_part_func(step_imag_part));
+                        imag_part_func(step_imag_part))
 
 //////////
 // Complex sign
@@ -374,9 +530,8 @@ static ex csgn_series(const ex & arg,
 	    && !(options & series_options::suppress_branchcut))
 		throw (std::domain_error("csgn_series(): on imaginary axis"));
 	
-	epvector seq;
-	seq.push_back(expair(csgn(arg_pt), _ex0));
-	return pseries(rel,seq);
+	epvector seq { expair(csgn(arg_pt), _ex0) };
+	return pseries(rel, std::move(seq));
 }
 
 static ex csgn_conjugate(const ex& arg)
@@ -398,7 +553,7 @@ static ex csgn_power(const ex & arg, const ex & exp)
 {
 	if (is_a<numeric>(exp) && exp.info(info_flags::positive) && ex_to<numeric>(exp).is_integer()) {
 		if (ex_to<numeric>(exp).is_odd())
-			return csgn(arg);
+			return csgn(arg).hold();
 		else
 			return power(csgn(arg), _ex2).hold();
 	} else
@@ -412,7 +567,7 @@ REGISTER_FUNCTION(csgn, eval_func(csgn_eval).
                         conjugate_func(csgn_conjugate).
                         real_part_func(csgn_real_part).
                         imag_part_func(csgn_imag_part).
-                        power_func(csgn_power));
+                        power_func(csgn_power))
 
 
 //////////
@@ -482,14 +637,13 @@ static ex eta_series(const ex & x, const ex & y,
 	    (y_pt.info(info_flags::numeric) && y_pt.info(info_flags::negative)) ||
 	    ((x_pt*y_pt).info(info_flags::numeric) && (x_pt*y_pt).info(info_flags::negative)))
 			throw (std::domain_error("eta_series(): on discontinuity"));
-	epvector seq;
-	seq.push_back(expair(eta(x_pt,y_pt), _ex0));
-	return pseries(rel,seq);
+	epvector seq { expair(eta(x_pt,y_pt), _ex0) };
+	return pseries(rel, std::move(seq));
 }
 
 static ex eta_conjugate(const ex & x, const ex & y)
 {
-	return -eta(x, y);
+	return -eta(x, y).hold();
 }
 
 static ex eta_real_part(const ex & x, const ex & y)
@@ -509,7 +663,7 @@ REGISTER_FUNCTION(eta, eval_func(eta_eval).
                        set_symmetry(sy_symm(0, 1)).
                        conjugate_func(eta_conjugate).
                        real_part_func(eta_real_part).
-                       imag_part_func(eta_imag_part));
+                       imag_part_func(eta_imag_part))
 
 
 //////////
@@ -587,9 +741,8 @@ static ex Li2_series(const ex &x, const relational &rel, int order, unsigned opt
 			// substitute the argument's series expansion
 			ser = ser.subs(s==x.series(rel, order), subs_options::no_pattern);
 			// maybe that was terminating, so add a proper order term
-			epvector nseq;
-			nseq.push_back(expair(Order(_ex1), order));
-			ser += pseries(rel, nseq);
+			epvector nseq { expair(Order(_ex1), order) };
+			ser += pseries(rel, std::move(nseq));
 			// reexpanding it will collapse the series again
 			return ser.series(rel, order);
 			// NB: Of course, this still does not allow us to compute anything
@@ -612,9 +765,8 @@ static ex Li2_series(const ex &x, const relational &rel, int order, unsigned opt
 			// substitute the argument's series expansion
 			ser = ser.subs(s==x.series(rel, order), subs_options::no_pattern);
 			// maybe that was terminating, so add a proper order term
-			epvector nseq;
-			nseq.push_back(expair(Order(_ex1), order));
-			ser += pseries(rel, nseq);
+			epvector nseq { expair(Order(_ex1), order) };
+			ser += pseries(rel, std::move(nseq));
 			// reexpanding it will collapse the series again
 			return ser.series(rel, order);
 		}
@@ -636,7 +788,7 @@ static ex Li2_series(const ex &x, const relational &rel, int order, unsigned opt
 				seq.push_back(expair((replarg.op(i)/power(s-foo,i)).series(foo==point,1,options).op(0).subs(foo==s, subs_options::no_pattern),i));
 			// append an order term:
 			seq.push_back(expair(Order(_ex1), replarg.nops()-1));
-			return pseries(rel, seq);
+			return pseries(rel, std::move(seq));
 		}
 	}
 	// all other cases should be safe, by now:
@@ -648,7 +800,7 @@ static ex Li2_conjugate(const ex & x)
 	// conjugate(Li2(x))==Li2(conjugate(x)) unless on the branch cuts which
 	// run along the positive real axis beginning at 1.
 	if (x.info(info_flags::negative)) {
-		return Li2(x);
+		return Li2(x).hold();
 	}
 	if (is_exactly_a<numeric>(x) &&
 	    (!x.imag_part().is_zero() || x < *_num1_p)) {
@@ -662,7 +814,7 @@ REGISTER_FUNCTION(Li2, eval_func(Li2_eval).
                        derivative_func(Li2_deriv).
                        series_func(Li2_series).
                        conjugate_func(Li2_conjugate).
-                       latex_name("\\mathrm{Li}_2"));
+                       latex_name("\\mathrm{Li}_2"))
 
 //////////
 // trilogarithm
@@ -676,7 +828,7 @@ static ex Li3_eval(const ex & x)
 }
 
 REGISTER_FUNCTION(Li3, eval_func(Li3_eval).
-                       latex_name("\\mathrm{Li}_3"));
+                       latex_name("\\mathrm{Li}_3"))
 
 //////////
 // Derivatives of Riemann's Zeta-function  zetaderiv(0,x)==zeta(x)
@@ -687,7 +839,7 @@ static ex zetaderiv_eval(const ex & n, const ex & x)
 	if (n.info(info_flags::numeric)) {
 		// zetaderiv(0,x) -> zeta(x)
 		if (n.is_zero())
-			return zeta(x);
+			return zeta(x).hold();
 	}
 	
 	return zetaderiv(n, x).hold();
@@ -707,7 +859,7 @@ static ex zetaderiv_deriv(const ex & n, const ex & x, unsigned deriv_param)
 
 REGISTER_FUNCTION(zetaderiv, eval_func(zetaderiv_eval).
 	                       	 derivative_func(zetaderiv_deriv).
-  	                         latex_name("\\zeta^\\prime"));
+  	                         latex_name("\\zeta^\\prime"))
 
 //////////
 // factorial
@@ -758,7 +910,7 @@ REGISTER_FUNCTION(factorial, eval_func(factorial_eval).
                              print_func<print_latex>(factorial_print_dflt_latex).
                              conjugate_func(factorial_conjugate).
                              real_part_func(factorial_real_part).
-                             imag_part_func(factorial_imag_part));
+                             imag_part_func(factorial_imag_part))
 
 //////////
 // binomial
@@ -798,7 +950,7 @@ static ex binomial_eval(const ex & x, const ex &y)
 		return binomial(x, y).hold();
 }
 
-// At the moment the numeric evaluation of a binomail function always
+// At the moment the numeric evaluation of a binomial function always
 // gives a real number, but if this would be implemented using the gamma
 // function, also complex conjugation should be changed (or rather, deleted).
 static ex binomial_conjugate(const ex & x, const ex & y)
@@ -820,7 +972,7 @@ REGISTER_FUNCTION(binomial, eval_func(binomial_eval).
                             evalf_func(binomial_evalf).
                             conjugate_func(binomial_conjugate).
                             real_part_func(binomial_real_part).
-                            imag_part_func(binomial_imag_part));
+                            imag_part_func(binomial_imag_part))
 
 //////////
 // Order term function (for truncated power series)
@@ -846,11 +998,10 @@ static ex Order_eval(const ex & x)
 static ex Order_series(const ex & x, const relational & r, int order, unsigned options)
 {
 	// Just wrap the function into a pseries object
-	epvector new_seq;
 	GINAC_ASSERT(is_a<symbol>(r.lhs()));
 	const symbol &s = ex_to<symbol>(r.lhs());
-	new_seq.push_back(expair(Order(_ex1), numeric(std::min(x.ldegree(s), order))));
-	return pseries(r, new_seq);
+	epvector new_seq { expair(Order(_ex1), numeric(std::min(x.ldegree(s), order))) };
+	return pseries(r, std::move(new_seq));
 }
 
 static ex Order_conjugate(const ex & x)
@@ -870,14 +1021,18 @@ static ex Order_imag_part(const ex & x)
 	return Order(x).hold();
 }
 
-// Differentiation is handled in function::derivative because of its special requirements
+static ex Order_expl_derivative(const ex & arg, const symbol & s)
+{
+	return Order(arg.diff(s));
+}
 
 REGISTER_FUNCTION(Order, eval_func(Order_eval).
                          series_func(Order_series).
                          latex_name("\\mathcal{O}").
+                         expl_derivative_func(Order_expl_derivative).
                          conjugate_func(Order_conjugate).
                          real_part_func(Order_real_part).
-                         imag_part_func(Order_imag_part));
+                         imag_part_func(Order_imag_part))
 
 //////////
 // Solve linear system
@@ -889,7 +1044,7 @@ ex lsolve(const ex &eqns, const ex &symbols, unsigned options)
 	if (eqns.info(info_flags::relation_equal)) {
 		if (!symbols.info(info_flags::symbol))
 			throw(std::invalid_argument("lsolve(): 2nd argument must be a symbol"));
-		const ex sol = lsolve(lst(eqns),lst(symbols));
+		const ex sol = lsolve(lst{eqns}, lst{symbols});
 		
 		GINAC_ASSERT(sol.nops()==1);
 		GINAC_ASSERT(is_exactly_a<relational>(sol.op(0)));
@@ -947,12 +1102,12 @@ ex lsolve(const ex &eqns, const ex &symbols, unsigned options)
 	} catch (const std::runtime_error & e) {
 		// Probably singular matrix or otherwise overdetermined system:
 		// It is consistent to return an empty list
-		return lst();
+		return lst{};
 	}
 	GINAC_ASSERT(solution.cols()==1);
 	GINAC_ASSERT(solution.rows()==symbols.nops());
 	
-	// return list of equations of the form lst(var1==sol1,var2==sol2,...)
+	// return list of equations of the form lst{var1==sol1,var2==sol2,...}
 	lst sollist;
 	for (size_t i=0; i<symbols.nops(); i++)
 		sollist.append(symbols.op(i)==solution(i,0));
@@ -1062,7 +1217,7 @@ fsolve(const ex& f_in, const symbol& x, const numeric& x1, const numeric& x2)
 			// determined by the secant between the values xx[0] and xx[1].
 			// Don't set the secant_weight to one because that could disturb
 			// the convergence in some corner cases!
-			static const double secant_weight = 0.984375;  // == 63/64 < 1
+			constexpr double secant_weight = 0.984375;  // == 63/64 < 1
 			numeric xxmid = (1-secant_weight)*0.5*(xx[0]+xx[1])
 			    + secant_weight*(xx[0]+fx[0]*(xx[0]-xx[1])/(fx[1]-fx[0]));
 			ex fxmid_ = f.subs(x == xxmid).evalf();

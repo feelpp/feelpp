@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-03
 #
 #  Copyright (C) 2012 Universit� Joseph Fourier (Grenoble I)
@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(OS_VERSION debian-wheezy)
+set(OS_VERSION debian-sid)
 set(ARCH x86_64)
 set(GCC_MAKE_ARGS "-j1")
 set(GCC_PARALLEL "1")
@@ -36,9 +36,10 @@ set(FEELPP_WORK_DIR ${WORK_DIR})
 # set(CTEST_BUILD_DIRECTORY "${WORK_DIR}/ctest_build")
 
 #Directories to update at run time
-set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
+set(FEELPP_MODULES "research/hifimagnet" "research/fluid" "research/feelpp-book")
 
 #Options
+set(DEFAULT_TEST_TIMEOUT "60")
 set(ENABLE_ALTIVEC OFF)
 set(ENABLE_BUILD_STATIC OFF)
 set(ENABLE_DOXYGEN OFF)
@@ -46,14 +47,15 @@ set(ENABLE_NEON OFF)
 set(ENABLE_OPENTURNS ON)
 set(ENABLE_PCH_FOR_APPLICATIONS OFF)
 set(ENABLE_VERBOSE_CMAKE OFF)
+set(STDLIB_CPP "c++")
 
 #Directories
 set(FEELPP_BENCHMARK_FLAG OFF) #
 set(ENABLE_TESTS ON) #testsuite
 set(ENABLE_DOCUMENTATION ON) #doc
 set(ENABLE_BENCHMARKS ON) #benchmarkes
-set(ENABLE_RESEARCH OFF) #research
+set(ENABLE_RESEARCH ON) #research
 set(ENABLE_APPLICATIONS OFF) #applications
 set(ENABLE_CRB_ALL ON) #Applications/CRB
 set(ENABLE_APPLICATIONS_CRB ON)#Applications/CRB
-
+set(ENABLE_RESEARCH_FEELPP-BOOK ON)

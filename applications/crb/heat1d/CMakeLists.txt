@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-23
 #
 #  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -24,7 +24,7 @@
 
 #crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
 #crb_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_crb_crb CFG heat1dpfem.cfg )
-crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
+#crb_add_executable(heat1dscm heat1dscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dscm.cfg )
 #crb_add_executable(heat1dcrb heat1dcrb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG heat1dcrb.cfg )
 
 #add_subdirectory(python)

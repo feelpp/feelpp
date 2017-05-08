@@ -104,8 +104,8 @@ public:
     typedef truth_model_type model_type;
     typedef boost::shared_ptr<truth_model_type> truth_model_ptrtype;
 
-    typedef ParameterSpace<TruthModelType::ParameterSpaceDimension> parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename TruthModelType::parameterspace_type parameterspace_type;
+    typedef typename TruthModelType::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
     typedef typename parameterspace_type::sampling_type sampling_type;
@@ -187,9 +187,9 @@ public:
          truth_model_ptrtype const & model )
         :
         super_crb( name, vm , model ),
-        M_crbdb( ( boost::format( "%1%" ) % option(_name="crb.error-type").template as<int>() ).str(),
+        M_crbdb( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
                  name,
-                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % option(_name="crb.output-index").template as<int>() % option(_name="crb.error-type").template as<int>() ).str(),
+                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % ioption(_name="crb.output-index") % option(_name="crb.error-type") ).str(),
                  vm )
     {
         this->setTruthModel( model );
@@ -327,8 +327,8 @@ CRBTrilinear<TruthModelType>::offline()
 
     int proc_number = this->worldComm().globalRank();
 
-    bool rebuild_database = option(_name="crb.rebuild-database").template as<bool>() ;
-    bool orthonormalize_primal = option(_name="crb.orthonormalize-primal").template as<bool>() ;
+    bool rebuild_database = boption(_name="crb.rebuild-database") ;
+    bool orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
 
     boost::timer ti;
     if( this->worldComm().isMasterRank() )
@@ -352,9 +352,9 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) << "[CRBTrilinear::offline] compute random sampling\n";
 
         int total_proc = this->worldComm().globalSize();
-        std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
-        bool all_proc_same_sampling=option("crb.all-procs-have-same-sampling").template as<bool>();
-        int sampling_size = option("crb.sampling-size").template as<int>();
+        std::string sampling_mode = soption("crb.sampling-mode");
+        bool all_proc_same_sampling=boption("crb.all-procs-have-same-sampling");
+        int sampling_size = ioption("crb.sampling-size");
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         if( all_proc_same_sampling )
             file_name+="-all-proc-have-same-sampling";
@@ -553,7 +553,7 @@ CRBTrilinear<TruthModelType>::offline()
             __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+         __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
             __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );

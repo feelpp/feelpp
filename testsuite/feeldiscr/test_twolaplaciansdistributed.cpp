@@ -1,16 +1,16 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
-#define TWOLAP_USE_BOOST_TEST 0
-
-#if TWOLAP_USE_BOOST_TEST
+#if 1
 #define BOOST_TEST_MODULE test_twolaplaciansdistributed
 #include <testsuite/testsuite.hpp>
+#else
+#define USE_BOOST_TEST 0
 #endif
 
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -23,9 +23,6 @@ namespace test_twolaplaciansdistributed
 
 using namespace Feel;
 using namespace Feel::vf;
-
-typedef Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
 /*_________________________________________________*
  * Options
@@ -54,11 +51,11 @@ makeAbout()
     AboutData about( "Test_Twolaplaciansdistributed" ,
                      "Test_Twolaplaciansdistributed" ,
                      "0.1",
-                     "test bilinear and linear form for several trial/test mesh ",
+                     "test two laplacian distributed",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@imag.fr", "" );
+    about.addAuthor( "Vincent Chabannes", "developer", "vincent.chabannes@feelpp.org", "" );
     return about;
 }
 
@@ -67,10 +64,10 @@ makeAbout()
  * About
  *_________________________________________________*/
 
-void run( Application_ptrtype & theApp )
+void run()
 {
     typedef Mesh< Simplex<2,1,2> > mesh_type;
-    double meshSize = theApp->vm()["hsize"].as<double>();
+    double meshSize = doption(_name="hsize");
 
     const int domainColor1=1;
     const int domainColor2=2;
@@ -80,31 +77,20 @@ void run( Application_ptrtype & theApp )
     auto worldCommDomain2 = Environment::worldComm();
 
     if ( nTotalProc>1)
+    {
+        std::vector<int> MapWorld(nTotalProc);
+        for (int proc = 0 ; proc < nTotalProc; ++proc)
         {
-            std::vector<int> MapWorld(nTotalProc);
-            if (nTotalProc==1) // a particular test case
-                {
-                    MapWorld[0]=domainColor2;
-                    MapWorld[1]=domainColor1;
-                    MapWorld[2]=domainColor2;
-                    MapWorld[3]=domainColor2;
-                    MapWorld[4]=domainColor1;
-                }
+            if (proc < nTotalProc/2 )
+                MapWorld[proc] = domainColor1;
             else
-                {
-                    for (int proc = 0 ; proc < nTotalProc; ++proc)
-                        {
-                            if (proc < nTotalProc/2 )
-                                MapWorld[proc] = domainColor1;
-                            else
-                                MapWorld[proc] = domainColor2;
-                        }
-                }
-            auto worldCommColored = WorldComm(MapWorld);
-            //worldCommColored.showMe();
-            worldCommDomain1 = worldCommColored.subWorldComm(domainColor1);
-            worldCommDomain2 = worldCommColored.subWorldComm(domainColor2);
+                MapWorld[proc] = domainColor2;
         }
+        auto worldCommColored = WorldComm(MapWorld);
+        //worldCommColored.showMe();
+        worldCommDomain1 = worldCommColored.subWorldComm(domainColor1);
+        worldCommDomain2 = worldCommColored.subWorldComm(domainColor2);
+    }
     //worldCommDomain1.showMe();
     //worldCommDomain2.showMe();
     //Environment::worldComm().showMe();
@@ -145,62 +131,50 @@ void run( Application_ptrtype & theApp )
     auto A2 = backend2->newMatrix(_test=Xh2,_trial=Xh2);
     auto F1 = backend1->newVector(Xh1);
     auto F2 = backend2->newVector(Xh2);
+
     //---------------------------------------------------------------------------------------//
     // assembly
     form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
         integrate( _range=elements(mesh1), _expr=gradt(u1)*trans(grad(u1)) );
     form1( _test=Xh1, _vector=F1 ) +=
         integrate( _range=elements(mesh1), _expr=id(u1) );
-
-    if (Xh1->worldComm().isActive())  //(todo vincent : simplifier)
-        {
-            //A1->close();F1->close();
-            form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
-                on( _range=boundaryfaces(mesh1),
-                    _element=u1,_rhs=F1,
-                    _expr=cst(0.) );
-        }
+    form2( _test=Xh1, _trial=Xh1, _matrix=A1 ) +=
+        on( _range=boundaryfaces(mesh1),
+            _element=u1,_rhs=F1,
+            _expr=cst(0.) );
 
     form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
         integrate( _range=elements(mesh2), _expr=gradt(u2)*trans(grad(u2)) );
     form1( _test=Xh2, _vector=F2 ) +=
         integrate( _range=elements(mesh2), _expr=id(u2) );
-
-    if (Xh2->worldComm().isActive())  //(todo vincent : simplifier)
-        {
-            //A2->close();F2->close();
-            form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
-                on( _range=boundaryfaces(mesh2),
-                    _element=u2,_rhs=F2,
-                    _expr=cst(0.) );
-        }
+    form2( _test=Xh2, _trial=Xh2, _matrix=A2 ) +=
+        on( _range=boundaryfaces(mesh2),
+            _element=u2,_rhs=F2,
+            _expr=cst(0.) );
 
     //---------------------------------------------------------------------------------------//
-    // solve (todo vincent : simplifier (+rajouter le worldcomm automatiquement dans prec defaut de la fonction solve et nlsolve  )
+    // solve
     if (Xh1->worldComm().isActive())
-        {
-#if 0
-            auto prec1 = preconditioner(_pc=(PreconditionerType) backend1->pcEnumType() /*LU_PRECOND*/,
-                                        _matrix=A1,
-                                        _backend= backend1,
-                                        _pcfactormatsolverpackage=(MatSolverPackageType) backend1->matSolverPackageEnumType(),
-                                        _worldcomm=backend1->comm(),
-                                        _prefix=backend1->prefix() );
+    {
+        backend1->solve(_matrix=A1,_solution=u1,_rhs=F1/*,_prec=prec1*/);
+
+        double l2NormU1 = u1.l2Norm();
+#if USE_BOOST_TEST
+        BOOST_CHECK( l2NormU1 > 1e-5 );
+#else
+        CHECK( l2NormU1 > 1e-5 ) << "l2Norm of u1 must be non null";
 #endif
-            backend1->solve(_matrix=A1,_solution=u1,_rhs=F1/*,_prec=prec1*/);
-        }
+    }
     if (Xh2->worldComm().isActive())
-        {
-#if 0
-            auto prec2 = preconditioner(_pc=(PreconditionerType) backend2->pcEnumType() /*LU_PRECOND*/,
-                                        _matrix=A2,
-                                        _backend= backend2,
-                                        _pcfactormatsolverpackage=(MatSolverPackageType) backend2->matSolverPackageEnumType(),
-                                        _worldcomm=backend2->comm(),
-                                        _prefix=backend2->prefix() );
+    {
+        backend2->solve(_matrix=A2,_solution=u2,_rhs=F2/*,_prec=prec2*/);
+        double l2NormU2 = u2.l2Norm();
+#if USE_BOOST_TEST
+        BOOST_CHECK( l2NormU2 > 1e-5 );
+#else
+        CHECK( l2NormU2 > 1e-5 ) << "l2Norm of u2 must be non null";
 #endif
-            backend2->solve(_matrix=A2,_solution=u2,_rhs=F2/*,_prec=prec2*/);
-        }
+    }
 
     //---------------------------------------------------------------------------------------//
     // exports
@@ -210,7 +184,6 @@ void run( Application_ptrtype & theApp )
     auto myexporter2 = exporter( _mesh=mesh2, _name="MyExportDomain2" );
     myexporter2->step(0)->add( "u2", u2 );
     myexporter2->save();
-
 }
 
 } //namespace test_twolaplaciansdistributed
@@ -220,60 +193,29 @@ void run( Application_ptrtype & theApp )
  * Main
  *_________________________________________________*/
 
-#if TWOLAP_USE_BOOST_TEST
+#if USE_BOOST_TEST
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_twolaplaciansdistributed::makeAbout(),
                                  test_twolaplaciansdistributed::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( twolaplaciansdistributed )
 
-typedef Feel::Application Application_type;
-typedef boost::shared_ptr<Application_type> Application_ptrtype;
-
-
 BOOST_AUTO_TEST_CASE( twolaplaciansdistributed1 )
 {
-    auto theApp = Application_ptrtype( new Application_type );
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    theApp->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                              % theApp->about().appName() );
-
-    test_twolaplaciansdistributed::run( theApp );
+    test_twolaplaciansdistributed::run();
 
 }
 BOOST_AUTO_TEST_SUITE_END()
 
-
 #else
+
 int
 main( int argc, char** argv )
 {
-    typedef Feel::Application Application_type;
-    typedef boost::shared_ptr<Application_type> Application_ptrtype;
     Feel::Environment env( Feel::_argc=argc,Feel::_argv=argv,
                            Feel::_about=test_twolaplaciansdistributed::makeAbout(),
                            Feel::_desc=test_twolaplaciansdistributed::makeOptions() );
-    auto theApp = Application_ptrtype( new Application_type );
-
-
-
-    if ( theApp->vm().count( "help" ) )
-    {
-        std::cout << theApp->optionsDescription() << "\n";
-        exit( 0 );
-    }
-
-    theApp->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                              % theApp->about().appName() );
-
-    test_twolaplaciansdistributed::run( theApp );
-
+    test_twolaplaciansdistributed::run();
 }
-#endif
 
+#endif

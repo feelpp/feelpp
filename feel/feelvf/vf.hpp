@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -36,7 +36,7 @@
 //#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 //#include <boost/numeric/bindings/blas/blas.hpp>
 
-#include <boost/fusion/tuple.hpp>
+
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 
@@ -49,7 +49,9 @@
 
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/cast.hpp>
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/rand.hpp>
 #include <feel/feelvf/trans.hpp>
 #include <feel/feelvf/unary.hpp>
 #include <feel/feelvf/one.hpp>
@@ -77,6 +79,7 @@
 //#include <feel/feelvf/eye.hpp>
 #include <feel/feelvf/val.hpp>
 #include <feel/feelvf/function.hpp>
+#include <feel/feelvf/function2.hpp>
 #include <feel/feelvf/matvec.hpp>
 //#include <feel/feelvf/integral.hpp>
 
@@ -94,6 +97,9 @@
 #include <feel/feelvf/evaluator.hpp>
 #include <feel/feelvf/evaluatorcontext.hpp>
 
+#if defined( FEELPP_HAS_FFTW)
+#include <feel/feelvf/msi.hpp>
+#endif
 
 
 #include <feel/feelvf/ginac.hpp>

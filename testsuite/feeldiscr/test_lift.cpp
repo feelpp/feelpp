@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -250,20 +250,18 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     std::cout << " -- ||u-glift||_H1  =" << math::sqrt( L2error2+semi_H1error2 ) << "\n";
 
     /** export results */
-    auto exporter( export_type::New( this->vm(),
-                                     ( boost::format( "%1%-%2%-%3%" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim ).str() ) );
-
-    if ( exporter->doExport() )
+    std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
+                                 % this->about().appName()
+                                 % shape
+                                 % Dim ).str();
+    auto myexporter = exporter(_mesh=mesh,_name=exporterName );
+    if ( myexporter->doExport() )
         {
             LOG(INFO) << "exportResults starts\n";
-            exporter->step( 0 )->setMesh( mesh );
-            exporter->step( 0 )->add( "u", u );
-            exporter->step( 0 )->add( "glift", glift2 );
-            exporter->step( 0 )->add( "g", gproj );
-            exporter->save();
+            myexporter->step( 0 )->add( "u", u );
+            myexporter->step( 0 )->add( "glift", glift2 );
+            myexporter->step( 0 )->add( "g", gproj );
+            myexporter->save();
             LOG(INFO) << "exportResults done\n";
         }
 } // TestLift::run
@@ -272,7 +270,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( lift )
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {

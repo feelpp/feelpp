@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-03-13
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file harmonic.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-03-13
  */
 #include <feel/feel.hpp>
@@ -116,7 +116,7 @@ int main(int argc, char**argv )
     a.solve(_rhs=l,_solution=u);
 
     auto m1 = lagrangeP1(_space=Vh)->mesh();
-    auto XhVisu = Pchv<1>(m1);
+    auto XhVisu = Pchv<1>(m1,true);
 
     auto opIVisu = opInterpolation(_domainSpace=Vh,
                                    _imageSpace=XhVisu,

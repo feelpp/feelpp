@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -35,7 +35,7 @@ makeOptions()
 {
     Feel::po::options_description nonlinearpowoptions( "Nonlinearpow problem options" );
     nonlinearpowoptions.add_options()
-    ( "lambda", Feel::po::value<int>()->default_value( 2 ), "power of u" )
+    ( "lambda", Feel::po::value<double>()->default_value( 2. ), "power of u" )
 
     ( "penalbc", Feel::po::value<double>()->default_value( 30 ), "penalisation parameter for the weak boundary conditions" )
     ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
@@ -66,8 +66,8 @@ main( int argc, char** argv )
     auto Vh = Pch<3>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
-    double penalbc = option(_name="penalbc").as<double>();
-    double lambda = option(_name="lambda").as<int>();
+    double penalbc = doption(_name="penalbc");
+    double lambda = doption(_name="lambda");
 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {

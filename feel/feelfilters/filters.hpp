@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2014-01-11
 
-   Copyright (C) 2014 Feel++ Consortium
+   Copyright (C) 2014-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -24,15 +24,18 @@
 #ifndef FEELPP_FEELFILTERS_FILTERS_HPP
 #define FEELPP_FEELFILTERS_FILTERS_HPP 1
 
+#if FEELPP_HAS_GMSH
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/img2msh.hpp>
 #include <feel/feelfilters/convert2msh.hpp>
+#endif
+#include <feel/feelfilters/loadmesh.hpp>
+
 #include <feel/feelfilters/unitsegment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>

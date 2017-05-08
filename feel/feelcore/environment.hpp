@@ -1,39 +1,41 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-04-14
-
-  Copyright (C) 2010-2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file environment.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-04-14
- */
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//! 
+//! This file is part of the Feel library
+//! 
+//! Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! Date: 2010-04-14
+//! 
+//! Copyright (C) 2010-2012 Université Joseph Fourier (Grenoble I)
+//! 
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//! 
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//! 
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//! 
+//! 
+//! \file environment.hpp
+//! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! \date 2010-04-14
+//! 
 #ifndef FEELPP_ENVIRONMENT_HPP
 #define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
+#include <memory>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
@@ -41,13 +43,15 @@
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-#include <mpi4py/mpi4py.h>
+//#include <mpi4py/mpi4py.h>
 #endif
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+#include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
+#include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -57,34 +61,42 @@
 #include <hwloc.h>
 #endif
 
+
 namespace Feel
 {
-namespace detail
-{
+namespace tc = termcolor;
+namespace pt =  boost::property_tree;
+
+class TimerTable;
+
+//!
+//! @class MemoryUsage
+//! @ingroup Core
+//! @brief class to query for memory usage
 struct MemoryUsage
 {
     MemoryUsage()
         :
+        memory_usage(0)
 #if defined ( FEELPP_HAS_PETSC_H )
-        memory_usage(0),
-        petsc_malloc_usage(0),
-        petsc_malloc_maximum_usage(0)
+        , petsc_malloc_usage(0)
+        , petsc_malloc_maximum_usage(0)
 #endif
         {}
     MemoryUsage(MemoryUsage const& m )
         :
+        memory_usage(m.memory_usage)
 #if defined ( FEELPP_HAS_PETSC_H )
-        memory_usage(m.memory_usage),
-        petsc_malloc_usage(m.petsc_malloc_usage),
-        petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
+        , petsc_malloc_usage(m.petsc_malloc_usage)
+        , petsc_malloc_maximum_usage(m.petsc_malloc_maximum_usage)
 #endif
         {}
     MemoryUsage& operator=(MemoryUsage const& m )
         {
             if ( this != &m )
             {
-#if defined ( FEELPP_HAS_PETSC_H )
                 memory_usage = m.memory_usage;
+#if defined ( FEELPP_HAS_PETSC_H )
                 petsc_malloc_usage = m.petsc_malloc_usage;
                 petsc_malloc_maximum_usage = m.petsc_malloc_maximum_usage;
 #endif
@@ -95,61 +107,71 @@ struct MemoryUsage
     PetscLogDouble memory_usage;
     PetscLogDouble petsc_malloc_usage;
     PetscLogDouble petsc_malloc_maximum_usage;
+#else
+    double memory_usage;
 #endif
-    
+
 };
-inline
-AboutData
-makeAbout( char* name )
-{
-    AboutData about( name,
-                     name,
-                     "0.1",
-                     name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012 Feel++ Consortium" );
+//! @ingroup Core
+//! default \c makeAbout function to define the \c AboutData structure of the Feel++
+//! application
+//! @param name name or short name of the application
+//! 
+AboutData makeAboutDefault( std::string name );
 
-    about.addAuthor( "Feel++ Consortium",
-                     "",
-                     "feelpp-devel@feelpp.org", "" );
-    return about;
-}
-
-/**
- *  @class Environment "Environment"
- *  @brief Initialize, finalize, and query the Feel++ environment.
- *
- *  The @c Environment class is used to initialize, finalize, and
- *  query the Feel++ environment. It will typically be used in the @c
- *  main() function of a program, which will create a single instance
- *  of @c Environment initialized with the arguments passed to the
- *  program:
- *
- *  @code
- *  int main(int argc, char* argv[])
- *  {
- *    Feel::Environment env(argc, argv);
- *  }
- *  @endcode
- *
- *  The instance of @c Environment will initialize Feel++ (by calling @c MPI, @c
- *  PETSc, @c SLEPc and @c MAdLib initialization routines) in its constructor
- *  and finalize in its destructor.
- *
- * @author Christophe Prud'homme
- * @see Application
- */
+//! 
+//! @class Environment "Environment"
+//! @ingroup Core
+//! @brief Initialize, finalize, and query the Feel++ environment.
+//! @ingroup Core
+//! 
+//! The @c Environment class is used to initialize, finalize, and
+//! query the Feel++ environment. It will typically be used in the @c
+//! main() function of a program, which will create a single instance
+//! of @c Environment initialized with the arguments passed to the
+//! program:
+//! 
+//! @code
+//! int main(int argc, char* argv[])
+//! {
+//!    using namespace Feel;
+//!    Environment env(argc, argv);
+//! }
+//! @endcode
+//! or more commonly
+//! @code
+//! int main(int argc, char* argv[])
+//! {
+//!    using namespace Feel;
+//!    po::options_description myoptions( "Laplacian options" );
+//!    myoptions.add_options()
+//!          ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" );
+//!    Environment env( _argc=argc, _argv=argv,
+//!                     _desc=myoptions,
+//!                    _about=about(_name="myapp",
+//!                                 _author="Feel++ Consortium",
+//!                                 _email="feelpp-devel@feelpp.org"));
+//! }
+//! @endcode
+//!
+//! The instance of @c Environment will initialize Feel++ (by calling @c MPI, @c
+//! PETSc, @c SLEPc or Logging initialization routines) in its constructor
+//! and finalize in its destructor.
+//! 
+//! @author Christophe Prud'homme
+//! @see Application
+//! 
 class Environment : boost::noncopyable
 {
 public:
+    
+    //! 
+    //! @name Constants
+    //! 
+    //! @{
 
-
-    /** @name Constants
-     */
-    //@{
-
-
-    //@}
+    
+    //! @}
 
     /** @name Typedefs
      */
@@ -184,71 +206,62 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    Environment( int argc, char** argv,
+#if BOOST_VERSION >= 105500
+                 mpi::threading::level lvl,
+#endif
+                 po::options_description const& desc,
+                 po::options_description const& desc_lib,
+                 AboutData const& about,
+                 std::string directory,
+                 bool add_subdir_np = true );
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( boost::python::list arg );
 #endif
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ), static changeRepository, tag,
-        ( required
-          ( directory,( boost::format ) ) )
-        ( optional
-          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
-        ) )
-    {
-        changeRepositoryImpl( directory, filename, subdir );
-    }
 
     template <class ArgumentPack>
     Environment( ArgumentPack const& args )
-    {
-        char** argv = args[_argv];
-        int argc = args[_argc];
-        S_desc_app = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc|Feel::feel_nooptions()] ) );
-        S_desc_lib = boost::shared_ptr<po::options_description>( new po::options_description( args[_desc_lib | Feel::feel_options()] ) );
-        AboutData about = args[_about| makeAbout( argv[0] )];
-        S_desc = boost::shared_ptr<po::options_description>( new po::options_description( ) );
-        S_desc->add( *S_desc_app );
-
-        // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
-        // otherwise we will have duplicated options
-        std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
-        auto it = std::find_if( opts.begin(), opts.end(),
-                                []( boost::shared_ptr<po::option_description> const&o )
-        {
-            return o->format_name().erase( 0,2 ) == "backend";
-        } );
-
-        if   ( it == opts.end() )
-            S_desc->add( *S_desc_lib );
-
-        S_desc->add( file_options( about.appName() ) );
-        S_desc->add( generic_options() );
-
-
-        init( argc, argv, *S_desc, *S_desc_lib, about );
-
-        if ( S_vm.count( "nochdir" ) == 0 )
-        {
-            std::string defaultdir = about.appName();
-
-            if ( S_vm.count( "directory" ) )
-                defaultdir = S_vm["directory"].as<std::string>();
-
-            std::string d = args[_directory|defaultdir];
-            LOG( INFO ) << "change directory to " << d << "\n";
-            boost::format f( d );
-            changeRepository( _directory=f );
-        }
-    }
-
-
-
-
-
-    void init( int argc, char** argv, po::options_description const& desc,
-               po::options_description const& desc_lib, AboutData const& about );
+        :
+        Environment( args[_argc],
+                     args[_argv],
+#if BOOST_VERSION >= 105500
+                     args[_threading|mpi::threading::single],
+#endif
+                     args[_desc|feel_nooptions()],
+                     args[_desc_lib | feel_options()],
+                     args[_about| makeAboutDefault( args[_argv][0] )],
+                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
+                     args[_subdir| true ] )
+        {}
+#if BOOST_VERSION >= 105500
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( threading,(mpi::threading::level) )
+          ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
+          ) ) // no semicolon
+#else
+    BOOST_PARAMETER_CONSTRUCTOR(
+        Environment, ( Environment ), tag,
+        ( required
+          ( argc,* )
+          ( argv,* ) )
+        ( optional
+          ( desc,* )
+          ( desc_lib,* )
+          ( about,* )
+          ( directory,( std::string ) )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
+          ) ) // no semicolon
+#endif
 
     /** Shuts down the Feel environment.
      *
@@ -288,12 +301,20 @@ public:
     static bool finalized();
 
     /**
+     * @return the shared_ptr WorldComm
+     */
+    static boost::shared_ptr<WorldComm> worldCommPtr()
+        {
+            return S_worldcomm;
+        }
+
+    /**
      * return the worldcomm (static)
      */
     static WorldComm& worldComm()
-    {
-        return *S_worldcomm;
-    }
+        {
+            return *S_worldcomm;
+        }
     static WorldComm& worldCommSeq()
     {
         return *S_worldcommSeq;
@@ -329,6 +350,31 @@ public:
     }
 
     /**
+     * return master rank in mpi communicator
+     */
+    static rank_type masterRank()
+    {
+        return S_worldcomm->masterRank();
+    }
+
+    /**
+     * @return true if number of process is 1, hence the environment is
+     * sequential
+     */
+    static bool isSequential()
+    {
+        return numberOfProcessors() == 1;
+    }
+
+    /**
+     * @return true if the environment is not sequential, that is if the number
+     * of process is greater than 1
+     */
+    static bool isParallel()
+    {
+        return !isSequential();
+    }
+    /**
      * rank 0 process is considered the master process
      *
      * the master process can then for example print information in the console
@@ -336,7 +382,16 @@ public:
      */
     static bool isMasterRank()
     {
-        return rank() == 0;
+        return rank() == masterRank();
+    }
+
+    static po::command_line_parser const& commandLineParser()
+    {
+        return *S_commandLineParser;
+    }
+    static std::set<std::string> configFileNames()
+    {
+        return S_configFileNames;
     }
 
     /**
@@ -345,6 +400,14 @@ public:
     static po::variables_map const& vm()
     {
         return S_vm;
+    }
+
+    template<typename T>
+    static void setOptionValue(std::string s,T val)
+    {
+        auto it = S_vm.find( s );
+        CHECK( it != S_vm.end() ) << "Invalid option " << s << "\n";
+        S_vm.at(s).value() = val;
     }
 
     static AboutData const& about()
@@ -399,6 +462,7 @@ public:
     }
 
 #if defined(FEELPP_HAS_HARTS)
+
     /**
      * Init Hwloc topology structure
      */
@@ -422,9 +486,19 @@ public:
     static void bindToCore( unsigned int id );
 
     /**
-     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     * Counts the number of cores on the current server
+     * Calls countCoresInSubtree done on the whole topology
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
      */
-    static int countCoresInSubtree( hwloc_obj_t node );
+    static int getNumberOfCores( bool logical = false );
+
+    /**
+     * Counts the number of cores under the current hwloc object, using a recursive strategy
+     *
+     *  @param logical boolean indicating if we want to include logical cores, i.e. hyperthreading
+     */
+    static int countCoresInSubtree( hwloc_obj_t node, bool logical = false );
 
     /**
      * Binds the MPI processes in Round Robin on the NUMA nodes
@@ -432,18 +506,40 @@ public:
     static void bindNumaRoundRobin( int lazy = false );
 
     /**
+     * Get information about the last CPU bound. You must use --bind-to core with MPI for this feature to work.
+     */
+    static void getLastBoundCPU( std::vector<int> * cpuAffinity, std::vector<int> * lastCPU );
+
+    /**
      * Writes data about processor affinity and last location of the different processes/threads
      * (last location is not guaranteed to be right, unles you bind the process to a core)
      */
     static void writeCPUData( std::string fname = "CPUData.dat" );
-#endif
 
+#endif
 
     //@}
 
     /** @name  Methods
      */
     //@{
+
+    //! @name directories
+    //! @{
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( void ), static changeRepository, tag,
+        ( required
+          ( directory,( boost::format ) ) )
+        ( optional
+          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
+          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
+          ( worldcomm, ( WorldComm ), Environment::worldComm() )
+          ( remove, ( bool ), false )
+          ) )
+        {
+            changeRepositoryImpl( directory, filename, subdir, worldcomm, remove );
+        }
 
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
@@ -487,6 +583,23 @@ public:
      */
     static boost::tuple<std::string,bool> systemConfigRepository();
 
+    //! the application directory, application results are stored there
+    //! the directory is controlled by changeRepository
+    static std::string appRepository();
+    
+    //! the expressions repository is typically a sub-directory of the \c
+    //! appRepository() that contains the expressions generated using Ginac
+    static std::string exprRepository();
+
+    //! the logfiles repository is a subdirectory of the \c appRepository containing the logfiles
+    static std::string logsRepository();
+
+    //! the exports repository is a subdirectory of the \c appRepository
+    //! containing the results exported during the application execution
+    static std::string exportsRepository();
+    
+    //! @}
+    
     BOOST_PARAMETER_MEMBER_FUNCTION(
         ( po::variable_value ), static vm, tag,
         ( required
@@ -495,6 +608,7 @@ public:
           ( worldcomm, ( WorldComm ), Environment::worldComm() )
           ( sub,( std::string ),"" )
           ( prefix,( std::string ),"" )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
         std::ostringstream os;
@@ -506,8 +620,8 @@ public:
             os << sub << "-";
 
         os << name;
-        auto it = Environment::vm().find( os.str() );
-        CHECK( it != Environment::vm().end() ) << "Invalid option " << os.str() << "\n";
+        auto it = vm.find( os.str() );
+        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return it->second;
     }
 
@@ -517,15 +631,68 @@ public:
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
 
+    /**
+     * add timer to a map of timers that can be shown using \c displayTimers()
+     */
+    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
+
+    /**
+     * display and save timers
+     */
+    static void saveTimers( bool save );
+    static void saveTimersMD( std::ostream & os );
+
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
 
-    /**
-     * set log files
-     * \param prefix prefix for log filenames
-     */
-    static void setLogs( std::string const& prefix );
+    //! 
+    //!  set log files
+    //!  \param prefix prefix for log filenames
+    FEELPP_DEPRECATED static void setLogs( std::string const& prefix );
 
+    //!
+    //! start logging.
+    //! \code
+    //! Environment::startLogging();
+    //! LOG(INFO) << "Feel++ uses logging";
+    //! Environment::stopLogging();
+    //! \endcode
+    //!
+    static void startLogging( std::string decorate );
+
+    //!
+    //! stop logging in Feel++.
+    //! \param remove deletes the log directory and all its content
+    //! \code
+    //! Environment::startLogging();
+    //! LOG(INFO) << "Feel++ uses logging";
+    //! Environment::stopLogging();
+    //! \endcode
+    //! 
+    //! \code
+    //! Environment::startLogging();
+    //! LOG(INFO) << "Feel++ uses logging";
+    //! Environment::stopLogging( true ); // delete the `logs` subdirectory of the current path
+    //! \endcode
+    //!
+    static void stopLogging( bool remove = false );
+
+    //! @return the summry tree of the application
+    static pt::ptree& summary() { return S_summary; }
+    
+    //! 
+    //! generate a summary of the execution of the application
+    //! @param fname name of the filename to generate
+    //! @param stage a string describing the stage at which the summary is generated/updated
+    //! @param write a boolean true to write the summary to disk, false otherwise
+    //! \code
+    //! Environment::generateSummary( about().appName(), "start", true ); // write to disk
+    //! Environment::generateSummary( about().appName(), "mid", false ); // do not write to disk but update tree
+    //! Environment::generateSummary( about().appName(), "end", true ); // write to disk
+    //! \endcode
+    //!
+    static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
+    
     template<typename Observer>
     static void
     addDeleteObserver( Observer const& obs )
@@ -541,10 +708,10 @@ public:
 
     static void clearSomeMemory();
 
-    /**
-     * \return the scratch directory
-     */
-    static const fs::path& scratchDirectory()
+    //! 
+    //!  \return the scratch directory
+    //! 
+    FEELPP_DEPRECATED static const fs::path& scratchDirectory()
     {
         return S_scratchdir;
     }
@@ -579,13 +746,19 @@ public:
 private:
 
     //! change the directory where the results are stored
-    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np );
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
+
+#if defined ( FEELPP_HAS_PETSC_H )
+    FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
+#endif
+
+
 
     //! process command-line/config-file options
-    static void doOptions( int argc, char** argv,
-                           po::options_description const& desc,
-                           po::options_description const& desc_lib,
-                           std::string const& appName );
+    static FEELPP_NO_EXPORT void doOptions( int argc, char** argv,
+                                            po::options_description const& desc,
+                                            po::options_description const& desc_lib,
+                                            std::string const& appName );
 
     /**
      * \fn void generateOLFiles( int argc, char ** argv, std::string const& appName )
@@ -596,20 +769,29 @@ private:
      * @param argv Application arguments.
      * @param appName Name of the application.
      */
-    static void generateOLFiles( int argc, char ** argv, std::string const& appName );
-    static void processGenericOptions();
-    static void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
+    static FEELPP_NO_EXPORT void generateOLFiles( int argc, char ** argv, std::string const& appName );
+    static FEELPP_NO_EXPORT void processGenericOptions();
+    static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
 private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
-    mpi::environment M_env;
+    std::unique_ptr<mpi::environment> M_env;
 
+    //! number of arguments in command line
+    static int S_argc;
+    //! arguments in command line
+    static char** S_argv;
+                                                        
     static std::vector<fs::path> S_paths;
 
-    static  fs::path S_scratchdir;
-
+    static fs::path S_appdir;
+    static fs::path S_scratchdir;
+    static fs::path S_cfgdir;
     static AboutData S_about;
+    static pt::ptree S_summary;
+    static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
+    static std::set<std::string> S_configFileNames;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
@@ -634,27 +816,9 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
+
+    static TimerTable S_timers;
 };
-} // detail
-
-
-
-class Environment : public detail::Environment
-{
-public:
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( detail::Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( directory,( std::string ) )
-        ) ) // no semicolon
-};
-
 
 BOOST_PARAMETER_FUNCTION(
     ( po::variable_value ), option, tag,
@@ -664,9 +828,10 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm, ( WorldComm ), Environment::worldComm() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
-    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix );
+    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix, _vm=vm );
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -800,6 +965,33 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
+BOOST_PARAMETER_FUNCTION(
+    ( std::vector<double> ),
+    vdoption, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( worldcomm, ( WorldComm ), Environment::worldComm() )
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+    ) )
+{
+	std::vector<double> opt;
+
+    try
+    {
+        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+    }
+
+    catch ( boost::bad_any_cast bac )
+    {
+        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
+    }
+
+    return opt;
+}
+
+//! @cond
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
@@ -815,6 +1007,7 @@ struct option
 };
 
 }
+//! @endcond
 
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::option<Args>::type ),
@@ -841,5 +1034,8 @@ BOOST_PARAMETER_FUNCTION(
     return opt;
 }
 
-}
+} // Feel
+
+#include <feel/feelcore/feelio.hpp>
+
 #endif /* FEELPP_ENVIRONMENT_HPP */

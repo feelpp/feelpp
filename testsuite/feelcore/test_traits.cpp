@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -32,10 +32,12 @@
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
-
 #include <feel/feelcore/constants.hpp>
 #include <feel/feelcore/traits.hpp>
 
+#if BOOST_VERSION >= 105900
+#define BOOST_MESSAGE(ARG) BOOST_TEST_MESSAGE(ARG)
+#endif
 
 template<typename value_type>
 void check( value_type x )

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013-2015 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,9 @@ straightenMesh( boost::shared_ptr<MeshType> m,
 extern template boost::shared_ptr<Mesh<Simplex<1,1>>>
 straightenMesh<Mesh<Simplex<1,1>>>( boost::shared_ptr<Mesh<Simplex<1,1>>>, 
                                     WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Hypercube<1,1>>>
+straightenMesh<Mesh<Hypercube<1,1>>>( boost::shared_ptr<Mesh<Hypercube<1,1>>>, 
+                                    WorldComm const& , bool, bool  );
 extern template boost::shared_ptr<Mesh<Simplex<1,1,2>>>
 straightenMesh<Mesh<Simplex<1,1,2>>>( boost::shared_ptr<Mesh<Simplex<1,1,2>>>, 
                                       WorldComm const& , bool, bool  );
@@ -78,8 +81,18 @@ straightenMesh<Mesh<Simplex<2,4>>>( boost::shared_ptr<Mesh<Simplex<2,4>>>,
 extern template boost::shared_ptr<Mesh<Simplex<3,1>>>
 straightenMesh<Mesh<Simplex<3,1>>>( boost::shared_ptr<Mesh<Simplex<3,1>>>, 
                                     WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Hypercube<3,1>>>
+straightenMesh<Mesh<Hypercube<3,1>>>( boost::shared_ptr<Mesh<Hypercube<3,1>>>, 
+                                    WorldComm const& , bool, bool  );
 extern template boost::shared_ptr<Mesh<Simplex<3,2>>>
 straightenMesh<Mesh<Simplex<3,2>>>( boost::shared_ptr<Mesh<Simplex<3,2>>>, 
+                                    WorldComm const& , bool, bool  );
+
+extern template boost::shared_ptr<Mesh<Simplex<3,3>>>
+straightenMesh<Mesh<Simplex<3,3>>>( boost::shared_ptr<Mesh<Simplex<3,3>>>, 
+                                    WorldComm const& , bool, bool  );
+extern template boost::shared_ptr<Mesh<Simplex<3,4>>>
+straightenMesh<Mesh<Simplex<3,4>>>( boost::shared_ptr<Mesh<Simplex<3,4>>>, 
                                     WorldComm const& , bool, bool  );
 #endif
 }

@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-08
 #
-#  Copyright (C) 2013 Université de Strasbourg
+#  Copyright (C) 2013-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -36,8 +36,8 @@ SET(CPACK_PACKAGE_NAME "feelpp")
 SET(CPACK_GENERATOR "TGZ")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.md")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.adoc")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.adoc")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${FEELPP_VERSION_MAJOR}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${FEELPP_VERSION_MINOR}")
 SET(CPACK_PACKAGE_VERSION_PATCH "${FEELPP_VERSION_MICRO}")
@@ -58,13 +58,19 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
+  "/.git;"
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
   "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-#  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+  #  "${PROJECT_SOURCE_DIR}/contrib/eigen"
+  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.user"
+  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.doc"
   "${PROJECT_SOURCE_DIR}/contrib/cln"
   "${PROJECT_SOURCE_DIR}/contrib/boost"
 # "${PROJECT_SOURCE_DIR}/contrib/gmsh"
+  "${PROJECT_SOURCE_DIR}/contrib/nt2"
+  "${PROJECT_SOURCE_DIR}/contrib/ipopt"
+  "${PROJECT_SOURCE_DIR}/contrib/cereal"
   "${PROJECT_SOURCE_DIR}/contrib/exodus-5.24"
   "${PROJECT_SOURCE_DIR}/ports"
   "${PROJECT_SOURCE_DIR}/projects"
@@ -73,13 +79,19 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"
   "${PROJECT_SOURCE_DIR}/data/ensoght"
   "${PROJECT_SOURCE_DIR}/data/gmsh/pelvis"
+  "${PROJECT_SOURCE_DIR}/applications/crb"
+  "${PROJECT_SOURCE_DIR}/applications/check"
+  "${PROJECT_SOURCE_DIR}/applications/polyvis"
+  "${PROJECT_SOURCE_DIR}/testsuite"
   "${PROJECT_SOURCE_DIR}/benchmarks/"
   "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
   "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
   "${PROJECT_SOURCE_DIR}/doc/poster/"
-#  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
+  "${PROJECT_SOURCE_DIR}/doc/api/"
+  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
+  "${PROJECT_SOURCE_DIR}/doc/manual/pngs/"
   "${PROJECT_SOURCE_DIR}/doc/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
@@ -93,7 +105,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
   "${PROJECT_SOURCE_DIR}/research/"
-  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/;"
+  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;"
   "*.eps;*.tag;"
   "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
   "${PROJECT_SOURCE_DIR}/applications/opus.old"

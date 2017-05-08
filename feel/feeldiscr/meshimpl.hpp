@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2007-08-07
 
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,10 +27,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-08-07
  */
-#ifndef __MESHIMPL_HPP
-#define __MESHIMPL_HPP 1
+#ifndef FEELPP_MESHIMPL_HPP
+#define FEELPP_MESHIMPL_HPP 1
 
+#include <unordered_set>
+#include <unordered_map>
 #include <boost/preprocessor/comparison/greater_equal.hpp>
+#include <feel/feeltiming/tic.hpp>
+
+
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -40,13 +46,31 @@
 
 namespace Feel
 {
+
+namespace meshdetail
+{
+template<typename MeshType>
+typename MeshType::gm1_ptrtype
+initGm1( typename MeshType::gm_ptrtype gm, mpl::true_ /**/ )
+{
+    return gm;
+}
+template<typename MeshType>
+typename MeshType::gm1_ptrtype
+initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
+{
+    return typename MeshType::gm1_ptrtype( new typename MeshType::gm1_type );
+}
+}
+
+
 template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
-    M_gm1( new gm1_type ),
+    M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
     M_meas( 0 ),
     M_measbdy( 0 ),
     M_substructuring( false ),
@@ -62,50 +86,18 @@ Mesh<Shape, T, Tag>::partition ( const uint16_type n_parts )
     //M_part->partition( *this, n_parts );
 }
 
-template<typename Shape, typename T, int Tag>
-flag_type
-Mesh<Shape, T, Tag>::markerId ( boost::any const& __marker )
-{
-    flag_type theflag = -1;
-    if ( boost::any_cast<flag_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<flag_type>( __marker);
-    }
-    else if ( boost::any_cast<int>( &__marker ) )
-    {
-        theflag = boost::any_cast<int>( __marker);
-    }
-    else if ( boost::any_cast<size_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<size_type>( __marker);
-    }
-    else if ( boost::any_cast<uint16_type>( &__marker ) )
-    {
-        theflag = boost::any_cast<uint16_type>( __marker);
-    }
-    else if ( boost::any_cast<std::string>( &__marker ) )
-    {
-        theflag = this->markerName( boost::any_cast<std::string>( __marker) );
-    }
-    else
-        CHECK( theflag != -1 ) << "invalid flag type\n";
-    return theflag;
-}
 
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateForUse()
 {
-    VLOG(2) << "component     MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
-    VLOG(2) << "component MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
-    VLOG(2) << "component MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
-    VLOG(2) << "component    MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
-
-    if ( this->numElements() == 0 )
-    {
-        VLOG(2) << "No elements in Mesh? (with process rank " << this->worldComm().rank() <<")\n";
-        if ( this->worldComm().localSize()==1 ) return;
-    }
+    VLOG(2) << "component                  MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
+    VLOG(2) << "component MESH_UPDATE_ELEMENTS_ADJACENCY: " <<  this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) << "\n";
+    VLOG(2) << "component              MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
+    VLOG(2) << "component              MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
+    VLOG(2) << "component                 MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
+    VLOG(2) << "component        MESH_NO_UPDATE_MEASURES: " <<  this->components().test( MESH_NO_UPDATE_MEASURES ) << "\n";
+    VLOG(2) << "component         MESH_GEOMAP_NOT_CACHED: " <<  this->components().test( MESH_GEOMAP_NOT_CACHED ) << "\n";
 
     boost::timer ti;
 
@@ -114,76 +106,11 @@ Mesh<Shape, T, Tag>::updateForUse()
     {
         if ( this->components().test( MESH_RENUMBER ) )
         {
-
             //this->renumber();
             VLOG(2) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
-        //
-        // compute the Adjacency graph
-        //
-        ti.restart();
-        VLOG(2) << "Compute adjacency graph\n";
         element_iterator iv,  en;
-        boost::unordered_map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
-
-        boost::unordered_map<std::set<int>, size_type > _faces;
-        typename boost::unordered_map<std::set<int>, size_type >::iterator _faceit;
-        int next_face = 0;
-
-        boost::tie( iv, en ) = this->elementsRange();
-
-        for ( ; iv != en; ++iv )
-        {
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-            {
-                std::set<int> s;
-
-                for ( int f = 0; f < face_type::numVertices; ++f )
-                {
-                    if ( nDim == 1 )
-                        s.insert( iv->point( j ).id() );
-
-                    else
-                        s.insert( iv->point( iv->fToP( j, f ) ).id() );
-                }
-
-                bool faceinserted = false;
-                boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
-
-                if ( faceinserted )
-                    ++next_face;
-
-                DVLOG(2) << "------------------------------------------------------------\n";
-                DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << " process id:" << iv->processId() << "\n";
-
-                if ( faceinserted )
-                {
-                    DVLOG(2) << " new face " << _faceit->second << " is now in store with elt "
-                             << f2e[_faceit->second].template get<0>()  << " and local face id "
-                             <<  f2e[_faceit->second].template get<1>()  << "\n";
-
-
-                    f2e[_faceit->second].template get<0>() = iv->id();
-                    f2e[_faceit->second].template get<1>() = j;
-                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, invalid_size_type_value );
-                }
-
-                else // already stored
-                {
-                    DVLOG(2) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
-
-                    f2e[_faceit->second].template get<2>() = iv->id();
-                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
-                    M_e2f[std::make_pair(f2e[_faceit->second].template get<0>(), f2e[_faceit->second].template get<1>())] =
-                        boost::make_tuple( _faceit->second, iv->id() );
-                }
-
-
-            } // local face
-        } // element loop
-        f2e.clear();
-        VLOG(1) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
 #if 0
 
         // partition mesh
@@ -196,63 +123,70 @@ Mesh<Shape, T, Tag>::updateForUse()
 
 #endif
 
-        if ( this->components().test( MESH_UPDATE_FACES ) )
+        if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
         {
-            ti.restart();
+            tic();
             // update connectivities of entities of co dimension 1
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
-
-            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
-
+            if ( this->components().test( MESH_CHECK ) )
+                this->check();
+            toc("Mesh::updateForUse update entities of codimension 1",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 1";
         }
+        else if ( this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) )
+        {
+            tic();
+            this->updateAdjacencyElements();
+            toc("Mesh::updateForUse update adjacency elements",FLAGS_v>0);
+        }
+
 
         if ( this->components().test( MESH_UPDATE_EDGES ) )
         {
-            ti.restart();
-            // update connectivities of entities of co dimension 2
-            // (edges in 3D)
+            tic();
+            // update connectivities of entities of co dimension 2 (edges in 3D)
             this->updateEntitiesCoDimensionTwo();
-            VLOG(1) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update entities of codimension 2",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update entities of codimension 2";
         }
 
         if ( this->worldComm().localSize()>1 )
         {
-            if ( this->components().test( MESH_UPDATE_FACES ) )
-            {
-                // warning : this function change the isOnBoundary for ghost faces
-                // so need call before updateOnBoundary()
-                if ( false )
-                    this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
-                else
-                    this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+            auto rangeGhostElement = this->ghostElements();
+            auto itghost = std::get<0>( rangeGhostElement );
+            auto const enghost = std::get<1>( rangeGhostElement );
+            for ( ; itghost != enghost; ++itghost )
+                this->addNeighborSubdomain( boost::unwrap_ref( *itghost ).processId() );
 
-                auto ipfRange = this->interProcessFaces();
-                for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
-                    this->addFaceNeighborSubdomain( itf->partition2() );
-            }
+            // update mesh entities with parallel data
+            if ( false )
+                this->updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
+            else
+                this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
-            auto iv = this->beginGhostElement();
-            auto const en = this->endGhostElement();
-            for ( ; iv != en; ++iv )
-                this->addNeighborSubdomain( iv->processId() );
+            // auto ipfRange = this->interProcessFaces();
+            auto rangeInterProcessFaces = this->interProcessFaces();
+            auto itf = std::get<0>( rangeInterProcessFaces );
+            auto enf = std::get<1>( rangeInterProcessFaces );
+            for ( ; itf!=enf ; ++itf )
+                this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
         }
 
-        if ( this->components().test( MESH_UPDATE_FACES ) ||
-             this->components().test( MESH_UPDATE_EDGES )
+        if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
+             ( nDim < 3 || this->components().test( MESH_UPDATE_EDGES ) )
              )
         {
-            ti.restart();
+            tic();
             updateOnBoundary();
-            VLOG(1) << "[Mesh::updateForUse] update on boundary : " << ti.elapsed() << "\n";
+            toc("Mesh::updateForUse update on boundary", FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update on boundary ";
         }
-
-
 
         if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            ti.restart();
+            tic();
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
@@ -260,63 +194,209 @@ Mesh<Shape, T, Tag>::updateForUse()
                                          []( element_type& e )
                                          {
                                              for ( int i = 0; i < e.numPoints; ++i )
-                                                 e.point( i ).addElement( e.id() );
+                                                 e.point( i ).addElement( e.id(), i );
                                          });
             }
-            VLOG(1) << "[Mesh::updateForUse] update add element info : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
+            VLOG(1) << "[Mesh::updateForUse] update add element info"; 
         }
 
-        this->updateNumGlobalElements();
+        if ( true )
+        {
+            tic();
+            boost::tie( iv, en ) = this->elementsRange();
+            for ( ; iv != en; ++iv )
+            {
+                // first look if the element has a point with a marker
+                // if not we skip this element
+                if ( iv->hasPointWithMarker() && !iv->isGhostCell())
+                {
+                    this->elements().modify( iv,
+                                             []( element_type& e )
+                                             {
+                                                 for ( int i = 0; i < e.numPoints; ++i )
+                                                 {
+                                                     if ( e.point( i ).hasMarker() )
+                                                     {
+                                                         e.point( i ).addElement( e.id(), i );
+#if 0
+                                                         LOG(INFO) << "added to point " << e.point(i).id() << " marker " << e.point(i).marker()
+                                                                   << " element " << e.id() << " pt id in element " << i
+                                                                   << " pt(std::set) " << boost::prior( e.point(i).elements().end())->first
+                                                                   << ", " << boost::prior( e.point(i).elements().end())->second;
+#endif
+                                                     }
+                                                 }
+                                             });
+                }
+            }
+            //auto& mpts = this->pointsByMarker();
+            //auto& mpts = this->pointsRange();
+            for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
+            {
+                auto & pt = p_it->second;
+                if ( pt.hasMarker() )
+                {
+                    if (!pt.elements().size())
+                    {
+                        pt.setProcessId( invalid_rank_type_value );
+                    }
+                }
+            }
+            toc("register elements associated to marked points" , FLAGS_v > 0 );
+            VLOG(1) << "[Mesh::updateForUse] update add element info for marked points";
+        }
+
+
+        // update number of vertices
+        if ( this->numVertices() == 0 )
+        {
+            if ( nOrder == 1 )
+                this->setNumVertices( this->numPoints() );
+            else
+            {
+                tic();
+                boost::tie( iv, en ) = this->elementsRange();
+                std::unordered_set<size_type> vertexIds;
+                vertexIds.reserve( this->numPoints() );
+                for ( ; iv != en; ++iv )
+                {
+                    for ( int p = 0; p < element_type::numVertices; ++p )
+                        vertexIds.insert( iv->point( p ).id() );
+                }
+                this->setNumVertices( vertexIds.size() );
+                vertexIds.clear();
+                std::unordered_set<size_type>().swap( vertexIds );
+                toc("Mesh::updateForUse update number of vertices",FLAGS_v>0);
+            }
+        }
+
+        this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         {
-            ti.restart();
+            tic();
             propagateMarkers(mpl::int_<nDim>() );
-            VLOG(1) << "[Mesh::updateForUse] update propagate markers : " << ti.elapsed() << "\n"; 
+            toc("Mesh::updateForUse update propagate markers",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update propagate markers";
         }
 
+        tic();
+        this->updateCommonDataInEntities( mpl::int_<nDim>() );
+        toc("Mesh::updateForUse update setMesh in elements and faces",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update setMesh in elements and faces";
+
+        if ( !this->components().test( MESH_NO_UPDATE_MEASURES ) )
         {
-            ti.restart();
-            for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+            tic();
+            // update meas, measface, hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+            this->updateMeasures();
+            toc("Mesh::updateForUse update mesh measures",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] update mesh measures";
+        }
+
+        // attach mesh in the localisation tool
+        M_tool_localization->setMesh( this->shared_from_this(),false );
+
+        if ( this->components().test( MESH_CHECK ) )
+        {
+            tic();
+            // check mesh connectivity
+            this->check();
+            toc("Mesh::updateForUse check",FLAGS_v>0);
+            VLOG(1) << "[Mesh::updateForUse] check";
+        }
+
+    } // isUpdatedForUse
+
+
+    if ( !this->components().test( MESH_GEOMAP_NOT_CACHED ) && !M_is_gm_cached )
+    {
+        tic();
+        M_gm->initCache( this );
+        if ( nOrder > 1 )
+            M_gm1->initCache( this );
+        M_is_gm_cached = true;
+        toc("Mesh::updateForUse update geomap cache",FLAGS_v>0);
+        VLOG(1) << "[Mesh::updateForUse] update geomap cache";
+    }
+
+    this->setUpdatedForUse( true );
+
+    if (Environment::isMasterRank() && FLAGS_v >= 1)
+    {
+        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "s\n";
+        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
+        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9  << "GBytes\n";
+    }
+}
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateMeasures()
+{
+    if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
+        return;
+
+    boost::timer ti;
+
+    M_local_meas = 0;
+    M_local_measbdy = 0;
+
+    typedef typename element_type::quad_meas_type quad_meas_type;
+    typedef typename element_type::quad_meas1_type quad_meas1_type;
+    quad_meas_type thequad;
+    quad_meas1_type thequad1;
+    typename gm_type::precompute_ptrtype pc;
+    typename gm_type::faces_precompute_type pcf;
+    typename gm1_type::precompute_ptrtype pc1;
+    typename gm1_type::faces_precompute_type pcf1;
+    // assume that a high order mesh is straightened (probably we need to store this info in the mesh)
+    bool meshIsStraightened = (nOrder > 1);
+    // not very nice and correct but this function can have a big cost so only do one time
+    bool updateMeasureWithPc = !this->isUpdatedForUse();
+    if ( updateMeasureWithPc )
+    {
+        pc = M_gm->preCompute( M_gm, thequad.points() );
+        if ( nDim == nRealDim ) // else not works
+            pcf = M_gm->preComputeOnFaces( M_gm, thequad.allfpoints() );
+        if ( meshIsStraightened )
+        {
+            pc1 = M_gm1->preCompute( M_gm1, thequad1.points() );
+            if ( nDim == nRealDim )
+                pcf1 = M_gm1->preComputeOnFaces( M_gm1, thequad1.allfpoints() );
+        }
+    }
+
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+
+    if ( iv != en )
+    {
+        auto ctx = M_gm->template context<vm::JACOBIAN>( *iv, pc );
+        auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf,0 );
+        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( *iv, pc1 );
+        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf1,0 );
+        for ( ; iv != en; ++iv )
+        {
+            if ( updateMeasureWithPc )
             {
-                this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+                if ( meshIsStraightened && !iv->isOnBoundary() )
+                {
+                    ctx1->update( *iv );
+                    iv->updateWithCtx1( thequad1, ctx1, ctxf1 );
+                }
+                else
+                {
+                    ctx->update( *iv );
+                    iv->updateWithCtx( thequad, ctx, ctxf );
+                }
             }
-            VLOG(1) << "[Mesh::updateForUse] update face mesh : " << ti.elapsed() << "\n"; 
-        }
-
-
-#if 1
-        {
-            ti.restart();
-            element_iterator iv,  en;
-            boost::tie( iv, en ) = this->elementsRange();
-            auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
-            auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
-            M_local_meas = 0;
-            M_local_measbdy = 0;
-
-            for ( ; iv != en; ++iv )
-            {
-                this->elements().modify( iv,
-                                         [=,&pc,&pcf]( element_type& e )
-                                         {
-                                             e.setMeshAndGm( this, M_gm, M_gm1 );
-                                             e.updateWithPc(pc, boost::ref( pcf) );
-                                         } );
-#if 0
-                lambda::bind( &element_type::setMeshAndGm,
-                              lambda::_1,
-                              this, M_gm, M_gm1 ) );
-
-            this->elements().modify( iv,
-                                     lambda::bind( &element_type::updateWithPc,
-                                                   lambda::_1, pc, boost::ref( pcf ) ) );
-#endif
 
             // only compute meas for active element (no ghost)
             if ( !iv->isGhostCell() )
                 M_local_meas += iv->measure();
-
+#if 0
             auto _faces = iv->faces();
 
             if ( nDim == 1 )
@@ -325,38 +405,45 @@ Mesh<Shape, T, Tag>::updateForUse()
                 for ( ; _faces.first != _faces.second; ++_faces.first )
                     if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
                         M_local_measbdy += ( *_faces.first )->measure();
-        }
-#if BOOST_VERSION >= 105500
-        std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
-        mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
 #else
-        std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
-        std::vector<value_type> gmeas( 2, 0.0 );
-        mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+            if ( nDim == 1 || nDim != nRealDim )
+                M_local_measbdy = 0;
+            else
+                for ( int f = 0; f < iv->numTopologicalFaces; ++f )
+                    M_local_measbdy += iv->faceMeasure( f );
 #endif
-        M_meas = gmeas[0];
-        M_measbdy = gmeas[1];
+        } // for element loop
+    } // if ()
+#if BOOST_VERSION >= 105500
+    std::vector<value_type> gmeas{ M_local_meas, M_local_measbdy };
+    mpi::all_reduce(this->worldComm(), mpi::inplace(gmeas.data()), 2, std::plus<value_type>());
+#else
+    std::vector<value_type> lmeas{ M_local_meas, M_local_measbdy };
+    std::vector<value_type> gmeas( 2, 0.0 );
+    mpi::all_reduce(this->worldComm(), lmeas.data(), 2, gmeas.data(), std::plus<value_type>());
+#endif
+    M_meas = gmeas[0];
+    M_measbdy = gmeas[1];
 
-        // now that all elements have been updated, build inter element
-        // data such as the measure of point element neighbors
-        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+    // now that all elements have been updated, build inter element
+    // data such as the measure of point element neighbors
+    if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+    {
+        boost::tie( iv, en ) = this->elementsRange();
+        for ( ; iv != en; ++iv )
         {
-            boost::tie( iv, en ) = this->elementsRange();
-            for ( ; iv != en; ++iv )
+            value_type meas = 0;
+            for( auto const& _elt: iv->pointElementNeighborIds() )
             {
-                value_type meas = 0;
-                for( auto const& _elt: iv->pointElementNeighborIds() )
-                {
-                    // warning : only compute meas for active element (no ghost)
-                    if ( this->hasElement( _elt ) )
-                        meas += this->element( _elt ).measure();
-                }
-                this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
+                // warning : only compute meas for active element (no ghost)
+                if ( this->hasElement( _elt ) )
+                    meas += this->element( _elt ).measure();
             }
+            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
-        VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
     }
-#endif
+    VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n";
+
     // compute h information: average, min and max
     {
         ti.restart();
@@ -386,32 +473,9 @@ Mesh<Shape, T, Tag>::updateForUse()
         VLOG(1) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n"; 
     }
 
-    {
-        ti.restart();
-        // check mesh connectivity
-        this->check();
-        VLOG(1) << "[Mesh::updateForUse] check : " << ti.elapsed() << "\n"; 
-    }
-
-    if ( M_is_gm_cached == false )
-    {
-        ti.restart();
-        M_gm->initCache( this );
-        M_gm1->initCache( this );
-        M_is_gm_cached = true;
-        VLOG(1) << "[Mesh::updateForUse] update geomap : " << ti.elapsed() << "\n"; 
-    }
-
-    M_tool_localization->setMesh( this->shared_from_this(),false );
-    this->setUpdatedForUse( true );
 }
-    if (Environment::isMasterRank() && FLAGS_v >= 1)
-    {
-        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
-        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
-        std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage/1.e9 << "\n";
-    }
-}
+
+
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::self_type&
 Mesh<Shape, T, Tag>::operator+=( self_type const& m )
@@ -484,21 +548,16 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<2> )
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
                    {
-                       if ( f.marker().isOff() )
+                       if ( !f.hasMarker() )
                            return;
 
                        // update points
                        for( int i = 0; i < face_type::numPoints; ++i )
                        {
-                           if ( f.point( i ).marker().isOff() )
+                           if ( !f.point( i ).hasMarker() )
                            {
-                               // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( f.point(i) ),
-                                                      [&f] ( point_type& p )
-                                                      {
-                                                          p.setMarker( f.marker().value() );
-                                                      } );
-
+                               // inherit marker from face
+                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
                            }
                        }
                    } );
@@ -512,20 +571,15 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
     std::for_each( this->beginEdge(), this->endEdge(),
                    [this]( edge_type const& e )
                    {
-                       if ( e.marker().isOff() )
+                       if ( !e.hasMarker() )
                            return;
 
                        for( int i = 0; i < edge_type::numPoints; ++i )
                        {
-                           if ( e.point( i ).marker().isOff() )
+                           if ( !e.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( e.point(i) ),
-                                                      [&e] ( point_type& p )
-                                                      {
-                                                          p.setMarker( e.marker().value() );
-                                                      } );
-
+                               this->pointIterator( e.point( i ).id() )->second.setMarker( e.marker().value() );
                            }
                        } } );
 
@@ -533,27 +587,22 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
                    {
-                       if ( f.marker().isOff() )
+                       if ( !f.hasMarker() )
                            return;
 
                        // update points
                        for( int i = 0; i < face_type::numPoints; ++i )
                        {
-                           if ( f.point( i ).marker().isOff() )
+                           if ( !f.point( i ).hasMarker() )
                            {
                                // inherit marker from edge
-                               this->points().modify( this->points().iterator_to( f.point(i) ),
-                                                      [&f] ( point_type& p )
-                                                      {
-                                                          p.setMarker( f.marker().value() );
-                                                      } );
-
+                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
                            }
                        }
                        // update edges
                        for( int i = 0; i < face_type::numEdges; ++i )
                        {
-                           if ( f.edge( i ).marker().isOff() )
+                           if ( !f.edge( i ).hasMarker() )
                            {
                                // inherit marker from edge
                                this->edges().modify( this->edges().iterator_to( f.edge(i) ),
@@ -569,8 +618,58 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
 
 template<typename Shape, typename T, int Tag>
 void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<0> )
+{
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        itp->second.setMesh( this );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        itp->second.setMesh( this );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        itp->second.setMesh( this );
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
+{
+    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
+    auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
+    for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
+        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+    for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
+        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+    for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
+        this->edges().modify( ite,[&geondEdgeCommon]( edge_type& e ) { e.setCommonData( geondEdgeCommon ); } );
+    for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
+        itp->second.setMesh( this );
+}
+
+template<typename Shape, typename T, int Tag>
+void
 Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 {
+#if 0
     size_type next_free_node = 0;
 
     // map old/new ids
@@ -717,8 +816,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
             elt != this->endFace(); ++elt )
     {
         face_type __face = *elt;
-        DVLOG(2) << "face id: " << __face.id()
-                 << " marker: " << __face.marker() << "\n";
+        DVLOG(2) << "face id: " << __face.id() << "\n";
 
         // renumber the nodes of the face
         for ( int i = 0; i < __face.nPoints(); ++i )
@@ -750,7 +848,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
     // should we renumber also the faces and elements ?
 
-
+#endif
 }
 
 template<typename Shape, typename T, int Tag>
@@ -773,8 +871,7 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
     {
         edge_type __edge = *elt;
 
-        DVLOG(2) << "edge id: " << __edge.id()
-                 << " marker: " << __edge.marker() << "\n";
+        DVLOG(2) << "edge id: " << __edge.id() << "\n";
 
         // renumber the nodes of the face
         for ( int i = 0; i < __edge.nPoints(); ++i )
@@ -850,22 +947,72 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
 {}
+
+
+namespace detail
+{
+struct HashFaceConnection
+{
+    size_t operator()(const std::set<size_type>& v) const
+        {
+            return boost::hash_range( v.begin(),v.end() );
+        }
+    size_t operator()(const std::vector<size_type>& v) const
+        {
+            return boost::hash_range( v.begin(),v.end() );
+        }
+};
+}
+
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 {
     boost::timer ti;
-    face_type face;
-    //face.setWorldComm(this->worldComm());
-    face.setProcessIdInPartition( this->worldComm().localRank() );
+    const bool updateComponentFacesMinimal = !this->components().test( MESH_UPDATE_FACES ) && this->components().test( MESH_UPDATE_FACES_MINIMAL );
 
-    std::map<std::set<int>, size_type > _faces;
-    typename std::map<std::set<int>, size_type >::iterator _faceit;
-    int next_face = 0;
-    element_type ele;
 
+    rank_type currentPid = this->worldComm().localRank();
+    rank_type numPartition = this->worldComm().localSize();
+
+    // typedef boost::unordered_map<std::set<size_type>, face_type* > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, face_type*, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typename pointstoface_container_type::iterator _faceit;
+        // stores local vertex ids of the faces to identify them
+    std::vector<size_type> lids(face_type::numVertices);
+
+    std::vector<face_type* > _facesOrderedWithId;
+    size_type next_face = 0;
+
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+    pointstoface_container_type _faces( std::distance(iv,en)*this->numLocalFaces() );
+
+    // other data used if updateComponentFacesMinimal is true for build adjacency elements info
+    std::vector< std::tuple<size_type,rank_type,uint16_type> > f2e;
+    boost::unordered_map<size_type, std::vector<std::tuple<size_type,rank_type,uint16_type> > > e2e;
+    // special trick (at this time, we need also to add active faces which touch interprocess boundary)
+    // else mpi dof table can be not build
+    std::set<size_type> ptsTouchInterProcess;
+    if ( updateComponentFacesMinimal )
+    {
+        auto rangeGhostElement = this->ghostElements();
+        auto ghostelt_it = std::get<0>( rangeGhostElement );
+        auto const ghostelt_en = std::get<1>( rangeGhostElement );
+        for ( ; ghostelt_it != ghostelt_en; ++ghostelt_it )
+        {
+            auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
+            for ( uint16_type vLocId = 0 ; vLocId < element_type::numVertices; ++vLocId )
+            {
+                auto const& thept = ghostelt.point( vLocId );
+                if ( thept.processId() != invalid_rank_type_value )
+                    ptsTouchInterProcess.insert( thept.id() );
+            }
+        }
+    }
+    tic();
     // First We check if we have already Faces stored
-    if ( ! this->faces().empty() )
+    if ( !this->faces().empty() )
     {
         // dump all faces in the container, to maintain the correct numbering
         // if everything is correct the numbering in the bareface structure
@@ -878,348 +1025,603 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         face_iterator __it = this->beginFace();
         face_iterator __en = this->endFace();
         LOG(INFO) << "We have " << std::distance( __it, __en ) << " faces in the database";
-        auto itb = this->beginFaceOnBoundary();
-        auto enb = this->beginFaceOnBoundary();
-        LOG(INFO) << "We have " << std::distance( itb, enb ) << " faces on the boundary in the database";
         for ( ; __it!=__en; )
         {
-            std::set<int> s;
-
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                s.insert( __it->point( f ).id() );
+                lids[f]= __it->point( f ).id();
             }
-
+            std::sort( lids.begin(), lids.end() );
+            
             bool faceinserted = false;
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
-
-            if ( faceinserted )
-                ++next_face;
+            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
 
             DVLOG_IF(2,faceinserted) << "added face with id " << __it->id () << "\n";
             DVLOG_IF(2,!faceinserted) << "not added face with id " << __it->id ()
                                       << " was already face with id = " << _faceit->second << "\n";
 
-
             if ( faceinserted == false )
             {
-                // here we get the next face or \c end()
-                size_type theid = __it->id();
-
-                // find the other face
-                face_iterator __other = this->faces().find( face_type( _faceit->second ) );
-                FEELPP_ASSERT( __other->id() != theid )
-                ( __other->id() )
-                ( theid ).error( "faces should have different ids " );
-
-                if ( __it->marker() != __other->marker() )
-                {
-                    this->faces().modify( __other, [__it]( face_type& f ) { f.setMarker2( __it->marker().value() ); } );
-                }
-
+                face_type* facePtr =  _faceit->second;
+                // if ( __it->hasMarker() && ( !facePtr->hasMarker() || ( __it->marker() != facePtr->marker() ) ) )
+                // {
+                //     facePtr->setMarker( __it->marker().value() );
+                // }
                 __it = this->eraseFace( __it );
-
-
-
             }
-
             else
             {
-                // ensure that item handler ids are in sync with
-                // faces ids
-                face_type __f = *__it;
-                __f.setId( _faceit->second );
+                // ensure that item handler ids are in sync with faces ids
+                _facesOrderedWithId.push_back( new face_type(*__it) );
 
-                // set the id for this partition
-                //__f.setIdInPartition( this->worldComm().localRank(),__f.id() );
+                face_type* facePtr = _facesOrderedWithId.back();//new face_type(*__it);
 
-                DVLOG(2) << "set face id " << __f.id()
-                         << " iterator id = " << __it->id()
-                         << " check id = " << _faceit->second << "\n";
+                facePtr->setId( next_face++ );
 
-                this->faces().replace( __it, __f );
+                _faceit->second = facePtr;
+                //_facesOrderedWithId.push_back( facePtr );
+
+                if ( updateComponentFacesMinimal )
+                {
+                    f2e.push_back( std::make_tuple(invalid_size_type_value,invalid_rank_type_value,0) );
+                }
+
+                //this->faces().replace( __it, __f );
                 ++__it;
             }
         }
+        // clean faces container, rebuild properly after
+        this->faces().clear();
     }
-
+    toc("Mesh.updateEntitiesCoDimensionOne.add_faces", FLAGS_v>0);
     VLOG(2) << "[Mesh::updateFaces] adding faces : " << ti.elapsed() << "\n";
     ti.restart();
 
+    bool inserted = false;
+    face_iterator __fit;
+
     VLOG(2) << "[Mesh::updateFaces] numLocalFaces : " << this->numLocalFaces() << "\n";
     VLOG(2) << "[Mesh::updateFaces] face_type::numVertices : " << face_type::numVertices << "\n";
-    element_iterator iv,  en;
-    boost::tie( iv, en ) = this->elementsRange();
 
-    for ( ; iv != en; ++iv )
+    std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
+    for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
     {
-        element_type const& __element = *iv;
-        size_type __element_id = __element.id();
+        for ( int f = 0; f < face_type::numVertices; ++f )
+            myfToP[j*face_type::numVertices+f] = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
+    }
 
-        //MakeBareEntity<element_type,nDim> baremaker( __element );
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+    // std::vector< std::set<size_type> > pointsFromFace( this->numLocalFaces() );
+    // std::array<size_type,element_type::numVertices> pointIdInElt;
+    Eigen::Matrix<uint32_type,element_type::numVertices,1> pointIdInElt;
+    // for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+    //     pointIdInElt[f] = iv->point( f ).id();
+
+    // std::set<size_type> s;
+    tic();
+
+    // get an ordering by process (need in // for have a deterministic choice of face connection (0 and 1) and therfore to define the permutations )
+    std::map<rank_type,typename super_elements::elements_reference_wrapper_type, std::less<rank_type> > elementsByProcOrdering;
+    auto itt = this->beginElement();
+    auto enn = this->endElement();
+    for ( ; itt!=enn;++itt )
+    {
+        rank_type pid = itt->processId();
+        elementsByProcOrdering[ pid ].push_back( boost::cref(*itt) );
+    }
+    for ( auto const& elementsByProcPair : elementsByProcOrdering )
+        for ( auto elementsByProc : elementsByProcPair.second )
+    {
+        element_type const& __element =  boost::unwrap_ref( elementsByProc );//*iv;
+        const size_type __element_id = __element.id();
+        const rank_type eltPid = __element.processId();
+        auto eltPtr = boost::addressof( __element );
+
+        for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+            pointIdInElt[f] = __element.point( f ).id();
+
+        for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
         {
+#if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
-            DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
-
-            std::set<int> s;
-
-            for ( int f = 0; f < face_type::numVertices; ++f )
+            DVLOG(2) << "Element id: " << __element.id() << " local face id: " << j << "\n";
+#endif
+            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
             {
-                uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
-                s.insert( iv->point( pt_localid ).id() );
-                VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
-                        << " global id " << iv->point( pt_localid ).id() << "\n";
+                //uint16_type pt_localid = ( nDim==1 )?j:/*__element.*/element_type::fToP( j, f );
+                // lids[f]= __element.point( pt_localid ).id();
+                lids[f]= pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
+
+#if !defined( NDEBUG )
+                VLOG(3) << "add point local id " << f << " to face " << j  << " " << __element.fToP( j, f )
+                        << " global id " << myfToP[j*face_type::numVertices+f]/*__element.point( pt_localid ).id()*/ << "\n";
+#endif
             }
+            std::sort(lids.begin(), lids.end());
 
             bool faceinserted = false;
-            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
+            //boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(nullptr) );
 
-            if ( faceinserted )
-                ++next_face;
-
+#if !defined( NDEBUG )
             DVLOG(2) << "------------------------------------------------------------\n";
-            DVLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+            DVLOG(2) << "Element id: " << __element.id() << " local face id: " << j << "\n";
+#endif
 
             if ( faceinserted )
             {
                 DVLOG(2) << "creating the face:" << _faceit->second << "\n";
 
+                _facesOrderedWithId.push_back( new face_type );
+
+                face_type* facePtr = _facesOrderedWithId.back();
+                facePtr->setProcessIdInPartition( currentPid );
                 // set face id
-                face.setId( _faceit->second );
-                face.disconnect();
-                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-                    face.addElement( __element_id );
-
+                facePtr->setId( next_face++ );
+                //face.disconnect();
+                // set the connection with the element
+                facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
+                facePtr->setOnBoundary( true, face_type::nDim );
                 // set the process id from element
-                face.setProcessId( __element.processId() );
-
-                // set the id for this partition
-                //face.setIdInPartition( this->worldComm().localRank(),face.id() );
-
+                facePtr->setProcessId( __element.processId() );
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
-                    face.setPoint( k, iv->point( ele.fToP( j, k ) ) );
+                    facePtr->setPoint( k, __element.point( /*ele.*/element_type::fToP( j, k ) ) );
 
-                // set the connection with the element
-                face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
-                face.setOnBoundary( true, face_type::nDim );
+                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                    facePtr->addElement( __element_id );
 
-                // adding the face
-                bool inserted = false;
-                face_iterator __fit;
-                boost::tie( __fit, inserted )  = this->addFace( face );
-                FEELPP_ASSERT( inserted && __fit != this->endFace() )
-                ( _faceit->second )
-                ( iv->id() )
-                ( __fit->id() )
-                ( face.id() ).error( "invalid face iterator" );
-                this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                _faceit->second = facePtr;
 
+                if ( updateComponentFacesMinimal )
+                {
+                    f2e.push_back( std::make_tuple(__element_id,eltPid,j) );
+                }
 
+#if !defined( NDEBUG )
                 DVLOG(2) << "Adding [new] face info : \n";
                 DVLOG(2) << "element id: " << __element_id << "\n";
-                DVLOG(2) << "process id: " << __fit->processId() << "\n";
-                DVLOG(2) << "id: " << __fit->id() << "\n";
-                DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                DVLOG(2) << "marker: " << __fit->marker() << "\n";
-                DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
-                DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
-                DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
-                DVLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
-                DVLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
-                DVLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
-
+                DVLOG(2) << "process id: " << facePtr->processId() << "\n";
+                DVLOG(2) << "id: " << facePtr->id() << "\n";
+                DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
+                if ( facePtr->hasMarker() )
+                    DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
+                DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
+                DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
+#endif
             }
 
             else
             {
                 DVLOG(2) << "found the face:" << _faceit->second << " in element " << __element_id << " and local face: " << j << "\n";
 
-                // look in the face table for the face
-                face_iterator __fit = this->faces().find( face_type( _faceit->second ) );
-                FEELPP_ASSERT( __fit != this->endFace() )( _faceit->second ).error( "face is not in face container" );
-
-
-                face_type face = *__fit;
-                DVLOG(2) << "the face id :"  << __fit->id() << "\n";
+                face_type* facePtr =  _faceit->second;
+                face_type const& cface = *facePtr;
 
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-                    face.addElement( __element_id );
+                    facePtr->addElement( __element_id );
 
                 // the three conditions below typically arise after reading a serialized mesh
-                if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
+                if ( cface.isConnectedTo0() && cface.connection0().template get<0>() == 0 && ( __element_id == cface.ad_first() ) )
                 {
                     DVLOG(2) << "fixing connection 0 in face\n";
                     // reconnect the elements to the face
-                    auto connect0 = __fit->connection0();
+                    auto connect0 = facePtr->connection0();
                     connect0.template get<0>() = boost::addressof( __element );
-                    face.setConnection0( connect0 );
-
-                    // need to reconstruct the neighbors
-                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-
+                    facePtr->setConnection0( connect0 );
                 }
-                if ( __fit->isConnectedTo1() && __fit->connection1().template get<0>() == 0 && ( __element.id() == __fit->ad_second() ) )
+                if ( cface.isConnectedTo1() && cface.connection1().template get<0>() == 0 && ( __element_id == cface.ad_second() ) )
                 {
                     DVLOG(2) << "fixing connection 1 in face\n";
-
                     // reconnect the elements to the face
-                    auto connect1 = __fit->connection1();
+                    auto connect1 = cface.connection1();
                     connect1.template get<0>() = boost::addressof( __element );
-                    face.setConnection1( connect1 );
-
-                    // need to reconstruct the neighbors
-                    element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
-                    this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-
+                    facePtr->setConnection1( connect1 );
                 }
-                if ( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
+                if ( cface.isConnectedTo0() && cface.isConnectedTo1() )
                 {
                     DVLOG(2) << "internal face, fixing process id if necessary\n";
-                    if ( !iv->facePtr( j ) )
-                        this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-                    FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
-                    FEELPP_ASSERT( face.isConnectedTo0() && face.isConnectedTo1() )
-                        ( face.isConnectedTo0() )( face.isConnectedTo1() ).error ("inconsistent data structure" );
-                    if ( face.processId()!=this->worldComm().localRank() )
+                    FEELPP_ASSERT( __element.facePtr( j ) )( j )( __element.id() ).warn( "invalid element face error" );
+                    FEELPP_ASSERT( cface.isConnectedTo0() && cface.isConnectedTo1() )
+                        ( cface.isConnectedTo0() )( cface.isConnectedTo1() ).error ("inconsistent data structure" );
+                    if ( cface.processId()!=this->worldComm().localRank() )
                     {
-                        if ( ( face.element0().processId()==this->worldComm().localRank() ) ||
-                             ( face.element1().processId()==this->worldComm().localRank() ) )
-                            face.setProcessId( this->worldComm().localRank() );
+                        if ( ( cface.element0().processId()==this->worldComm().localRank() ) ||
+                             ( cface.element1().processId()==this->worldComm().localRank() ) )
+                            facePtr->setProcessId( currentPid );
                     }
                 }
-
 
                 // the face could have been entered apriori given by
                 // the mesh generator, so just set the connection0
                 // properly .
-                if ( !__fit->isConnectedTo0() )
+                if ( !facePtr->isConnectedTo0() )
                 {
+#if !defined( NDEBUG )
                     DVLOG(2) << "[updateFaces][boundary] element: " << __element_id
-                             << " face: " << j << " id: " << _faceit->second << "\n";
+                             << " face: " << j << " id: " << facePtr->id() << "\n";
+#endif
 
-                    // set the connection with the element
-                    face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
-                    // set the process id from element
-                    face.setProcessId( __element.processId() );
-                    face.setOnBoundary( true, face_type::nDim );
-                    //this->faces().modify( __fit,
-                    //Feel::detail::UpdateFaceConnection0<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
+                    facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
+                    facePtr->setProcessId( eltPid );
+                    facePtr->setOnBoundary( true, face_type::nDim );
 
-                    this->faces().replace( __fit, face );
+                    if ( updateComponentFacesMinimal )
+                    {
+                        f2e[ facePtr->id() ] = std::make_tuple(__element_id,eltPid,j);
+                    }
 
-                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
+#if !defined( NDEBUG )
                     DVLOG(2) << "adding [!isConnectedTo0] face info : \n";
-                    DVLOG(2) << "id: " << __fit->id() << "\n";
-                    DVLOG(2) << "process id: " << __fit->processId() << "\n";
-                    DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << __fit->marker() << "\n";
-                    DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
-                    DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
-                    DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
-                    DVLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
-                    DVLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
-                    DVLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
-                    DVLOG(2) << "element process id: " << iv->processId() << "\n";
+                    DVLOG(2) << "id: " << facePtr->id() << "\n";
+                    DVLOG(2) << "process id: " << facePtr->processId() << "\n";
+                    DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
+                    if ( facePtr->hasMarker() )
+                        DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                    DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
+                    DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
+                    DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
+                    DVLOG(2) << "element process id: " << __element.processId() << "\n";
+#endif
                 }
 
                 // we found an internal face
-                else if ( !__fit->isConnectedTo1() )
+                else if ( !facePtr->isConnectedTo1() )
                 {
-
-
-#if 0
-                    this->faces().modify( __fit,
-                                          Feel::detail::UpdateFaceConnection1<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
-
-
-                    FEELPP_ASSERT( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
-                    ( __fit->isConnectedTo0() )( __fit->isConnectedTo1() ).error( "invalid face connection" );
-#endif
-                    Feel::detail::UpdateFaceConnection1<typename face_type::element_connectivity_type> update1( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
-                    update1( face );
-                    face.setOnBoundary( false );
-
-                    // force processId equal to M_comm.rank() if face on interprocessfaces
-                    if ( face.processId()!=this->worldComm().localRank() )
+                    if ( updateComponentFacesMinimal )
                     {
-                        if ( ( face.element0().processId()==this->worldComm().localRank() ) || ( face.element1().processId()==this->worldComm().localRank() ) )
-                            face.setProcessId( this->worldComm().localRank() );
+                        auto const& f2eVal = f2e[cface.id()];
+                        e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( __element_id, eltPid, std::get<2>(f2eVal) ) );
+                        e2e[__element_id].push_back( std::make_tuple( std::get<0>(f2eVal), std::get<1>(f2eVal), j ) );
+
+                        //bool isInterProcessFace = numPartition > 1 && ( ( facePtr->element0().processId() == currentPid && eltPid != currentPid ) ||
+                        //                                                ( facePtr->element0().processId() != currentPid && eltPid == currentPid ) );
+                        bool isFaceOnGhostElt = ( facePtr->element0().processId() != currentPid ) || ( eltPid != currentPid );
+                        bool isFaceConnectedToInterProcess = false;
+                        bool removeThisFace = !cface.hasMarker() && !isFaceOnGhostElt;
+                        if ( removeThisFace && numPartition > 1 )
+                        {
+                            for ( uint16_type vLocId = 0 ; vLocId < face_type::numVertices; ++vLocId )
+                            {
+                                if ( ptsTouchInterProcess.find( cface.point(vLocId).id() ) != ptsTouchInterProcess.end() )
+                                {
+                                    removeThisFace = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if ( removeThisFace )
+                        {
+                            size_type faceId = cface.id();
+                            delete facePtr;
+                            _facesOrderedWithId[faceId]=nullptr;
+                            _faceit->second = nullptr;
+                            // go to next face
+                            continue;
+                        }
                     }
 
-                    this->faces().replace( __fit, face );
-#if 0
-                    // update neighbors for each element and replace in element container
-                    element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
-                    this->elements().modify( elt1, update_element_neighbor_type( __fit->pos_first(),
-                                             __fit->ad_second() ) );
-                    this->elements().modify( iv, update_element_neighbor_type( __fit->pos_second(),
-                                             __fit->ad_first() ) );
-#endif
-                    // be careful: this step is crucial to set proper neighbor
-                    // connectivity
-                    element_iterator elt1 = this->elementIterator( __fit->ad_first(), __fit->proc_first() );
-                    this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
-                    this->elements().modify( iv, Feel::detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
+                    facePtr->setConnection1( boost::make_tuple( eltPtr, j ) );
+                    facePtr->setOnBoundary( false );
+                    // force processId equal to M_comm.rank() if face on interprocessfaces
+                    if ( facePtr->processId() != currentPid )
+                    {
+                        if ( ( facePtr->element0().processId()== currentPid ) || ( facePtr->element1().processId()== currentPid ) )
+                            facePtr->setProcessId( currentPid );
+                    }
 
-                    // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                    this->fixPointDuplicationInHOMesh( iv,__fit, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
 
+#if !defined( NDEBUG )
                     DVLOG(2) << "adding face info : \n";
-                    DVLOG(2) << "id: " << __fit->id() << "\n";
-                    DVLOG(2) << "process id: " << __fit->processId() << "\n";
-                    DVLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    DVLOG(2) << "marker: " << __fit->marker() << "\n";
-                    DVLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
-                    DVLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
-                    DVLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
-                    DVLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
-                    DVLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
-                    DVLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
-                    DVLOG(2) << "element1 process id: " << elt1->processId() << "\n";
-                    DVLOG(2) << "element2 process id: " << iv->processId() << "\n";
+                    DVLOG(2) << "id: " << facePtr->id() << "\n";
+                    DVLOG(2) << "process id: " << facePtr->processId() << "\n";
+                    DVLOG(2) << "bdy: " << facePtr->isOnBoundary() << "\n";
+                    if ( facePtr->hasMarker() )
+                        DVLOG(2) << "marker: " << facePtr->marker() << "\n";
+                    DVLOG(2) << "ad_first: " << facePtr->ad_first() << "\n";
+                    DVLOG(2) << "pos_first: " << facePtr->pos_first() << "\n";
+                    DVLOG(2) << "proc_first: " << facePtr->proc_first() << "\n";
+                    DVLOG(2) << "ad_second: " << facePtr->ad_second() << "\n";
+                    DVLOG(2) << "pos_second: " << facePtr->pos_second() << "\n";
+                    DVLOG(2) << "proc_second: " << facePtr->proc_second() << "\n";
+#endif
+
+                    // erase face desc in map (maybe improve other acces)
+                    //_faces.erase( _faceit );
                 }
 
-                CHECK( (__fit->processId() == __fit->proc_first()) ||
-                       (__fit->processId() == __fit->proc_second()) )
-                    << "invalid process id " << __fit->processId() << " with element proc first = " <<  __fit->proc_first()
-                    << " and element proc second " << __fit->proc_second();
+#if !defined( NDEBUG )
+                CHECK( (facePtr->processId() == facePtr->proc_first()) ||
+                       (facePtr->processId() == facePtr->proc_second()) )
+                    << "invalid process id " << facePtr->processId() << " with element proc first = " <<  facePtr->proc_first()
+                    << " and element proc second " << facePtr->proc_second();
+#endif
+
             }
 
-            LOG_IF( WARNING, !iv->facePtr( j ) ) << "invalid element " << iv->id() << " with local face id " << j;
         } // face loop
     } // element loop
 
+    toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
+    DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
+    _faces.clear();
+    pointstoface_container_type().swap( _faces );
 
-    face_iterator f_it = this->beginFace();
-    face_iterator f_en = this->endFace();
-
-    for ( ; f_it!=f_en;  )
+    tic();
+    // update multi-index faces container
+    for ( face_type* facePtr : _facesOrderedWithId )
     {
-        // cleanup the face data structure :
-
-        if ( !f_it->isConnectedTo0() )
+        if ( facePtr )
         {
-            DLOG(INFO) << "removing face id : " << f_it->id()
-                       << " marker : " << f_it->marker();
-            // remove all faces that are not connected to any elements
-            f_it = this->faces().erase( f_it );
-            //++f_it;
+            //this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            facePtr =  nullptr; 
         }
-        else
-        {
-            ++f_it;
-        }
-
     }
+    toc("Mesh.updateEntitiesCoDimensionOne.insert_faces_in_multiindex", FLAGS_v>0);
+    _facesOrderedWithId.clear();
+    std::vector<face_type*>().swap(_facesOrderedWithId);
+
+    DVLOG(2) << "[Mesh::updateFaces] finish container faces insertion";
+
+    tic();
+    if ( !updateComponentFacesMinimal )
+    {
+        face_iterator f_it = this->beginFace();
+        face_iterator f_en = this->endFace();
+        for ( ; f_it!=f_en;  )
+        {
+            // cleanup the face data structure :
+            if ( !f_it->isConnectedTo0() )
+            {
+                DLOG(INFO) << "removing face id : " << f_it->id();
+                // remove all faces that are not connected to any elements
+                f_it = this->faces().erase( f_it );
+                //++f_it;
+            }
+            else
+            {
+                // be careful: this step is crucial to set proper neighbor connectivity
+                element_iterator elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ );
+                this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                if ( f_it->isConnectedTo1() )
+                {
+                    element_iterator elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ );
+                    this->elements().modify( elt2, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+
+                    // fix duplication of point in connection1 with 3d mesh at order 3 and 4
+                    this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
+                }
+
+                ++f_it;
+            }
+        }
+    }
+    else
+    {
+        face_iterator f_it = this->beginFace();
+        face_iterator f_en = this->endFace();
+        for ( ; f_it!=f_en;  )
+        {
+            // cleanup the face data structure :
+            if ( !f_it->isConnectedTo0() )
+            {
+                DLOG(INFO) << "removing face id : " << f_it->id();
+                // remove all faces that are not connected to any elements
+                f_it = this->faces().erase( f_it );
+            }
+            else
+            {
+                element_iterator elt1 = this->elementIterator( f_it->ad_first() );
+                this->elements().modify( elt1, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_first(), *f_it ); } );
+                if ( f_it->isConnectedTo1() )
+                {
+                    element_iterator elt2 = this->elementIterator( f_it->ad_second() );
+                    this->elements().modify( elt2, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_second(), *f_it ); } );
+
+                    // fix duplication of point in connection1 with 3d mesh at order 3 and 4
+                    this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
+                }
+                ++f_it;
+            }
+        }
+
+        for ( auto const& eltDatasPair : e2e )
+        {
+            element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
+            for (auto const& eltDatas  : eltDatasPair.second )
+            {
+                uint16_type j = std::get<2>( eltDatas );
+                size_type eltId2 = std::get<0>( eltDatas );
+                rank_type eltPid2 = std::get<1>( eltDatas );
+                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2 ); });
+            }
+        }
+    }
+    toc("Mesh.updateEntitiesCoDimensionOne.update_faces",FLAGS_v>0);
 
     LOG(INFO) << "We have now " << nelements(boundaryfaces(this)) << " faces on the boundary in the database";
     VLOG(1) << "[Mesh::updateEntitiesCoDimensionOne] element/face connectivity : " << ti.elapsed() << "\n";
-    ti.restart();
 }
+
+
+
+#if 0
+// this version is a lit bit less efficiently
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateAdjacencyElements()
+{
+    VLOG(2) << "Compute adjacency graph\n";
+    //boost::unordered_map<std::set<int>, size_type > _faces;
+    //typename boost::unordered_map<std::set<int>, size_type >::iterator _faceit;
+    boost::unordered_map<std::set<size_type>, size_type > _faces;
+    typename boost::unordered_map<std::set<size_type>, size_type >::iterator _faceit;
+    //std::map<std::set<size_type>, size_type > _faces;
+    //typename std::map<std::set<size_type>, size_type >::iterator _faceit;
+    std::vector< std::vector<std::tuple<size_type,rank_type,uint16_type> > > f2e;
+    size_type next_face = 0;
+    bool faceinserted = false;
+
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+
+    const uint16_type _numLocalFaces = this->numLocalFaces();
+    for ( ; iv != en; ++iv )
+    {
+        const size_type eltId = iv->id();
+        const rank_type eltPid = iv->processId();
+        for ( uint16_type j = 0; j < _numLocalFaces; j++ )
+        {
+            std::set<size_type> s;
+            //std::set<int> s;
+            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
+            {
+                if ( nDim == 1 )
+                    s.insert( iv->point( j ).id() );
+                else
+                    s.insert( iv->point( iv->fToP( j, f ) ).id() );
+            }
+
+            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( s, next_face ) );
+
+            auto const& faceIdRegistered = _faceit->second;
+            DVLOG(2) << "Connect face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
+
+            if ( faceinserted )
+            {
+                f2e.push_back( std::vector<std::tuple<size_type,rank_type,uint16_type> >(1,std::make_tuple(eltId,eltPid,j) ) );
+                ++next_face;
+            }
+            else // already stored
+            {
+                f2e[faceIdRegistered].reserve(2);
+                f2e[faceIdRegistered].push_back( std::make_tuple(eltId,eltPid,j) );
+
+                // erase face desc in map (maybe improve other acces)
+                //_faces.erase( _faceit );
+            }
+
+        } // local face
+    } // element loop
+
+    for ( auto const& faceDatas : f2e )
+    {
+        int nConnectedElts = faceDatas.size();
+        if ( nConnectedElts <= 1 ) continue;
+        for ( int k1=0;k1<nConnectedElts;++k1 )
+        {
+            auto const& data1 = faceDatas[k1];
+            element_iterator eltIt1 = this->elementIterator( std::get<0>( data1 ), std::get<1>( data1 ) );
+            uint16_type j = std::get<2>( data1 );
+            for ( int k2=0;k2<nConnectedElts;++k2 )
+            {
+                if ( k1==k2 ) continue;
+                auto const& data2 = faceDatas[k2];
+                size_type eltId2 = std::get<0>( data2 );
+                rank_type eltPid2 = std::get<1>( data2 );
+                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2 ); });
+            }
+        }
+    }
+}
+#else
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateAdjacencyElements()
+{
+    VLOG(2) << "Compute adjacency graph\n";
+    typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::vector< std::tuple<size_type,uint16_type> >  facetoelement_container_type;
+
+    std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
+    for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
+    {
+        for ( int f = 0; f < face_type::numVertices; ++f )
+            myfToP[j*face_type::numVertices+f] = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
+    }
+
+    facetoelement_container_type f2e;
+    size_type next_face = 0;
+    bool faceinserted = false;
+
+    std::unordered_map<size_type, std::vector<std::tuple<size_type,uint16_type> > > e2e;
+
+    Eigen::Matrix<uint16_type,element_type::numVertices,1> pointIdInElt;
+    std::vector<size_type> lids(face_type::numVertices);
+
+    const uint16_type _numLocalFaces = this->numLocalFaces();
+
+    element_iterator iv,  en;
+    boost::tie( iv, en ) = this->elementsRange();
+
+    pointstoface_container_type _faces( std::distance(iv,en)*_numLocalFaces );
+    typename pointstoface_container_type::iterator _faceit;
+
+    for ( ; iv != en; ++iv )
+    {
+        element_type const& elt = *iv;
+        const size_type eltId = elt.id();
+        const rank_type eltPid = elt.processId();
+
+        for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+            pointIdInElt[f] = elt.point( f ).id();
+
+        for ( uint16_type j = 0; j < _numLocalFaces; j++ )
+        {
+            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
+                lids[f] = pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
+            std::sort(lids.begin(), lids.end());
+
+#if 0
+            boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, next_face ) );
+#else
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(next_face) );
+#endif
+            if ( faceinserted )
+            {
+                DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
+                f2e.push_back( std::make_tuple( eltId,j ) );
+                ++next_face;
+            }
+            else // already stored
+            {
+                auto const& faceIdRegistered = _faceit->second;
+                DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
+
+                auto const& f2eVal = f2e[faceIdRegistered];
+                e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( eltId, std::get<1>(f2eVal) ) );
+                e2e[eltId].push_back( std::make_tuple( std::get<0>(f2eVal), j ) );
+                // erase face desc in map (maybe improve other acces)
+                // if ( nDim == nRealDim )
+                //    _faces.erase( _faceit );
+            }
+        } // local face
+    } // element loop
+
+    f2e.clear();
+    facetoelement_container_type().swap( f2e );
+    _faces.clear();
+    pointstoface_container_type().swap( _faces );
+
+    for ( auto const& eltDatasPair : e2e )
+    {
+        element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
+        for (auto const& eltDatas  : eltDatasPair.second )
+        {
+            uint16_type j = std::get<1>( eltDatas );
+            size_type eltId2 = std::get<0>( eltDatas );
+            this->elements().modify( eltIt1, [&j,&eltId2]( element_type& elt ) { elt.setNeighbor( j,eltId2 ); });
+        }
+    }
+}
+
+#endif
 
 template<typename Shape, typename T, int Tag>
 void
@@ -1297,6 +1699,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv, face_iter
 {}
 
 
+
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true> )
@@ -1336,7 +1739,9 @@ Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& iv, mpl:
     bool isOnBoundary = false;
     for ( size_type j = 0; j < iv->nEdges(); j++ )
     {
-        isOnBoundary |= iv->edge( j ).isOnBoundary();
+        auto edgePtr = iv->edgePtr( j );
+        if ( edgePtr )
+            isOnBoundary |= edgePtr->isOnBoundary();
     }
     if ( isOnBoundary )
     {
@@ -1366,9 +1771,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
                 if ( it->point( f ).isOnBoundary() == false )
                 {
                     auto pit = this->pointIterator( it->point(f).id() );
-                    this->points().modify( pit,
-                                           []( point_type& p )
-                                           {p.setOnBoundary(true, 0 );} );
+                    pit->second.setOnBoundary(true, 0 );
                 }
 
             }
@@ -1385,7 +1788,9 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
         // first check if a face is on the boundary
         for ( size_type j = 0; j < iv->nTopologicalFaces(); j++ )
         {
-            isOnBoundary |= iv->face( j ).isOnBoundary();
+            auto facePtr = iv->facePtr( j );
+            if ( facePtr )
+                isOnBoundary |= facePtr->isOnBoundary();
         }
 
         if ( isOnBoundary )
@@ -1416,8 +1821,13 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     } // loop over the elements
     LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
               << " elements sharing a point, a edge or a face with the boundary in the database";
-    BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
+    // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
+    auto rangebe = this->boundaryElements( 0, 2, 0 );
+    auto itbe = std::get<0>( rangebe );
+    auto enbe = std::get<1>( rangebe );
+    for( ; itbe != enbe ; ++itbe )
     {
+        auto const& e = boost::unwrap_ref( *itbe );
         VLOG(3) << "boundary element : " << e.id()
                 << " entity on boundary max dim  " << e.boundaryEntityDimension()
                 << " process id : " << e.processId();
@@ -1436,10 +1846,11 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
 
                        for( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )
                        {
-                           if ( it->isOnBoundary() )
+                           auto const& face = boost::unwrap_ref( *it );
+                           if ( face.isOnBoundary() )
                            {
-                               DVLOG(3) << "removing face "  << it->id() << "\n";
-                               auto it2 = this->faces().template project<0>( it );
+                               DVLOG(3) << "removing face "  << face.id() << "\n";
+                               auto it2 = this->faceIterator( face ); //this->faces().template project<0>( it );
                                this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
 
 
@@ -1447,7 +1858,7 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                                //f.setOnBoundary( false );
                                //this->faces().replace( it2, f );
                                CHECK( it2->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
-                               CHECK( it->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
+                               CHECK( face.isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
                            }
 
                        }
@@ -1456,27 +1867,28 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
 
-    VLOG(2) << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
+    VLOG(2) << "[Mesh::updateEntitiesCoDimensionGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
 
     std::vector<int> nbMsgToSend( this->worldComm().localSize(), 0 );
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
 
-    auto iv = this->beginGhostElement();
-    auto en = this->endGhostElement();
+    auto rangeGhostElement = this->ghostElements();
+    auto iv = std::get<0>( rangeGhostElement );
+    auto const en = std::get<1>( rangeGhostElement );
     for ( ; iv != en; ++iv )
     {
-        element_type const& __element = *iv;
+        element_type const& __element = boost::unwrap_ref( *iv );
         const int IdProcessOfGhost = __element.processId();
         const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
 
-        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectEdgeToElement() );
 
         // send
         this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
@@ -1495,13 +1907,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
 
-    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
-    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto rangeElements = this->elementsWithProcessId( this->worldComm().localRank() );
+    auto itEltActif = std::get<0>( rangeElements );
+    auto const enEltActif = std::get<1>( rangeElements );
     for ( ; itEltActif!=enEltActif ; ++itEltActif )
     {
-        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
-        auto itneighbor = itEltActif->neighborPartitionIds().begin();
-        auto const enneighbor = itEltActif->neighborPartitionIds().end();
+        auto const& elt = boost::unwrap_ref( *itEltActif );
+        if ( elt.numberOfNeighborPartitions() == 0 ) continue;
+        auto itneighbor = elt.neighborPartitionIds().begin();
+        auto const enneighbor = elt.neighborPartitionIds().end();
         for ( ; itneighbor!=enneighbor ; ++itneighbor )
             nbMsgToRecv[*itneighbor]++;
     }
@@ -1621,7 +2035,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
             std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
                      <<" with tag "<< cpt << std::endl;
 #endif
-            auto const& theelt = this->element( mapMsg[proc][cpt],proc );
+            auto const& theelt = this->element( mapMsg[proc][cpt]/*,proc*/ );
 
             //update faces data
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -1662,7 +2076,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
                 } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
@@ -1691,11 +2105,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
                     if (find2) { hasFind=true;jBis=j2; }
                 }
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( proc, idPointRecv ) );
+                point_it->second.setIdInOtherPartitions( proc, idPointRecv );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
 
             /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
@@ -1707,33 +2121,140 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 
     //------------------------------------------------------------------------------------------------//
 
-    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] finish" << std::endl;
+    //std::cout << "[Mesh::updateEntitiesCoDimensionGhostCell] finish" << std::endl;
 
-} // updateEntitiesCoDimensionOneGhostCell
+} // updateEntitiesCoDimensionGhostCell
+
+namespace detail
+{
+typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
+
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::false_ /**/ )
+{}
+template<typename ElementType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type & idEdgesWithBary, mpl::true_ /**/ )
+{
+    typedef typename ElementType::value_type value_type;
+    // get edges id and bary
+    idEdgesWithBary.resize(ElementType::numLocalEdges,boost::make_tuple(invalid_size_type_value, false, std::vector<double>(ElementType::nRealDim) ));
+    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+    {
+        if ( !theelt.edgePtr( j ) ) continue;
+        auto const& theedge = theelt.edge( j );
+        idEdgesWithBary[j].template get<0>() = theedge.id();
+        idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
+
+        //compute edge barycenter
+        auto const& theGj = theedge.vertices();
+        typename ElementType::matrix_node_type v( theGj.size1(), 1 );
+        ublas::scalar_vector<value_type> avg( theGj.size2(), value_type( 1 ) );
+        value_type n_val = int( theGj.size2() );
+        for ( size_type i = 0; i < theGj.size1(); ++i )
+            v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg )/n_val;
+        auto baryEdge = ublas::column( v,0 );
+
+        // save edgebarycenter by components
+        for ( uint16_type comp = 0; comp<ElementType::nRealDim; ++comp )
+        {
+            idEdgesWithBary[j].template get<2>()[comp]=baryEdge[comp];
+        }
+    }
+}
+
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+{}
+template<typename MeshType>
+void
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+{
+    typedef typename MeshType::element_type ElementType;
+    typedef typename MeshType::edge_type edge_type;
+    typedef typename ElementType::value_type value_type;
+    const rank_type idProc = theelt.processId();
+
+    //update edges data
+    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+    {
+        auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
+        if ( idEdgeRecv == invalid_size_type_value )
+            continue;
+        const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
+        auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
+
+        // find edge relation by comparing barycenters
+        uint16_type jBis = invalid_uint16_type_value;
+        bool hasFind=false;
+        for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
+        {
+            if ( !theelt.edgePtr( j2 ) ) continue;
+            auto const& theedgej2 = theelt.edge( j2 );
+            auto const& theGj2 = theedgej2.vertices();
+            //compute edge barycenter
+            typename ElementType::matrix_node_type v( theGj2.size1(), 1 );
+            ublas::scalar_vector<value_type> avg( theGj2.size2(), value_type( 1 ) );
+            value_type n_val = int( theGj2.size2() );
+            for ( size_type i = 0; i < theGj2.size1(); ++i )
+                v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg )/n_val;
+            auto baryEdge = ublas::column( v,0 );
+            // compare barycenter
+            bool find2=true;
+            for (uint16_type d=0;d<MeshType::nRealDim;++d)
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
+            if (find2) { hasFind=true;jBis=j2; }
+        }
+        CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
+
+        // get the good edge
+        auto edge_it = mesh.edgeIterator( theelt.edge( jBis ).id() );
+        // update id edge in other partition
+        mesh.edges().modify( edge_it, [&idProc,&idEdgeRecv]( edge_type& e )
+                             {
+                                 e.addNeighborPartitionId( idProc );
+                                 e.setIdInOtherPartitions( idProc, idEdgeRecv );
+                             } );
+
+        // maybe the edge is not really on boundary
+        if ( edge_it->isOnBoundary() && !edgeOnBoundaryRecv )
+            mesh.edges().modify( edge_it, []( edge_type& e ){ e.setOnBoundary( false ); } );
+
+    } // for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
+
+
+}
+
+} // namespace detail
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
+    typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_edge_type;
     typedef std::vector< boost::tuple<size_type, bool, std::vector<double> > > resultghost_face_type;
 
-    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
 
     const rank_type nProc = this->worldComm().localSize();
 
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
     std::map< rank_type, int > nDataInVecToSend;
-    auto iv = this->beginGhostElement();
-    auto const en = this->endGhostElement();
+    auto rangeGhostElement = this->ghostElements();
+    auto iv = std::get<0>( rangeGhostElement );
+    auto const en = std::get<1>( rangeGhostElement );
     for ( ; iv != en; ++iv )
     {
-        const rank_type IdProcessOfGhost = iv->processId();
+        auto const& ghostelt = boost::unwrap_ref( *iv );
+        const rank_type IdProcessOfGhost = ghostelt.processId();
         // update info for parallelism
-        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectPointToElement() );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectEdgeToElement() );
 
         // be sure that the counter start to 0
         if ( nDataInVecToSend.find(IdProcessOfGhost) == nDataInVecToSend.end() )
@@ -1743,7 +2264,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // init and resize the container to send
-    std::map< rank_type, std::vector<size_type> > dataToSend;
+    std::map< rank_type, std::vector<std::pair<size_type,size_type> > > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
     auto const enNDataInVecToSend = nDataInVecToSend.end();
     for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
@@ -1756,7 +2277,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     // prepare container to send
     std::map< rank_type, std::map<int,size_type> > memoryMsgToSend;
     std::map< rank_type, int > nDataInVecToSendBis;
-    iv = this->beginGhostElement();
+    iv = std::get<2>( rangeGhostElement )->begin();
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
@@ -1768,11 +2289,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         // save request
         memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = __element.id();
         // update container
-        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idEltInOtherPartition;
+        dataToSend[idProc][nDataInVecToSendBis[idProc]] = std::make_pair(__element.id(),idEltInOtherPartition);
         // update counter
         nDataInVecToSendBis[idProc]++;
     }
     //------------------------------------------------------------------------------------------------//
+#if 0
     // compute nbMsgToRecv
     std::set<rank_type> procToRecv;
     auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
@@ -1810,7 +2332,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // first recv
-    std::map<rank_type,std::vector<size_type> > dataToRecv;
+    std::map<rank_type,std::vector<std::pair<size_type,size_type> > > dataToRecv;
     auto itProcToRecv = procToRecv.begin();
     auto const enProcToRecv = procToRecv.end();
     for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
@@ -1819,12 +2341,25 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
         ++cptRequest;
     }
+#else
+    std::map<rank_type,std::vector<std::pair<size_type,size_type> > > dataToRecv;
+    int neighborSubdomains = this->neighborSubdomains().size();
+    int nbRequest = 2*neighborSubdomains;
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    // first send/recv
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+    }
+#endif
     //------------------------------------------------------------------------------------------------//
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > dataToReSend;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1834,12 +2369,21 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         dataToReSend[idProc].resize( nDataRecv );
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto const& theelt = this->element( itDataRecv->second[k] );
+            size_type idEltOtherProcess = itDataRecv->second[k].first;
+            size_type idEltOnProcess = itDataRecv->second[k].second;
+            if ( !this->hasElement( idEltOnProcess ) )
+                continue;
+
+            auto const& theelt = this->element( idEltOnProcess );
+            this->elements().modify( this->elementIterator( idEltOnProcess ), Feel::detail::updateIdInOthersPartitions( idProc, idEltOtherProcess ) );
+
             //---------------------------//
             // get faces id and bary
-            resultghost_face_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(0, false, std::vector<double>(nRealDim) ));
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+            resultghost_face_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(invalid_size_type_value, false, std::vector<double>(nRealDim,0.) ));
+            for ( uint16_type j = 0; j < theelt.nTopologicalFaces()/*this->numLocalFaces()*/; j++ )
             {
+                if( !theelt.facePtr( j ) )
+                    continue;
                 auto const& theface = theelt.face( j );
                 idFacesWithBary[j].template get<0>() = theface.id();
                 idFacesWithBary[j].template get<1>() = theface.isOnBoundary();
@@ -1866,6 +2410,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 }
             }
             //---------------------------//
+            // get edges id and bary
+            resultghost_edge_type idEdgesWithBary;
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1( theelt, idEdgesWithBary, mpl::bool_<element_type::nDim == 3>() );
+            //---------------------------//
             // get points id and nodes
             resultghost_point_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
@@ -1879,11 +2427,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
             }
             //---------------------------//
             // update container to ReSend
-            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idFacesWithBary);
+            dataToReSend[idProc][k] = boost::make_tuple(idPointsWithNode,idEdgesWithBary,idFacesWithBary);
 
         } // for ( int k=0; k<nDataRecv; ++k )
     }
     //------------------------------------------------------------------------------------------------//
+#if 0
     // send respond to the request
     cptRequest=0;
     auto itDataToReSend = dataToReSend.begin();
@@ -1895,7 +2444,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
     }
     //------------------------------------------------------------------------------------------------//
     // recv the initial request
-    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_face_type>  > > finalDataToRecv;
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
 
     itDataToSend = dataToSend.begin();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
@@ -1904,6 +2453,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
         ++cptRequest;
     }
+#else
+    std::map<rank_type, std::vector< boost::tuple<resultghost_point_type,resultghost_edge_type,resultghost_face_type>  > > finalDataToRecv;
+    cptRequest=0;
+    // second send/recv
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, finalDataToRecv[neighborRank] );
+    }
+#endif
     //------------------------------------------------------------------------------------------------//
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
@@ -1920,13 +2479,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
         for ( int k=0; k<nDataRecv; ++k )
         {
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
-            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
-            auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
+            auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
+            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
+            auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
 
             //update faces data
+            if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
                 auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
+                if ( idFaceRecv == invalid_size_type_value )
+                    continue;
                 const bool faceOnBoundaryRecv = idFacesWithBaryRecv[j].template get<1>();
                 auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<2>();
 
@@ -1935,7 +2498,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                 bool hasFind=false;
                 for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
                 {
-
+                    if ( !theelt.facePtr( j2 ) )
+                        continue;
                     auto const& thefacej2 = theelt.face( j2 );
                     //auto const& theGj2 = thefacej2.G();
                     auto const& theGj2 = thefacej2.vertices();
@@ -1963,19 +2527,29 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
 
                 } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 // update id face in other partition
-                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+                this->faces().modify( face_it, [&idProc,&idFaceRecv]( face_type& f )
+                                      {
+                                          f.addNeighborPartitionId( idProc );
+                                          f.setIdInOtherPartitions( idProc, idFaceRecv );
+                                      } );
+
                 // maybe the face is not really on boundary
                 if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
-                    this->faces().modify( face_it, Feel::detail::UpdateFaceOnBoundary( false ) );
+                    this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
+            // edges
+            if ( !idEdgesWithBaryRecv.empty() )
+            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, mpl::bool_<element_type::nDim == 3>() );
 
+            // vertices
+            if ( !idPointsWithNodeRecv.empty() )
             for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
             {
                 auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
@@ -1995,18 +2569,18 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm
                     if (find2) { hasFind=true;jBis=j2; }
                 }
 
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, Feel::detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
-
+                point_it->second.addNeighborPartitionId( idProc );
+                point_it->second.setIdInOtherPartitions( idProc, idPointRecv );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
     } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     //------------------------------------------------------------------------------------------------//
 
-    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
+    DVLOG(1) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
 
 }
 
@@ -2020,34 +2594,45 @@ Mesh<Shape, T, Tag>::check() const
         return;
 #if !defined( NDEBUG )
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
-    element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
-    element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
+    //element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    auto iv = this->beginElement();
+    auto en = this->endElement();
     size_type nEltInMesh = std::distance( iv,en );
+    VLOG(2) << "[Mesh::check] nEltInMesh = " << nEltInMesh;
 
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
 
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        if ( this->components().test( MESH_UPDATE_FACES ) )
         {
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
-            VLOG(2) << "------------------------------------------------------------\n";
-            VLOG(2) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
-
+             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+             {
+                 FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
+                 VLOG(2) << "------------------------------------------------------------\n";
+                 VLOG(2) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
+             }
         }
 
-        size_type counter = 0;
-
-        for ( uint16_type ms=0; ms < __element.nNeighbors(); ms++ )
+        if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ||
+             this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) )
         {
-            if ( __element.neighbor( ms ).first != invalid_size_type_value )
-                ++counter;
+            size_type counter = 0;
+            for ( uint16_type ms=0; ms < __element.nNeighbors(); ms++ )
+            {
+                if ( __element.neighbor( ms ) != invalid_size_type_value )
+                    ++counter;
 
+            }
+            VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
+            if ( __element.nNeighbors() > 0 )
+            {
+                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+            }
         }
 
-        VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-        FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
 #if 0
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
@@ -2063,19 +2648,19 @@ Mesh<Shape, T, Tag>::check() const
     }
 
     // faces check
-    typedef typename super::location_face_const_iterator location_face_const_iterator;
-    location_face_const_iterator itf = this->beginFaceOnBoundary();
-    location_face_const_iterator ite = this->endFaceOnBoundary();
+    auto rangeBoundaryFaces = this->facesOnBoundary();
+    auto itf = std::get<0>( rangeBoundaryFaces );
+    auto ite = std::get<1>( rangeBoundaryFaces );
     std::map<int,int> nf;
     for ( ; itf != ite; ++ itf )
     {
-        face_type const& __face = *itf;
+        face_type const& __face = boost::unwrap_ref( *itf );
         DLOG_IF( WARNING, !__face.isConnectedTo0() && !__face.isConnectedTo1() ) << "face not connected to an element face:" << __face << "\n";
         if ( !__face.isConnectedTo0() && !__face.isConnectedTo1() )
         {
-            auto it = nf.find( (int)__face.marker().value() );
+            auto it = nf.find( (int)__face.id() );
             if (  it == nf.end() )
-                nf[(int)__face.marker().value()] = 1;
+                nf[(int)__face.id()] = 1;
             else
                 it->second += 1;
         }
@@ -2089,7 +2674,7 @@ Mesh<Shape, T, Tag>::check() const
     auto ent = nf.end();
     for(; itt != ent; ++itt )
     {
-        LOG(INFO ) << "face with marker " << itt->first << " not attached " << itt->second << "\n";
+        LOG(INFO ) << "face with id " << itt->first << " not attached " << itt->second << "\n";
     }
 #endif
 }
@@ -2259,8 +2844,8 @@ Mesh<Shape, T, Tag>::send(int p, int tag)
     encode();
     VLOG(1) << "sending markername\n";
     //this->comm().send( p, tag, M_markername.size() );
-    VLOG(1) << "sending markername size: "<< M_markername.size() << "\n";
-    BOOST_FOREACH(auto m, M_markername )
+    VLOG(1) << "sending markername size: "<< this->M_markername.size() << "\n";
+    BOOST_FOREACH(auto m, this->M_markername )
     {
         VLOG(1) << "sending key: "<< m.first << "\n";
         //this->comm().send( p, tag, m.first );
@@ -2274,7 +2859,7 @@ void
 Mesh<Shape, T, Tag>::recv(int p, int tag)
 {
     VLOG(1) << "receiving markername\n";
-    //this->comm().recv( p, tag, M_markername );
+    //this->comm().recv( p, tag, this->M_markername );
     int s = 0;
     //this->comm().recv( p, tag, s );
     VLOG(1) << "receiving markername size: "<< s << "\n";
@@ -2288,7 +2873,7 @@ Mesh<Shape, T, Tag>::recv(int p, int tag)
         VLOG(1) << "receiving value\n";
         //this->comm().recv( p, tag, v );
         VLOG(1) << "receiving value: "<< v[0] << ","<< v[1] <<"\n";
-        //M_markername[k]=v;
+        // this->M_markername[k]=v;
     }
 
 
@@ -2335,13 +2920,14 @@ Mesh<Shape, T, Tag>::encode()
     M_enc_pts.clear();
     for( auto pt_it = this->beginPoint(), pt_en = this->endPoint(); pt_it != pt_en; ++pt_it )
     {
+        auto const& pt = pt_it->second;
         std::vector<double> pts(3,0);
-        pts[0] = pt_it->node()[0];
+        pts[0] = pt.node()[0];
         if ( mesh_type::nRealDim >= 2 )
-            pts[1] = pt_it->node()[1];
+            pts[1] = pt.node()[1];
         if ( mesh_type::nRealDim >= 3 )
-            pts[2] = pt_it->node()[2];
-        M_enc_pts[pt_it->id()+1] = boost::make_tuple( pt_it->isOnBoundary(), pt_it->tags(), pts );
+            pts[2] = pt.node()[2];
+        M_enc_pts[pt.id()+1] = boost::make_tuple( pt.isOnBoundary(), pt.tags(), pts );
 
     }
     M_enc_elts.clear();
@@ -2360,41 +2946,42 @@ Mesh<Shape, T, Tag>::encode()
 
     for ( ; face_it != face_end; ++face_it )
     {
+        auto const& curface = boost::unwrap_ref( *face_it );
         std::vector<int> faces;
         faces.push_back( ordering_face.type() );
-        faces.push_back( 4 + face_it->numberOfPartitions() );
-        faces.push_back( face_it->marker().value() );
-        faces.push_back( face_it->marker2().value() );
-        faces.push_back( face_it->numberOfPartitions() );
-        faces.push_back( face_it->processId() );
-        for ( size_type i=0 ; i<face_it->numberOfNeighborPartitions(); ++i )
-            faces.push_back( -( face_it->neighborPartitionIds()[i] ) );
+        faces.push_back( 4 + curface.numberOfPartitions() );
+        faces.push_back( curface.hasMarker()? curface.marker().value() : 0 );
+        faces.push_back( curface.hasMarker2()? curface.marker2().value() : 0 );
+        faces.push_back( curface.numberOfPartitions() );
+        faces.push_back( curface.processId() );
+        for ( size_type i=0 ; i<curface.numberOfNeighborPartitions(); ++i )
+            faces.push_back( -( curface.neighborPartitionIds()[i] ) );
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
-            faces.push_back( face_it->point( ordering_face.fromGmshId( p ) ).id()+1 );
+            faces.push_back( curface.point( ordering_face.fromGmshId( p ) ).id()+1 );
 
-        M_enc_faces[face_it->id()] = faces;
+        M_enc_faces[curface.id()] = faces;
     } // faces
 
 
-    auto eltOnProccess = elements( *this );
-    auto elt_it = eltOnProccess.template get<1>();
-    auto elt_en = eltOnProccess.template get<2>();
-
+    auto rangeElements = this->elementsWithProcessId();
+    auto elt_it = std::get<0>( rangeElements );
+    auto elt_en = std::get<1>( rangeElements );
     for ( ; elt_it != elt_en; ++elt_it )
     {
+        auto const& curelt = boost::unwrap_ref( *elt_it );
         std::vector<int> elts;
         elts.push_back( ordering.type() );
-        elts.push_back( 4 + elt_it->numberOfPartitions() );
-        elts.push_back( elt_it->marker().value() );
-        elts.push_back( elt_it->marker2().value() );
-        elts.push_back( elt_it->numberOfPartitions() );
-        elts.push_back( elt_it->processId() );
-        for ( size_type i=0 ; i<elt_it->numberOfNeighborPartitions(); ++i )
-            elts.push_back( -( elt_it->neighborPartitionIds()[i] ) );
+        elts.push_back( 4 + curelt.numberOfPartitions() );
+        elts.push_back( curelt.hasMarker()? curelt.marker().value() : 0 );
+        elts.push_back( curelt.hasMarker2()? curelt.marker2().value() : 0 );
+        elts.push_back( curelt.numberOfPartitions() );
+        elts.push_back( curelt.processId() );
+        for ( size_type i=0 ; i<curelt.numberOfNeighborPartitions(); ++i )
+            elts.push_back( -( curelt.neighborPartitionIds()[i] ) );
         for ( uint16_type p=0; p<element_type::numPoints; ++p )
-            elts.push_back( elt_it->point( ordering.fromGmshId( p ) ).id()+1 );
+            elts.push_back( curelt.point( ordering.fromGmshId( p ) ).id()+1 );
 
-        M_enc_elts[elt_it->id()] = elts;
+        M_enc_elts[curelt.id()] = elts;
     } // elements
     //std::cout<<"encode=   " << this->worldComm().localSize() << std::endl;
 }
@@ -2458,7 +3045,7 @@ Mesh<Shape, T, Tag>::decode()
         {
             pf.setPoint( ordering.fromGmshId( jj ), this->point( face_it->second[shift+jj]-1 ) );
         }
-        this->addFace( pf );
+        this->addFace( this->endFace(), std::move(pf) );
     }
 
     for( auto elt_it = M_enc_elts.begin(), elt_en = M_enc_elts.end();
@@ -2489,8 +3076,8 @@ Mesh<Shape, T, Tag>::decode()
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
     LOG(INFO) << "distance faces: "<< std::distance( this->beginFace(), this->endFace() ) << "\n";
-    LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
-    LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
+    // LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
+    // LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
 
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
@@ -2586,9 +3173,9 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 {
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
-    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    auto rangeElements = M_mesh->elementsWithProcessId();
+    auto el_it = std::get<0>( rangeElements );
+    auto el_en = std::get<1>( rangeElements );
     const size_type nActifElt = std::distance( el_it, el_en );
     if ( nActifElt==0 ) return;
 
@@ -2610,19 +3197,20 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
-                                   *el_it,
+                                   boost::unwrap_ref( *el_it ),
                                    __geopc ) );
     VLOG(2) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
 
     for ( ; el_it != el_en; ++el_it )
     {
+        auto const& elt = boost::unwrap_ref( *el_it );
         // get geometric transformation
-        __c->update( *el_it );
-        gic_type gic( M_mesh->gm(), *el_it );
+        __c->update( elt );
+        gic_type gic( M_mesh->gm(), elt );
 
         // create bounding box
         //bb.make( el_it->points() );
-        bb.make( el_it->G() );
+        bb.make( elt.G() );
 
         for ( size_type k=0; k < bb.min.size(); ++k )
         {
@@ -2630,7 +3218,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
             bb.max[k] += 1e-10;
         }
 
-        DVLOG(2) << "G = " << el_it->G() << " min = " << bb.min << ", max = " << bb.max << "\n";
+        DVLOG(2) << "G = " << elt.G() << " min = " << bb.min << ", max = " << bb.max << "\n";
 
         // check if the points
         this->pointsInBox( boxpts, bb.min, bb.max );
@@ -2669,8 +3257,8 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
                 {
                     M_ref_coords[index] = gic.xRef();
                     M_dist[index] = dmin;
-                    M_cvx_pts[index]=el_it->id();
-                    M_pts_cvx[el_it->id()][index]=boost::get<2>( boxpts[i] );
+                    M_cvx_pts[index]=elt.id();
+                    M_pts_cvx[elt.id()][index]=boost::get<2>( boxpts[i] );
                     npt[index]=true;
                 }
             }
@@ -2695,21 +3283,28 @@ Mesh<Shape, T, Tag>::Localization::init()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear();
 
-    typename self_type::element_iterator el_it;
-    typename self_type::element_iterator el_en;
-    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
+    auto rangeElements = mesh->elementsWithProcessId();
+    auto el_it = std::get<0>( rangeElements );
+    auto el_en = std::get<1>( rangeElements );
+    if ( el_it != el_en )
+    {
+        auto const& elt = boost::unwrap_ref( *el_it );
+        M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() ) );
+        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+    }
 
     for ( ; el_it != el_en; ++el_it )
     {
-        for ( int i=0; i<el_it->nPoints(); ++i )
+        auto const& elt = boost::unwrap_ref( *el_it );
+        for ( int i=0; i<elt.nPoints(); ++i )
         {
-            if ( boost::get<1>( M_geoGlob_Elts[el_it->point( i ).id()] ).size()==0 )
+            if ( boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).size()==0 )
             {
-                boost::get<0>( M_geoGlob_Elts[el_it->point( i ).id()] ) = el_it->point( i ).node();
-                M_kd_tree->addPoint( el_it->point( i ).node(),el_it->point( i ).id() );
+                boost::get<0>( M_geoGlob_Elts[elt.point( i ).id()] ) = elt.point( i ).node();
+                M_kd_tree->addPoint( elt.point( i ).node(),elt.point( i ).id() );
             }
 
-            boost::get<1>( M_geoGlob_Elts[el_it->point( i ).id()] ).push_back( el_it->id() );
+            boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).push_back( elt.id() );
         }
     }
 
@@ -2733,22 +3328,33 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
     M_geoGlob_Elts.clear();
     M_kd_tree->clear()
 ;
-    typename self_type::location_face_iterator face_it;
-    typename self_type::location_face_iterator face_en;
-    boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
-
+    // typename self_type::location_face_iterator face_it;
+    // typename self_type::location_face_iterator face_en;
+    // boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
+    auto rangeBoundaryFaces = Feel::boundaryfaces( mesh );
+    auto face_it = boost::get<1>( rangeBoundaryFaces );
+    auto face_en = boost::get<2>( rangeBoundaryFaces );
+    bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {
-        for ( int i=0; i<face_it->nPoints(); ++i )
+        auto const& face = boost::unwrap_ref( *face_it );
+        for ( int i=0; i<face.nPoints(); ++i )
         {
-            if ( face_it->isConnectedTo0() )
+            if ( face.isConnectedTo0() )
                 {
-                    if ( boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).size()==0 )
+                    if ( boost::get<1>( M_geoGlob_Elts[face.point( i ).id()] ).size()==0 )
                         {
-                            boost::get<0>( M_geoGlob_Elts[face_it->point( i ).id()] ) = face_it->point( i ).node();
-                            M_kd_tree->addPoint( face_it->point( i ).node(),face_it->point( i ).id() );
+                            boost::get<0>( M_geoGlob_Elts[face.point( i ).id()] ) = face.point( i ).node();
+                            M_kd_tree->addPoint( face.point( i ).node(),face.point( i ).id() );
                         }
-                    boost::get<1>( M_geoGlob_Elts[face_it->point( i ).id()] ).push_back( face_it->element( 0 ).id() );
+                    boost::get<1>( M_geoGlob_Elts[face.point( i ).id()] ).push_back( face.element( 0 ).id() );
+
+                    if ( !hasInitGic )
+                    {
+                        M_gic.reset( new gmc_inverse_type( mesh->gm(), face.element( 0 ), mesh->worldComm().subWorldCommSeq() ) );
+                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face.element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() ) );
+                        hasInitGic=true;
+                    }
                 }
         }
     }
@@ -2767,7 +3373,7 @@ boost::tuple<bool,typename Mesh<Shape, T, Tag>::node_type,double>
 Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) const
 {
     bool isin=false;
-    double dmin;
+    double dmin=0;
     node_type x_ref;
 
     auto mesh = M_mesh.lock();
@@ -2776,6 +3382,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
 
     if ( elt.isOnBoundary() )
         {
+#if 0
             // get inverse geometric transformation
             gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2783,9 +3390,19 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+            M_gic->update( elt );
+            M_gic->setXReal( _pt);
+            x_ref=M_gic->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
         }
     else
         {
+#if 0
             // get inverse geometric transformation
             gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
@@ -2793,6 +3410,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+            M_gic1->update( elt, mpl::int_<1>() );
+            M_gic1->setXReal( _pt);
+            x_ref=M_gic1->xRef();
+            if ( nDim == nRealDim )
+                isin = M_gic1->isIn();
+            else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                boost::tie( isin, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
         }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -2821,6 +3447,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
 
         if ( elt.isOnBoundary() )
             {
+#if 0
                 // get inverse geometric transformation
                 gmc_inverse_type gic( mesh->gm(), elt );
                 //apply the inverse geometric transformation for the point p
@@ -2828,10 +3455,20 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem.isIn( gic.xRef() );
+#else
+                M_gic->update( elt );
+                M_gic->setXReal( _pt);
+                __x_ref=M_gic->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem.isIn( M_gic->xRef() );
+#endif
                 isin[i] = isin2;
             }
         else
             {
+#if 0
                 // get inverse geometric transformation
                 gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>() );
                 //apply the inverse geometric transformation for the point p
@@ -2839,6 +3476,15 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem1.isIn( gic.xRef() );
+#else
+                M_gic1->update( elt, mpl::int_<1>() );
+                M_gic1->setXReal( _pt);
+                __x_ref=M_gic1->xRef();
+                if ( nDim == nRealDim )
+                    isin2 = M_gic1->isIn();
+                else // in this case, result given with gic->isIn() seems not work (see geomap.hpp)
+                    boost::tie( isin2, dmin ) = M_refelem1.isIn( M_gic1->xRef() );
+#endif
                 isin[i] = isin2;
             }
         if (isin[i]) ++nbIsIn;
@@ -3269,7 +3915,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     double dmin=0.;
     node_type x_ref;
     auto mesh=this->mesh().lock();
-    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -3307,7 +3953,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
                 }
             else
                 {
-                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+                    // idEltFound = invalid_size_type_value;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }

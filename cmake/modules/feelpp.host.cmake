@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-08-17
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -36,4 +36,7 @@ if(APPLE)
       message(STATUS "MACOSX RPATH disabled (CMAKE Version 3)")
     endif()
   endif()
+else()
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
+

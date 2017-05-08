@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-04-26
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinearFree( space_ptrtype space , expr_type expr ) :
         super_type( space ),
+#if FEELPP_HAS_PETSC
         M_backend( backend_type::build( BACKEND_PETSC ) ),
+#else
+        M_backend( backend_type::build( BACKEND_EIGEN ) ),
+#endif
         M_expr( expr )
     {}
 
@@ -151,8 +155,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::type functionalfree_type;
     typedef typename Feel::detail::compute_functionalLinearFree_return<Args>::ptrtype functionalfree_ptrtype;
     return functionalfree_ptrtype ( new functionalfree_type( space , backend , expr ) );

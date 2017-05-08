@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -348,11 +348,11 @@ void
 ThermalBlockFree::initModel()
 {
 
-    gamma_dir=option(_name="gamma_dir").template as<double>();
+    gamma_dir=doption(_name="gamma_dir");
 
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
-    double hsize = option(_name="hsize").template as<double>();
+    double hsize = doption(_name="hsize");
 
     if( mshfile_name=="" )
     {

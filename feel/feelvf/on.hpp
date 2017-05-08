@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -152,14 +153,14 @@ public:
     static const uint16_type imorder = OnExpr::imorder;
     static const bool imIsPoly = OnExpr::imIsPoly;
 
-    typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
+    using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
+    using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
 
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
     typedef value_type evaluate_type;
     typedef typename element_type::return_type return_type;
-    typedef boost::function<return_type ( node_type const& )> bc_type;
     typedef OnExpr expression_type;
 
     template<typename Func>
@@ -174,6 +175,14 @@ public:
         static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+    using test_basis = std::nullptr_t;
+    using trial_basis = typename element_type::functionspace_type::basis_type;
+
+
     static const uint16_type nComponents = element_type::nComponents;
 
     //@}
@@ -181,12 +190,14 @@ public:
     /** @name Constructors, destructor
      */
     //@{
+    IntegratorOnExpr() = delete;
 
     IntegratorOnExpr( ElementRange const& __elts,
                       element_type const& __u,
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
-                      size_type __on )
+                      size_type __on,
+                      double value_on_diag )
         :
         M_elts(),
         M_eltbegin( __elts.template get<1>() ),
@@ -194,7 +205,8 @@ public:
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
-        M_on_strategy( __on )
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
     {
         M_elts.push_back( __elts );
     }
@@ -202,13 +214,15 @@ public:
                       element_type const& __u,
                       rhs_element_type const& __rhs,
                       expression_type const& __expr,
-                      size_type __on )
+                      size_type __on,
+                      double value_on_diag )
         :
         M_elts( __elts ),
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
-        M_on_strategy( __on )
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
     {
         if ( __elts.size() )
         {
@@ -216,19 +230,9 @@ public:
             M_eltend = __elts.begin()->template get<2>();
         }
     }
-    IntegratorOnExpr( IntegratorOnExpr const& ioe )
-        :
-        M_elts( ioe.M_elts ),
-        M_eltbegin( ioe.M_eltbegin ),
-        M_eltend( ioe.M_eltend ),
-        M_u( ioe.M_u ),
-        M_rhs( ioe.M_rhs ),
-        M_expr( ioe.M_expr ),
-        M_on_strategy( ioe.M_on_strategy )
-    {
-    }
-
-    ~IntegratorOnExpr() {}
+    IntegratorOnExpr( IntegratorOnExpr const& ioe ) = default;
+    IntegratorOnExpr( IntegratorOnExpr && ioe ) = default;
+    ~IntegratorOnExpr() = default;
 
     //@}
 
@@ -271,9 +275,11 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
-        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                      << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
+        static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+        static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+        VLOG(2) << "[IntegratorOn::assemble()] is_same: "
+                << is_same_space << " is_comp_space:" << is_comp_space << "\n";
+        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>(), on_type() );
     }
     //@}
 private:
@@ -281,12 +287,22 @@ private:
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                    boost::shared_ptr<Elem2> const& /*__v*/,
-                   FormType& /*__f*/, mpl::bool_<false> ) const {}
+                   FormType& /*__f*/, mpl::bool_<false>, on_type ) const {}
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_FACES> ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,
                    boost::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true> ) const;
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
+    
+    template<typename Elem1, typename Elem2, typename FormType>
+    void assemble( boost::shared_ptr<Elem1> const& __u,
+                   boost::shared_ptr<Elem2> const& __v,
+                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_POINTS> ) const;
 
 private:
 
@@ -298,6 +314,7 @@ private:
     mutable rhs_element_type M_rhs;
     expression_type M_expr;
     Context M_on_strategy;
+    double M_value_on_diagonal { 1.0 };
 };
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
@@ -306,7 +323,8 @@ void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
                                                                   boost::shared_ptr<Elem2> const& /*__v*/,
                                                                   FormType& __form,
-                                                                  mpl::bool_<true> ) const
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_FACES>) const
 {
 #if 0
 
@@ -315,7 +333,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         return;
 
 #endif
-    DVLOG(2) << "call on::assemble() " << "\n";
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
+    
     //
     // a few typedefs
     //
@@ -352,10 +374,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
 
-    // make sure that the form is close, ie the associated matrix is assembled
-    __form.matrix().close();
-    // make sure that the right hand side is closed, ie the associated vector is assembled
-    M_rhs->close();
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    {
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
+    }
 
     //
     // start
@@ -452,6 +477,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
+
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
@@ -505,12 +533,15 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
-                    size_type thedof = M_u.start()+ ldof.index(); // global dof
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
+                    thedof = trialDofIdToContainerId[ thedof ];
+
                     DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
-
+                    DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
+                             << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),
                                     dofs.end(),
                                     thedof ) != dofs.end() )
@@ -545,20 +576,312 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         } // for( auto& lit : M_elts )
     }// findAFace
 
-    if ( __form.rowStartInMatrix()!=0)
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
+    x.reset();
+}
+
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_EDGES>) const
+{
+
+
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
+
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
     {
-        auto const thedofshift = __form.rowStartInMatrix();
-        for (auto& itd : dofs)
-            itd+=thedofshift;
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
     }
+
+    //
+    // start
+    //
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
+    boost::timer __timer;
+
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    auto edge_it = this->beginElement();
+    auto edge_en = this->endElement();
+
+    bool findAEdge = false;
+    for( auto& lit : M_elts )
+    {
+        edge_it = lit.template get<1>();
+        edge_en = lit.template get<2>();
+        if ( edge_it != edge_en )
+        {
+            findAEdge=true;
+            break;
+        }
+    }
+    if ( findAEdge )
+    {
+        auto const& edgeForInit = boost::unwrap_ref( *edge_it );
+
+        auto const* __dof = M_u.functionSpace()->dof().get();
+        auto const* __fe = M_u.functionSpace()->fe().get();
+        auto const* mesh = M_u.functionSpace()->mesh().get();
+        auto gm = mesh->gm();
+        size_type eid = edgeForInit.elements().begin()->first;
+        size_type edgeid_in_element = edgeForInit.elements().begin()->second;
+        auto const& elt = mesh->element( eid );
+        //auto geopc = gm->preComputeOnEdges([&__fe]( int f ){ return __fe->edgePoints(f); } );
+        auto geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+        // TODO: create context for edge associated to element
+        auto ctx =  gm->template context<context>( elt, geopc);
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = __fe->edgeLocalInterpolant();
+
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
+
+        for( auto& lit : M_elts )
+        {
+            edge_it = lit.template get<1>();
+            edge_en = lit.template get<2>();
+            DVLOG(2) << "edge nb: " << std::distance(edge_it,edge_en);
+            for ( ;
+                  edge_it != edge_en;//this->endElement();
+                  ++edge_it )
+            {
+                auto const& theedge = boost::unwrap_ref( *edge_it );
+                // do not process the edge if it is a ghost edge: belonging to two
+                // processes and being in a process id greater than the one
+                // corresponding edge
+                if ( theedge.isGhostCell() )
+                {
+                    LOG(WARNING) << "edge id : " << theedge.id() << " is a ghost edge";
+                    continue;
+                }
+
+                size_type eid = theedge.elements().begin()->first;
+                size_type edgeid_in_element = theedge.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+                ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
+                //ctx->update( elt, edgeid_in_element, geopc );
+                ctx->update( elt, geopc );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->edgeInterpolate( expr_evaluator, IhLoc );
+
+                for( auto const& ldof : M_u.functionSpace()->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                {
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
+                    thedof = trialDofIdToContainerId[ thedof ];
+                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                            // this can be quite expensive depending on the
+                            // matrix storage format.
+                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
+
+                            // only the real dof ( not the ghosts )
+                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                            {
+                                dofs.push_back( thedof );
+                                values.push_back(  __value );
+                            }
+
+                            //M_rhs.set( thedof, __value );
+                        }
+
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                        {
+                            __form.set( thedof, thedof, 1.0*1e30 );
+                            M_rhs->set( thedof, __value*1e30 );
+                        }
+                }
+        }// edge_it != edge_en
+
+        } // for( auto& lit : M_elts )
+
+    }// findAEdge
 
     auto x = M_rhs->clone();
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
+    x.reset();
+
+}
+
+template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
+template<typename Elem1, typename Elem2, typename FormType>
+void
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true>,
+                                                                  mpl::size_t<MESH_POINTS>) const
+{
+#if 0
+
+    if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
+         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+        return;
+
+#endif
+    typedef typename Elem::functionspace_type functionspace_type;
+    static constexpr bool is_product = functionspace_type::is_product;
+    static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
+    static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+    VLOG(2) << "call on::assemble(MESH_POINTS): " << is_comp_space<< "\n";
+
+    VLOG(2) << "On::assemble on Mesh Points";
+    // TODO : check that we do not use hdiv hcurl or other type of elements
+    const size_type context = OnExpr::context|vm::POINT;
+    VLOG(2)  << "assembling Dirichlet conditions\n";
+    auto mesh = M_u.functionSpace()->mesh().get();
+    auto const* dof = M_u.functionSpace()->dof().get();
+    auto const* __fe = M_u.functionSpace()->fe().get();
+    auto gm = mesh->gm();
+
+    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    {
+        // make sure that the form is close, ie the associated matrix is assembled
+        __form.matrix().close();
+        // make sure that the right hand side is closed, ie the associated vector is assembled
+        M_rhs->close();
+    }
+
+    std::vector<int> dofs;
+    std::vector<value_type> values;
+    auto pt_it = this->beginElement();
+    auto pt_en = this->endElement();
+
+    bool findAPt = false;
+    for( auto& lit : M_elts )
+    {
+        pt_it = lit.template get<1>();
+        pt_en = lit.template get<2>();
+        if ( pt_it != pt_en )
+        {
+            findAPt=true;
+            break;
+        }
+    }
+    if ( findAPt )
+    {
+        // get the first pt properly connected
+        bool findAPtToInit=false;
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            for( ; pt_it != pt_en; ++pt_it )
+            {
+                if ( boost::unwrap_ref( *pt_it).elements().size() )
+                {
+                    findAPtToInit=true;
+                    break;
+                }
+            }
+            if ( findAPtToInit ) break;
+        }
+        CHECK( findAPtToInit ) << "a point to initialize the Dirichlet constraint\n";
+
+        auto const& thept = boost::unwrap_ref( *pt_it );
+            
+        size_type eid = thept.elements().begin()->first;
+        size_type ptid_in_element = thept.elements().begin()->second;
+
+        auto const& elt = mesh->element( eid );
+        auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        auto ctx = gm->template context<context>( elt, geopc );
+        auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
+        auto IhLoc = __fe->vertexLocalInterpolant();
+
+        int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
+        auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
+
+        for( auto& lit : M_elts )
+        {
+            pt_it = lit.template get<1>();
+            pt_en = lit.template get<2>();
+            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " with marker " << boost::unwrap_ref( *pt_it ).marker() << " nb: " << std::distance(pt_it,pt_en);
+            
+            if ( pt_it == pt_en )
+                continue;
+
+            for ( ;
+                  pt_it != pt_en;
+                  ++pt_it )
+            {
+                auto const& thept = boost::unwrap_ref( *pt_it );
+                
+                size_type eid = thept.elements().begin()->first;
+                size_type ptid_in_element = thept.elements().begin()->second;
+                auto const& elt = mesh->element( eid );
+                geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+                ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                expr_evaluator.update( mapgmc( ctx ) );
+                __fe->vertexInterpolate( expr_evaluator, IhLoc );
+
+                for( int c = 0; c < (is_product?nComponents:1); ++c )
+                {
+                    size_type index = dof->localToGlobal( eid, ptid_in_element, c ).index();
+                    size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*index : index;
+                    thedof = trialDofIdToContainerId[ thedof ];
+
+                    double __value = IhLoc( c );
+                    
+                    if ( std::find( dofs.begin(),
+                                    dofs.end(),
+                                    thedof ) != dofs.end() )
+                        continue;
+
+                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        DVLOG(3) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        
+                        dofs.push_back( thedof );
+                        values.push_back(  __value );
+                    }
+                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
+                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        __form.set( thedof, thedof, 1.0*1e30 );
+                        M_rhs->set( thedof, __value*1e30 );
+                    }
+                }
+            }// pt_it != pt_en
+        } // for( auto& lit : M_elts )
+    }// findAFace
+
+    auto x = M_rhs->clone();
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    x->setVector( dofs.data(), dofs.size(), values.data() );
+    x->close();
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
 }
+
 
 
 namespace detail
@@ -651,8 +974,9 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,   ( std::string ), "" )
-      ( type,   ( std::string ), option(_prefix=prefix,_name="on.type").template as<std::string>() )
-      ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
+      ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
+      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
+      ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
         )
     )
 {
@@ -660,7 +984,8 @@ BOOST_PARAMETER_FUNCTION(
                                                             element,
                                                             Feel::vf::detail::getRhsVector(rhs),
                                                             expr,
-                                                            size_type(ContextOnMap[type]) );
+                                                            size_type(ContextOnMap[type]),
+                                                            value_on_diagonal );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";

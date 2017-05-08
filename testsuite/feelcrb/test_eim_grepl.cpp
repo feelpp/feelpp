@@ -76,7 +76,7 @@ makeOptions()
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 
@@ -151,7 +151,7 @@ public:
 
             auto Pset = Dmu->sampling();
             //specify how many elements we take in each direction
-            std::vector<int> N(2);
+            std::vector<size_type> N(2);
             //40 elements in each direction
             N[0]=40; N[1]=40;
             Pset->equidistributeProduct( N );
@@ -171,13 +171,13 @@ public:
             M_funs.push_back( e );
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_grepl" );}
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {

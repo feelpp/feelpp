@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme
    Date     : Fri Mar 21 18:10:49 2014
 
-   Copyright (C) 2014 Feel++ Consortium
+   Copyright (C) 2014-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/product.hpp>
 
 
@@ -41,11 +42,11 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = loadMesh(_mesh = new Mesh<Simplex<2>> );
-
     typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
+#if 0
     auto X1 = Pch<1>(mesh);
     auto X2 = Pch<0>(mesh);
-    auto Vh = space_type::NewFromList( X1, X2 );
+    //auto Vh = space_type::NewFromList( X1, X2 );
     //auto Vh = product( X1, X2 );
     //BOOST_MPL_ASSERT_MSG( (boost::is_same<space_type, decltype(*Vh)>::value),
     //INVALID_SPACE,
@@ -53,7 +54,8 @@ int main(int argc, char**argv )
     std::cout << "X : " << X1->nLocalDof() << "\n";
     std::cout << "Vh->X1 : " << Vh->functionSpace<0>()->nLocalDof() << "\n";
     //std::cout << "Vh->X2 : " << Vh->functionSpace<1>()->nLocalDof() << "\n";
-#if 0
+#else
+    auto Vh = space_type::New( mesh );
     auto U = Vh->element();
     auto V = Vh->element();
     auto u = U.element<0>() ;

@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel++ library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-02-10
 #
 #  Copyright (C) 2010 Université Joseph Fourier
@@ -33,9 +33,8 @@ INCLUDE(CheckIncludeFileCXX)
 FIND_LIBRARY( ANN_LIB ann ANN PATHS /usr/lib /opt/local/lib  $ENV{ANN_DIR}/lib)
 SET(ANN_LIBRARIES ${ANN_LIB} )
 
-FIND_PATH(ANN_INCLUDE_DIR
-  ANN.h
-  PATHS /usr/include/ /usr/include/ANN /opt/local/include/ANN /usr/local/include/ANN  $ENV{ANN_DIR}/include/ANN
+FIND_PATH(ANN_INCLUDE_DIR ANN/ANN.h
+  PATHS /usr/include/ /opt/local/include /usr/local/include $ENV{ANN_DIR}/include
   DOC "Directory where ANN header files are stored" )
 
 include(FindPackageHandleStandardArgs)

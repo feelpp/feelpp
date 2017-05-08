@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -83,9 +83,9 @@ public:
         import.setVersion( version );
         M_mesh->accept( import );
 
-        typename mesh_type::element_iterator el_it;
-        typename mesh_type::element_iterator el_en;
-        boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
+        auto rangeElement = elements( *M_mesh );
+        auto el_it = boost::get<1>( rangeElement );
+        auto el_en = boost::get<2>( rangeElement );
 
         ref_entity_type refelem;
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
@@ -99,15 +99,16 @@ public:
 
         std::vector<boost::tuple<size_type, uint16_type > > itab;
 
-        boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
+        //boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
         std::cout << "refelem = " << refelem.points() << "\n";
 
         for ( ; el_it != el_en; ++el_it )
         {
-            gmc_type gmc( M_mesh->gm(), *el_it, __geopc );
-            gic_type gic( M_mesh->gm(), *el_it );
+            auto const& meshElt = boost::unwrap_ref( *el_it );
+            gmc_type gmc( M_mesh->gm(), meshElt, __geopc );
+            gic_type gic( M_mesh->gm(), meshElt );
 
-            meshinv.pointsInConvex( el_it->id(), itab );
+            meshinv.pointsInConvex( meshElt.id(), itab );
 
             for ( int q = 0; q < itab.size(); ++q )
             {
@@ -129,7 +130,7 @@ public:
 
             FEELPP_ASSERT( gic.isIn() )
             ( refelem.points() )( gmc.xReal() )
-            ( el_it->id() ).error( "invalid geometric transformation inversion" );
+            ( meshElt.id() ).error( "invalid geometric transformation inversion" );
         }
 
         VLOG(1) << "testing Interp with file format version " << version << " done\n";

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-06-20
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,26 +21,53 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file test_spacefunc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2014-06-20
- */
-#include <feel/feelcore/environment.hpp>
+#define BOOST_TEST_MODULE test_spacefunc
+#include <testsuite/testsuite.hpp>
+
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelvf/vf.hpp>
 
-int main( int argc, char **argv)
+using namespace Feel;
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( element_component )
+
+BOOST_AUTO_TEST_CASE( element_component_vectorial )
 {
-    using namespace Feel;
-    Environment env(  _argc=argc, _argv=argv );
     auto mesh=unitCircle();
     auto Xh=Pdhv<0>(mesh);
     auto v = Xh->element();
+
     CHECK( v.nDof() == 2*mesh->numGlobalElements() );
     v.on( _range=elements(mesh), _expr=ones<2,1>() );
     auto s = v.sum();
-    CHECK( s == 2*mesh->numGlobalElements() );
-    return 0;
+    CHECK( s == 2*mesh->numGlobalElements() ) << "invalid result " << s << " should be " << 2*mesh->numGlobalElements();
+
+    CHECK( v[Component::X].size() == mesh->numGlobalElements() )
+        << "invalid result " << v[Component::Y].size() << " should be " << mesh->numGlobalElements();
+    CHECK( v[Component::Y].size() == mesh->numGlobalElements() )
+        << "invalid result " << v[Component::Y].size() << " should be " << mesh->numGlobalElements();
+
+    v[Component::X].on( _range=elements(mesh), _expr=cst(3.) );
+    v[Component::Y].on( _range=elements(mesh), _expr=cst(0) );
+    s = v[Component::X].sum();
+    CHECK( s == 3*mesh->numGlobalElements() ) << "Invalid sum result = " << s << " should be " << 3*mesh->numGlobalElements();
+    v[Component::X].on( _range=elements(mesh), _expr=Px() );
+    v[Component::Y].on( _range=elements(mesh), _expr=Py() );
+    auto r = normL2( _range=elements(mesh), _expr=idv(v)-vec(Px(),Py()));
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
+    v.on(_range=elements(mesh),_expr=vec(3.1*Py(),-2*Px()) );
+    r = normL2( _range=elements(mesh), _expr=idv(v[Component::X])-3.1*Py());
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
+    r = normL2( _range=elements(mesh), _expr=idv(v[Component::Y])+2*Px());
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
+
+    v[Component::X].on( _range=elements(mesh), _expr=cst(0) );
+    v[Component::Y].on( _range=elements(mesh), _expr=cst(4.) );
+    s = v[Component::Y].sum();
+    CHECK( s == 4*mesh->numGlobalElements() ) << "Invalid sum result = " << s << " should be " << 4*mesh->numGlobalElements();
 }
+
+BOOST_AUTO_TEST_SUITE_END()

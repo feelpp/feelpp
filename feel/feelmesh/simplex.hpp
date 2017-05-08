@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -60,6 +60,7 @@ struct points<0>
 
 
 }
+class SimplexBase {};
 
 /**
  * @class Simplex
@@ -70,7 +71,7 @@ struct points<0>
 template<uint16_type Dim,
          uint16_type Order = 1,
          uint16_type RDim = Dim>
-class Simplex : public Convex<Dim,Order,RDim>
+class Simplex : public Convex<Dim,Order,RDim>, SimplexBase
 {
 private:
     /**
@@ -114,6 +115,8 @@ private:
                 Simplex<1, Order, rdim>,
                 Simplex<2, Order, rdim> > type;
     };
+
+    typedef mpl::vector<boost::none_t,Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Simplex<1, Order>, Simplex<2, Order>, Simplex<3, Order>, boost::none_t > elements_t;
 
 public:
@@ -133,6 +136,7 @@ public:
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
+    typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
     typedef topological_face_type GeoBShape;
 
     static const uint16_type numVertices = nDim+1;
@@ -182,9 +186,12 @@ public:
     };
 
 
-    Simplex()
-    {
-    }
+    Simplex() = default;
+    Simplex( Simplex const& ) = default;
+    Simplex( Simplex && ) = default;
+    Simplex& operator=( Simplex const& ) = default;
+    Simplex& operator=( Simplex && ) = default;
+
     /**
      * \return the topological dimension of the simplex
      */
@@ -319,6 +326,9 @@ public:
 
 template<uint16_type Dim, uint16_type Order, uint16_type RDim >
 const uint16_type Simplex<Dim, Order, RDim>::topological_dimension;
+
+template<uint16_type Dim, uint16_type Order, uint16_type RDim >
+const uint16_type Simplex<Dim, Order, RDim>::nOrder;
 
 template<int Dim> struct Line : public Simplex<1, Dim> {};
 template<int Dim> struct Triangle : public Simplex<2, Dim> {};

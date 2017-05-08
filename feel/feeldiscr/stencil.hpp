@@ -520,27 +520,41 @@ private:
             const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
-                size_type domain_eid = invalid_size_type_value;
-                if ( !theface.element0().isGhostCell() )
-                    domain_eid = theface.element0().id();
-                else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
-                    domain_eid = theface.element1().id();
-                else
-                    CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+                size_type face_id = _M_X1->mesh()->subMeshToMesh( test_eid );
+                auto const& theface = _M_X2->mesh()->face(face_id);
+                if ( theface.isConnectedTo1() )
+                {
+                    if ( !theface.element0().isGhostCell() && !theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                    else if ( !theface.element0().isGhostCell() && theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                    else if ( theface.element0().isGhostCell() && !theface.element1().isGhostCell() )
+                    {
+                        idsFind.insert( theface.element0().id() );
+                        idsFind.insert( theface.element1().id() );
+                    }
+                }
+                else if ( theface.isConnectedTo0() )
+                    idsFind.insert( theface.element0().id() );
+                DVLOG(1) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element ids : " << idsFind << "\n";
 
-                DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
-                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
                 auto const& eltTest = _M_X1->mesh()->element(test_eid);
                 for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
-                    {
-                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                        if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
-                    }
-                DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+                {
+                    const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                    if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                }
+                DVLOG(1) << "[trial_related_to_test<1>] ids : " << idsFind;
+                DVLOG(1) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
             }
             else if ( trial_sibling_of_test )
             {
@@ -559,6 +573,7 @@ private:
             {
                 CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
             }
+            google::FlushLogFiles( google::GLOG_INFO );
             return idsFind;
         }
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )
@@ -575,9 +590,10 @@ public :
         typedef typename fusion::result_of::find<rangeiterator_test_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_test_type>::type> hasnotfindrange_type;
 
-        typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
+        // typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
+        typedef elements_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -601,9 +617,10 @@ public :
         typedef typename fusion::result_of::find<rangeiterator_extended_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
         typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_extended_type>::type> hasnotfindrange_type;
 
-        typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
-                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+        // typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
+        //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+        typedef faces_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -773,8 +790,9 @@ BOOST_PARAMETER_FUNCTION(
         // cleanup memory before doing anything
         stencilManagerGarbageCollect();
     }
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
     typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
@@ -979,14 +997,15 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( s
 
     const size_type globalDofRowStart = this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
     const size_type globalDofColStart = this->trialSpace()->dof()->firstDofGlobalCluster()  +  this->trialSpace()->nLocalDofWithoutGhostOnProcStart( myrank, trial_index );
-    const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+    //const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+    const size_type locdofStart = this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
 
     typename graph_type::const_iterator it = g->begin();
     typename graph_type::const_iterator en = g->end();
     for ( ; it != en; ++it )
     {
         size_type theglobalrow = globalDofRowStart + ( it->first - mapOnTest.firstDofGlobalCluster() );
-        const size_type thelocalrow = locdofStart + it->second.get<1>();
+        /*const*/ size_type thelocalrow = locdofStart + it->second.get<1>();
 
         if (it->second.get<0>()!=g->worldComm().globalRank() )
         {
@@ -994,6 +1013,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( s
             const size_type realrowStart = this->testSpace()->dof()->firstDofGlobalCluster(proc)
                 + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index );
             theglobalrow = realrowStart+(it->first-mapOnTest.firstDofGlobalCluster(proc));
+            thelocalrow = this->testSpace()->nLocalDofWithoutGhost()
+                + (this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index ) - locdofStart)
+                + (it->second.get<1>() -mapOnTest.nLocalDofWithoutGhost());
         }
 
         std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
@@ -1460,21 +1482,24 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 
     for ( ; elem_it != elem_en; ++elem_it )
     {
-        DVLOG(4) << "[Stencil::computePattern] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+        auto const& eltRange = boost::unwrap_ref( *elem_it );
+        DVLOG(4) << "[Stencil::computePattern] element " << eltRange.id() << " on proc " << eltRange.processId() << "\n";
 
-        const std::set<std::pair<size_type,rank_type> > infoTestElts = testElementIdFromRange( iDimRange,*elem_it );
+        const std::set<std::pair<size_type,rank_type> > infoTestElts = testElementIdFromRange( iDimRange, eltRange );
         for ( std::pair<size_type,rank_type> const& infoTestElt : infoTestElts )
         {
         size_type idTestElt = infoTestElt.first;
-        rank_type pidTestElt = infoTestElt.second;
-        auto const& elem = _M_X1->mesh()->element( idTestElt,pidTestElt );
+        //rank_type pidTestElt = infoTestElt.second;
+        auto const& elem = _M_X1->mesh()->element( idTestElt );
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
         //const uint16_type  n1_dof_on_element = element_dof1.size();
         const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
-
         for ( const size_type domain_eid : domains_eid_set )
         {
+            if ( trial_space_type::dof_type::is_mortar )
+                element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
+
             // Get the global indices of the DOFs with support on this element
             _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
 
@@ -1525,20 +1550,18 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                     {
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
-                            const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
-                            size_type neighbor_id = elem.neighbor( ms ).first;
-                            size_type neighbor_process_id = elem.neighbor( ms ).second;
+                            // const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
+                            size_type neighbor_id = elem.neighbor( ms );
 
                             // warning ! the last condition is a temporary solution
                             if ( neighbor_id != invalid_size_type_value )
                             {
-                                if ( neighbor_process_id != proc_id )
+                                const auto * neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
+
+                                if ( neighbor->processId() != proc_id )
                                     CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
                                              _M_X2->dof()->buildDofTableMPIExtended() ) )
                                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
-
-                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
-                                                                                     neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
@@ -1592,9 +1615,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
             auto faceExtended_en = rangeExtended.template get<2>();
             for ( ; faceExtended_it != faceExtended_en ;++faceExtended_it )
             {
-                if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
+                auto const& faceExtended = boost::unwrap_ref( *faceExtended_it );
+                if ( !faceExtended.isConnectedTo0() || !faceExtended.isConnectedTo1() ) continue;
 
-                if ( faceExtended_it->isInterProcessDomain() )
+                if ( faceExtended.isInterProcessDomain() )
                     CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
                              _M_X2->dof()->buildDofTableMPIExtended() )  )
                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
@@ -1604,8 +1628,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                         << "DofTableMPIExtended is not built!";
 #endif
 
-                auto const& elt0 = faceExtended_it->element0();
-                auto const& elt1 = faceExtended_it->element1();
+                auto const& elt0 = faceExtended.element0();
+                auto const& elt1 = faceExtended.element1();
 
                 const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
                 const uint16_type  n2_dof_on_element = _M_X2->dof()->getIndicesSize();
@@ -1865,16 +1889,17 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
     if ( elem_it==elem_en ) return sparsity_graph;
 
-    CHECK( elem_it->mesh()->isSameMesh( _M_X1->mesh() ) ) << "case not take into account : mesh range is not the same that test mesh";
+    auto const& eltInit = boost::unwrap_ref( *elem_it );
+    CHECK( eltInit.mesh()->isSameMesh( _M_X1->mesh() ) ) << "case not take into account : mesh range is not the same that test mesh";
 
-    matrix_node_type ptsReal( elem_it->vertices().size1(), 1 );
-    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange,*elem_it );
+    matrix_node_type ptsReal( eltInit.vertices().size1(), 1 );
+    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange, eltInit );
 
     if ( _M_X1->nDof()>1 )
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
-            auto const& elem = *elem_it;
+            auto const& elem = boost::unwrap_ref( *elem_it );
             // Get the global indices of the DOFs with support on this element
             element_dof1_range = _M_X1->dof()->getIndices( elem.id(), iDimRange );
 
@@ -1893,7 +1918,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                 ublas::column(ptsReal,0 ) = ptRealDof;
                 if (notUseOptLocTrial) IdEltInXh2=invalid_size_type_value;
-                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
+                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem.vertices(),mpl::int_<0>());
                 IdEltInXh2 = resLocalisationInXh2.template get<1>();
                 bool hasFind = resLocalisationInXh2.template get<0>()[0];
 
@@ -1909,7 +1934,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                     std::vector<size_type> neighbor_ids;
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
                     {
-                        size_type neighbor_id = geoelt2.neighbor( ms ).first;
+                        size_type neighbor_id = geoelt2.neighbor( ms );
 
                         if ( neighbor_id!=invalid_size_type_value )
                             neighbor_ids.push_back( neighbor_id );
@@ -1965,10 +1990,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 }
             } // for (size_type i=0; i<n1_dof_on_element_range; i++)
 
-            uint16_type nbFind = hasFinds.size();
             bool doQ=false;
+            // try to detect if we need to apply doQ
+            if ( test_space_type::is_mortar && elem.isOnBoundary() )
+                doQ = true;
+            uint16_type nbFind = hasFinds.size();
             size_type id1,id2;
-
             for ( uint16_type nF = 0 ; nF<nbFind && !doQ ; ++nF )
                 if ( hasFinds[nF].template get<0>() )
                 {
@@ -2024,7 +2051,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
-            auto const& elem = *elem_it;
+            auto const& elem = boost::unwrap_ref( *elem_it );
 
             // Get the global indices of the DOFs with support on this element
             const std::set<size_type> idsElt = Feel::detail::idEltStencil( iDimRange,elem );
@@ -2063,7 +2090,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
                     {
-                        size_type neighbor_id = geoelt2.neighbor( ms ).first;
+                        size_type neighbor_id = geoelt2.neighbor( ms );
 
                         if ( neighbor_id!=invalid_size_type_value ) neighbor_ids.push_back( neighbor_id );
 

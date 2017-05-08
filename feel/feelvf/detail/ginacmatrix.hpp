@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-02-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ namespace vf {
  * Handle Ginac matrix expression
  */
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix : public Feel::vf::GiNaCBase
+class FEELPP_EXPORT GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -42,7 +42,7 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
 
-    static const size_type context = vm::POINT;
+    static const size_type context = vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL;
     static const bool is_terminal = false;
     static const uint16_type imorder = Order;
     static const bool imIsPoly = false;
@@ -57,6 +57,13 @@ public:
     {
         static const bool result = false;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     typedef GiNaC::ex expression_type;
     typedef GinacMatrix<M,N,Order> this_type;
@@ -84,14 +91,17 @@ public:
 
     GinacMatrix() : super() {}
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super( syms ),
         M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -102,21 +112,24 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
     explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
-                          std::string filename="", WorldComm const& world=Environment::worldComm() )
+                          std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository() )
         :
         super(syms),
         M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
-        M_filename( Environment::expand( (filename.empty() || fs::path(filename).is_absolute())? filename : (fs::current_path()/filename).string() ) ),
+        M_filename(),
         M_exprDesc( exprDesc )
         {
+            std::string filenameExpanded = Environment::expand( filename );
+            M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
+
             DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
             GiNaC::lst exprs;
             for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -127,13 +140,14 @@ public:
             // get filename if not given
             if ( M_filename.empty() && !M_exprDesc.empty() )
             {
-                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc );
+                M_filename = Feel::vf::detail::ginacGetDefaultFileName( M_exprDesc, dirLibExpr );
             }
 
             // build ginac lib and link if necessary
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
+    GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun )
     :
         super(fun),
@@ -171,6 +185,8 @@ public:
      */
     //@{
 
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -238,9 +254,7 @@ public:
         //typedef typename expression_type::value_type value_type;
         typedef double value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -316,6 +330,9 @@ public:
                 {
                     for ( auto const& comp : M_expr.indexSymbolXYZ() )
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                    // is it called for updates on faces? need to check that...
+                    for ( auto const& comp : M_expr.indexSymbolN() )
+                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
 
@@ -331,14 +348,17 @@ public:
                 {
                     for ( auto const& comp : M_expr.indexSymbolXYZ() )
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
+                    for ( auto const& comp : M_expr.indexSymbolN() )
+                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
                     M_fun(&ni,M_x.data(),&no,M_y[q].data());
                 }
             }
 
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
             {
-                update( ctx->gmContext() );
+                boost::fusion::vector<CTX...> ctxvec( ctx... );
+                update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
             }
 
         value_type
@@ -382,11 +402,25 @@ private:
 }; // GinacMatrix
 
 template<int M,int N,int Order>
-std::ostream&
+FEELPP_EXPORT std::ostream&
 operator<<( std::ostream& os, GinacMatrix<M,N,Order> const& e )
 {
     os << e.expression();
     return os;
+}
+
+template<int M, int N, int Order>
+FEELPP_EXPORT std::string
+str( GinacMatrix<M,N,Order> && e )
+{
+    return str( std::forward<GinacMatrix<M,N,Order>>(e).expression() );
+}
+
+template<int M, int N, int Order>
+FEELPP_EXPORT std::string
+str( GinacMatrix<M,N,Order> const& e )
+{
+    return str( e.expression() );
 }
 
 /// \endcond

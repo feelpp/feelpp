@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,10 +29,13 @@
 #ifndef __Gauss_H
 #define __Gauss_H 1
 
+#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/quadpoint.hpp>
 
 namespace Feel
 {
+template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+
 /*!
  * \class Gauss
  * \brief Gauss quadrature points

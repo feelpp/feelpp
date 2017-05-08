@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -38,6 +38,10 @@
 
 #if defined(FEELPP_HAS_VTK)
 
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
@@ -55,6 +59,9 @@
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
+#if defined(__GNUC__) && !(defined(__clang__))
+#pragma GCC diagnostic pop
 #endif
 
 #endif /* FEELPP_HAS_VTK */
@@ -214,7 +221,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         __nd = pset->point( __i );
 
         point_type __pt( __i,__nd, false );
-        __pt.marker() = 0;
+        __pt.setMarker( 0 );
 
         if ( __nd[0] == -1 || __nd[0] == 1 )
         {
@@ -237,7 +244,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     face_type* pf0 = new face_type;
 
-    pf0->marker() = 0;
+    pf0->setMarker( 0 );
     pf0->setPoint( 0, M_mesh->point( 0 ) );
 
     pf0->setId( n_faces++ );
@@ -248,7 +255,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     face_type* pf1 = new face_type;
 
-    pf1->marker() = 0;
+    pf1->setMarker( 0 );
     pf1->setPoint( 0, M_mesh->point( 1 ) );
 
     pf1->setId( n_faces++ );
@@ -264,7 +271,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         element_type  pf;
 
         pf.setId( __i );
-        pf.marker() = 0;
+        pf.setMarker( 0 );
 
         if ( __nele == 1 )
         {

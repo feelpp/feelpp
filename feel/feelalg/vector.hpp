@@ -21,6 +21,7 @@
 #define __numeric_vector_h__
 
 #include <vector>
+#include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
@@ -130,7 +131,27 @@ public:
      */
     virtual void clear ();
 
+    /**
+     *
+     */
     void localize(const Vector<T>& V);
+
+    /**
+     * set initialized only for subclasses
+     */
+    void setInitialized( bool b )
+    {
+        M_is_initialized = b;
+    }
+
+    /**
+     * @ set false if the vector is in assembly state and need to be closed
+     * for some next used (global operation) , false otherwise.
+     */
+    void setIsClosed( bool b )
+    {
+        M_is_closed = b;
+    }
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
@@ -168,7 +189,7 @@ public:
      * Replaces each component of a vector by its reciprocal.
      */
     virtual int reciprocal();
-    
+
     /**
      * Creates a copy of this vector and returns it in an \p shared_ptr<>.
      * This must be overloaded in the derived classes.
@@ -199,8 +220,10 @@ public:
                         const bool = false );
 
 
-    // surement a virtualiser!!!
-    void init ( datamap_ptrtype const& dm )
+    /**
+     * call init with datamap,
+     */
+    virtual void init ( datamap_ptrtype const& dm )
     {
         M_is_closed = false;
         M_is_initialized = false;
@@ -235,6 +258,16 @@ public:
      *  \f$U = V\f$: copy all components.
      */
     Vector<T> & operator= ( const std::vector<T> &v );
+
+    /**
+     *  \f$v = x*y\f$: coefficient-wise multiplication
+     */
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) {}
+
+    /**
+     *  \f$v = x/y\f$: coefficient-wise divide
+     */
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) {}
 
     /**
      * \return the sum of the components of the vector
@@ -467,8 +500,8 @@ public:
                              const std::vector<size_type>& dof_indices ) = 0;
 #endif
 
-    virtual value_type dot( Vector<T> const& v ) = 0;
-    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) { return dot( *v ); }
+    virtual value_type dot( Vector<T> const& v ) const = 0;
+    virtual value_type dot( boost::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>
@@ -554,6 +587,35 @@ public:
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
+    /**
+     * copy vector entries in subvector ( subvector is already built from a createSubVector)
+     * row indices given in the "rows" entries.
+     */
+    virtual
+    void
+    updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
+                     std::vector<size_type> const& rows,
+                     bool init=true )
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+        }
+
+    /**
+     * Creates the subvector "subvector" from the indices in the
+     * "rows" array.  Similar to the create_submatrix routine for
+     * the SparseMatrix class, it is currently only implemented for
+     * PetscVectors.
+     */
+    virtual
+    boost::shared_ptr<Vector<T> >
+    createSubVector( std::vector<size_type> const& rows,
+                     bool checkAndFixRange=true ) const
+        {
+            CHECK( false ) << "invalid call : Not Implemented in base class";
+            boost::shared_ptr<Vector<T> > res;
+            return res;
+        }
+
 protected:
 
     /**
@@ -576,6 +638,7 @@ protected:
 
 typedef Vector<double> vector_type;
 typedef boost::shared_ptr<vector_type> vector_ptrtype;
+typedef std::unique_ptr<vector_type> vector_uptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
 
@@ -595,34 +658,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
     ( v1.localSize() )( v2.localSize() )
     ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
 
-    typedef typename type_traits<T>::real_type real_type;
-
-    size_type s = v1.localSize();
-    //size_type s = v1.map().nLocalDofWithoutGhost();
-    real_type res = 0;
-    size_type start = v1.firstLocalIndex();
-    real_type global_res = 0;
-
-    if ( v1.comm().size() == 1 )
-        {
-            for ( size_type i = 0; i < s; ++i )
-                res += v1( start + i )* v2( start + i );
-
-            global_res = res;
-        }
-    else
-        {
-            for ( size_type i = 0; i < s; ++i )
-                {
-                    if ( !v1.localIndexIsGhost( start + i ) )
-                        res += v1( start + i )* v2( start + i );
-                }
-#if defined( FEELPP_HAS_MPI )
-            mpi::all_reduce( v1.comm(), res, global_res, std::plus<real_type>() );
-#endif
-        }
-
-    return global_res;
+    return v1.dot( v2 );
 }
 /**
  * Computes the inner product of two vectors and eventually in parallel
@@ -667,7 +703,41 @@ struct is_vector_ptr<boost::shared_ptr<VectorType> >
         VectorType>
 {};
 
-}
+template <typename T>
+struct syncOperator
+{
+    typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
+    syncOperator() {}
+    syncOperator( std::map<size_type, std::set<rank_type> > const& m )
+        :
+        M_activeDofClusterUsedByProc( m )
+        {}
+    syncOperator( syncOperator const& obj ) = default;
+
+    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const = 0;
+    virtual bool hasOperator() const = 0;
+    std::map<size_type, std::set<rank_type> > const& activeDofClusterUsedByProc() const { return M_activeDofClusterUsedByProc; }
+    void setActiveDofClusterUsedByProc( std::map<size_type, std::set<rank_type> > const& m ) { M_activeDofClusterUsedByProc = m; }
+private :
+    std::map<size_type, std::set<rank_type> > M_activeDofClusterUsedByProc;
+
+};
+
+} // namespace detail
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr = "=" );
+
+template <typename T>
+void
+sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+
+template <typename T>
+void
+sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
+
+
 
 } // Feel
 

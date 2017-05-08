@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -28,6 +28,8 @@
  */
 #ifndef __refsimplex_H
 #define __refsimplex_H 1
+
+#include <feel/feelmesh/marker.hpp>
 
 namespace Feel
 {
@@ -62,6 +64,8 @@ public:
             mpl::identity<Reference<typename super::element_type, nDim+1, nOrder, nRealDim, T> > >::type::type element_type;
     typedef Reference<typename super::topological_face_type,
             super::topological_face_type::nDim, nOrder, nRealDim, T> topological_face_type;
+    typedef Reference<typename super::edge_type,
+                      super::edge_type::nDim, nOrder, nRealDim, T> edge_type;
 
     typedef typename super::edge_to_point_t edge_to_point_t;
     typedef typename super::face_to_point_t face_to_point_t;
@@ -92,7 +96,8 @@ public:
     typedef ublas::vector<edge_tangent_type> edge_tangents_type;
     typedef typename edge_tangents_type::const_iterator edge_tangent_const_iterator;
 
-    typedef typename super::permutation_type permutation_type;
+    using permutation_type = typename super::permutation_type;
+    using edge_permutation_type = typename super::edge_permutation_type;
     //@}
 
     /** @name Constructors, destructor
@@ -228,22 +233,50 @@ public:
         computeMeasure();
     }
 
-    Reference( Reference const & r )
+    Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY)
         :
-        super( r ),
-        M_id( r.M_id ),
-        M_vertices( r.M_vertices ),
-        M_points( r.M_points ),
-        M_normals( r.M_normals ),
-        M_edge_tangents( r.M_edge_tangents ),
-        M_barycenter( r.M_barycenter ),
-        M_barycenterfaces( r.M_barycenterfaces ),
-        M_meas( r.M_meas )
+        super(),
+        M_id( __f ),
+        M_vertices( nRealDim, numVertices ),
+        M_points( nRealDim, numPoints ),
+        M_normals( numNormals ),
+        M_edge_tangents( numNormals ),
+        M_barycenter( nRealDim ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_meas( 0 )
     {
+        if ( __f >= element_type::numEdges )
+        {
+            std::ostringstream str;
+            str << "invalid face number " << __f << "\n"
+                << "must be 0 <= f < " << element_type::numTopologicalFaces << "\n";
+            throw std::invalid_argument( str.str() );
+        }
 
+
+
+        CHECK( nDim == 1 ) << "nDim equal to 1\n";
+        std::map<uint16_type, std::vector<uint16_type> > permLines{
+            {line_permutations::IDENTITY, {0,1} },
+            {line_permutations::REVERSE_PERMUTATION, {1,0} } };
+        
+        DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
+        
+        for ( int i = 0; i < numVertices; ++i )
+        {
+            const int iperm = permLines.find( __p )->second[ i ];
+            ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
+        }
+        
+        M_points = make_line_points();
+        
+        computeBarycenters();
+        computeMeasure();
     }
 
-    ~Reference() {}
+    Reference( Reference const & r ) = default;
+
+    ~Reference() = default;
 
     //@}
 
@@ -251,22 +284,7 @@ public:
      */
     //@{
 
-    Reference& operator=( Reference const& r )
-    {
-        if ( this != &r )
-        {
-            M_id = r.M_id;
-            M_vertices = r.M_vertices;
-            M_points = r.M_points;
-            M_normals = r.M_normals;
-            M_edge_tangents = r.M_edge_tangents;
-            M_barycenter = r.M_barycenter;
-            M_barycenterfaces = r.M_barycenterfaces;
-            M_meas = r.M_meas;
-        }
-
-        return *this;
-    }
+    Reference& operator=( Reference const& r ) = default;
 
     //@}
 
@@ -362,7 +380,7 @@ public:
     /**
      * \return the barycenter of the reference simplex
      */
-    node_type barycenter() const
+    node_type const& barycenter() const
     {
         return M_barycenter;
     }
@@ -370,7 +388,7 @@ public:
     /**
      * \return the barycenter of the faces of the reference simplex
      */
-    points_type barycenterFaces() const
+    points_type const& barycenterFaces() const
     {
         return M_barycenterfaces;
     }
@@ -458,6 +476,11 @@ public:
         topological_face_type ref( *this, __f, __p );
         return ref;
     }
+    edge_type edge( uint16_type __f, uint16_type __p = edge_permutation_type::IDENTITY ) const
+    {
+        edge_type ref( *this, __f, mpl::int_<1>(), __p );
+        return ref;
+    }
 
     points_type const& G() const
     {
@@ -475,6 +498,10 @@ public:
     size_type id() const
     {
         return 0;
+    }
+    std::map<uint16_type,Marker1> markers() const
+    {
+        return std::map<uint16_type,Marker1>();
     }
     flag_type marker() const
     {

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -128,6 +128,17 @@ public:
                              mpl::int_<nEdges>,
                              mpl::int_<nFaces> >::type >::type::value;
 
+    LagrangeDual( LagrangeDual const& d )
+        :
+        super( d ),
+        M_convex_ref(),
+        M_eid( d.M_eid ),
+        M_pts( d.M_pts ),
+        M_points_face( d.M_points_face ),
+        M_fset( d.M_fset )
+        {}
+
+    LagrangeDual( LagrangeDual && d ) = default;
     LagrangeDual( primal_space_type const& primal )
         :
         super( primal ),
@@ -146,9 +157,7 @@ public:
         DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
         DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
-        pointset_type pts;
-
-        M_pts = pts.points();
+        M_pts = M_pset.points();
 
         if ( nOrder > 0 )
         {
@@ -156,7 +165,7 @@ public:
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -171,7 +180,8 @@ public:
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( pts.points() ),
         M_points_face( nFacesInConvex ),
-        M_fset( primal )
+        M_fset( primal ),
+        M_pset( pts )
     {
         DVLOG(2) << "Lagrange finite element: \n";
         DVLOG(2) << " o- dim   = " << nDim << "\n";
@@ -188,7 +198,7 @@ public:
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -196,10 +206,9 @@ public:
         setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
 
-    ~LagrangeDual()
-    {
+    ~LagrangeDual() = default;
+    LagrangeDual& operator=( LagrangeDual const& ) = default;
 
-    }
     points_type const& points() const
     {
         return M_pts;
@@ -217,6 +226,36 @@ public:
     {
         return ublas::column( M_points_face[f], __i );
     }
+
+#if 0
+    std::vector<point_type> points( int topodim ) const
+        {
+            std::vector<point_type> pts( ;
+            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
+                  e < M_convex_ref.entityRange( nDim-1 ).end();
+                  ++e )
+            {
+                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
+            }
+            return M_pset.pointsBySubEntity( topodim, edge, 1 );
+        }
+#endif
+     points_type points( int topodim, int entity ) const
+            {
+                return M_pset.pointsBySubEntity( topodim, entity, 1 );
+            }
+
+
+    points_type edgePoints(int edge) const
+        {
+            return M_pset.pointsBySubEntity( 1, edge, 1 );
+        }
+
+
+    points_type vertexPoints(int vertex) const
+        {
+            return M_pset.pointsBySubEntity( 0, vertex, 1 );
+        }
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
@@ -251,7 +290,7 @@ private:
     points_type M_pts;
     std::vector<points_type> M_points_face;
     FunctionalSet<primal_space_type> M_fset;
-
+    pointset_type M_pset;
 
 };
 }// details
@@ -290,7 +329,8 @@ public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
                            boost::is_same<PolySetType<N>, Vectorial<N> >::value ||
-                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ) );
+                           boost::is_same<PolySetType<N>, Tensor2<N> >::value ||
+                           boost::is_same<PolySetType<N>, Tensor2Symm<N> >::value ) );
 
     /** @name Typedefs
      */
@@ -317,7 +357,11 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
+    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
+    using is_symm  = Feel::is_symm<polyset_type>;
+
     static const bool is_product = true;
+    static constexpr int Nm2 = (N>2)?N-2:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
@@ -327,6 +371,11 @@ public:
             mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
+                              mpl::identity<boost::none_t>,
+                              mpl::identity< Lagrange<Nm2, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type edge_basis_type;
+
+    typedef boost::shared_ptr<edge_basis_type> edge_basis_ptrtype;
 
     typedef typename dual_space_type::convex_type convex_type;
     typedef typename dual_space_type::pointset_type pointset_type;
@@ -334,6 +383,7 @@ public:
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
+    typedef typename convex_type::edge_type edge_type;
 
     static const uint16_type numPoints = reference_convex_type::numPoints;
     static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
@@ -348,6 +398,9 @@ public:
     static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
+    static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
+                                               edge_type::numEdges * nDofPerEdge);
+    static const uint16_type nLocalVertexDof = nDofPerVertex;
     template<int subN>
     struct SubSpace
     {
@@ -451,9 +504,23 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalDof+q ) = expr.evalq( c1, c2, q );
-
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalDof+q );
+                        }
+                        // diagonal
+                        Ihloc( (c1+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
         }
     local_interpolant_type
     faceLocalInterpolant() const
@@ -472,37 +539,146 @@ public:
                                   (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
             for( int q = 0; q < nLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
-                        Ihloc( (c1+nComponents1*c2)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
-
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalFaceDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalFaceDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
         }
 
+    local_interpolant_type
+    edgeLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalEdgeDof, 1 );
+        }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
-    {
-        BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
-                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
-        BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
-                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
-                              (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
-
-        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
-
-        for( int q = 0; q <expr.geom()->nPoints(); ++q )
-            for( int i = 0; i < fe_expr_type::nLocalDof; ++i )
+    edgeInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalEdgeDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                {
+                    if ( is_symm_v )
                     {
-                        int ldof = (c1+fe_expr_type::nComponents1*c2)*fe_expr_type::nLocalDof + i;
-                        int ldof2 = (fe_expr_type::is_product)? ldof : i;
-                        Ihloc( ldof, q ) = expr.evaliq( /*i*/ldof2, c1, c2, q );
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalEdgeDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c1, q );
+
                     }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalEdgeDof+q ) = expr.evalq( c1, c2, q );
+                    }
+                }
+        }
+    local_interpolant_type
+    vertexLocalInterpolant() const
+        {
+            return local_interpolant_type::Zero( nComponents*nLocalVertexDof, 1 );
+        }
+    template<typename ExprType>
+    void
+    vertexInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+        {
+            BOOST_MPL_ASSERT_MSG( nComponents1==ExprType::shape::M,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents1>,mpl::int_<ExprType::shape::M>));
+            BOOST_MPL_ASSERT_MSG( nComponents2==ExprType::shape::N,
+                                  INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                                  (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
+            for( int q = 0; q < nLocalVertexDof; ++q )
+                for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
+                {
+                    if ( is_symm_v )
+                    {
+                        for( int c2 = 0; c2 < c1; ++c2 )
+                        {
+                            Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                            Ihloc( (c1+nComponents2*c2)*nLocalVertexDof+q ) = Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q );
+                        }
+                        Ihloc( (c1+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c1, q );
+                    }
+                    else
+                    {
+                        for( int c2 = 0; c2 < ExprType::shape::N; ++c2 )
+                            Ihloc( (c2+nComponents2*c1)*nLocalVertexDof+q ) = expr.evalq( c1, c2, q );
+                    }
+
+                }
+        }
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
+    {
+        using shape = typename std::decay_t<ExprType>::shape;
+        /*
+        BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>,mpl::int_<shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>,mpl::int_<shape::N>));
+         */
+        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+
+        for( int q = 0; q < nLocalDof; ++q )
+        {
+            for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+            {
+                int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+
+                for ( uint16_type c = 0; c < ncomp1; ++c )
+                {
+                    uint16_type I = expr_basis_t::nLocalDof*c + i;
+                    for( int c1 = 0; c1 < shape::M; ++c1 )
+                    {
+                        if ( is_symm_v )
+                        {
+                            for( int c2 = 0; c2 < c1; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q;
+                                Ihloc( I, ldof2) = Ihloc( I, ldof);
+                            }
+                            int ldof = (c1+nComponents2*c1)*nLocalDof + q;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
+                        }
+                        else
+                        {
+                            for( int c2 = 0; c2 < shape::N; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-
-
     //@}
 
 private:

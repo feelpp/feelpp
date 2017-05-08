@@ -1,6 +1,6 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-28
 #
 #  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -27,8 +27,9 @@ add_custom_target( testsuite )
 
 add_subdirectory(contrib)
 
-foreach( testdir core math alg mesh poly filters material interpolation integration discr crb ts vf leaks opt )
+foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 
 endforeach()
+

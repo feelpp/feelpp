@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-23
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,7 +23,7 @@
 */
 /**
    \file doflocal.hpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-10-23
  */
 #ifndef FEELPP_DofFromElement_H
@@ -31,7 +31,10 @@
 
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/policy.hpp>
 #include <feel/feeldiscr/dof.hpp>
+
+#include <feel/feelmesh/marker.hpp>
 
 namespace Feel
 {
@@ -85,12 +88,13 @@ public:
     static const bool is_scalar = fe_type::is_scalar;
     static const bool is_vectorial = fe_type::is_vectorial;
     static const bool is_tensor2 = fe_type::is_tensor2;
+    static const bool is_tensor2symm = fe_type::is_tensor2 && is_symm_v<fe_type>;
     static const bool is_modal = fe_type::is_modal;
     static const bool is_product = fe_type::is_product;
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
     //@}
 
@@ -179,12 +183,14 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numVertices; ++i )
         {
+            auto const& thepoint = __elt.point( i );
+            Marker1 pointMarker = thepoint.hasMarker()? thepoint.marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
             {
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                const size_type gDof = ( thepoint.id() ) * fe_type::nDofPerVertex + l;
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  0, gDof ),
-                                 processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
+                                       processor, next_free_dof, 1, false, global_shift, pointMarker );
             }
         }
 
@@ -219,11 +225,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker = __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -249,6 +256,8 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
+
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -260,7 +269,7 @@ private:
                     gDof += l ; // both nodal and modal case
                     if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
                     {
-                        
+
                         M_doftable->M_locglob_signs[ie][lc] = 1;
                     }
                 }
@@ -287,7 +296,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -314,6 +323,7 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -350,7 +360,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -382,11 +392,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -412,6 +423,8 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
+            Marker1 faceMarker =  __elt.face( i ).hasMarker()? __elt.face( i ).marker() : Marker1(0);
+
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
             // Polynomial order in each direction
@@ -450,13 +463,20 @@ private:
                         else
                             gDof += M_doftable->vector_permutation[permutation][l];
 
+                        /*
                         if (permutation  == face_permutation_type( 1 ))
                             M_doftable->M_locglob_signs[ie][l] = 1;
                         else
                         {
                             sign=-1;
                             M_doftable->M_locglob_signs[ie][l] = -1;
-                        }
+                         }*/
+                        if ( __elt.face(i).ad_first() == __elt.id() )
+                            M_doftable->M_locglob_signs[ie][lc] = 1;
+                        else
+                            M_doftable->M_locglob_signs[ie][lc] = -1;
+
+                        //std::cout << "e=" << __elt.id() << " l=" << lc << " sign =" << M_doftable->M_locglob_signs[ie][lc] << "\n";
                     }
                     else
                     {
@@ -484,7 +504,7 @@ private:
                     }
                 }
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift, faceMarker );
 
             }
         }
@@ -513,11 +533,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -581,10 +602,29 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
 
         for ( uint16_type l = 0; l < nldof; ++l )
         {
-            for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
+            if ( is_tensor2symm )
             {
-                M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
-                                                           Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                for ( int c1 = 0; c1 < nComponents1; ++c1)
+                {
+                    for ( int c2 = 0; c2 < c1; ++c2, ++next_free_dof )
+                    {
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c1+c2) + l ),
+                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c2+c1) + l ),
+                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                    }
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*(nComponents1*c1+c1) + l ),
+                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                    ++next_free_dof;
+                }
+            }
+            else
+            {
+                for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
+                {
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
+                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
+                }
             }
         }
     }

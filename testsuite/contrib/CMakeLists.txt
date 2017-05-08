@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 04 Oct 2014
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -26,4 +26,4 @@ add_executable(test_po po.cpp)
 target_link_libraries(test_po  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} )
 
 add_executable(test_mpi mpi.cpp)
-target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_C_LIBRARIES} )
+target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_LIBRARIES} )

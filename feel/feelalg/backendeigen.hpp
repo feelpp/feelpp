@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -33,7 +33,9 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/program_options/variables_map.hpp>
+#if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
+#endif
 #undef MatType
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -116,7 +118,7 @@ public:
         {
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof() ) );
             //auto A= sparse_matrix_ptrtype( new eigen_sparse_matrix_type( space1->nDof(), space2->nDof(), this->comm() ) );
-            auto A= boost::make_shared<eigen_sparse_matrix_type>( space1->nDof(), space2->nDof(), space1->map()->worldComm() );
+            auto A= boost::make_shared<eigen_sparse_matrix_type>( space2->dof(), space1->dof() );
             A->setMatrixProperties( matrix_properties );
             return A;
         }
@@ -154,9 +156,7 @@ public:
     sparse_matrix_ptrtype
     newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(),
-                                                                      d2->nGlobalElements(),
-                                                                      this->comm() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -176,7 +176,7 @@ public:
     sparse_matrix_ptrtype
     newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -325,9 +325,21 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
 
     //x.vec()=A.mat().template fullPivLu().solve(b.vec());
-    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
-    solver.compute(A.mat());
-    x.vec() = solver.solve(b.vec());
+    if ( false )
+    {
+#if 0
+        // not compile with sparse matrix and row major
+        Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+#endif
+    }
+    else
+    {
+        Eigen::SparseLU<typename eigen_sparse_matrix_type::matrix_type> solver;
+        solver.compute(A.mat());
+        x.vec() = solver.solve(b.vec());
+    }
 
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed

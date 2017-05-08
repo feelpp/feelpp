@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 	 This file is part of the Feel library
 
@@ -67,9 +67,8 @@ void run()
         pt[1] = 0.5;
     if ( DimGeo >= 3 )
         pt[2] = 0.5;
-    auto eval = u(pt)[0];
-
-    auto e_eval = e.evaluate();
+    auto evaltensor = u(pt)[0];
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> eval( evaltensor.data(), evaltensor.dimension(0), evaltensor.dimension(1) );
     if ( DimGeo >= 2 )
     {
         e.setParameterValues( { { "x", 0.5 },{ "y", 0.5 } } );

@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -22,7 +22,7 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp)
+  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp topetsc.cpp backendpetsc.cpp)
 
   if ( FEELPP_HAS_SLEPC )
     set( FEELPP_SLEPC_SRCS solvereigenslepc.cpp )
@@ -37,10 +37,10 @@ set( SRC
   dummy.cpp enums.cpp datamap.cpp
   vector.cpp vectorublas.cpp
   preconditioner.cpp
-  backend.cpp  matrixshellsparse.cpp backendpetsc.cpp
+  backend.cpp  matrixshellsparse.cpp
   graphcsr.cpp  solvereigen.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
-  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp
+  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp
   ${FEELPP_PETSC_SRCS}
   ${FEELPP_SLEPC_SRCS}
   ${FEELPP_TRILINOS_SRCS}

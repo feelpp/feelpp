@@ -59,10 +59,10 @@ class Geo0D
 public boost::equality_comparable<Geo0D<Dim,T> >,
 public boost::less_than_comparable<Geo0D<Dim,T> >,
 public boost::less_than_comparable<Geo0D<Dim,T>, size_type>,
-public GeoEntity<Simplex<0, 1, Dim> >,
+public GeoEntity<Simplex<0, 1, Dim>,T >,
 public node<T, Dim>::type
 {
-    typedef GeoEntity<Simplex<0, 1, Dim> > super;
+    typedef GeoEntity<Simplex<0, 1, Dim>,T > super;
     typedef typename node<T, Dim>::type super2;
 public:
 
@@ -115,7 +115,8 @@ public:
         :
         super( 0, MESH_ENTITY_INTERNAL ),
         super2( Dim ),
-        M_is_vertex( false )
+        M_is_vertex( false ),
+        M_mesh( nullptr )
     {
         this->operator[]( 0 ) = x;
 
@@ -149,7 +150,8 @@ public:
         :
         super( 0, MESH_ENTITY_INTERNAL ),
         super2( __x ),
-        M_is_vertex( false )
+        M_is_vertex( false ),
+        M_mesh( nullptr )
     {
     }
 
@@ -169,19 +171,16 @@ public:
     }
 
     /**
-     * copy constructor
-     * @param G the Geo0D to copy
+     * copy/move constructors
      */
-    Geo0D( Geo0D const & G );
+    Geo0D( Geo0D const & G ) = default;
+    Geo0D( Geo0D && G ) = default;
 
     /**
-     * assignement operator
-     *
-     * @param G the geo0D to copy
-     *
-     * @return the newly assigned Geo0D
+     * assignement operators
      */
-    Geo0D & operator=( Geo0D const & G );
+    Geo0D & operator=( Geo0D const& G ) = default;
+    Geo0D & operator=( Geo0D && G ) = default;
 
     template<typename AE>
     Geo0D & operator=( ublas::vector_expression<AE> const& expr )
@@ -411,43 +410,86 @@ public:
         return *this;
     }
 
+    std::map<uint16_type,Marker1> const&
+    markers() const
+    {
+        return M_markers;
+    }
+    void setMarkers( std::map<uint16_type,Marker1> const& markers )
+    {
+        M_markers = markers;
+    }
+    bool hasMarker( uint16_type k ) const
+    {
+        auto itFindMarker = M_markers.find( k );
+        if ( itFindMarker == M_markers.end() )
+            return false;
+        if ( itFindMarker->second.isOff() )
+            return false;
+        return true;
+    }
+    Marker1 const& marker( uint16_type k ) const
+    {
+        return M_markers.find( k )->second;
+    }
+    Marker1& marker( uint16_type k )
+    {
+        return M_markers[k];
+    }
+    void setMarker( uint16_type k, flag_type v )
+    {
+        M_markers[k].assign( v );
+    }
+
+    bool hasMarker() const
+    {
+        return this->hasMarker( 1 );
+    }
     Marker1 const& marker() const
     {
-        return M_marker1;
+        return M_markers.find( 1 )->second;
     }
     Marker1& marker()
     {
-        return M_marker1;
+        return M_markers[1];
     }
     void setMarker( flag_type v )
     {
-        return M_marker1.assign( v );
+        M_markers[1].assign( v );
     }
 
-    Marker2 const& marker2() const
+    bool hasMarker2() const
     {
-        return M_marker2;
+        return this->hasMarker( 2 );
     }
-    Marker2& marker2()
+    Marker1 const& marker2() const
     {
-        return M_marker2;
+        return M_markers.find( 2 )->second;
+    }
+    Marker1& marker2()
+    {
+        return M_markers[2];
     }
     void setMarker2( flag_type v )
     {
-        return M_marker2.assign( v );
+        M_markers[2].assign( v );
     }
 
-    Marker3 const& marker3() const
+    bool hasMarker3() const
     {
-        return M_marker3;
+        return this->hasMarker( 3 );
     }
-    Marker3& marker3()
+    Marker1 const& marker3() const
     {
-        return M_marker3;
+        return M_markers.find( 3 )->second;
+    }
+    Marker1& marker3()
+    {
+        return M_markers[3];
     }
     void setMarker3( flag_type v )
     {
-        return M_marker3.assign( v );
+        M_markers[3].assign( v );
     }
 
     /**
@@ -470,8 +512,8 @@ public:
     std::vector<int> tags() const
         {
             std::vector<int> thetags(3);
-            thetags[0] = M_marker1.value();
-            thetags[1] = M_marker2.value();
+            thetags[0] = (this->hasMarker(1))? this->marker(1).value() : 0;//M_marker1.value();
+            thetags[1] = (this->hasMarker(2))? this->marker(2).value() : 0;//M_marker2.value();
             thetags[2] = this->processId();
             return thetags;
         }
@@ -524,9 +566,7 @@ private:
             ar & boost::serialization::base_object<super2>( *this );
             //ar & M_is_vertex;
             //ar & M_is_parametric;
-            ar & M_marker1;
-            ar & M_marker2;
-            ar & M_marker3;
+            ar & M_markers;
             /*
             ar & M_gdim;
             ar & M_gtag;
@@ -546,9 +586,7 @@ private:
     MeshBase const* M_mesh;
 
 
-    Marker1 M_marker1;
-    Marker2 M_marker2;
-    Marker3 M_marker3;
+    std::map<uint16_type,Marker1> M_markers;
 
     int M_gdim;
     int M_gtag;
@@ -570,9 +608,7 @@ Geo0D<Dim, T>::Geo0D()
     M_master_id( 0 ),
     M_is_vertex( false ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -587,9 +623,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, bool boundary, bool is_vertex )
     super2( Dim ),
     M_master_id( id ),
     M_is_vertex( is_vertex ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -606,9 +640,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, value_type x, value_type y, value_type z, bo
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -632,9 +664,7 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     M_master_id( id ),
     M_is_vertex( is_vertex ),
     M_is_parametric( false ),
-    M_marker1(),
-    M_marker2(),
-    M_marker3(),
+    M_mesh( nullptr ),
     M_gdim( 0 ),
     M_gtag( 0 ),
     M_uv( 2 )
@@ -644,43 +674,6 @@ Geo0D<Dim, T>::Geo0D( size_type id, node_type const& __p, bool boundary, bool is
     this->setOnBoundary( boundary );
 }
 
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T>::Geo0D( Geo0D const & G )
-    :
-    super( G ),
-    super2( G ),
-    M_master_id( G.id() ),
-    M_is_vertex( G.M_is_vertex ),
-    M_is_parametric( G.M_is_parametric ),
-    M_marker1( G.M_marker1 ),
-    M_marker2( G.M_marker2 ),
-    M_marker3( G.M_marker3 ),
-    M_gdim( G.M_gdim ),
-    M_gtag( G.M_gtag ),
-    M_uv( G.M_uv )
-{
-}
-
-template<uint16_type Dim, typename T>
-Geo0D<Dim, T> &
-Geo0D<Dim, T>::operator=( Geo0D<Dim, T> const & G )
-{
-    if (  this == &G )
-        return *this;
-
-    super::operator=( G );
-    super2::operator=( G );
-    M_master_id = G.masterId();
-    M_is_vertex = G.M_is_vertex;
-    M_is_parametric = G.M_is_parametric;
-    M_marker1 = G.M_marker1;
-    M_marker2 = G.M_marker2;
-    M_marker3 = G.M_marker3;
-    M_gdim = G.M_gdim;
-    M_gtag = G.M_gtag;
-    M_uv = G.M_uv;
-    return *this;
-}
 
 template<uint16_type Dim, typename T>
 std::ostream &
@@ -696,7 +689,20 @@ Geo0D<Dim, T>::showMe( bool /*verbose*/, std::ostream & out ) const
 
 template<uint16_type Dim, typename T>
 inline
-DebugStream&
+std::ostream&
+operator<<( std::ostream& __os, Geo0D<Dim, T> const& __n )
+{
+    __os.setf( std::ios::scientific, std::ios::floatfield );
+    __os << "----- BEGIN of Geo0D ---\n";
+    __os << "id = " << __n.id() << " node:" << (ublas::vector<double>&)__n.node() << "\n";
+    __os << "is a vertex = " << __n.isVertex() << "\n";
+    __os << "----- END OF Geo0D ---\n";
+    return __os;
+}
+
+template<uint16_type Dim, typename T>
+inline
+FEELPP_DEPRECATED DebugStream&
 operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 {
     if ( __os.doPrint() )
@@ -712,7 +718,7 @@ operator<<( DebugStream& __os, Geo0D<Dim, T> const& __n )
 }
 template<uint16_type Dim, typename T>
 inline
-NdebugStream&
+FEELPP_DEPRECATED NdebugStream&
 operator<<( NdebugStream& __os, Geo0D<Dim, T> const& __n )
 {
     return __os;

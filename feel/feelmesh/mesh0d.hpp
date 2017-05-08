@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -72,16 +72,16 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Shape>
+template<typename Shape, typename T = double>
 class Mesh0D
     :
 public VisitableBase<>,
 public MeshBase,
-public Elements<Shape>,
-public Points<Shape::nRealDim>
+public Elements<Shape,T>,
+public Points<Shape::nRealDim,T>
 {
     // check at compilation time that the shape has indeed dimension 1
-    BOOST_STATIC_ASSERT( Shape::nDim == 1 );
+    BOOST_STATIC_ASSERT( Shape::nDim == 0 && Shape::nRealDim >= 1 );
 
 public:
 
@@ -98,7 +98,7 @@ public:
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<Shape> super_elements;
+    typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
@@ -108,13 +108,19 @@ public:
     typedef super_elements super_faces;
     typedef elements_type faces_type;
 
-    typedef Points<nRealDim> super_points;
+    typedef Points<nRealDim,T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Mesh0D<Shape> self_type;
+    typedef Mesh0D<Shape,T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    using face_type = point_type;
+    using face_iterator = element_iterator;
+    using face_const_iterator = element_const_iterator;
+    using edge_type = point_type;
+    using edge_iterator = element_iterator;
+    using edge_const_iterator = element_const_iterator;
     //@}
 
     /** @name Constructors, destructor
@@ -127,26 +133,14 @@ public:
     Mesh0D( WorldComm const& worldComm = Environment::worldComm() )
         :
         super_visitable(),
-        super( worldComm ),
+        super( 0, nRealDim, worldComm ),
         super_elements( worldComm ),
         super_points( worldComm )
     {}
 
+    Mesh0D( Mesh0D const& m ) = default;
+    Mesh0D( Mesh0D && m ) = default;
 
-    /**
-     * copy constructor
-     */
-    Mesh0D( Mesh0D const & m )
-        :
-        super_visitable(),
-        super( m ),
-        super_elements( m ),
-        super_points( m )
-    {}
-
-    /**
-     * destructor
-     */
     ~Mesh0D()
     {}
 
@@ -156,18 +150,8 @@ public:
      */
     //@{
 
-    Mesh0D& operator=( Mesh0D const& m )
-    {
-        if ( this != &m )
-        {
-            super::operator=( m );
-            super_elements::operator=( m );
-            super_points::operator=( m );
-        }
-
-        return *this;
-    }
-
+    Mesh0D& operator=( Mesh0D const& m ) = default;
+    Mesh0D& operator=( Mesh0D && m ) = default;
 
     //@}
 
@@ -232,6 +216,11 @@ public:
      */
     //@{
 
+    void setWorldComm( WorldComm const& _worldComm )
+        {
+            this->setWorldCommMeshBase( _worldComm );
+            this->setWorldCommPoints( _worldComm );
+        }
 
     //@}
 

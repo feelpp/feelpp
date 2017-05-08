@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@math.unistra.fr>
 #       Date: 2012-09-05
 #
-#  Copyright (C) 2012 Université de Strasbourg
+#  Copyright (C) 2012-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify

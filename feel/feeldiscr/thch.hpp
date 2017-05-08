@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,32 @@ struct THch
 };
 
 } //meta
+
+/**
+ * Define the type for Taylor-Hood space 
+ * \code
+ * THch_type<1,Mesh<Simplex<2>>> // generates \f$P2P1\f$ over a mesh of triangles
+ * \endcode
+ */
+template<int Order,typename MeshType>
+using THch_type = FunctionSpace<MeshType,
+                                bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                                double,
+                                Periodicity <NoPeriodicity,NoPeriodicity>,
+                                mortars<NoMortar,NoMortar> >;
+/**
+ * Define the shared_ptr type for Taylor-Hood space 
+ * \code
+ * THch_ptrtype<1,Mesh<Simplex<2>>> // defines the shared_ptr type of \f$P2P1\f$ over a mesh of triangles
+ * \endcode
+ */
+template<int Order,typename MeshType>
+using THch_ptrtype = boost::shared_ptr<FunctionSpace<MeshType,
+                                                     bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
+                                                     double,
+                                                     Periodicity <NoPeriodicity,NoPeriodicity>,
+                                                     mortars<NoMortar,NoMortar> >>;
+    
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k+1}]^d \times P_{k}]\f$ where $d$ is the
@@ -59,21 +85,14 @@ struct THch
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,
-                                bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
-                                double,
-                                Periodicity <NoPeriodicity,NoPeriodicity>,
-                                mortars<NoMortar,NoMortar> >>
+THch_ptrtype<Order,MeshType>
 THch( boost::shared_ptr<MeshType> mesh,
       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
-                         double,
-                         Periodicity <NoPeriodicity,NoPeriodicity>,
-                         mortars<NoMortar,NoMortar>>::New( _mesh=mesh,
-                                                           _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
-                                                           _extended_doftable=buildExtendedDofTable );
+    return THch_type<Order,MeshType>::New( _mesh=mesh,
+                                           _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
+                                           _extended_doftable=buildExtendedDofTable );
 }
 
 

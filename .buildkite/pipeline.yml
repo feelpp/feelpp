@@ -1,0 +1,55 @@
+steps:
+ - name: ':ubuntu: 16.10,clang-3.9'
+   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   agents:
+     docker: true
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     TARGET: ubuntu:16.10
+ # - name: ':ubuntu: sid,clang-4.0'
+ #   command: tools/scripts/buildkite/install-feelpp-lib.sh
+ #   env:
+ #     JOBS: 20
+ #     CXX: clang++-4.0
+ #     CC: clang-4.0
+ #     TARGET: ubuntu:sid
+ - name: ':mac: using homebrew :beer:'
+   command: tools/scripts/buildkite/build-osx.sh
+   branches: develop
+   agents:
+     osx: true
+ - wait
+ - name: ':ubuntu: 16.10,clang-3.9  feelpp-base :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh base
+   agents:
+     docker: true
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     TARGET: ubuntu:16.10
+ - wait
+ - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     docker: true
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     TARGET: ubuntu:16.10
+ - name: ':ubuntu: 16.10,clang-3.9 feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
+   agents:
+     docker: true
+   env:
+     CXX: clang++-3.9
+     CC: clang-3.9
+     TARGET: ubuntu:16.10
+ - wait
+ - command: tools/scripts/buildkite/release.sh --latest true --branch develop -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+   branches: develop
+   env:
+     TARGET: ubuntu:16.10

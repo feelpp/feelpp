@@ -4,7 +4,7 @@
  *  methods for series expansion. */
 
 /*
- *  GiNaC Copyright (C) 1999-2011 Johannes Gutenberg University Mainz, Germany
+ *  GiNaC Copyright (C) 1999-2016 Johannes Gutenberg University Mainz, Germany
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,8 +68,43 @@ pseries::pseries() { }
  *  @param rel_  expansion variable and point (must hold a relational)
  *  @param ops_  vector of {coefficient, power} pairs (coefficient must not be zero)
  *  @return newly constructed pseries */
-pseries::pseries(const ex &rel_, const epvector &ops_) : seq(ops_)
+pseries::pseries(const ex &rel_, const epvector &ops_)
+  : seq(ops_)
 {
+#ifdef DO_GINAC_ASSERT
+	auto i = seq.begin();
+	while (i != seq.end()) {
+		auto ip1 = i+1;
+		if (ip1 != seq.end())
+			GINAC_ASSERT(!is_order_function(i->rest));
+		else
+			break;
+		GINAC_ASSERT(is_a<numeric>(i->coeff));
+		GINAC_ASSERT(ex_to<numeric>(i->coeff) < ex_to<numeric>(ip1->coeff));
+		++i;
+	}
+#endif // def DO_GINAC_ASSERT
+	GINAC_ASSERT(is_a<relational>(rel_));
+	GINAC_ASSERT(is_a<symbol>(rel_.lhs()));
+	point = rel_.rhs();
+	var = rel_.lhs();
+}
+pseries::pseries(const ex &rel_, epvector &&ops_)
+  : seq(std::move(ops_))
+{
+#ifdef DO_GINAC_ASSERT
+	auto i = seq.begin();
+	while (i != seq.end()) {
+		auto ip1 = i+1;
+		if (ip1 != seq.end())
+			GINAC_ASSERT(!is_order_function(i->rest));
+		else
+			break;
+		GINAC_ASSERT(is_a<numeric>(i->coeff));
+		GINAC_ASSERT(ex_to<numeric>(i->coeff) < ex_to<numeric>(ip1->coeff));
+		++i;
+	}
+#endif // def DO_GINAC_ASSERT
 	GINAC_ASSERT(is_a<relational>(rel_));
 	GINAC_ASSERT(is_a<symbol>(rel_.lhs()));
 	point = rel_.rhs();
@@ -84,12 +119,12 @@ pseries::pseries(const ex &rel_, const epvector &ops_) : seq(ops_)
 void pseries::read_archive(const archive_node &n, lst &sym_lst) 
 {
 	inherited::read_archive(n, sym_lst);
-	archive_node::archive_node_cit first = n.find_first("coeff");
-	archive_node::archive_node_cit last = n.find_last("power");
+	auto first = n.find_first("coeff");
+	auto last = n.find_last("power");
 	++last;
 	seq.reserve((last-first)/2);
 
-	for (archive_node::archive_node_cit loc = first; loc < last;) {
+	for (auto loc = first; loc < last;) {
 		ex rest;
 		ex coeff;
 		n.find_ex_by_loc(loc++, rest, sym_lst);
@@ -104,11 +139,9 @@ void pseries::read_archive(const archive_node &n, lst &sym_lst)
 void pseries::archive(archive_node &n) const
 {
 	inherited::archive(n);
-	epvector::const_iterator i = seq.begin(), iend = seq.end();
-	while (i != iend) {
-		n.add_ex("coeff", i->rest);
-		n.add_ex("power", i->coeff);
-		++i;
+	for (auto & it : seq) {
+		n.add_ex("coeff", it.rest);
+		n.add_ex("power", it.coeff);
 	}
 	n.add_ex("var", var);
 	n.add_ex("point", point);
@@ -129,7 +162,7 @@ void pseries::print_series(const print_context & c, const char *openbrace, const
 	if (seq.empty())
 		c.s << '0';
 
-	epvector::const_iterator i = seq.begin(), end = seq.end();
+	auto i = seq.begin(), end = seq.end();
 	while (i != end) {
 
 		// print a sign, if needed
@@ -170,7 +203,7 @@ void pseries::print_series(const print_context & c, const char *openbrace, const
 				}
 			}
 		} else
-			Order(power(var-point,i->coeff)).print(c);
+			Order(pow(var - point, i->coeff)).print(c);
 		++i;
 	}
 
@@ -248,7 +281,7 @@ int pseries::compare_same_type(const basic & other) const
 		return cmpval;
 	
 	// ...and if that failed the individual elements
-	epvector::const_iterator it = seq.begin(), o_it = o.seq.begin();
+	auto it = seq.begin(), o_it = o.seq.begin();
 	while (it!=seq.end() && o_it!=o.seq.end()) {
 		cmpval = it->compare(*o_it);
 		if (cmpval)
@@ -274,8 +307,8 @@ ex pseries::op(size_t i) const
 		throw (std::out_of_range("op() out of range"));
 
 	if (is_order_function(seq[i].rest))
-		return Order(power(var-point, seq[i].coeff));
-	return seq[i].rest * power(var - point, seq[i].coeff);
+		return Order(pow(var-point, seq[i].coeff));
+	return seq[i].rest * pow(var - point, seq[i].coeff);
 }
 
 /** Return degree of highest power of the series.  This is usually the exponent
@@ -283,25 +316,17 @@ ex pseries::op(size_t i) const
  *  series is examined termwise. */
 int pseries::degree(const ex &s) const
 {
-	if (var.is_equal(s)) {
-		// Return last exponent
-		if (seq.size())
-			return ex_to<numeric>((seq.end()-1)->coeff).to_int();
-		else
-			return 0;
-	} else {
-		epvector::const_iterator it = seq.begin(), itend = seq.end();
-		if (it == itend)
-			return 0;
-		int max_pow = std::numeric_limits<int>::min();
-		while (it != itend) {
-			int pow = it->rest.degree(s);
-			if (pow > max_pow)
-				max_pow = pow;
-			++it;
-		}
-		return max_pow;
-	}
+	if (seq.empty())
+		return 0;
+
+	if (var.is_equal(s))
+		// Return last/greatest exponent
+		return ex_to<numeric>((seq.end()-1)->coeff).to_int();
+
+	int max_pow = std::numeric_limits<int>::min();
+	for (auto & it : seq)
+		max_pow = std::max(max_pow, it.rest.degree(s));
+	return max_pow;
 }
 
 /** Return degree of lowest power of the series.  This is usually the exponent
@@ -311,25 +336,17 @@ int pseries::degree(const ex &s) const
  *  I.e.: (1-x) + (1-x)^2 + Order((1-x)^3) has ldegree(x) 1, not 0. */
 int pseries::ldegree(const ex &s) const
 {
-	if (var.is_equal(s)) {
-		// Return first exponent
-		if (seq.size())
-			return ex_to<numeric>((seq.begin())->coeff).to_int();
-		else
-			return 0;
-	} else {
-		epvector::const_iterator it = seq.begin(), itend = seq.end();
-		if (it == itend)
-			return 0;
-		int min_pow = std::numeric_limits<int>::max();
-		while (it != itend) {
-			int pow = it->rest.ldegree(s);
-			if (pow < min_pow)
-				min_pow = pow;
-			++it;
-		}
-		return min_pow;
-	}
+	if (seq.empty())
+		return 0;
+
+	if (var.is_equal(s))
+		// Return first/smallest exponent
+		return ex_to<numeric>((seq.begin())->coeff).to_int();
+
+	int min_pow = std::numeric_limits<int>::max();
+	for (auto & it : seq)
+		min_pow = std::min(min_pow, it.rest.degree(s));
+	return min_pow;
 }
 
 /** Return coefficient of degree n in power series if s is the expansion
@@ -377,43 +394,31 @@ ex pseries::collect(const ex &s, bool distributed) const
 }
 
 /** Perform coefficient-wise automatic term rewriting rules in this class. */
-ex pseries::eval(int level) const
+ex pseries::eval() const
 {
-	if (level == 1)
-		return this->hold();
-	
-	if (level == -max_recursion_level)
-		throw (std::runtime_error("pseries::eval(): recursion limit exceeded"));
-	
+	if (flags & status_flags::evaluated) {
+		return *this;
+	}
+
 	// Construct a new series with evaluated coefficients
 	epvector new_seq;
 	new_seq.reserve(seq.size());
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		new_seq.push_back(expair(it->rest.eval(level-1), it->coeff));
-		++it;
-	}
-	return (new pseries(relational(var,point), new_seq))->setflag(status_flags::dynallocated | status_flags::evaluated);
+	for (auto & it : seq)
+		new_seq.push_back(expair(it.rest, it.coeff));
+
+	return dynallocate<pseries>(relational(var,point), std::move(new_seq)).setflag(status_flags::evaluated);
 }
 
 /** Evaluate coefficients numerically. */
-ex pseries::evalf(int level) const
+ex pseries::evalf() const
 {
-	if (level == 1)
-		return *this;
-	
-	if (level == -max_recursion_level)
-		throw (std::runtime_error("pseries::evalf(): recursion limit exceeded"));
-	
 	// Construct a new series with evaluated coefficients
 	epvector new_seq;
 	new_seq.reserve(seq.size());
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		new_seq.push_back(expair(it->rest.evalf(level-1), it->coeff));
-		++it;
-	}
-	return (new pseries(relational(var,point), new_seq))->setflag(status_flags::dynallocated | status_flags::evaluated);
+	for (auto & it : seq)
+		new_seq.push_back(expair(it.rest, it.coeff));
+
+	return dynallocate<pseries>(relational(var,point), std::move(new_seq)).setflag(status_flags::evaluated);
 }
 
 ex pseries::conjugate() const
@@ -421,16 +426,14 @@ ex pseries::conjugate() const
 	if(!var.info(info_flags::real))
 		return conjugate_function(*this).hold();
 
-	epvector * newseq = conjugateepvector(seq);
+	std::unique_ptr<epvector> newseq(conjugateepvector(seq));
 	ex newpoint = point.conjugate();
 
 	if (!newseq && are_ex_trivially_equal(point, newpoint)) {
 		return *this;
 	}
 
-	ex result = (new pseries(var==newpoint, newseq ? *newseq : seq))->setflag(status_flags::dynallocated);
-	delete newseq;
-	return result;
+	return dynallocate<pseries>(var==newpoint, newseq ? std::move(*newseq) : seq);
 }
 
 ex pseries::real_part() const
@@ -443,9 +446,9 @@ ex pseries::real_part() const
 
 	epvector v;
 	v.reserve(seq.size());
-	for(epvector::const_iterator i=seq.begin(); i!=seq.end(); ++i)
-		v.push_back(expair((i->rest).real_part(), i->coeff));
-	return (new pseries(var==point, v))->setflag(status_flags::dynallocated);
+	for (auto & it : seq)
+		v.push_back(expair((it.rest).real_part(), it.coeff));
+	return dynallocate<pseries>(var==point, std::move(v));
 }
 
 ex pseries::imag_part() const
@@ -458,24 +461,24 @@ ex pseries::imag_part() const
 
 	epvector v;
 	v.reserve(seq.size());
-	for(epvector::const_iterator i=seq.begin(); i!=seq.end(); ++i)
-		v.push_back(expair((i->rest).imag_part(), i->coeff));
-	return (new pseries(var==point, v))->setflag(status_flags::dynallocated);
+	for (auto & it : seq)
+		v.push_back(expair((it.rest).imag_part(), it.coeff));
+	return dynallocate<pseries>(var==point, std::move(v));
 }
 
 ex pseries::eval_integ() const
 {
-	epvector *newseq = NULL;
-	for (epvector::const_iterator i=seq.begin(); i!=seq.end(); ++i) {
+	std::unique_ptr<epvector> newseq(nullptr);
+	for (auto i=seq.begin(); i!=seq.end(); ++i) {
 		if (newseq) {
 			newseq->push_back(expair(i->rest.eval_integ(), i->coeff));
 			continue;
 		}
 		ex newterm = i->rest.eval_integ();
 		if (!are_ex_trivially_equal(newterm, i->rest)) {
-			newseq = new epvector;
+			newseq.reset(new epvector);
 			newseq->reserve(seq.size());
-			for (epvector::const_iterator j=seq.begin(); j!=i; ++j)
+			for (auto j=seq.begin(); j!=i; ++j)
 				newseq->push_back(*j);
 			newseq->push_back(expair(newterm, i->coeff));
 		}
@@ -483,8 +486,7 @@ ex pseries::eval_integ() const
 
 	ex newpoint = point.eval_integ();
 	if (newseq || !are_ex_trivially_equal(newpoint, point))
-		return (new pseries(var==newpoint, *newseq))
-		       ->setflag(status_flags::dynallocated);
+		return dynallocate<pseries>(var==newpoint, std::move(*newseq));
 	return *this;
 }
 
@@ -493,13 +495,12 @@ ex pseries::evalm() const
 	// evalm each coefficient
 	epvector newseq;
 	bool something_changed = false;
-	for (epvector::const_iterator i=seq.begin(); i!=seq.end(); ++i) {
+	for (auto i=seq.begin(); i!=seq.end(); ++i) {
 		if (something_changed) {
 			ex newcoeff = i->rest.evalm();
 			if (!newcoeff.is_zero())
 				newseq.push_back(expair(newcoeff, i->coeff));
-		}
-		else {
+		} else {
 			ex newcoeff = i->rest.evalm();
 			if (!are_ex_trivially_equal(newcoeff, i->rest)) {
 				something_changed = true;
@@ -511,7 +512,7 @@ ex pseries::evalm() const
 		}
 	}
 	if (something_changed)
-		return (new pseries(var==point, newseq))->setflag(status_flags::dynallocated);
+		return dynallocate<pseries>(var==point, std::move(newseq));
 	else
 		return *this;
 }
@@ -528,12 +529,9 @@ ex pseries::subs(const exmap & m, unsigned options) const
 	// expansion point
 	epvector newseq;
 	newseq.reserve(seq.size());
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		newseq.push_back(expair(it->rest.subs(m, options), it->coeff));
-		++it;
-	}
-	return (new pseries(relational(var,point.subs(m, options)), newseq))->setflag(status_flags::dynallocated);
+	for (auto & it : seq)
+		newseq.push_back(expair(it.rest.subs(m, options), it.coeff));
+	return dynallocate<pseries>(relational(var,point.subs(m, options)), std::move(newseq));
 }
 
 /** Implementation of ex::expand() for a power series.  It expands all the
@@ -541,15 +539,12 @@ ex pseries::subs(const exmap & m, unsigned options) const
 ex pseries::expand(unsigned options) const
 {
 	epvector newseq;
-	epvector::const_iterator i = seq.begin(), end = seq.end();
-	while (i != end) {
-		ex restexp = i->rest.expand();
+	for (auto & it : seq) {
+		ex restexp = it.rest.expand();
 		if (!restexp.is_zero())
-			newseq.push_back(expair(restexp, i->coeff));
-		++i;
+			newseq.push_back(expair(restexp, it.coeff));
 	}
-	return (new pseries(relational(var,point), newseq))
-	        ->setflag(status_flags::dynallocated | (options == 0 ? status_flags::expanded : 0));
+	return dynallocate<pseries>(relational(var,point), std::move(newseq)).setflag(options == 0 ? status_flags::expanded : 0);
 }
 
 /** Implementation of ex::diff() for a power series.
@@ -557,51 +552,45 @@ ex pseries::expand(unsigned options) const
 ex pseries::derivative(const symbol & s) const
 {
 	epvector new_seq;
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
 
 	if (s == var) {
 		
 		// FIXME: coeff might depend on var
-		while (it != itend) {
-			if (is_order_function(it->rest)) {
-				new_seq.push_back(expair(it->rest, it->coeff - 1));
+		for (auto & it : seq) {
+			if (is_order_function(it.rest)) {
+				new_seq.push_back(expair(it.rest, it.coeff - 1));
 			} else {
-				ex c = it->rest * it->coeff;
+				ex c = it.rest * it.coeff;
 				if (!c.is_zero())
-					new_seq.push_back(expair(c, it->coeff - 1));
+					new_seq.push_back(expair(c, it.coeff - 1));
 			}
-			++it;
 		}
 
 	} else {
 
-		while (it != itend) {
-			if (is_order_function(it->rest)) {
-				new_seq.push_back(*it);
+		for (auto & it : seq) {
+			if (is_order_function(it.rest)) {
+				new_seq.push_back(it);
 			} else {
-				ex c = it->rest.diff(s);
+				ex c = it.rest.diff(s);
 				if (!c.is_zero())
-					new_seq.push_back(expair(c, it->coeff));
+					new_seq.push_back(expair(c, it.coeff));
 			}
-			++it;
 		}
 	}
 
-	return pseries(relational(var,point), new_seq);
+	return pseries(relational(var,point), std::move(new_seq));
 }
 
 ex pseries::convert_to_poly(bool no_order) const
 {
 	ex e;
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	
-	while (it != itend) {
-		if (is_order_function(it->rest)) {
+	for (auto & it : seq) {
+		if (is_order_function(it.rest)) {
 			if (!no_order)
-				e += Order(power(var - point, it->coeff));
+				e += Order(pow(var - point, it.coeff));
 		} else
-			e += it->rest * power(var - point, it->coeff);
-		++it;
+			e += it.rest * pow(var - point, it.coeff);
 	}
 	return e;
 }
@@ -613,7 +602,7 @@ bool pseries::is_terminating() const
 
 ex pseries::coeffop(size_t i) const
 {
-	if (i >=nops())
+	if (i >= nops())
 		throw (std::out_of_range("coeffop() out of range"));
 	return seq[i].rest;
 }
@@ -640,7 +629,7 @@ ex basic::series(const relational & r, int order, unsigned options) const
 	// default for order-values that make no sense for Taylor expansion
 	if ((order <= 0) && this->has(s)) {
 		seq.push_back(expair(Order(_ex1), order));
-		return pseries(r, seq);
+		return pseries(r, std::move(seq));
 	}
 
 	// do Taylor expansion
@@ -654,24 +643,24 @@ ex basic::series(const relational & r, int order, unsigned options) const
 
 	int n;
 	for (n=1; n<order; ++n) {
-		fac = fac.mul(n);
+		fac = fac.div(n);
 		// We need to test for zero in order to see if the series terminates.
 		// The problem is that there is no such thing as a perfect test for
 		// zero.  Expanding the term occasionally helps a little...
 		deriv = deriv.diff(s).expand();
 		if (deriv.is_zero())  // Series terminates
-			return pseries(r, seq);
+			return pseries(r, std::move(seq));
 
 		coeff = deriv.subs(r, subs_options::no_pattern);
 		if (!coeff.is_zero())
-			seq.push_back(expair(fac.inverse() * coeff, n));
+			seq.push_back(expair(fac * coeff, n));
 	}
 	
 	// Higher-order terms, if present
 	deriv = deriv.diff(s);
 	if (!deriv.expand().is_zero())
 		seq.push_back(expair(Order(_ex1), n));
-	return pseries(r, seq);
+	return pseries(r, std::move(seq));
 }
 
 
@@ -692,7 +681,7 @@ ex symbol::series(const relational & r, int order, unsigned options) const
 			seq.push_back(expair(Order(_ex1), numeric(order)));
 	} else
 		seq.push_back(expair(*this, _ex0));
-	return pseries(r, seq);
+	return pseries(r, std::move(seq));
 }
 
 
@@ -706,17 +695,14 @@ ex pseries::add_series(const pseries &other) const
 	// Adding two series with different variables or expansion points
 	// results in an empty (constant) series 
 	if (!is_compatible_to(other)) {
-		epvector nul;
-		nul.push_back(expair(Order(_ex1), _ex0));
-		return pseries(relational(var,point), nul);
+		epvector nul { expair(Order(_ex1), _ex0) };
+		return pseries(relational(var,point), std::move(nul));
 	}
 	
 	// Series addition
 	epvector new_seq;
-	epvector::const_iterator a = seq.begin();
-	epvector::const_iterator b = other.seq.begin();
-	epvector::const_iterator a_end = seq.end();
-	epvector::const_iterator b_end = other.seq.end();
+	auto a = seq.begin(), a_end = seq.end();
+	auto b = other.seq.begin(), b_end = other.seq.end();
 	int pow_a = std::numeric_limits<int>::max(), pow_b = std::numeric_limits<int>::max();
 	for (;;) {
 		// If a is empty, fill up with elements from b and stop
@@ -766,7 +752,7 @@ ex pseries::add_series(const pseries &other) const
 			}
 		}
 	}
-	return pseries(relational(var,point), new_seq);
+	return pseries(relational(var,point), std::move(new_seq));
 }
 
 
@@ -781,16 +767,14 @@ ex add::series(const relational & r, int order, unsigned options) const
 	acc = overall_coeff.series(r, order, options);
 	
 	// Add remaining terms
-	epvector::const_iterator it = seq.begin();
-	epvector::const_iterator itend = seq.end();
-	for (; it!=itend; ++it) {
+	for (auto & it : seq) {
 		ex op;
-		if (is_exactly_a<pseries>(it->rest))
-			op = it->rest;
+		if (is_exactly_a<pseries>(it.rest))
+			op = it.rest;
 		else
-			op = it->rest.series(r, order, options);
-		if (!it->coeff.is_equal(_ex1))
-			op = ex_to<pseries>(op).mul_const(ex_to<numeric>(it->coeff));
+			op = it.rest.series(r, order, options);
+		if (!it.coeff.is_equal(_ex1))
+			op = ex_to<pseries>(op).mul_const(ex_to<numeric>(it.coeff));
 		
 		// Series addition
 		acc = ex_to<pseries>(acc).add_series(ex_to<pseries>(op));
@@ -809,15 +793,13 @@ ex pseries::mul_const(const numeric &other) const
 	epvector new_seq;
 	new_seq.reserve(seq.size());
 	
-	epvector::const_iterator it = seq.begin(), itend = seq.end();
-	while (it != itend) {
-		if (!is_order_function(it->rest))
-			new_seq.push_back(expair(it->rest * other, it->coeff));
+	for (auto & it : seq) {
+		if (!is_order_function(it.rest))
+			new_seq.push_back(expair(it.rest * other, it.coeff));
 		else
-			new_seq.push_back(*it);
-		++it;
+			new_seq.push_back(it);
 	}
-	return pseries(relational(var,point), new_seq);
+	return pseries(relational(var,point), std::move(new_seq));
 }
 
 
@@ -831,23 +813,21 @@ ex pseries::mul_series(const pseries &other) const
 	// Multiplying two series with different variables or expansion points
 	// results in an empty (constant) series 
 	if (!is_compatible_to(other)) {
-		epvector nul;
-		nul.push_back(expair(Order(_ex1), _ex0));
-		return pseries(relational(var,point), nul);
+		epvector nul { expair(Order(_ex1), _ex0) };
+		return pseries(relational(var,point), std::move(nul));
 	}
 
 	if (seq.empty() || other.seq.empty()) {
-		return (new pseries(var==point, epvector()))
-		       ->setflag(status_flags::dynallocated);
+		return dynallocate<pseries>(var==point, epvector());
 	}
 	
 	// Series multiplication
 	epvector new_seq;
-	int a_max = degree(var);
-	int b_max = other.degree(var);
-	int a_min = ldegree(var);
-	int b_min = other.ldegree(var);
-	int cdeg_min = a_min + b_min;
+	const int a_max = degree(var);
+	const int b_max = other.degree(var);
+	const int a_min = ldegree(var);
+	const int b_min = other.ldegree(var);
+	const int cdeg_min = a_min + b_min;
 	int cdeg_max = a_max + b_max;
 	
 	int higher_order_a = std::numeric_limits<int>::max();
@@ -856,25 +836,37 @@ ex pseries::mul_series(const pseries &other) const
 		higher_order_a = a_max + b_min;
 	if (is_order_function(other.coeff(var, b_max)))
 		higher_order_b = b_max + a_min;
-	int higher_order_c = std::min(higher_order_a, higher_order_b);
+	const int higher_order_c = std::min(higher_order_a, higher_order_b);
 	if (cdeg_max >= higher_order_c)
 		cdeg_max = higher_order_c - 1;
-	
+
+	std::map<int, ex> rest_map_a, rest_map_b;
+	for (const auto& it : seq)
+		rest_map_a[ex_to<numeric>(it.coeff).to_int()] = it.rest;
+
+	if (other.var.is_equal(var))
+		for (const auto& it : other.seq)
+			rest_map_b[ex_to<numeric>(it.coeff).to_int()] = it.rest;
+
 	for (int cdeg=cdeg_min; cdeg<=cdeg_max; ++cdeg) {
 		ex co = _ex0;
 		// c(i)=a(0)b(i)+...+a(i)b(0)
 		for (int i=a_min; cdeg-i>=b_min; ++i) {
-			ex a_coeff = coeff(var, i);
-			ex b_coeff = other.coeff(var, cdeg-i);
-			if (!is_order_function(a_coeff) && !is_order_function(b_coeff))
-				co += a_coeff * b_coeff;
+			const auto& ita = rest_map_a.find(i);
+			if (ita == rest_map_a.end())
+				continue;
+			const auto& itb = rest_map_b.find(cdeg-i);
+			if (itb == rest_map_b.end())
+				continue;
+			if (!is_order_function(ita->second) && !is_order_function(itb->second))
+				co += ita->second * itb->second;
 		}
 		if (!co.is_zero())
 			new_seq.push_back(expair(co, numeric(cdeg)));
 	}
 	if (higher_order_c < std::numeric_limits<int>::max())
 		new_seq.push_back(expair(Order(_ex1), numeric(higher_order_c)));
-	return pseries(relational(var, point), new_seq);
+	return pseries(relational(var, point), std::move(new_seq));
 }
 
 
@@ -893,20 +885,18 @@ ex mul::series(const relational & r, int order, unsigned options) const
 	std::vector<bool> ldegree_redo;
 
 	// find minimal degrees
-	const epvector::const_iterator itbeg = seq.begin();
-	const epvector::const_iterator itend = seq.end();
 	// first round: obtain a bound up to which minimal degrees have to be
 	// considered
-	for (epvector::const_iterator it=itbeg; it!=itend; ++it) {
+	for (auto & it : seq) {
 
-		ex expon = it->coeff;
+		ex expon = it.coeff;
 		int factor = 1;
 		ex buf;
 		if (expon.info(info_flags::integer)) {
-			buf = it->rest;
+			buf = it.rest;
 			factor = ex_to<numeric>(expon).to_int();
 		} else {
-			buf = recombine_pair_to_ex(*it);
+			buf = recombine_pair_to_ex(it);
 		}
 
 		int real_ldegree = 0;
@@ -943,16 +933,16 @@ ex mul::series(const relational & r, int order, unsigned options) const
 	// method.
 	// here we can ignore ldegrees larger than degbound
 	size_t j = 0;
-	for (epvector::const_iterator it=itbeg; it!=itend; ++it) {
+	for (auto & it : seq) {
 		if ( ldegree_redo[j] ) {
-			ex expon = it->coeff;
+			ex expon = it.coeff;
 			int factor = 1;
 			ex buf;
 			if (expon.info(info_flags::integer)) {
-				buf = it->rest;
+				buf = it.rest;
 				factor = ex_to<numeric>(expon).to_int();
 			} else {
-				buf = recombine_pair_to_ex(*it);
+				buf = recombine_pair_to_ex(it);
 			}
 			int real_ldegree = 0;
 			int orderloop = 0;
@@ -960,7 +950,7 @@ ex mul::series(const relational & r, int order, unsigned options) const
 				orderloop++;
 				real_ldegree = buf.series(r, orderloop, options).ldegree(sym);
 			} while ((real_ldegree == orderloop)
-					&& ( factor*real_ldegree < degbound));
+			      && (factor*real_ldegree < degbound));
 			ldegrees[j] = factor * real_ldegree;
 			degbound -= factor * real_ldegree;
 		}
@@ -970,20 +960,19 @@ ex mul::series(const relational & r, int order, unsigned options) const
 	int degsum = std::accumulate(ldegrees.begin(), ldegrees.end(), 0);
 
 	if (degsum >= order) {
-		epvector epv;
-		epv.push_back(expair(Order(_ex1), order));
-		return (new pseries(r, epv))->setflag(status_flags::dynallocated);
+		epvector epv { expair(Order(_ex1), order) };
+		return dynallocate<pseries>(r, std::move(epv));
 	}
 
 	// Multiply with remaining terms
-	std::vector<int>::const_iterator itd = ldegrees.begin();
-	for (epvector::const_iterator it=itbeg; it!=itend; ++it, ++itd) {
+	auto itd = ldegrees.begin();
+	for (auto it=seq.begin(), itend=seq.end(); it!=itend; ++it, ++itd) {
 
 		// do series expansion with adjusted order
 		ex op = recombine_pair_to_ex(*it).series(r, order-degsum+(*itd), options);
 
 		// Series multiplication
-		if (it == itbeg)
+		if (it == seq.begin())
 			acc = ex_to<pseries>(op);
 		else
 			acc = ex_to<pseries>(acc.mul_series(ex_to<pseries>(op)));
@@ -1038,11 +1027,8 @@ ex pseries::power_const(const numeric &p, int deg) const
 	// adjust number of coefficients
 	int numcoeff = deg - (p*ldeg).to_int();
 	if (numcoeff <= 0) {
-		epvector epv;
-		epv.reserve(1);
-		epv.push_back(expair(Order(_ex1), deg));
-		return (new pseries(relational(var,point), epv))
-		       ->setflag(status_flags::dynallocated);
+		epvector epv { expair(Order(_ex1), deg) };
+		return dynallocate<pseries>(relational(var,point), std::move(epv));
 	}
 	
 	// O(x^n)^(-m) is undefined
@@ -1052,7 +1038,7 @@ ex pseries::power_const(const numeric &p, int deg) const
 	// Compute coefficients of the powered series
 	exvector co;
 	co.reserve(numcoeff);
-	co.push_back(power(coeff(var, ldeg), p));
+	co.push_back(pow(coeff(var, ldeg), p));
 	for (int i=1; i<numcoeff; ++i) {
 		ex sum = _ex0;
 		for (int j=1; j<=i; ++j) {
@@ -1080,7 +1066,7 @@ ex pseries::power_const(const numeric &p, int deg) const
 	if (!higher_order)
 		new_seq.push_back(expair(Order(_ex1), p * ldeg + numcoeff));
 
-	return pseries(relational(var,point), new_seq);
+	return pseries(relational(var,point), std::move(new_seq));
 }
 
 
@@ -1088,12 +1074,9 @@ ex pseries::power_const(const numeric &p, int deg) const
 pseries pseries::shift_exponents(int deg) const
 {
 	epvector newseq = seq;
-	epvector::iterator i = newseq.begin(), end  = newseq.end();
-	while (i != end) {
-		i->coeff += deg;
-		++i;
-	}
-	return pseries(relational(var, point), newseq);
+	for (auto & it : newseq)
+		it.coeff += deg;
+	return pseries(relational(var, point), std::move(newseq));
 }
 
 
@@ -1154,7 +1137,7 @@ ex power::series(const relational & r, int order, unsigned options) const
 			new_seq.push_back(expair(_ex1, exponent));
 		else
 			new_seq.push_back(expair(Order(_ex1), exponent));
-		return pseries(r, new_seq);
+		return pseries(r, std::move(new_seq));
 	}
 
 	// No, expand basis into series
@@ -1187,9 +1170,8 @@ ex power::series(const relational & r, int order, unsigned options) const
 	try {
 		result = ex_to<pseries>(e).power_const(numexp, order);
 	} catch (pole_error) {
-		epvector ser;
-		ser.push_back(expair(Order(_ex1), order));
-		result = pseries(r, ser);
+		epvector ser { expair(Order(_ex1), order) };
+		result = pseries(r, std::move(ser));
 	}
 
 	return result;
@@ -1208,17 +1190,15 @@ ex pseries::series(const relational & r, int order, unsigned options) const
 			return *this;
 		else {
 			epvector new_seq;
-			epvector::const_iterator it = seq.begin(), itend = seq.end();
-			while (it != itend) {
-				int o = ex_to<numeric>(it->coeff).to_int();
+			for (auto & it : seq) {
+				int o = ex_to<numeric>(it.coeff).to_int();
 				if (o >= order) {
 					new_seq.push_back(expair(Order(_ex1), o));
 					break;
 				}
-				new_seq.push_back(*it);
-				++it;
+				new_seq.push_back(it);
 			}
-			return pseries(r, new_seq);
+			return pseries(r, std::move(new_seq));
 		}
 	} else
 		return convert_to_poly().series(r, order, options);
@@ -1229,7 +1209,7 @@ ex integral::series(const relational & r, int order, unsigned options) const
 	if (x.subs(r) != x)
 		throw std::logic_error("Cannot series expand wrt dummy variable");
 	
-	// Expanding integrant with r substituted taken in boundaries.
+	// Expanding integrand with r substituted taken in boundaries.
 	ex fseries = f.series(r, order, options);
 	epvector fexpansion;
 	fexpansion.reserve(fseries.nops());
@@ -1244,7 +1224,7 @@ ex integral::series(const relational & r, int order, unsigned options) const
 	}
 
 	// Expanding lower boundary
-	ex result = (new pseries(r, fexpansion))->setflag(status_flags::dynallocated);
+	ex result = dynallocate<pseries>(r, std::move(fexpansion));
 	ex aseries = (a-a.subs(r)).series(r, order, options);
 	fseries = f.series(x == (a.subs(r)), order, options);
 	for (size_t i=0; i<fseries.nops(); ++i) {

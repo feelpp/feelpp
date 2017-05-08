@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -53,6 +53,9 @@ file_options( std::string const& appname )
     po::options_description file( "File options" );
     file.add_options()
         ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
+        ( "config-files", po::value<std::vector<std::string> >()->multitoken(), "specify a list of .cfg file" )
+        ( "bc-file", po::value<std::string>()->default_value(appname+".bc"), "specify boundary condition (.bc) file" )
+        ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
@@ -79,9 +82,15 @@ generic_options()
           " <log level> overrides any value given by --v." )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "rmlogs", "remove logs after execution" )
+        ( "rm", "remove application repository after execution" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
+        ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
+        ( "serialization-library", po::value<std::string>()->default_value("boost"), "Library used for serialization" )
+        ( "display-stats", po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...)" )
+        ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
         ;
     return generic;
 }
@@ -163,14 +172,33 @@ nlopt_options( std::string const& prefix )
 }
 
 po::options_description
+mesh_options( std::string const& prefix )
+{
+    po::options_description _options( "Mesh " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"mesh.filename").c_str(), po::value<std::string>()->default_value( "untitled.geo" ), "mesh filename" )
+        ( prefixvm( prefix,"mesh.partition.enable").c_str(), po::value<bool>()->default_value(0), "partition the mesh using Feel++ partitioners" )
+        ( prefixvm( prefix,"mesh.partition.size").c_str(), po::value<int>()->default_value(1), "number of partitions" )
+        ( prefixvm( prefix,"mesh.partition.type").c_str(), po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" )
+        ( prefixvm( prefix,"mesh.save.enable" ).c_str(), Feel::po::value<bool>()->default_value( true ), "enable saving mesh to disk" )
+        ( prefixvm( prefix,"mesh.save.formats" ).c_str(), Feel::po::value<std::vector<std::string>>()->default_value( {"json+h5","msh"} ), "format of the mesh: json+h5, msh" )
+        ( prefixvm( prefix,"mesh.load.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable loading mesh from disk, overriding file name extension" );
+        ( prefixvm( prefix,"mesh.load.format" ).c_str(), Feel::po::value<std::string>()->default_value( "json+h5" ), "file format to load: msh, json" );
+
+    return _options;
+}
+
+po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
+
     _options.add_options()
-    // solver options
+    // gmsh options
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
+        ( prefixvm( prefix,"gmsh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" )
         ( prefixvm( prefix,"gmsh.hsize2" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
         ( prefixvm( prefix,"gmsh.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated" )
@@ -179,14 +207,13 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
         ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
         ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
+        ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated in HDF5 format" )
+        ( prefixvm( prefix,"gmsh.use-json" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use json/hdf5 file if it exists, instead of the Gmsh files (geo or msh)" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
         ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
-#if defined(HAVE_METIS)
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
-#else
-        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
-#endif
+        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
@@ -212,14 +239,15 @@ gmsh_options( std::string const& prefix )
 
         ( prefixvm( prefix,"partition.linear" ).c_str(), Feel::po::value<bool>()->default_value( false ), "linear partitioning if true (false otherwise)" );
 
-
     return _options;
+
 
 }
 po::options_description
 gmsh_domain_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh Domain " + prefix + " options" );
+#if defined( FEELPP_HAS_GMSH_H )
     _options.add_options()
     // solver options
         ( prefixvm( prefix,"gmsh.domain.shape" ).c_str(), Feel::po::value<std::string>()->default_value( "hypercube" ), "Domain shape" )
@@ -243,7 +271,19 @@ gmsh_domain_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.domain.nz" ).c_str(), Feel::po::value<double>()->default_value( 2 ), "number of subdivison in in z-direction" )
         ;
 
+#endif // FEELPP_HAS_GMSH_H
+    return _options;
 
+}
+
+
+po::options_description
+arm_options( std::string const& prefix )
+{
+    po::options_description _options( "Acusim Raw Mesh (ARM) " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"arm.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "ARM filename" )
+        ;
     return _options;
 
 }
@@ -255,6 +295,7 @@ on_options( std::string const& prefix )
     _options.add_options()
         ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<std::string>()->default_value( "elimination" ), "Strong Dirichlet conditions treatment type: elimination, elimination_keep_diagonal, elimination_symmetric, elimination_symmetric_keep_diagonal, penalisation" )
         ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
+        ( prefixvm( prefix,"on.value_on_diagonal" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "value on diagonal of operator when eliminating" )
         ;
     return _options;
 }
@@ -264,6 +305,7 @@ parallel_options( std::string const& prefix )
 {
     po::options_description _options( "Parallel " + prefix + " options" );
     _options.add_options()
+#if defined(FEELPP_HAS_HARTS)
         ( prefixvm( prefix,"parallel.cpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of additional cores for parallelization" )
         ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
         ( prefixvm( prefix,"parallel.cpu.restrict" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Restrict the multithreading to N additional cores per MPI process (0: guess the maximum number of usable cores)" )
@@ -272,10 +314,30 @@ parallel_options( std::string const& prefix )
         ( prefixvm( prefix,"parallel.opencl.device" ).c_str(), Feel::po::value<std::string>()->default_value("cpu"), "Specify the device to use for OpenCL (Valid entries: cpu or gpu" )
 #endif
         ( prefixvm( prefix,"parallel.debug" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Enable debugging for parallelization" )
+#endif
         ;
     return _options;
 }
 
+po::options_description cnab2_options( std::string const& prefix )
+{
+    po::options_description _options( "CNAB2 (Crank-Nicolson Adam-Bashforth order 2 adaptive scheme) options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "cnab2.time-initial" ).c_str(), po::value<double>()->default_value( 1e-8 ), "initial time step" )
+        ( prefixvm( prefix, "cnab2.time-final" ).c_str(), po::value<double>()->default_value( 1 ), "target final time" )
+        ( prefixvm( prefix, "cnab2.keps" ).c_str(), po::value<double>()->default_value( 1e-3 ), "time tolerance" )
+        ( prefixvm( prefix, "cnab2.nstar" ).c_str(), po::value<int>()->default_value( 10 ), "averaging period" )
+        ( prefixvm( prefix, "cnab2.steady" ).c_str(), po::value<bool>()->default_value( 0 ), "look for steady solution" )
+        ( prefixvm( prefix, "cnab2.steady-tol" ).c_str(), po::value<double>()->default_value( 1e-6 ), "steady solution tolerance" )
+        ( prefixvm( prefix, "cnab2.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
+        ( prefixvm( prefix, "cnab2.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
+        ( prefixvm( prefix, "cnab2.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
+        ( prefixvm( prefix, "cnab2.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
+        ( prefixvm( prefix, "cnab2.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
+        ( prefixvm( prefix, "cnab2.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " );
+
+    return _options;
+}
 /**
  * \return the command lines options for BDF
  */
@@ -297,6 +359,8 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
     ( prefixvm( prefix, "bdf.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
     ( prefixvm( prefix, "bdf.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+    ( prefixvm( prefix, "bdf.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
+
     ;
     _options.add_options()
     ( prefixvm( prefix, "bdf.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time" )
@@ -310,22 +374,45 @@ po::options_description ts_options( std::string const& prefix )
 {
     po::options_description _options( "BDF (Backward Differences time discretization) options (" + prefix + ")" );
     _options.add_options()
-    // solver options
-    ( prefixvm( prefix, "ts.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
-    ( prefixvm( prefix, "ts.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
-    ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
+        // solver options
+        ( prefixvm( prefix, "ts.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
+        ( prefixvm( prefix, "ts.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
+        ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
         //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
-    ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
-    ( prefixvm( prefix, "ts.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
-    ( prefixvm( prefix, "ts.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
-    ( prefixvm( prefix, "ts.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
-    ( prefixvm( prefix, "ts.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
-    ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
-    ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
-    ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
-    ;
+        ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+        ( prefixvm( prefix, "ts.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
+        ( prefixvm( prefix, "ts.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
+        ( prefixvm( prefix, "ts.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
+        ( prefixvm( prefix, "ts.restart.step-before-last-save" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "do a restart with ti the ieme step before last save " )
+        ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
+        ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
+        ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+        ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
+        ( prefixvm( prefix, "ts.display-stats").c_str(), po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...) at each ts iteration" )
+        ;
     return _options;
 }
+
+po::options_description stabilization_options( std::string const& prefix )
+{
+    po::options_description _options("Options for stabilization");
+    _options.add_options()
+        ( prefixvm( prefix, "stab.use" ).c_str(), po::value<bool>()->default_value( false ), "use or not stabilization method" )
+        ( prefixvm( prefix, "stab.div" ).c_str(), po::value<bool>()->default_value( true ), "add stabilization on divergence" )
+        ( prefixvm( prefix, "stab.compute-lambdaK" ).c_str(), po::value<bool>()->default_value( true ), "true : compute obtimized stabilization coefficient (highly recommended) / false use arbitrary constant" )
+        ( prefixvm( prefix, "stab.type" ).c_str(), po::value<std::string>()->default_value( "douglas-wang"), "douglas-wang, gls or supg" )
+        ( prefixvm( prefix, "stab.force" ).c_str(), po::value<bool>()->default_value( true ), "force the computation of stabilization terms at first iteration" )
+        ( "stab.starting-Re", po::value<double>()->default_value( 0.9 ), "maximal value of local Reynolds number before the stabilization starts" )
+        ( prefixvm( prefix, "stab.penal-lambdaK" ).c_str(), po::value<double>()->default_value( 1e-6 ), "value of the penalisation used in the computation of lambdaK" )
+
+        ( prefixvm( prefix, "stab.export" ).c_str(), po::value<bool>()->default_value( true ), "export fields" )
+
+        ( prefixvm( prefix, "stab.parameter" ).c_str(), po::value<int>()->default_value( 1 ), "different way to evaluate the stabilization parameter" )
+        ;
+
+    return _options.add( backend_options( prefixvm(prefix,"stab") ) );
+}
+
 
 
 Feel::po::options_description
@@ -334,6 +421,7 @@ eimOptions( std::string const& prefix )
     Feel::po::options_description eimoptions( "EIM Options" );
     eimoptions.add_options()
         ( "eim.sampling-size"   , Feel::po::value<int>()->default_value( 30 ), "Offline  sampling size " )
+        ( "eim.sampling-mode"   , Feel::po::value<std::string>()->default_value( "random" ), "EIM Offline : random, log-random, log-equidistribute, equidistribute " )
         ( "eim.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
         ( "eim.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
         ( "eim.dimension-max"   , Feel::po::value<int>()->default_value( 50 ),       "Offline  max WN size" )
@@ -356,6 +444,30 @@ eimOptions( std::string const& prefix )
 
     return eimoptions;
 }
+
+Feel::po::options_description
+crbSEROptions( std::string const& prefix )
+{
+    Feel::po::options_description seroptions( "SER Options" );
+    seroptions.add_options()
+        ( "ser.rb-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of RB basis built per step of SER process, 0 : no SER" )
+        ( "ser.eim-frequency", Feel::po::value<int>()->default_value( 0 ), "Number of EIM basis built per step of SER process, 0 : no SER")
+        ( "ser.use-rb-in-eim-mu-selection", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to select parameters during EIM offline step")
+        ( "ser.use-rb-in-eim-basis-build", Feel::po::value<bool>()->default_value( false ), "Use RB approx. to build EIM basis")
+        ( "ser.rb-rebuild-freq", Feel::po::value<int>()->default_value( -1 ), "rebuild database with a given frequency" )
+        ( "ser.error-estimation", Feel::po::value<bool>()->default_value( false ), "Use SER error estimation = Norm of residual (Riesz) as error indicator")
+        ( "ser.use-greedy-in-rb", Feel::po::value<bool>()->default_value( false ), "Use SER error indicator to build RB basis (Greedy)")
+        ( "ser.eim-subtrainset-method", Feel::po::value<int>()->default_value( 0 ), "Build subtrainset from error estimation : full trainset (=0), select mu for which residual < tol (=1), select mu for which residual > tol (=2)")
+        ( "ser.print-rb-iterations_info", Feel::po::value<bool>()->default_value( false ), "Write online rb iterations (Picard) needed for Greedy")
+        ( "ser.radapt-eim-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for EIM r-adaptation - default(0.0) = no adaptation")
+        ( "ser.radapt-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB r-adaptation - default(0.0) = no adaptation")
+        ( "ser.eim-greedy-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for the error indicator constraint in eim Greedy algorithm : choose mu from those which satisfies this criterion - default(0.0) = no error indicator constraint")
+        ( "ser.corrected-rb-rtol", Feel::po::value<double>()->default_value( 0.0 ), "Relative tolerance criterion for RB correction (from error estimation) to be used - default(0.0) = no correction")
+        ( "ser.nb-levels", Feel::po::value<int>()->default_value( 1 ), "number of SER levels = number of passages into SER algorithm (default 1)")
+        ;
+    return seroptions;
+}
+
 po::options_description
 solvereigen_options( std::string const& prefix )
 {
@@ -378,10 +490,21 @@ solvereigen_options( std::string const& prefix )
         ( ( _prefix+"solvereigen.spectrum" ).c_str(), Feel::po::value<std::string>()->default_value( "largest_magnitude" ), "eigenvalue solver position in spectrum. Choice: largest_magnitude, smallest_magnitude, largest_real, smallest_real, largest_imaginary, smallest_imaginary" )
         ( ( _prefix+"solvereigen.transform" ).c_str(), Feel::po::value<std::string>()->default_value( "shift" ), "spectral transformation. Choice: shift, shift_invert, fold, cayley" )
         ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
-        ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
+        ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "dimension of the subspace" )
+        ( ( _prefix+"solvereigen.mpd" ).c_str(), Feel::po::value<int>()->default_value( -2 ), "maximum projected dimension" )
+        ( ( _prefix+"solvereigen.eps-target" ).c_str(), Feel::po::value<double>()->default_value( NAN ), "sets the value of the target" )
+        ( ( _prefix+"solvereigen.interval-a" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "start of the interval in which all the eigenvalues are found" )
+        ( ( _prefix+"solvereigen.interval-b" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "end of the interval in which all the eigenvalues are found" )
+#if defined(PETSC_HAVE_MUMPS)
+        ( ( _prefix+"solvereigen.st-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ), "sets the software that is used to perform the factorization for the spectral transformation (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#else
+        ( ( _prefix+"solvereigen.st-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "sets the software that is used to perform the factorization for the spectral transformation (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
+        ( ( _prefix+"solvereigen.krylovschur-partitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of communicator to use for interval" )
         ( ( _prefix+"solvereigen.tolerance" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
         ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" )
-        ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" );
+        ( ( _prefix+"solvereigen.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "verbose eigen solver" )
+        ( ( _prefix+"solvereigen.eps-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ), "monitor eigen problem solver" );
 
     return _options;
 }
@@ -430,9 +553,10 @@ crbOptions( std::string const& prefix )
     ( "crb.output-index"   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
     ( "crb.sampling-size"   , Feel::po::value<int>()->default_value( 1000 ), "Offline  sampling size " )
     ( "crb.sampling-mode"   , Feel::po::value<std::string>()->default_value( "log-random" ), "Offline  sampling mode, equidistribute, log-equidistribute or log-random " )
-    ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( "false" ), "all procs have the same sampling if true" )
+    ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( false ), "all procs have the same sampling if true" )
     ( "crb.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
     ( "crb.online-tolerance"   , Feel::po::value<double>()->default_value( 1e-2 ),       "Online  tolerance" )
+    ( "crb.absolute-error" , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
     ( "crb.dimension-max"   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
     ( "crb.dimension"   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
     ( "crb.error-type"   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
@@ -441,12 +565,12 @@ crbOptions( std::string const& prefix )
     ( "crb.Nm"   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
     ( "crb.apply-POD-to-WN"   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
     ( "crb.check.rb"   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
-        //( "crb.check.gs"   , Feel::po::value<int>()->default_value( 0 ),       "check Gram-Schmidt orthonormalisation" )
     ( "crb.orthonormality-tol" , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
     ( "crb.orthonormality-max-iter" , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
 
     ( "crb.check.residual"   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
     ( "crb.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
+    ( "crb.use-primal-pc",Feel::po::value<bool>()->default_value( true ), "use specific preconditioner for the primal problem")
     ( "crb.orthonormalize-primal" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
     ( "crb.orthonormalize-dual" , Feel::po::value<bool>()->default_value( 1 ), "orthonormalize or not " )
     ( "crb.solve-dual-problem" , Feel::po::value<bool>()->default_value( 1 ), "solve or not the dual problem (this bool will be ignored if error-type=CRB_RESIDUAL) " )
@@ -458,9 +582,11 @@ crbOptions( std::string const& prefix )
     ( "crb.show-mu-selection" , Feel::po::value<bool>()->default_value( 0 ), " show mu selection during offline step to build RB space" )
     ( "crb.show-residual" , Feel::po::value<bool>()->default_value( 0 ), " show mu residuals values (used for the error estimation)" )
     ( "crb.print-error-during-rb-construction" , Feel::po::value<bool>()->default_value( 0 ), " print the max error (absolute) obtained during the offline step" )
+    ( "crb.print-iterations-info", Feel::po::value<bool>()->default_value( 0 ), "Write offline Picard iterations summary" )
     ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
     ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
+    ( "crb.use-aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
     ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
     ( "crb.max-fixedpoint-iterations",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
     ( "crb.increment-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
@@ -488,6 +614,7 @@ crbOptions( std::string const& prefix )
     ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
     ( "crb.run-on-scm-parameters",Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
     ( "crb.script-mode",Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
+    ( "crb.db.format", Feel::po::value<std::string>()->default_value("boost"), "format in which the crb database is saved, either boost of hdf5")
     ( "crb.results-repo-name", Feel::po::value<std::string>()->default_value("default_repo"), "name for results repository, and also use for database storage")
     ( "crb.compute-fem-during-online",Feel::po::value<bool>()->default_value( true ), "compute fem during online step, necessary to compute the error between fem and crb")
 
@@ -501,13 +628,19 @@ crbOptions( std::string const& prefix )
 
     ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
     ( "crb.optimize-offline-residual",Feel::po::value<bool>()->default_value( false ), "use optimize way for offline residual computation if true (temporary option)")
+    ( "crb.offline-residual-version",Feel::po::value<int>()->default_value( 0 ), "offline residual version 0 : old no storage, 1 : new faster with storage")
 
     ( "crb.user-parameters",Feel::po::value<std::string>()->default_value( "" ), "values of parameters (used for one feel)")
     ( "crb.vary-only-parameter-components",Feel::po::value<std::string>()->default_value( "" ), "specify which parameter component vary (max : 2 components + time 't') and how many values we take in each direction. For example 0 10 1 20 means that component 0 will take 10 values and component 1 will take 20 values. We can write also t 1 10 and in this case the time will vary and also component 1")
     ( "crb.load-elements-database",Feel::po::value<bool>()->default_value( false ), "load database of elements if true, need to be true for visualization, need to be false to run CRB approximation on a different number of processors than this was used to build the reduced basis ")
 
     ( "crb.solve-fem-monolithic",Feel::po::value<bool>()->default_value( false ), "solve FEM problem without using EIM and without affine decomposition ")
-    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 10 ), "maximum size for variable names in export (truncature)")
+    ( "crb.export-name-max-size",Feel::po::value<int>()->default_value( 30 ), "maximum size for variable names in export (truncature)")
+
+    ("crb.minimization-func", Feel::po::value<std::string>(), "giving a functional f(output) - give the output which minimizes f(output)" )
+    ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
+
+    ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
     ;
 
     crboptions
@@ -515,6 +648,26 @@ crbOptions( std::string const& prefix )
 
     return crboptions;
 }
+
+    Feel::po::options_description
+    crbSaddlePointOptions( std::string const& prefix )
+{
+    Feel::po::options_description crboptions( "CRB Options" );
+    crboptions.add_options()
+        ( "crb.saddlepoint.transpose",Feel::po::value<bool>()->default_value( true ), "automatically fill the null blocks with transposed if true. ex A01=A10 if true and A01=zero")
+        ( "crb.saddlepoint.add-false-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis, false version")
+        ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
+        ( "crb.saddlepoint.orthonormalize0",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #0")
+        ( "crb.saddlepoint.orthonormalize1",Feel::po::value<int>()->default_value( 0 ), "orthonormalize reduce basis for rbspace #1")
+        ( "crb.saddlepoint.test-residual",Feel::po::value<bool>()->default_value( 0 ), "test residual evaluation")
+        ;
+
+    crboptions.add( backend_options("backend-Xh0") );
+    crboptions.add( backend_options("backend-Xh1") );
+
+    return crboptions;
+}
+
 
 Feel::po::options_description
 podOptions( std::string const& prefix )
@@ -559,21 +712,57 @@ error_options( std::string const& prefix )
     return _options;
 }
 
+// preconditioner for Navier-Stokes
 po::options_description
-btpcd_options( std::string const& prefix )
+blockns_options( std::string const& prefix )
 {
-    po::options_description _options( "BTPCD options (" + prefix + ")" );
+    po::options_description _options( "BLOCKNS options (" + prefix + ")" );
     _options.add_options()
         // error options
-        ( prefixvm( prefix, "btpcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD preconditioner" )
-        ( prefixvm( prefix, "btpcd.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Velocity CD preconditioner" )
-        ( prefixvm( prefix, "btpcd.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BTPCD/Pressure CD preconditioner" )
-        ( prefixvm( prefix, "btpcd.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
-        ( prefixvm( prefix, "btpcd.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
-        ( prefixvm( prefix, "btpcd.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
-        ( prefixvm( prefix, "btpcd.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "blockns" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS preconditioner" )
+        ( prefixvm( prefix, "blockns.cd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Velocity CD preconditioner" )
+        ( prefixvm( prefix, "blockns.pcd" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable BLOCKNS/Pressure CD preconditioner" )
+        ( prefixvm( prefix, "blockns.pcd.inflow" ).c_str(), Feel::po::value<std::string>()->default_value("Robin"), "Type of boundary conditions at inflow: Robin or Dirichlet" )
+        ( prefixvm( prefix, "blockns.pcd.outflow" ).c_str(), Feel::po::value<std::string>()->default_value("Dirichlet"), "Type of boundary conditions at inflow: Neumann or Dirichlet" )
+        ( prefixvm( prefix, "blockns.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
+        ( prefixvm( prefix, "blockns.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
+        ( prefixvm( prefix, "blockns.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        // options for pmm
+        ( prefixvm( prefix, "blockns.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
         ;
     return _options;
+}
+
+// preconditioner for Magneto Static - regularized
+po::options_description
+ams_options( std::string const& prefix )
+{
+    po::options_description _options( "AMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "useEdge" ).c_str(), Feel::po::value<bool>()->default_value(true), "true: SetConstantEdgeVector, false: SetCoordinates" )
+        //( prefixvm( prefix, "threshold" ).c_str(), Feel::po::value<bool>()->default_value(false), "remove near null values in Grad" )
+        ( prefixvm( prefix, "setAlphaBeta" ).c_str(), Feel::po::value<bool>()->default_value(false), "Use locally constructed A_alpha and A_beta" )
+        //( prefixvm( prefix, "singular" ).c_str(), Feel::po::value<bool>()->default_value(false), "Force the relaxation parameter to be zero" )
+        ( prefixvm( prefix, "relax" ).c_str(), Feel::po::value<double>()->default_value(1.), "Relaxation parameter" )
+        ;
+    return _options
+        .add( backend_options( prefix.c_str() ))  // for AMS
+        /* if ams.pc-type == AS */
+        .add( backend_options( prefixvm(prefix, "1").c_str() )) // the (1,1).1 block
+        .add( backend_options( prefixvm(prefix, "2").c_str() )) // the (1,1).2 block
+        ;
+}
+
+// preconditioner for Magneto Static - saddle point
+po::options_description
+blockms_options( std::string const& prefix )
+{
+    po::options_description _options( "BLOCKMS options (" + prefix + ")" );
+    _options.add_options()
+        ( prefixvm( prefix, "penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" );
+    return _options
+        .add(     ams_options( prefixvm(prefix, "11").c_str() ))  // the (1,1) block
+        .add( backend_options( prefixvm(prefix, "22").c_str() )); // the (2,2) block
 }
 
 /**
@@ -612,6 +801,9 @@ exporter_options( std::string const& prefix )
         // matlab options
         ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
 
+        // spaces options (P0 to P1 smoothing)
+        ( prefixvm( prefix,"exporter.element-spaces" ).c_str(), Feel::po::value<std::string>()->default_value( "P0" ), "spaces for P0 fields export. Choices : P0 (=only P0 visu), P1 (=smoothed P0, only P1 visu), P0+P1 (P0 + smoothed P0 visu)" )
+
         //
         // ensightgold
         //
@@ -625,12 +817,10 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.ensightgold.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
         ( prefixvm( prefix,"exporter.ensightgold.pack.timesteps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Allows to set the number of timesteps that will be stored in a single file, before switching to a new one. This option is meant to be used with --exporter.ensightgold.merge.timesteps. A value <= 0 means that all timesteps will go in the same file" )
         ( prefixvm( prefix,"exporter.gmsh.merge" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported data from different into a single file (reduces the number of output files)" )
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-        ( prefixvm( prefix,"exporter.hdf5.merge" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Merge exported data from different into a single file (reduces the number of output files)" )
-#endif
 #if defined(FEELPP_HAS_VTK) && defined(FEELPP_VTK_INSITU_ENABLED)
-        ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer)." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable In-situ visualization with VTK exporter (Data won't be written to disk any longer, see --exporter.vtk.insitu.save to enable it)." )
         ( prefixvm( prefix,"exporter.vtk.insitu.pyscript" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify a python user script for visualization." )
+        ( prefixvm( prefix,"exporter.vtk.insitu.save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "When this option is enabled, data will be written to disk when in using In-situ visualization." )
         ( prefixvm( prefix,"exporter.vtk.insitu.hostname" ).c_str(), Feel::po::value<std::string>()->default_value( "localhost" ), "Specify a hostname to which the simulation will connect for coprocessing." )
         ( prefixvm( prefix,"exporter.vtk.insitu.port" ).c_str(), Feel::po::value<int>()->default_value( 22222 ), "Specify the connection port used for coprocessing." )
 #endif
@@ -652,6 +842,36 @@ po::options_description aitken_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+msi_options( std::string const& prefix )
+{
+    po::options_description _options( "Multiscale image " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"msi.level" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "Coarsening level to pass from a fine grid to a coarse one" )
+        ( prefixvm( prefix,"msi.pixelsize" ).c_str(), Feel::po::value<double>()->default_value( 8.9e-3  ), " Pixel size " )
+
+               ;
+    return _options;
+}
+
+// fit options
+po::options_description
+fit_options( std::string const& prefix )
+{
+    po::options_description _options( "Fit " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"fit.datafile" ).c_str(), Feel::po::value<std::string>(), "X - f(X) data file measures" )
+        ( prefixvm( prefix,"fit.kind" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Kind of interpolator : P0 (=0), P1 (=1), Spline (=2), Akima (=3)" )
+        ( prefixvm( prefix,"fit.type" ).c_str(), Feel::po::value<std::string>()->default_value( "Akima" ), "type of interpolator : P0 , P1, Spline, Akima" )
+        ( prefixvm( prefix,"fit.P0" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "left = 0, right = 1, center = 2" )
+        ( prefixvm( prefix,"fit.P1_right" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "zero = 0, constant = 1, extrapol = 2" )
+        ( prefixvm( prefix,"fit.P1_left" ).c_str(), Feel::po::value<int>()->default_value( 1  ), "zero = 0, constant = 1, extrapol = 2" )
+        ( prefixvm( prefix,"fit.Spline_right" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "natural = 0, clamped = 1" )
+        ( prefixvm( prefix,"fit.Spline_left" ).c_str(), Feel::po::value<int>()->default_value( 0  ), "natural = 0, clamped = 1" )
+
+               ;
+    return _options;
+}
 
 po::options_description
 feel_options( std::string const& prefix  )
@@ -674,7 +894,8 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Mp") )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
-        .add( btpcd_options( prefix ) )
+        .add( blockns_options( prefix ) )
+        //.add( blockms_options( prefix ) )
 
         /* nonlinear solver options */
         .add( nlsolver_options() )
@@ -682,6 +903,7 @@ feel_options( std::string const& prefix  )
         /* discr options */
         .add( ts_options( prefix ) )
         .add( bdf_options( prefix ) )
+        .add( cnab2_options( prefix ) )
 
         /* exporter options */
         .add( exporter_options( prefix ) )
@@ -691,6 +913,9 @@ feel_options( std::string const& prefix  )
         .add( nlopt_options( prefix ) )
 #endif
 
+        .add( mesh_options( prefix ) )
+        /* arm options */
+        .add( arm_options( prefix ) )
         /* gmsh options */
         .add( gmsh_options( prefix ) )
 
@@ -727,6 +952,9 @@ feel_options( std::string const& prefix  )
         .add( functionspace_options( prefix ) )
 #endif
         .add( aitken_options( prefix ) )
+
+        .add (msi_options(prefix))
+        .add (fit_options(prefix))
         ;
 
     return opt;

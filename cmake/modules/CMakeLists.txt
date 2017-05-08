@@ -1,6 +1,6 @@
 ###  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-12-31
 #
 #  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -48,4 +48,5 @@ FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 #   ResolveCompilerPaths.cmake
 #   UseLATEX.cmake )
 
-INSTALL(FILES ${modules} DESTINATION share/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)

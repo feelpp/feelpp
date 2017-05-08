@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -55,7 +55,7 @@ Bench1::run()
 
     if ( this->vm().count( "nochdir" ) )
     {
-        this->changeRepository( boost::format( "/benchmarks/perf/%1%/%2$dD/%3$.3f" )
+        this->changeRepository( boost::format( "benchmarks/perf/%1%/%2$dD/%3$.3f" )
                                 % this->about().appName()
                                 % this->vm()["dim"].as<int>()
                                 % this->vm()["hsize"].as<double>() );

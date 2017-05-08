@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -175,7 +175,7 @@ public:
     }
 
     //Returns the local indices of all the subentities that compose the entity
-    index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 )
+    index_map_type entityToLocal ( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         index_map_type indices( top_dim+1 );
 
@@ -247,7 +247,7 @@ public:
     }
 
 
-    points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 )
+    points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 

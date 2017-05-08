@@ -39,7 +39,9 @@ main( int argc, char** argv )
                      _desc=opusapp_options("eadscrb")
                      .add(makeEadsOptions())
                      .add(crbOptions())
-                     .add(eimOptions()),
+                     .add(eimOptions())
+                     .add(crbSEROptions())
+                     .add(podOptions()),
                      _about=makeEadsAbout( "eadscrb" ));
 
     OpusApp<OpusModelRB<2,1,2> > app ;

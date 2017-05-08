@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -260,7 +260,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
         point_type __pt( __i,__nd, false );
-        __pt.marker() = 0;
+        __pt.setMarker( 0 );
         __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
         __pt.setProcessId( mesh->worldComm().localRank() );
 
@@ -335,7 +335,6 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         pf->setMarker( 0 );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
@@ -403,13 +402,13 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
         {
             __pt.setOnBoundary( true );
-            __pt.marker() = 0;
+            __pt.setMarker( 0 );
         }
 
         else
         {
             __pt.setOnBoundary( false );
-            __pt.marker() = 1;
+            __pt.setMarker( 1 );
         }
 
         mesh->addPoint( __pt );
@@ -490,7 +489,6 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         pf->setMarker( 0  );
         pf->setProcessIdInPartition( mesh->worldComm().localRank() );
         pf->setProcessId( mesh->worldComm().localRank() );
-        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );

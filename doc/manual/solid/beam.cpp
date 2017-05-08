@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -23,6 +23,7 @@
 */
 
 #include <feel/feel.hpp>
+#include <feel/feelcore/units.hpp>
 
 inline
 Feel::po::options_description
@@ -87,7 +88,7 @@ public:
         beta(     doption("beta"   )),
         bcCoeff(  doption("bccoeff")),
         M_bctype( ioption("bctype" )),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
+        exporter( Exporter<mesh_type>::New( this->about().appName() ) ),
         timers()
     {
         LOG(INFO) << "[Beam] hsize = " << meshSize << "\n";
@@ -99,12 +100,9 @@ public:
 
     ~Beam()
     {
-        std::map<std::string,std::pair<mpi::timer,double> >::iterator it = timers.begin();
-        std::map<std::string,std::pair<mpi::timer,double> >::iterator en = timers.end();
-
-        for ( ; it != en; ++it )
+        for( auto const& d: timers )
         {
-            LOG(INFO) << it->first << " : " << it->second.second << " s elapsed\n";
+            LOG(INFO) << d.first << " : " << d.second.second << " s elapsed\n";
         }
     }
 
@@ -171,13 +169,13 @@ Beam<nDim,nOrder>::run()
     /*
      * Data associated with the simulation
      */
-    const double E = Environment::vm(_name="E").template as<double>();
-    const double nu = Environment::vm(_name="nu").template as<double>();
+    auto E = doption(_name="E")*pascal;
+    const double nu = doption(_name="nu");
 
-    const double mu = E/( 2*( 1+nu ) );
-    const double lambda = E*nu/( ( 1+nu )*( 1-2*nu ) );
-    const double density = 1e3;
-    const double gravity = -2;//-density*0.05;
+    auto mu = E/( 2*( 1+nu ) );
+    auto lambda = E*nu/( ( 1+nu )*( 1-2*nu ) );
+    auto density = 1e3;
+    auto gravity = -2*newton/pow<Dim>(meter);//-density*0.05;
     LOG(INFO) << "lambda = " << lambda << "\n"
           << "mu     = " << mu << "\n"
           << "gravity= " << gravity << "\n";
@@ -193,9 +191,9 @@ Beam<nDim,nOrder>::run()
     timers["assembly"].first.restart();
 
     if ( Dim == 3 )
-        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity*oneZ() )*id( v ) );
+        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity.value()*oneZ() )*id( v ) );
     else
-        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity*oneY() )*id( v ) );
+        form1( _test=Xh, _vector=F ) = integrate( elements( mesh ), trans( gravity.value()*oneY() )*id( v ) );
 
     timers["assembly"].second = timers["assembly"].first.elapsed();
 
@@ -208,16 +206,16 @@ Beam<nDim,nOrder>::run()
     auto def = sym(grad(u));
     auto a = form2( _test=Xh, _trial=Xh, _matrix=D );
     a = integrate( elements( mesh ),
-                   lambda*divt( u )*div( v )  +
-                   2*mu*trace( trans( deft )*def ) );
+                   lambda.value()*divt( u )*div( v )  +
+                   2.*mu.value()*trace( trans( deft )*def ) );
 
     if ( M_bctype == 1 ) // weak Dirichlet bc
     {
         auto Id = eye<nDim>();
         a += integrate( markedfaces( mesh, "clamped" ),
-                        - trans( ( 2*mu*deft+lambda*trace( deft )*Id )*N() )*id( v )
-                        - trans( ( 2*mu*def+lambda*trace( def )*Id )*N() )*idt( u )
-                        + bcCoeff*std::max(2*mu,lambda)*trans( idt( u ) )*id( v )/hFace() );
+                        - trans( ( 2.*mu.value()*deft+lambda.value()*trace( deft )*Id )*N() )*id( v )
+                        - trans( ( 2.*mu.value()*def+lambda.value()*trace( def )*Id )*N() )*idt( u )
+                        + bcCoeff*std::max(2.*mu.value(),lambda.value())*trans( idt( u ) )*id( v )/hFace() );
     }
 
     if ( M_bctype == 0 )
@@ -233,36 +231,6 @@ Beam<nDim,nOrder>::run()
     auto i1 = mean( _range=markedfaces( mesh, "tip"  ), _expr=idv( u ) );
     LOG(INFO) << "deflection: " << i1 << "\n";
 
-
-
-#if 0
-    MeshMover<mesh_type> meshmove;
-    u.vec() *= doption("scale");
-    meshmove.apply( Xh->mesh(), u );
-
-    element_type w( Xh, "w" );
-
-    for ( int i = 1; i < 5; ++i )
-    {
-        w = vf::project( Xh,
-                         elements( Xh->mesh() ),
-                         P() );
-        this->exportResults( i, u, w );
-        meshmove.apply( Xh->mesh(), u );
-    }
-
-    LOG(INFO) << "||v||_2 = " << v.l2Norm() << " (P() before move)\n";
-    LOG(INFO) << "||w||_2 = " << w.l2Norm() << " (P() after move)\n";
-
-
-    w.add( -1.0, v );
-
-    LOG(INFO) << "||u||_2 = " << w.l2Norm() << " (displacement u)\n";
-    LOG(INFO) << "||w-v||_2 = " << w.l2Norm() << " (displacement w-v\n";
-
-    w.add( -1.0, u );
-    LOG(INFO) << "||(w-v)-u||_2 = " << w.l2Norm() << " (should be 0, ie u=w-v)\n";
-#endif
 } // Beam::run
 
 template<int nDim, int nOrder>

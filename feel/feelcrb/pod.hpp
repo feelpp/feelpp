@@ -302,7 +302,7 @@ void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )
 
     }
 
-    BOOST_FOREACH( auto d, data )
+    for( auto d : data )
     {
         mode_file << d.first << " " << d.second << "\n";
     }
@@ -471,7 +471,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
     std::vector<double> copy_eigen_values ( eigen_values );
     int number_of_good_eigenvectors=0;
     bool go = true;
-    double min_eigenvalue = option(_name="pod.minimum-eigenvalue").template as<double>();
+    double min_eigenvalue = doption(_name="pod.minimum-eigenvalue");
     //for(int maxmode=0; maxmode<M_Nm; maxmode++)
     auto max = std::max_element( copy_eigen_values.begin(), copy_eigen_values.end() );
     double idx = std::distance( copy_eigen_values.begin(), max );
@@ -550,7 +550,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
         double Awnorm = Aw.norm();
         double lambdawnorm = lambdaw.norm();
         double eigenvectornorm = eigenvector.norm();
-        double check_tol = option(_name="pod.check-tol").template as<double>();
+        double check_tol = doption(_name="pod.check-tol");
         CHECK( math::abs(Awnorm - lambdawnorm) < check_tol )<<" A w : "<<Awnorm<<" and lambda w : "<<lambdawnorm<<" so math::abs(A w - lambda w) : "<<math::abs(Awnorm - lambdawnorm)<<" and pod.check-tol : "<<check_tol<<" -- eigenvalue : "<<eigenvalue<<"\n";
 
         if( (i+1) < max_idx.size() )
@@ -560,7 +560,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
 
 
     //check orthogonality
-    if( option(_name="pod.check-orthogonality").template as<bool>() )
+    if( boption(_name="pod.check-orthogonality") )
     {
         position_of_largest_eigenvalue=max_idx[0];
         for(int i=1; i<M_Nm; i++)

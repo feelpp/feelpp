@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -57,6 +57,15 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
     super( vm, exp_prefix, worldComm ),
+    M_worldCommBase(worldComm)
+{
+    init();
+}
+
+template<typename MeshType, int N>
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm )
+    :
+    super( exp_prefix, worldComm ),
     M_worldCommBase(worldComm)
 {
     init();
@@ -136,6 +145,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::save() const
 {
+    tic();
     if ( !this->worldComm().isActive() ) return;
 
     DVLOG(2) << "checking if frequency is ok\n";
@@ -158,11 +168,19 @@ ExporterEnsightGold<MeshType,N>::save() const
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
 
+        mesh_ptrtype mesh = NULL;
+
         /* check if we have steps for the current dataset */
         if(__it == __end)
         {
             LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
             hasSteps = false;
+
+            /* if we have no time steps, we still save the geometry */
+            if(__ts->hasMesh())
+            {
+                mesh = __ts->mesh();
+            }
         }
         /* if we have steps */
         else
@@ -172,52 +190,50 @@ ExporterEnsightGold<MeshType,N>::save() const
 
             /* get the mesh for the timestep to save */
             typename timeset_type::step_ptrtype __step = *__it;
-            auto mesh = __step->mesh();
+            mesh = __step->mesh();
+        }
 
-            /* If we haven't yet computed the markers to be written */
-            /* or we restart a simulation, we need to update the markers to be written */
-            if( M_markersToWrite.size() == 0)
-            {
-                this->computeMarkersToWrite(mesh);
-            }
+        /* If we haven't yet computed the markers to be written */
+        /* or we restart a simulation, we need to update the markers to be written */
+        if( mesh && M_markersToWrite.size() == 0)
+        {
+            this->computeMarkersToWrite(mesh);
         }
 
         ++__ts_it;
     }
 
+    /*
     if(!hasSteps)
     {
         return;
     }
+    */
 
-    boost::timer ti;
-    DVLOG(2) << "export in ensight format\n";
-
-    ti.restart();
-    DVLOG(2) << "export geo(mesh) file\n";
+    tic();
     writeGeoFiles();
-    DVLOG(2) << "export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save geo",FLAGS_v>1);
 
-    LOG(INFO) << "Geo File written" << std::endl;
 
-    ti.restart();
-    DVLOG(2) << "export variable file\n";
-    writeVariableFiles();
-    DVLOG(2) << "export variable files ok, time " << ti.elapsed() << "\n";
-
-    ti.restart();
-    DVLOG(2) << "export time set\n";
+    /* only try to write variable data when we have time steps */
+    if(hasSteps)
+    {
+        tic();
+        writeVariableFiles();
+        toc("ExporterEnsightGold::save variables",FLAGS_v>1);
+    }
+    tic();
     this->saveTimeSet();
-    DVLOG(2) << "export time set ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save timeset",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "export case file\n";
+    tic();
     writeCaseFile();
-    DVLOG(2) << "export case file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save case",FLAGS_v>1);
 
-    DVLOG(2) << "export sos\n";
+    tic();
     writeSoSFile();
-    DVLOG(2) << "export sos ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsightGold::save sos",FLAGS_v>1);
+    toc("ExporterEnsightGold::save", FLAGS_v > 0 );
 }
 
 template<typename MeshType, int N>
@@ -244,7 +260,7 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
             __out << "MULTIPLE_CASEFILES\n"
                 << "total number of cfiles: 1 " << std::endl
                 << "cfiles global path: " << fs::current_path().string() << "\n"
-                << "cfiles pattern: "<<this->prefix() << ".case\n"
+                << "cfiles pattern: "<< this->prefix() << ".case\n"
                 << "cfiles start number: 0\n"
                 << "cfiles increment: 1\n\n";
         }
@@ -300,6 +316,42 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
     }
 }
 template<typename MeshType, int N>
+template<typename Iterator,typename TSt>
+void
+ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator end,
+                                                         std::string const& loc,
+                                                         std::string const& type,
+                                                         std::string const& ext,
+                                                         TSt const& __ts,
+                                                         std::ostream& __out ) const
+{
+    for( ; it != end; ++it )
+    {
+        if( boption( _name="exporter.ensightgold.merge.timesteps") )
+        {
+            __out << type << " per " << loc << ": "
+                  << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
+                  << it->second.name() << " " << __ts->name() << "." << it->first;
+            if( ! boption( _name="exporter.ensightgold.merge.markers") )
+            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+            /* if we want to pack data in several files instead of one, we add an index to the filename */
+            if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
+            { __out << ".*"; }
+            __out << "." << ext << std::endl;
+        }
+        else
+        {
+            __out << type << " per " << loc << ": "
+                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
+                  << it->second.name() << " " << __ts->name() << "." << it->first;
+            if( ! boption( _name="exporter.ensightgold.merge.markers") )
+            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+            __out << "." << ext << "." << std::string(M_timeExponent, '*') << std::endl;
+        }
+    }
+}
+
+template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 {
@@ -311,386 +363,253 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
         timeset_const_iterator __ts_it = this->beginTimeSet();
         timeset_const_iterator __ts_en = this->endTimeSet();
 
-        filestr << this->path() << "/"
-            << this->prefix();
-        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-        { filestr << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-        filestr << ".case";
-
-        std::ofstream __out( filestr.str().c_str() );
-
-        if ( __out.fail() )
+        while ( __ts_it != __ts_en )
         {
-            DVLOG(2) << "cannot open " << filestr.str()  << "\n";
-            exit( 0 );
-        }
+            timeset_ptrtype __ts = *__ts_it;
 
-        __out << "FORMAT:\n"
-            << "type: ensight gold\n"
-            << "GEOMETRY:\n";
+            filestr << this->path() << "/"
+                << __ts->name();
+            if( ! boption( _name="exporter.ensightgold.merge.markers") )
+            { filestr << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+            filestr << ".case";
 
-        switch ( this->exporterGeometry() )
-        {
-            case EXPORTER_GEOMETRY_STATIC:
+            std::ofstream __out( filestr.str().c_str() );
+
+            if ( __out.fail() )
+            {
+                DVLOG(2) << "cannot open " << filestr.str()  << "\n";
+                exit( 0 );
+            }
+
+            __out << "FORMAT:\n"
+                << "type: ensight gold\n"
+                << "GEOMETRY:\n";
+
+            switch ( this->exporterGeometry() )
+            {
+                case EXPORTER_GEOMETRY_STATIC:
                 {
-                    timeset_ptrtype __ts = *__ts_it;
                     __out << "model: " << __ts->name();
                     if( ! boption( _name="exporter.ensightgold.merge.markers") )
                     { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
                     __out << ".geo";
                 }
                 break;
-            default:
-            case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
-            case EXPORTER_GEOMETRY_CHANGE:
+                default:
+                case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
+                case EXPORTER_GEOMETRY_CHANGE:
                 {
-                    while ( __ts_it != __ts_en )
+                    if( boption( _name="exporter.ensightgold.merge.timesteps") )
                     {
-                        timeset_ptrtype __ts = *__ts_it;
+                        __out << "model: " << __ts->index() << " 1 " << __ts->name();
+                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
+                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+                        /* if we want to pack data in several files instead of one, we add an index to the filename */
+                        if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
+                        { __out << ".*"; }
+                        __out << ".geo";
+                    }
+                    else
+                    {
+                        __out << "model: " << __ts->index() << " " << __ts->name();
+                        if( ! boption( _name="exporter.ensightgold.merge.markers") )
+                        { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
+                        __out << ".geo" << "." << std::string(M_timeExponent, '*');
+                    }
 
-                        if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                        {
-                            __out << "model: " << __ts->index() << " 1 " << __ts->name();
-                            if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                            /* if we want to pack data in several files instead of one, we add an index to the filename */
-                            if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                            { __out << ".*"; }
-                            __out << ".geo";
-                        }
-                        else
-                        {
-                            __out << "model: " << __ts->index() << " " << __ts->name();
-                            if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                            { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                            __out << ".geo" << "." << std::string(M_timeExponent, '*');
-                        }
-
-                        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
-                            __out << " change_coords_only";
-
-                        ++__ts_it;
+                    if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+                    {
+                        __out << " change_coords_only";
                     }
                 }
                 break;
-        }
-        __out << "\n";
+            }
+            __out << "\n";
 
-        __out << "VARIABLES:" << "\n";
+            __out << "VARIABLES:" << "\n";
 
-        __ts_it = this->beginTimeSet();
+            auto __tstp_st = __ts->beginStep();
+            auto __tstp_en = __ts->endStep();
 
-        while ( __ts_it != __ts_en )
-        {
-            timeset_ptrtype __ts = *__ts_it;
-
-            // treat constant per case
-            auto s_it = ( *__ts->rbeginStep() )->beginScalar();
-            auto s_en = ( *__ts->rbeginStep() )->endScalar();
-            for ( ; s_it != s_en; ++s_it )
+            /* protect this portion of code */
+            /* if we don't have time steps */
+            /* happens when we only have the mesh */
+            if(__tstp_st != __tstp_en)
             {
-                if ( s_it->second.second )
+                auto __tstp_it = boost::prior(__tstp_en);
+
+                // treat constant per case
+                auto s_it = ( *__tstp_it )->beginScalar();
+                auto s_en = ( *__tstp_it )->endScalar();
+                for ( ; s_it != s_en; ++s_it )
                 {
-                    // constant over time
-                    __out << "constant per case: " << s_it->first << " " << s_it->second.first << "\n";
-                }
-                else
-                {
-                    if ( this->worldComm().isMasterRank() )
+                    if ( s_it->second.second )
                     {
-
-                        __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << s_it->first << ".scl";
-                        // loop over time
-                        auto stepit = __ts->beginStep();
-                        auto stepen = __ts->endStep();
-
-                        std::ofstream ofs;
-                        int d = std::distance( stepit, stepen );
-                        LOG(INFO) << "distance = " << d;
-                        if ( d > 1 )
-                            ofs.open( s_it->first+".scl", std::ios::out | std::ios::app );
-                        else
-                            ofs.open( s_it->first+".scl", std::ios::out );
-
-                        auto step = *boost::prior(stepen);
-                        ofs << step->scalar( s_it->first ) << "\n";
-                        ofs.close();
-                        __out << "\n";
+                        // constant over time
+                        __out << "constant per case: " << s_it->first << " " << __ts->name() << "." << s_it->second.first << "\n";
                     }
+                    else
+                    {
+                        if ( this->worldComm().isMasterRank() )
+                        {
 
+                            __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << __ts->name() << "." << s_it->first << ".cst";
+                            // loop over time
+                            auto stepit = __ts->beginStep();
+                            auto stepen = __ts->endStep();
+
+                            std::ofstream ofs;
+                            int d = std::distance( stepit, stepen );
+                            LOG(INFO) << "distance = " << d;
+                            if ( d > 1 )
+                                ofs.open( this->path()+ "/"+ __ts->name()+"."+s_it->first+".cst", std::ios::out | std::ios::app );
+                            else
+                                ofs.open( this->path()+ "/" +__ts->name()+"."+s_it->first+".cst", std::ios::out );
+
+                            auto step = *boost::prior(stepen);
+                            ofs << step->scalar( s_it->first ) << "\n";
+                            ofs.close();
+                            __out << "\n";
+                        }
+
+                    }
                 }
+
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalScalar(),
+                                        ( *__tstp_it )->endNodalScalar(),
+                                        "node", "scalar", "scl",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalVector(),
+                                        ( *__tstp_it )->endNodalVector(),
+                                        "node", "vector", "vec",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2(),
+                                        ( *__tstp_it )->endNodalTensor2(),
+                                        "node", "tensor asym", "tsr",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2Symm(),
+                                        ( *__tstp_it )->endNodalTensor2Symm(),
+                                        "node", "tensor symm", "tsrs",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementScalar(),
+                                        ( *__tstp_it )->endElementScalar(),
+                                        "element",  "scalar", "scl",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementVector(),
+                                        ( *__tstp_it )->endElementVector(),
+                                        "element", "vector", "vec",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2(),
+                                        ( *__tstp_it )->endElementTensor2(),
+                                        "element", "tensor asym", "tsr",
+                                        __ts, __out );
+                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2Symm(),
+                                        ( *__tstp_it )->endElementTensor2Symm(),
+                                        "element", "tensor symm", "tsrs",
+                                        __ts, __out );
+
             }
 
-            typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__ts->rbeginStep() )->beginNodalScalar();
-            typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__ts->rbeginStep() )->endNodalScalar();
+            __out << "TIME:\n";
 
-            while ( __it != __end )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "scalar per node: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __it->second.name() << " " << __it->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".scl" << std::endl;
-                }
-                else
-                {
-                    __out << "scalar per node: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __it->second.name() << " " << __it->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-                }
-                ++__it;
-            }
-
-            typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__ts->rbeginStep() )->beginNodalVector();
-            typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__ts->rbeginStep() )->endNodalVector();
-
-            while ( __itv != __env )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "vector per node: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __itv->second.name() << " " << __itv->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".vec" << std::endl;
-                }
-                else
-                {
-                    __out << "vector per node: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __itv->second.name() << " " << __itv->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-                }
-                ++__itv;
-            }
-
-            typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__ts->rbeginStep() )->beginNodalTensor2();
-            typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__ts->rbeginStep() )->endNodalTensor2();
-
-            while ( __itt != __ent )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "tensor per node: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __itt->second.name() << " " << __itt->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".tsr" << std::endl;
-                }
-                else
-                {
-                    __out << "tensor per node: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __itt->second.name() << " " << __itt->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl; 
-                }
-                ++__itt;
-            }
-
-            typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__ts->rbeginStep() )->beginElementScalar();
-            typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__ts->rbeginStep() )->endElementScalar();
-
-            while ( __it_el != __end_el )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "scalar per element: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __it_el->second.name() << " " << __it_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".scl" << std::endl;
-                }
-                else
-                {
-                    __out << "scalar per element: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __it_el->second.name() << " " << __it_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".scl" << "." << std::string(M_timeExponent, '*') << std::endl;
-                }
-                ++__it_el;
-            }
-
-            typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__ts->rbeginStep() )->beginElementVector();
-            typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__ts->rbeginStep() )->endElementVector();
-
-            while ( __itv_el != __env_el )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "vector per element: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __itv_el->second.name() << " " << __itv_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".vec" << std::endl;
-                }
-                else
-                {
-                    __out << "vector per element: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __itv_el->second.name() << " " << __itv_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".vec" << "." << std::string(M_timeExponent, '*') << std::endl;
-                }
-                ++__itv_el;
-            }
-
-            typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__ts->rbeginStep() )->beginElementTensor2();
-            typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__ts->rbeginStep() )->endElementTensor2();
-
-            while ( __itt_el != __ent_el )
-            {
-                if( boption( _name="exporter.ensightgold.merge.timesteps") )
-                {
-                    __out << "tensor per element: "
-                        << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                        << __itt_el->second.name() << " " << __itt_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    /* if we want to pack data in several files instead of one, we add an index to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    { __out << ".*"; }
-                    __out << ".tsr" << std::endl;
-                }
-                else
-                {
-                    __out << "tensor per element: "
-                        << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                        << __itt_el->second.name() << " " << __itt_el->first;
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __out << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().globalRank(); }
-                    __out << ".tsr" << "." << std::string(M_timeExponent, '*') << std::endl;
-                }
-                ++__itt_el;
-            }
-
-            ++__ts_it;
-        }
-
-        __out << "TIME:\n";
-        __ts_it = this->beginTimeSet();
-
-        while ( __ts_it != __ts_en )
-        {
-            timeset_ptrtype __ts = *__ts_it;
             typename timeset_type::step_const_iterator __its = __ts->beginStep();
-
-            __out << "time set:        " << __ts->index() << "\n"
-                << "number of steps: " << __ts->numberOfSteps() << "\n"
-                << "filename start number: " << ( *__its )->index() << "\n"
-                << "filename increment: " << 1 << "\n"
-                << "time values: ";
-
-            uint16_type __l = 0;
             typename timeset_type::step_const_iterator __ens = __ts->endStep();
+
+            if(__its != __ens)
+            {
+                __out << "time set:        " << __ts->index() << "\n"
+                    << "number of steps: " << __ts->numberOfSteps() << "\n"
+                    << "filename start number: " << ( *__its )->index() << "\n"
+                    << "filename increment: " << 1 << "\n"
+                    << "time values: ";
+            }
+            else
+            {
+                __out << "time set:        " << TS_INITIAL_INDEX << "\n"
+                    << "number of steps: " << 1 << "\n"
+                    << "filename start number: " << TS_INITIAL_INDEX << "\n"
+                    << "filename increment: " << 1 << "\n"
+                    << "time values: 1.0";
+            }
+
+            uint16_type __l = 1;
 
             while ( __its != __ens )
             {
 
-                __out << ( *__its )->time() << " ";
+                __out << std::scientific << std::setprecision( 6 ) << ( *__its )->time() << " ";
 
                 if ( __l++ % 10 == 0 )
                     __out << "\n";
 
                 ++__its;
             }
+            __out << "\n";
 
+            if( boption( _name="exporter.ensightgold.merge.timesteps") )
+            {
+                auto ts = *(this->beginTimeSet());
+
+                // create several filesets if we pack data into groups in several files
+                if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
+                {
+                    int stepsPerFile = ioption( _name="exporter.ensightgold.pack.timesteps" );
+                    int nbFiles = ts->numberOfSteps() / stepsPerFile;
+                    int r = ts->numberOfSteps() % stepsPerFile;
+
+                    __out << "FILE\n";
+                    __out << "file set: 1\n";
+                    // create a file set for each step pack
+                    int i = 0;
+                    for( i = 0; i < nbFiles; i++)
+                    {
+                        __out << "filename index: " << i + 1 << "\n";
+                        __out << "number of steps: " << stepsPerFile << "\n";
+                    }
+
+                    // if we have remainder steps to pack
+                    // we create an additional file pack
+                    if( r != 0 )
+                    {
+                        __out << "filename index: " << i + 1 << "\n";
+                        __out << "number of steps: " << r << "\n";
+                    }
+                }
+                else
+                {
+                    __out << "FILE\n";
+                    __out << "file set: 1\n";
+                    __out << "number of steps: " << ts->numberOfSteps() << "\n";
+                }
+            }
+
+            __out << "\n";
+
+            if ( boption( _name="exporter.ensightgold.use-sos" ) == false )
+            {
+                // In the following line, we substituted the Environment::numberOfProcessors
+                // by the size of the worldComm passed to the exporter to ensure that we are using
+                // only the data for the current processor
+                if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+                {
+                    __out << "APPENDED_CASEFILES\n"
+                        << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
+                        // no need for that
+                        // << "cfiles global path: " << fs::current_path().string() << "\n"
+                        << "cfiles: ";
+                    for(int p = 1; p < this->worldComm().globalSize(); ++p )
+                    {
+                        std::ostringstream filestr;
+                        filestr << __ts->name() << "-"
+                            << this->worldComm().globalSize() << "_" << p << ".case";
+                        __out << filestr.str() << "\n        ";
+                    }
+                }
+            } // use-sos
+
+            __out.close();
             ++__ts_it;
         }
-        __out << "\n";
-
-        if( boption( _name="exporter.ensightgold.merge.timesteps") )
-        {
-            auto ts = *this->beginTimeSet();
-            int stepsPerFile = ioption( _name="exporter.ensightgold.pack.timesteps" );
-            int nbFiles = ts->numberOfSteps() / stepsPerFile;
-            int r = ts->numberOfSteps() % stepsPerFile;
-
-            // create several filesets if we pack data into groups in several files
-            if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-            {
-                __out << "FILE\n";
-                __out << "file set: 1\n";
-                // create a file set for each step pack
-                int i = 0;
-                for( i = 0; i < nbFiles; i++)
-                {
-                    __out << "filename index: " << i + 1 << "\n";
-                    __out << "number of steps: " << stepsPerFile << "\n";
-                }
-
-                // if we have remainder steps to pack
-                // we create an additional file pack
-                if( r != 0 )
-                {
-                    __out << "filename index: " << i + 1 << "\n";
-                    __out << "number of steps: " << r << "\n";
-                }
-            }
-            else
-            {
-                __out << "FILE\n";
-                __out << "file set: 1\n";
-                __out << "number of steps: " << ts->numberOfSteps() << "\n";
-            }
-        }
-
-        __out << "\n";
-
-        if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
-        {
-            // In the following line, we substituted the Environment::numberOfProcessors
-            // by the size of the worldComm passed to the exporter to ensure that we are using
-            // only the data for the current processor
-            if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
-            {
-                __out << "APPENDED_CASEFILES\n"
-                    << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
-                    // no need for that
-                    // << "cfiles global path: " << fs::current_path().string() << "\n"
-                    << "cfiles: ";
-                for(int p = 1; p < this->worldComm().globalSize(); ++p )
-                {
-                    std::ostringstream filestr;
-                    filestr << this->prefix() << "-"
-                        << this->worldComm().globalSize() << "_" << p << ".case";
-                    __out << filestr.str() << "\n        ";
-                }
-            }
-        } // use-sos
-
-        __out.close();
     }
 }
 
@@ -705,7 +624,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
     MPI_File fh;
     MPI_Status status;
-    MPI_Info info;
+    //MPI_Info info;
     MPI_Offset offset = 0;
 
     timeset_const_iterator __ts_it = this->beginTimeSet();
@@ -717,7 +636,34 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 
         typename timeset_type::step_const_iterator __it = __ts->beginStep();
         typename timeset_type::step_const_iterator __end = __ts->endStep();
-        __it = boost::prior( __end );
+        int timeIndex = TS_INITIAL_INDEX;
+        mesh_ptrtype mesh = NULL;
+
+        /* if we do not have time steps, we try to save the mesh at least */
+        if( __it == __end )
+        {
+            if ( __ts->hasMesh() )
+            { mesh = __ts->mesh(); }
+        }
+        /* otherwise we save the mesh */
+        else
+        {
+            __it = boost::prior( __end );
+
+            /* check that step is in memory */
+            if( (*__it)->isInMemory() && (*__it)->hasMesh() )
+            { mesh = (*__it)->mesh(); }
+
+            /* record step index */
+            timeIndex = (*__it)->index();
+        }
+
+        /* if we were not able to get a mesh, there is a problem */
+        if(!mesh)
+        {
+            LOG(INFO) << "GEO: Unable to get mesh data" << std::endl;
+            return;
+        }
 
         /* static geometry */
         if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
@@ -725,10 +671,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
             LOG(INFO) << "GEO: Static geo mode" << std::endl;
 
             /* only write the geometry in the first timestep */
-            if( __it == __ts->beginStep() ) 
+            if( __it == __ts->beginStep() )
             {
-                time_index = 0 ;
-
                 /* generate geo filename */
                 std::ostringstream __geofname;
                 __geofname << this->path() << "/" << __ts->name();
@@ -736,14 +680,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
                 __geofname << ".geo";
                 M_filename =  __geofname.str();
-                CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
-
-                /* get mesh data */
-                mesh_ptrtype mesh;
-                if ( __ts->hasMesh() )
-                    mesh = __ts->mesh();
-                if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                    mesh = (*__it)->mesh();
+                //CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
 
                 /* Open File with MPI IO */
                 char * str = strdup(__geofname.str().c_str());
@@ -756,8 +693,18 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 }
                 MPI_Barrier( this->worldComm().comm() );
 
-                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                //init MPI_Info object fromhints defined as environment variables
+                //MPI_Info info = initIoInfoFromEnvVars();
+                if( boption( _name="exporter.ensightgold.merge.timesteps" ) )
+                    MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+                else
+                    MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+
+                //MPI_Info_free(&info);
                 free(str);
+                // Initializing cursor in file
+                posInFile=0;
+
 
                 Feel::detail::FileIndex index;
 
@@ -766,49 +713,55 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                     // first read
                     index.read(fh);
                     // we position the cursor at the beginning of the file
-                    MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                    // MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                    posInFile=0;
 
                     /* write C binary if we didn't find the index <=> first pass on the file */
                     if( !index.defined() )
                     {
                         if( this->worldComm().isMasterRank() )
-                        { size = sizeof(buffer); }
-                        else
-                        { size = 0; }
-                        memset(buffer, '\0', sizeof(buffer));
-                        strcpy(buffer, "C Binary");
-                        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                        {
+                            memset(buffer, '\0', sizeof(buffer));
+                            strncpy(buffer, "C Binary", 80);
+                            //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                        }
+                        // all procs increment their offset
+                        posInFile+=80;
                     }
+
 
                     /* Write time step start */
                     if( this->worldComm().isMasterRank() )
-                    { size = sizeof(buffer); }
-                    else
-                    { size = 0; }
-                    memset(buffer, '\0', sizeof(buffer));
-                    strcpy(buffer,"BEGIN TIME STEP");
-                    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                    LOG(INFO) << "saveNodal out: " << buffer;
+                    {
+                        memset(buffer, '\0', sizeof(buffer));
+                        strncpy(buffer, "BEGIN TIME STEP", 80);
+                        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                        LOG(INFO) << "saveNodal out: " << buffer;
+                    }
+                    // all procs increment their offset
+                    posInFile+=80;
 
                     /* add the beginning of the new block to the file */
-                    MPI_File_get_position_shared(fh, &offset);
-                    index.add( offset );
+                    //MPI_File_get_position_shared(fh, &offset);
+                    index.add( posInFile );
                 }
 
                 /* Write the file */
                 this->writeGeoMarkers(fh, mesh);
-
                 if( boption( _name="exporter.ensightgold.merge.timesteps" ) )
                 {
                     /* write timestep end */
                     if( this->worldComm().isMasterRank() )
-                    { size = sizeof(buffer); }
-                    else
-                    { size = 0; }
-                    memset(buffer, '\0', sizeof(buffer));
-                    strcpy(buffer,"END TIME STEP");
-                    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
+                    {
+                        char bufferEnd[80];
+                        memset(buffer, '\0', 80);
+                        strcpy(buffer,"END TIME STEP");
+                        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    }
+                    posInFile+=80;
                     // write back the file index
                     index.write( fh );
                 }
@@ -832,106 +785,97 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 /* WriteGeo(T, f) */
                 /* P0 : Write "END TIME STEP" */
 
-                while ( __it != __end )
+                std::ostringstream __geofname;
+
+                __geofname << this->path() << "/"
+                           << __ts->name();
+                if( ! boption( _name="exporter.ensightgold.merge.markers") )
+                { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
+                /* if we want to pack data in several files instead of one */
+                /* we compute an index to add to the filename */
+                if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
                 {
-                    typename timeset_type::step_ptrtype __step = *__it;
-                    time_index = __step->index();
-
-                    std::ostringstream __geofname;
-
-                    __geofname << this->path() << "/"
-                        << __ts->name();
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
-                    /* if we want to pack data in several files instead of one */
-                    /* we compute an index to add to the filename */
-                    if( ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-                    {
-                        // timestep indices start at 1
-                        __geofname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
-                    }
-                    __geofname << ".geo";
-
-                    if ( __step->isInMemory() )
-                    {
-                        M_filename =  __geofname.str();
-                        //__step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
-
-                        auto mesh = __step->mesh();
-
-                        /* Open File with MPI IO */
-                        char * str = strdup(M_filename.c_str());
-
-                        /* Check if file exists and delete it, if so */
-                        /* (MPI IO does not have a truncate mode ) */
-                        if(this->worldComm().isMasterRank() && __it == __ts->beginStep() && fs::exists(str))
-                        {
-                            MPI_File_delete(str, MPI_INFO_NULL);
-                        }
-                        MPI_Barrier(this->worldComm().comm());
-
-                        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-                        free(str);
-
-                        Feel::detail::FileIndex index;
-
-                        // first read
-                        index.read(fh);
-
-                        /* Move to the beginning of the fie index section */
-                        /* to overwrite it */
-                        if ( index.defined() && __step->index() > 0 ) {
-                            MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
-                        }
-                        else {
-                            // we position the cursor at the beginning of the file
-                            MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
-                        }
-
-                        /* write C binary if we didn't find the index <=> first pass on the file */
-                        if( !index.defined() )
-                        {
-                            if( this->worldComm().isMasterRank() )
-                            { size = sizeof(buffer); }
-                            else
-                            { size = 0; }
-                            memset(buffer, '\0', sizeof(buffer));
-                            strcpy(buffer, "C Binary");
-                            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                        }
-
-                        /* Write time step start */
-                        if( this->worldComm().isMasterRank() )
-                        { size = sizeof(buffer); }
-                        else
-                        { size = 0; }
-                        memset(buffer, '\0', sizeof(buffer));
-                        strcpy(buffer,"BEGIN TIME STEP");
-                        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                        LOG(INFO) << "saveNodal out: " << buffer;
-
-                        /* add the beginning of the new block to the file */
-                        MPI_File_get_position_shared(fh, &offset);
-                        index.add( offset );
-
-                        /* write data for timestep */
-                        this->writeGeoMarkers(fh, mesh);
-
-                        /* write timestep end */
-                        if( this->worldComm().isMasterRank() )
-                        { size = sizeof(buffer); }
-                        else
-                        { size = 0; }
-                        memset(buffer, '\0', sizeof(buffer));
-                        strcpy(buffer,"END TIME STEP");
-                        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-                        // write back the file index
-                        index.write( fh );
-                    }
-
-                    ++__it;
+                    // timestep indices start at 1
+                    __geofname << "." << ((timeIndex - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
                 }
+                __geofname << ".geo";
+
+                M_filename =  __geofname.str();
+
+                /* Open File with MPI IO */
+                char * str = strdup(M_filename.c_str());
+
+                /* Check if file exists and delete it, if so */
+                /* (MPI IO does not have a truncate mode ) */
+                if(this->worldComm().isMasterRank() && __it == __ts->beginStep() && fs::exists(str))
+                {
+                    MPI_File_delete(str, MPI_INFO_NULL);
+                }
+                MPI_Barrier(this->worldComm().comm());
+
+                //init MPI_Info object from hints defined as environment variables
+                //MPI_Info info = initIoInfoFromEnvVars();
+
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+
+                //MPI_Info_free(&info);
+                free(str);
+
+                Feel::detail::FileIndex index;
+
+                // first read
+                index.read(fh);
+
+                /* Move to the beginning of the fie index section */
+                /* to overwrite it */
+                if ( index.defined() && (timeIndex - TS_INITIAL_INDEX) > 0 ) {
+                    // MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+                    posInFile=index.fileblock_n_steps;
+                }
+                else {
+                    // we position the cursor at the beginning of the file
+                    // MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                    posInFile=0;
+                }
+
+                /* write C binary if we didn't find the index <=> first pass on the file */
+                if( !index.defined() )
+                {
+                    if( this->worldComm().isMasterRank() ){
+                        memset(buffer, '\0', sizeof(buffer));
+                        strncpy(buffer, "C Binary", 80);
+                        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    }
+                    posInFile+=80;
+                }
+
+                /* Write time step start */
+                if( this->worldComm().isMasterRank() ){
+                    memset(buffer, '\0', sizeof(buffer));
+                    strncpy(buffer, "BEGIN TIME STEP", 80);
+                    //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    LOG(INFO) << "saveNodal out: " << buffer;
+                }
+                posInFile+=80;
+
+                /* add the beginning of the new block to the file */
+                index.add( posInFile );
+
+                /* write data for timestep */
+                this->writeGeoMarkers(fh, mesh);
+
+                /* write timestep end */
+                if( this->worldComm().isMasterRank() )
+                {
+                    memset(buffer, '\0', sizeof(buffer));
+                    strncpy(buffer, "END TIME STEP", 80);
+                    //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                }
+                posInFile+=80;
+                // write back the file index
+                index.write( fh );
             }
             /* non transient */
             else
@@ -940,50 +884,45 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
                 /* for each Timestep T in TS */
                 /* MPI_File_Open -> f */
                 /* WriteGeo(T, f) */
-                int i = 0;
-                while ( __it != __end )
+
+                std::ostringstream __geofname;
+
+                __geofname << this->path() << "/" << __ts->name();
+                if( ! boption( _name="exporter.ensightgold.merge.markers") )
+                { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
+                __geofname << ".geo" << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << timeIndex;
+
+                /* no need to check if step is in memory */
+                /* as it is performed at the beginning of the function */
+                M_filename =  __geofname.str();
+
+                /* Open File with MPI IO */
+                char * str = strdup(M_filename.c_str());
+
+                /* Check if file exists and delete it, if so */
+                /* (MPI IO does not have a truncate mode ) */
+                if(this->worldComm().isMasterRank() && fs::exists(str))
                 {
-                    LOG(INFO) << "Step " << i++ << std::endl;
-                    typename timeset_type::step_ptrtype __step = *__it;
-                    time_index = __step->index();
-
-                    std::ostringstream __geofname;
-
-                    __geofname << this->path() << "/" << __ts->name();
-                    if( ! boption( _name="exporter.ensightgold.merge.markers") )
-                    { __geofname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
-                    __geofname << ".geo" << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
-
-                    if ( __step->isInMemory() )
-                    {
-                        M_filename =  __geofname.str();
-                        //__step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
-
-                        auto mesh = __step->mesh();
-
-                        /* Open File with MPI IO */
-                        char * str = strdup(M_filename.c_str());
-
-                        /* Check if file exists and delete it, if so */
-                        /* (MPI IO does not have a truncate mode ) */
-                        if(this->worldComm().isMasterRank() && fs::exists(str))
-                        {
-                            MPI_File_delete(str, MPI_INFO_NULL);
-                        }
-                        MPI_Barrier(this->worldComm().comm());
-
-                        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-                        free(str);
-
-                        /* Either write every marker in one file */
-                        this->writeGeoMarkers(fh, mesh);
-
-                        /* close file */
-                        MPI_File_close(&fh);
-                    }
-
-                    ++__it;
+                    MPI_File_delete(str, MPI_INFO_NULL);
                 }
+                MPI_Barrier(this->worldComm().comm());
+
+                //init MPI_Info object fromhints defined as environment variables
+                //MPI_Info info = initIoInfoFromEnvVars();
+                MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+                //MPI_Info_free(&info);
+
+                free(str);
+
+                // Initializing cursor in file
+                posInFile=0;
+
+
+                /* Either write every marker in one file */
+                this->writeGeoMarkers(fh, mesh);
+
+                /* close file */
+                MPI_File_close(&fh);
             }
         }
 
@@ -995,6 +934,12 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
 {
+    /* Protect the function call in case we have a NULL mesh */
+    if(mesh == NULL)
+    {
+        return;
+    }
+
     // TODO write the faces
     // Integrate them into the parts corresponding to the elements ?
     int nbmarkers = mesh->markerNames().size();
@@ -1104,7 +1049,8 @@ ExporterEnsightGold<MeshType, N>::computeMarkersToWrite(mesh_ptrtype mesh) const
         osss << this->worldComm().rank() << " parts/markers";
         for(std::set<int>::iterator it = M_markersToWrite.begin(); it != M_markersToWrite.end(); it++)
         {
-            osss << " " << *it << " (" << std::distance(mesh->beginElementWithMarker(*it), mesh->endElementWithMarker(*it)) << ")";
+            auto rangeMarkedElements = mesh->elementsWithMarker( *it );
+            osss << " " << *it << " (" << std::distance( std::get<0>( rangeMarkedElements ),std::get<1>( rangeMarkedElements ) ) << ")";
         }
         LOG(INFO) << osss.str() << std::endl;
     }
@@ -1147,7 +1093,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     this->writeGeoHeader(fh);
 
     /* Write faces */
-    if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+    if ( boption( _name="exporter.ensightgold.save-face" ) )
     {
         for( std::pair<const std::string, std::vector<size_type> > & m : mesh->markerNames() )
         {
@@ -1160,6 +1106,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh)
     {
         this->writeGeoMarkedElements(fh, mesh, *mit);
     }
+
 }
 
 
@@ -1170,48 +1117,47 @@ ExporterEnsightGold<MeshType, N>::writeGeoHeader(MPI_File fh) const
     MPI_Status status;
 
     int size = 0;
-    char buffer[80];
 
     DVLOG(2) << "Merging markers : " << "\n";
 
     /* write header */
     /* little trick to only perform collective operation (optimized) */
     /* and avoid scattering offset and reseting the shared pointer if we would write this only on master proc */
-    if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
 
     // only write C Binary if we are not mergin timesteps
     // as it is oalready writtent at the beginning of the file
     if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
     {
-        memset(buffer, '\0', sizeof(buffer));
-        strcpy(buffer, "C Binary");
-        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        char buffer[80];
+        if( this->worldComm().isMasterRank() )
+        {
+            memset(buffer, '\0', sizeof(buffer));
+            strncpy(buffer, "C Binary", 80);
+            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        }
+        posInFile+=80;
         //LOG(INFO) << "wrote " << buffer << std::endl;
     }
 
-    // get only the filename (maybe with full path)
-    fs::path gp = M_filename;
-    std::string theFileName = gp.filename().string();
-    CHECK( theFileName.length() < 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
+    char buffer[320];
+    if( this->worldComm().isMasterRank() )
+    {
+        // get only the filename (maybe with full path)
+        fs::path gp = M_filename;
+        std::string theFileName = gp.filename().string();
+        CHECK( theFileName.length() < 80 ) << "the file name is too long : theFileName=" << theFileName << "\n";
+        char buffer2[320];
+        memset(buffer2, '\0', sizeof(buffer2));
+        strcpy( buffer2, theFileName.c_str() );
+        strcpy( &buffer2[80], "elements" );
+        strcpy( &buffer2[160], "node id given" );
+        strcpy( &buffer2[240], "element id given" );
+        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+    }
+    posInFile+=320;
 
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, theFileName.c_str() );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "elements" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "node id given" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "element id given" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
 }
 
 template<typename MeshType, int N>
@@ -1231,109 +1177,180 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         return;
 
     VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-    auto pairit = mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
-    auto fit = pairit.first;
-    auto fen = pairit.second;
+    auto rangeMarkedFaces = mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+    auto fit = std::get<0>( rangeMarkedFaces );
+    auto fen = std::get<1>( rangeMarkedFaces );
     Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), fit, fen, true, true, true );
     int32_t __ne = std::distance( fit, fen );
-    int nverts = fit->numLocalVertices;
+    if ( __ne == 0 ) return;
+    int nverts = boost::unwrap_ref( *fit ).numLocalVertices;
     DVLOG(2) << "Faces : " << __ne << "\n";
 
-    if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "part" );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    int32_t partid = m.second[0]; 
-    if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
+    int sizeOfInt32_t;
+    int sizeOfFloat;
+    MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
+    MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
+    int localOffset, sumOffsets; //needed to calculate offsets for individual mpiio cursors
 
     if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    memset(buffer, '\0', sizeof(buffer));
-    strncpy(buffer, m.first.c_str(), sizeof(buffer) - 1 );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strncpy(buffer, "part", 80);
+        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+    }
+    posInFile+=80;
 
     if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy(buffer, "coordinates");
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    {
+        int32_t partid = m.second[0] + 1;
+        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+        // MPI_File_write_ordered(fh, &partid, 1, MPI_INT32_T, &status);
+    }
+    posInFile += sizeOfInt32_t;
+
+    if( this->worldComm().isMasterRank() )
+    {
+        char buffer2[160];
+        memset(buffer2, '\0', sizeof(buffer2));
+        strncpy(buffer2, m.first.c_str(), 80 - 1 );
+        strcpy(&buffer2[80], "coordinates");
+        // MPI_File_write_ordered(fh, buffer2, size, MPI_CHAR, &status);
+        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+    }
+    posInFile+=160;
 
     // write points coordinates
-    fit = pairit.first;
-    fen = pairit.second;
+    // fit = pairit.first;
+    // fen = pairit.second;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
 
     size_type __nv = mp.ids.size();
     int32_t gnop = (int32_t)(mp.globalNumberOfPoints());
+
     if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    // write number of points
-    MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status);
+    {
+        // write number of points
+        // MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status);
+        MPI_File_write_at(fh, posInFile, &gnop, 1, MPI_INT32_T, &status);
+    }
+    posInFile += sizeOfInt32_t;
+
     /* write points ids */
-    MPI_File_write_ordered(fh, mp.ids.data(), mp.ids.size(), MPI_INT32_T, &status );
+    // all procs writing :
+    // - calculate mp.ids.size()*sizeOfInt32_t
+    int ptIdWritingSize = mp.ids.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan(...)
+    MPI_Exscan(&ptIdWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+    MPI_File_write_at(fh, posInFile+localOffset, mp.ids.data(), mp.ids.size(),MPI_INT32_T, &status);
+    // - calculate the whole offset to increment posInFile :
+    sumOffsets = localOffset + ptIdWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets;
+
+
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
+    // All procs write :
+    // - calculate every proc size of part to write
+    int coordsWritingSize = __nv*sizeOfFloat;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&coordsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    sumOffsets = localOffset + coordsWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset + i*sumOffsets
     for(int i = 0; i < 3; i++)
     {
-        MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+        MPI_File_write_at(fh, posInFile + i*sumOffsets + localOffset, \
+                          mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+        //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
+    posInFile += 3*sumOffsets;
+
 
     // write connectivity
-    fit = pairit.first;
-    fen = pairit.second;
+    // fit = pairit.first;
+    // fen = pairit.second;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
 
     if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, M_face_type.c_str() );
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-    VLOG(1) << "face type " << buffer;
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strcpy( buffer, M_face_type.c_str() );
+        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        VLOG(1) << "face type " << buffer;
+    }
+    posInFile +=80;
+
 
     if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, &__ne, size, MPI_INT32_T, &status);
-    VLOG(1) << "n faces " << __ne;
+    {
+        MPI_File_write_at(fh, posInFile, &__ne, 1, MPI_INT32_T, &status);
+        //MPI_File_write_ordered(fh, &__ne, size, MPI_INT32_T, &status);
+        VLOG(1) << "n faces " << __ne;
+    }
+    posInFile += sizeOfInt32_t;
 
     idnode.resize( __ne );
-    fit = pairit.first;
+    // fit = pairit.first;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
     size_type e = 0;
     for ( ; fit != fen; ++fit, ++e )
     {
-        idnode[e] = fit->id() + 1;
+        auto const& face = boost::unwrap_ref( *fit );
+        idnode[e] = face.id() + 1;
     }
     CHECK( e == idnode.size() ) << "Invalid number of face id for part " << m.first;
-    MPI_File_write_ordered(fh, idnode.data(), idnode.size(), MPI_INT32_T, &status);
+
+    // All procs write :
+    // - calculate every proc size of part to write
+    int idnodeWritingSize = idnode.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&idnodeWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+    MPI_File_write_at(fh, posInFile+localOffset, idnode.data(), idnode.size(), MPI_INT32_T, &status);
+    //MPI_File_write_ordered(fh, idnode.data(), idnode.size(), MPI_INT32_T, &status);
+
+    sumOffsets = localOffset + idnodeWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets; // all procs go to the end of last writing.
+
+
 
     idelem.resize( __ne*nverts );
-    fit = pairit.first;
+    // fit = pairit.first;
+    fit = std::get<2>( rangeMarkedFaces )->begin();
     e = 0;
     for( ; fit != fen; ++fit, ++e )
     {
+        auto const& face = boost::unwrap_ref( *fit );
         for ( size_type j = 0; j < nverts; j++ )
         {
             // ensight id start at 1
-            idelem[e*nverts+j] = mp.old2new[fit->point( j ).id()];
+            idelem[e*nverts+j] = mp.old2new[face.point( j ).id()];
         }
     }
     CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
-    MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT32_T, &status);
+
+
+    // All procs write :
+    // - calculate every proc size of part to write
+    int idelemWritingSize = idelem.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&idelemWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+
+    MPI_File_write_at(fh, posInFile+localOffset, idelem.data(), idelem.size(), MPI_INT32_T, &status);
+    //MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT32_T, &status);
+
+    sumOffsets = localOffset + idelemWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets; // all procs go to the end of last writing.
 }
 
 template<typename MeshType, int N>
@@ -1344,6 +1361,12 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
     int size = 0;
     char buffer[80];
+
+    int sizeOfInt32_t;
+    int sizeOfFloat;
+    MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
+    MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
+    int localOffset, sumOffsets;
 
     std::vector<int32_t> idnode, idelem;
 
@@ -1357,58 +1380,53 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     //VLOG(1) << "material : " << m << " local nb element: " << std::distance(lelt_it, lelt_en );
     Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), allelt_it, allelt_en, true, true, true );
     VLOG(1) << "mesh pts size : " << mp.ids.size();
-
     // part
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "part" );
 
     if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    // write number of points
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strncpy(buffer, "part", 80);
+        // write number of points
+        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+    }
+    posInFile+=80;
     // Was previously using p_it->first as partid
     // part id
-    int32_t partid = markerid;
-
     if ( this->worldComm().isMasterRank() )
+    {
+        int32_t partid = markerid + 1;
         LOG(INFO) << "writing part " << partid << std::endl;
+        // write number of points
+        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+        // MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
+    }
+    posInFile+=sizeOfInt32_t;
 
     if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    // write number of points
-    MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
+    {
+        char buffer2[160];
+        // material
+        memset(buffer2, '\0', sizeof(buffer2));
+        //sprintf(buffer, "Material %d", part->first);
+        // Restrict the marker name to 32 chars to avoid buffer overflow (48 chars left for text + id)
+        sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
+        strcpy( &buffer2[80], "coordinates" );
 
-    // material
-    memset(buffer, '\0', sizeof(buffer));
-    //sprintf(buffer, "Material %d", part->first);
-    sprintf(buffer, "Material %d", (int)(markerid));
-    if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, "coordinates" );
-    if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+        //MPI_File_write_ordered(fh, buffer2, size, MPI_CHAR, &status);
+    }
+    posInFile+=160;
 
     size_type __nv = mp.ids.size();
     int32_t gnop = (int32_t)(mp.globalNumberOfPoints());
+
     if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status );
-    // now we need to move with respect to the processors for the coordinates
+    {
+        MPI_File_write_at(fh, posInFile, &gnop, 1, MPI_INT32_T, &status );
+        //MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status );
+    }
+    posInFile+=sizeOfInt32_t;
 
     // TODO modify this code !
     // Integrate id translation in the MeshPoints constructor
@@ -1418,22 +1436,54 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     {
         pointids.push_back(mp.ids.at(i) + mp.offsets_pts);
     }
-    MPI_File_write_ordered(fh, pointids.data(), pointids.size(), MPI_INT32_T, &status );
+
+    // All procs write :
+    // - calculate every proc size of part to write
+    int pointidsWritingSize = pointids.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&pointidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+
+    MPI_File_write_at(fh, posInFile+localOffset, pointids.data(), pointids.size(), MPI_INT32_T, &status );
+    //MPI_File_write_ordered(fh, pointids.data(), pointids.size(), MPI_INT32_T, &status );
+
+    sumOffsets = localOffset + pointidsWritingSize;
+    // last proc bcasts to all
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets; // all procs go to the end of last writing.
 
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
+
+    // All procs write :
+    // - calculate every proc size of part to write
+    int coordsWritingSize = __nv*sizeOfFloat;
+    localOffset = 0;
+// - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&coordsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+
+    sumOffsets = localOffset + coordsWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+
+    // - write in file on cursor : posInFile + localOffset
     for(int i = 0; i < 3; i++)
     {
-        MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+        MPI_File_write_at(fh, posInFile + localOffset + i*sumOffsets, \
+                          mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+        //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
+    posInFile += 3*sumOffsets;
+
 
     /* write element type */
-    memset(buffer, '\0', sizeof(buffer));
-    strcpy( buffer, this->elementType().c_str() );
     if( this->worldComm().isMasterRank() )
-    { size = sizeof(buffer); }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
+    {
+        memset(buffer, '\0', sizeof(buffer));
+        strncpy( buffer, this->elementType().c_str(), 80);
+        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
+    }
+    posInFile+=80;
 
     /* compute and write number of elements */
     //auto r2 = markedelements(mesh, part->first, EntityProcessType::LOCAL_ONLY );
@@ -1445,10 +1495,12 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     int32_t gnole = mpl.globalNumberOfElements();
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
-    { size = 1; }
-    else
-    { size = 0; }
-    MPI_File_write_ordered(fh, &gnole, size, MPI_INT32_T, &status );
+    {
+        MPI_File_write_at(fh, posInFile, &gnole, 1, MPI_INT32_T, &status );
+        //MPI_File_write_ordered(fh, &gnole, size, MPI_INT32_T, &status );
+    }
+    posInFile+=sizeOfInt32_t;
+
     // now we need to move with respect to the processors for the coordinates
     //MPI_File_seek(fh, mp.offsets_elts, MPI_SEEK_CUR );
 
@@ -1465,7 +1517,19 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         elids.push_back(elt.id() + mp.offsets_elts + 1);
     }
 
-    MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
+    // All procs write :
+    // - calculate every proc size of part to write
+    int elidsWritingSize = elids.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+
+    MPI_File_write_at(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
+    //MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
+    sumOffsets = localOffset + elidsWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets; // all procs go to the end of last writing.
 
     /* Write point ids of vertices */
     /* gather points */
@@ -1482,7 +1546,21 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     /* translate the point ids using the global id system (where LOCAL and GHOST cells are taken into account) */
     mp.translatePointIds(ptids);
 
-    MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+    // All procs write :
+    // - calculate every proc size of part to write
+    int ptidsWritingSize = ptids.size()*sizeOfInt32_t;
+    localOffset = 0;
+    // - calculate every proc offset "localOffset" with Mpi_Exscan
+    MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+    // - write in file on cursor : posInFile + localOffset
+
+    MPI_File_write_at(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+    //MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+
+    sumOffsets = localOffset + ptidsWritingSize;
+    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+    posInFile += sumOffsets; // all procs go to the end of last writing.
+
 
     /* Write ghost elements */
     if ( this->worldComm().globalSize() > 1 )
@@ -1495,23 +1573,26 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
         std::string ghost_t = "g_" + this->elementType();
         // ghosts elements
-        memset(buffer, '\0', sizeof(buffer));
-        strcpy( buffer, ghost_t.c_str() );
         if( this->worldComm().isMasterRank() )
-        { size = sizeof(buffer); }
-        else
-        { size = 0; }
-        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
+        {
+            memset(buffer, '\0', sizeof(buffer));
+            strcpy( buffer, ghost_t.c_str() );
+            //buffer = ghost_t.c_str();
+            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
+        }
+        posInFile +=80;
 
         Feel::detail::MeshPoints<float> mpg( mesh.get(), this->worldComm(), gelt_it, gelt_en, true, true, true );
         //VLOG(1) << "material : " << p_it->first << " ghost nb element: " << __ne;
 
         int32_t gnoge = mpg.globalNumberOfElements();
         if( this->worldComm().isMasterRank() )
-        { size = 1; }
-        else
-        { size = 0; }
-        MPI_File_write_ordered(fh, &gnoge, size, MPI_INT32_T, &status );
+        {
+            MPI_File_write_at(fh, posInFile, &gnoge, 1, MPI_INT32_T, &status );
+            //MPI_File_write_ordered(fh, &gnoge, size, MPI_INT32_T, &status );
+        }
+        posInFile +=sizeOfInt32_t;
 
         /* Write elements ids */
         std::vector<int32_t> elids;
@@ -1521,7 +1602,21 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
             elids.push_back(elt.id() + mp.offsets_elts + 1);
         }
 
-        MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
+
+        // All procs write :
+        // - calculate every proc size of part to write
+        int elidsWritingSize = elids.size()*sizeOfInt32_t;
+        localOffset = 0;
+        // - calculate every proc offset "localOffset" with Mpi_Exscan
+        MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+        // - write in file on cursor : posInFile + localOffset
+
+        MPI_File_write_at(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
+        // MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
+
+        sumOffsets = localOffset + elidsWritingSize;
+        MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+        posInFile += sumOffsets; // all procs go to the end of last writing.
 
         /* Write point ids of vertices */
         std::vector<int32_t> ptids;
@@ -1537,7 +1632,22 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         /* translate the point ids using the global id system (where LOCAL and GHOST cells are taken into account) */
         mp.translatePointIds(ptids);
 
-        MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+        // All procs write :
+        // - calculate every proc size of part to write
+        int ptidsWritingSize = ptids.size()*sizeOfInt32_t;
+        localOffset = 0;
+        // - calculate every proc offset "localOffset" with Mpi_Exscan
+        MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+        // - write in file on cursor : posInFile + localOffset
+
+        MPI_File_write_at(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+        // MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+
+        sumOffsets = localOffset + ptidsWritingSize;
+        MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+        posInFile += sumOffsets; // all procs go to the end of last writing.
+
+        // TODO : ASSERT ALL CURSORS EQUAL
     }
 }
 
@@ -1571,20 +1681,26 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
                 { LOG(INFO) << "NodalVector: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginNodalTensor2(), __step->endNodalTensor2())) != 0)
                 { LOG(INFO) << "NodalTensor2: " << dist << std::endl; }
+                if( (dist = std::distance(__step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm())) != 0)
+                { LOG(INFO) << "NodalTensor2Symm: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementScalar(), __step->endElementScalar())) != 0)
                 { LOG(INFO) << "ElementScalar: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementVector(), __step->endElementVector())) != 0)
                 { LOG(INFO) << "ElementVector: " << dist << std::endl; }
                 if( (dist = std::distance(__step->beginElementTensor2(), __step->endElementTensor2())) != 0)
                 { LOG(INFO) << "ElementTensor2: " << dist << std::endl; }
+                if( (dist = std::distance(__step->beginElementTensor2Symm(), __step->endElementTensor2Symm())) != 0)
+                { LOG(INFO) << "ElementTensor2Symm: " << dist << std::endl; }
 
-                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalScalar(), __step->endNodalScalar() );
-                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalVector(), __step->endNodalVector() );
-                saveNodal( __step, (__it == __ts->beginStep()), __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalScalar(), __step->endNodalScalar() );
+                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalVector(), __step->endNodalVector() );
+                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm() );
 
-                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementScalar(), __step->endElementScalar() );
-                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementVector(), __step->endElementVector() );
-                saveElement( __step, (__it == __ts->beginStep()), __step->beginElementTensor2(), __step->endElementTensor2() );
+                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementScalar(), __step->endElementScalar() );
+                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementVector(), __step->endElementVector() );
+                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2(), __step->endElementTensor2() );
+                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2Symm(), __step->endElementTensor2Symm() );
 
             }
 
@@ -1599,7 +1715,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
+ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
 {
     int size = 0;
     char buffer[ 80 ];
@@ -1608,6 +1724,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
     MPI_File fh;
     MPI_Status status;
 
+    int sizeOfInt32_t;
+    int sizeOfFloat;
+    MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
+    MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
+    int localOffset, sumOffsets;
     while ( __var != en )
     {
         if ( !__var->second.worldComm().isActive() ) return;
@@ -1616,7 +1737,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
         auto __mesh = __step->mesh();
 
-        __varfname << this->path() << "/" << __var->first;
+        __varfname << this->path() << "/" << __ts->name() << "." << __var->first;
         if( ! boption( _name="exporter.ensightgold.merge.markers") )
         { __varfname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
         /* if we want to pack data in several files instead of one */
@@ -1625,7 +1746,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
         {
             // timestep indices start at 1
-            __varfname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
+            __varfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
         }
         // add extension
         if(__var->second.is_scalar)
@@ -1634,8 +1755,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         { __varfname << ".vec"; }
         else if(__var->second.is_tensor2)
         { __varfname << ".tsr"; }
+        else if(__var->second.is_tensor2symm)
+        { __varfname << ".tsrs"; }
         else
-        { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
+        { __varfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2,tensor2symm). Defaulted to scalar." << std::endl; }
 
         if( ! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
@@ -1656,9 +1779,18 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         }
         MPI_Barrier(this->worldComm().comm());
 
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+        //init MPI_Info object fromhints defined as environment variables
+        //MPI_Info info = initIoInfoFromEnvVars();
+        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
+            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+        else
+            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+
+        //MPI_Info_free(&info);
         free(str);
 
+        // INIT CURSOR IN FILE
+        posInFile = 0;
         Feel::detail::FileIndex index;
 
         if( boption( _name = "exporter.ensightgold.merge.timesteps") )
@@ -1668,99 +1800,125 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
             /* Move to the beginning of the fie index section */
             /* to overwrite it */
-            if ( index.defined() && __step->index() > 0 ) {
-                MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
+                // MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+                posInFile = index.fileblock_n_steps;
             }
             else {
                 // we position the cursor at the beginning of the file
-                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                // MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                posInFile = 0;
             }
 
             /* Write time step start */
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy(buffer,"BEGIN TIME STEP");
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strncpy(buffer, "BEGIN TIME STEP", 80);
+                // buffer = "BEGIN TIME STEP";
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                // memset(buffer, '\0', sizeof(buffer));
+                // strcpy(buffer,"BEGIN TIME STEP");
+                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            }
+            posInFile+=80;
 
             /* add the beginning of the new block to the file */
-            MPI_File_get_position_shared(fh, &offset);
-            index.add( offset );
+            // MPI_File_get_position_shared(fh, &offset);
+            index.add( posInFile );
         }
 
         if( this->worldComm().isMasterRank() )
-        { size = sizeof(buffer); }
-        else
-        { size = 0; }
-        memset(buffer, '\0', sizeof(buffer));
-        strcpy( buffer, __var->second.name().c_str() );
-        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        {
+            memset(buffer, '\0', sizeof(buffer));
+            strncpy(buffer, __var->second.name().c_str(), 80);
+            // buffer = __var->second.name().c_str();
+            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        }
+        posInFile+=80;
 
         /* handle faces data */
-        if ( option( _name="exporter.ensightgold.save-face" ).template as<bool>() )
+        if ( boption( _name="exporter.ensightgold.save-face" ) )
         {
             BOOST_FOREACH( auto m, __mesh->markerNames() )
             {
                 if ( m.second[1] != __mesh->nDim-1 )
                     continue;
                 VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-                auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
-                auto fit = pairit.first;
-                auto fen = pairit.second;
+                //auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+                auto rangeMarkedFaces = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
+                auto fit = std::get<0>( rangeMarkedFaces );
+                auto fen = std::get<1>( rangeMarkedFaces );
+
+                // auto fit = pairit.first;
+                // auto fen = pairit.second;
 
                 Feel::detail::MeshPoints<float> mp( __mesh.get(), this->worldComm(), fit, fen, true, true, true );
                 int __ne = std::distance( fit, fen );
-
-                int nverts = fit->numLocalVertices;
+                if ( __ne == 0 ) continue;
+                int nverts = boost::unwrap_ref( *fit ).numLocalVertices;
                 DVLOG(2) << "Faces : " << __ne << "\n";
 
                 if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy( buffer, "part" );
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-                int32_t partid = m.second[0];
-                if( this->worldComm().isMasterRank() )
-                { size = 1; }
-                else
-                { size = 0; }
-                MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
+                {
+                    memset(buffer, '\0', sizeof(buffer));
+                    strcpy( buffer, "part" );
+                    //buffer = "part";
+                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    // memset(buffer, '\0', sizeof(buffer));
+                    // strcpy( buffer, "part" );
+                    // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                }
+                posInFile+=80;
 
                 if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy( buffer, "coordinates" );
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                {
+                    int32_t partid = m.second[0] + 1;
+                    MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+                    //MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
+                }
+                posInFile+=sizeOfInt32_t;
+
+                if( this->worldComm().isMasterRank() )
+                {
+                    memset(buffer, '\0', sizeof(buffer));
+                    strcpy( buffer, "coordinates" );
+                    //buffer = "coordinates";
+                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    // memset(buffer, '\0', sizeof(buffer));
+                    // strcpy( buffer, "coordinates" );
+                    // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                }
+                posInFile+=80;
 
                 // write values
-                fit = pairit.first;
-                fen = pairit.second;
-
+                // fit = pairit.first;
+                // fen = pairit.second;
+                fit = std::get<2>( rangeMarkedFaces )->begin();
                 uint16_type nComponents = __var->second.nComponents;
                 if ( __var->second.is_vectorial )
                     nComponents = 3;
+                if ( __var->second.is_tensor2  )
+                    nComponents = 9;
+                if ( __var->second.is_tensor2symm  )
+                    nComponents = 6;
 
                 int nfaces = mp.ids.size();
                 std::vector<float> field( nComponents*nfaces, 0.0 );
                 for( ; fit != fen; ++fit )
                 {
+                    auto const& face = boost::unwrap_ref( * fit );
                     for ( uint16_type c = 0; c < nComponents; ++c )
                     {
                         for ( size_type j = 0; j < nverts; j++ )
                         {
-                            size_type pid = mp.old2new[fit->point( j ).id()]-1;
+                            size_type pid = mp.old2new[face.point( j ).id()]-1;
                             size_type global_node_id = nfaces*c + pid ;
                             if ( c < __var->second.nComponents )
                             {
                                 size_type thedof =  __var->second.start() +
-                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ));
+                                    boost::get<0>(__var->second.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ));
 
                                 field[global_node_id] = __var->second.globalValue( thedof );
                             }
@@ -1772,10 +1930,23 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     }
                 }
                 /* Write each component separately */
+
+                // All procs write :
+                // - calculate every proc size of part to write
+                int fieldWritingSize = nfaces*sizeOfFloat;
+                localOffset = 0;
+                // - calculate every proc offset "localOffset" with Mpi_Exscan
+                MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+                sumOffsets = localOffset + fieldWritingSize;
+                MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+                // - write in file on cursor : posInFile + localOffset
                 for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                 {
-                    MPI_File_write_ordered(fh, field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
+                    MPI_File_write_at(fh, posInFile + localOffset + c*sumOffsets, \
+                                      field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
+                    // MPI_File_write_ordered(fh, field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
                 }
+                posInFile += __var->second.nComponents * sumOffsets;
             } // boundaries loop
         }
 
@@ -1783,28 +1954,17 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         for( std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy( buffer, "part" );
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-            if( this->worldComm().isMasterRank() )
-            { size = 1; }
-            else
-            { size = 0; }
-
-            int32_t partid = *mit;
-            MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
-
-            if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy( buffer, "coordinates" );
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strcpy( buffer, "part" );
+                //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                int32_t partid = *mit + 1;
+                MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
+                strcpy(buffer, "coordinates");
+                MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
+            }
+            posInFile+=160+sizeOfInt32_t;
 
             uint16_type nComponents = __var->second.nComponents;
 
@@ -1813,6 +1973,16 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             {
                 nComponents = 3;
                 VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
+            }
+            if ( __var->second.is_tensor2 )
+            {
+                nComponents = 9;
+                VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
+            }
+            if ( __var->second.is_tensor2symm )
+            {
+                nComponents = 6;
+                VLOG(1) << "nComponents field(is_tensor2): " << nComponents;
             }
 
             /* we get that from the local processor */
@@ -1829,16 +1999,24 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = npts;
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
+            if ( __var->second.is_tensor2 )
+                __field_size *= 9;
+            if ( __var->second.is_tensor2symm )
+                __field_size *= 6;
             ublas::vector<float> __field( __field_size, 0.0 );
             size_type e = 0;
             VLOG(1) << "field size=" << __field_size;
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
+            int nc = __var->second.nComponents;
+            if ( __var->second.is_tensor2symm )
+                nc = __var->second.nComponents1*(__var->second.nComponents1+1)/2;
 
             /*
-            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents 
+            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
             */
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             /* loop on the elements */
             int index = 0;
@@ -1849,17 +2027,20 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 /* because we need to pack the data in the x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn order */
                 for ( uint16_type c = 0; c < nComponents; ++c )
                 {
+                    uint16_type c1= c;
+                    if ( __var->second.is_tensor2symm )
+                        c1 = reorder_tensor2symm[c];
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
                         size_type ptid = mp.old2new[elt_it->get().point( p ).id()]-1;
-                        size_type global_node_id = mp.ids.size()*c + ptid ;
+                        size_type global_node_id = mp.ids.size()*c1 + ptid ;
                         //LOG(INFO) << elt_it->get().point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
                         DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->get().id()
                                                                      << " local pt:" << p
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                        if ( c < __var->second.nComponents )
+                        if ( c < nc )
                         {
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->get().id(), p, c ) );
 
@@ -1881,23 +2062,36 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             }
 
             /* Write each component separately */
+            // All procs write :
+            // - calculate every proc size of part to write
+            int fieldWritingSize = npts*sizeOfFloat;
+            localOffset = 0;
+            // - calculate every proc offset "localOffset" with Mpi_Exscan
+            MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+            sumOffsets = localOffset + fieldWritingSize;
+            MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+            // - write in file on cursor : posInFile + localOffset +
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
-                MPI_File_write_ordered(fh, ((float *)(__field.data().begin())) + npts * c, npts, MPI_FLOAT, &status);
+                MPI_File_write_at(fh, posInFile + localOffset + c*sumOffsets, \
+                                  ((float *)(__field.data().begin())) + npts * c, npts, MPI_FLOAT, &status);
+                // MPI_File_write_ordered(fh, ((float *)(__field.data().begin())) + npts * c, npts, MPI_FLOAT, &status);
             }
+            posInFile += nComponents*sumOffsets;
+
         } // parts loop
 
         if( boption(_name="exporter.ensightgold.merge.timesteps") )
         {
             /* write timestep end */
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy(buffer,"END TIME STEP");
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strncpy(buffer,"END TIME STEP", 80);
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            }
+            posInFile+=80;
             // write back the file index
             index.write( fh );
         }
@@ -1912,7 +2106,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const
+ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const
 {
     int size;
     char buffer[ 80 ];
@@ -1921,13 +2115,18 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
     MPI_Offset offset = 0;
     MPI_Status status;
 
+    int sizeOfInt32_t;
+    int  sizeOfFloat;
+    MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
+    MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
+    int localOffset, sumOffsets;
     while ( __evar != __evaren )
     {
         if ( !__evar->second.worldComm().isActive() ) return;
 
         std::ostringstream __evarfname;
 
-        __evarfname << this->path() << "/" << __evar->first;
+        __evarfname << this->path() << "/" << __ts->name() << "." << __evar->first;
 
         if( ! boption( _name="exporter.ensightgold.merge.markers") )
         { __evarfname << "-" << this->worldCommBase().globalSize() << "_" << this->worldCommBase().localRank(); }
@@ -1937,7 +2136,7 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
         {
             // timestep indices start at 1
-            __evarfname << "." << ((__step->index() - 1) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
+            __evarfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
         }
         // add extension
         if(__evar->second.is_scalar)
@@ -1946,8 +2145,10 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         { __evarfname << ".vec"; }
         else if(__evar->second.is_tensor2)
         { __evarfname << ".tsr"; }
+        else if(__evar->second.is_tensor2symm)
+        { __evarfname << ".tsrs"; }
         else
-        { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2). Defaulted to scalar." << std::endl; }
+        { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2, tensor2symm). Defaulted to scalar." << std::endl; }
 
         if(! boption( _name="exporter.ensightgold.merge.timesteps") )
         {
@@ -1969,8 +2170,18 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
         }
         MPI_Barrier(this->worldComm().comm());
 
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+        //init MPI_Info object fromhints defined as environment variables
+        //MPI_Info info = initIoInfoFromEnvVars();
+        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
+            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+        else
+            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
+
+        //MPI_Info_free(&info);
         free(str);
+
+        // INIT CURSOR IN FILE
+        posInFile = 0;
 
         Feel::detail::FileIndex index;
 
@@ -1981,70 +2192,74 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
             /* Move to the beginning of the fie index section */
             /* to overwrite it */
-            if ( index.defined() && __step->index() > 0 ) {
-                MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
+                // MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
+                posInFile = index.fileblock_n_steps;
             }
             else {
                 // we position the cursor at the beginning of the file
-                MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                //MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
+                posInFile = 0;
             }
 
             /* Write time step start */
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy(buffer,"BEGIN TIME STEP");
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strncpy(buffer, "BEGIN TIME STEP",80);
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            }
+            posInFile+=80;
 
             /* add the beginning of the new block to the file */
-            MPI_File_get_position_shared(fh, &offset);
-            index.add( offset );
+            // MPI_File_get_position_shared(fh, &offset);
+            index.add( posInFile );
         }
 
         if( this->worldComm().isMasterRank() )
-        { size = sizeof(buffer); }
-        else
-        { size = 0; }
-        memset(buffer, '\0', sizeof(buffer));
-        strcpy( buffer, __evar->second.name().c_str() );
-        MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
+        {
+            memset(buffer, '\0', sizeof(buffer));
+            strncpy( buffer, __evar->second.name().c_str(), 80);
+            // buffer = __evar->second.name().c_str();
+            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+        }
+        posInFile+=80;
         // iterate over the markers
         for( std::set<int>::iterator mit = M_markersToWrite.begin() ; mit != M_markersToWrite.end(); mit++ )
         {
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy( buffer, "part" );
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strncpy(buffer, "part", 80);
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                int32_t partid = *mit + 1;
+                MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
+                DVLOG(2) << "part " << buffer << "\n";
+                memset(buffer, '\0', sizeof(buffer));
+                strncpy(buffer, this->elementType().c_str(), 80);
+                MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
+                DVLOG(2) << "element type " << buffer << "\n";
 
-            int32_t partid = *mit;
-            if( this->worldComm().isMasterRank() )
-            { size = 1; }
-            else
-            { size = 0; }
-            MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
-            DVLOG(2) << "part " << buffer << "\n";
-
-            if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy( buffer, this->elementType().c_str() );
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-            DVLOG(2) << "element type " << buffer << "\n";
+            }
+            posInFile+=160+sizeOfInt32_t;
 
             uint16_type nComponents = __evar->second.nComponents;
 
             if ( __evar->second.is_vectorial )
                 nComponents = 3;
+            if ( __evar->second.is_tensor2 )
+                nComponents = 9;
+            if ( __evar->second.is_tensor2symm )
+                nComponents = 6;
 
-            size_type __field_size = nComponents * __evar->second.size()/__evar->second.nComponents;
+            int nc = __evar->second.nComponents;
+            if ( __evar->second.is_tensor2symm )
+                nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
+
+            size_type __field_size = nComponents * __evar->second.size()/nc;
+
             ublas::vector<float> __field( __field_size );
             __field.clear();
 
@@ -2063,12 +2278,19 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             size_type ncells = std::distance( elt_st, elt_en );
 
             /*
-            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents 
+            std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
                       << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
             */
+            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
 
             for ( int c = 0; c < nComponents; ++c )
             {
+                uint16_type c1= c;
+                if ( __evar->second.is_tensor2symm )
+                    c1=reorder_tensor2symm[c];
+                int nc = __evar->second.nComponents;
+                if ( __evar->second.is_tensor2symm )
+                    nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
                 size_type e = 0;
                 for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
                 {
@@ -2077,9 +2299,9 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
                              << " elt_it :  " << elt.id()
                              << " e : " << e << "\n";
 
-                    size_type global_node_id = c*ncells+e ;
+                    size_type global_node_id = c1*ncells+e ;
 
-                    if ( c < __evar->second.nComponents )
+                    if ( c < nc)
                     {
                         size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ) );
 
@@ -2108,23 +2330,37 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             }
 
             /* Write each component separately */
+
+            // All procs write :
+            // - calculate every proc size of part to write
+            int fieldWritingSize = ncells*sizeOfFloat;
+            localOffset = 0;
+            // - calculate every proc offset "localOffset" with Mpi_Exscan
+            MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
+            sumOffsets = localOffset + fieldWritingSize;
+            MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
+            // - write in file on cursor : posInFile + localOffset
+
             for ( uint16_type c = 0; c < nComponents; ++c )
             {
-                MPI_File_write_ordered(fh, __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
+                MPI_File_write_at(fh, posInFile + c*sumOffsets + localOffset, \
+                                  __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
+                // MPI_File_write_ordered(fh, __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
             }
+            posInFile += nComponents*sumOffsets;
         }
 
         if( boption(_name="exporter.ensightgold.merge.timesteps") )
         {
             /* write timestep end */
             if( this->worldComm().isMasterRank() )
-            { size = sizeof(buffer); }
-            else
-            { size = 0; }
-            memset(buffer, '\0', sizeof(buffer));
-            strcpy(buffer,"END TIME STEP");
-            MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
+            {
+                memset(buffer, '\0', sizeof(buffer));
+                strcpy(buffer,"END TIME STEP");
+                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
+                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            }
+            posInFile+=80;
             // write back the file index
             index.write( fh );
         }

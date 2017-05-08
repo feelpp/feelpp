@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -108,19 +108,13 @@ public :
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    //! the exporter factory type
-    typedef Exporter<mesh_type> export_type;
-    //! the exporter factory (shared_ptr<> type)
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
     /**
      * Constructor
      */
     TestInterpolationHDiv()
         :
         super(),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        M_backend( backend_type::build( soption( _name="backend" ) ) )
     {
         this->changeRepository( boost::format( "%1%/" )
                                 % this->about().appName()
@@ -135,9 +129,6 @@ public :
 private:
     //! linear algebra backend
     backend_ptrtype M_backend;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 };
 
@@ -188,10 +179,7 @@ TestInterpolationHDiv<Dim>::testInterpolationOneElt( std::string one_element_mes
     U_h_on.zero();
     U_h_on.on(_range=elements(oneelement_mesh), _expr=myexpr);
 
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%" ) % this->about().appName() %mesh_path.stem().string() ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    auto exporter_proj = exporter( _mesh=mesh, _name=( boost::format( "%1%-%2%" ) % this->about().appName() %mesh_path.stem().string() ).str() );
     exporter_proj->step( 0 )->add( "U_interpolation_handly-" + mesh_path.stem().string(), U_h_int );
     exporter_proj->step( 0 )->add( "U_interpolation_on-" + mesh_path.stem().string(), U_h_on );
     exporter_proj->save();

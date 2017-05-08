@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -55,7 +55,7 @@ int main(int argc, char**argv )
             auto u = Vh->element();
             auto v = Vh->element();
 
-            auto syms = symbols<3>();
+            auto syms = symbols<2>();
             auto g = option(_name="functions.g").as<std::string>();
             auto laplacian_g = laplacian( g, syms  );
 
@@ -67,7 +67,7 @@ int main(int argc, char**argv )
             a = integrate(_range=elements(mesh),
                           _expr=gradt(u)*trans(grad(v)) );
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
-            a.solve(_rhs=l,_solution=u);
+            a.solve(_rhs=l,_solution=u,_rebuild=true);
 
             LOG(INFO) << "pointing on matrix from bilinear form = "<<a.matrixPtr().use_count()<<std::endl;
 

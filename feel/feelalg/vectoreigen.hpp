@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -360,6 +360,7 @@ public:
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
     {
         //eigen::project( (*this), eigen::range( start1, stop1 ) ) = eigen::zero_vector<value_type>( stop1 );
+        this->zero();
     }
 
     /**
@@ -761,7 +762,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
-    value_type dot( Vector<T> const& __v )
+    value_type dot( Vector<T> const& __v ) const
     {
         throw std::logic_error( "[vetor eigen] ERROR dot function not yet implemented" );
         return 0;

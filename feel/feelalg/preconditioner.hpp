@@ -26,19 +26,22 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#ifndef __Preconditioner_H
-#define __Preconditioner_H 1
+#ifndef FEELPP_PRECONDITIONER_HPP
+#define FEELPP_PRECONDITIONER_HPP 1
 
 #include <boost/parameter.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
 
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/nullspace.hpp>
 
 namespace Feel
 {
+class BackendBase;
 template<typename T> class Backend;
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
@@ -75,7 +78,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
     typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
@@ -103,13 +106,21 @@ public:
     M_matSolverPackage_type( o.M_matSolverPackage_type ),
     M_prec_matrix_structure ( o.M_prec_matrix_structure ),
     M_is_initialized( o.M_is_initialized ),
-    M_mat_has_changed( o.M_mat_has_changed )
+    M_mat_has_changed( o.M_mat_has_changed ),
+    M_nearNullSpace( o.M_nearNullSpace )
         {}
 
     //! destructor
     ~Preconditioner();
 
-    static preconditioner_ptrtype build( std::string const& name = "", BackendType = BACKEND_PETSC, WorldComm const& worldComm=Environment::worldComm() );
+    static preconditioner_ptrtype build( 
+            std::string const& name = "", 
+#if FEELPP_HAS_PETSC
+            BackendType = BACKEND_PETSC, 
+#else
+            BackendType = BACKEND_NONE,
+#endif
+            WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -202,10 +213,48 @@ public:
     sparse_matrix_ptrtype const& matrix() const { return M_matrix; }
 
     /**
+     * Return true if the preconditioner will be reuse
+     */
+    bool reusePrec() const { return M_prec_matrix_structure == MatrixStructure::SAME_PRECONDITIONER; }
+
+    /**
      * @return the side of the system to which the preconditioner applies
      */
     Side side() const { return M_side; }
-    
+
+    bool hasNearNullSpace( std::set<int> const& splitIds ) const { return M_nearNullSpace.find(splitIds) != M_nearNullSpace.end(); }
+    boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace( std::set<int> const& splitIds ) const
+    {
+        CHECK( this->hasNearNullSpace( splitIds ) ) << " near null space not given for index split ";
+        return M_nearNullSpace.find(splitIds)->second;
+    }
+
+    bool hasAuxiliaryVector( std::string const& key ) const { return M_auxiliaryVector.find( key ) != M_auxiliaryVector.end(); }
+    vector_ptrtype const& auxiliaryVector( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliaryVector( key ) ) << " auxiliary vector not given for this key : " << key ;
+        return M_auxiliaryVector.find( key )->second;
+    }
+
+    bool hasAuxiliarySparseMatrix( std::string const& key ) const { return M_auxiliarySparseMatrix.find( key ) != M_auxiliarySparseMatrix.end(); }
+    sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
+        return M_auxiliarySparseMatrix.find( key )->second;
+    }
+
+    bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
+    preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners.find(key)->second;
+    }
+    preconditioner_ptrtype & inHousePreconditioners( std::string const& key )
+    {
+        CHECK( this->hasInHousePreconditioners( key ) ) << " in house preconditioner not given for this key : " << key ;
+        return M_inHousePreconditioners[key];
+    }
+
     //@}
 
     /** @name  Mutators
@@ -238,6 +287,32 @@ public:
      * set the side \p s of the linear system to which the preconditioner applies
      */
     void setSide( Side s ) { M_side = s; }
+
+    void attachNearNullSpace( int k, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        std::set<int> splitIds; splitIds.insert( k );
+        this->attachNearNullSpace( splitIds, nearNullSpace );
+    }
+    void attachNearNullSpace( std::set<int> const& splitIds, boost::shared_ptr<NullSpace<value_type> > const& nearNullSpace )
+    {
+        M_nearNullSpace[splitIds] = nearNullSpace;
+    }
+
+    void attachAuxiliaryVector( std::string const& key,vector_ptrtype const& vec )
+    {
+        M_auxiliaryVector[key] = vec;
+    }
+
+    void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_auxiliarySparseMatrix[key] = mat;
+    }
+
+    void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
+    {
+        M_inHousePreconditioners[key] = pc;
+    }
+
     //@}
 
     /** @name  Methods
@@ -272,7 +347,7 @@ protected:
     Side M_side;
     
     /**
-     * Enum statitng with type of preconditioner to use.
+     * Enum stating with type of preconditioner to use.
      */
     PreconditionerType M_preconditioner_type;
 
@@ -291,6 +366,15 @@ protected:
      */
     bool M_is_initialized, M_mat_has_changed;
 
+    /**
+     *  Near Null Space for Field Split
+     */
+    std::map<std::set<int>,boost::shared_ptr<NullSpace<value_type> > >  M_nearNullSpace;
+
+    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+    std::map<std::string,vector_ptrtype> M_auxiliaryVector;
+
+    std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -306,7 +390,11 @@ M_worldComm(worldComm),
 M_matrix(),
 M_side( LEFT ),
 M_preconditioner_type   ( ILU_PRECOND ),
+#if FEELPP_HAS_PETSC
 M_matSolverPackage_type ( MATSOLVER_PETSC ),
+#else
+M_matSolverPackage_type ( MATSOLVER_NONE ),
+#endif
 M_prec_matrix_structure ( MatrixStructure::SAME_NONZERO_PATTERN ),
 M_is_initialized        ( false ),
 M_mat_has_changed       ( false )
@@ -352,20 +440,27 @@ typedef Feel::Singleton<PreconditionerManagerDeleterImpl> PreconditionerManagerD
 } // detail
 
 
-BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
-                                 preconditioner,
-                                 tag,
-                                 ( required
-                                   ( pc,( PreconditionerType ) )
-                                   ( backend, (backend_ptrtype) ) )
-                                 ( optional
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                                   ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
+template<typename Args>
+struct compute_prec_return
+{
+    typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
+    typedef boost::shared_ptr<Preconditioner<value_type>> type;
+};
 
-                                   ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                                   ( rebuild,      (bool), false )
-                                     )
-    )
+BOOST_PARAMETER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
+                          preconditioner,
+                          tag,
+                          ( required
+                            ( pc,( PreconditionerType ) )
+                            ( backend, *(boost::is_convertible<mpl::_, boost::shared_ptr<BackendBase>>) ) )
+                          ( optional
+                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                            ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
+                            
+                            ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
+                            ( rebuild,      (bool), false )
+                            )
+                          )
 {
     // register the PreconditionerManager into Feel::Environment so that it gets the
     // PreconditionerManager is cleared up when the Environment is deleted
@@ -376,21 +471,23 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         observed = true;
     }
 
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
-
+#endif
     auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
 
     if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
+        if ( matrix && !git->second->matrix() )
+            git->second->setMatrix( matrix );
         return git->second;
     }
 
     else
     {
-
-        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), backend->comm() );
+        using value_type = typename compute_prec_return<Args>::value_type;
+        preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->comm() );
         p->setType( pc );
         p->setMatSolverPackageType( pcfactormatsolverpackage );
 
@@ -398,7 +495,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
         {
             p->setMatrix( matrix );
         }
-        VLOG(2) << "storing preconditionerin singleton" << "\n";
+        VLOG(2) << "storing preconditioner in singleton (name = " << prefix << ")\n";
         Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
         backend->addDeleteObserver( p );
         return p;

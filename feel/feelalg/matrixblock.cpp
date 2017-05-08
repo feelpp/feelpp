@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -97,8 +97,8 @@ BlocksBaseSparseMatrix<T>::close()
             if ( this->operator()(i,j) ) continue;
 
             DVLOG(1) << "add zero matrix in block ("<<i<<","<<j<<")\n";
-            
-            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapRowRef[i], dataMapColRef[j]);
+
+            this->operator()(i,j) = Feel::detail::backend(T(0))->newZeroMatrix(dataMapColRef[j], dataMapRowRef[i]);
         }
     }
 
@@ -141,7 +141,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
             for ( uint16_type j=0; j<nCol; ++j )
             {
-                blockSet(i,j)->close();
+                //blockSet(i,j)->close(); // close done in updateBlockMat
                 this->updateBlockMat( blockSet(i,j),start_i,start_j );
 
                 for ( int proc=0 ;proc < worldsize;++proc )
@@ -151,6 +151,8 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
             for ( int proc=0 ;proc < worldsize;++proc )
                 start_i[proc] += blockSet(i,0)->mapRow().nLocalDofWithoutGhost(proc);
         }
+        if ( !M_mat->closed() )
+            M_mat->close();
     }
 
 }
@@ -180,52 +182,6 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     M_mat->zero();
 
     M_mat->setIndexSplit( graph->mapRow().indexSplit() );
-
-#if 0
-    bool computeIndexSplit = true;
-    if ( computeIndexSplit )
-    {
-#if 0
-        const uint16_type nRow = blockgraph.nRow();
-        const uint16_type nCol = blockgraph.nCol();
-        // index container for field split preconditioner
-        std::vector< std::vector<size_type> > indexSplit( nRow );
-        size_type startIS = M_mat->mapRow().firstDofGlobalCluster();
-        for ( uint16_type i=0; i<nRow; ++i )
-        {
-            auto const& mapRowBlock = blockgraph(i,0)->mapRow();
-            const size_type nLocDofWithoutGhostBlock = mapRowBlock.nLocalDofWithoutGhost();
-            const size_type nLocDofWithGhostBlock = mapRowBlock.nLocalDofWithGhost();
-            const size_type firstDofGCBlock = mapRowBlock.firstDofGlobalCluster();
-
-            indexSplit[i].resize( nLocDofWithoutGhostBlock );
-
-            for ( size_type l = 0; l< nLocDofWithGhostBlock ; ++l )
-            {
-                if ( mapRowBlock.dofGlobalProcessIsGhost(l) ) continue;
-
-                const size_type globalDof = mapRowBlock.mapGlobalProcessToGlobalCluster(l);
-                indexSplit[i][globalDof - firstDofGCBlock ] = startIS + (globalDof - firstDofGCBlock);
-            }
-
-            startIS += nLocDofWithoutGhostBlock;
-        }
-#else
-        const uint16_type nRow = blockgraph.nRow();
-        indexsplit_ptrtype indexSplit( new IndexSplit() );
-        const size_type firstDofGC = graph->mapRow().firstDofGlobalCluster();
-        for ( uint16_type i=0; i<nRow; ++i )
-        {
-            indexSplit->addSplit( firstDofGC, blockgraph(i,0)->mapRow().indexSplit() );
-        }
-        //indexSplit.showMe();
-        graph->mapRowPtr()->setIndexSplit( indexSplit );
-#endif
-
-        // update
-        M_mat->setIndexSplit( indexSplit );
-    }
-#endif
 
 }
 
@@ -394,7 +350,7 @@ MatrixBlockBase<T>::printMatlab ( const std::string name ) const
 template <typename T>
 inline
 void
-MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> &X_in )
+MatrixBlockBase<T>::addMatrix ( const value_type a_in, MatrixSparse<value_type> const&X_in )
 {
     M_mat->addMatrix( a_in,X_in );
 }
@@ -451,9 +407,9 @@ MatrixBlockBase<T>::operator = ( MatrixSparse<value_type> const& M )
 
 template <typename T>
 void
-MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal )
 {
-    M_mat->zeroRows( rows,values,rhs,on_context );
+    M_mat->zeroRows( rows,values,rhs,on_context, value_on_diagonal );
 }
 
 template <typename T>
@@ -472,7 +428,7 @@ MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt, size_type options )
 
 template <typename T>
 void
-MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
+MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j )
 {
     M_mat->updateBlockMat( m,start_i,start_j );
 }

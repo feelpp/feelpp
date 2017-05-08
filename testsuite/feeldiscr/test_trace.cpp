@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -87,9 +87,9 @@ public:
     Test()
         :
         super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
+        M_backend( backend_type::build( soption( _name="backend" ) ) ),
+        meshSize( doption(_name="hsize") ),
+        shape( soption(_name="shape") )
     {}
 
     void run();
@@ -189,17 +189,12 @@ Test<Dim,Order>::run()
 
     }
 
-    auto trace_exporter = trace_export_type::New( this->vm(),
-                                                  ( boost::format( "trace-%1%-%2%-%3%" )
-                                                    % this->about().appName()
-                                                    % shape
-                                                    % Dim ).str() );
-
-
+    std::string exporterName = ( boost::format( "trace-%1%-%2%-%3%" ) % this->about().appName()% shape % Dim ).str();
+    auto trace_exporter = exporter(_mesh=trace_mesh,_name=exporterName );
     if ( trace_exporter->doExport() )
     {
         LOG(INFO) << "trace export starts\n";
-        trace_exporter->step( 0 )->setMesh( trace_mesh );
+        //trace_exporter->step( 0 )->setMesh( trace_mesh );
         trace_exporter->step( 0 )->add( "trace_g", t );
         trace_exporter->save();
         LOG(INFO) << "trace export done\n";
@@ -218,7 +213,11 @@ main( int argc, char** argv )
                                   _email="abdoulaye.samake@imag.fr") );
     Application app;
 
+#if BOOST_PP_GREATER_EQUAL(FEELPP_MESH_MAX_ORDER, 3)
     app.add( new Test<2,3>() );
+#else
+    app.add( new Test<2,1>() );
+#endif
     app.run();
 
 }

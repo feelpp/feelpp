@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -86,7 +86,7 @@ sign( T const& x )
 # /* List of applicative unary functions. */
 # define VF_APPLICATIVE_UNARY_FUNCS \
    BOOST_PP_TUPLE_TO_LIST( \
-      15, \
+      17, \
       ( \
          ( abs  , __Abs__ , Feel::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( cos  , __Cos__ , Feel::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 2), \
@@ -101,6 +101,8 @@ sign( T const& x )
          ( exp  , __Exp__ , Feel::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( log  , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
          ( sqrt , __Sqrt__, Feel::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
+         ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 2), \
+         ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 0), \
          ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 0) \
       ) \
@@ -190,6 +192,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        template<typename Func>                                         \
+            static const bool has_test_basis = false;                   \
+        template<typename Func>                                         \
+            static const bool has_trial_basis = false;                  \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
                                                                         \
         typedef UnaryFunctor<typename ExprT1::value_type> super;        \
         typedef typename super::functordomain_type functordomain_type;  \
@@ -228,12 +236,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                      \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type> type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
-            typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+            typename Lambda<TheExpr...>::type                           \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \
@@ -255,21 +263,21 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
                 M_expr( expr.expression(), geom ),                     \
                 M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
-                        update( geom );                                 \
+                        /*update( geom );*/                             \
                     }                                                   \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
@@ -292,10 +300,10 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             {                                                           \
                 M_expr.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr.updateContext( ctx );                           \
+                M_expr.updateContext( ctx... );                         \
             }                                                           \
                                                                         \
                 value_type                                              \
@@ -380,6 +388,8 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
                                                                         \
         typedef BinaryFunctor<typename ExprT1::value_type,typename ExprT2::value_type> super;      \
         typedef typename super::functordomain_1_type functordomain_1_type;  \
@@ -424,12 +434,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         template<typename... TheExpr>                                   \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_FUNC_NAME( O )<TheExpr...> type;                    \
+            typedef VF_FUNC_NAME( O )<typename ExprT1::template Lambda<TheExpr...>::type, typename ExprT2::template Lambda<TheExpr...>::type > type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                        \
             typename Lambda<TheExpr...>::type                               \
-        operator()( TheExpr... e ) { return VF_FUNC_NAME(O)<TheExpr...>( e... ); } \
+        operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr_1( e... ), M_expr_2( e... ) ); } \
                                                                         \
                                                                         \
         expression_1_type const& expression1() const { return M_expr_1; } \
@@ -496,11 +506,11 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                 M_expr1.update( geom, face );                           \
                 M_expr2.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_expr1.updateContext( ctx );                           \
-                M_expr2.updateContext( ctx );                           \
+                M_expr1.updateContext( ctx... );                        \
+                M_expr2.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                 value_type                                              \

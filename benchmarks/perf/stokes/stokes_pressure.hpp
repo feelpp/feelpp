@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -160,7 +160,7 @@ template<int nDim, int uOrder, int geoOrder>
 void
 Stokes<nDim,uOrder,geoOrder>::init()
 {
-    std::string geoname = fs::path( option( _name="geofile" ).template as<std::string>() ).stem().string();
+    std::string geoname = fs::path( soption( _name="geofile" ) ).stem().string();
     Environment::changeRepository( boost::format( "benchmarks/%1%/%2%/%3%D/P%4%P%5%G%6%/h_%7%/l_%8%" )
                                    % this->about().appName() % geoname
                                    % nDim
@@ -172,7 +172,7 @@ Stokes<nDim,uOrder,geoOrder>::init()
 
 #if defined( DIM2 )
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=geo(_filename=option(_name="geofile").template as<std::string>(),
+                           _desc=geo(_filename=soption(_name="geofile"),
                                      _h=meshSizeInit()),
                            _refine=level());
 #elif defined(DIM3)
@@ -198,7 +198,7 @@ Stokes<nDim,uOrder,geoOrder>::init()
     else
     {
         mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=geo(_filename=option(_name="geofile").template as<std::string>(),
+                               _desc=geo(_filename=soption(_name="geofile"),
                                          _h=meshSizeInit()),
                                _refine=level());
     }
@@ -292,7 +292,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) - divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
-    stokes +=integrate( _range=markedfaces( mesh, "wall" ), _expr=- trans(SigmaNt)*id(v) - trans(SigmaN)*idt(v) + option(_name="bccoeff").template as<double>()*trans(idt(v))*id(v)/hFace());
+    stokes +=integrate( _range=markedfaces( mesh, "wall" ), _expr=- trans(SigmaNt)*id(v) - trans(SigmaN)*idt(v) + doption(_name="bccoeff")*trans(idt(v))*id(v)/hFace());
     auto t = vec(Ny(),-Nx());
 
 #if defined( FEELPP_USE_LM )
@@ -304,7 +304,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     // set lagrange multipliers to 0 on boundary weakly
-    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*idt(nu1)*id(nu1)/hFace() );
+    stokes += integrate( boundaryfaces(mesh_lag), doption(_name="bccoefflag")*idt(nu1)*id(nu1)/hFace() );
     LOG(INFO) << "chrono (lambda,lambda): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
 #elif defined( DIM3 )
@@ -323,10 +323,10 @@ Stokes<nDim,uOrder,geoOrder>::run()
                             -trans( cross(idt( u ),N()))*(Clag) );
     }
     //stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
-    //stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
-    //stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
+    //stokes += integrate( markedfaces( mesh,inlet ), doption("eps")*trans(idt(lambda))*id( nu ) );
+    //stokes += integrate( markedfaces( mesh,outlet ), doption("eps")*trans(idt(lambda))*id( nu ) );
     // set lagrange multipliers to 0 on boundary weakly
-    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*(idt(nu1)*id(nu1)+idt(nu2)*id(nu2))/hFace() );
+    stokes += integrate( boundaryfaces(mesh_lag), doption(_name="bccoefflag")*(idt(nu1)*id(nu1)+idt(nu2)*id(nu2))/hFace() );
 #endif // DIM3
 
 
@@ -341,7 +341,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
     //stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #if! defined( FEELPP_USE_LM )
-    auto cTau = option("gamma-tau").template as<double>()*mu/hFace();
+    auto cTau = doption("gamma-tau")*mu/hFace();
     stokes +=integrate( markedfaces( mesh,inlet ), cTau*trans(cross(idt(v),N()))*cross(id(v),N()) );
     stokes +=integrate( markedfaces( mesh,outlet ), cTau*trans(cross(idt(v),N()))*cross(id(v),N()) );
 #endif

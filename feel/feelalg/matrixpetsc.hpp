@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -135,8 +135,8 @@ public:
      * \p init(...).
      */
     MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
-
-    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
 
 
     /**
@@ -213,6 +213,11 @@ public:
      */
     size_type rowStop () const;
 
+    //!
+    //! @return the number of non-zero entries
+    //!
+    std::size_t nnz() const;
+    
     //@}
 
     /** @name  Mutators
@@ -384,14 +389,40 @@ public:
      * whenever you add a non-zero value to \p X.  Note: \p X will
      * be closed, if not already done, before performing any work.
      */
-    void addMatrix ( const T a, MatrixSparse<T> &X );
+    void addMatrix ( const T a, MatrixSparse<T> const&X );
+
+    /**
+     * set diagonal entries from vector
+     */
+    void setDiagonal( const Vector<T>& vecDiag );
+
+    /**
+     * add diagonal entries from vector
+     */
+    void addDiagonal( const Vector<T>& vecDiag );
+
+    /**
+     * Multiplies the matrix with \p arg and stores the result in \p
+     * dest.
+     */
+    void multVector( const Vector<T>& arg, Vector<T>& dest, bool transpose ) const;
 
     /**
      * Multiply this by a Sparse matrix \p In,
      * stores the result in \p Res:
      * \f$ Res = \texttt{this}*In \f$.
      */
-    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res );
+    void matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const;
+
+    /**
+     * Creates the matrix product C = P^T * A * P with A the current matrix
+     */
+    void PtAP( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
+
+    /**
+     * Creates the matrix product C = P * A * P^T with A the current matrix
+     */
+    void PAPt( MatrixSparse<value_type> const& P, MatrixSparse<value_type> & C ) const;
 
     /**
      * scale the matrix by the factor \p a
@@ -405,13 +436,24 @@ public:
     void diagonal ( Vector<value_type>& dest ) const;
 
     /**
+     * Return copy vector of the diagonal part of the matrix.
+     */
+    boost::shared_ptr<Vector<T> > diagonal() const;
+
+    /**
      * Returns the transpose of a matrix
      *
-     * \param M the matrix to transpose
      * \param Mt the matrix transposed
      * \param options options for tranpose
      */
     void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
+
+    /**
+     * Returns the transpose of a matrix
+     *
+     * \param options options for tranpose
+     */
+    boost::shared_ptr<MatrixSparse<T> > transpose( size_type options ) const;
 
     /**
     * Returns the symmetric part of the matrix
@@ -453,6 +495,16 @@ public:
                      bool checkAndFixRange=true ) const;
 
     /**
+     * copy matrix entries in submatrix ( submatrix is already built from a createSubMatrix)
+     * row and column indices given in the "rows" and "cols" entries.
+     */
+    void
+    updateSubMatrix( boost::shared_ptr<MatrixSparse<T> > & submatrix,
+                     std::vector<size_type> const& rows,
+                     std::vector<size_type> const& cols, bool doClose = true );
+
+
+    /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
@@ -476,12 +528,12 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     void updatePCFieldSplit( PC & pc, indexsplit_ptrtype const& is );
     void updatePCFieldSplit( PC & pc );
@@ -493,7 +545,7 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
-    bool isSymmetric () const;
+    bool isSymmetric ( bool check = false ) const;
 
     bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
 
@@ -504,6 +556,16 @@ public:
      */
     void zeroEntriesDiagonal();
 
+    //!
+    //! get some matrix information use MatInfo data structure from Petsc
+    //!
+    virtual void getMatInfo(std::vector<double> &);
+
+    //!
+    //! 
+    //!
+    virtual void threshold( void );
+
 private:
 
     // disable
@@ -511,7 +573,7 @@ private:
 
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
-                            Mat &submat ) const;
+                            Mat &submat, bool doClose = true ) const;
 protected:
 
     /**
@@ -532,6 +594,8 @@ private:
      */
     const bool M_destroy_mat_on_exit;
     std::vector<PetscInt> M_ia,M_ja;
+
+    MatInfo M_info;
 };
 
 
@@ -552,8 +616,8 @@ public :
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
     MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
-
-    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
 
     MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, bool initLocalToGlobalMapping=false, bool destroyMatOnExit=false );
 
@@ -578,13 +642,12 @@ public :
                 const size_type n_l,
                 graph_ptrtype const& graph );
 
+    /**
+     * define in petsc matrix the dof mapping between
+     * numbering between local process to global world
+     */
+    void initLocalToGlobalMapping();
 
-    size_type size1() const;
-    size_type size2() const;
-    size_type rowStart() const;
-    size_type rowStop() const;
-    size_type colStart() const;
-    size_type colStop() const;
 
     void set( const size_type i,
               const size_type j,
@@ -602,7 +665,7 @@ public :
                     int* cols, int ncols,
                     value_type* data );
 
-    void addMatrix( const T a, MatrixSparse<T> &X );
+    void addMatrix( const T a, MatrixSparse<T> const&X );
 
 
     void zero();
@@ -611,17 +674,12 @@ public :
     void zeroRows( std::vector<int> const& rows,
                    Vector<value_type> const& values,
                    Vector<value_type>& rhs,
-                   Context const& on_context );
-
-    real_type energy( Vector<value_type> const& __v,
-                      Vector<value_type> const& __u,
-                      bool transpose = false ) const;
+                   Context const& on_context,
+                   value_type value_on_diagonal );
 
 private :
 
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
-
-    void initLocalToGlobalMapping();
 };
 
 

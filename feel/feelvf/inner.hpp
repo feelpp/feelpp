@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,25 @@ public:
             ExprL::template HasTrialFunction<Func>::result||
         ExprR::template HasTrialFunction<Func>::result ;
     };
+
+    template<typename Func>
+    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+        ExprR::template HasTestFunction<Func>::result ;
+    template<typename Func>
+        static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result||
+        ExprR::template HasTrialFunction<Func>::result ;
+    using test_basis = typename ExprL::test_basis;
+    using trial_basis = typename ExprL::trial_basis;
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef Product<typename ExprL::template Lambda<TheExpr...>::type,typename ExprR::template Lambda<TheExpr...>::type,Type,Props> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_left_expr(e...),M_right_expr(e...)); }
 
 
     /** @name Typedefs
@@ -223,158 +242,374 @@ public:
             if ( !IsSame )
                 M_r_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_l_tensor_expr.updateContext( ctx );
+            M_l_tensor_expr.updateContext( ctx... );
             if ( !IsSame )
-                M_r_tensor_expr.updateContext( ctx );
+                M_r_tensor_expr.updateContext( ctx... );
         }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
-            return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type(), mpl::bool_<IsSame>() );
+            value_type res = evalijq( i, j, cc1, cc2, q, mpl::bool_<IsSame>() );
+            if ( ApplySqrt )
+                return math::sqrt(res);
+            else
+                return res;
+        }
+
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_ ) const
+        {
+            return evalijq( i,j,cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<r_is_terminal>(), mpl::bool_<false>() );
         }
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0>, mpl::bool_<false> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::false_, mpl::false_ ) const
         {
             double res = 0;
-
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += M_l_tensor_expr.evalijq( i, j, c1, c2, q )*M_r_tensor_expr.evalijq( i, j, c1, c2, q );
                     }
             }
-
             return res;
         }
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0>, mpl::bool_<true> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+#if 0
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                    }
+#else
+                auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
+                auto const& rtensor = M_r_tensor_expr.evalijq( i,j,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += ltensor(c1,c2)*rtensor(c1,c2);
+                    }
+#endif
+            }
+            return res;
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::false_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += ltensor(c1,c2)*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                    }
+            }
+            return res;
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& rtensor = M_r_tensor_expr.evalijq( i,j,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*rtensor(c1,c2);
+                    }
+            }
+            return res;
+        }
+
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_ ) const
+        {
+            return evalijq( i,j,cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<true>() );
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_ ) const
         {
             double res = 0;
 
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         auto a = M_l_tensor_expr.evalijq( i, j, c1, c2, q );
                         res += a*a;
                     }
             }
+            return res;
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                //return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+#if 0
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                    }
+#else
+                auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        value_type val=ltensor(c1,c2);
+                        res += val*val;
+                    }
+#endif
+            }
+            return res;
+        }
+
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
+        {
+            value_type res = evaliq( i, cc1, cc2, q, mpl::bool_<IsSame>() );
             if ( ApplySqrt )
                 return math::sqrt(res);
             else
                 return res;
         }
-
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::false_ ) const
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_ ) const
         {
-            //if ( Type == 1 )
-            {
-                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
-            }
+            return evaliq( i,cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<r_is_terminal>(), mpl::bool_<false>() );
         }
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::true_ ) const
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::false_, mpl::false_ ) const
         {
-            //if ( Type == 1 )
-            {
-                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
-            }
-        }
-        value_type
-        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
-            {
-                return evaliq( i, cc1, cc2, q, mpl::bool_<IsSame>() );
-            }
-        value_type
-        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<false> ) const
-        {
-            double res = 0;
-
+            value_type res = 0;
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += M_l_tensor_expr.evaliq( i, c1, c2, q )*M_r_tensor_expr.evaliq( i, c1, c2, q );
                     }
             }
-
             return res;
         }
         value_type
-        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<true> ) const
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_, mpl::false_ ) const
         {
-            double res = 0;
-
+            value_type res = 0;
             if ( Type == 1 )
             {
-                for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                    for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
+                auto const& ltensor = M_l_tensor_expr.evaliq( i,q );
+                auto const& rtensor = M_r_tensor_expr.evaliq( i,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
-                        auto a = M_l_tensor_expr.evaliq( i, c1, c2, q );
-                        res += a*a;
+                        res += ltensor(c1,c2)*rtensor(c1,c2);
                     }
             }
+            return res;
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::false_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& ltensor = M_l_tensor_expr.evaliq( i,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += ltensor(c1,c2)*M_r_tensor_expr.evaliq( i, c1, c2, q );
+                    }
+            }
+            return res;
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& rtensor = M_r_tensor_expr.evaliq( i,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evaliq( i, c1, c2, q )*rtensor(c1,c2);
+                    }
+            }
+            return res;
+        }
+
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_ ) const
+        {
+            return evaliq( i,cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<true>() );
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        value_type val = M_l_tensor_expr.evaliq( i, c1, c2, q );
+                        res += val*val;
+                    }
+            }
+            return res;
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& ltensor = M_l_tensor_expr.evaliq( i,q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        value_type val = ltensor(c1,c2);
+                        res += val*val;
+                    }
+            }
+            return res;
+        }
+
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
+        {
+            value_type res = evalq( cc1, cc2, q, mpl::bool_<IsSame>() );
             if ( ApplySqrt )
                 return math::sqrt(res);
             else
                 return res;
         }
-        value_type
-        evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
-            {
-                return evalq( cc1, cc2, q, mpl::bool_<IsSame>() );
-            }
+
         value_type
         evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<false> ) const
         {
-            double res = 0;
-
+            return evalq( cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<r_is_terminal>(), mpl::bool_<false>() );
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::false_, mpl::false_ ) const
+        {
+            value_type res = 0;
             if ( Type == 1 )
             {
-                for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                    for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += M_l_tensor_expr.evalq( c1, c2, q )*M_r_tensor_expr.evalq( c1, c2, q );
                     }
             }
-
             return res;
         }
         value_type
-        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<true> ) const
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_, mpl::false_ ) const
         {
-            double res = 0;
-
+            value_type res = 0;
             if ( Type == 1 )
             {
-                for ( uint16_type l = 0; l < left_shape::M; ++l )
-                {
-                    for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
+                auto const& ltensor = M_l_tensor_expr.evalq( q );
+                auto const& rtensor = M_r_tensor_expr.evalq( q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
-                        auto a = M_l_tensor_expr.evalq( l, c2, q );
-                        res += a*a;
+                        res += ltensor(c1,c2)*rtensor(c1,c2);
                     }
-                }
             }
-            if ( ApplySqrt )
-                return math::sqrt(res);
-            else
-                return res;
+            return res;
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::false_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& ltensor = M_l_tensor_expr.evalq( q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += ltensor(c1,c2)*M_r_tensor_expr.evalq( c1, c2, q );
+                    }
+            }
+            return res;
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_, mpl::false_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& rtensor = M_r_tensor_expr.evalq( q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
+                    {
+                        res += M_l_tensor_expr.evalq( c1, c2, q )*rtensor(c1,c2);
+                    }
+            }
+            return res;
+        }
+
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<true> ) const
+        {
+            return evalq( cc1,cc2,q, mpl::bool_<l_is_terminal>(), mpl::bool_<true>() );
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::false_, mpl::true_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++c1 )
+                    {
+                        value_type val = M_l_tensor_expr.evalq( c1, c2, q );
+                        res += val*val;
+                    }
+            }
+            return res;
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::true_, mpl::true_ ) const
+        {
+            value_type res = 0;
+            if ( Type == 1 )
+            {
+                auto const& ltensor = M_l_tensor_expr.evalq( q );
+                for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
+                    for ( uint16_type c1 = 0; c1 < left_shape::M; ++c1 )
+                    {
+                        value_type val = ltensor( c1, c2 );
+                        res += val*val;
+                    }
+            }
+            return res;
         }
 
     private:
         l_tensor_expr_type M_l_tensor_expr;
         r_tensor_expr_type M_r_tensor_expr;
-        mutable Eigen::Matrix<value_type,left_shape::M,left_shape::N> M1,M2;
     };
 
 private:
@@ -402,6 +637,27 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprR,1,Props> product_t;
     return Expr< product_t >(  product_t( l, r ) );
+}
+
+/**
+ * \brief symetric part of a matricial expression
+ */
+template<typename ExprL>
+inline
+Expr< Product<ExprL, ExprL,1,InnerProperties::IS_SAME> >
+inner( ExprL l )
+{
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
+}
+
+template<typename ExprL, int Props>
+inline
+Expr< Product<ExprL, ExprL,1,Props> >
+inner( ExprL l, mpl::int_<Props> )
+{
+    typedef Product<ExprL, ExprL,1,InnerProperties::IS_SAME|Props> product_t;
+    return Expr< product_t >(  product_t( l, l ) );
 }
 
 

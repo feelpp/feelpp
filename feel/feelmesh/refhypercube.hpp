@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -28,6 +28,8 @@
  */
 #ifndef __refhypercube_H
 #define __refhypercube_H 1
+
+#include <feel/feelmesh/marker.hpp>
 
 namespace Feel
 {
@@ -99,13 +101,16 @@ public:
         :
         super(),
         M_id( 0 ),
-        M_vertices( nDim, numVertices ),
-        M_points( nDim, numPoints ),
+        M_vertices( nRealDim, numVertices ),
+        M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces ),
+        M_barycenter( nRealDim ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
     {
+        M_vertices *= 0;
+        M_points *= 0;
+
         if ( nDim == 1 )
         {
             M_vertices( 0, 0 ) = -1.0;
@@ -172,6 +177,7 @@ public:
 
         //std::cout << "P = " << M_points << "\n";
         make_normals();
+        computeBarycenters();
         computeMeasure();
     }
 
@@ -182,8 +188,8 @@ public:
         M_vertices( nRealDim, numVertices ),
         M_points( nRealDim, numPoints ),
         M_normals( numNormals ),
-        M_barycenter( nDim ),
-        M_barycenterfaces( nDim, numTopologicalFaces ),
+        M_barycenter( nRealDim ),
+        M_barycenterfaces( nRealDim, numTopologicalFaces ),
         M_meas( 0 )
     {
         if ( __f >= element_type::numTopologicalFaces )
@@ -237,24 +243,13 @@ public:
 
 
         make_normals();
+        computeBarycenters();
         computeMeasure();
     }
 
-    Reference( Reference const & r )
-        :
-        super( r ),
-        M_id( r.M_id ),
-        M_vertices( r.M_vertices ),
-        M_points( r.M_points ),
-        M_normals( r.M_normals ),
-        M_barycenter( r.M_barycenter ),
-        M_barycenterfaces( r.M_barycenterfaces ),
-        M_meas( r.M_meas )
-    {
+    Reference( Reference const & r ) = default;
 
-    }
-
-    ~Reference() {}
+    ~Reference() = default;
 
     //@}
 
@@ -262,21 +257,7 @@ public:
      */
     //@{
 
-    Reference& operator=( Reference const& r )
-    {
-        if ( this != &r )
-        {
-            M_id = r.M_id;
-            M_vertices = r.M_vertices;
-            M_points = r.M_points;
-            M_normals = r.M_normals;
-            M_barycenter = r.M_barycenter;
-            M_barycenterfaces = r.M_barycenterfaces;
-            M_meas = r.M_meas;
-        }
-
-        return *this;
-    }
+    Reference& operator=( Reference const& r ) = default;
 
     //@}
 
@@ -348,9 +329,8 @@ public:
      */
     matrix_node_type faceVertices( uint16_type f ) const
     {
-        const int d[3] = { 1,2,4 };
-        matrix_node_type v( nDim, d[nDim-1]  );
-        // there is exactely nDim vertices on each face on a d-simplex
+        const int d[4] = { 0,1,2,4 };
+        matrix_node_type v( nRealDim, d[nDim]  );
 
         for ( int p = 0; p < d[nDim]; ++p )
         {
@@ -373,7 +353,7 @@ public:
     /**
      * \return the barycenter of the reference simplex
      */
-    node_type barycenter() const
+    node_type const& barycenter() const
     {
         return M_barycenter;
     }
@@ -381,7 +361,7 @@ public:
     /**
      * \return the barycenter of the faces of the reference simplex
      */
-    points_type barycenterFaces() const
+    points_type const& barycenterFaces() const
     {
         return M_barycenterfaces;
     }
@@ -467,7 +447,11 @@ public:
     {
         return 0;
     }
-    size_type marker() const
+    std::map<uint16_type,Marker1> markers() const
+    {
+        return std::map<uint16_type,Marker1>();
+    }
+    flag_type marker() const
     {
         return 0;
     }
@@ -867,10 +851,11 @@ private:
     {
         M_normals.resize( numNormals );
 
-        for ( int n = 0; n < numNormals; ++n )
+        for ( uint16_type n = 0; n < numNormals; ++n )
         {
-            M_normals[n].resize( nDim );
-            M_normals[n].clear();
+            //M_normals[n].resize( nDim );
+            //M_normals[n].clear();
+            M_normals[n] = ublas::scalar_vector<value_type>( nDim, 0. );
         }
 
         if ( nDim == 1 )

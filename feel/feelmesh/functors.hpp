@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -102,7 +102,7 @@ struct UpdateFace
             element.setFace( M_face.pos_first(), M_face );
 
             if ( M_face.isConnectedTo1() )
-                element.setNeighbor( M_face.pos_first(), M_face.ad_second(), M_face.proc_second() );
+                element.setNeighbor( M_face.pos_first(), M_face.ad_second() );
 
             FEELPP_ASSERT( element.facePtr( M_face.pos_first() ) )
             ( M_face.pos_first() )
@@ -112,7 +112,7 @@ struct UpdateFace
         else if ( M_face.ad_second() == element.id() )
         {
             element.setFace( M_face.pos_second(), M_face );
-            element.setNeighbor( M_face.pos_second(), M_face.ad_first(), M_face.proc_first() );
+            element.setNeighbor( M_face.pos_second(), M_face.ad_first() );
             FEELPP_ASSERT( element.facePtr( M_face.pos_second() ) )
             ( M_face.pos_second() )
             ( M_face.ad_second() ).error( "invalid face" );
@@ -158,9 +158,11 @@ struct UpdateFaceConnection0
         M_conn( conn )
     {}
     template<typename FaceType>
-    void operator()( FaceType& element  ) const
+    void operator()( FaceType& face  ) const
     {
-        element.setConnection0( M_conn );
+        face.setConnection0( M_conn );
+        face.setProcessId( boost::get<3>( M_conn ) );
+        face.setOnBoundary( true, FaceType::nDim );
     }
 private:
     ConnectionType const& M_conn;
@@ -169,22 +171,35 @@ private:
 template<typename ConnectionType>
 struct UpdateFaceConnection1
 {
-    UpdateFaceConnection1( ConnectionType const& conn )
+    UpdateFaceConnection1( ConnectionType const& conn, rank_type currentPid )
         :
-        M_conn( conn )
+        M_conn( conn ),
+        M_currentPid( currentPid )
     {}
     template<typename FaceType>
-    void operator()( FaceType& element  ) const
+    void operator()( FaceType& face  ) const
     {
         //element.setOnBoundary( false );
-        element.setConnection1( M_conn );
+        face.setConnection1( M_conn );
+#if 0
+        if ( ( face.element0().marker() == face.element1().marker() ) &&
+                face.marker().value() == 0 )
+            face.setMarker( face.element0().marker().value() );
+#endif
+        face.setOnBoundary( false );
 
-        if ( ( element.element0().marker() == element.element1().marker() ) &&
-                element.marker().value() == 0 )
-            element.setMarker( element.element0().marker().value() );
+        // force processId equal to M_comm.rank() if face on interprocessfaces
+        if ( face.processId()!=M_currentPid )
+        {
+            if ( ( face.element0().processId()==M_currentPid ) || ( face.element1().processId()==M_currentPid ) )
+                face.setProcessId( M_currentPid );
+        }
+
+
     }
 private:
     ConnectionType const& M_conn;
+    rank_type M_currentPid;
 
 };
 
@@ -242,6 +257,28 @@ private:
 
 };
 
+template<typename EdgeIteratorType,typename PermutationType>
+struct UpdateEdgeAndEdgePermutation
+{
+    UpdateEdgeAndEdgePermutation( std::vector< std::pair< EdgeIteratorType,PermutationType> > const& eltToEdgeDatas )
+        :
+        M_eltToEdgeDatas( eltToEdgeDatas )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element  ) const
+    {
+        for ( uint16_type eid=0;eid< M_eltToEdgeDatas.size();++eid )
+        {
+            auto const& eltToEdgeData = M_eltToEdgeDatas[eid];
+            element.setEdge( eid, *eltToEdgeData.first );
+            element.setEdgePermutation( eid, eltToEdgeData.second );
+        }
+    }
+private:
+    std::vector< std::pair< EdgeIteratorType,PermutationType> > const& M_eltToEdgeDatas;
+};
+
+
 struct updateIdInOthersPartitions
 {
     updateIdInOthersPartitions( rank_type pid, size_type id )
@@ -252,7 +289,7 @@ struct updateIdInOthersPartitions
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setIdInOthersPartitions( M_pid, M_id );
+        element.setIdInOtherPartitions( M_pid, M_id );
     }
 private:
     rank_type M_pid;

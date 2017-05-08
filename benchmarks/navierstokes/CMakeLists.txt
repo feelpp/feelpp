@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-04-02
 #
 #  Copyright (C) 2011 Universit� Joseph Fourier (Grenoble I)
@@ -21,6 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-foreach( DIR poiseuille kovasznay2 turek stokes nozzle steps)
+foreach( DIR poiseuille kovasznay2 turek stokes nozzle steps phantom)
   add_subdirectory( ${DIR} )
 endforeach()

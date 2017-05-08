@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -275,8 +275,8 @@ TestMixed<Dim,Order>::run()
 
     {
         auto D = M_backend->newMatrix( Xh, Yh );
-        BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Yh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*id( p ) );
         D->close();
         //D->printMatlab( "D.m" );
@@ -319,8 +319,8 @@ TestMixed<Dim,Order>::run()
     }
     {
         sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Xh ) );
-        BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Yh->nDof() );
         form2( _test=Xh, _trial=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), div( u )*idt( p ) );
 
         D->close();
@@ -345,8 +345,8 @@ TestMixed<Dim,Order>::run()
     }
     {
         sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-        BOOST_CHECK_EQUAL( D->size1(), Xh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Xh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
+        BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
         form2( _trial=Xh, _test=Xh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*div( u ) );
         D->close();
         //D->printMatlab( "divdiv.m" );
@@ -373,7 +373,7 @@ TestMixed<Dim,Order>::run()
 }
 #if USE_BOOST_TEST
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( mixed )
 

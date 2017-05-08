@@ -65,7 +65,7 @@ makeOptions()
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
-    return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
+    return simgetoptions.add( eimOptions() ).add( crbSEROptions() );
 }
 
 
@@ -218,13 +218,13 @@ public:
 
         }
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
         {
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_model1" );}
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {
@@ -403,12 +403,12 @@ public:
         }
     std::string modelName() const { return std::string("test_eim_model2" );}
     //! return the parameter space
-    parameterspace_ptrtype parameterSpace() const
+    parameterspace_ptrtype const& parameterSpace() const
     {
         return Dmu;
     }
 
-    space_ptrtype functionSpace() { return Xh; }
+    space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )
         {

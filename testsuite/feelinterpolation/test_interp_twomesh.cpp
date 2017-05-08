@@ -1,5 +1,5 @@
-//#define USE_BOOST_TEST 0
-#if USE_BOOST_TEST
+
+#if 1
 #define BOOST_TEST_MODULE interp_twomesh tests
 #include <testsuite/testsuite.hpp>
 #endif
@@ -87,8 +87,8 @@ run_test_geomap()
     //-----------------------------------------------------------------------------------//
 
     //Geometry
-    double meshSize1 = option(_name="hsize1").template as<double>();
-    double meshSize2 = option(_name="hsize2").template as<double>();
+    double meshSize1 = doption(_name="hsize1");
+    double meshSize2 = doption(_name="hsize2");
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
     GeoTool::Rectangle R1( meshSize1,"LEFT",x1,x2 );
@@ -123,6 +123,9 @@ run_test_geomap()
     typename mesh_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
 
+    //init inverse geometric transformation phi^{-1}
+    typename mesh_type::Inverse::gic_type gic( __gm, *el_it );
+
     typedef typename mesh_type::gm_type::precompute_type geopc_type;
     typedef typename mesh_type::gm_type::precompute_ptrtype geopc_ptrtype;
     geopc_ptrtype __geopc( new geopc_type( __gm, im.points() ) );
@@ -133,15 +136,17 @@ run_test_geomap()
         gmc_ptrtype __c( new gmc_type( __gm,
                                        *el_it,//mesh->element( *el_it ),
                                        __geopc ) );
-
+#if 0
         //init inverse geometric transformation phi^{-1}
         typename mesh_type::Inverse::gic_type gic( __gm, *el_it );
-
+#else
+        gic.update( *el_it );
+#endif
         for ( uint32_type i=0; i< __c->xReal().size2(); ++i )
         {
 
             // get phi for one point
-            typename mesh_type::node_type n = ublas::column( __c->xReal(), i );
+            typename mesh_type::node_type n = Feel::ublas::column( __c->xReal(), i );
 
             //compute phi^{-1}
             gic.setXReal( n );
@@ -149,7 +154,7 @@ run_test_geomap()
             //verify that : phi°phi^{-1}=Id
             for ( uint32_type j=0; j<n.size(); ++j )
             {
-                double err = std::abs( ublas::column( im.points(),i )( j ) - gic.xRef()( j ) );
+                double err = std::abs( Feel::ublas::column( im.points(),i )( j ) - gic.xRef()( j ) );
                 //if ( err> 1e-9) std::cout<< "\nProb : "<< err;
 #if USE_BOOST_TEST
                 BOOST_CHECK( err<1e-9 );
@@ -266,7 +271,7 @@ test_interp_boundary( boost::tuple<
                             _expr= hessv( u1 )-hessv( u2, useConformalIntegration ) );
 #if USE_BOOST_TEST
         BOOST_MESSAGE( "[testBoundary] hessv(u1) error : " << __errHess );
-        BOOST_CHECK_SMALL( __errHess,1e-12 );
+        BOOST_CHECK_SMALL( __errHess,1e-9 );
 #else
         std::cout << "[testBoundary] hessv(u1) error : " << __errHess << "\n";
 #endif
@@ -327,7 +332,7 @@ test_interp_boundary( boost::tuple<
                                  _expr=curlxv( v1 )-curlxv( v2, useConformalIntegration ) );
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] curlxv(v1) error : " << __errCurlx );
-    BOOST_CHECK_SMALL( __errCurlxv,1e-12 );
+    BOOST_CHECK_SMALL( __errCurlx,1e-12 );
 #else
     LOG(INFO) << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
     std::cout << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
@@ -358,9 +363,9 @@ run_test_interp()
 
     //-----------------------------------------------------------------------------------//
 
-    double meshSize1 = option(_name="hsize1").template as<double>();
-    double meshSize2 = option(_name="hsize2").template as<double>();
-    bool userelation = option(_name="userelation").template as<bool>();
+    double meshSize1 = doption(_name="hsize1");
+    double meshSize2 = doption(_name="hsize2");
+    bool userelation = boption(_name="userelation");
     //-----------------------------------------------------------------------------------//
 
     //Geometry
@@ -464,9 +469,9 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( test_interp_twomesh::makeAbout(), test_interp_t
 
 BOOST_AUTO_TEST_SUITE( interp_twomesh_testsuite )
 
+#if 0
 BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
 {
-#if 0
     using namespace test_interp_twomesh;
 
     BOOST_MESSAGE(   "\n[main] ----------TEST_GEOMAP_START----------\n" );
@@ -478,14 +483,14 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_geomap )
     run_test_geomap<2,6,3>();
     BOOST_MESSAGE(   "[main] ----------------<2,6,4>---------------\n" );
     run_test_geomap<2,6,4>();
-    BOOST_MESSAGE(   "[main] ----------------<2,6,5>---------------\n" );
-    run_test_geomap<2,6,5>();
+    //BOOST_MESSAGE(   "[main] ----------------<2,6,5>---------------\n" );
+    //run_test_geomap<2,6,5>();
     BOOST_MESSAGE(   "[main] ----------TEST_GEOMAP_FINISH----------\n\n" );
-#endif
 }
+#endif
 
 // problem with this test case
-
+#if 1
 BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
 {
 
@@ -505,7 +510,7 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
     //run_test_interp<2,11,5>();
     BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 
 #else
@@ -516,7 +521,7 @@ int main(int argc, char**argv )
                      _desc=test_interp_twomesh::makeOptions(),
                      _about=test_interp_twomesh::makeAbout() );
 
-    Environment::changeRepository( _directory=boost::format( "/testsuite/feeldiscr/interp/%1%/" )
+    Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/interp/%1%/" )
                                    % env.about().appName()
                                    );
 

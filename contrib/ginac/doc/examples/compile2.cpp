@@ -22,7 +22,7 @@ int main()
 	cout << "Enter an expression containing 'x' and/or 'y': ";
 	cin >> s;
 	// Expression now in expr
-	ex expr(s, lst(x,y));
+	ex expr(s, lst{x,y});
  
 	cout << "start integration of " << expr << " ..." << endl;
 
@@ -43,7 +43,10 @@ int main()
 
 	// Our function pointer that points to the compiled ex
 	FUNCP_CUBA fp;
-	compile_ex(lst(expr), lst(x,y), fp);
+
+	// Optionally, compile with custom compiler flags:
+	// setenv("CXXFLAGS", "-O3 -fomit-frame-pointer -ffast-math", 1);
+	compile_ex(lst{expr}, lst{x,y}, fp);
 
 	// Starting VEGAS
 	// By invocation of compile() the expression in expr is converted into the

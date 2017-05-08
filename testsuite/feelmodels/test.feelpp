@@ -1,0 +1,76 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Turek",
+    "Model":"Navier-Stokes",
+    "Description":"Fluid flow around a cylinder",
+    "Parameters":
+    {
+        "Um":
+        {
+            "type":"variable",
+            "value":0.3,
+            "min":1e-4,
+            "max":10
+        },
+        "H":
+        {
+            "type":"constant",
+            "value":0.41
+        }
+    },
+    "Materials":
+    {
+        "fluid":
+        {
+            "name":"fluid",
+            "rho": "1", // density
+            "eta": "0.001", // dynamic_viscosity
+            "mu": "{1,t}:t",
+            "nu": "{1,2,x*y}:x:y:z",
+            "chi": "{1,2,x,y}:x:y",
+            "xhi": "{1,2,3,4,5,6,7,8,t}:t",
+            "f" : "2*g:g",
+            "h" : "2*g+t:g:t"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "inflow":
+                {
+                    // inflow condition
+                    "expr":"{4*Um*y*( H-y )/H^2,0}:y:Um:H"
+                },
+                /* outflow condition */
+                "wall":
+                {
+                    "expr":"{0,0}"
+                },
+                "cylinder":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "Neumann":
+            {
+                "outlet":
+                {
+                    "expr":"{0,0,0,0}" // outlet
+                }
+            }
+        }
+    }, // BoundaryConditions
+    "PostProcess":
+    {
+        "Force":["cylinder"],
+        "PressureDifference":
+        {
+            "x1":"{0.15,0.2}",
+            "x2":"{0.25,0.2}"
+        }
+    }
+}
+

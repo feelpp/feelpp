@@ -1,6 +1,6 @@
 # -*- mode: cmake; coding: utf-8 -*-
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-29
 #
 #  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -26,16 +26,27 @@ IF ( ENABLE_INSTANTIATION_MODE )
 
     # exporterensight.cpp exportergmsh.cpp # exportergnuplot.cpp
     )
-  endif()
+endif()
+
+set(FEELFILTERS_GMSH_SRCS "")
+if(FEELPP_HAS_GMSH_H AND FEELPP_HAS_GMSH_LIBRARY)
+  set(FEELFILTERS_GMSH_SRCS gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp gmsh.cpp geotool.cpp)
+endif()
 
 SET(SRC
-  unitsegment.cpp unitsquare.cpp unitcube.cpp
-  gmshhypercubedomain.cpp gmshsimplexdomain.cpp gmshellipsoiddomain.cpp
+  importergmsh.cpp gmshenums.cpp unitsegment.cpp unitsquare.cpp unitcube.cpp
   #exporterfactorysimplex.cpp exporterfactoryhypercube.cpp
-  gmsh.cpp  ${FEELFILTERS_INST_SRCS} geotool.cpp
-  detail/fileindex.cpp 
-  straightenmesh_inst_1d.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
+  ${FEELFILTERS_GMSH_SRCS}
+  ${FEELFILTERS_INST_SRCS}
+  detail/fileindex.cpp
+  loadcsv.cpp
+  hbf.cpp
+  straightenmesh_inst_1d.cpp straightenmesh_inst_1d_p2.cpp straightenmesh_inst_2d.cpp straightenmesh_inst_2d_ho.cpp straightenmesh_inst_3d.cpp straightenmesh_inst_3d_ho.cpp
   )
+
+if(FEELPP_HAS_PARAVIEW)
+    SET(SRC ${SRC} vtkBaseInsituPipeline.cpp)
+endif()
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelfilters "${SRC};${HDR}")

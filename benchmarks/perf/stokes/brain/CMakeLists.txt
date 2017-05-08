@@ -1,5 +1,5 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-02-03
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -28,5 +28,5 @@ add_custom_target(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-feelpp_add_application( perf_stokesCerebroVeinous SRCS stokes.cpp LABELS benchmarks CFG stokes.cfg GEO stokes.geo)
-install(TARGETS feelpp_perf_stokesCerebroVeinous DESTINATION bin/ COMPONENT Bin )
+feelpp_add_application( stokesCerebroVeinous SRCS stokes.cpp display_flowrates.cpp LABELS benchmarks CFG stokes.cfg GEO vincent_1.geo vincent_1.mesh DEFS FEELPP_DIM=3 FEELPP_ORDER_P=1)
+install(TARGETS feelpp_benchmarks_stokesCerebroVeinous DESTINATION bin/ COMPONENT Bin )

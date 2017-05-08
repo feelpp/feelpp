@@ -1,8 +1,8 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-02-18
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -52,3 +52,5 @@ feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABELS doc 
 feelpp_add_application( doc_laplacian_lagrange_multiplier2 SRCS laplacian_lagrange_multiplier2.cpp LABELS doc CFG laplacian_lagrange_multiplier2.cfg)
 
 feelpp_add_application( partition SRCS partition.cpp LABELS doc CFG partition.cfg)
+
+feelpp_add_application( doc_laplacian_bean SRCS laplacian_bean.cpp LABELS doc CFG laplacian_bean.cfg)

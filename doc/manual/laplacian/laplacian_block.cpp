@@ -1,4 +1,4 @@
-// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
 #include <feel/feel.hpp>
 #include <feel/feelalg/vectorblock.hpp>
@@ -80,12 +80,12 @@ void runLaplacianBlockV1()
                     _expr=gradt(u1)*trans(grad(u1)) );
 
     form2( _trial=Vh2, _test=Vh1 ,_matrix=A,
-           _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
+           _rowstart=0, _colstart=1 )
         += integrate( _range=elements(submesh),
                       _expr=idt(u2)*id(u1) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
-           _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
+           _rowstart=1, _colstart=0 )
         += integrate( _range=elements(submesh),
                       _expr=idt(u1)*id(u2) );
 

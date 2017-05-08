@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -63,7 +63,6 @@ public:
     typedef boost::shared_ptr<solvereigen_type> solvereigen_ptrtype;
 
     typedef boost::tuple<size_type, size_type, std::vector<double> > solve_return_type;
-
 
     typedef Vector<value_type> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
@@ -202,12 +201,36 @@ public:
     }
 
     /**
-     * Returns the number of eigenvalues to compute
+     * Returns the dimension of the subspace
      */
     size_type numberOfEigenvaluesConverged() const
     {
         return M_ncv;
     }
+
+    /**
+     * Returns the maximum projected dimension
+     */
+    size_type maximumProjectedDimension() const
+    {
+        return M_mpd;
+    }
+
+    /**
+     * Returns the start of the interval
+     */
+    double intervalA() const
+    {
+        return M_interval_a;
+    }
+
+    /**
+     * Returns the end of the interval
+     */
+    double intervalB() const
+        {
+            return M_interval_b;
+        }
 
     /**
      * Returns the tolerance to be reached by eigenvalue solver
@@ -291,11 +314,28 @@ public:
     }
 
     /**
-     * set the number of eigenvalues to have converged
+     * set the dimension of the subspace
      */
     void setNumberOfEigenValuesConverged( size_type ncv )
     {
         M_ncv = ncv;
+    }
+
+    /**
+     * set the maximum projected dimension
+     */
+    void setMaximumProjectedDimension( size_type mpd )
+    {
+        M_mpd = mpd;
+    }
+
+    /**
+     * set the interval
+     */
+    void setInterval( double interval_a, double interval_b )
+    {
+        M_interval_a = interval_a;
+        M_interval_b = interval_b;
     }
 
     datamap_type const& mapRow() const
@@ -460,8 +500,16 @@ protected:
     //! number of eigenvalues
     size_type M_nev;
 
-    //! number of eigenvalues
+    //! dimension of the subspace
     size_type M_ncv;
+
+    //! maximum projected dimension
+    size_type M_mpd;
+
+    //! start of the interval
+    double M_interval_a;
+    //! end of the interval
+    double M_interval_b;
 
     //! max number of iterations
     size_type M_maxit;
@@ -501,7 +549,10 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                  ( optional
                                    ( nev, ( int ), ioption(_name="solvereigen.nev") )
                                    ( ncv, ( int ), ioption(_name="solvereigen.ncv") )
-                                   ( backend,( BackendType ), BACKEND_PETSC )
+                                   ( mpd, ( int ), ioption(_name="solvereigen.mpd") )
+                                   ( interval_a, ( double ), doption("solvereigen.interval-a") )
+                                   ( interval_b, ( double ), doption("solvereigen.interval-b") )
+                                   ( backend,( BackendType ), BACKEND_DEFAULT )
                                    ( solver,( EigenSolverType ), KRYLOVSCHUR )
                                    ( problem,( EigenProblemType ), GHEP )
                                    ( transform,( SpectralTransformType ), SHIFT )
@@ -520,6 +571,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     eigen->setPositionOfSpectrum( spectrum );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
+    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_size_type_value );
+    eigen->setInterval( interval_a, interval_b );
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( transform );
     eigen->setTolerance( tolerance );
@@ -534,9 +587,9 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     unsigned int nconv, nits;
     std::vector<double> err( ncv );
     boost::tie( nconv, nits, err )  = eigen->solve( _matrixA=matrixA,
-                                      _matrixB=matrixB,
-                                      _maxit=maxit,
-                                      _tolerance=tolerance );
+                                                    _matrixB=matrixB,
+                                                    _maxit=maxit,
+                                                    _tolerance=tolerance );
 
     if ( verbose )
     {
@@ -571,15 +624,18 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                                    ( formA, *)//*(mpl::is_convertible<mpl::_,BilinearFormBase>) )
                                    ( formB, *))//*(mpl::is_convertible<mpl::_,BilinearFormBase>) ) )
                                  ( optional
-                                   ( nev, ( int ), option(_name="solvereigen.nev").template as<int>() )
-                                   ( ncv, ( int ), option(_name="solvereigen.ncv").template as<int>() )
-                                   ( solver,( std::string ), option(_name="solvereigen.solver").template as<std::string>() )
-                                   ( problem,( std::string ), option(_name="solvereigen.problem").template as<std::string>() )
-                                   ( transform,( std::string ), option(_name="solvereigen.transform").template as<std::string>() )
-                                   ( spectrum,( std::string ), option(_name="solvereigen.spectrum").template as<std::string>()  )
-                                   ( maxit,( size_type ), option(_name="solvereigen.maxiter").template as<int>() )
-                                   ( tolerance,( double ), option(_name="solvereigen.tolerance").template as<double>() )
-                                   ( verbose,( bool ), option(_name="solvereigen.verbose").template as<bool>() )
+                                   ( nev, ( int ), ioption(_name="solvereigen.nev") )
+                                   ( ncv, ( int ), ioption(_name="solvereigen.ncv") )
+                                   ( mpd, ( int ), ioption(_name="solvereigen.mpd") )
+                                   ( interval_a, ( double ), doption("solvereigen.interval-a") )
+                                   ( interval_b, ( double ), doption("solvereigen.interval-b") )
+                                   ( solver,( std::string ), soption(_name="solvereigen.solver") )
+                                   ( problem,( std::string ), soption(_name="solvereigen.problem") )
+                                   ( transform,( std::string ), soption(_name="solvereigen.transform") )
+                                   ( spectrum,( std::string ), soption(_name="solvereigen.spectrum")  )
+                                   ( maxit,( size_type ), ioption(_name="solvereigen.maxiter") )
+                                   ( tolerance,( double ), doption(_name="solvereigen.tolerance") )
+                                   ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
                                )
 {
@@ -591,6 +647,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
     eigen->setPositionOfSpectrum( (PositionOfSpectrum)EigenMap[spectrum] );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
+    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_size_type_value );
+    eigen->setInterval( interval_a, interval_b );
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( (SpectralTransformType)EigenMap[transform] );
     eigen->setTolerance( tolerance );
@@ -636,6 +694,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type
                 std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
             femodes[i].first = mode.second.get<0>();
             femodes[i].second = *mode.second.get<2>();
+            femodes[i].second.close();
             ++i;
         }
     }

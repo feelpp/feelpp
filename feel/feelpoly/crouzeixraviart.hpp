@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -454,7 +454,7 @@ public:
                               (mpl::int_<nComponents2>,mpl::int_<ExprType::shape::N>));
 
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
-        typedef typename ExprType::tensor_expr_type::expression_type::fe_type fe_expr_type;
+        typedef typename ExprType::tensor_expr_type::expr_type::fe_type fe_expr_type;
 
         for( int q = 0; q <expr.geom()->nPoints(); ++q )
             for( int i = 0; i < fe_expr_type::nLocalDof; ++i )

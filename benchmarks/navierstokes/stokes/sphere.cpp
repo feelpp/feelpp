@@ -71,7 +71,7 @@ int main( int argc, char** argv )
     po::store( po::parse_command_line( argc, argv, desc ), vm );
     po::notify( vm );
 
-    const int Order=3;
+    const int Order=2;
     const int OrderP=3;
     using namespace Feel;
     using namespace Feel::vf;
@@ -183,14 +183,14 @@ int main( int argc, char** argv )
     exporter->step( 0 )->add( "sin(theta)", v_st );
     exporter->step( 0 )->add( "ur", v_ur );
     exporter->step( 0 )->add( "utheta", v_ut );
-    exporter->step( 0 )->add( "ux", v_u.comp( X ) );
-    exporter->step( 0 )->add( "uy", v_u.comp( Y ) );
-    exporter->step( 0 )->add( "uy", v_u.comp( Z ) );
+    exporter->step( 0 )->add( "ux", v_u[Component::X] );
+    exporter->step( 0 )->add( "uy", v_u[Component::Y] );
+    exporter->step( 0 )->add( "uy", v_u[Component::Z] );
     exporter->step( 0 )->add( "p", v_p );
     exporter->step( 0 )->add( "u_1", v_u_goncalo );
-    exporter->step( 0 )->add( "u_1x", v_u_goncalo.comp( X ) );
-    exporter->step( 0 )->add( "u_2y", v_u_goncalo.comp( Y ) );
-    exporter->step( 0 )->add( "u_3y", v_u_goncalo.comp( Z ) );
+    exporter->step( 0 )->add( "u_1x", v_u_goncalo[Component::X] );
+    exporter->step( 0 )->add( "u_2y", v_u_goncalo[Component::Y] );
+    exporter->step( 0 )->add( "u_3y", v_u_goncalo[Component::Z] );
     exporter->step( 0 )->add( "p_goncalo", v_p_goncalo );
 
     exporter->save();

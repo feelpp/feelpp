@@ -65,7 +65,7 @@ makeHeatShieldOptions()
     ( "beta.F1.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F1" )
     ( "beta.M0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for M0" )
     ;
-    return heatshieldoptions.add( bdf_options( "heatshield" ) );
+    return heatshieldoptions.add( bdf_options( "heatshield" ) ).add( ts_options( "heatshield" ) );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )
@@ -308,7 +308,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.A%1%") %i ).str();
         std::string filename = ( boost::format("GinacA%1%") %i ).str();
-        ginac_expressionA.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        ginac_expressionA.push_back( expr( soption(_name=name), Symbols( symbols_vec ) , filename ) );
     }
 
 
@@ -316,7 +316,7 @@ HeatShield<Order>::buildGinacExpressions()
     {
         std::string name = ( boost::format("beta.M%1%") %i ).str();
         std::string filename = ( boost::format("GinacM%1%") %i ).str();
-        ginac_expressionM.push_back( expr( option(_name=name).template as<std::string>(),  Symbols( symbols_vec ) , filename ) );
+        ginac_expressionM.push_back( expr( soption(_name=name),  Symbols( symbols_vec ) , filename ) );
     }
 
     for(int i=0; i<M_Nl; i++)
@@ -326,7 +326,7 @@ HeatShield<Order>::buildGinacExpressions()
         {
             std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
             std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-            ginac_expressionF.push_back( expr( option(_name=name).template as<std::string>(), Symbols( symbols_vec ) , filename ) );
+            ginac_expressionF.push_back( expr( soption(_name=name), Symbols( symbols_vec ) , filename ) );
         }
     }
 
@@ -416,7 +416,7 @@ void HeatShield<Order>::initModel()
     this->M_betaFq[0].resize( M_Ql[0] );
     this->M_betaFq[1].resize( M_Ql[1] );
 
-    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
+    M_use_ginac = boption(_name="crb.use-ginac-for-beta-expressions");
 
     if( mshfile_name=="" )
     {
@@ -427,7 +427,7 @@ void HeatShield<Order>::initModel()
     else
     {
 
-        bool load_mesh_already_partitioned=option(_name="load-mesh-already-partitioned").template as<bool>();
+        bool load_mesh_already_partitioned=boption(_name="load-mesh-already-partitioned");
         if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();
@@ -473,7 +473,7 @@ void HeatShield<Order>::initModel()
 
     M_bdf = bdf( _space=Xh, _vm=Environment::vm(), _name="heatshield" , _prefix="heatshield" );
 
-    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
+    bool dont_use_operators_free = boption(_name="do-not-use-operators-free") ;
     if( dont_use_operators_free )
     {
         this->M_Aq.resize( M_Qa );
@@ -595,7 +595,7 @@ void HeatShield<Order>::assemble()
         ;
 #endif
 
-    if( ! option(_name="do-not-use-operators-free").template as<bool>() )
+    if( ! boption(_name="do-not-use-operators-free") )
     {
         M_compositeLightA = opLinearComposite( _domainSpace=this->Xh , _imageSpace=this->Xh );
         M_compositeLightA->addList( M_Aq_free );
@@ -621,7 +621,7 @@ double HeatShield<Order>::output( int output_index, parameter_type const& mu, el
 
     double s=0;
 
-    bool dont_use_operators_free = option(_name="do-not-use-operators-free").template as<bool>() ;
+    bool dont_use_operators_free = boption(_name="do-not-use-operators-free") ;
     auto fqm = backend()->newVector( this->Xh );
     if ( output_index<2 )
     {

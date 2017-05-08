@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -112,12 +112,22 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     //auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
     //auto en = f.functionSpace()->mesh()->endElementWithProcessId();
-    bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() );
+    bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->buildDofTableMPIExtended();
+    bool outputUseDofTableMPIExtended = space->dof()->buildDofTableMPIExtended();
+    bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && inputUseDofTableMPIExtended && outputUseDofTableMPIExtended );
     EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
     auto it = rangeElt.template get<1>();
     auto en = rangeElt.template get<2>();
-    if ( it==en ) return;
+
+    bool applyVectorSync = !upExtendedElt && outputUseDofTableMPIExtended;
+
+    if ( it == en )
+    {
+        if ( applyVectorSync )
+            sync( interp, "=" );
+        return;
+    }
 
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
 
@@ -145,24 +155,30 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
 
+
+
+        typename f_fectx_type::id_type m_id( basis_type::nComponents1, basis_type::nComponents2);
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
             __c->update( curElt );
             fectx->update( __c, pc );
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+
+            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.));
             f.id( *fectx, fvalues );
 
             //std::cout << "interpfunc :  " << interpfunc << "\n";
             for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
             {
 
-                const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+                const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
+                const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
 
-                for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
+                    for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
                 {
                     size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
-                                                          l, comp ) );
+                                                          l, ncdof2*comp1+comp2 ) );
 
 #if 0
                     size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
@@ -178,58 +194,13 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     if ( globaldof >= interp.firstLocalIndex() &&
                             globaldof < interp.lastLocalIndex() )
                     {
-                        interp( globaldof ) = fvalues[l]( comp,0 );
+                        interp( globaldof ) = fvalues[l]( comp1,comp2 );
                         //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }
                 }
             }
         }
-
-
-#if 0
-        if ( space->mesh()->worldComm().localSize()>1 )
-        {
-            if ( f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() )
-            {
-                std::set<size_type> eltGhostDone;
-                auto face_it = f.functionSpace()->mesh()->interProcessFaces().first;
-                auto const face_en = f.functionSpace()->mesh()->interProcessFaces().second;
-                for ( ; face_it!=face_en ; ++face_it )
-                {
-                    auto const& elt0 = face_it->element0();
-                    auto const& elt1 = face_it->element1();
-                    const bool elt0isGhost = elt0.isGhostCell();
-                    auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-
-                    if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
-
-                    __c->update( eltOffProc );
-                    fectx->update( __c, pc );
-                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
-                    f.id( *fectx, fvalues );
-
-                    for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
-                    {
-                        const int ncdof = basis_type::is_product?basis_type::nComponents:1;
-
-                        for ( uint16_type comp = 0; comp < ncdof; ++comp )
-                        {
-                            size_type globaldof =  boost::get<0>( __dof->localToGlobal( eltOffProc.id(),l, comp ) );
-
-                            // update only values on the processor
-                            if ( globaldof >= interp.firstLocalIndex() &&
-                                 globaldof < interp.lastLocalIndex() )
-                            {
-                                interp( globaldof ) = fvalues[l]( comp,0 );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-#endif
-
 
         DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
     } // same mesh
@@ -263,7 +234,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
         for ( ; it_dofpt != en_dofpt; ++it_dofpt, ++nbpts  )
         {
-            meshinv.addPointWithId( *it_dofpt );
+            meshinv.addPointWithId( it_dofpt->second );
         }
 
         FEELPP_ASSERT( meshinv.nPoints() == nbpts )( meshinv.nPoints() )( nbpts ).error( "invalid number of points " );
@@ -274,7 +245,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         std::vector<boost::tuple<size_type,uint16_type > > itab;
 
         size_type first_dof = space->dof()->firstDof();
-
+        typename f_fectx_type::id_type m_id( SpaceType::nComponents1, SpaceType::nComponents2 );
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
@@ -309,7 +280,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                     //typename FunctionType::id_type interpfunc( f.id( *__c, pc ) );
                     //typename FunctionType::id_type interpfunc;
 
-                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.) );
                     f.id( *fectx, fvalues );
                     //std::cout << "interpfunc :  " << interpfunc << "\n";
 
@@ -363,6 +334,9 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
 #endif
     }
+
+    if ( applyVectorSync )
+        sync( interp, "=" );
 
     //std::cout << "interp=" << interp << "\n";
 } // interpolate

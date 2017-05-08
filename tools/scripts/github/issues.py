@@ -12,7 +12,7 @@ from StringIO import StringIO
 
 buffer = StringIO()
 c = pycurl.Curl()
-c.setopt(c.URL, 'https://api.github.com/repos/feelpp/feelpp/issues?milestone=14&state=closed')
+c.setopt(c.URL, 'https://api.github.com/repos/feelpp/feelpp/issues?milestone=15&state=closed')
 c.setopt(c.WRITEDATA, buffer)
 c.perform()
 c.close()

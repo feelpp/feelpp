@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-27
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -30,7 +30,7 @@
 
 # if the gflags source directory exists then we use it even if an elligible
 # version of gflags is available on the system
-if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
+if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags-toto )
   # try local version if system version is not present
   FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
     ${CMAKE_BINARY_DIR}/contrib/gflags/include
@@ -49,15 +49,24 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  --enable-static --disable-shared  CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=${CMAKE_CXX_FLAGS}
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
           #      OUTPUT_QUIET
-          OUTPUT_FILE "gflags-configure"
+          #OUTPUT_FILE "gflags-configure"
           )
       else()
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags  LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-          #      OUTPUT_QUIET
-          OUTPUT_FILE "gflags-configure"
-          )
+        if ( APPLE )
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+            #      OUTPUT_QUIET
+            #OUTPUT_FILE "gflags-configure"
+            )
+        else(APPLE)
+          execute_process(
+            COMMAND ${FEELPP_HOME_DIR}/contrib/gflags/configure --prefix=${CMAKE_BINARY_DIR}/contrib/gflags LDFLAGS=-dynamic CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+            #      OUTPUT_QUIET
+            #OUTPUT_FILE "gflags-configure"
+            )
+        endif(APPLE)
       endif(FEELPP_USE_STATIC_LINKAGE)
     endif()
 
@@ -83,6 +92,12 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
           OUTPUT_FILE "gflags-install"
           )
       endif()
+
+      if ( APPLE AND (NOT FEELPP_USE_STATIC_LINKAGE) )
+        message(STATUS "GFlags: use @rpath in dynamic lib installed")
+        EXECUTE_PROCESS(COMMAND install_name_tool -id @rpath/libfeelpp_gflags.2.dylib ${CMAKE_BINARY_DIR}/contrib/gflags/lib/libfeelpp_gflags.dylib )
+      endif()
+
     endif()
   endif()
 
@@ -94,32 +109,32 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
     ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
     NO_DEFAULT_PATH
     )
-else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
+else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags-toto )
 
-  FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
-    $ENV{FEELPP_DIR}/include/feel
-    NO_DEFAULT_PATH)
+  # FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
+  #   $ENV{FEELPP_DIR}/include/feel
+  #   NO_DEFAULT_PATH)
 
-  FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
-    $ENV{FEELPP_DIR}/include/feel
-    /usr/include/feel
-    /usr/local/include/feel
-    /opt/local/include/feel
-    NO_DEFAULT_PATH)
-  message(STATUS "Gflags/system: ${GFLAGS_INCLUDE_DIR}")
-  FIND_LIBRARY(GFLAGS_LIBRARY  NAMES feelpp_gflags  PATHS   $ENV{FEELPP_DIR}/lib  NO_DEFAULT_PATH)
-  FIND_LIBRARY(GFLAGS_LIBRARY  NAMES feelpp_gflags    )
-endif( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags )
+  # FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
+  #   $ENV{FEELPP_DIR}/include/feel
+  #   /usr/include/feel
+  #   /usr/local/include/feel
+  #   /opt/local/include/feel
+  #   NO_DEFAULT_PATH)
+  # message(STATUS "Gflags/system: ${GFLAGS_INCLUDE_DIR}")
+  # FIND_LIBRARY(GFLAGS_LIBRARY  NAMES feelpp_gflags  PATHS   $ENV{FEELPP_DIR}/lib  NO_DEFAULT_PATH)
+  # FIND_LIBRARY(GFLAGS_LIBRARY  NAMES feelpp_gflags    )
+endif( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags-toto )
 
-string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
+# string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
 
-set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
-message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )
+# set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
+# message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )
 
 
-# handle the QUIETLY and REQUIRED arguments and set GFLAGS_FOUND to TRUE if
-# all listed variables are TRUE
-include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (GFLAGS DEFAULT_MSG GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR )
+# # handle the QUIETLY and REQUIRED arguments and set GFLAGS_FOUND to TRUE if
+# # all listed variables are TRUE
+# include (FindPackageHandleStandardArgs)
+# find_package_handle_standard_args (GFLAGS DEFAULT_MSG GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR )
 
-mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR GFLAGS_LIBRARY)
+# mark_as_advanced (GFLAGS_INCLUDE_DIR GFLAGS_LIBRARIES GFLAGS_DIR GFLAGS_LIBRARY)

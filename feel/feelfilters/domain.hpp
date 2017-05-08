@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,9 @@
 #if !defined(FEELPP_DOMAIN_HPP)
 #define FEELPP_DOMAIN_HPP 1
 
+#include <feel/feelconfig.h>
+
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel {
@@ -65,26 +68,26 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( prefix,(std::string), "" )
       ( worldcomm,      *, Environment::worldComm() )
-      ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  option(_prefix=prefix,_name="gmsh.domain.shape").template as<std::string>() )
-      ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  option(_prefix=prefix,_name="gmsh.domain.shear").template as<double>() )
-      ( recombine,      *( boost::is_integral<mpl::_> )    , option(_prefix=prefix,_name="gmsh.domain.recombine").template as<bool>() )
+      ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  soption(_prefix=prefix,_name="gmsh.domain.shape") )
+      ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  doption(_prefix=prefix,_name="gmsh.domain.shear") )
+      ( recombine,      *( boost::is_integral<mpl::_> )    , boption(_prefix=prefix,_name="gmsh.domain.recombine") )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.hsize").template as<double>() )
-      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), option(_prefix=prefix,_name="gmsh.domain.convex").template as<std::string>() )
-      ( addmidpoint,    *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.addmidpoint").template as<bool>() )
-      ( usenames,       *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.usenames").template as<bool>() )
-      ( xmin,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.xmin").template as<double>() )
-      ( xmax,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.xmax").template as<double>())
-      ( ymin,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.ymin").template as<double>() )
-      ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.ymax").template as<double>() )
-      ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.zmin").template as<double>() )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.zmax").template as<double>() )
-      ( nx,             *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.nx").template as<double>() )
-      ( ny,             *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.ny").template as<double>() )
-      ( nz,             *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.ny").template as<double>() )
-      ( substructuring, *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.domain.substructuring").template as<bool>() ) ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.domain.convex") )
+      ( addmidpoint,    *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.domain.addmidpoint") )
+      ( usenames,       *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.domain.usenames") )
+      ( xmin,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.xmin") )
+      ( xmax,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.xmax"))
+      ( ymin,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ymin") )
+      ( ymax,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ymax") )
+      ( zmin,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.zmin") )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.zmax") )
+      ( nx,             *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.nx") )
+      ( ny,             *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ny") )
+      ( nz,             *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.domain.ny") )
+      ( substructuring, *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.domain.substructuring") ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex, worldcomm );
     gmsh_ptr->setPrefix( name );
@@ -106,5 +109,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 }
+
+#endif
 
 #endif /* FEELPP_DOMAIN_HPP */

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -124,7 +124,8 @@ public:
     */
     ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() ) FEELPP_DEPRECATED;
+    ExporterEnsightGold( std::string const& exp_prefix, WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex );
 
@@ -206,42 +207,52 @@ private:
     /**
      * init the ensight exporter
      */
-    void init();
+    FEELPP_NO_EXPORT void init();
 
     /**
        write the '' file for ensight
     */
-    void writeSoSFile() const;
+    FEELPP_NO_EXPORT void writeSoSFile() const;
 
+    /**
+     * write case file variables
+     */
+    template<typename Iterator, typename TSt>
+    void writeCaseFileVariables( Iterator it, Iterator end,
+                                 std::string const& loc,
+                                 std::string const& type,
+                                 std::string const& ext,
+                                 TSt const& __ts,
+                                 std::ostream& __out ) const;
     /**
        write the 'case' file for ensight
     */
-    void writeCaseFile() const;
+    FEELPP_NO_EXPORT void writeCaseFile() const;
 
     /**
        updates the markers to be written by he exporters
     */
-    void computeMarkersToWrite(mesh_ptrtype mesh) const;
+    FEELPP_NO_EXPORT void computeMarkersToWrite(mesh_ptrtype mesh) const;
 
     /**
        write the 'geo' file for ensight
     */
-    void writeGeoFiles() const;
-    void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
-    void writeGeoHeader(MPI_File fh) const;
-    void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
-    void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
+    FEELPP_NO_EXPORT void writeGeoFiles() const;
+    FEELPP_NO_EXPORT void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
+    FEELPP_NO_EXPORT void writeGeoHeader(MPI_File fh) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<size_type> > & m) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
 
     /**
        write the variables file for ensight
     */
-    void writeVariableFiles() const;
+    FEELPP_NO_EXPORT void writeVariableFiles() const;
 
     template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
+    FEELPP_NO_EXPORT void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
     template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
+    FEELPP_NO_EXPORT void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
 
 private:
 
@@ -256,11 +267,12 @@ private:
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
-    mutable int time_index;
     mutable std::set<int> M_markersToWrite;
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */
     mutable int M_timeExponent;
+    // file position for explicit pointers
+    mutable MPI_Offset posInFile;
 };
 
 

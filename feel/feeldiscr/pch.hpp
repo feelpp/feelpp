@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -50,6 +50,19 @@ struct Pch
 };
 
 } // meta
+
+template<typename MeshType,
+         int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
+using Pch_type = typename meta::Pch<MeshType,Order,T,Pts,Tag>::type;
+template<typename MeshType,
+         int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         int Tag = 0>
+using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
 /**
  * \fn Pch<k,MeshType>
  *
@@ -62,13 +75,12 @@ template<int Order,
          typename MeshType,
          int Tag = 0>
 inline
-typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype
+Pch_ptrtype<MeshType,Order,T,Pts,Tag>
 Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    typedef typename meta::Pch<MeshType,Order,T,Pts,Tag>::type space_type;
-    return space_type::New( _mesh=mesh,
-                            _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+    return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
+                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 

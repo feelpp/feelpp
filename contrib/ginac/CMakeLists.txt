@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 project(GiNaC)
@@ -29,36 +29,17 @@ ENDIF()
 enable_testing()
 add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
 # make info
-#add_custom_target(info ALL)
-#add_custom_target(html)
-#add_custom_target(pdf)
+add_custom_target(info-ginac ALL)
+add_custom_target(html-ginac)
+add_custom_target(pdf-ginac)
 
-find_package(CLN 1.3.2)
-#if ( CLN_FOUND )
+set (CMAKE_CXX_STANDARD 11)
+
+find_package(CLN 1.2.2 REQUIRED)
 include_directories(${CLN_INCLUDE_DIR})
-#endif()
 
 include(CheckIncludeFile)
-check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
-
-# Check Python version
-# If python is version 3, we need to patch the scripts/yaptu.py file
-# (exec is a statement in Python 2 and a function in Python 3)
-FIND_PACKAGE(PythonInterp)
-
-if(PYTHONINTERP_FOUND)
-    if(PYTHON_VERSION_MAJOR MATCHES "3")
-        message(STATUS "Python 3 detected: patching files")
-        get_filename_component(PYTHONINTERP_PATH ${PYTHON_EXECUTABLE} PATH)
-        execute_process(COMMAND ${PYTHONINTERP_PATH}/2to3 -w --no-diffs ${CMAKE_SOURCE_DIR}/contrib/ginac/)
-        message(WARNING "Ginac files have been patched for Python 3 compatibility")
-    elseif(PYTHON_VERSION_MAJOR MATCHES "2")
-        message(STATUS "Python 2 detected: No need to patch")
-    else()
-        message(FATAL_ERROR "Unknown Python version: ${PYTHON_VERSION_STRING}")
-    endif()
-endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/ginac)
 
@@ -121,7 +102,7 @@ endif()
 # setting rpath on installed binaries.
 
 # rpath for making binaries/libraries relocatable
-set(_ginac_rpath_reloc "$ORIGIN/../lib")
+#set(_ginac_rpath_reloc "$ORIGIN/../lib")
 set(_wl_rpath "${CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG}")
 
 # rpath for the pkg-config meta-data.
@@ -148,7 +129,9 @@ foreach(_d ${CLN_LIBRARY_DIRS} ${LIB_INSTALL_DIR})
 		list(APPEND _ginac_rpath "${_d}")
 	endif()
 endforeach()
-list(REMOVE_DUPLICATES _ginac_rpath)
+if (_ginac_rpath)
+    list(REMOVE_DUPLICATES _ginac_rpath)
+endif()
 string(REPLACE ";" ":" ginac_rpath "${_ginac_rpath}")
 
 if (NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_RPATH)
@@ -187,20 +170,31 @@ if (READLINE_FOUND)
 	set(HAVE_READLINE_HISTORY_H 1)
 endif()
 
+set(SAVE_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} )
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules )
+find_package(LibDL)
+set(CMAKE_MODULE_PATH ${SAVE_CMAKE_MODULE_PATH})
+if (LIBDL_FOUND)
+	set(HAVE_LIBDL 1)
+endif()
+
 find_program(MAKEINFO makeinfo)
 find_program(FIG2DEV fig2dev)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
+if (NOT LIBEXECDIR)
+	set (LIBEXECDIR "${CMAKE_INSTALL_PREFIX}/libexec")
+endif()
+
 add_subdirectory(ginac)
 add_subdirectory(tools)
-# feel++ edit
 #add_subdirectory(check)
 if (BISON_FOUND AND FLEX_FOUND)
 	add_subdirectory(ginsh)
 endif()
-# feel++ edit
-#if (MAKEINFO)
+if (MAKEINFO)
 #	add_subdirectory(doc)
-#endif()
+endif()
+

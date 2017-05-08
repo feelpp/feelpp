@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -98,7 +98,7 @@ void testMatrixDestructorWriteInfo(std::string file_name)
     LOG( INFO ) << "lost memory : "<<lost_memory;
 }
 std::string
-format(std::string logm, int Dim, int Order )
+myformat(std::string logm, int Dim, int Order )
 {
     return (boost::format("\"%1% (%2%D,Order %3%)\"") % logm % Dim %Order).str();
 }
@@ -113,13 +113,13 @@ testMatrixDestructor()
 
     std::string str = ( boost::format("pslog-%1%D-P%2%") %Dim %Order ).str();
     PsLogger ps (str);
-    ps.log(format("before matrix creation", Dim, Order) );
+    ps.log(myformat("before matrix creation", Dim, Order) );
     auto matrix = backend()->newMatrix( Xh , Xh);
-    ps.log(format("matrix created",Dim,Order));
+    ps.log(myformat("matrix created",Dim,Order));
 
     //call destructor
     matrix.reset();
-    ps.log(format("matrix destroyed",Dim,Order));
+    ps.log(myformat("matrix destroyed",Dim,Order));
 
     testMatrixDestructorWriteInfo(str);
 }
@@ -131,7 +131,7 @@ testMatrixDestructor()
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( matrix_destructor )
 

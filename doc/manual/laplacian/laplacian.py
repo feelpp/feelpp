@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel++ library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #        Date: 2012-08-31
 #
 #   Copyright (C) 2012 Universite de Strasbourg
@@ -23,7 +23,7 @@
 #
 #
 # \file laplacian.py
-# \author Christophe Prud'homme <christophe.prudhomme@unistra.fr>
+# \author Christophe Prud'homme <christophe.christophe.prudhomme@feelpp.org>
 # \date 2012-08-31
 #
 

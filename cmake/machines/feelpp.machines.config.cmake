@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-04-12
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -25,18 +25,31 @@ execute_process(COMMAND uname -n OUTPUT_VARIABLE FEELPP_MACHINE_NAME )
 STRING(STRIP "${FEELPP_MACHINE_NAME}" FEELPP_MACHINE_NAME )
 message(STATUS "[Feel++] detected machine: ${FEELPP_MACHINE_NAME}")
 #message(STATUS "[Feel++] script: ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.${FEELPP_MACHINE_NAME}.cmake")
+
 if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.${FEELPP_MACHINE_NAME}.cmake )
   message( STATUS "[Feel++] Configuration found for : ${FEELPP_MACHINE_NAME}" )
   include( feelpp.machines.${FEELPP_MACHINE_NAME} )
 endif()
+
 # try harder by looking elsewhere to ensure we are on the proper machine
 # we are more specific now
 STRING(REGEX MATCH "login.*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
-message(STATUS "FEELPP_MACHINE_NAME: ${FEELPP_NAME_LOGIN}")
+#message(STATUS "FEELPP_MACHINE_NAME: ${FEELPP_NAME_LOGIN}")
 if( FEELPP_NAME_LOGIN AND EXISTS /lrz )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.lrz.cmake )
     message( STATUS "[Feel++] Configuration found for : lrz(supermuc)" )
     include( feelpp.machines.lrz )
+  endif()
+endif()
+
+# Match with some characteristic of Marseille mesocentre
+STRING(REGEX MATCH "login" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN AND EXISTS /softs )
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.rheticus.cmake )
+    message( STATUS "[Feel++] Configuration found for : Rheticus (Marseille)" )
+    set(FEELPP_MACHINE_NAME "rheticus")
+    message( STATUS "[Feel++] Renamed machine to ${FEELPP_MACHINE_NAME}" )
+    include( feelpp.machines.rheticus )
   endif()
 endif()
 
@@ -64,6 +77,15 @@ if( FEELPP_NAME_LOGIN AND EXISTS /bglocal )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.turing.cmake )
     message( STATUS "[Feel++] Configuration found for : idris(turing)" )
     include( feelpp.machines.turing )
+  endif()
+endif()
+
+STRING(REGEX MATCH "occigen*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN )
+  message(STATUS "Using Occigen config")
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.occigen.cmake )
+      message( STATUS "[Feel++] Configuration found for : Occigen (CINES)" )
+      include( feelpp.machines.occigen )
   endif()
 endif()
 

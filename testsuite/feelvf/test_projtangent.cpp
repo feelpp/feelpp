@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-14
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -57,13 +57,13 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( projtangent_suite )
 
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     BOOST_TEST_MESSAGE( "test_circle" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_circle/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_circle/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCircle();
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     BOOST_TEST_MESSAGE( "test_square" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_square/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_square/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitSquare();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
 BOOST_AUTO_TEST_CASE( test_2 )
 {
     BOOST_TEST_MESSAGE( "test_cube" );
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
@@ -137,9 +137,9 @@ int main(int argc, char** argv )
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
 
-    Feel::Environment::changeRepository( boost::format( "/testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
-                                         % option(_name="gmsh.hsize").template as<double>() );
+                                         % doption(_name="gmsh.hsize") );
     auto mesh = unitCube();
     double a = integrate( _range= boundaryfaces( mesh ), _expr= norm2(pT()*N()) ).evaluate()( 0,0 );
     LOG_IF(WARNING, math::abs(a) < 1e-13 ) << "should be 0 and the value is " << a;

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -78,8 +78,8 @@ public:
     DAR( po::variables_map const& vm, AboutData const& ad )
         :
         super(),
-        bcCoeff( option(_name="bccoeff").template as<double>() ),
-        geomap( ( GeomapStrategyType )option(_name="geomap").template as<int>() )
+        bcCoeff( doption(_name="bccoeff") ),
+        geomap( ( GeomapStrategyType )ioption(_name="geomap") )
     {
     }
 
@@ -124,13 +124,13 @@ DAR<Dim, Order, Cont, Entity>::run()
                             % meshSizeInit()
                           );
     value_type penalisation = option(_name="penal").template as<value_type>();
-    int bctype = option(_name="bctype").template as<int>();
+    int bctype = ioption(_name="bctype");
 
     double beta_x = option(_name="bx").template as<value_type>();
     double beta_y = option(_name="by").template as<value_type>();
     value_type mu = option(_name="mu").template as<value_type>();
     value_type stiff = option(_name="stiff").template as<value_type>();
-    bool ring = option(_name="ring").template as<bool>();
+    bool ring = boption(_name="ring");
 
     std::cout << "[DAR] hsize = " << meshSizeInit() << "\n";
     std::cout << "[DAR] bx = " << beta_x << "\n";

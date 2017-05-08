@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -161,7 +161,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
     double ymin = -1, ymax=1;
 #endif
     double shear = option(_name="shear").template as<value_type>();
-    bool recombine = option(_name="recombine").template as<bool>();
+    bool recombine = boption(_name="recombine");
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence

@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-01-19
 #
 #  Copyright (C) 2011-2014 Feel++ Consortium
@@ -21,17 +21,31 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_library( feelpp-applications-crb-benchmarkgrepl-options SHARED benchmarkgrepl-options.cpp )
+target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
+
 foreach(O 1 2 3)
-    configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )
-    configure_file( benchmarkgrepl-nonlinear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.xml.in COPYONLY )
-    configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
-    configure_file( benchmarkgrepl-nonlinear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}.cfg )
+  configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )
+  configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
+
+  crb_add_model(
+    benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}>
+    HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
+    CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
+
+  foreach(D 2 3)
+    configure_file( benchmarkgrepl-nonlinear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}-${D}D.xml.in COPYONLY )
+    configure_file( benchmarkgrepl-nonlinear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-nonlinear-elliptic${O}-${D}D.cfg )
+
     crb_add_model(
-      benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}> 
-      HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
-    crb_add_model(
-      benchmarkgrepl-nonlinear-elliptic${O} BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O}> 
-      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-elliptic${O}.cfg XML benchmarkgrepl-nonlinear-elliptic${O}.xml )
+      benchmarkgrepl-nonlinear-elliptic${O}-${D}D BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O},${D}>
+      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
+      CFG benchmarkgrepl-nonlinear-elliptic${O}-${D}D.cfg XML benchmarkgrepl-nonlinear-elliptic${O}-${D}D.xml )
+  endforeach()
 endforeach()
+crb_add_model(
+  benchmarkgrepl-nonlinear-parabolic3 BenchmarkGreplNonLinearParabolic CLASS BenchmarkGreplNonLinearParabolic<3> 
+  HDRS benchmarkgrepl-nonlinear-parabolic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG benchmarkgrepl-nonlinear-parabolic3.cfg XML benchmarkgrepl-nonlinear-parabolic3.xml )
 
 feelpp_add_application(grepl_fem SRCS grepl_fem.cpp)

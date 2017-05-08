@@ -1,4 +1,4 @@
-/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -225,6 +225,9 @@ GmshHypercubeDomain::getDescription2D() const
         else if ( this->structuredMesh() == 3 )
             ostr << "nx=" << M_nx << ";\n"
                  << "ny=" << M_ny << ";\n";
+        else
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
 
 
         ostr << "\n"
@@ -294,6 +297,10 @@ GmshHypercubeDomain::getDescription3D() const
             ostr << "nx=" << M_nx << ";\n"
                  << "ny=" << M_ny << ";\n"
                  << "nz=" << M_nz << ";\n";
+        else
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n"
+                 << "nz = (zmax-zmin)/h;\n";
     }
 
 

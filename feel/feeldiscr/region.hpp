@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -56,16 +56,19 @@ region( boost::shared_ptr<SpaceType> const& space,
     VLOG(1) << "[region] saving region with pid:\n";
     int pid = space->mesh()->comm().rank();
     VLOG(1) << "[region] saving region with pid: " << pid << "\n";
-    auto it = space->mesh()->beginElementWithProcessId( pid );
-    auto en = space->mesh()->endElementWithProcessId( pid );
+    auto rangeElements = space->mesh()->elementsWithProcessId( pid );
+    auto it = std::get<0>( rangeElements );
+    auto en = std::get<1>( rangeElements );
+
     VLOG(1) << "[region] nb elements in region: " << std::distance( it, en ) << "\n";
     for ( ; it != en; ++it )
     {
-        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( it->id(),0, 0 ) );
+        auto const& elt = boost::unwrap_ref( *it );
+        size_type dof_id = boost::get<0>( space->dof()->localToGlobal( elt.id(),0, 0 ) );
 
         if ( dof_id >= v.firstLocalIndex() &&
                 dof_id < v.lastLocalIndex() )
-            v ( dof_id ) = expr( *it );
+            v ( dof_id ) = expr( elt );
     }
 
     return v;

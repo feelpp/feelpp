@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-13
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -63,6 +63,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     /** @name Typedefs
      */
@@ -98,14 +104,15 @@ public:
     };
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  ) { return trans(M_expr(e...)); }
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type( M_expr(e...) ); }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-
+        static constexpr size_type context = this_type::context; 
+        using expr_type = typename this_type::expression_type;
         typedef typename Transpose<typename tensor_expr_type::shape>::type shape;
 
         template <class Args> struct sig
@@ -157,10 +164,10 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_tensor_expr.updateContext( ctx );
+            M_tensor_expr.updateContext( ctx... );
         }
 
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-04-26
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -456,7 +456,9 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
 
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_opLinearFree_return<Args>::type oplinfree_type;
     typedef typename Feel::detail::compute_opLinearFree_return<Args>::ptrtype oplinfree_ptrtype;
     return oplinfree_ptrtype ( new oplinfree_type( domainSpace,imageSpace,backend,expr ) );

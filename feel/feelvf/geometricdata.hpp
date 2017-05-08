@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -69,6 +69,7 @@ const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
 const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
 const size_type jp = vm::JACOBIAN|vm::POINT;
 const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
+const size_type mctx = vm::MEASURE;
 
 # /* List of applicative unary operators. */
 #if 1
@@ -105,16 +106,16 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
     BOOST_PP_TUPLE_TO_LIST(                                             \
         10,                                                              \
         (                                                               \
-            ( h       , GDH       , 0, 0 , Scalar   , M_gmc->h()                   , 0), \
-            ( hMin    , GDHMin    , 0, 0 , Scalar   , M_gmc->hMin()                , 0), \
-            ( hFace   , GDHFace   , 0, 0 , Scalar   , M_gmc->hFace()               , 0), \
-            ( meas    , GDMeas    , 0, 0 , Scalar   , M_gmc->meas()                , 0), \
-            ( measPEN , GDMeasPEN , 0, 0 , Scalar   , M_gmc->measurePointElementNeighbors(), 0), \
-            ( nPEN    , GDNPEN    , 0, 0 , Scalar   , M_gmc->element().numberOfPointElementNeighbors(), 0), \
-            ( measFace, GDHMeasFace,0, 0 , Scalar   , M_gmc->measFace()            , 0), \
-            ( eid     , GDEid     , 0, 0 , Scalar   , M_gmc->id()                  , 0), \
-            ( emarker , GDEmarker , 0, 0 , Scalar   , M_gmc->marker().value()      , 0), \
-            ( emarker2, GDEmarker2, 0, 0 , Scalar   , M_gmc->marker2().value()     , 0) \
+            ( h       , GDH       , 0, mctx , Scalar   , M_gmc->h()                   , 0), \
+            ( hMin    , GDHMin    , 0, mctx , Scalar   , M_gmc->hMin()                , 0), \
+            ( hFace   , GDHFace   , 0, mctx , Scalar   , M_gmc->hFace()               , 0), \
+            ( meas    , GDMeas    , 0, mctx , Scalar   , M_gmc->meas()                , 0), \
+            ( measPEN , GDMeasPEN , 0, mctx , Scalar   , M_gmc->measurePointElementNeighbors(), 0), \
+            ( nPEN    , GDNPEN    , 0, 0    , Scalar   , M_gmc->element().numberOfPointElementNeighbors(), 0), \
+            ( measFace, GDHMeasFace,0, mctx , Scalar   , M_gmc->measFace()            , 0), \
+            ( eid     , GDEid     , 0, 0    , Scalar   , M_gmc->id()                  , 0), \
+            ( emarker , GDEmarker , 0, 0    , Scalar   , M_gmc->marker().value()      , 0), \
+            ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0) \
             )                                                           \
         )                                                               \
 /**/
@@ -177,6 +178,13 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         {                                                               \
             static const bool result = false;                           \
         };                                                              \
+        template<typename Func>                                         \
+            static const bool has_test_basis = false;                   \
+        template<typename Func>                                         \
+            static const bool has_trial_basis = false;                  \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
+                                                                        \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
         typedef value_type evaluate_type;                               \
@@ -251,10 +259,11 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
                 /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
                 update( geom );                                         \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+            void updateContext( CTX const& ... ctx )                    \
             {                                                           \
-                M_gmc = ctx->gmContext().get();                        \
+                boost::fusion::vector<CTX...> ctxvec( ctx... );        \
+                M_gmc = boost::fusion::at_c<0>( ctxvec )->gmContext().get(); \
             }                                                           \
                                                                         \
                 value_type                                              \

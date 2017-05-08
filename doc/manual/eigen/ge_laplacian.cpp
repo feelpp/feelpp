@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -56,7 +56,7 @@ EigenProblem<Dim, Order>::run()
                                    % this->about().appName()
                                    % Dim
                                    % Order
-                                   % option(_name="gmsh.hsize").template as<double>() );
+                                   % doption(_name="gmsh.hsize") );
 
     auto mesh = loadMesh(_mesh = new mesh_type );
 
@@ -79,12 +79,8 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode : modes )
         {
-            std::cout << " -- eigenvalue " << i << " = " << mode.first << "\n";
-            double l2div = normL2(_range=elements(mesh),_expr=dzv(mode.second) );
-            if ( Environment::worldComm().isMasterRank() )
-            {
-                std::cout << "  - div = " <<  l2div << "\n";
-            }
+            if ( Environment::isMasterRank() )
+                std::cout << " -- eigenvalue " << i << " = " << mode.first << "\n";
             ++i;
         }
     }
@@ -97,7 +93,7 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode: modes )
         {
-            e->add( ( boost::format( "mode-%1%" ) % i ).str(), mode.second );
+            e->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode.second );
         }
 
         e->save();

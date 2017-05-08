@@ -1,6 +1,6 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
 #  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
@@ -28,7 +28,16 @@ project( feel-research )
 separate_arguments(FEELPP_ENABLED_PROJECTS)
 FOREACH( project ${FEELPP_ENABLED_PROJECTS} )
 	string(TOUPPER ${project} PROJECT)
-	IF(${FEELPP_ENABLE_RESEARCH_${PROJECT}})
+    if ( ${project} STREQUAL "eye2brain" AND  EXISTS ${project} )
+      SET( FEELPP_ENABLE_RESEARCH_EYE2BRAIN ON )
+    endif()
+    if ( ${project} STREQUAL "hydromorpho" AND  EXISTS ${project} )
+      SET( FEELPP_ENABLE_RESEARCH_HYDROMORPHO ON )
+    endif()
+    if ( ${project} STREQUAL "sivibirpp" AND  EXISTS ${project} )
+      SET( FEELPP_ENABLE_RESEARCH_SIVIBIRPP ON )
+    endif()
+	IF(${FEELPP_ENABLE_RESEARCH_${PROJECT}} )
 		add_subdirectory( ${project} )
 	endif()
 endforeach()

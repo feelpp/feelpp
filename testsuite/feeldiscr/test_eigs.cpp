@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -82,7 +82,7 @@ testSlepc()
 #if 0
     auto backend = backend_type::build( BACKEND_PETSC );
 #else
-    auto backend = backend_type::build( );
+    auto backend = backend_type::build( "petsc" );
 #endif
 
     auto u = Xh->element();
@@ -99,13 +99,13 @@ testSlepc()
     modes=
         eigs( _matrixA=A,
               _matrixB=B,
-              _solver=( EigenSolverType )option(_name="solver-type").template as<int>(),
+              _solver=( EigenSolverType )ioption(_name="solver-type"),
               _spectrum=SMALLEST_REAL,
               _transform=SINVERT,
-              _ncv=option(_name="ncv").template as<int>(),
-              _nev=option(_name="nev").template as<int>(),
-              _tolerance=option(_name="tol").template as<double>(),
-              _maxit=option(_name="maxiter").template as<int>()
+              _ncv=ioption(_name="ncv"),
+              _nev=ioption(_name="nev"),
+              _tolerance=doption(_name="tol"),
+              _maxit=ioption(_name="maxiter")
               );
 
     double eigen_value = modes.begin()->second.template get<0>();
@@ -130,7 +130,7 @@ testSlepc()
  * main code
  */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( slepc )
 

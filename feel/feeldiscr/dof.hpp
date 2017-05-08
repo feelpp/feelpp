@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
 
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 2010-04-20
 
- Copyright (C) 2013 Feel++ Consortium
+ Copyright (C) 2013-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -401,6 +401,11 @@ public:
         {
             return this->get<4>();
         }
+    /// @return the local dof in the face
+    uint16_type localDofInEntity() const
+        {
+            return this->get<4>();
+        }
     /// @return the local dof in element
     uint16_type localDofInElement() const                                \
         {
@@ -429,6 +434,9 @@ public:
     //@}
 
 };
+//@ Alias for FaceDof
+using EntityDof =  FaceDof;
+
 #if 0
 typedef multi_index::multi_index_container<
     Dof,
@@ -531,6 +539,16 @@ class LocalDofSet : public std::vector<LocalDof<NC>>
         std::for_each( this->begin(), this->end(), [eid]( localdof_type& d ) { d.first = eid; } );
         return *this;
     }
+    LocalDofSet const& update( size_type eid, uint16_type nLocalDof )
+    {
+        if ( nLocalDof == this->size() )
+            return this->update( eid );
+        this->resize( nLocalDof );
+        for(uint16_type i = 0; i < nLocalDof; ++i )
+            this->at( i ) = localdof_type( eid, i );
+        return *this;
+    }
+
 };
 
 } // Feel

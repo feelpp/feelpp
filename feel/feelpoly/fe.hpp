@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2005-10-06
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +22,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file fe.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-10-06
- */
-#ifndef __FiniteElement_H
-#define __FiniteElement_H 1
+#ifndef FEELPP_FE_HPP
+#define FEELPP_FE_HPP 1
 
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -59,12 +55,26 @@ template<typename P,
          template<class,uint16_type,class> class Pts>
 class FiniteElement :
     public mpl::if_<mpl::bool_<P::is_scalar>,
-    mpl::identity<PolynomialSet<P, Scalar> >,
-    mpl::identity<PolynomialSet<P, Vectorial> > >::type::type
+                    mpl::identity<PolynomialSet<P, Scalar> >,
+                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
+                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                      typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
+                                                        mpl::identity<PolynomialSet<P, Tensor2Symm>> ,
+                                                        mpl::identity<PolynomialSet<P, Tensor2>>
+                                                        >::type
+                                      >::type
+                    >::type::type
 {
-    typedef typename mpl::if_<mpl::bool_<P::is_scalar>,
-            mpl::identity<PolynomialSet<P, Scalar> >,
-            mpl::identity<PolynomialSet<P, Vectorial> > >::type::type super;
+    using super = typename mpl::if_<mpl::bool_<P::is_scalar>,
+                                    mpl::identity<PolynomialSet<P, Scalar> >,
+                                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
+                                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                                      typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
+                                                                        mpl::identity<PolynomialSet<P, Tensor2Symm>>,
+                                                                        mpl::identity<PolynomialSet<P, Tensor2>>
+                                                                        >::type
+                                                      >::type
+                                    >::type::type;
 
 public:
 
@@ -74,7 +84,7 @@ public:
 
     typedef FiniteElement<P, PDual, Pts> self_type;
 
-    typedef typename P::value_type value_type;
+    using value_type = typename P::value_type;
 
     typedef P primal_space_type;
 
@@ -273,6 +283,16 @@ public:
     {
         return M_dual.points( f );
     }
+
+    points_type edgePoints( uint16_type e ) const
+        {
+            return M_dual.edgePoints( e );
+        }
+
+    points_type vertexPoints( uint16_type v ) const
+        {
+            return M_dual.vertexPoints( v );
+        }
 
     /**
      * \return the family name of the finite element

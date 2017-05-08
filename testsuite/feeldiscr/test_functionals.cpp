@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-01-30
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -106,8 +106,9 @@ BOOST_AUTO_TEST_CASE( test_projection_hdiv_rt )
     ul.printMatlab( "ul.m" );
     BOOST_TEST_MESSAGE( "Xh defined, dimension: " << Xh->nLocalDof() );
     BOOST_TEST_MESSAGE( "n elements: " << nelements( elements(mesh)  ) );
-    for( auto const& element : elements(mesh) )
+    for( auto const& elementRange : elements(mesh) )
     {
+        auto const& element = boost::unwrap_ref( elementRange );
         LOG(INFO) << "element : " << element.id();
         auto mesh_element = createSubmesh( mesh, idedelements(mesh,element.id()), Environment::worldCommSeq() );
         BOOST_TEST_MESSAGE( "n elements of extracted element " << element.id() << " : " << nelements( elements(mesh_element)  ) );

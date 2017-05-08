@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -66,25 +66,27 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( format,         *, option(_prefix=prefix,_name="gmsh.format").template as<int>() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_prefix=prefix,_name="gmsh.hsize").template as<double>() )
-      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      ( format,         *, ioption(_prefix=prefix,_name="gmsh.format") )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
+      //( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
-      ( in_memory,       *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.in-memory").template as<bool>() )
-      ( straighten,      *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.refine").template as<int>() )
-      ( structured,          *( boost::is_integral<mpl::_> ), option(_prefix=prefix,_name="gmsh.structured").template as<int>() )
+      ( in_memory,       *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.in-memory") )
+      ( straighten,      *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
+      ( structured,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.structured") )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,           *,false )
+      ( physical_are_elementary_regions,           *,boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions"))
       ( periodic,        *, PeriodicEntities() )
-      ( respect_partition,	(bool), option(_prefix=prefix,_name="gmsh.respect_partition").template as<bool>() )
-      ( rebuild_partitions,	(bool), option(_prefix=prefix,_name="gmsh.partition").template as<bool>() )
+      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
+      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
-      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
+      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.localSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partitioner,   *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
+      ( directory,(std::string), "" )
         )
     )
 {
@@ -107,10 +109,11 @@ BOOST_PARAMETER_FUNCTION(
         desc->setStructuredMesh( structured );
         desc->setPeriodic( periodic );
         desc->setInMemory( in_memory );
+        desc->setVerbosity( verbose );
 
         std::string fname;
         bool generated_or_modified;
-        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
+        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes, true, directory );
 
         // refinement if option is enabled to a value greater or equal to 1
         // do not refine if the mesh/geo file was previously generated or modified
@@ -122,6 +125,7 @@ BOOST_PARAMETER_FUNCTION(
 
         if ( rebuild_partitions )
         {
+            VLOG(1) << "Rebuild partitions\n";
             desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
             fname=rebuild_partitions_filename;
         }
@@ -134,8 +138,10 @@ BOOST_PARAMETER_FUNCTION(
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         }
         import.setRespectPartition( respect_partition );
+#if defined( FEELPP_HAS_GMSH_H )
         import.setGModel( desc->gModel() );
         import.setInMemory( in_memory );
+#endif
         _mesh->accept( import );
 
         if ( update )

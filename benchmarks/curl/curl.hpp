@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -132,7 +132,7 @@ public:
         meshSize( doption("hsize") ),
         exporter( Exporter<mesh_type>::New( this->vm() ) )
     {
-        this->changeRepository( boost::format( "/benchmark_curl/%1%/h_%2%/" )
+        this->changeRepository( boost::format( "benchmark_curl/%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("hsize")
                                 );
@@ -227,7 +227,7 @@ CurlFormulation<Dim, OrderU, OrderP>::convergence(int nb_refine)
             auto Xh = Ned1h<0>( mesh );
             auto u = Xh->element();
             auto phi = Xh->element();
-            //auto penaldir = option("penaldir").template as<double>();
+            //auto penaldir = doption("penaldir");
             auto penaldir = 50;
 
             auto v = Vh->element( u_exact );

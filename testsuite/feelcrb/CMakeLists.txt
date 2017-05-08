@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-23
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -22,10 +22,14 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testcrb )
-feelpp_add_test( eim )
-feelpp_add_test( eim_grepl TIMEOUT 90 )
-feelpp_add_test( eim_composite CFG test_eim_composite.cfg ) 
+feelpp_add_test( eim NO_MPI_TEST )
+feelpp_add_test( eim_grepl TIMEOUT 90 NO_MPI_TEST )
+feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST ) 
 
 
 feelpp_add_test( rbspace )
 feelpp_add_test( rbspacevector )
+
+feelpp_add_test( db CFG test_db.cfg GEO test_db.geo )
+
+feelpp_add_test( parameterspace )

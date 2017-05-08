@@ -6,7 +6,7 @@
             Goncalo Pena  <gpena@mat.uc.pt>
  Date: 02 Oct 2014
 
- Copyright (C) 2014 Feel++ Consortium
+ Copyright (C) 2014-2016 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -30,17 +30,18 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
 {
 
-template<typename space_type>
+template<typename space_type, typename PropertiesSpaceType = Pdh_type<typename space_type::mesh_type,0>>
 class OperatorPCD : public OperatorBase<typename space_type::value_type>
 {
     typedef OperatorBase<typename space_type::value_type> super;
 public:
 
-    typedef OperatorPCD<space_type> type;
+    typedef OperatorPCD<space_type, PropertiesSpaceType> type;
     typedef boost::shared_ptr<type> ptrtype;
 
     typedef typename space_type::value_type value_type;
@@ -52,6 +53,12 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
+
+    using properties_space_type = PropertiesSpaceType;
+    using properties_space_ptrtype = boost::shared_ptr<properties_space_type>;
+    using property_type = typename properties_space_type::element_type;
+    typedef boost::shared_ptr<property_type> property_ptrtype;
+
     typedef typename space_type::mesh_type mesh_type;
     typedef typename space_type::mesh_ptrtype mesh_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -84,16 +91,22 @@ public:
     OperatorPCD( space_ptrtype Qh,
                  sparse_matrix_ptrtype A,
                  backend_ptrtype b,
-                 std::map< std::string, std::set<flag_type> > bcFlags,
-                 double nu,
-                 double alpha );
+                 BoundaryConditions const& bcFlags,
+                 std::string const& p,
+                 property_ptrtype mu,
+                 property_ptrtype rho,
+                 property_ptrtype alpha,
+                 bool acc);
 
-    OperatorPCD( const OperatorPCD& tc );
+    OperatorPCD( const OperatorPCD& tc ) = default;
+    OperatorPCD( OperatorPCD&& tc ) = default;
+    OperatorPCD& operator=( const OperatorPCD& tc ) = default;
+    OperatorPCD& operator=( OperatorPCD&& tc ) = default;
 
     void initialize();
 
     template < typename ExprConvection, typename ExprBC >
-    void update( ExprConvection const& expr_b, ExprBC const& ebc );
+    void update( ExprConvection const& expr_b, ExprBC const& ebc, bool hasConvection=true , double tn = 0., double tn1 = 0 );
 
     void setProblemType( std::string prob_type )
         {
@@ -110,6 +123,10 @@ public:
     int apply(const vector_type& X, vector_type& Y) const;
     int applyInverse(const vector_type& X, vector_type& Y) const;
 
+
+    // void setAlpha( property_ptrtype a ) { M_alpha = a; }
+    // void setMu( property_ptrtype m ) { M_mu = m; }
+    // void setRho( property_ptrtype r ) { M_rho = r; }
 private:
     backend_ptrtype M_b;
     space_ptrtype M_Xh;
@@ -119,26 +136,27 @@ private:
     velocity_element_type u, v;
     pressure_element_type p, q;
 
-    sparse_matrix_ptrtype M_mass, M_diff, M_conv, G, M_B, M_massv_inv, M_A;
+    sparse_matrix_ptrtype G;
+    form2_type<pressure_space_type,pressure_space_type> form2_conv;
+    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_B, M_massv_inv, M_Bt;
     vector_ptrtype rhs;
 
     op_mat_ptrtype massOp, diffOp, convOp;
 
-    std::map< std::string, std::set<flag_type> > M_bcFlags;
+    BoundaryConditions M_bcFlags;
+    std::string M_prefix;
 
     op_ptrtype precOp;
 
-    double M_nu, M_alpha;
-
-    std::set<flag_type>::const_iterator inflowIter;
+    property_ptrtype M_mu, M_rho, M_alpha;
 
     std::string M_prob_type;
+
+    bool M_accel;
 
     void assembleMass();
 
     void assembleDiffusion();
-
-    void assembleConvection();
 
     void applyBC( sparse_matrix_ptrtype& A );
 
@@ -148,13 +166,16 @@ private:
 
 
 
-template < typename space_type>
-OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
-                                      sparse_matrix_ptrtype A,
+template < typename space_type, typename PropertiesSpaceType>
+OperatorPCD<space_type, PropertiesSpaceType>::OperatorPCD( space_ptrtype Qh,
+                                      sparse_matrix_ptrtype Bt,
                                       backend_ptrtype b,
-                                      std::map< std::string, std::set<flag_type> > bcFlags,
-                                      double nu,
-                                      double alpha )
+                                      BoundaryConditions const& bcFlags,
+                                      std::string const& p,
+                                      property_ptrtype mu,
+                                      property_ptrtype rho,
+                                      property_ptrtype alpha,
+                                      bool acc)
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
     M_b( b),
@@ -165,102 +186,115 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     v( M_Vh, "v" ),
     p( M_Qh, "p" ),
     q( M_Qh, "q" ),
+    G( backend()->newMatrix(M_Qh, M_Qh) ),
+    form2_conv( M_Qh, M_Qh, G ),
     M_mass( backend()->newMatrix(M_Qh, M_Qh) ),
     M_diff( backend()->newMatrix(M_Qh, M_Qh) ),
     M_conv( backend()->newMatrix(M_Qh, M_Qh) ),
-    G( backend()->newMatrix(M_Qh, M_Qh) ),
     M_B( backend()->newMatrix(_trial=M_Vh, _test=M_Qh) ),
     M_massv_inv( backend()->newMatrix(_trial=M_Vh, _test=M_Vh) ),
-    M_A( A ),
+    M_Bt( Bt ),
     rhs( backend()->newVector( M_Qh ) ),
     M_bcFlags( bcFlags ),
-    M_nu( nu ),
-    M_alpha( alpha )
+    M_prefix( p ),
+    M_mu( mu ),
+    M_rho( rho ),
+    M_alpha( alpha ),
+    M_accel( acc )
 {
     initialize();
 
-    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using nu=" << M_nu << "\n";
+    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using mu=" << M_mu << "\n";
+    LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using rho=" << M_rho << "\n";
     LOG(INFO) << "[Pressure Correction Diffusion Operator] Constructor: using alpha=" << M_alpha << "\n";
-
-    if ( alpha == 0 )
-        this->setProblemType( "steady" );
-    else
-        this->setProblemType( "unsteady" );
 
     this->assembleMass();
     this->assembleDiffusion();
-    this->assembleConvection();
 }
-
-
-
-template < typename space_type>
-OperatorPCD<space_type>::OperatorPCD( const OperatorPCD& tc )
-    :
-    super(tc),
-    M_Xh( tc.M_Xh ),
-    M_Qh( tc.M_Qh ),
-    p( tc.p ),
-    q( tc.q ),
-    M_mass( tc.M_mass ),
-    M_diff( tc.M_diff ),
-    M_conv( tc.M_conv ),
-    G( tc.G ),
-    rhs( tc.rhs ),
-    massOp( tc.massOp ),
-    diffOp( tc.diffOp ),
-    convOp( tc.convOp ),
-    precOp( tc.precOp ),
-    M_bcFlags( tc.M_bcFlags ),
-    M_nu( tc.M_nu ),
-    M_alpha( tc.M_alpha ),
-    inflowIter( tc.inflowIter ),
-    M_prob_type( tc.M_prob_type )
-{
-    //LOG(INFO) << "Call for OperatorPCD copy constructor...\n";
-}
-
-
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 void
-OperatorPCD<space_type>::initialize()
+OperatorPCD<space_type, PropertiesSpaceType>::initialize()
 {
     rhs->zero();
     rhs->close();
 }
 
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 template < typename ExprConvection, typename ExprBC >
 void
-OperatorPCD<space_type>::update( ExprConvection const& expr_b,
-                                 ExprBC const& ebc )
+OperatorPCD<space_type, PropertiesSpaceType>::update( ExprConvection const& expr_b,
+                                 ExprBC const& ebc,
+                                 bool hasConvection,
+                                 double tn,
+                                 double tn1 )
 {
+    tic();
 
-    auto conv  = form2( _test=M_Qh, _trial=M_Qh, _matrix=G );
-    G->zero();
+    double time_step = M_accel?tn1-tn:1;
+    tic();
+    form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_mu)*gradt(p)*trans(grad(q)));
+    toc("OperatorPCD::update apply diffusion",FLAGS_v>0);
 
-    conv = integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
-    conv += integrate( _range=elements(M_Qh->mesh()), _expr=M_nu*gradt(p)*trans(grad(q)));
+    if ( hasConvection )
+    {
+        tic();
+        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(q));
+        toc("OperatorPCD::update apply convection",FLAGS_v>0);
+    }
 
-    if ( soption("btpcd.pcd.inflow") == "Robin" )
-        for( auto dir : M_bcFlags["Dirichlet"])
+    if ( soption("blockns.pcd.inflow") == "Robin" )
+    {
+        tic();
+        for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
         {
-            std::string m = M_Qh->mesh()->markerName(dir);
-            conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(ebc.find(M_Qh->mesh()->markerName(dir))->second)*N()*idt(p)*id(q));
-            //conv += integrate( _range=markedfaces(M_Qh->mesh(), dir), _expr=-trans(expr_b)*N()*idt(p)*id(q));
+            LOG(INFO) << "Setting Robin condition on " << dir.marker();
+            if ( ebc.find( dir.marker() ) != ebc.end() )
+            {
+                if ( M_accel )
+                {
+                    auto en = ebc.find(dir.marker())->second;
+                    en.setParameterValues( { { "t", tn } } );
+                    auto en1 = ebc.find(dir.marker())->second;
+                    en1.setParameterValues( { { "t", tn1 } } );
+
+                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
+                                             _expr=-idv(*M_rho)*trans((en1-en)/time_step)*N()*idt(p)*id(q));
+                }
+                else
+                {
+                    form2_conv += integrate( _range=markedfaces(M_Qh->mesh(), dir.meshMarkers()),
+                                             _expr=-idv(*M_rho)*trans(ebc.find(dir.marker())->second)*N()*idt(p)*id(q));
+                }
+            }
         }
+        toc("OperatorPCD::update apply Robin",FLAGS_v>0);
+    }
 
-    G->close();
-    //LOG(INFO) << "[OperatorPCD] Add diffusion matrix...\n";
-    //G->addMatrix( M_nu, M_diff );
-
-
-
-    if ( this->problemType() == "unsteady" )
+    //auto alphaMax = normLinf( _range=elements(M_Qh->mesh()), _expr=idv(M_alpha), _pset=_Q<5>() );
+    //if ( alphaMax.value() > 1e-15 )
+    if ( M_alpha->linftyNorm() > 1e-15 )
     {
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
-        G->addMatrix( M_alpha, M_mass );
+        tic();
+        form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=idv(*M_alpha)/time_step*idt(p)*id(q) );
+        toc("OperatorPCD::update apply mass",FLAGS_v>0);
     }
+
+    G->close();
+    tic();
+    if ( soption("blockns.pcd.inflow") != "Robin" )
+        for( auto dir : M_bcFlags[M_prefix]["Dirichlet"])
+        {
+            form2_conv += on( markedfaces(M_Qh->mesh(),dir.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+        }
+
+    // on neumann boundary on velocity, apply Dirichlet condition on pressure
+    if ( soption("blockns.pcd.outflow") == "Dirichlet" )
+        for( auto cond : M_bcFlags[M_prefix]["Neumann"])
+        {
+            form2_conv += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
+        }
+    toc("OperatorPCD::update apply on()",FLAGS_v>0);
 
     this->applyBC(G);
 
@@ -270,55 +304,63 @@ OperatorPCD<space_type>::update( ExprConvection const& expr_b,
     {
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
-        if ( ioption("btpcd.pcd.order") == 1 )
-            precOp = compose( massOp, compose(inv(op(G,"Ap")),diffOp) );
+        if ( ioption("blockns.pcd.order") == 1 )
+            precOp = compose( massOp, compose(inv(op(G,"Fp")),diffOp) );
         else
-            precOp = compose( diffOp, compose(inv(op(G,"Ap")),massOp) );
+            precOp = compose( diffOp, compose(inv(op(G,"Fp")),massOp) );
         LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
         init_G = true;
     }
+    toc("Operator::PCD update",FLAGS_v>0);
 }
 
 
 
 
 
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 void
-OperatorPCD<space_type>::assembleMass()
+OperatorPCD<space_type, PropertiesSpaceType>::assembleMass()
 {
+    tic();
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(q) );
     M_mass->close();
     massOp = op( M_mass, "Mp" );
+    toc("OperatorPCD::mass assembly",FLAGS_v>0);
 }
 
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 void
-OperatorPCD<space_type>::assembleDiffusion()
+OperatorPCD<space_type, PropertiesSpaceType>::assembleDiffusion()
 {
-    if ( soption("btpcd.pcd.diffusion") == "Laplacian" )
+    tic();
+    if ( soption("blockns.pcd.diffusion") == "Laplacian" )
     {
         auto d = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_diff );
         d = integrate( _range=elements(M_Qh->mesh()), _expr=gradt(p)*trans(grad(q)));
-        
-        for( auto dir : M_bcFlags["Neumann"])
+        LOG(INFO) << "blockns.pcd.diffusion is Laplacian";
+        for( auto cond : M_bcFlags[M_prefix]["Neumann"])
         {
-            std::string m = M_Qh->mesh()->markerName(dir);
-            if ( (m=="outlet") || (m == "outflow") )
-                d += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
+            LOG(INFO) << "Diffusion Setting Dirichlet condition on pressure on " << cond.marker();
+            if ( boption("blockns.weakdir" ) )
+                d+= integrate( markedfaces(M_Qh->mesh(),cond.meshMarkers()),
+                               _expr=-gradt(p)*N()*id(p)-grad(p)*N()*idt(p)+doption("penaldir")*idt(p)*id(p)/hFace() );
+            else
+                d += on( markedfaces(M_Qh->mesh(),cond.meshMarkers()), _element=p, _rhs=rhs,
+                         _expr=cst(0.), _type="elimination_keep_diagonal" );
         }
-        //this->applyBC(M_diff);
-    }
-    if ( soption("btpcd.pcd.diffusion") == "BTBt" )
+        M_diff->close();
+     }
+    if ( soption("blockns.pcd.diffusion") == "BTBt" )
     {
         tic();
         std::vector<size_type> M_Vh_indices( M_Vh->nLocalDofWithGhost() );
         std::vector<size_type> M_Qh_indices( M_Qh->nLocalDofWithGhost() );
         std::iota( M_Vh_indices.begin(), M_Vh_indices.end(), 0 );
-        std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
-                   M_Vh->nLocalDofWithGhost() );
-        M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
+        //std::iota( M_Qh_indices.begin(), M_Qh_indices.end(),
+        //M_Vh->nLocalDofWithGhost() );
+        //M_B = M_A->createSubMatrix( M_Qh_indices, M_Vh_indices );
         toc(" - OperatorPCD Extracted B" );
         tic();
         auto m = form2( _test=M_Vh, _trial=M_Vh );
@@ -333,66 +375,33 @@ OperatorPCD<space_type>::assembleDiffusion()
         M_massv_inv->close();
         toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
         tic();
-        M_b->PAPt( M_massv_inv, M_B, M_diff );
+        M_b->PtAP( M_massv_inv, M_Bt, M_diff );
+        M_diff->close();
         toc(" - OperatorPCD B T^-1 B^T built");
         if ( Environment::numberOfProcessors() == 1 )
-            M_diff->printMatlab( "BTBt." );
+            M_diff->printMatlab( "BTBt.m" );
     }
 
-    diffOp = op( M_diff, "Fp" );
+    diffOp = op( M_diff, "Ap" );
+    toc("OperatorPCD::diffusion assembly",FLAGS_v>0);
 }
 
-template < typename space_type>
+
+template < typename space_type, typename PropertiesSpaceType>
 void
-OperatorPCD<space_type>::assembleConvection()
+OperatorPCD<space_type, PropertiesSpaceType>::applyBC( sparse_matrix_ptrtype& A )
 {
-    /*
-     form2( M_Qh, M_Qh, M_conv, _init=true ) =
-     integrate( elements(M_Qh->mesh()), typename MyIm<2*pOrder>::type(),
-     trace(trans(gradt(p))*grad(q))
-     );
-
-     M_conv->close();
-
-     this->applyBC(M_conv);
-     */
-
 }
 
-template < typename space_type>
-void
-OperatorPCD<space_type>::applyBC( sparse_matrix_ptrtype& A )
-{
-    auto a = form2( _test=M_Qh, _trial=M_Qh, _matrix=A );
-
-    if ( soption("btpcd.pcd.inflow") != "Robin" )
-        for( auto dir : M_bcFlags["Dirichlet"])
-        {
-            std::string m = M_Qh->mesh()->markerName(dir);
-            a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
-        }
-
-    // on neumann boundary on velocity, apply Dirichlet condition on pressure
-    if ( soption("btpcd.pcd.outflow") == "Dirichlet" )
-        for( auto dir : M_bcFlags["Neumann"])
-        {
-            std::string m = M_Qh->mesh()->markerName(dir);
-            if ( (m=="outlet") || (m == "outflow") )
-                a += on( markedfaces(M_Qh->mesh(),dir), _element=p, _rhs=rhs, _expr=cst(0.) );
-        }
-    rhs->close();
-    A->close();
-}
-
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 int
-OperatorPCD<space_type>::apply(const vector_type& X, vector_type& Y) const
+OperatorPCD<space_type, PropertiesSpaceType>::apply(const vector_type& X, vector_type& Y) const
 {
     return precOp->apply( X, Y );
 }
-template < typename space_type>
+template < typename space_type, typename PropertiesSpaceType>
 int
-OperatorPCD<space_type>::applyInverse(const vector_type& X, vector_type& Y) const
+OperatorPCD<space_type, PropertiesSpaceType>::applyInverse(const vector_type& X, vector_type& Y) const
 {
     return precOp->applyInverse( X, Y );
 }

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -29,8 +29,10 @@
 #ifndef __SolverNonLinear_H
 #define __SolverNonLinear_H 1
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <functional>
+
+//#include <boost/function.hpp>
+//#include <boost/bind.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -40,6 +42,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/preconditioner.hpp>
+#include <feel/feelalg/nullspace.hpp>
 
 
 namespace Feel
@@ -88,30 +91,33 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R )> residual_function_type;
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    sparse_matrix_ptrtype& J )> jacobian_function_type;
-    typedef boost::function<void ( const vector_ptrtype& X,
+    typedef std::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R,
                                    sparse_matrix_ptrtype& J )> matvec_function_type;
 
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_vector_type & R )> dense_residual_function_type;
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_matrix_type& J )> dense_jacobian_function_type;
-    typedef boost::function<void ( dense_vector_type const& X,
+    typedef std::function<void ( dense_vector_type const& X,
                                    dense_vector_type& R,
                                    dense_matrix_type& J )> dense_matvec_function_type;
 
     //eigen
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_vector_type & R )> map_dense_residual_function_type;
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_matrix_type& J )> map_dense_jacobian_function_type;
-    typedef boost::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_vector_type const& X,
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
+
+    using pre_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
+    using post_solve_type = std::function<void(vector_ptrtype,vector_ptrtype)>;
 
     class NLSolveData : public boost::tuple<bool,size_type,value_type>
     {
@@ -135,7 +141,8 @@ public:
 
     // return type of solve()
     typedef NLSolveData solve_return_type;
-
+    using SolveData = NLSolveData;
+    
     //@}
 
     /** @name Constructors, destructor
@@ -145,7 +152,7 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverNonLinear(WorldComm const& worldComm = Environment::worldComm() );
+    SolverNonLinear( std::string const& prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * copy constructor
@@ -162,14 +169,18 @@ public:
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * the \p variables_map \p vm and  \p prefix
      */
-    static solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
+    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( po::variables_map const& vm, std::string const& prefix = "",
+                                                            WorldComm const& worldComm = Environment::worldComm() );
+    static solvernonlinear_ptrtype build( std::string const& prefix = "",
+                                          WorldComm const& worldComm = Environment::worldComm() );
+    static solvernonlinear_ptrtype build( std::string const& kind, std::string const& prefix = "",
                                           WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Builds a \p NonlinearSolver using the nonlinear solver package specified by
      * \p solver_package
      */
-    static solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
+    static FEELPP_DEPRECATED solvernonlinear_ptrtype build( SolverPackage solver_package, WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Initialize data structures if not done so already.
@@ -289,6 +300,10 @@ public:
     {
         M_snl_type=snl_type;
     }
+    void setType( std::string const& snl_type )
+    {
+        M_snl_type=snesTypeConvertStrToEnum(snl_type);
+    }
     /**
      * Returns the type of solver to use.
      */
@@ -350,6 +365,15 @@ public:
         M_preconditioner = preconditioner;
     }
 
+    void attachNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nullSpace = ns;
+    }
+    void attachNearNullSpace( boost::shared_ptr<NullSpace<value_type> > const& ns )
+    {
+        M_nearNullSpace = ns;
+    }
+
     /**
      * Sets the type of preconditioner to use.
      */
@@ -405,6 +429,37 @@ public:
     {
         M_nbItMax=n;
     }
+
+    /**
+     * \return the pre solve function
+     */
+    pre_solve_type preSolve() { return M_pre_solve; }
+
+    /**
+     * set the pre solve function
+     */
+    void setPreSolve( pre_solve_type pre ) { M_pre_solve = pre; }
+
+    /**
+     * call the pre solve function with \p x as the rhs and \p y as the solution
+     */
+    void preSolve(vector_ptrtype x, vector_ptrtype y) { return M_pre_solve(x,y); }
+
+    /**
+     * \return the post solve function
+     */
+    post_solve_type postSolve() { return M_post_solve; }
+
+    /**
+     * set the post solve function
+     */
+    void setPostSolve( post_solve_type post ) { M_post_solve = post; }
+    
+    /**
+     * call the post solve function with \p x as the rhs and \p y as the solution
+     */
+    void postSolve(vector_ptrtype x, vector_ptrtype y) { return M_post_solve(x,y); }
+    
     //@}
 
 
@@ -432,7 +487,8 @@ public:
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
-
+    bool viewSNESInfo() const { return M_viewSNESInfo; }
+    void setViewSNESInfo( bool b ) { M_viewSNESInfo=b; }
     /**
      * KSP relative tolerance
      */
@@ -552,6 +608,8 @@ public:
 
 protected:
 
+    std::string M_prefix;
+
     WorldComm M_worldComm;
 
     /**
@@ -561,7 +619,6 @@ protected:
 
     MatrixStructure M_prec_matrix_structure;
 
-    std::string M_prefix;
 
     /**
      * Define the type of non linear solver
@@ -582,6 +639,11 @@ protected:
      * Holds the Preconditioner object to be used for the linear solves.
      */
     preconditioner_ptrtype M_preconditioner;
+
+    /**
+     * Null Space and Near Null Space
+     */
+    boost::shared_ptr<NullSpace<value_type> > M_nullSpace, M_nearNullSpace;
 
     /**
      * Enum the software that is used to perform the factorization
@@ -616,6 +678,7 @@ protected:
 
     bool M_showKSPMonitor, M_showSNESMonitor;
     bool M_showKSPConvergedReason, M_showSNESConvergedReason;
+    bool M_viewSNESInfo;
 
     /**
      * KSP relative tolerance
@@ -634,6 +697,15 @@ protected:
      */
     size_type M_maxitKSP;
 
+    /**
+     * pre solve function
+     */
+    pre_solve_type M_pre_solve;
+
+    /**
+     * post solve function
+     */
+    post_solve_type M_post_solve;
 
 };
 

@@ -1,61 +1,33 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+ This file is part of the Feel library
+ 
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+      Date: 2005-02-19
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-02-19
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2008,2009,2010 Université de Grenoble 1
+ Copyright (C) 2005,2006 EPFL
+ Copyright (C) 2008,2009,2010 Universite de Grenoble 1
+ Copyright (C) 2011-2016 Feel++ Consortium
 
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file info.hpp
-
-   The file was created from KDE/kdelibs/kdecore/kdeversion.hpp and
-   accomodated to Feel needs.
-
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-02-19
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 3.0 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef _FEELPP_VERSION_H_
-#define _FEELPP_VERSION_H_
+#ifndef FEELPP_INFO_HPP
+#define FEELPP_INFO_HPP 1
 
-#define FEELPP_MAKE_VERSION( a,b,c ) (((a) << 16) | ((b) << 8) | (c))
-#define FEELPP_IS_VERSION(a,b,c) ( FEELPP_VERSION >= FEELPP_MAKE_VERSION(a,b,c) )
-
-#define FEELPP_VERSION_LESS_THAN(major,minor,micro)                   \
-    ((FEELPP_VERSION_MAJOR < (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR < (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO < (micro))))) ? 1 : 0)
-
-#define FEELPP_VERSION_GREATER_THAN(major,minor,micro)                \
-    ((FEELPP_VERSION_MAJOR > (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR > (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO > (micro))))) ? 1 : 0)
-
-#define FEELPP_VERSION_GREATER_OR_EQUAL_THAN(major,minor,micro)       \
-    ((FEELPP_VERSION_MAJOR > (major) ||                                  \
-      (FEELPP_VERSION_MAJOR == (major) && (FEELPP_VERSION_MINOR > (minor) || \
-                                          (FEELPP_VERSION_MINOR == (minor) && \
-                                           FEELPP_VERSION_MICRO >= (micro))))) ? 1 : 0)
-
+#include <feel/feelcore/feelmacros.hpp>
 
 /**
  * Namespace for general FEEL functions.
@@ -68,9 +40,13 @@ namespace Feel
  * \author Christophe Prud'homme
  *
  */
-class Info
+class FEELPP_EXPORT Info
 {
 public:
+    Info() = delete;
+    Info( Info const& ) = delete;
+    Info& operator=( Info const& ) = delete;
+    
     /**
      * Build id is the Feel compilation date/time (e.g 2005/12/07 - 18:18:09)
      *
@@ -144,12 +120,9 @@ public:
      */
     static char const* datadir();
 
-private:
-    Info();
-    Info( Info const& );
-    Info& operator=( Info const& );
 }; // Info
 
-}
+} // Feel
 
-#endif // _FEELPP_VERSION_H_
+#endif
+

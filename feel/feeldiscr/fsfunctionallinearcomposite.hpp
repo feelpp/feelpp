@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-04-26
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,11 @@ public:
 
     FsFunctionalLinearComposite( space_ptrtype space ) :
         super_type( space ),
+#if FEELPP_HAS_PETSC
         M_backend( backend_type::build( BACKEND_PETSC ) )
+#else
+        M_backend( backend_type::build( BACKEND_EIGEN ) )
+#endif
     {}
 
     FsFunctionalLinearComposite( space_ptrtype space, backend_ptrtype backend ) :
@@ -392,8 +396,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // optionnal
 )
 {
-
+#if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
+#endif
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::type functionalcomposite_type;
     typedef typename Feel::detail::compute_functionalLinearComposite_return<Args>::ptrtype functionalcomposite_ptrtype;
     return functionalcomposite_ptrtype ( new functionalcomposite_type( space , backend ) );

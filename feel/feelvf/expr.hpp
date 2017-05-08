@@ -1,4 +1,4 @@
-/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -92,6 +92,12 @@ public:
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
 
 
@@ -141,9 +147,7 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::NDim, Scalar, false> shape;
 
@@ -270,6 +274,7 @@ public:
     static const bool imIsPoly = ExprT::imIsPoly;
 
 
+
     template<typename Func>
     struct HasTestFunction
     {
@@ -281,9 +286,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-
-
-
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
 
     /** @name Typedefs
      */
@@ -402,7 +410,8 @@ public:
         }
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
-            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            //this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+            M_expr.setParameterValues( mp );
         }
     void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
         {
@@ -418,14 +427,11 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<0> >,
-                                  mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-        typedef typename tensor_expr_type::shape shape;
+        using expr_type = typename this_type::expression_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using shape = typename tensor_expr_type::shape;
 
         template <class Args> struct sig
         {
@@ -483,10 +489,10 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
-        template<typename CTX>
-        void updateContext( CTX const& ctx )
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
         {
-            M_tensor_expr.updateContext( ctx );
+            M_tensor_expr.updateContext( ctx... );
         }
 
 
@@ -522,17 +528,32 @@ public:
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
+        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            return M_tensor_expr.evaliq( i, q );
+        }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_tensor_expr.evalq( c1, c2, q );
+            value_type e = M_tensor_expr.evalq( c1, c2, q );
+            return e;
+        }
+        Eigen::Matrix<value_type, shape::M, shape::N> const&
+        evalq( uint16_type q ) const
+        {
+            return M_tensor_expr.evalq( q );
         }
 
         gmc_ptrtype M_geo;
         //Geo_t const& M_geo;
         tensor_expr_type M_tensor_expr;
     };
+
+    template<typename Geo_t>
+    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    
 #if 0
     class Diff
     {
@@ -633,7 +654,12 @@ public:
     {
         return M_expr.evaluate( parallel,worldcomm );
     }
-
+    template<typename T, int M, int N=1>
+    decltype(auto)
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v ) const
+        {
+            return M_expr.evaluate( v );
+        }
     typename expression_type::value_type
     evaluateAndSum() const
     {
@@ -677,10 +703,20 @@ operator<<( std::ostream& os, Expr<ExprT> const& exprt )
     return os;
 }
 
+template <typename ExprT>
+std::string
+str( Expr<ExprT> && exprt )
+{
+    return str(std::forward<Expr<ExprT>>(exprt).expression());
+}
+
 
 extern Expr<LambdaExpr1> _e1;
 extern Expr<LambdaExpr2> _e2;
 extern Expr<LambdaExpr3> _e3;
+extern Expr<LambdaExpr1V> _e1v;
+extern Expr<LambdaExpr2V> _e2v;
+extern Expr<LambdaExpr3V> _e3v;
 
 /**
  * \class ExpressionOrder
@@ -699,7 +735,7 @@ struct ExpressionOrder
 
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
+    typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
     static const uint16_type nOrderGeo = the_element_type::nOrder;
@@ -957,9 +993,7 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -6,6 +6,7 @@
        Date: 2009-04-30
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +22,9 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file orthonormalpolynomialset.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2009-04-30
- */
-#ifndef __OrthonormalPolynomialSet_H
-#define __OrthonormalPolynomialSet_H 1
+#ifndef FEELPP_ORTHONORMALPOLYNOMIALSET_HPP
+#define FEELPP_ORTHONORMALPOLYNOMIALSET_HPP 1
+
 namespace Feel
 {
 /// \cond DETAIL
@@ -74,6 +71,7 @@ public:
 
     typedef typename super::polyset_type polyset_type;
     static const bool is_tensor2 = polyset_type::is_tensor2;
+    static const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const bool is_continuous = false;
@@ -141,9 +139,7 @@ public:
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
 
-        if ( is_tensor2 )
-            std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
-
+#if 0
         if ( !( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                        m ) < 1e-10 ) )
             std::cout << "m1=" << m << "\n"
@@ -152,6 +148,7 @@ public:
 
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                               m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+#endif
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
@@ -211,6 +208,7 @@ public:
 
     typedef typename super::polyset_type polyset_type;
     static const bool is_tensor2 = polyset_type::is_tensor2;
+    static const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const bool is_continuous = false;
@@ -263,12 +261,13 @@ public:
 
     {
         ublas::matrix<value_type> m( ublas::identity_matrix<value_type>( nComponents*convex_type::polyDims( nOrder ) ) );
-
+#if 0
         if ( is_tensor2 )
             std::cout << "[orthonormalpolynomialset] m = " << m << "\n";
 
         FEELPP_ASSERT( ublas::norm_frobenius( polyset_type::toMatrix( polyset_type::toType( m ) ) -
                                               m ) < 1e-10 )( m ).warn ( "invalid transformation" );
+#endif
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 

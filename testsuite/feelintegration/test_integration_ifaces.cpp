@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -233,13 +233,13 @@ struct test_integration_internal_faces_lf : public Application
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
         auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
         auto v_exact = u_exact *unitX() + u_exact*unitY()+ u_exact*unitZ();
-        u = vf::project( Xh, elements( mesh ), u_exact );
-
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=u_exact );
+        sync(u);
 
         auto F = backend->newVector( Xh );
-        auto _F_ = integrate( internalfaces( mesh ),
-                trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
-        form1( _test=Xh, _vector=F, _init=true ) = _F_;
+        form1( _test=Xh, _vector=F ) =
+            integrate( internalfaces( mesh ),
+                       trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
         //  integrate( internalfaces( mesh ),
         //        //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
         //        trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )
@@ -253,33 +253,53 @@ struct test_integration_internal_faces_lf : public Application
         BOOST_CHECK_SMALL( jumpu_F, eps );
 
 #if 1
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ),
-                ( jump( grad( u ) ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=( jump( grad( u ) ) ) );
+        F->close();
         double jump_gradu_F = inner_product( u, *F );
         BOOST_TEST_MESSAGE ( "jump(grad(u) u^T F = " << jump_gradu_F << "\n" );
         BOOST_CHECK_SMALL( jump_gradu_F, eps );
 
-        form1(_test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( grad( u )*N() ) );
+        form1(_test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=leftface( grad( u )*N() ) );
+        F->close();
         double left_gradu_n = inner_product( u, *F );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( grad( u )*N() ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=rightface( grad( u )*N() ) );
+        F->close();
         double right_gradu_n = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "jump(left(grad(u)*N)) u^T F = " << left_gradu_n << "\n" );
         BOOST_TEST_MESSAGE(  "jump(right(grad(u)*N)) u^T F = " << right_gradu_n << "\n" );
         BOOST_CHECK_CLOSE( left_gradu_n, -right_gradu_n, eps*100 );
 
-        u = vf::project( Xh, elements( mesh ), cst( 1. ) );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), leftface( id( u ) ) );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=cst( 1. ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=leftface( id( u ) ) );
+        F->close();
         double left_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "left(id(u)) u^T F = " << left_1 << "\n" );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), rightface( id( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=rightface( id( u ) ) );
+        F->close();
         double right_1 = inner_product( u, *F );
         BOOST_TEST_MESSAGE(  "right(id(u)) u^T F = " << right_1 << "\n" );
         BOOST_CHECK_CLOSE( left_1, right_1, eps );
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), trans( N() )*jump( id( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=trans( N() )*jump( id( u ) ) );
+        F->close();
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ), jump( grad( u ) ) );
+        form1( _test=Xh, _vector=F ) =
+            integrate( _range=internalfaces( mesh ),
+                       _expr=jump( grad( u ) ) );
+        F->close();
         BOOST_CHECK_SMALL( inner_product( u, *F ), eps );
 #endif
 

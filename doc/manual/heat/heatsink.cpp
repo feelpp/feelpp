@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -206,24 +206,24 @@ template<int Dim, int Order>
 HeatSink<Dim,Order>::HeatSink()
     :
     super(),
-    depth( option(_name="depth").template as<double>() ),
-    L( option(_name="L").template as<double>() ),
+    depth( doption(_name="depth") ),
+    L( doption(_name="L") ),
     width( option(_name="width").template as <double>() ),
-    kappa_s( option(_name="kappa_s").template as<double>() ),
-    kappa_f( option(_name="kappa_f").template as<double>() ),
-    rho_s( option(_name="rho_s").template as<double>() ),
-    rho_f( option(_name="rho_f").template as<double>() ),
-    c_s( option(_name="c_s").template as<double>() ),
-    c_f( option(_name="c_f").template as<double>() ),
+    kappa_s( doption(_name="kappa_s") ),
+    kappa_f( doption(_name="kappa_f") ),
+    rho_s( doption(_name="rho_s") ),
+    rho_f( doption(_name="rho_f") ),
+    c_s( doption(_name="c_s") ),
+    c_f( doption(_name="c_f") ),
     therm_coeff( option(_name="therm_coeff").template as <double>() ),
     Tamb( option(_name="Tamb").template as <double>() ),
     heat_flux( option(_name="heat_flux").template as <double>() ),
-    steady( option(_name="steady").template as<bool>() ),
+    steady( boption(_name="steady") ),
     M_exporter()
 {
     this->changeRepository( boost::format( "%1%/%2%/" )
                             % this->about().appName()
-                            % option(_name="gmsh.hsize").template as<double>() );
+                            % doption(_name="gmsh.hsize") );
 
     // Create mesh: it automatically changes the geometric parameters using the
     // associated options
@@ -254,7 +254,7 @@ template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
 {
-    LOG(INFO) << "meshSize = " << option(_name="gmsh.hsize").template as<double>() << "\n"
+    LOG(INFO) << "meshSize = " << doption(_name="gmsh.hsize") << "\n"
               << "L = "<< L <<"\n"
               << "width = " << width << "\n"
               << "depth = " << depth << "\n"

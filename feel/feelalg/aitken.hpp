@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -446,7 +446,7 @@ Aitken<fs_type>::computeResidualNorm()
 {
     auto oldEltL2Norm = M_previousElement.l2Norm();
 
-    if ( oldEltL2Norm > 1e-8 )
+    if ( oldEltL2Norm > 1e-13 )
         M_residualConvergence = M_currentResidual.l2Norm()/oldEltL2Norm;
 
     else

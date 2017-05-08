@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -40,7 +40,6 @@ MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat()
 {}
 template <typename T>
@@ -48,8 +47,15 @@ MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const
     :
     super(worldComm),
     M_is_initialized( false ),
-    M_is_closed( false ),
     M_mat( r, c )
+{}
+
+template <typename T>
+MatrixEigenDense<T>::MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+    :
+    super( dmRow,dmCol ),
+    M_is_initialized( false ),
+    M_mat( dmRow->nDof(), dmCol->nDof() )
 {}
 
 template <typename T>
@@ -57,7 +63,6 @@ MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
     M_is_initialized( m.M_is_initialized ),
-    M_is_closed( m.M_is_closed ),
     M_mat( m.M_mat )
 
 {}
@@ -134,7 +139,7 @@ template<typename T>
 void
 MatrixEigenDense<T>::close() const
 {
-    M_is_closed = true;
+    this->setIsClosed( true );
 }
 
 template<typename T>
@@ -181,9 +186,9 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
+MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type> const& _m )
 {
-    MatrixEigenDense<value_type>* m = dynamic_cast<MatrixEigenDense<value_type>*>( &_m );
+    MatrixEigenDense<value_type> const* m = dynamic_cast<MatrixEigenDense<value_type> const*>( &_m );
     FEELPP_ASSERT( m != 0 ).error( "invalid sparse matrix type, should be MatrixEigenDense" );
     //FEELPP_ASSERT( m->closed() ).error( "invalid sparse matrix type, should be closed" );
 
@@ -198,9 +203,9 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
 
 template<typename T>
 void
-MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
-                                     std::vector<size_type> start_i,
-                                     std::vector<size_type> start_j )
+MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m,
+                                     std::vector<size_type> const& start_i,
+                                     std::vector<size_type> const& start_j )
 {
     LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
 
@@ -261,7 +266,8 @@ void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
                                Vector<value_type> const& vals,
                                Vector<value_type>& rhs,
-                               Context const& on_context )
+                               Context const& on_context,
+                               value_type value_on_diagonal )
 {
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
@@ -271,7 +277,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
 
     for ( size_type i = 0; i < rows.size(); ++i )
     {
-        value_type value = 1.0;
+        value_type value = value_on_diagonal;
 
         if ( on_context.test( ContextOn::ELIMINATION|ContextOn::KEEP_DIAGONAL ) )
             value = M_mat( rows[i], rows[i] );
@@ -310,7 +316,7 @@ MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<double>> &Eingvs )
 
 template <typename T>
 void
-MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res ) const
 {
     //FEELPP_ASSERT ( this->isInitialized() ).error( "eigendense matrix not initialized" );
 

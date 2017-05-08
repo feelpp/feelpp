@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -413,16 +413,14 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
 
     BOOST_CHECK_CLOSE( T_mean, 344, 2e-1 );
 
-    TestNLSolveComposite::export_ptrtype exporter( TestNLSolveComposite::export_type::New( this->vm(),
-                                                                                           (boost::format( "%1%" )
-                                                                                            % this->about().appName() ).str() ) );
+    auto e = exporter( _mesh = mesh, _name= (boost::format( "%1%" ) % this->about().appName() ).str());
 
-    if ( exporter->doExport() )
+    if ( e->doExport() )
         {
-            exporter->step(0)->setMesh( mesh );
-            exporter->step(0)->add( "Potential", VT.template element<0>() );
-            exporter->step(0)->add( "Temperature", VT.template element<1>() );
-            exporter->save();
+            e->step(0)->setMesh( mesh );
+            e->step(0)->add( "Potential", VT.template element<0>() );
+            e->step(0)->add( "Temperature", VT.template element<1>() );
+            e->save();
         }
 }
 

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -113,6 +113,7 @@ extern "C"
     PetscErrorCode __feel_petsc_preconditioner_setup ( PC );
     PetscErrorCode __feel_petsc_preconditioner_apply( PC, Vec x, Vec y );
     PetscErrorCode __feel_petsc_preconditioner_view( PC, PetscViewer viewer);
+    PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx);
 
 #endif
 } // end extern "C"
@@ -291,6 +292,8 @@ private:
     void setPetscPreconditionerType ();
 
     void setPetscConstantNullSpace ();
+    void updateNullSpace( Mat A, Vec rhs );
+    void updateNearNullSpace( Mat A );
 
     // SLES removed from >= PETSc 2.2.0
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)

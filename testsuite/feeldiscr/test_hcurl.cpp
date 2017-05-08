@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -151,8 +151,7 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        meshSize( doption("gmsh.hsize") ),
-        exporter( Exporter<mesh_type>::New( this->vm() ) )
+        meshSize( doption("gmsh.hsize") )
     {
         std::cout << "[TestHCurl]\n";
         std::cout << "hsize = " << meshSize << std::endl;
@@ -176,9 +175,6 @@ private:
 
     //! mesh characteristic size
     double meshSize;
-
-    //! exporter factory
-    export_ptrtype exporter;
 
 }; //TestHCurl
 
@@ -237,13 +233,11 @@ TestHCurl::exampleProblem1()
 #endif
 
     std::string pro1_name = "problem1";
-    export_ptrtype exporter_pro1( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % pro1_name ).str() ) );
-
-    exporter_pro1->step( 0 )->setMesh( mesh );
+    std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
+                                 % this->about().appName()
+                                 % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                 % pro1_name ).str();
+    auto exporter_pro1 = exporter(_mesh=mesh,_name=exporterName );
     exporter_pro1->step( 0 )->add( "u", u );
     exporter_pro1->step( 0 )->add( "proj_L2_u", u );
     exporter_pro1->step( 0 )->add( "u_exact", v );
@@ -319,13 +313,11 @@ TestHCurl::testProjector()
     BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHCURL_ned, error_pHCURL_ned ) ), 1e-13 );
 
     std::string proj_name = "projection";
-    export_ptrtype exporter_proj( export_type::New( this->vm(),
-                                  ( boost::format( "%1%-%2%-%3%" )
-                                    % this->about().appName()
-                                    % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
-                                    % proj_name ).str() ) );
-
-    exporter_proj->step( 0 )->setMesh( mesh );
+    std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
+                                 % this->about().appName()
+                                 % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
+                                 % proj_name ).str();
+    auto exporter_proj = exporter(_mesh=mesh,_name=exporterName );
     exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
     exporter_proj->step( 0 )->add( "proj_L2_E[NED]", E_pL2_ned );
     exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );

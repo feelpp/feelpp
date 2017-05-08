@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-10-16
 
   Copyright (C) 2013 Université de Strasbourg
@@ -23,10 +23,11 @@
 */
 /**
    \file hdf5.hpp
-  @author Radu Popescu <radu.popescu@epfl.ch> (LifeV)
-   \author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+   \author Radu Popescu <radu.popescu@epfl.ch> (LifeV)
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
    \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
-   \date 2013-10-16
+   \author Guillaume Dollé <gdolle@unistra.fr>
+   \date 2015-10-01
  */
 #ifndef FEELPP_HDF5_HPP
 #define FEELPP_HDF5_HPP
@@ -47,11 +48,10 @@
 
 namespace Feel
 {
-
 /*!
   @brief Convenience wrapper for the C interface of the HDF5 library
   @author Radu Popescu <radu.popescu@epfl.ch>
-  @author Christophe Prud'homme <prudhomme@unistra.fr> (adaptation from LifeV to Feel++)
+  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org> (adaptation from LifeV to Feel++)
 
   This class provides an easy way to write and read data from an HDF5 container.
   It is designed to handle a single open file at one time, with multiple open
@@ -68,7 +68,7 @@ namespace Feel
       - close the tables after you are finished, with HDF5::closeTable
       - close the file: HDF5::closeFile
 */
-class HDF5
+class FEELPP_EXPORT HDF5
 {
 public:
     //! @name Public Types
@@ -79,7 +79,7 @@ public:
     //! @name Constructors and Destructor
     //@{
     //! Default empty constructor
-    HDF5() {}
+    HDF5() = default;
 
     //! Constructor
     /*!
@@ -89,8 +89,12 @@ public:
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
      */
-    HDF5 (const std::string& fileName, const comm_type& comm,
-            const bool& existing = false);
+    HDF5( const std::string& fileName, const comm_type& comm,
+          const bool& existing = false );
+
+    // Copy constructor and assignment operator are disabled
+    HDF5 (const HDF5&) = delete;
+    HDF5& operator= (const HDF5&) = delete;
 
     //! Empty destructor
     virtual ~HDF5() {}
@@ -98,16 +102,52 @@ public:
 
     //! @name Public Methods
     //@{
-    //! Open
+
+    //! Check if group exist.
+    /*!
+     * \param groupName full path to the group under root.
+     */
+    bool groupExist( const std::string& groupName );
+
+    //! Create or open a file.
     /*!
      * Create a file or open an existing file
      * \param fileName the name of the HDF5 file to be used
      * \param comm pointer to Epetra_Comm
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
+     * \param rdwr when opening an existing file, specifies whether to open it 
+     *        in read-only or read/write mode.
      */
-    void openFile (const std::string& fileName, const comm_type& comm,
-                   const bool& existing);
+    void openFile( const std::string& fileName, const comm_type& comm,
+                   const bool& existing, const bool& rdwr = false );
+
+    //! Create a new group
+    /*!
+     * Create a new group in the open file
+     */
+    void createGroup( const std::string& tableName );
+
+    //! Open group
+    /*!
+     * Open an existing group.
+     * \param groupName Name of the group.
+     * \param createIfNotExist Create all groups which does not exist in
+     *        the given group path (default: true).
+     */
+    void openGroup( const std::string& groupName,
+                    const bool& createIfNotExist = true );
+
+    //! Open groups
+    /*!
+     * Open recursively all existing group from the given group name.
+     * \param groupName Name of the group.
+     * \param createIfNotExist Create all groups which does not exist in
+     *        the given group path (default: true).
+     */
+    void openGroups( const std::string& groupName,
+                     const bool& createIfNotExist = true );
+
     //! Create a new table
     /*!
      * Create a new table in the open file
@@ -115,14 +155,33 @@ public:
      * \param fileDataType data type that is to be used in the HDF5 container
      *        should be a standard HDF5 type, not a machine native type;
      *        consult HDF5 documentation for more information
-     * \param tableDimensions array of hsize_t of size 2 which holds the
+     * \param tableDimensions array of hsize_t of size nbDims which holds the
      *        dimensions of the table
+     * \param nbDims the number of dimensions of the array to store 
      */
-    void createTable (const std::string& tableName, hid_t& fileDataType,
-                      hsize_t tableDimensions[]);
+    void createTable( const std::string& tableName,
+                      hid_t& fileDataType,
+                      hsize_t tableDimensions[],
+                      unsigned int nbDims = 2 );
 
-    void createTable (const std::string& GroupName, const std::string& tableName, hid_t& fileDataType,
-                             hsize_t tableDimensions[], const bool& existing);
+    //! Create a new table
+    /*!
+     * Create a new table in the open file under the given group.
+     * \param groupName A string containing the group name.
+     * \param tableName A string containing the table name.
+     * \param fileDataType Data type that is to be used in the HDF5 container
+     *        should be a standard HDF5 type, not a machine native type;
+     *        Consult HDF5 documentation for more information.
+     * \param tableDimensions Array of hsize_t of size nbDims which holds the
+     *        dimensions of the table.
+     * \param nbDims the number of dimensions of the array to store 
+     */
+    void createTable( const std::string& GroupName,
+                      const std::string& tableName,
+                      hid_t& fileDataType,
+                      hsize_t tableDimensions[],
+                      const bool& existing,
+                      unsigned int nbDims = 2 );
 
     //! Open a new table
     /*!
@@ -131,23 +190,29 @@ public:
      * \param tableDimensions array of hsize_t of size 2 which will hold the
      *        dimensions of the table (output parameter)
      */
-    void openTable (const std::string& tableName, hsize_t tableDimensions[]);
+    void openTable( const std::string& tableName, hsize_t tableDimensions[] );
+
     //! Write
     /*!
      * \param tableName a string containing the table name
      * \param memDataType the type (described as an HDF5 machine native type)
      *        of the data in the buffer that is to be written
-     * \param currentCount an array of hsize_t of size two describing the shape
+     * \param currentCount an array of hsize_t of size nbDims describing the shape
      *        of the block to be written (see HDF5 documentation)
-     * \param currentOffset an array of hsize_t of size two describing the
+     * \param currentOffset an array of hsize_t of size nbDims describing the
      *        stride of the block to be written (see HDF5 documentation)
      * \param buffer pointer to a memory region containing the data to be
      *        written
+     * \param nbDims the number of dimensions of the array to store 
      */
-    void write (const std::string& tableName,
-                hid_t& memDataType, hsize_t currentCount[],
-                hsize_t currentOffset[], void* buffer);
-    //! Write
+    void write( const std::string& tableName,
+                hid_t& memDataType,
+                hsize_t currentCount[],
+                hsize_t currentOffset[],
+                void* buffer,
+                unsigned int nbDims = 2 );
+
+    //! Read
     /*!
      * \param tableName a string containing the table name
      * \param memDataType the type (described as an HDF5 machine native type)
@@ -158,21 +223,39 @@ public:
      *        stride of the block to be read (see HDF5 documentation)
      * \param buffer pointer to a memory region that represents the destination
      *        of the read operation
+     * \param nbDims the number of dimensions of the array to store 
      */
-    void read (const std::string& tableName,
-               hid_t& memDataType, hsize_t currentCount[],
-               hsize_t currentOffset[], void* buffer);
-    //! Write
+    void read( const std::string& tableName,
+               hid_t& memDataType,
+               hsize_t currentCount[],
+               hsize_t currentOffset[],
+               void* buffer,
+               int nbDims = 2 );
+
+    //! Close an open group.
+    /*
+     * \param groupName A string containing the group name.
+     */
+    void closeGroup( const std::string& groupName );
+
+    //! Close recursively open groups.
+    /*
+     * \param groupName A string containing the group name.
+     */
+    void closeGroups( const std::string& groupName );
+
+    //! Close open table.
     /*!
-     * \param tableName a string containing the table name
+     * \param tableName A string containing the table name.
      */
-    void closeGroup (const std::string& groupName);
-    void closeTable (const std::string& tableName);
+    void closeTable( const std::string& tableName );
+
     //! Close an open file
     /*!
-     * Call this when finished operating with a file
+     * Call this when finished operating with a file.
      */
     void closeFile();
+
     //@}
 
 private:
@@ -183,10 +266,6 @@ private:
         hid_t dataset;
         hid_t plist;
     } tableHandle;
-
-    // Copy constructor and assignment operator are disabled
-    HDF5 (const HDF5&);
-    HDF5& operator= (const HDF5&);
 
     //! Private Data Members
     //@{

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -161,7 +161,7 @@ Tilted<Dim, BasisU, Entity>::run()
 
     boost::timer t;
     double shear = option(_name="shear").template as<value_type>();
-    bool recombine = option(_name="recombine").template as<bool>();
+    bool recombine = boption(_name="recombine");
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -321,7 +321,7 @@ Tilted<Dim, BasisU, Entity>::run()
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
     subt.restart();
 
-    if ( option(_name="bctype").template as<int>() == 1  )
+    if ( ioption(_name="bctype") == 1  )
     {
         form1( Xh, _vector=F ) += integrate( _range=boundaryfaces( mesh ), _expr=-idv(v)*k*grad( u )*N() );
         M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
@@ -342,19 +342,19 @@ Tilted<Dim, BasisU, Entity>::run()
     size_type pattern = Pattern::COUPLED;
     size_type patternsym = Pattern::COUPLED;
 
-    if ( option(_name="faster").template as<int>() == 1 )
+    if ( ioption(_name="faster") == 1 )
     {
         pattern = Pattern::COUPLED;
         patternsym = Pattern::COUPLED|Pattern::SYMMETRIC;
     }
 
-    if ( option(_name="faster").template as<int>() == 2 )
+    if ( ioption(_name="faster") == 2 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT;
     }
 
-    if ( option(_name="faster").template as<int>() == 3 )
+    if ( ioption(_name="faster") == 3 )
     {
         pattern = Pattern::DEFAULT;
         patternsym = Pattern::DEFAULT|Pattern::SYMMETRIC;
@@ -376,7 +376,7 @@ Tilted<Dim, BasisU, Entity>::run()
     LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
-    if ( option(_name="bctype").template as<int>() == 1  )
+    if ( ioption(_name="bctype") == 1  )
     {
         form2( Xh, Xh, _matrix=D )+=integrate( _range=boundaryfaces( mesh ),_expr=-k*( gradt( u )*N() )*id( v )-k*trans( grad( u )*N() )*idt( v ) );
         M_stats.put( "t.assembly.matrix.dirichlet1",subt.elapsed() );
@@ -392,7 +392,7 @@ Tilted<Dim, BasisU, Entity>::run()
     D->close();
     F->close();
 
-    if ( option(_name="bctype").template as<int>() == 0  )
+    if ( ioption(_name="bctype") == 0  )
     {
         form2( Xh, Xh, _matrix=D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact);
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );

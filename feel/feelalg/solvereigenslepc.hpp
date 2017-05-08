@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -244,6 +244,21 @@ private:
      * set the spectral transforms
      */
     void setSlepcSpectralTransform();
+
+    /**
+     * set the eigenvalues to compute
+     */
+    void setSlepcDimensions();
+
+    /**
+     * set the preconditionner solver package
+     */
+    void setSlepcPCSolverPackage();
+
+    /**
+     * set the target
+     */
+    void setSlepcEPSTarget();
 
     /**
      * Eigenproblem solver context

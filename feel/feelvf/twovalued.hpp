@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -66,7 +66,12 @@ public:
     {
         static const bool result = false;
     };
-
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     /** @name Typedefs
      */
@@ -354,6 +359,12 @@ public:
         static const bool result = false;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = false;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = std::nullptr_t;
 
     /** @name Typedefs
      */
@@ -593,7 +604,12 @@ public:
     {
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
-
+    template<typename Func>
+    static const bool has_test_basis = false;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = std::nullptr_t;
+    using trial_basis = typename ExprT::trial_basis;
     /** @name Typedefs
      */
     //@{
@@ -832,6 +848,12 @@ public:
         static const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
+    template<typename Func>
+    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
     /** @name Typedefs
      */
     //@{

@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-07-28
 #
 #  Copyright (C) 2010 Universit� de Grenoble 1 (Joseph Fourier)
@@ -61,7 +61,18 @@ find_program( GMSH_EXECUTABLE
   $ENV{GMSH_DIR}/bin
   ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
+  DOC "GMSH mesh generator"
+  NO_DEFAULT_PATH
+  )
+if(NOT GMSH_EXECUTABLE)
+find_program( GMSH_EXECUTABLE
+  NAMES gmsh
+  PATHS
+  $ENV{GMSH_DIR}/bin
+  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
+  PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
+endif()
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
@@ -83,7 +94,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATHS ${GMSH_INCLUDE_PATH}
       DOC "Directory where GMSH header files are stored" )
     if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-      set( FEELPP_HAS_GMSH_H 1 )
+      set( FEELPP_HAS_GMSH_ADAPT_H 1 )
     else ( GMSH_ADAPTMESH_INCLUDE_DIR )
       message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
       message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
@@ -137,13 +148,77 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       lib  )
   ENDIF()
 
+  # should detect instead if MED is supported by Gmsh
+  OPTION( FEELPP_ENABLE_CGNS "Enable the CGNS library" OFF )
+  OPTION( FEELPP_ENABLE_MED "Enable the MED library" OFF )
+  OPTION( FEELPP_ENABLE_OPENCASCADE "Enable the OCC library" OFF )
+  IF(GMSH_EXECUTABLE)
+    execute_process(COMMAND ${GMSH_EXECUTABLE} -info
+      OUTPUT_FILE "gmsh-info.log"
+      ERROR_FILE "gmsh-config.err")
+    execute_process(COMMAND grep "Build options" gmsh-config.err
+      OUTPUT_VARIABLE GMSH_BUILDOPTS)
+    if ( GMSH_BUILDOPTS )
+      STRING(REPLACE "Build options    : " "" GMSH_EXTERNAL_LIBS_STRING ${GMSH_BUILDOPTS})
+      string(REPLACE " " ";" GMSH_EXTERNAL_LIBS ${GMSH_EXTERNAL_LIBS_STRING})
+    
+      # Could also check for Cgns support (not really working in Gmsh)
+      set (EXTERNAL_LIBS Med OpenCascade)
+      foreach(_l ${EXTERNAL_LIBS})
+        list (FIND GMSH_EXTERNAL_LIBS ${_l} _index)
+        if (${_index} GREATER -1)
+          MESSAGE(STATUS "Gmsh has ${_l} support")
+          string(TOUPPER ${_l} EXTERNLIB)
+          set(FEELPP_ENABLE_${EXTERNLIB} ON)
+        ENDIF()
+      endforeach()
+    endif( GMSH_BUILDOPTS)
+  ELSE(GMSH_EXECUTABLE)
+    MESSAGE(STATUS "gmsh executable has not been detected. Support for Med and OpenCascade set to OFF")
+  ENDIF(GMSH_EXECUTABLE)
+  
+  set(GMSH_EXTERNAL_LIBRARIES "")
+  IF ( FEELPP_ENABLE_MED )
+    find_library(MED_LIB med)
+    if(MED_LIB)
+      list(APPEND GMSH_EXTERNAL_LIBRARIES ${MED_LIB})
+    endif(MED_LIB)
+    find_library(MEDC_LIB medC)
+    if(MEDC_LIB)
+      list(APPEND GMSH_EXTERNAL_LIBRARIES ${MEDC_LIB})
+    endif(MEDC_LIB)
+    if (MED_LIB AND MEDC_LIB)
+      # check if HDF5 version is compatible
+      IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+        MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}. Only 1.8.x versions are compatible with med support.")
+      ELSE()
+        MESSAGE(STATUS "[Feelpp] Add support for MED library from Gmsh")
+        ADD_DEFINITIONS( -DFEELPP_HAS_GMSH_HAS_MED )
+      ENDIF()
+    endif(MED_LIB AND MEDC_LIB)
+  endif(FEELPP_ENABLE_MED)
+
+  IF ( FEELPP_ENABLE_CGNS )
+    find_library(CGNS_LIB cgns)
+    if(CGNS_LIB)
+      list(APPEND GMSH_EXTERNAL_LIBRARIES ${CGNS_LIB})
+      IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+        MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}. Only 1.8.x versions are compatible with cgns support.")
+      ELSE()
+        MESSAGE(STATUS "[Feelpp] Add support for CGNS library from Gmsh")
+        ADD_DEFINITIONS( -DFEELPP_HAS_GMSH_HAS_CGNS )
+      ENDIF()
+    endif(CGNS_LIB)
+  ENDIF ( FEELPP_ENABLE_CGNS )
+  MESSAGE(STATUS "[Gmsh] GMSH_EXTERNAL_LIBRARIES ${GMSH_EXTERNAL_LIBRARIES}")
+  
   if(GMSH_INCLUDE_PATH)
       set(GMSH_INCLUDE_DIR ${GMSH_INCLUDE_PATH})
   endif(GMSH_INCLUDE_PATH)
 
   set(GMSH_LIBRARIES "")
   if(GMSH_LIBRARY)
-    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY})
+    set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
 endif()
 
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG

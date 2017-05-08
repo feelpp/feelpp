@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -426,9 +426,6 @@ private:
     static vector_matrix_type
     derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
     {
-        FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
-        // VLOG(1) << "Expansion::derivate<1>] number of points " << __pts().size2() << "\n";
-
         vector_matrix_type D( 1 );
         D[0].resize( nOrder+1, __pts().size2() );
         D[0] = JacobiBatchDerivation<nOrder,value_type>( 0.0, 0.0, ublas::row( __pts(),0 ) );

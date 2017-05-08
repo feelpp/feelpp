@@ -1,83 +1,74 @@
-os:
-  - linux
-
+language: cpp
 git:
   depth: 1
   submodules: false
+matrix:
+  include:
+      - os: linux
+        env: BUILD="ubuntu 17.04,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" TARGET_IMAGE="ubuntu:17.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O0 -DNDEBUG"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="ubuntu 16.10,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O0 -DNDEBUG"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian testing,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      # - os: osx
+      #   compiler: clang
+      #   env: BUILD="osx clang" FEELPP_CXX="clang++" FEELPP_CC="clang" CXXFLAGS="-O0 -DNDEBUG" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      #   osx_image: xcode8.2
 
-language: cpp
-
-compiler:
-- clang
-
-env:
-- BUILDTYPE=Release TARGET=quickstart
-
-#- BUILDTYPE=Release TARGET=tutorial
+  allow_failures:
+  - env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
+  - env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  #- env: BUILD="osx clang" FEELPP_CXX="clang++" FEELPP_CC="clang" CXXFLAGS="-O0 -DNDEBUG" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
 
 before_install:
 - echo $TRAVIS_OS_NAME
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:mapnik/boost-backports-1-54; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:kalakris/eigen; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo add-apt-repository -y ppa:feelpp/petsc; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get -qq update; fi
-- if test "x$TRAVIS_OS_NAME" = "xlinux"; then sudo apt-get install -qq libboost1.54-all-dev mpi-default-dev mpi-default-bin libeigen3-dev
-    libpetsc3.4.2-dev libcln-dev petsc-dev libxml2-dev gmsh bison flex doxygen doxygen-latex transfig
-    imagemagick libtbb-dev libann-dev libglpk-dev automake libtool; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then cd /usr/local && git remote add feelpp https://github.com/feelpp/homebrew.git && git pull feelpp master; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew tap feelpp/science; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then ls /usr/local/Cellar; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install open-mpi; fi
-- if test "x$TRAVIS_OS_NAME" = "xosx"; then brew install --only-dependencies feelpp; fi
-#install some submodules
-- git submodule update --init --recursive contrib/nlopt
-- git submodule update --init --recursive contrib/nt2
-- git submodule update --init --recursive contrib/ipopt
-
-cache:
-  directories:
-  - /usr/local/Cellar/libevent
-  - /usr/local/Cellar/open-mpi
-  - /usr/local/Cellar/cln
-  - /usr/local/Cellar/eigen
-  - /usr/local/Cellar/gmsh
-  - /usr/local/Cellar/veclibfort
-  - /usr/local/Cellar/scalapack
-  - /usr/local/Cellar/szip
-  - /usr/local/Cellar/hdf5
-  - /usr/local/Cellar/scotch5
-  - /usr/local/Cellar/mumps
-  - /usr/local/Cellar/tbb
-  - /usr/local/Cellar/suite-sparse
-  - /usr/local/Cellar/petsc
-  - /usr/local/Cellar/slepc
-  - /usr/local/Cellar/boost
-  - /usr/local/Cellar/ann
-  - /usr/local/Cellar/glpk
+- echo $HOME
+- echo "building ${TRAVIS_BRANCH}..."
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then tools/scripts/travis/build-osx.sh   ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker --version   ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tools/scripts/travis/build-docker.sh   ; fi
 
 install:
-- mkdir opt && cd opt && ../configure --build=$BUILDTYPE -v
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker images; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run ${TARGET_IMAGE} true; fi
 
 script:
-- make -j16 feelpp_ginac
-- make -j2 feelpp
-- make $TARGET-check
+- true
 
-branches:
-  only:
-  - develop
-  - master
-  - feature/explicit
-  - merging-with-explicit
-cache:
-- apt
 notifications:
-  email:
-    recipients:
-    - feelpp-devel@feelpp.org
-    on_success: change
-    on_failure: change
-
-matrix:
-  allow_failures:
-  - gcc
+  webhooks:
+      urls:
+        - https://webhooks.gitter.im/e/12ef0320a0dce1a9972a
+      on_success: always  # options: [always|never|change] default: always
+      on_failure: always  # options: [always|never|change] default: always
+      on_start: never     # options: [always|never|change] default: always

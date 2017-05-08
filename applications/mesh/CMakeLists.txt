@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-06-11
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -23,9 +23,20 @@
 #
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
+
+if(NOT FEELPP_MINIMAL_BUILD)
+
 feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
-feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex)
+feelpp_add_application( mesh2d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Simplex) # LINK_LIBRARIES metis)
 feelpp_add_application( mesh1d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Simplex)
 feelpp_add_application( mesh3d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Hypercube)
 feelpp_add_application( mesh2d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 CONVEX=Hypercube)
 feelpp_add_application( mesh1d_hypercube SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=1 CONVEX=Hypercube)
+
+feelpp_add_application( submesh SRCS submesh.cpp INCLUDE_IN_ALL PROJECT mesh )
+
+endif(NOT FEELPP_MINIMAL_BUILD)
+
+if (FEELPP_HAS_HDF5)
+  feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL MAN partitioner )
+endif (FEELPP_HAS_HDF5)

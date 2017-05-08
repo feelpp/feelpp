@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -79,7 +79,7 @@ createMesh( double hsize )
                                          _shape="hypercube",
                                          _dim=Dim,
                                          _order=Order,
-                                         _h=option(_name="gmsh.hsize").template as<double>() ) );
+                                         _h=doption(_name="gmsh.hsize") ) );
     //typedef typename imesh<Dim, Order, RDim>::type meshType;
     //return loadMesh( _mesh=new meshType,
     //                       _desc=domain(_addmidpoint=false,
@@ -253,7 +253,7 @@ makeAbout()
         return test;
     }
 #else
-    FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+    FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
     BOOST_AUTO_TEST_SUITE( interpolation_suite )
 

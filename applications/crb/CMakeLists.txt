@@ -1,9 +1,9 @@
 ###  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2017 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,13 +21,37 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+project(crb)
+
+
+# with this it is possible to compile applications/crb from an installed
+# version of feel++. This is useful also for staged compilation for docker
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  cmake_minimum_required(VERSION 2.8)
+  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+endif()
+
+if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
+  cmake_policy(SET CMP0064 OLD)
+endif()
+
 add_custom_target(crb)
 set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include(UseCRB)
 
-OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" ON)
+include_directories(${FEELPP_CRB_SOURCE_DIR})
+include_directories(${FEELPP_CRB_BINARY_DIR})
+
+OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" OFF)
 OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_HEAT2D "enable HEAT2D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_HEAT3D "enable HEAT3D testcase" ON)
+OPTION(FEELPP_ENABLE_CRB_LINEARELASTICITY "enable LINEARELASTICITY testcase" ON)
 OPTION(FEELPP_ENABLE_CRB_RBHEAT "enable RBHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_CABINEHEAT "enable CABINEHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_FINALCABINEHEAT "enable FINALCABINEHEAT testcases" OFF)
@@ -38,12 +62,16 @@ OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
 
 OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
 if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_EADS ON)
   set(FEELPP_ENABLE_CRB_HEAT1D ON)
+  set(FEELPP_ENABLE_CRB_HEAT2D ON)
+  set(FEELPP_ENABLE_CRB_HEAT3D ON)
+  set(FEELPP_ENABLE_CRB_LINEARELASTICITY ON)
   set(FEELPP_ENABLE_CRB_RBHEAT OFF)
   set(FEELPP_ENABLE_CRB_CABINEHEAT OFF)
   set(FEELPP_ENABLE_CRB_FINALCABINEHEAT OFF)
@@ -54,6 +82,7 @@ if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_HEATSHIELD ON)
   set(FEELPP_ENABLE_CRB_BENCHMARKGREPL ON)
   set(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION ON)
+  set(FEELPP_ENABLE_CRB_THERMALFIN ON)
   set(FEELPP_ENABLE_CRB_EEG OFF)
 endif()
 
@@ -62,11 +91,22 @@ IF ( FEELPP_ENABLE_CRB_EADS )
   add_subdirectory(eads)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_HEAT2D )
+  add_subdirectory(heat2d)
+ENDIF()
+
+IF ( FEELPP_ENABLE_CRB_HEAT3D )
+  add_subdirectory(heat3d)
+ENDIF()
 
 IF ( FEELPP_ENABLE_CRB_HEAT1D )
   add_subdirectory(heat1d)
   add_subdirectory(unsteady_heat1d)
 ENDIF()
+
+if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
+    add_subdirectory(linearelasticity3d)
+endif()
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -111,9 +151,13 @@ if ( FEELPP_ENABLE_CRB_GEOHEATDIFFUSION )
   add_subdirectory(GeoHeatDiffusion)
 ENDIF()
 
+if ( FEELPP_ENABLE_CRB_THERMALFIN )
+  add_subdirectory(thermalfin)
+ENDIF()
+
 IF ( FEELPP_ENABLE_CRB_EEG )
   add_subdirectory(eeg)
 ENDIF()
 
 
-
+add_subdirectory(onlinerun)

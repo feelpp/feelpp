@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,12 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
+#ifdef FEELPP_HAS_GMSH
 namespace Feel {
 
 boost::shared_ptr<Mesh<Simplex<2> > >
@@ -46,3 +49,5 @@ unitSquare( double h, PeriodicEntities pe )
 }
 
 }
+#endif
+

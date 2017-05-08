@@ -33,4 +33,4 @@ In order to use these templates properly you should install the
 template elisp package from Christoph Wedler hosted at
 http://emacs-template.sourceforge.net/. It consists in one .el file.
 
- -- Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>, Sat, 30 Dec 2006 15:48:59 +0100
+ -- Christophe Prud'Homme <christophe.prudhomme@feelpp.org>, Mon,  9 Mar 2015 01:31:37 +0000

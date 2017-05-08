@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2014-05-28
 
-  Copyright (C) 2014 Feel++ Consortium
+  Copyright (C) 2014-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ int main(int argc, char**argv )
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<FEELPP_DIM>> );
 
     auto Xh = Pchv<1>( mesh );
-    auto Nh = Ned1h<1>( mesh );
+    auto Nh = Ned1h<0>( mesh );
 
     auto a = form2( _trial=Nh, _test=Nh );
     auto c = doption("parameters.c");
@@ -58,7 +58,11 @@ int main(int argc, char**argv )
     auto v = Nh->element(e);
     auto w = Xh->element(e);
     auto z = Xh->element();
-    double penaldir=30;
+    double penaldir=doption("parameters.d");
+
+    std::cout << "Weakdirichlet = " << (boption("weakdirichlet") ? "true":"false") << std::endl;
+    std::cout << "Penaldir      = " <<  penaldir << std::endl;
+    std::cout << "Stab Param    = " <<  c << std::endl;
 
 #if FEELPP_DIM == 2
     a = integrate(_range=elements(mesh), _expr=c*trans(idt(u))*id(v)+curlxt(u)*curlx(v));

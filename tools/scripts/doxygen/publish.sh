@@ -17,7 +17,7 @@ function builddox
       if [ $cpt -ge 3 ]
       then
         project=$(echo $i | awk '{print toupper($0)}')
-        STR="$STR -DFEELPP_ENABLE_"$project"_DOCUMENTATION=ON"
+        STR="$STR -DFEELPP_ENABLE_RESEARCH_"$project"_DOCUMENTATION=ON"
         if [ ! -d $feelpp_source/research/$i ]; 
         then
           cd $feelpp_source/research/

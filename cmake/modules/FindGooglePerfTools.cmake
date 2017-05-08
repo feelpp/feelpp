@@ -1,6 +1,6 @@
 ### FindGooglePerfTools.cmake; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-04-11
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)

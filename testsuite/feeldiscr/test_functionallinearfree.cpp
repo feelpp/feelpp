@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
   Author(s): Stephane Veys <stephane.veys@imag.fr>
        Date: 2013-04-29
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -164,10 +164,9 @@ testFunctionalLinearComposite()
     double result_free = functionalfree->operator()( element );
 
     double epsilon=1e-13;
-    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), epsilon );
-    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), epsilon );
-    BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), epsilon );
-
+    BOOST_CHECK_CLOSE( result_composite,result_compositefree, epsilon );
+    BOOST_CHECK_CLOSE( result,result_compositefree, epsilon );
+    BOOST_CHECK_CLOSE( result_free,result_compositefree, epsilon );
 
     //test access functions
     auto vector_composite1 = backend->newVector( Xh );
@@ -246,5 +245,3 @@ BOOST_AUTO_TEST_CASE( test_2 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

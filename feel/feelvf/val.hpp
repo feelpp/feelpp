@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -109,6 +109,12 @@ public:
     {
         static const bool result = false;
     };
+    template<typename Func>
+    static const bool has_test_basis = ExprT1::template has_test_basis<Func>;
+    template<typename Func>
+    static const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
+    using test_basis = typename ExprT1::test_basis;
+    using trial_basis = typename ExprT1::trial_basis;
 
     typedef UnaryFunctor<typename ExprT1::value_type> super;
     typedef typename super::functordomain_type functordomain_type;
@@ -160,9 +166,7 @@ public:
         //typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t,Basis_j_t> tensor2_expr_type;
         typedef typename expression_1_type::template tensor<Geo_t> tensor2_expr_type;
         typedef typename tensor2_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<0> >,
-                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename tensor2_expr_type::shape shape;

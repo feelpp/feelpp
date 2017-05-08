@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,15 +39,25 @@ po::options_description opusapp_options( std::string const& prefix )
 
     po::options_description _options( "Application " + prefix + " options" );
     _options.add_options()
-    ( ( _prefix+"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
-    ( ( _prefix+"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
-    ( ( _prefix+"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
-    ( (_prefix+"how-compute-unkown-for-eim").c_str(), Feel::po::value<std::string>()->default_value("CRB-with-ad"), "CRB-with-ad or FEM-with-ad or FEM-without-ad (ad:affine decomposition)")
-    ( (_prefix+"export-solution").c_str(), Feel::po::value<bool>()->default_value(false), "export solution and error for each parameters if true")
-
+        ( ( _prefix+"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
+        ( ( _prefix+"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
+        ( ( _prefix+"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
+        ( (_prefix+"how-compute-unkown-for-eim").c_str(), Feel::po::value<std::string>()->default_value("CRB-with-ad"), "CRB-with-ad or FEM-with-ad or FEM-without-ad (ad:affine decomposition)")
+        ( (_prefix+"export-solution").c_str(), Feel::po::value<bool>()->default_value(false), "export solution and error for each parameters if true")
+        ( (_prefix+"run.parameter").c_str(), Feel::po::value<std::vector<double>> ()->multitoken(), "a command line parameter for the online part")
     ;
 
     return _options;
+}
+
+std::string _o( std::string const& prefix, std::string const& opt )
+{
+    std::string o = prefix;
+
+    if ( !o.empty() )
+        o += ".";
+
+    return o + opt;
 }
 
 }

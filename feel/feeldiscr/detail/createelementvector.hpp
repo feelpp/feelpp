@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date     : Tue Feb 25 06:36:40 2014
 
-   Copyright (C) 2014 Feel++ Consortium
+   Copyright (C) 2014-2016 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 namespace Feel { namespace detail {
 
 template<typename ElementType>
-struct CreateElementVector
+struct FEELPP_NO_EXPORT CreateElementVector
 {
 public:
     template<typename Sig>
@@ -68,15 +68,15 @@ public:
 
             FEELPP_ASSERT( M_names.size() == s  )
                 ( M_names.size() )( s ).error( "incompatible number of function names and functions");
-            elt.setName( M_names[index::value] );
+            elt.setName( sanitize(M_names[index::value]) );
         }
         else if  ( ( M_names.size() == 1 )  && s > 1 )
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % M_names[0] % index::value ).str() );
+            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_names[0]) % index::value ).str() );
         }
         else
         {
-            elt.setName( (boost::format( "%1%-%2%" ) % M_e.name() % index::value ).str() );
+            elt.setName( (boost::format( "%1%-%2%" ) % sanitize(M_e.name()) % index::value ).str() );
         }
         return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
     }
@@ -84,4 +84,6 @@ public:
 
 
 } } // Feel / detail
+
+
 #endif // FEELPP_CREATE_ELEMENT_VECTOR_HPP

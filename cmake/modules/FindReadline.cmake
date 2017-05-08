@@ -2,7 +2,7 @@
 #
 #  This file is part of the Feel library
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-04-10
 #
 #  Copyright (C) 2010 Université Joseph Fourier
@@ -23,12 +23,27 @@
 #
 FIND_PATH(READLINE_INCLUDE_DIR
   readline.h
-  PATH_SUFFIXES readline)
-FIND_LIBRARY(READLINE_LIBRARY NAMES readline PATH_SUFFIXES x86_64-linux-gnu)
+  PATHS /opt/local/include
+  PATH_SUFFIXES readline
+  NO_DEFAULT_PATH
+  )
+if ( NOT READLINE_INCLUDE_DIR )
+  FIND_PATH(READLINE_INCLUDE_DIR
+    readline.h
+    PATH_SUFFIXES readline
+    )
+endif()
+FIND_LIBRARY(READLINE_LIBRARY NAMES readline PATHS /opt/local/lib/ NO_DEFAULT_PATH)
+if ( NOT READLINE_LIBRARY )
+  FIND_LIBRARY(READLINE_LIBRARY NAMES readline PATH_SUFFIXES x86_64-linux-gnu)
+endif()
+
 MESSAGE(STATUS "readline: ${READLINE_LIBRARY}")
 
 IF (READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
   SET(READLINE_FOUND TRUE)
+  set(READLINE_INCLUDE_DIRS ${READLINE_INCLUDE_DIR})
+  set(READLINE_LIBRARIES ${READLINE_LIBRARY} )
 ENDIF (READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
 
 IF (READLINE_FOUND)

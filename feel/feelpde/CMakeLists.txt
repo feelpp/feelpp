@@ -1,6 +1,6 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2013-07-22
 #
 #  Copyright (C) 2013-2014 Feel++ Consortium
@@ -21,6 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(SRC reinit_fms_inst_2d.cpp reinit_fms_inst_3d.cpp)
+set(SRC boundaryconditions.cpp)
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelpde "${SRC};${HDR}")

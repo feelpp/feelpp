@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -70,7 +71,7 @@ extern "C"
         SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
         if ( !s ) return 1;
         if ( s->worldComm().isMasterRank() )
-            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << rnorm << "\n";
+            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 #if PETSC_VERSION_LESS_THAN(3,0,1)
@@ -109,8 +110,22 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+        bool reusePrec = preconditioner->reusePrec();
+        // if we are here and reusePrec option, need to rebuild the preconditioner
+        if ( reusePrec )
+            preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_NONZERO_PATTERN );
+#endif
+        // build preconditioner
         preconditioner->init();
-        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec\n";
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+        // tell to not rebuild the preconditioner after
+        if ( reusePrec )
+            preconditioner->setPrecMatrixStructure( MatrixStructure::SAME_PRECONDITIONER );
+#endif
+        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec " << preconditioner->name() << "\n";
         return 0;
     }
 
@@ -120,26 +135,40 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
-#if 0
-        VectorPetsc<double> x_vec( x );
-        VectorPetsc<double> y_vec( y );
-        preconditioner->apply( x_vec,y_vec );
-#else
-        boost::shared_ptr<VectorPetsc<double> > x_vec;
-        boost::shared_ptr<VectorPetsc<double> > y_vec;
-        if ( preconditioner->worldComm().localSize() > 1 )
+
+        PreconditionerPetsc<double> * preconditionerPetsc = dynamic_cast<PreconditionerPetsc<double>*>( preconditioner );
+        if ( preconditionerPetsc != NULL )
         {
-            CHECK ( preconditioner->matrix() ) << "matrix is not defined";
-            x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
-            y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+            preconditionerPetsc->apply(x,y);
         }
         else
         {
-            x_vec.reset( new VectorPetsc<double>( x ) );
-            y_vec.reset( new VectorPetsc<double>( y ) );
+            boost::shared_ptr<VectorPetsc<double> > x_vec;
+            boost::shared_ptr<VectorPetsc<double> > y_vec;
+            if ( preconditioner->worldComm().localSize() > 1 )
+            {
+                CHECK ( preconditioner->matrix() ) << "matrix is not defined";
+                Vec lx, ly;
+                VecGhostGetLocalForm(x,&lx);
+                VecGhostGetLocalForm(y,&ly);
+                if ( lx )
+                    x_vec.reset( new VectorPetscMPI<double>( x, preconditioner->matrix()->mapColPtr() ) );
+                else
+                    x_vec.reset( new VectorPetscMPIRange<double>( x, preconditioner->matrix()->mapColPtr() ) );
+                if ( ly )
+                    y_vec.reset( new VectorPetscMPI<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+                else
+                    y_vec.reset( new VectorPetscMPIRange<double>( y, preconditioner->matrix()->mapRowPtr() ) );
+                VecGhostRestoreLocalForm(x,&lx);
+                VecGhostRestoreLocalForm(y,&ly);
+            }
+            else
+            {
+                x_vec.reset( new VectorPetsc<double>( x,preconditioner->matrix()->mapColPtr() ) );
+                y_vec.reset( new VectorPetsc<double>( y,preconditioner->matrix()->mapRowPtr() ) );
+            }
+            preconditioner->apply( *x_vec,*y_vec );
         }
-        preconditioner->apply( *x_vec,*y_vec );
-#endif
 
         return 0;
     }
@@ -248,7 +277,8 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
+        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Set user-specified  solver and preconditioner types
@@ -291,12 +321,27 @@ void SolverLinearPetsc<T>::init ()
             ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
-
-        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
-            int nRestartGMRES = option(_name="gmres-restart", _prefix=this->prefix() ).template as<int>();
+            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
             ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
+        {
+            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
+        }
+        else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
+        {
+            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
+            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->setSide( preconditioner_type::RIGHT );
         }
         // Notify PETSc of location to store residual history.
         // This needs to be called before any solves, since
@@ -320,7 +365,7 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
             PCShellSetView( M_pc,__feel_petsc_preconditioner_view );
-#if PETSC_VERSION_LESS_THAN(3,4,0)
+#if PETSC_VERSION_LESS_THAN(3,2,0)
             const PCType pc_type;
 #else
             PCType pc_type;
@@ -333,15 +378,27 @@ void SolverLinearPetsc<T>::init ()
             default:
             case preconditioner_type::LEFT:
                 VLOG(2) << " . PC is set to left side\n";
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+                KSPSetPreconditionerSide( M_ksp, PC_LEFT );
+#else
                 KSPSetPCSide( M_ksp, PC_LEFT );
+#endif
                 break;
             case preconditioner_type::RIGHT:
                 VLOG(2) << " . PC is set to right side\n";
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+                KSPSetPreconditionerSide( M_ksp, PC_RIGHT );
+#else
                 KSPSetPCSide( M_ksp, PC_RIGHT );
+#endif
                 break;
             case preconditioner_type::SYMMETRIC:
                 VLOG(2) << " . PC is set to symmetric\n";
+#if PETSC_VERSION_LESS_THAN(3,4,0)
+                KSPSetPreconditionerSide( M_ksp, PC_SYMMETRIC );
+#else
                 KSPSetPCSide( M_ksp, PC_SYMMETRIC );
+#endif
                 break;
             }
 
@@ -359,6 +416,10 @@ void SolverLinearPetsc<T>::init ()
             //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
+
+        // The value can be checked with --(prefix.)ksp-view=1
+        this->check( KSPSetNormType(M_ksp,
+                   kspNormTypeConvertStrToEnum(Environment::vm(_name="ksp-norm-type",_prefix=this->prefix()).template as<std::string>())) );
 
     }
 }
@@ -400,14 +461,22 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     PetscReal final_resid=0.;
 
     // Close the matrices and vectors in case this wasn't already done.
-    matrix->close ();
-    precond->close ();
+    if ( false ) // close already done in backend::solve()
+    {
+        matrix->close ();
+        precond->close ();
+        rhs->close ();
+    }
     solution->close ();
-    rhs->close ();
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit( M_pc );
+
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
+        this->updateNullSpace( matrix->mat(), rhs->vec() );
+    if ( this->M_nearNullSpace && this->M_nearNullSpace->size() > 0 )
+        this->updateNearNullSpace( matrix->mat() );
 
     //   // If matrix != precond, then this means we have specified a
     //   // special preconditioner, so reset preconditioner type to PCMAT.
@@ -417,6 +486,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     //       this->set_petsc_preconditioner_type ();
     //     }
 
+    
     // 2.1.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
@@ -573,9 +643,10 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
-    if ( option( _prefix=this->prefix(), _name="ksp-view" ).template as<bool>() )
+    if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
+    LOG(INFO) << "[solverlinearpetsc] reason = " << reason ;
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
@@ -692,15 +763,102 @@ template <typename T>
 void
 SolverLinearPetsc<T>::setPetscConstantNullSpace()
 {
-    if ( M_constant_null_space )
+    int ierr = 0;
+    if ( this->M_nullSpace && this->M_nullSpace->size() > 0 )
     {
+        //std::cout << "define nullspace in petsc with size "<< this->M_nullSpace->size() <<"\n";
+    }
+    else if ( M_constant_null_space )
+    {
+        std::cout << "use nullspace in petsc\n";
         MatNullSpace nullsp;
 
-        MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
-        KSPSetNullSpace( M_ksp, nullsp );
+        ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+#if PETSC_VERSION_LESS_THAN( 3,5,4 )
+        ierr = KSPSetNullSpace( M_ksp, nullsp );
+#else
+        Mat A;
+        ierr = KSPGetOperators( M_ksp, &A, NULL );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = MatSetNullSpace( A, nullsp );
+#endif
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
         PETSc::MatNullSpaceDestroy( nullsp );
     }
+}
 
+template <typename T>
+void
+SolverLinearPetsc<T>::updateNullSpace( Mat A, Vec rhs )
+{
+    if ( !this->M_nullSpace ) return;
+    if ( this->M_nullSpace->size() == 0 ) return;
+
+    int ierr = 0;
+    int dimNullSpace = this->M_nullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nullSpace->basisVector(k) )->vec();
+
+#if 0
+    // reorthornomalisation with petsc
+    PetscScalar dots[5];
+    for (int i=0/*dim*/; i<dimNullSpace; i++) {
+        /* Orthonormalize vec[i] against vec[0:i-1] */
+        VecMDot(petsc_vec[i],i,petsc_vec.data(),dots);
+        for (int j=0; j<i; j++) dots[j] *= -1.;
+        VecMAXPY(petsc_vec[i],i,dots,petsc_vec.data()/*vec*/);
+        VecNormalize(petsc_vec[i],NULL);
+    }
+#endif
+
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = MatSetNullSpace(A,nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    //ierr = MatNullSpaceRemove(nullsp,rhs);
+    //CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    bool checkNullSpace = false;
+    if ( checkNullSpace )
+    {
+        PetscBool isNull;
+        ierr = MatNullSpaceTest(nullsp, A, &isNull);
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        CHECK( isNull ) << "nullspace is not apply on this matrix";
+    }
+
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
+}
+
+template <typename T>
+void
+SolverLinearPetsc<T>::updateNearNullSpace( Mat A )
+{
+    if ( !this->M_nearNullSpace ) return;
+    if ( this->M_nearNullSpace->size() == 0 ) return;
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+    int ierr = 0;
+    int dimNullSpace = this->M_nearNullSpace->size();
+    std::vector<Vec> petsc_vec(dimNullSpace);
+    for ( int k = 0 ; k<dimNullSpace ; ++k )
+        petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
+    MatNullSpace nullsp;
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    ierr = MatSetNearNullSpace( A, nullsp);
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    PETSc::MatNullSpaceDestroy( nullsp );
+#endif
 }
 
 template <typename T>
@@ -784,6 +942,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
 
     case PREONLY :
         ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case GCR :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGCR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 

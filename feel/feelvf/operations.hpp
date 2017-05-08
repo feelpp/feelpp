@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -109,11 +109,12 @@
 # /* List of applicative binary operators. */
 # define VF_APPLICATIVE_BINARY_OPS \
    BOOST_PP_TUPLE_TO_LIST( \
-      12, \
+      13, \
       ( \
          ( *  , vf_mul           ,1 ,0 ,0 ,0 ,1, shape_op_mul      ,2 ), \
          ( /  , vf_div           ,1 ,0 ,0 ,0 ,0, shape_op_div      ,1 ), \
          ( +  , vf_add           ,1 ,0 ,0 ,1 ,1, shape_op_samerank ,1 ), \
+         ( %  , vf_mod           ,1 ,0 ,0 ,0 ,0, shape_op_div      ,1 ), \
          ( -  , vf_sub           ,1 ,0 ,0 ,1 ,0, shape_op_samerank ,1 ), \
          ( <  , vf_less          ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
          ( <= , vf_less_equal    ,1 ,1 ,0 ,0 ,0, shape_op_id       ,0 ), \
@@ -377,6 +378,12 @@
         {                                                               \
             static const bool result = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
         };                                                              \
+        template<typename Func>                                         \
+            static const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
+        template<typename Func>                                         \
+            static const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
+        using test_basis = std::nullptr_t;                              \
+        using trial_basis = std::nullptr_t;                             \
                                                                         \
         typedef typename mpl::if_<mpl::greater<mpl::sizeof_<VF_VALUE_TYPE(L)>, \
             mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
@@ -408,6 +415,12 @@
                                                                         \
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
+                                                                        \
+        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        {                                                               \
+            M_left.setParameterValues( mp );                            \
+            M_right.setParameterValues( mp );                           \
+        }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
@@ -485,11 +498,11 @@
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, face );                           \
             }                                                           \
-            template<typename CTX>                                      \
-                void updateContext( CTX const& ctx )                    \
+            template<typename ... CTX>                                  \
+                void updateContext( CTX const& ... ctx )                \
             {                                                           \
-                M_left.updateContext( ctx );                           \
-                M_right.updateContext( ctx );                          \
+                M_left.updateContext( ctx... );                        \
+                M_right.updateContext( ctx... );                        \
             }                                                           \
                                                                         \
                                                                         \

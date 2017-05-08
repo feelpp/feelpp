@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -39,31 +39,20 @@
 BOOST_AUTO_TEST_CASE( test_context )
 {
     using namespace Feel;
-    Context ctx( int(OnContext::ELIMINATION) | int(OnContext::ELIMINATION_KEEP_DIAGONAL) );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::PENALISATION ), false );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_KEEP_DIAGONAL ), true );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_SYMMETRIC ), false );
+    Context ctx( ContextOn::ELIMINATION | ContextOn::KEEP_DIAGONAL);
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::PENALISATION ), false );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::KEEP_DIAGONAL ), true );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::SYMMETRIC ), false );
 
 
-    ctx = int(OnContext::ELIMINATION) | int(OnContext::ELIMINATION_SYMMETRIC);
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::PENALISATION ), false );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_KEEP_DIAGONAL ), false );
-    BOOST_CHECK_EQUAL( ctx.test( OnContext::ELIMINATION_SYMMETRIC ), true );
-    BOOST_CHECK_EQUAL( ctx.test( int(OnContext::ELIMINATION_SYMMETRIC) | int(OnContext::ELIMINATION) ), true );
+    ctx = int(ContextOn::ELIMINATION) | ContextOn::SYMMETRIC;
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::PENALISATION ), false );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::ELIMINATION ), true );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::KEEP_DIAGONAL ), false );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ), true );
+    BOOST_CHECK_EQUAL( ctx.test( ContextOn::SYMMETRIC), true );
 
-#if 0
-    detail::Flags<on_context_type> oct;
-
-    //FEELPP_DECLARE_FLAGS( onct, on_context_type );
-
-
-    onct |= ( OnContext::ELIMINATION|OnContext::ELIMINATION_SYMMETRIC );
-    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION ), true );
-    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION_KEEP_DIAGONAL ), false );
-    BOOST_CHECK_EQUAL( onct.testFlag( OnContext::ELIMINATION_SYMMETRIC ), true );
-#endif
 }
 
 BOOST_AUTO_TEST_CASE( test_context_matrix_properties )

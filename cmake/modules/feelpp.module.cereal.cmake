@@ -3,7 +3,7 @@
 #  Author(s): Alexandre Ancel <alexandre.ancel@cemosis.fr>
 #       Date: 2014-12-18
 #
-#  Copyright (C) 2014 Feel++ Consortium
+#  Copyright (C) 2014-2015 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify

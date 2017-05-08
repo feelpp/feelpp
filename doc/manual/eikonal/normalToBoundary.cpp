@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
  This file is part of the Feel library
 
@@ -32,7 +32,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelpde/reinit_fms.hpp>
+#include <feel/feells/reinit_fms.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/vf.hpp>

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -1377,6 +1377,7 @@ GeoGMSHTool::geoStr()
     // generate code for all entities in geo file
     //--------------------------------------------------------------------------//
     //--------------------------------------------------------------------------//
+    //this->showMe();
 
     // save markers in these containers
     std::map<std::string,std::set<int> > markerPoints,markerLines,markerSurf,markerVol;
@@ -2219,6 +2220,11 @@ param( data_geo_ptrtype __dg )
  *_________________________________________________*
  *_________________________________________________*/
 
+void
+writePoint( uint16_type _numLoc, data_geo_ptrtype _dg , node_type const& _node )
+{
+    writePoint( _numLoc,_dg,_node(0),_node(1),_node(2) );
+}
 
 void writePoint( uint16_type __numLoc, data_geo_ptrtype __dg ,double __x1,double __x2, double __x3 )
 {
@@ -2366,7 +2372,7 @@ writeSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "spline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
-        myptId.push_back( *it );
+        myptId.push_back( (*(__dg->get<1>()))[0][*it] );
     myLine.setPoints( myptId );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );
@@ -2408,7 +2414,7 @@ writeBSpline( uint16_type __numLoc, data_geo_ptrtype __dg ,Loop __loop )
     detail::GeoToolLine myLine(name,__numLoc, __dg->get<0>()->cptLine(), "bspline" );
     std::list<size_type> myptId;
     for ( auto it=__loop.begin(), en=__loop.end() ; it!=en ; ++it )
-        myptId.push_back( *it );
+        myptId.push_back( (*(__dg->get<1>()))[0][*it] );
     myLine.setPoints( myptId );
 
     auto mymark = __dg->get<0>()->findPhysicalMarker( "line", __dg->get<3>()/*name*/, __numLoc );

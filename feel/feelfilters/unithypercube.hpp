@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,9 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#ifdef FEELPP_HAS_GMSH
 #include <feel/feelfilters/creategmshmesh.hpp>
+#endif
 #include <feel/feelfilters/domain.hpp>
 
 namespace Feel {
@@ -43,14 +45,19 @@ namespace Feel {
 template<int Dim, typename Convex=Simplex<Dim>>
 inline
 boost::shared_ptr<Mesh<Convex> >
-unitHypercube( double h = option(_name="gmsh.hsize").template as<double>() )
+unitHypercube( double h = doption(_name="gmsh.hsize") )
 {
+#ifdef FEELPP_HAS_GMSH
     return createGMSHMesh(_mesh=new Mesh<Convex>,
                           _desc=domain( _name="hypercube",
                                         _shape="hypercube",
                                         _convex=Convex::type(),
                                         _dim=Dim,
                                         _h=h ) );
+#else
+    LOG(WARNING) << "unitHypercube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return boost::make_shared<Mesh<Convex> >();
+#endif
 }
 
 }

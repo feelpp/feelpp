@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -95,6 +95,8 @@ public:
 
     MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
+    MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
     ~MatrixEigenSparse();
@@ -147,7 +149,7 @@ public:
      */
     size_type nnz() const
     {
-        return M_mat.rows()*M_mat.cols();
+        return M_mat.nonZeros();
     }
 
     /**
@@ -181,16 +183,6 @@ public:
      * optimized matrix into a read optimized matrix
      */
     void close () const;
-
-
-    /**
-     * see if Eigen matrix has been closed
-     * and fully assembled yet
-     */
-    bool closed() const
-    {
-        return M_is_closed;
-    }
 
 
     /**
@@ -333,7 +325,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
 
     void init() {}
 
@@ -358,7 +350,7 @@ public:
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( value_type v, MatrixSparse<value_type>& _m );
+    void addMatrix( value_type v, MatrixSparse<value_type> const& _m );
 
     /**
      * Add the full matrix to the
@@ -410,7 +402,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
 
     //@}
 
@@ -421,7 +413,6 @@ protected:
 private:
 
     bool M_is_initialized;
-    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure

@@ -58,7 +58,7 @@ struct AddressRange {
 // Expected function [start,end] range.
 AddressRange expected_range[BACKTRACE_STEPS];
 
-#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
+#if __GNUC__
 // Using GCC extension: address of a label can be taken with '&&label'.
 // Start should be a label somewhere before recursive call, end somewhere
 // after it.

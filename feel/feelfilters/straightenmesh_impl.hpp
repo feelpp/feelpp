@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-24
 
-  Copyright (C) 2013 Feel++ Consortium
+  Copyright (C) 2013-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,10 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 
-namespace Feel { namespace detail {
+
+namespace Feel {
+#if 0
+namespace detail {
 /// \cond DETAIL
 template <typename ElementSpaceType>
 void
@@ -76,24 +79,26 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 
     // search if there are some edges on boundary which are the interface of two ghost boundary faces
     // in this case this edges must not be straigthen
-    auto itedge = mesh->beginEdgeOnBoundary();
-    auto const enedge = mesh->endEdgeOnBoundary();
+    auto rangeBoundaryEdges = mesh->edgesOnBoundary();
+    auto itedge = std::get<0>( rangeBoundaryEdges );
+    auto const enedge = std::get<1>( rangeBoundaryEdges );
     for ( ; itedge!=enedge ; ++itedge )
     {
-        if ( itedge->numberOfProcGhost()==0 ) continue;
+        auto const& edge = boost::unwrap_ref( *itedge );
+        if ( edge.numberOfProcGhost()==0 ) continue;
 
-        auto const theedgeid = itedge->id();
+        auto const theedgeid = edge.id();
         std::set<size_type> ghostFaceIdFoundOnBoundary;
 
-        auto itprocghost=itedge->elementsGhost().begin();
-        auto const enprocghost=itedge->elementsGhost().end();
+        auto itprocghost=edge.elementsGhost().begin();
+        auto const enprocghost=edge.elementsGhost().end();
         for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
             auto iteltghost = itprocghost->second.begin();
             auto const eneltghost = itprocghost->second.end();
             for ( ; iteltghost!=eneltghost ; ++iteltghost )
             {
-                auto const& eltGhost = mesh->element(*iteltghost,itprocghost->first);
+                auto const& eltGhost = mesh->element(*iteltghost);
                 for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
                 {
                     auto const& theface = eltGhost.face(f);
@@ -150,7 +155,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 
 } // namespace detail
 /// \endcond
-
+#endif
 /**
    \brief straighten the internal faces of a high order mesh
 
@@ -176,12 +181,24 @@ straightenMesh( boost::shared_ptr<MeshType> mesh, WorldComm const& worldcomm, bo
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh, entityProcess ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
 
+    std::set<size_type> dofsWithValueImposed;
+    for ( auto const& faceWrap : boundaryfaces( mesh, entityProcess ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = Xh->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            dofsWithValueImposed.insert( it->index() );
+    }
+    sync( xHoBdy, "=", dofsWithValueImposed );
+    sync( xLoBdy, "=", dofsWithValueImposed );
+
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
 
+#if 0
     if (worldcomm.localSize()>1)
         Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
-
+#endif
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate(true,worldcomm).norm();
 
     if ( norm_mean_value > 1e-12 )

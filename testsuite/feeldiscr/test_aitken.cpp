@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
    This file is part of the Feel library
 
@@ -506,30 +506,19 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     }; // iteration loop
 
-    export_ptrtype exporter( export_type::New( this->vm(),
-                             ( boost::format( "%1%-%2%-%3%-%4%" )
-                               % this->about().appName()
-                               % shape
-                               % k0
-                               % Dim ).str() ) );
-
-    export_ptrtype exporter1( export_type::New( this->vm(),
-                              ( boost::format( "%1%-%2%-%3%-%4%" )
-                                % this->about().appName()
-                                % shape
-                                % k1
-                                % Dim ).str() ) );
-
-
-    if ( exporter->doExport() )
+    auto exporter1 = exporter( _mesh=mesh1, _name=( boost::format( "%1%-%2%-%3%-%4%" )
+                                                   % this->about().appName() % shape
+                                                   % k0 % Dim ).str() );
+    auto exporter2 = exporter( _mesh=mesh2, _name=( boost::format( "%1%-%2%-%3%-%4%" )
+                                                    % this->about().appName() % shape
+                                                    % k1 % Dim ).str() );
+    if ( exporter1->doExport() )
     {
         LOG(INFO) << "exportResults starts\n";
-        exporter->step( 0 )->setMesh( mesh1 );
-        exporter->step( 0 )->add( "u1", u1 );
-        exporter->save();
-        exporter1->step( 1 )->setMesh( mesh2 );
-        exporter1->step( 1 )->add( "u2", u2 );
+        exporter1->step( 0 )->add( "u1", u1 );
         exporter1->save();
+        exporter2->step( 1 )->add( "u2", u2 );
+        exporter2->save();
 
 
         LOG(INFO) << "exportResults done\n";
