@@ -21,7 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-configure_file(feelpp_build.sh.in ${CMAKE_CURRENT_SOURCE_DIR}/feelpp_build.sh @ONLY)
-
-install(PROGRAMS list.sh ${CMAKE_CURRENT_SOURCE_DIR}/feelpp_build.sh   DESTINATION share/feelpp/feel/scripts)
+install(PROGRAMS list.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
