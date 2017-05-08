@@ -1,7 +1,7 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jan 2017
+#       Date: 07 May 2017
 #
 #  Copyright (C) 2017 Feel++ Consortium
 #
@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+configure_file(feelpp_dockerize.sh.in ${CMAKE_CURRENT_BINARY_DIR}/feelpp_dockerize.sh @ONLY)
+install(PROGRAMS  ${CMAKE_CURRENT_BINARY_DIR}/feelpp_dockerize.sh   DESTINATION bin COMPONENT Bin)
 
-add_subdirectory(buildkite)
-add_subdirectory(docker)
+install(PROGRAMS feelpp_build.sh  DESTINATION bin COMPONENT Bin)
+install(FILES Dockerfile.template  DESTINATION share/feelpp/docker COMPONENT Bin)
