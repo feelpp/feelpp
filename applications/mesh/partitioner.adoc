@@ -26,15 +26,18 @@ The generated mesh can then be loaded very efficiently in parallel.
 
 === Options
 
-{manmanual} requires some options.                                                                                                                                  
-.Table of command-line {manmanual} options                                                           |===                                                                                                                                                                              
-| Name | Description | Default value                                                                                                                                              
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===                                                                                                                                                                              
+| Name | Description | Default value
+
 | dim | dimension of the mesh | 3                                                                                              
 | shape| shape of the mesh elements | Simplex
 | part | number of desired partitions |
 | ifile | name or path to the mesh |
 | ofile | output filename prefix (without extension) |
-| odir | output directory |                                                                                                                                                     
+| odir | output directory |
 |===  
 
 == EXAMPLES

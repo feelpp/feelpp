@@ -48,7 +48,7 @@ makeSharedMesh( Args&&... args )
 //!
 template< class T, class... Args >
 decltype(auto)
-makeMesh( Args&&... args ) ->
+makeMesh( Args&&... args ) 
 {
     return makeSharedMesh<Mesh<T>>( args... );
 }
