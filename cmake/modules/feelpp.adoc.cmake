@@ -30,6 +30,8 @@ if ( ASCIIDOCTOR_FOUND )
   set (FEELPP_TITLE ${PROJECT_NAME} ${FEELPP_PACKAGE_VERSION})
   set (FEELPP_A2M ${ASCIIDOCTOR_EXECUTABLE} -b manpage -amanmanual='${FEELPP_TITLE}')
   set (FEELPP_A2H ${ASCIIDOCTOR_EXECUTABLE} -d manpage -b html5 -a stylesheeet=${FEELPP_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${FEELPP_PACKAGE_VERSION})
+  set (FEELPP_A2M_STR "${ASCIIDOCTOR_EXECUTABLE} -b manpage -amanmanual='${FEELPP_TITLE}'")
+  set (FEELPP_A2H_STR "${ASCIIDOCTOR_EXECUTABLE} -d manpage -b html5 -a stylesheeet=${FEELPP_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${FEELPP_PACKAGE_VERSION}")
 
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/check.asciidoc.man.adoc "= toto(1)\n\n== NAME\n\nabc - def")
   execute_process(

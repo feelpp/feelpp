@@ -590,6 +590,7 @@ macro (feelpp_add_man NAME MAN SECT)
 
     if ( FEELPP_HAS_ASCIIDOCTOR_MANPAGE )
       add_custom_target(${NAME}.${SECT})
+
       add_custom_command (
         TARGET ${NAME}.${SECT}
         #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
@@ -603,6 +604,8 @@ macro (feelpp_add_man NAME MAN SECT)
       if ( TARGET ${NAME} )
         add_dependencies(${NAME} ${NAME}.${SECT})
       endif()
+      install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
+      
 
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
@@ -625,8 +628,9 @@ macro (feelpp_add_man NAME MAN SECT)
       endif()
       if ( TARGET ${NAME} )
         add_dependencies(${NAME} ${NAME}.${SECT}.html)
+
       endif()
-      
+      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)      
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
         DESTINATION ${CMAKE_INSTALL_DOCDIR}

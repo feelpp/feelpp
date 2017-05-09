@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
-set -x
+#set -x
 PROJECT=$1
 TARGET=$2
 BRANCH=$3
@@ -49,7 +49,7 @@ echo "basetag: $basetag"
 echo "--- Building $PROJECT:${tag}"
 
 mkdir -p docker
-cp /tmp/feelpp/bin/feelpp_build.sh docker
+cp ${FEELPP_DIR}/bin/feelpp_build.sh docker/
 dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}:${basetag}" > docker/dockerfile.tmp
 
 docker build \
