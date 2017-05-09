@@ -230,7 +230,7 @@ int main(int argc, char**argv )
     auto salgo = soption("nlopt.algo"); 
     Feel::cout << "NLOP algorithm: " << salgo << "\n";
     auto algo = authAlgo.at(salgo);
-    ::nlopt::opt opt( algo, N_UNKNOWNS );
+    opt::OptimizationNonLinear/*::nlopt::opt*/ opt( algo, N_UNKNOWNS );
 
     // We keep diffusion coefficients in [0,1].
     vec lb = { doption("lb"), doption("lb"), doption("lb") }; // lowerbound
@@ -239,9 +239,9 @@ int main(int argc, char**argv )
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
 
-    ::nlopt::func f = std::ref( myfunc );
+    //::nlopt::func f = std::ref( myfunc );
 
-    opt.set_min_objective( f, nullptr );
+    opt.set_min_objective( myfunc, nullptr );
     opt.set_maxeval( ioption("nlopt.maxeval") );
     opt.set_xtol_rel( doption("nlopt.xtol_rel") );
     opt.set_ftol_rel( doption("nlopt.ftol_rel") );
