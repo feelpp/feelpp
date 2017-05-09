@@ -181,27 +181,17 @@ int main(int argc, char**argv )
     // We could use the vector version here (see ::NLOPT::vfunc).
     auto myfunc = [&]( unsigned n, const double* x, double* grad, void *my_func_data )->double
     {
-        if(grad==nullptr)
-        {
-            grad = new double(3);
-            isGradAlloc=true;
-        }
-
         forwardProblem(x);
         double obj=J();
-
-        adjointProblem(x);
-        gradJ(x, grad);
-
         Feel::cout << "objective function = " <<  obj
-                   << " for diffusion coefficients k0=" << x[0] << ", k1=" << x[1] << ", k2=" << x[2]
-                   << " gradient DJk0=" << grad[0] << ", DJk1=" << grad[1] << ", DJk2=" << grad[2]
-                   << "\n";
+                   << " for diffusion coefficients k0=" << x[0] << ", k1=" << x[1] << ", k2=" << x[2] << "\n";
 
-        if(isGradAlloc)
+        if ( grad )
         {
-            delete grad;
-            isGradAlloc=false;
+            adjointProblem(x);
+            gradJ(x, grad);
+            Feel::cout << "gradient DJk0=" << grad[0] << ", DJk1=" << grad[1] << ", DJk2=" << grad[2] << "\n";
+
         }
 
         if(e->doExport())
@@ -227,10 +217,10 @@ int main(int argc, char**argv )
     // Set a priori inclusion diffusion coefficients.
     x = { doption("k0init"), doption("k1init"), doption("k2init") };
 
-    auto salgo = soption("nlopt.algo"); 
+    auto salgo = soption("nlopt.algo");
     Feel::cout << "NLOP algorithm: " << salgo << "\n";
     auto algo = authAlgo.at(salgo);
-    ::nlopt::opt opt( algo, N_UNKNOWNS );
+    opt::OptimizationNonLinear/*::nlopt::opt*/ opt( algo, N_UNKNOWNS );
 
     // We keep diffusion coefficients in [0,1].
     vec lb = { doption("lb"), doption("lb"), doption("lb") }; // lowerbound
@@ -239,9 +229,7 @@ int main(int argc, char**argv )
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
 
-    ::nlopt::func f = std::ref( myfunc );
-
-    opt.set_min_objective( f, nullptr );
+    opt.set_min_objective( myfunc, nullptr );
     opt.set_maxeval( ioption("nlopt.maxeval") );
     opt.set_xtol_rel( doption("nlopt.xtol_rel") );
     opt.set_ftol_rel( doption("nlopt.ftol_rel") );
@@ -251,6 +239,7 @@ int main(int argc, char**argv )
     double minf;
 
     ::nlopt::result result = opt.optimize(x, minf);
+    Feel::cout << "final result :  k0=<<" << x[0] << ", k1=" << x[1] << ", k2=" << x[2] << "\n";
 
     switch( result )
     {
