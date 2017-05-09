@@ -48,7 +48,6 @@ public :
                                   void *func_data)> nlopt_func_type;
 
     OptimizationNonLinear( ::nlopt::algorithm a, unsigned n) : super_type(a,n) {}
-    ~OptimizationNonLinear() { std::cout << "~OptimizationNonLinear\n"; }
 
     void set_min_objective(::nlopt::func f, void *f_data)
         {
