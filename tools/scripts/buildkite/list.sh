@@ -15,6 +15,7 @@ LATEST_DEBIAN=${DEBIAN_VERSIONS[${#DEBIAN_VERSIONS[@]} - 2]}
 UBUNTU_VERSIONS=(
     #16.04
     16.10
+    17.04
 )
 
 LATEST_UBUNTU=${UBUNTU_VERSIONS[${#UBUNTU_VERSIONS[@]} - 1]}
@@ -77,6 +78,7 @@ for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
         # feelpp/<container>:[latest,edge,beta] tags
 
         printf " %s" $(sed -e 's/develop/latest/g' <<< $feelpp_version)
+        printf " %s" $(sed -e 's/master/stable/g' <<< $feelpp_version)
 
 
         printf " %s" $(image_name "$feelpp_version" "$distro")
