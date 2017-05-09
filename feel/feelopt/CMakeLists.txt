@@ -21,6 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
+if (FEELPP_HAS_NLOPT )
+  set(SRC nlopt.cpp)
+  feel_append_src(feelopt "${SRC}")
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 
