@@ -96,6 +96,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEELPP_CXX_FLAGS}")
   
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
+  include(feelpp.host)
   include(feelpp.macros)
 
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
