@@ -181,6 +181,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
         }
 
     //--------------------------------------------------------------//
@@ -216,6 +217,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // stabilisation options
+    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
+    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+
     M_applyCIPStabOnlyOnBoundaryFaces=false;
     M_doCIPStabConvection = boption(_name="stabilisation-cip-convection",_prefix=this->prefix());
     M_doCIPStabDivergence = boption(_name="stabilisation-cip-divergence",_prefix=this->prefix());
@@ -697,6 +701,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     //----------------------------------------------------------------------------//
     // update rho, mu, nu,...
     M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_densityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     //----------------------------------------------------------------------------//
@@ -971,7 +977,23 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
-
+    //-------------------------------------------------//
+    // init stabilization
+    if ( M_stabilizationGLS )
+    {
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameter->init();
+        if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
+        {
+            std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh(),expr(locationExpression));
+        }
+        else
+        {
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh());
+        }
+        M_stabilizationGLSEltRangePressure = elements(this->mesh());
+    }
     //-------------------------------------------------//
     this->initFluidOutlet();
     // init function defined in json
@@ -1003,6 +1025,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         }
 #endif
     }
+    //-------------------------------------------------//
+    this->updateBoundaryConditionsForUse();
+    //-------------------------------------------------//
     M_isUpdatedForUse = true;
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");

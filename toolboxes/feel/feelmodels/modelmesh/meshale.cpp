@@ -212,6 +212,17 @@ MeshALE<Convex>::init()
 
     }
 
+
+    for ( auto const& faceWrap : markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving") ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            M_dofsOnMovingBoundary_HO.insert( it->index() );
+    }
+
+    M_aleFactory->init();
+
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
 }
 
@@ -545,11 +556,8 @@ MeshALE<Convex>::exportResults(double time)
 
 template< class Convex >
 void
-MeshALE<Convex>::updateImpl( Vector<double> const& dispInput )
+MeshALE<Convex>::updateImpl()
 {
-    //M_displacementOnMovingBoundary_HO_ref->zero();
-    *M_displacementOnMovingBoundary_HO_ref = dispInput;
-
     //---------------------------------------------------------------------------------------------//
     // transform disp from ref_ho -> ref_p1
     for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)

@@ -1,9 +1,9 @@
-if (FEELPP_ENABLE_PYTHON_WRAPPING AND FEELPP_HAS_BOOST_PYTHON) 
+if (FEELPP_ENABLE_PYTHON_WRAPPING AND FEELPP_HAS_BOOST_PYTHON)
 
-include_directories(${Boost_INCLUDE_DIRS}) 
+include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(PyFeelpp SHARED libPyFeelpp.cpp)
-target_link_libraries(PyFeelpp feelpp ${FEELPP_LIBRARIES})
+target_link_libraries(PyFeelpp feelpp ${FEELPP_LIBRARIES} )
 
 #add_library(PyFeelpp2 SHARED libPyFeelpp2.cpp)
 #target_link_libraries(PyFeelpp2 feelpp ${FEELPP_LIBRARIES})

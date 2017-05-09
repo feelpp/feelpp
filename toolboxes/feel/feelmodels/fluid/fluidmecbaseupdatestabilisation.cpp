@@ -2,7 +2,7 @@
 #include <feel/feelmodels/fluid/fluidmecbase.hpp>
 
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 namespace Feel
 {
@@ -13,13 +13,19 @@ namespace FeelModels
 #define jumpgradt( u ) ::Feel::vf::leftfacet(dnt(u)) + ::Feel::vf::rightfacet(dnt(u))
 #define jumpgrad( u ) ::Feel::vf::leftface(dn(u)) + ::Feel::vf::rightface(dn(u))
 
+
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart,
-                                                                  sparse_matrix_ptrtype& A_extended, bool _BuildExtendedPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
+    this->updateLinearPDEStabilisationGLS( data );
 
-    using namespace Feel::vf;
+    //using namespace Feel::vf;
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _BuildCstPart = data.buildCstPart();
+    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
+    bool _BuildExtendedPart = data.buildExtendedPart();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("FluidMechanics","updateLinearPDEStabilisation", "start"+sc );
@@ -186,13 +192,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( sparse_mat
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                                                                    bool BuildCstPart, bool UseJacobianLinearTerms) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
+    this->updateResidualStabilisationGLS( data, U );
+
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateResidualStabilisation", "start" );
     boost::mpi::timer thetimer;
+
+    vector_ptrtype& R = data.residual();
+    bool BuildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
 
     bool BuildTermStabCIP = !BuildCstPart;
     if ( this->isMoveDomain() )
@@ -359,16 +370,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation(element_flui
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation(element_fluid_external_storage_type const& U,
-                                                                    sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                                                    bool BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
+
+    this->updateJacobianStabilisationGLS( data, U );
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
     boost::mpi::timer thetimer;
 
     //--------------------------------------------------------------------------------------------------//
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool BuildCstPart = data.buildCstPart();
 
     bool BuildNonCstPart = !BuildCstPart;
     bool BuildTermStabCIP = BuildNonCstPart;

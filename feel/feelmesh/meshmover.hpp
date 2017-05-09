@@ -176,7 +176,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     {
         // call updateMeasures in parallel here because this function is called ( at the end of this function)
         // by others proc which have elements and need collective comm
-        if ( imesh->worldComm().localSize() > 1 ) {
+        if ( M_updateMeshMeasures && imesh->worldComm().localSize() > 1 ) {
             //imesh->updateForUse();
             imesh->updateMeasures();
         }
