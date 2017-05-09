@@ -9,7 +9,7 @@ fi
 
 
 build="$(basename "$0")"
-BRANCH=master
+BRANCH=${BUILDKITE_BRANCH:-develop}
 if [ -z ${TARGET:-""} ]; then
     TARGET=ubuntu:17.04
 fi
