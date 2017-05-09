@@ -22,7 +22,8 @@
 #
 #
 configure_file(feelpp_dockerize.sh.in ${CMAKE_CURRENT_BINARY_DIR}/feelpp_dockerize.sh @ONLY)
+configure_file(feelpp_build.sh.in ${CMAKE_CURRENT_BINARY_DIR}/feelpp_build.sh @ONLY)
 install(PROGRAMS  ${CMAKE_CURRENT_BINARY_DIR}/feelpp_dockerize.sh   DESTINATION bin COMPONENT Bin)
-
-install(PROGRAMS feelpp_build.sh  DESTINATION bin COMPONENT Bin)
+install(PROGRAMS  ${CMAKE_CURRENT_BINARY_DIR}/feelpp_build.sh  DESTINATION bin COMPONENT Bin)
 install(FILES Dockerfile.template  DESTINATION share/feelpp/docker COMPONENT Bin)
+feelpp_add_man( feelpp_dockerize feelpp_dockerize 1 )
