@@ -96,3 +96,4 @@ void primpart_content(ex& pp, ex& c, ex e, const exvector& vars,
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

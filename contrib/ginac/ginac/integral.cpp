@@ -446,3 +446,4 @@ ex integral::eval_integ() const
 
 GINAC_BIND_UNARCHIVER(integral);
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
