@@ -53,6 +53,35 @@ ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->setModelName( advection_model );
     // Init super_type
     super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
+    // Set initial value
+    this->setInitialValue();
+}
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::setInitialValue()
+{
+    this->modelProperties().parameters().updateParameterValues();
+    if( !this->M_icValue.empty() )
+    {
+        auto const& phi = this->fieldSolutionPtr();
+        M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        for( auto const& iv : M_icValue )
+        {
+            if( marker(iv).empty() )
+            {
+                phi->on( _range=elements(this->mesh()),
+                         _expr=expression(iv),
+                         _geomap=this->geomap() );
+            }
+            else
+            {
+                phi->on( _range=markedelements(this->mesh(), marker(iv)),
+                         _expr=expression(iv),
+                         _geomap=this->geomap() );
+            }
+        }
+    }
 }
 
 namespace detail {
@@ -80,6 +109,14 @@ map_vector_field<Dim, 1, 2> getBCFields(
 }
 
 } // namespace detail
+
+ADVECTION_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigICFile()
+{
+    this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
+            this->modelProperties().initialConditions(), this->prefix(), "InitialValue" );
+}
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
