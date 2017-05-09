@@ -504,9 +504,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                     {
                         auto tempVec = M_backend->newVector( F->mapPtr() );
                         auto spaceEvalForm1 = this->couplingFSI_RNG_evalForm1()->functionSpace();
-                        spaceEvalForm1->element( tempVec,rowStartInVector ).on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                                                               _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
-                        tempVec->close();
+                        auto eltEvalForm1 = spaceEvalForm1->element( tempVec,rowStartInVector );
+                        eltEvalForm1.on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                        _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
+                        sync( eltEvalForm1, "=", M_dofsVelocityInterfaceOnMovingBoundary);
                         F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
                     }
                     else

@@ -23,6 +23,7 @@
 #
 add_library( feelpp-applications-crb-benchmarkgrepl-options SHARED benchmarkgrepl-options.cpp )
 target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
 
 foreach(O 1 2 3)
   configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )

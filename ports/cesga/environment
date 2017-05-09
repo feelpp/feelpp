@@ -1,0 +1,4 @@
+SOFTDIR=$LUSTRE/software
+SRCDIR=$SOFTDIR/src
+INSDIR=$SOFTDIR/install
+ARCDIR=$SOFTDIR/archives

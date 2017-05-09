@@ -2673,3 +2673,5 @@ ex resultant(const ex & e1, const ex & e2, const ex & s)
 
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
