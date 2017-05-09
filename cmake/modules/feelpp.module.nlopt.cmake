@@ -109,7 +109,7 @@
     # else()
     #   message(STATUS "NLOpt: nlopt.hpp is generated")
     # endif()
-    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
+    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
     include_directories(${NLOPT_INCLUDE_DIR})
     SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
     SET(FEELPP_HAS_NLOPT 1)
