@@ -84,6 +84,8 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
+    void setInitialValue();
+    virtual void loadConfigICFile();
     virtual void loadConfigBCFile();
     //--------------------------------------------------------------------//
     // Solve
@@ -102,11 +104,15 @@ public:
     void addMarkerInflowBC( std::string const& markerName );
 
 protected:
+    //--------------------------------------------------------------------//
     // Boundary conditions
     bc_map_field_type M_bcDirichlet;
     bc_map_field_type M_bcNeumann;
     //map_scalar_fields<2> M_bcRobin;
     std::list<std::string> M_bcInflowMarkers;
+    //--------------------------------------------------------------------//
+    // Initial conditions
+    bc_map_field_type M_icValue;
 
     bc_map_field_type M_sources;
 
