@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-
+#set -x
 if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
     docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
 fi
@@ -10,8 +10,11 @@ fi
 
 build="$(basename "$0")"
 BRANCH=master
-TARGET=ubuntu:16.10
+if [ -z ${TARGET:-""} ]; then
+    TARGET=ubuntu:17.04
+fi
 latest=false
+noop=false
 
 usage() {
     echo >&2 "usage: $build "
@@ -31,6 +34,7 @@ while [ -n "$1" ]; do
         -t|--target) TARGET="$2" ; shift 2 ;;
         -b|--branch) BRANCH="$2" ; shift 2 ;;
         --latest) latest="$2" ; shift 2 ;;
+        --noop) noop="$2" ; shift 2 ;;
         -h|--help) usage ;;
         --) shift ; break ;;
     esac
@@ -44,7 +48,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh | grep "${fromos}-${fromtag}"  | while read line ; do
+    tools/scripts/buildkite/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
@@ -55,7 +59,7 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh | grep "${fromos}-${fromtag}"  | while read line ; do
+    tools/scripts/buildkite/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
@@ -65,25 +69,44 @@ extratags_from_target() {
 for container in ${CONTAINERS}; do
     echo "--- Pushing Container feelpp/${container}"
 
-    tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+    #tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+    #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+    tag=$(tag_from_target $TARGET)
         
     echo "--- Pushing feelpp/${container}:$tag"
-    docker push "feelpp/${container}:$tag"
 
-    
-    if [ "${latest}" = "true" ]; then
-        echo "--- Tagging ${container}:${tag}"
-        echo "Tagging feelpp/${container}:$tag as feelpp/${container}:latest"
-        docker tag "feelpp/${container}:$tag" "feelpp/${container}:latest"
-        docker push  "feelpp/${container}:latest"
+    if [ "$noop" = "false" ]; then
+        docker push "feelpp/${container}:$tag";
+    else
+        echo "docker push \"feelpp/${container}:$tag\"";
     fi
 
+    
+    # if [ "${latest}" = "true" ]; then
+    #     echo "--- Tagging ${container}:${tag}"
+    #     echo "Tagging feelpp/${container}:$tag as feelpp/${container}:latest"
+    #     if [ "$noop" = "false" ]; then
+    #         docker tag "feelpp/${container}:$tag" "feelpp/${container}:latest";
+    #         docker push  "feelpp/${container}:latest";
+    #     else
+    #         echo "docker tag \"feelpp/${container}:$tag\" \"feelpp/${container}:latest\"";
+    #         echo "docker push  \"feelpp/${container}:latest\"";
+    #     fi
+    # fi
+
     if [ "${BRANCH}" = "develop" -o  "${BRANCH}" = "master" ]; then
-        extratags=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
+        #extratags=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
+        #extratags=$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
+        extratags=$(extratags_from_target $TARGET)
         for aliastag in ${extratags[@]} ; do
             echo "--- Pushing feelpp/${container}:$aliastag"
-            docker tag "feelpp/${container}:$tag" "feelpp/${container}:$aliastag"
-            docker push "feelpp/${container}:$aliastag"
+            if [ "$noop" = "false" ]; then
+                docker tag "feelpp/${container}:$tag" "feelpp/${container}:$aliastag";
+                docker push "feelpp/${container}:$aliastag";
+            else
+                echo "docker tag \"feelpp/${container}:$tag\" \"feelpp/${container}:$aliastag\"";
+                echo "docker push \"feelpp/${container}:$aliastag\"";
+            fi
         done
     fi
 done
