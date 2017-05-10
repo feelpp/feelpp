@@ -2,13 +2,14 @@
 
 set -eo pipefail
 #set -x
-PROJECT=$1
-TARGET=$2
-BRANCH=$3
+ECHO=${ECHO:-}
+PROJECT=${1:-${PROJECT}}
+TARGET=${2:-${TARGET:-ubuntu:17.04}}
+BRANCH=${3:-${BRANCH:-master}}
 URL=https://www.github.com/feelpp/
-FROM=${4:-feelpp/feelpp-base}
-FEELPP_BRANCH=$5
-JOBS=${6:-10}
+FROM=${4:-${FROM:-feelpp/feelpp-base}}
+FEELPP_BRANCH=${5:-${FEELPP_BRANCH:-develop}}
+JOBS=${6:-${BUILD_JOBS:-10}}
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
 
 # Combines a dockerfile template with a generated FROM line
@@ -51,7 +52,7 @@ mkdir -p docker
 cp ${FEELPP_DIR}/bin/feelpp_build.sh docker/
 dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}:${basetag}" > docker/dockerfile.tmp
 
-docker build \
+${ECHO} docker build \
        --tag=feelpp/$PROJECT:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=URL=${URL}\
@@ -71,6 +72,7 @@ if [ "${BRANCH}" = "master" ]; then
     # add extra tags
     for tagalias in ${extratags[@]}; do
         echo "Tagging feelpp/$PROJECT:$tag as feelpp/$PROJECT:$tagalias"
-        docker tag "feelpp/$PROJECT:$tag" "feelpp/$PROJECT:$tagalias"
+        ${ECHO} docker tag "feelpp/$PROJECT:$tag" "feelpp/$PROJECT:$tagalias"
+        ${ECHO} docker push feelpp/$PROJECT:$tagalias
     done
 fi
