@@ -188,3 +188,5 @@ std::vector<remember_table> & remember_table::remember_tables()
 }
 
 } // namespace GiNaC
+
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

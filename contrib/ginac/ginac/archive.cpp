@@ -270,7 +270,7 @@ std::istream &operator>>(std::istream &is, archive &ar)
 	constexpr unsigned max_version = GINACLIB_ARCHIVE_VERSION;
 	constexpr unsigned min_version = GINACLIB_ARCHIVE_VERSION - GINACLIB_ARCHIVE_AGE;
 	unsigned version = read_unsigned(is);
-	if ((version > max_version) || (version < min_version))
+	if ((version > max_version) || ((int)version < (int)min_version))
 		throw (std::runtime_error("archive version " + std::to_string(version) + " cannot be read by this GiNaC library (which supports versions " + std::to_string(min_version) + " thru " + std::to_string(max_version)));
 
 	// Read atoms
@@ -674,3 +674,5 @@ void archive_node::printraw(std::ostream &os) const
 
 
 } // namespace GiNaC
+
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

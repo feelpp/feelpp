@@ -498,3 +498,4 @@ void cleanup_ex( bool verbose = false )
 #endif // def HAVE_LIBDL
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

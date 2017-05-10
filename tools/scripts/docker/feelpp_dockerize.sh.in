@@ -2,13 +2,14 @@
 
 set -eo pipefail
 #set -x
-PROJECT=$1
-TARGET=$2
-BRANCH=$3
+ECHO=${ECHO:-}
+PROJECT=${1:-${PROJECT}}
+TARGET=${2:-${TARGET:-ubuntu:17.04}}
+BRANCH=${3:-${BRANCH:-master}}
 URL=https://www.github.com/feelpp/
-FROM=${4:-feelpp/feelpp-base}
-FEELPP_BRANCH=$5
-JOBS=${6:-10}
+FROM=${4:-${FROM:-feelpp/feelpp-base}}
+FEELPP_BRANCH=${5:-${FEELPP_BRANCH:-develop}}
+JOBS=${6:-${BUILD_JOBS:-10}}
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
 
 # Combines a dockerfile template with a generated FROM line
@@ -19,32 +20,31 @@ dockerfile_from() {
 }
 
 tag_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    splitfrom=(`echo "$1" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
     done
 }
 extratags_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    splitfrom=(`echo "$1" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
     done
 }
 
-tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+tag=$(tag_from_target $TARGET $BRANCH)
 echo "tag: $tag"
-echo `cut -d- -f 2- <<< $(tag_from_target $TARGET)`
-basetag=$(echo "${FEELPP_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+basetag=$(tag_from_target $TARGET $FEELPP_BRANCH)
 echo "basetag: $basetag" 
 echo "--- Building $PROJECT:${tag}"
 
@@ -52,7 +52,7 @@ mkdir -p docker
 cp ${FEELPP_DIR}/bin/feelpp_build.sh docker/
 dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}:${basetag}" > docker/dockerfile.tmp
 
-docker build \
+${ECHO} docker build \
        --tag=feelpp/$PROJECT:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=URL=${URL}\
@@ -68,10 +68,11 @@ docker build \
 
 if [ "${BRANCH}" = "master" ]; then
     echo "--- Tagging $PROJECT:${tag}"
-    extratags=`extratags_from_target $TARGET`
+    extratags=`extratags_from_target $TARGET $BRANCH`
     # add extra tags
     for tagalias in ${extratags[@]}; do
         echo "Tagging feelpp/$PROJECT:$tag as feelpp/$PROJECT:$tagalias"
-        docker tag "feelpp/$PROJECT:$tag" "feelpp/$PROJECT:$tagalias"
+        ${ECHO} docker tag "feelpp/$PROJECT:$tag" "feelpp/$PROJECT:$tagalias"
+        ${ECHO} docker push feelpp/$PROJECT:$tagalias
     done
 fi
