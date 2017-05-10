@@ -22,3 +22,6 @@
 #
 #
 install(PROGRAMS list.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
+
+configure_file(release.sh ${CMAKE_CURRENT_BINARY_DIR}/release.sh @ONLY)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/release.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
