@@ -65,8 +65,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::setInitialValue()
     if( !this->M_icValue.empty() )
     {
         auto const& phi = this->fieldSolutionPtr();
-        M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-        for( auto const& iv : M_icValue )
+        this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+        for( auto const& iv : this->M_icValue )
         {
             if( marker(iv).empty() )
             {
@@ -124,7 +124,7 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
-    M_bcInflowMarkers.clear();
+    this->M_bcInflowMarkers.clear();
 
     //this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "advection", "Dirichlet" );
     this->M_bcDirichlet = detail::getBCFields<nDim, is_vectorial>( 
@@ -144,11 +144,11 @@ ADVECTION_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         //this->addMarkerRobinBC( marker(d) );
 
     for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
-        if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), bcMarker) == M_bcInflowMarkers.end() )
-            M_bcInflowMarkers.push_back( bcMarker );
+        if( std::find(this->M_bcInflowMarkers.begin(), this->M_bcInflowMarkers.end(), bcMarker) == this->M_bcInflowMarkers.end() )
+            this->M_bcInflowMarkers.push_back( bcMarker );
 
     //M_sources = this->modelProperties().boundaryConditions().template getScalarFields( "advection", "Sources" );
-    M_sources = detail::getBCFields<nDim, is_vectorial>(
+    this->M_sources = detail::getBCFields<nDim, is_vectorial>(
             this->modelProperties().boundaryConditions(), this->prefix(), "Sources"
             );
 }
@@ -160,10 +160,10 @@ ADVECTION_CLASS_TEMPLATE_TYPE::solve()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
 
-    M_bcDirichlet.setParameterValues( paramValues );
-    M_bcNeumann.setParameterValues( paramValues );
+    this->M_bcDirichlet.setParameterValues( paramValues );
+    this->M_bcNeumann.setParameterValues( paramValues );
     //M_bcRobin.setParameterValues( paramValues );
-    M_sources.setParameterValues( paramValues );
+    this->M_sources.setParameterValues( paramValues );
 
     super_type::solve(); 
 }
@@ -229,52 +229,25 @@ ADVECTION_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_pt
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool BuildCstPart) const
+ADVECTION_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const
 {
     if( this->M_sources.empty() ) return;
 
-    bool BuildSourceTerm = !BuildCstPart;
+    bool BuildCstPart = data.buildCstPart();
+    if ( BuildCstPart )
+        return;
+    vector_ptrtype& F = data.rhs();
 
-    if ( BuildSourceTerm )
+    auto mesh = this->mesh();
+    auto space = this->functionSpace();
+    auto const& v = this->fieldSolution();
+    auto linearForm = form1( _test=space, _vector=F );
+    for( auto const& d : this->M_sources )
     {
-        //auto linearForm = form1( 
-                //_test=this->functionSpace(), 
-                //_vector=F,
-                //_rowstart=this->rowStartInVector() 
-                //);
-        //auto const& v = this->fieldSolution();
-        
-        auto fieldSourceAux = this->functionSpace()->element();
-
-        for( auto const& d : M_sources )
-        {
-            if ( marker(d).empty() )
-            {
-                //linearForm +=
-                    //integrate( _range=elements(this->mesh()),
-                               //_expr= inner( expression(d),id(v) ),
-                               //_geomap=this->geomap() );
-                fieldSourceAux.on( 
-                        _range=elements(this->mesh()), 
-                        _expr=expression(d), 
-                        _geomap=this->geomap()
-                        );
-            }
-            else
-            {
-                //linearForm +=
-                    //integrate( _range=markedelements(this->mesh(),marker(d)),
-                               //_expr= inner( expression(d),id(v) ),
-                               //_geomap=this->geomap() );
-                fieldSourceAux.on( 
-                        _range=markedelements(this->mesh(),marker(d)), 
-                        _expr=expression(d), 
-                        _geomap=this->geomap()
-                        );
-            }
-            
-            *fieldSource += fieldSourceAux;
-        }
+        auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+        linearForm += integrate( _range=rangeUsed,
+                                 _expr= inner(expression(d),id(v)),
+                                 _geomap=this->geomap() );
 
     }
 }
@@ -290,8 +263,8 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
 {
-    if( std::find(M_bcInflowMarkers.begin(), M_bcInflowMarkers.end(), markerName) == M_bcInflowMarkers.end() )
-        M_bcInflowMarkers.push_back( markerName );
+    if( std::find(this->M_bcInflowMarkers.begin(), this->M_bcInflowMarkers.end(), markerName) == this->M_bcInflowMarkers.end() )
+        this->M_bcInflowMarkers.push_back( markerName );
 }
 
 namespace detail {
