@@ -30,6 +30,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateSubmeshDirac(true),
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
+    M_advectionToolbox( new advecion_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
     M_doUpdateMarkers(true),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
@@ -40,7 +41,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
     // Set advection model
-    this->setModelName( "Advection" );
+    M_advectionToolbox->setModelName( "Advection" );
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -78,7 +79,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("LevelSet", "build", "start");
 
-    super_type::build();
+    M_advectionToolbox->build();
     this->createFunctionSpaces();
     this->createInterfaceQuantities();
     this->createReinitialization();
@@ -93,7 +94,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
 {
     this->log("LevelSet", "build (from mesh)", "start");
 
-    super_type::build( mesh );
+    M_advectionToolbox->build( mesh );
     this->createFunctionSpaces();
     this->createInterfaceQuantities();
     this->createReinitialization();
@@ -112,8 +113,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     // Set levelset initial value
     this->initLevelsetValue();
     // Init levelset advection
-    super_type::init( true, this->shared_from_this() );
-    M_timeOrder = this->timeStepBDF()->timeOrder(); 
+    M_advectionToolbox->init();
+    M_timeOrder = this->timeStepBDF()->timeOrder();
+    this->updateTime( M_advectionToolbox->currentTime() );
+    if (this->doRestart())
+        this->setTimeInitial( M_advectionToolbox->timeInitial() );
+
 
     // Init modGradPhi advection
     if( M_useGradientAugmented )
@@ -328,6 +333,20 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    if ( !M_exporter )
+    {
+        std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="ExportLS",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
+    }
+    if (this->doRestart() && this->restartPath().empty() )
+    {
+        if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
+    }
+
+
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
@@ -615,7 +634,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    super_type::loadParametersFromOptionsVm();
+    //super_type::loadParametersFromOptionsVm();
 
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
@@ -1277,7 +1296,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
-    auto const& phi = this->fieldSolution();
+    auto const& phi = *this->phi();//this->fieldSolution();
     auto gradPhi = this->gradPhi();
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -1290,7 +1309,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(
             on( _range=markedfaces(mesh, bcMarker),
                     _element=phi,
                     _rhs=F,
-                    _expr=(idv(this->timeStepBDF()->polyDeriv())-trans(idv(gradPhi))*idv(this->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
+                    _expr=(idv(this->timeStepBDF()->polyDeriv())-trans(idv(gradPhi))*idv(M_advectionToolbox->fieldAdvectionVelocity()))/(this->timeStepBDF()->polyDerivCoefficient(0))
               );
     }
 
@@ -1306,13 +1325,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     // Solve phi
-    super_type::solve();
+    M_advectionToolbox->solve();
 
     if( M_useGradientAugmented )
     {
         // Solve modGradPhi
         //auto modGradPhi = M_modGradPhiAdvection->fieldSolutionPtr();
-        auto u = this->fieldAdvectionVelocityPtr();
+        auto u = M_advectionToolbox->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
         M_modGradPhiAdvection->updateAdvectionVelocity( idv(u) );
@@ -1329,7 +1348,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     {
         // Solve stretch modGradPhi
         //auto modGradPhi = M_stretchAdvection->fieldSolutionPtr();
-        auto u = this->fieldAdvectionVelocityPtr();
+        auto u = M_advectionToolbox->fieldAdvectionVelocityPtr();
         auto NxN = idv(this->N()) * trans(idv(this->N()));
         auto Du = sym( gradv(u) );
         auto NxNDu = this->projectorL2()->project( inner(NxN, Du) );
@@ -1374,7 +1393,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->saveCurrent();
 
-    super_type::updateTimeStep();
+    M_advectionToolbox->updateTimeStep();
     if( M_useGradientAugmented )
         M_modGradPhiAdvection->updateTimeStep();
     if( M_useStretchAugmented )
@@ -1695,10 +1714,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- local rank                 : " << this->worldComm().localRank()
 
            << "\n   Numerical Solver"
-           << "\n     -- solver : " << this->solverName();
+           << "\n     -- solver : " << M_advectionToolbox->solverName();
 
+#if 0
     if ( this->algebraicFactory() )
     *_ostr << this->algebraicFactory()->getInfo()->str();
+#endif
     //if (enable_reinit)
     //{
         //if (reinitmethod == "hj")
@@ -1771,13 +1792,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    this->exportResultsImpl( time );
+    //this->exportMeasures( time );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
- 
+
     if ( !this->M_exporter->doExport() ) return;
 
+    this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Phi"),
+                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Phi")),
+                                         *this->phi() );
     this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Dirac"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Dirac")),
                                    *this->dirac() );
@@ -1821,8 +1853,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Stretch")),
                                        *this->stretch() );
     }
-
-    super_type::exportResultsImpl( time );
+    M_exporter->save();
+//M_advectionToolbox->exportResultsImpl( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
