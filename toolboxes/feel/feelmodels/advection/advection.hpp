@@ -60,15 +60,6 @@ public:
     static constexpr bool is_vectorial = super_type::is_vectorial;
 
     //--------------------------------------------------------------------//
-    typedef map_scalar_field<2> map_scalar_field_type;
-    typedef map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
-    typedef typename mpl::if_< 
-        mpl::bool_<is_vectorial>,
-            map_vector_field_type,
-            map_scalar_field_type
-        >::type bc_map_field_type;
-
-    //--------------------------------------------------------------------//
     // Constructor
     Advection( 
             std::string const& prefix,
@@ -94,7 +85,7 @@ public:
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const;
+    void updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const;
 
     //--------------------------------------------------------------------//
     bool hasSourceTerm() const;
@@ -102,19 +93,6 @@ public:
     //--------------------------------------------------------------------//
     // BC management
     void addMarkerInflowBC( std::string const& markerName );
-
-protected:
-    //--------------------------------------------------------------------//
-    // Boundary conditions
-    bc_map_field_type M_bcDirichlet;
-    bc_map_field_type M_bcNeumann;
-    //map_scalar_fields<2> M_bcRobin;
-    std::list<std::string> M_bcInflowMarkers;
-    //--------------------------------------------------------------------//
-    // Initial conditions
-    bc_map_field_type M_icValue;
-
-    bc_map_field_type M_sources;
 
 private:
     void loadPeriodicityFromOptionsVm();

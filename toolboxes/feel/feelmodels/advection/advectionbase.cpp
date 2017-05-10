@@ -405,16 +405,25 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasAdvection() const
+{
+    return (this->modelName() == "Advection" || this->modelName() == "Advection-Diffusion" ||
+            this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
+}
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasDiffusion() const
 {
-    return (this->modelName() == "Advection-Diffusion" || this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Diffusion" || this->modelName() == "Advection-Diffusion" ||
+            this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasReaction() const
 {
-    return (this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Reaction" || this->modelName() == "Advection-Reaction" ||
+            this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -602,7 +611,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     auto linearForm = form1( _test=space, _vector=F );
 
     // Advection
-    if(build_AdvectiveTerm)
+    if(this->hasAdvection() && build_AdvectiveTerm)
     {
         this->timerTool("Solve").start();
         
@@ -662,25 +671,13 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     }
 
     // Source term
-    if( this->hasSourceTerm() )
+    this->updateSourceTermLinearPDE( data );
+    if( this->hasSourceAdded() && !BuildCstPart )
     {
-        if( !this->hasSourceAdded() )
-            M_fieldSource->zero();
-        this->updateSourceTermLinearPDE(const_cast<element_advection_ptrtype&>(M_fieldSource), BuildCstPart);
-    }
-
-    if( BuildNonCstPart && (this->hasSourceAdded() || this->hasSourceTerm()) )
-    {
-        this->timerTool("Solve").start();
-
-        linearForm += integrate( 
-                _range=elements(mesh),
-                _expr= inner(idv(*M_fieldSource),id(psi)),
-                _geomap=this->geomap() 
-                );
-
-        double timeElapsedSource = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly source terms in "+(boost::format("%1% s") %timeElapsedSource).str() );
+        linearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= inner(idv(M_fieldSource),id(psi)),
+                       _geomap=this->geomap() );
     }
 
     // Stabilization
@@ -729,9 +726,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
         auto beta_norm = vf::sqrt(trans(beta)*beta);
         auto polyDeriv = M_bdf->polyDeriv();
 
-        auto f = (!this->isStationary()) * idv(polyDeriv) // transient rhs
+        /*auto f = (!this->isStationary()) * idv(polyDeriv) // transient rhs
             + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*M_fieldSource) // source
-            ;
+         ;*/
         
         switch ( this->stabilizationMethod() )
         {
@@ -744,7 +741,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 //auto L_op = grad(psi)*beta + sigma*id(psi);
                 //auto L_opt = gradt(phi)*beta + sigma*idt(phi);
-
                 auto L_op = grad(psi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
                     + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
@@ -761,10 +757,25 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                         _expr=coeff * inner(L_op, L_opt),
                         _geomap=this->geomap() );
 
-                linearForm += integrate(
-                        _range=elements(mesh),
-                        _expr=coeff * inner(L_op, f),
-                        _geomap=this->geomap() );
+                if ( !this->isStationary() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(polyDeriv)),
+                                             _geomap=this->geomap() );
+                }
+                for( auto const& d : this->M_sources )
+                {
+                    auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                    linearForm += integrate( _range=rangeUsed,
+                                             _expr=coeff * inner(L_op, expression(d)),
+                                             _geomap=this->geomap() );
+                }
+                if( this->hasSourceAdded() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(M_fieldSource)),
+                                             _geomap=this->geomap() );
+                }
 
                 break ;
             } //GALS
@@ -787,10 +798,26 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                         _expr=coeff * inner(L_op, L_opt) 
                         );
 
-                linearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, f) 
-                        );
+                if ( !this->isStationary() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(polyDeriv)),
+                                             _geomap=this->geomap() );
+                }
+                for( auto const& d : this->M_sources )
+                {
+                    auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                    linearForm += integrate( _range=rangeUsed,
+                                             _expr=coeff * inner(L_op, expression(d)),
+                                             _geomap=this->geomap() );
+                }
+                if( this->hasSourceAdded() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(M_fieldSource)),
+                                             _geomap=this->geomap() );
+                }
+
 
                 break;
             } //SUPG
@@ -801,7 +828,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
                 //auto L_op = grad(psi) * val(beta) - val(sigma) * id(psi);
                 //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
-                
+
                 auto L_op = grad(psi) * beta // advection term
                     - (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
                     - (this->hasReaction()) * (idv(R))*id(psi) // reaction term
@@ -818,10 +845,25 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                         _expr=coeff * inner(L_op, L_opt)
                         );
 
-                linearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, f)
-                        );
+                if ( !this->isStationary() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(polyDeriv)),
+                                             _geomap=this->geomap() );
+                }
+                for( auto const& d : this->M_sources )
+                {
+                    auto rangeUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                    linearForm += integrate( _range=rangeUsed,
+                                             _expr=coeff * inner(L_op, expression(d)),
+                                             _geomap=this->geomap() );
+                }
+                if( this->hasSourceAdded() )
+                {
+                    linearForm += integrate( _range=elements(mesh),
+                                             _expr=coeff * inner(L_op, idv(M_fieldSource)),
+                                             _geomap=this->geomap() );
+                }
 
                 break;
             } //SGS

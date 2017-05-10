@@ -187,6 +187,13 @@ public :
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
+    typedef map_scalar_field<2> map_scalar_field_type;
+    typedef map_vector_field<nDim, 1, 2> map_vector_field_type;
+    typedef typename mpl::if_< mpl::bool_<is_vectorial>,
+                               map_vector_field_type,
+                               map_scalar_field_type
+                               >::type bc_map_field_type;
+    //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 
@@ -222,6 +229,7 @@ public :
     std::string const& modelName() const { return M_modelName; }
     void setModelName( std::string const& type );
 
+    bool hasAdvection() const;
     bool hasDiffusion() const;
     bool hasReaction() const;
 
@@ -279,7 +287,7 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     virtual void updateLinearPDEStabilization( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
-    virtual void updateSourceTermLinearPDE( element_advection_ptrtype& fieldSource, bool buildCstPart ) const {}
+    virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const {};
     virtual bool hasSourceTerm() const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const =0;
@@ -392,6 +400,16 @@ protected:
     //--------------------------------------------------------------------//
     // Solution
     element_advection_ptrtype M_fieldSolution;
+    //--------------------------------------------------------------------//
+    // Boundary conditions
+    bc_map_field_type M_bcDirichlet;
+    bc_map_field_type M_bcNeumann;
+    //map_scalar_fields<2> M_bcRobin;
+    std::list<std::string> M_bcInflowMarkers;
+    // Initial conditions
+    bc_map_field_type M_icValue;
+    // body forces
+    bc_map_field_type M_sources;
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
