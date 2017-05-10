@@ -6,7 +6,14 @@ if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
     docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
 fi
 
+FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
 
+if [ -f ${FEELPP_DIR}/share/feelpp/scripts/list.sh ]; then 
+    LIST=${FEELPP_DIR}/share/feelpp/scripts/list.sh;
+else
+    LIST=$HOME/src/feelpp/tools/scripts/buildkite/list.sh
+fi
+    
 
 build="$(basename "$0")"
 BRANCH=${BUILDKITE_BRANCH:-develop}
@@ -48,7 +55,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    $LIST | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
@@ -59,7 +66,7 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
+    $LIST | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
