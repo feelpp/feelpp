@@ -1407,3 +1407,5 @@ ex clifford_moebius_map(const ex & M, const ex & v, const ex & G, unsigned char 
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
