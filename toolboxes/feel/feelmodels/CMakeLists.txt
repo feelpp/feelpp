@@ -43,6 +43,7 @@ option(FEELPP_MODELS_ENABLE_FSI "Enable/Disable FSI" ON)
 option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" OFF)
 option(FEELPP_MODELS_ENABLE_LEVELSET "Enable/Disable LevelSet" OFF)
 option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
+option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
 
 
 add_subdirectory(modelcore)
@@ -60,18 +61,11 @@ add_custom_target(feelpp-models)
 #add_dependencies(feelpp-models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
 add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
 
-
-set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS  feelpp_modelcore feelpp_modelmesh )
+add_custom_target(feelpp-models-common)
+add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelalg feelpp_modelmesh)
 if( FEELPP_MODELS_HAS_MESHALE )
-  set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS feelpp_modelmeshale ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS} )
+  add_dependencies(feelpp-models-common feelpp_modelmeshale)
 endif()
-add_custom_target(install-feelpp-models-common
-  DEPENDS ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS}
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=LibsFeelppModelsCommon
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-)
-
 
 # generate models lib
 if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )

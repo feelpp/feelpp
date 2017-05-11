@@ -148,16 +148,11 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
+            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= expression(d)*id(v),
+                           _geomap=this->geomap() );
         }
     }
 }

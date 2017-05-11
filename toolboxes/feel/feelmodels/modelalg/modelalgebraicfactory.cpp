@@ -469,7 +469,7 @@ namespace FeelModels
         //---------------------------------------------------------------------//
         this->application()->timerTool("Solve").start();
         M_appli->updateNewtonInitialGuess(U);
-        U->close();
+        //U->close();
         this->application()->timerTool("Solve").elapsed("algebraic-newton-bc");
         this->application()->timerTool("Solve").restart();
         //---------------------------------------------------------------------//

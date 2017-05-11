@@ -7,7 +7,7 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/modelalg/functionSup.cpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -81,6 +81,9 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
     M_doExportVelocityConvection = boption(_name="do_export_velocity-convection",_prefix=this->prefix());
+
+    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
+    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 }
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -236,6 +239,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
+    if ( M_stabilizationGLS )
+    {
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameter->init();
+    }
+
     // load an initial solution from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
     {
@@ -269,6 +278,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
         // up current time
         this->updateTime( M_bdfTemperature->time() );
     }
+
+    this->updateBoundaryConditionsForUse();
 
     // post-process
     this->initPostProcess();
@@ -425,6 +436,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if ( this->fieldVelocityConvectionIsUsedAndOperational() )
         *_ostr << "\n   Space Velocity Convection Discretization"
                << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
+    if ( M_stabilizationGLS )
+    {
+        *_ostr << "\n   Finite element stabilization"
+               << "\n     -- type : " << M_stabilizationGLSType;
+        if ( M_stabilizationGLSParameter )
+            *_ostr << "\n     -- paramter method : " << M_stabilizationGLSParameter->method();
+    }
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
     *_ostr << "\n||==============================================||"
@@ -448,6 +466,35 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_volumicForcesProperties.setParameterValues( paramValues );
 }
 
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    auto mesh = this->mesh();
+    auto XhTemperature = this->spaceTemperature();
+    //auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
+    auto & dofsWithValueImposedTemperature = M_dofsWithValueImposed["temperature"];
+    dofsWithValueImposedTemperature.clear();
+    std::set<std::string> temperatureMarkers;
+
+    // strong Dirichlet bc on temperature from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        temperatureMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
+
+    // on topological faces
+    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesTemperature ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhTemperature->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            dofsWithValueImposedTemperature.insert( it->index() );
+    }
+}
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -458,9 +505,10 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
     this->updateParameterValues();
 
-    //M_algebraicFactory->linearSolver(this->blockVectorSolution().vector());
-    M_algebraicFactory->solve( "LinearSystem", this->blockVectorSolution().vector() );
-    //M_algebraicFactory->solve( "Newton", this->blockVectorSolution().vector() );
+    M_blockVectorSolution.updateVectorFromSubVectors();
+
+    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vector() );
+    //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vector() );
 
     M_blockVectorSolution.localize();
 
@@ -613,7 +661,107 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 }
 
 
+template< int StabParamType,typename ThermoDynType>
+void
+updateLinearPDEStabilizationGLS( ThermoDynType const& thermodyn, ModelAlgebraic::DataUpdateLinear & data )
+{
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool buildCstPart = data.buildCstPart();
+    if ( !thermodyn.fieldVelocityConvectionIsUsedAndOperational() || buildCstPart )
+        return;
 
+    auto mesh = thermodyn.mesh();
+    auto Xh = thermodyn.spaceTemperature();
+    auto const& u = thermodyn.fieldTemperature();
+    auto const& v = thermodyn.fieldTemperature();
+
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=thermodyn.rowStartInMatrix(),
+                                              _colstart=thermodyn.colStartInMatrix() );
+    auto myLinearForm = form1( _test=Xh, _vector=F,
+                               _rowstart=thermodyn.rowStartInVector() );
+
+    if ( thermodyn.fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
+    {
+        auto kappa = idv(thermodyn.thermalProperties()->fieldThermalConductivity());
+        auto thecoeff = idv(thermodyn.thermalProperties()->fieldRho())*idv(thermodyn.thermalProperties()->fieldHeatCapacity());
+        auto uconv=thecoeff*idv(thermodyn.fieldVelocityConvection());
+        auto tau = thermodyn.stabilizationGLSParameter()->tau( uconv, kappa, mpl::int_<StabParamType>() );
+
+        if ( ThermoDynType::nOrderTemperature <= 1 || thermodyn.stabilizationGLSType() == "supg"  )
+        {
+            auto stab_test = grad(u)*uconv;
+            if (!thermodyn.isStationary())
+            {
+                auto stab_residual_bilinear = thecoeff*(idt(u)*thermodyn.timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(thermodyn.fieldVelocityConvection()) );
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=elements(mesh),
+                               _expr=val(tau)*stab_residual_bilinear*stab_test,
+                               _geomap=thermodyn.geomap() );
+                auto rhsTimeStep = thermodyn.timeStepBdfTemperature()->polyDeriv();
+                auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
+                myLinearForm +=
+                    integrate( _range=elements(mesh),
+                               _expr= val(tau*stab_residual_linear)*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+            else
+            {
+                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(thermodyn.fieldVelocityConvection());
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=elements(mesh),
+                               _expr=val(tau)*stab_residual_bilinear*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+            for( auto const& d : thermodyn.bodyForces() )
+            {
+                auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                myLinearForm +=
+                    integrate( _range=rangeBodyForceUsed,
+                               _expr=val(tau)*expression(d)*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+        }
+        else if ( ( thermodyn.stabilizationGLSType() == "gls" ) || ( thermodyn.stabilizationGLSType() == "unusual-gls" ) )
+        {
+            int stabCoeffDiffusion = (thermodyn.stabilizationGLSType() == "gls")? 1 : -1;
+            auto stab_test = grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
+            if (!thermodyn.isStationary())
+            {
+                auto stab_residual_bilinear = thecoeff*(idt(u)*thermodyn.timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(thermodyn.fieldVelocityConvection()) ) - kappa*laplaciant(u);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=elements(mesh),
+                               _expr=val(tau)*stab_residual_bilinear*stab_test,
+                               _geomap=thermodyn.geomap() );
+                auto rhsTimeStep = thermodyn.timeStepBdfTemperature()->polyDeriv();
+                auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
+                myLinearForm +=
+                    integrate( _range=elements(mesh),
+                               _expr= val(tau*stab_residual_linear)*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+            else
+            {
+                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(thermodyn.fieldVelocityConvection()) - kappa*laplaciant(u);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=elements(mesh),
+                               _expr=val(tau)*stab_residual_bilinear*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+            for( auto const& d : thermodyn.bodyForces() )
+            {
+                auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                myLinearForm +=
+                    integrate( _range=rangeBodyForceUsed,
+                               _expr=val(tau)*expression(d)*stab_test,
+                               _geomap=thermodyn.geomap() );
+            }
+        }
+    }
+
+}
 
 
 
@@ -735,6 +883,15 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     // update source term
     this->updateSourceTermLinearPDE(F, buildCstPart);
 
+    // update stabilization gls
+    if ( M_stabilizationGLS )
+    {
+        if ( M_stabilizationGLSParameter->method() == "eigenvalue" )
+            updateLinearPDEStabilizationGLS<0>( *this, data );
+        else if ( M_stabilizationGLSParameter->method() == "doubly-asymptotic-approximation" )
+            updateLinearPDEStabilizationGLS<2>( *this, data );
+    }
+
     // update bc
     this->updateWeakBCLinearPDE(A,F,buildCstPart);
     if ( !buildCstPart && _doBCStrongDirichlet)
@@ -762,6 +919,10 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype
         u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=expression(d) );
     }
+    // synchronize temperature dof on interprocess
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
+    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
+        sync( u, "=", itFindDofsWithValueImposed->second );
 
     this->log("ThermoDynamics","updateNewtonInitialGuess","finish" );
 }
@@ -965,6 +1126,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","start" );
 
     auto mesh = this->mesh();
+#if 0
     auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
 
     for( auto const& d : this->M_bcDirichlet )
@@ -972,7 +1134,14 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_
         u.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=cst(0.) );
     }
-
+#else
+    auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
+    auto const& dofsWithValueImposedTemperature = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedTemperature )
+        u.set( thedof,0. );
+    sync( u, "=", dofsWithValueImposedTemperature );
+#endif
     this->log("ThermoDynamics","updateBCDirichletStrongResidual","finish" );
 }
 
@@ -1046,16 +1215,11 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= -expression(d)*id(v),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= -expression(d)*id(v),
-                               _geomap=this->geomap() );
+            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= -expression(d)*id(v),
+                           _geomap=this->geomap() );
         }
     }
 }
