@@ -282,6 +282,9 @@ public:
     typename advecion_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    template<typename ExprT>
+    void
+    updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
@@ -411,7 +414,8 @@ public:
     void exportResults( double time );
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
     bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
-
+    exporter_ptrtype & getExporter() { return M_exporter; }
+    exporter_ptrtype const& getExporter() const { return M_exporter; }
     //--------------------------------------------------------------------//
     // Physical quantities
     double volume() const;
