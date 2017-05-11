@@ -205,9 +205,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            DCHECK( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
-                    expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ) << "wrong expr type";
-            return M_locRes[q]( c1,c2 );
+            return evalq( c1,c2,q );
         }
         matrix_shape_type const&
         evaliq( uint16_type i, uint16_type q ) const
@@ -218,7 +216,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_locRes[q]( c1,c2 );
+            return this->evalq( c1, c2, q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
         matrix_shape_type const&
         evalq( uint16_type q ) const
@@ -227,6 +225,23 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
 
     private :
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<FMSTExprApplyType::FM_ST_EVAL> /**/ ) const
+            {
+                return M_locRes[q]( c1,c2 );
+            }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> /**/ ) const
+            {
+                CHECK( false ) << "not allow";
+                return M_locRes[q]( c1,c2 );
+            }
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<FMSTExprApplyType::FM_VISCOSITY_EVAL> /**/ ) const
+            {
+                return M_locRes[q]( 0,0 );
+            }
+
         expr_type const& M_expr;
 
         pc_velocity_ptrtype M_pcVelocity;

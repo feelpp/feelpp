@@ -129,6 +129,8 @@ public :
      */
     ~ALE();
 
+    void init();
+
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
     /**
@@ -278,6 +280,7 @@ private :
 
     bool M_moveGhostEltFromExtendedStencil;
 
+    std::map<std::string,std::set<size_type> > M_dofsHighOnBoundary;
 };
 
 } // namespace ALE_IMPL
