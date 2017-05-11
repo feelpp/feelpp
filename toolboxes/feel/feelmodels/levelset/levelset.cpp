@@ -1399,6 +1399,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if( M_useStretchAugmented )
         M_stretchAdvection->updateTimeStep();
 
+    this->updateTime( M_advectionToolbox->currentTime() );
+
     if( M_iterSinceReinit < M_timeOrder )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
