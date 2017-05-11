@@ -3,6 +3,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
+     ubuntu: 17.04
    env:
      CXX: clang++-4.0
      CC: clang-4.0
@@ -11,6 +12,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
+     ubuntu: 16.10
    env:
      CXX: clang++-4.0
      CC: clang-4.0
@@ -25,6 +27,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
+     ubuntu: 17.04
    env:
      CXX: clang++-4.0
      CC: clang-4.0
@@ -43,6 +46,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
+     ubuntu: 17.04
    env:
      CXX: clang++-4.0
      CC: clang-4.0
@@ -51,6 +55,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
      docker: true
+     ubuntu: 17.04
    env:
      CXX: clang++-4.0
      CC: clang-4.0
@@ -78,6 +83,7 @@ steps:
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
+     ubuntu: 17.04
    branches: develop master
    env:
      TARGET: ubuntu:17.04
