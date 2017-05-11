@@ -11,7 +11,7 @@ FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
 if [ -f ${FEELPP_DIR}/share/feelpp/scripts/list.sh ]; then 
     LIST=${FEELPP_DIR}/share/feelpp/scripts/list.sh;
 else
-    LIST=$HOME/src/feelpp/tools/scripts/buildkite/list.sh
+    LIST=tools/scripts/buildkite/list.sh
 fi
     
 
