@@ -1,18 +1,9 @@
 steps:
- - name: ':ubuntu: 17.04,clang-4.0'
-   command: tools/scripts/buildkite/install-feelpp-lib.sh
-   agents:
-     docker: true
-     ubuntu: 17.04
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:17.04
  - name: ':ubuntu: 16.10,clang-3.9'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
-     ubuntu: 16.10
+     ubuntu: "16.10"
    env:
      CXX: clang++-3.9
      CC: clang-3.9
@@ -23,15 +14,6 @@ steps:
  #   agents:
  #     osx: true
  - wait
- - name: ':ubuntu: 17.04,clang-4.0  feelpp-base :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh base
-   agents:
-     docker: true
-     ubuntu: 17.04
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:17.04
  - name: ':ubuntu: 16.10,clang-3.9  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
@@ -42,29 +24,11 @@ steps:
      CC: clang-3.9
      TARGET: ubuntu:16.10
  - wait
- - name: ':ubuntu: 17.04,clang-4.0 feelpp-toolboxes :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
-   agents:
-     docker: true
-     ubuntu: 17.04
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:17.04
- - name: ':ubuntu: 17.04,clang-4.0 feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
-   agents:
-     docker: true
-     ubuntu: 17.04
-   env:
-     CXX: clang++-4.0
-     CC: clang-4.0
-     TARGET: ubuntu:17.04
  - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
-     ubuntu: 16.10
+     ubuntu: "16.10"
    env:
      CXX: clang++-3.9
      CC: clang-3.9
@@ -83,15 +47,7 @@ steps:
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: 17.04
-   branches: develop master
-   env:
-     TARGET: ubuntu:17.04
- - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
-   name: ":docker: push images to the hub :rocket:"
-   agents:
-     docker: true
-     ubuntu: 16.10
+     ubuntu: "16.10"
    branches: develop master
    env:
      TARGET: ubuntu:16.10
