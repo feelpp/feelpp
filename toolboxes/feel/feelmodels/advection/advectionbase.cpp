@@ -15,8 +15,10 @@ const std::map<std::string, AdvectionStabMethod>
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
     {"NONE", AdvectionStabMethod::NONE},
     {"GALS", AdvectionStabMethod::GALS},
+    {"gls", AdvectionStabMethod::GALS},
     {"CIP", AdvectionStabMethod::CIP},
     {"SUPG", AdvectionStabMethod::SUPG},
+    {"supg", AdvectionStabMethod::SUPG},
     {"SGS", AdvectionStabMethod::SGS}
 };
 
@@ -134,20 +136,26 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     if( !M_isBuilt )
         this->build();
 
-    // Vector solution
-    this->buildBlockVector();
+    if ( this->hasAdvection() &&
+         ( (this->stabilizationMethod() == AdvectionStabMethod::GALS) ||
+           (this->stabilizationMethod() == AdvectionStabMethod::SUPG)  ) )
+    {
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameter->init();
+    }
 
     // Time step
     this->initTimeStep();
     // Post-process
     this->initPostProcess();
-    
+
+    // Vector solution
+    this->buildBlockVector();
     // Algebraic factory
     if( buildModelAlgebraicFactory )
     {
         // matrix sparsity graph
         auto graph = this->buildMatrixGraph();
-        
         M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
     }
 
@@ -397,6 +405,21 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
     else if ( type == "Advection-Diffusion-Reaction" )
     {
         M_modelName = "Advection-Diffusion-Reaction";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Diffusion" )
+    {
+        M_modelName = "Diffusion";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Diffusion-Reaction" )
+    {
+        M_modelName = "Diffusion-Reaction";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Reaction" )
+    {
+        M_modelName = "Reaction";
         M_solverName = "LinearSystem";
     }
     else
@@ -681,7 +704,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     }
 
     // Stabilization
-    this->updateLinearPDEStabilization(A, F, BuildCstPart);
+    if ( this->hasAdvection() )
+        this->updateLinearPDEStabilization(A, F, BuildCstPart);
 
     // Boundary conditions
     this->updateWeakBCLinearPDE(A, F, BuildCstPart);
@@ -736,6 +760,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
             case AdvectionStabMethod::GALS :
             {
+#if 0
                 auto coeff  = val( stabCoeff /
                         ( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
 
@@ -751,7 +776,22 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                     + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
+#else
+                auto kappa = idv(D);
+                auto uconv = beta;
+                auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
 
+                auto L_op = grad(psi) * beta // advection term
+                    + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
+                    ;
+                auto L_opt = gradt(phi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
+                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
+                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
+                    ;
+
+#endif
                 bilinearForm += integrate(
                         _range=elements(mesh),
                         _expr=coeff * inner(L_op, L_opt),
@@ -776,14 +816,18 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                                              _expr=coeff * inner(L_op, idv(M_fieldSource)),
                                              _geomap=this->geomap() );
                 }
-
                 break ;
             } //GALS
 
             case AdvectionStabMethod::SUPG :
             {
+#if 0
                 auto coeff = val(vf::h() / (2 * beta_norm + 0.001));
-
+#else
+                auto kappa = idv(D);
+                auto uconv = beta;
+                auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+#endif
                 auto L_op = grad(psi) * val(beta);
                 //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
 
@@ -792,10 +836,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                     + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
-
                 bilinearForm += integrate(
                         _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, L_opt) 
+                        _expr=coeff * inner(L_op, L_opt)
                         );
 
                 if ( !this->isStationary() )
