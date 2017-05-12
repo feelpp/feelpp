@@ -390,6 +390,11 @@ advection_options(std::string const& prefix)
         (prefixvm(prefix,"export-diffusion").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_diffusion_coeff")
         (prefixvm(prefix,"export-reaction").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_reaction_coeff")
         (prefixvm(prefix,"export-source").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_source_field")
+
+        (prefixvm(prefix,"stabilization-gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
         ;
     return advectionOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
