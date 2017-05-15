@@ -52,11 +52,11 @@ The simplest way to launch the tests is with the following command:
 
 [source,sh]
 ----
-mpirun -np 1 feelpp_benchmarks_conv_2DP1G1E3 --config-file cvg-tests/darcy2D-Dir.cfg
+mpirun -np 1 feelpp_benchmarks_cvg_mixedpoisson_2DP1G1E3 --config-files cvg-mp-tests/darcy2DP1.cfg cvg-mp-tests/darcy2DDir.cfg cvg-mp-tests/darcyGASM.cfg
 ----
 
 The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
-You have different configuration files for 2D and 3D and for each type of boundary condition. +
+You have different configuration files, one for the dimension and the polynomial order, one for the boundary conditions and one for the solver and preconditioner used. +
 The important options are:
 
 * `cvg.p_exact`: exact expression for the pressure
