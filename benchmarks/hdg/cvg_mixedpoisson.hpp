@@ -74,10 +74,13 @@ private:
     markers_type M_markersNeumann;
     markers_type M_markersIBC;
 
+    std::map<std::string, std::vector<double> > M_timers;
+
 public:
     ConvergenceTest();
     void assembleExact();
     void run();
+    void exportTimers();
 };
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -122,22 +125,32 @@ void
 ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
 {
     tic();
+    tic();
     M_model->assembleCstPart();
+    M_timers["asbCstPart"].push_back(toc("assembleCstPart"));
 
     auto cond = cst(doption("cvg.cond"));
+    tic();
     M_model->updateConductivityTerm(cond, "");
+    M_timers["asbCndPart"].push_back(toc("assembleConductivityPart"));
 
     auto grad_p_exact = grad<Dim,expr_order>(M_p_exact);
     auto u_exact = -cond*trans(grad_p_exact);
     auto f = -cond*laplacian(M_p_exact);
+    tic();
     M_model->assemblePotentialRHS(f, "");
+    M_timers["asbPotRHS"].push_back(toc("assemblePotentialRHS"));
 
+    tic();
     for( auto const& marker : M_markersDirichlet )
     {
         if( M_mesh->hasFaceMarker(marker))
         {
+            tic();
             M_model->assembleDirichlet(marker);
             M_model->assembleRhsDirichlet(M_p_exact, marker);
+            std::string s = (boost::format("asbDir_%1%") % marker).str();
+            M_timers[s].push_back(toc(s));
             Feel::cout << "add Dirichlet on " << marker << std::endl;
         }
         else
@@ -149,8 +162,11 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
     {
         if( M_mesh->hasFaceMarker(marker))
         {
+            tic();
             M_model->assembleNeumann( marker);
             M_model->assembleRhsNeumann( -cond*grad_p_exact*N(), marker);
+            std::string s = (boost::format("asbNeu_%1%") % marker).str();
+            M_timers[s].push_back(toc(s));
             Feel::cout << "add Neumann on " << marker << std::endl;
         }
         else
@@ -165,7 +181,10 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
         {
             double intjn = integrate(_range=markedfaces(M_mesh,marker), _expr=inner(u_exact,N())).evaluate()(0,0);
             // double intjn = -std::log(2)/(2.*boost::math::constants::pi<double>());
+            tic();
             M_model->assembleRhsIBC(i++, marker, intjn);
+            std::string s = (boost::format("asbIBC_%1%") % marker).str();
+            M_timers[s].push_back(toc(s));
             Feel::cout << "add ibc on " << marker << " with value of " << intjn << std::endl;
         }
         else
@@ -173,7 +192,8 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
             LOG(FATAL) << "marker for IBC condition " << marker << "does not exist";
         }
     }
-    toc("convergence assembly");
+    M_timers["asbBC"].push_back(toc("assembleBC"));
+    M_timers["cvgAsb"].push_back(toc("convergence assembly"));
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -187,39 +207,50 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
     auto u_exact = -cond*trans(grad_p_exact);
 
     std::ofstream cvg_u, cvg_p, cvg_n;
-    cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
-    cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
+    if( Environment::isMasterRank() )
+    {
+        cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
+        cvg_p.open( "convergence_p.dat", std::ios::out | std::ios::trunc);
+        if( boption("cvg.normal-compute") )
+            cvg_n.open( "../../../../../convergence_n.dat", std::ios::out | std::ios::app);
+    }
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
     boost::format fmterOut;
     if( boption("cvg.normal-compute") )
         fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6%\n");
     else
         fmterOut = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
-    cvg_u << fmter % "#h" % "nDof" % "l2err";
-    cvg_p << fmter % "#h" % "nDof" % "l2err";
-    if( boption("cvg.normal-compute") )
+    if( Environment::isMasterRank() )
     {
-        cvg_n.open( "../../../../../convergence_n.dat", std::ios::out | std::ios::app);
-        cvg_n << fmter % "#P" % "G" % "err";
+        cvg_u << fmter % "#h" % "nDof" % "l2err";
+        cvg_p << fmter % "#h" % "nDof" % "l2err";
+        if( boption("cvg.normal-compute") )
+            cvg_n << fmter % "#P" % "G" % "err";
     }
+
 
     export_ptrtype e( export_type::New( "convergence") );
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
-        tic();
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
-        M_model -> init(M_mesh);
-
+        tic();
+        M_model->init(M_mesh);
         auto nDofU = M_model->fluxSpace()->nDof();
         auto nDofP = M_model->potentialSpace()->nDof();
+        M_timers["nDofU"].push_back(nDofU);
+        M_timers["nDofP"].push_back(nDofP);
+        M_timers["initModel"].push_back(toc("initModel"));
+
         auto u_ex = M_model->fluxSpace()->element();
         auto p_ex = M_model->potentialSpace()->element();
         auto p_ex_mean = M_model->potentialSpace()->element();
         auto p_mean = M_model->potentialSpace()->element();
 
         this->assembleExact();
+        tic();
         M_model->solve();
+        M_timers["solve"].push_back(toc("solve"));
 
         M_u = M_model->fluxField();
         M_p = M_model->potentialField();
@@ -240,26 +271,31 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
             // double length = integrate(_range=markedfaces(M_mesh, soption("cvg.normal-marker")),
             //                           _expr=expr(soption("functions.f")) ).evaluate()(0,0);
             // double errN = math::abs(length - doption("cvg.normal-exact") );
-            cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP" % "errN";
-            cout << fmterOut % h % nDofU % errU % nDofP % errP % errN;
-            cvg_n << fmter % Order % G_Order % errN;
+            if( Environment::isMasterRank() )
+            {
+                cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP" % "errN";
+                cout << fmterOut % h % nDofU % errU % nDofP % errP % errN;
+                cvg_n << fmter % Order % G_Order % errN;
+            }
         }
         else
         {
-            cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP";
-            cout << fmterOut % h % nDofU % errU % nDofP % errP;
+            if( Environment::isMasterRank() )
+            {
+                cout << fmterOut % "h" % "nDofU" % "errU" % "nDofP" % "errP";
+                cout << fmterOut % h % nDofU % errU % nDofP % errP;
+            }
         }
-        cvg_u << fmter % h % nDofU % errU;
-        cvg_p << fmter % h % nDofP % errP;
-
-        Feel::cout << "start projection" << std::endl;
+        if( Environment::isMasterRank() )
+        {
+            cvg_u << fmter % h % nDofU % errU;
+            cvg_p << fmter % h % nDofP % errP;
+        }
 
         u_ex.on( elements(M_mesh), u_exact);
         p_ex.on( elements(M_mesh), M_p_exact);
         p_ex_mean.on( elements(M_mesh), M_p_exact-cst(mean_p_exact));
         p_mean.on( elements(M_mesh), idv(M_p)-cst(mean_p));
-
-        Feel::cout << "start export" << std::endl;
 
         e->step(i)->setMesh(M_mesh);
         e->step(i)->add("u", M_u);
@@ -270,16 +306,43 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
         e->step(i)->add("p_ex", p_ex);
         e->save();
 
-        Feel::cout << "end export" << std::endl;
-
         h /= doption("cvg.refine-factor");
         toc("convergence loop");
     }
 
-    cvg_u.close();
-    cvg_p.close();
-    if( boption("cvg.normal-compute") )
-        cvg_n.close();
+    this->exportTimers();
+
+    if( Environment::isMasterRank() )
+    {
+        cvg_u.close();
+        cvg_p.close();
+        if( boption("cvg.normal-compute") )
+            cvg_n.close();
+    }
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+ConvergenceTest<Dim,Order,G_Order,E_Order>::exportTimers()
+{
+    if( Environment::isMasterRank() )
+    {
+        std::ofstream timers( "timers.dat", std::ios::out | std::ios::trunc);
+        std::string fmtS = "";
+        for( int i = 1; i <= M_timers.size(); ++i )
+            fmtS += "%" + std::to_string(i) + "% %|" + std::to_string(14*i) + "t|";
+        boost::format fmt(fmtS);
+        for( auto const& pair : M_timers )
+            fmt % pair.first;
+        timers << fmt << std::endl;
+        for( int i = 0; i < ioption("cvg.refine-nb"); ++i )
+        {
+            for( auto const& pair : M_timers )
+                fmt % pair.second[i];
+            timers << fmt << std::endl;
+        }
+        timers.close();
+    }
 }
 
 // } // end namespace FeelModels
