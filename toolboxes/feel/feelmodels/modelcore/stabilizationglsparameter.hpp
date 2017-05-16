@@ -2,11 +2,12 @@
 #ifndef FEELPP_MODELS_STABILIZATIONGLSPARAMETER_HPP
 #define FEELPP_MODELS_STABILIZATIONGLSPARAMETER_HPP 1
 
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelalg/matrixeigendense.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/pchv.hpp>
+//#include <feel/feeldiscr/pch.hpp>
+//#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 
 
@@ -17,38 +18,41 @@ namespace FeelModels
 
 
 template<typename MeshType, uint16_type OrderPoly>
-class StabilizationGLSParameter
+class StabilizationGLSParameter : public StabilizationGLSParameterBase<MeshType>
 {
+    using super_type = StabilizationGLSParameterBase<MeshType>;
 public :
-    static const uint16_type nOrder = OrderPoly;
-    using mesh_t = MeshType;
-    using mesh_ptr_t = boost::shared_ptr<mesh_t>;
 
+    using mesh_t = typename super_type::mesh_t;// MeshType;
+    using mesh_ptr_t = typename super_type::mesh_ptr_t;
+
+    static const uint16_type nOrder = OrderPoly;
     using space_t = Pdh_type<mesh_t,nOrder>;
     using space_ptr_t = boost::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;
+#if 0
     using space_P0_t = Pdh_type<mesh_t,0>;
     using space_P0_ptr_t = boost::shared_ptr<space_P0_t>;
     using element_P0_t = typename space_P0_t::element_type;
+#endif
 
     StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix )
         :
-        M_mesh( mesh ),
+        super_type( mesh, prefix ),
+        M_Xh( Pdh<nOrder>(mesh) )
+#if 0
+        ,
         M_spaceP0( Pdh<0>(mesh) ),
-        M_Xh( Pdh<nOrder>(mesh) ),
         M_hSize( M_spaceP0, "hSize" ),
         M_lambdaK( M_spaceP0, "lambdak" ),
         M_sqrtLambdaK( M_spaceP0, "sqrtLambdaK"),
-        M_mK( M_spaceP0, "mk"),
-        M_method( soption(_name="method",_prefix=prefix ) ),
-        M_hSizeMethod( soption(_name="hsize.method",_prefix=prefix ) ),
-        M_penalLambdaK( doption( _name="eigenvalue.penal-lambdaK",_prefix=prefix ) )
-        {
-            CHECK( M_method == "eigenvalue" || M_method == "doubly-asymptotic-approximation" )  << "invalid method";
-        }
+        M_mK( M_spaceP0, "mk")
+#endif
+        {}
 
     void init();
 
+#if 0
     template<typename ExprConvectiontype, typename ExprCoeffDiffusionType>
     auto localPeRe( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, mpl::int_<0> /**/ ) const;
     template<typename ExprConvectiontype, typename ExprCoeffDiffusionType>
@@ -71,23 +75,14 @@ public :
     template<int ParameterType, typename ExprConvectiontype, typename ExprCoeffDiffusionType>
     auto delta( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion ) const;
 
-    element_P0_t const& hSize() const { return M_hSize; }
-    element_P0_t const& sqrtLambdaK() const { return M_sqrtLambdaK; }
-    element_P0_t const& lambdaK() const { return M_lambdaK; }
-    element_P0_t const& mK() const { return M_mK; }
-
-    std::string const& method() const { return M_method; }
-    double penalLambdaK() const { return M_penalLambdaK; }
-    void setPenalLambdaK( double val ) { M_penalLambdaK = val; }
+#endif
 
 private :
-    mesh_ptr_t M_mesh;
-    space_P0_ptr_t M_spaceP0;
     space_ptr_t M_Xh;
+#if 0
+    space_P0_ptr_t M_spaceP0;
     element_P0_t M_hSize, M_lambdaK, M_sqrtLambdaK, M_mK;
-    std::string M_method;
-    std::string M_hSizeMethod;
-    double M_penalLambdaK;
+#endif
 }; // class StabilizationGLSParameter
 
 
@@ -95,18 +90,33 @@ template<typename MeshType, uint16_type OrderPoly>
 void
 StabilizationGLSParameter<MeshType,OrderPoly>::init()
 {
-    auto mesh = M_mesh;
+    auto mesh = this->M_mesh;
 
-    if ( M_hSizeMethod == "hmin" )
+#if 0
+    if ( this->M_hSizeMethod == "hmin" )
         M_hSize.on(_range=elements(mesh), _expr=hMin() );
-    else if ( M_hSizeMethod == "h" )
+    else if ( this->M_hSizeMethod == "h" )
         M_hSize.on(_range=elements(mesh), _expr=h() );
-    else if ( M_hSizeMethod == "meas" )
+    else if ( this->M_hSizeMethod == "meas" )
         M_hSize.on(_range=elements(mesh), _expr=pow(meas(),1./mesh_t::nDim) );
+#endif
+    this->M_hSizeValues.clear();
+    for ( auto const elt : allelements(mesh) )
+    {
+        size_type id = elt.id();
+        if ( this->M_hSizeMethod == "hmin" )
+            this->M_hSizeValues[id] = elt.hMin();
+        else if ( this->M_hSizeMethod == "h" )
+            this->M_hSizeValues[id] = elt.h();
+        else if ( this->M_hSizeMethod == "meas" )
+            this->M_hSizeValues[id] = math::pow(elt.measure(),1./mesh_t::nDim);
+    }
 
     // Stabilization : computation of lambdaK
-    if ( M_method == "eigenvalue" || M_method == "eigenvalue-simplified" )
+    if ( this->M_method == "eigenvalue" || this->M_method == "eigenvalue-simplified" )
     {
+        if ( !M_Xh )
+            M_Xh = Pdh<nOrder>(mesh);
         auto Ph = M_Xh;
         auto w = Ph->element();
 
@@ -119,15 +129,18 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         auto fB = form2( _trial=Ph, _test=Ph, _matrix=matB );
         fB = integrate( _range=elements(mesh),
                         _expr=inner(grad(w),gradt(w)) );
-        if ( math::abs( M_penalLambdaK ) > 1e-12 )
+        if ( math::abs( this->M_penalLambdaK ) > 1e-12 )
             fB += integrate( elements(mesh),
-                             M_penalLambdaK*inner(id(w),idt(w)) );
+                             this->M_penalLambdaK*inner(id(w),idt(w)) );
         matB->close();
 
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatB(0,0);
 
-        for ( auto const& eltWrap : elements(M_mesh) )
+        this->M_lambdaKValues.clear();
+        this->M_sqrtLambdaKValues.clear();
+        this->M_mKValues.clear();
+        for ( auto const& eltWrap : elements(this->M_mesh) )
         {
             auto const& elt = unwrap_ref( eltWrap );
             auto extractIndices = Ph->dof()->getIndices( elt.id() );
@@ -148,17 +161,26 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
             Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es( localEigenMatA,localEigenMatB );
             Eigen::VectorXd eigen_vls= es.eigenvalues();
             double lambda = eigen_vls.maxCoeff();
+            size_type eltId = elt.id();
+            this->M_lambdaKValues[eltId] = lambda;
+            this->M_sqrtLambdaKValues[eltId] = math::sqrt( lambda );
+            double currenthSize = this->hSize( eltId );
+            double cKValues = 1./(lambda*math::pow(currenthSize,2));
+            this->M_mKValues[elt.id()] = std::min( 1./3.,2*cKValues);
+#if 0
             M_lambdaK.on( _range=idedelements( mesh,elt.id() ), _expr=cst(lambda) );
+#endif
         }
-
+#if 0
         M_sqrtLambdaK.on(_range=elements(mesh), _expr=sqrt(idv(M_lambdaK)) );
         auto cK = cst(1.)/(idv(M_lambdaK)*pow(idv(M_hSize),2));
         M_mK.on(_range=elements(mesh),_expr=min( cst(1./3.),2*cK ) );
+#endif
     }
 }
 
 
-
+#if 0
 template<typename MeshType, uint16_type OrderPoly>
 template<typename ExprConvectiontype, typename ExprCoeffDiffusionType>
 auto
@@ -238,6 +260,7 @@ StabilizationGLSParameter<MeshType,OrderPoly>::delta( ExprConvectiontype const& 
     auto myDelta = cst(1.)*norm_u*idv(M_hSize)*xi_Re;
     return myDelta;
 }
+#endif
 
 }  // namespace FeelModels
 
