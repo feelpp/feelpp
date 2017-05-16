@@ -18,7 +18,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
-     ubuntu: 16.10
+     ubuntu: "16.10"
    env:
      CXX: clang++-3.9
      CC: clang-3.9
@@ -37,7 +37,7 @@ steps:
    command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
      docker: true
-     ubuntu: 16.10
+     ubuntu: "16.10"
    env:
      CXX: clang++-3.9
      CC: clang-3.9
