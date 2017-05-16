@@ -1693,3 +1693,4 @@ ex sub_matrix(const matrix&m, unsigned r, unsigned nr, unsigned c, unsigned nc)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

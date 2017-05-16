@@ -264,7 +264,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     // dirichlet condition by elimination
     if (this->hasMarkerDirichletBCelimination() && !BuildCstPart)
     {
-        this->updateBCDirichletStrongResidual( R );
+        //this->updateBCDirichletStrongResidual( R );
+        R->close();
+
+        auto resFeViewDisp = M_XhDisplacement->element(R,rowStartInVector);
+        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
+        auto const& dofsWithValueImposedDisp = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+        for ( size_type thedof : dofsWithValueImposedDisp )
+            resFeViewDisp.set( thedof,0. );
+        sync( resFeViewDisp, "=", dofsWithValueImposedDisp );
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -401,6 +409,71 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( elem
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
+
+
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+{
+    if ( !this->hasDirichletBC() ) return;
+
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "start",
+                                               this->worldComm(),this->verboseAllProc());
+
+    auto Xh = this->functionSpace();
+    auto mesh = this->mesh();
+
+    if ( !Xh->worldsComm()[0].isActive()) // only on Displacement Proc
+        return;
+
+    auto u = Xh->element( U, this->rowStartInVector() );
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
+        if ( !listMarkerFaces.empty() )
+            u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                 _expr=expression(d) );
+        if ( !listMarkerEdges.empty() )
+            u.on(_range=markededges(mesh,listMarkerEdges),
+                 _expr=expression(d) );
+        if ( !listMarkerPoints.empty() )
+            u.on(_range=markedpoints(mesh,listMarkerPoints),
+                 _expr=expression(d) );
+    }
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d), comp ) );
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            if ( !listMarkerFaces.empty() )
+                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                           _expr=expression(d) );
+            if ( !listMarkerEdges.empty() )
+                u[comp].on(_range=markededges(mesh,listMarkerEdges),
+                           _expr=expression(d) );
+            if ( !listMarkerPoints.empty() )
+                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
+                           _expr=expression(d) );
+        }
+    }
+
+    // synchronize velocity dof on interprocess
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
+    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
+        sync( u, "=", itFindDofsWithValueImposed->second );
+
+
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
+                                               this->worldComm(),this->verboseAllProc());
+}
 
 
 } // FeelModels

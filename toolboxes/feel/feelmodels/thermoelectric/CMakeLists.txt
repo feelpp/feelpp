@@ -33,4 +33,8 @@ endforeach()
 
 add_library(feelpp_model_thermoelectric SHARED libthermoelectric.cpp )
 target_link_libraries(feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC})
-install(TARGETS feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} DESTINATION lib COMPONENT Lib)
+set_property(TARGET feelpp_model_thermoelectric PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_model_thermoelectric DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermoelectric COMPONENT Devel)

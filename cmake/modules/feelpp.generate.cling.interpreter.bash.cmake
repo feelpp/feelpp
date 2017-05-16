@@ -1,0 +1,75 @@
+
+if ( NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+  message(ERROR "config file not found  ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake")
+  return()
+endif()
+
+
+set(FEELPP_DONT_SETUP_CMAKE 1)
+include(${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake)
+unset(FEELPP_DONT_SETUP_CMAKE)
+
+
+set(FEELPP_CLING_PATH_BASH_SCRIPT_TEMP ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++)
+
+File( WRITE ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP} 
+"#!/usr/bin/env bash
+printf \"\\\n\\e[1m\\e[1;31m\
+_____ _____ _____ __      _     _
+|   __|   __|   __|  |   _| |_ _| |
+|   __|   __|   __|  |__|_   _|_   _|
+|__|  |_____|_____|_____| |_|   |_|
+\\e[0m \\e[1m\\e[1;36m
+Feel++ interpreter (cling based)
+For more infos, see www.feelpp.org
+Type '.help' for help, '.q' to exit
+\\e[0m
+\"
+"
+)
+
+file( APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP}
+"${FEELPP_CLING_BIN} \\\n"
+)
+file (APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP}
+"${FEELPP_CXX_FLAGS} \\\n")
+
+set(FEELPP_CLING_COMPILE_DEFINITIONS_TEXT)
+foreach( THEDEF ${FEELPP_COMPILE_DEFINITIONS})
+  set( FEELPP_CLING_COMPILE_DEFINITIONS_TEXT "${FEELPP_CLING_COMPILE_DEFINITIONS_TEXT} -D${THEDEF} \\\n")
+endforeach()
+file( APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP} ${FEELPP_CLING_COMPILE_DEFINITIONS_TEXT} )
+unset(FEELPP_CLING_COMPILE_DEFINITIONS_TEXT)
+
+
+set(FEELPP_CLING_INCLUDE_DIR_TEXT)
+foreach( THEINC ${FEELPP_INCLUDE_DIR})
+  set(FEELPP_CLING_INCLUDE_DIR_TEXT "${FEELPP_CLING_INCLUDE_DIR_TEXT} -I${THEINC} \\\n")
+endforeach()
+file( APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP} ${FEELPP_CLING_INCLUDE_DIR_TEXT} )
+unset(FEELPP_CLING_INCLUDE_DIR_TEXT)
+
+if (0)
+set(FEELPP_CLING_LIBRARIES_TEXT)
+foreach( THELIB ${FEELPP_LIBRARY})
+  set(FEELPP_CLING_LIBRARIES_TEXT "${FEELPP_CLING_LIBRARIES_TEXT} ${THELIB} \\\n")
+endforeach()
+foreach( THELIB ${FEELPP_LIBRARIES})
+  set(FEELPP_CLING_LIBRARIES_TEXT "${FEELPP_CLING_LIBRARIES_TEXT} ${THELIB} \\\n")
+endforeach()
+file( APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP} ${FEELPP_CLING_LIBRARIES_TEXT} )
+unset(FEELPP_CLING_LIBRARIES_TEXT)
+endif()
+
+file( APPEND ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP}
+"--nologo \\
+$1"
+)
+
+# copy file with permissions as executable script.
+file( INSTALL ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP}
+    FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    )
+file(REMOVE ${FEELPP_CLING_PATH_BASH_SCRIPT_TEMP})
+unset(FEELPP_CLING_PATH_BASH_SCRIPT_TEMP)
