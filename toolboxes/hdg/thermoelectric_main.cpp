@@ -24,14 +24,15 @@ int main(int argc, char *argv[])
     Feel::Environment env( _argc=argc,
                            _argv=argv,
                            _about=makeAbout(),
-                           _desc=FeelModels::makeMixedPoissonOptions("mixedpoisson"),
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("mixedpoisson").add(feel_options())
+                           _desc=makeThermoElectricHDGOptions(),
+                           _desc_lib=feel_options()
                            );
 
     using thermoelectric_type = ThermoElectricHDG<FEELPP_DIM, FEELPP_ORDER, FEELPP_ORDER>;
     using thermoelectric_ptrtype = boost::shared_ptr<thermoelectric_type>;
 
     auto te = boost::make_shared<thermoelectric_type>();
+    te->run();
 
     return 0;
 }
