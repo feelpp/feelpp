@@ -283,24 +283,12 @@ macro(feelpp_add_test)
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
     ${ARGN}
     )
+  
+  
 
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
   #set(targetname feelpp_test_${FEELPP_TEST_NAME})
-
-  if ( FEELPP_APP_PROJECT )
-      set(targetname feelpp_${FEELPP_APP_PROJECT}_test_${FEELPP_TEST_NAME})
-  else( FEELPP_APP_PROJECT )
-      if ( PROJECT_NAME AND ( NOT PROJECT_NAME STREQUAL "Feel++" ) )
-          if ( PROJECT_SHORTNAME )
-              set(targetname feelpp_${PROJECT_SHORTNAME}_test_${FEELPP_TEST_NAME})
-          else()
-              set(targetname feelpp_${PROJECT_NAME}_test_${FEELPP_TEST_NAME})
-          endif()
-      else ()
-          set(targetname feelpp_test_${FEELPP_TEST_NAME})
-      endif()
-  endif()
 
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
