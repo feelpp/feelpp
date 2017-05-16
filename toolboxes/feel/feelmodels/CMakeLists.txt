@@ -49,6 +49,7 @@ option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OF
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
+add_subdirectory(modelvf)
 
 
 add_custom_target(feelpp-models-algebra)
