@@ -5138,6 +5138,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     delete formc;
 }
 
+namespace detail_integrator
+{
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<1> ) { return exprLambda(exprX); }
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<2> ) { return exprLambda(vec(exprX,exprY)); }
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<3> ) { return exprLambda(vec(exprX,exprY,exprZ)); }
+}
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
@@ -5170,9 +5182,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         auto geopc1 = gm1->preCompute( this->im().points() );
         auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
         auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
-        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc );
+        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc1 );
         double x=100,y=101,z=102;
-        auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
+        //auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
+        static const int inputDataDim = M;
+        auto expr_= detail_integrator::generateLambdaExpr( expression(), cst_ref(x), cst_ref(y), cst_ref(z), mpl::int_<inputDataDim>() );
         auto expr_evaluator = expr_.evaluator( mapgmc(ctx) );
 
         for ( ; it != en; ++it )
@@ -5191,13 +5205,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 for( auto const& e : v )
                 {
                     x=e(0,0);
-                    y=e(1,0);
-                    z=e(2,0);
+                    if ( inputDataDim > 1 )
+                        y=e(1,0);
+                    if ( inputDataDim > 2 )
+                        z=e(2,0);
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            double v = M_im( expr_evaluator, c1, c2 );
-                            res[i]( (int)c1,(int)c2 ) += v;
+                            res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
                         }
                     ++i;
                 }
@@ -5214,8 +5229,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 for( auto const& e : v )
                 {
                     x=e(0,0);
-                    y=e(1,0);
-                    z=e(2,0);
+                    if ( inputDataDim > 1 )
+                        y=e(1,0);
+                    if ( inputDataDim > 2 )
+                        z=e(2,0);
 
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5241,8 +5258,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     for( auto const& e : v )
                     {
                         x=e(0,0);
-                        y=e(1,0);
-                        z=e(2,0);
+                        if ( inputDataDim > 1 )
+                            y=e(1,0);
+                        if ( inputDataDim > 2 )
+                            z=e(2,0);
 
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                             for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5264,8 +5283,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     for( auto const& e : v )
                     {
                         x=e(0,0);
-                        y=e(1,0);
-                        z=e(2,0);
+                        if ( inputDataDim > 1 )
+                            y=e(1,0);
+                        if ( inputDataDim > 2 )
+                            z=e(2,0);
 
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                             for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
