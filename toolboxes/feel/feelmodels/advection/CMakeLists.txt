@@ -102,3 +102,7 @@ endforeach()
 
 add_library(feelpp_model_advection SHARED libadvection.cpp )
 target_link_libraries(feelpp_model_advection ${FEELPP_MODELS_LIBRARIES_ADVECTION})
+
+install(TARGETS feelpp_model_advection DESTINATION lib/ COMPONENT Libs)
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/advection COMPONENT Devel)

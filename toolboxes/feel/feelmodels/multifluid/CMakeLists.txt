@@ -33,3 +33,8 @@ endforeach()
 
 add_library(feelpp_model_multifluid SHARED libmultifluid.cpp)
 target_link_libraries(feelpp_model_multifluid ${FEELPP_MODELS_LIBRARIES_MULTIFLUID})
+
+install(TARGETS feelpp_model_multifluid DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/multifluid COMPONENT Devel)
