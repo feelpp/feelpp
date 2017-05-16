@@ -29,8 +29,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _BuildCstPart = data.buildCstPart();
-    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
-    bool _BuildExtendedPart = data.buildExtendedPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool BuildNonCstPart = !_BuildCstPart;
@@ -61,31 +59,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     this->log("FluidMechanics","updateLinearPDE", "start"+sc );
     this->timerTool("Solve").start();
 
-    auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
-
-    element_fluid_ptrtype fielCurrentPicardSolution;
-    if ( this->solverName() == "Picard" )
-    {
-        fielCurrentPicardSolution = Xh->elementPtr();
-        for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
-            fielCurrentPicardSolution->set( k,vecCurrentPicardSolution->operator()(/*rowStartInVector+*/k) );
-    }
-
-    auto const& U = this->fieldVelocityPressure();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
-
-    // strain tensor (trial)
-    auto deft = sym(gradt(u));
-    // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
-    // identity matrix
-    auto const Id = eye<nDim,nDim>();
 
     //--------------------------------------------------------------------------------------------------//
+
+    auto mesh = this->mesh();
+    auto Xh = this->functionSpace();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
@@ -101,6 +79,36 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
     auto myLinearForm =form1( _test=Xh, _vector=F,
                               _rowstart=rowStartInVector );
+
+
+    //boost::shared_ptr<element_fluid_external_storage_type> fielCurrentPicardSolution;
+    element_fluid_ptrtype fielCurrentPicardSolution;
+    if ( this->solverName() == "Picard" )
+    {
+#if 0
+        fielCurrentPicardSolution = Xh->elementPtr();
+        *fielCurrentPicardSolution = *vecCurrentPicardSolution;
+        //for ( size_type k=0;k<Xh->nLocalDofWithGhost();++k )
+        //fielCurrentPicardSolution->set( k,vecCurrentPicardSolution->operator()(/*rowStartInVector+*/k) );
+#else
+        fielCurrentPicardSolution = Xh->elementPtr();
+        *fielCurrentPicardSolution = *Xh->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
+#endif
+    }
+
+    auto const& U = this->fieldVelocityPressure();
+    auto u = U.template element<0>();
+    auto v = U.template element<0>();
+    auto p = U.template element<1>();
+    auto q = U.template element<1>();
+
+    // strain tensor (trial)
+    auto deft = sym(gradt(u));
+    //auto deft = 0.5*gradt(u);
+    // density
+    auto const& rho = this->densityViscosityModel()->fieldRho();
+    // identity matrix
+    auto const Id = eye<nDim,nDim>();
 
     //--------------------------------------------------------------------------------------------------//
     this->timerTool("Solve").start();
@@ -143,7 +151,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=elements(mesh),
-                       _expr= -divt(u)*id(q),
+                       _expr= -idv(rho)*divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 
@@ -323,7 +331,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateLinearPDEStabilisation(A,F,_BuildCstPart,A_extended,_BuildExtendedPart);
+    this->updateLinearPDEStabilisation( data );
 
     //--------------------------------------------------------------------------------------------------//
     // neumann condition

@@ -925,3 +925,4 @@ compare_statistics_t compare_statistics;
 #endif
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

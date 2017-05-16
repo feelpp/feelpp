@@ -204,25 +204,34 @@ class Mesh2D
     }
 
     /**
- * \return the number of faces in an element
- * \sa numLocalEdges()
- */
+     * \return the number of faces in an element
+     * \sa numLocalEdges()
+     */
     size_type numLocalFaces() const
     {
         return super_elements::element_type::numLocalEdges;
     }
 
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
+    uint16_type numLocalTopologicalFaces() const
+    {
+        return super_elements::element_type::numTopologicalFaces;
+    }
+
     /**
- * \return the number of vertices in an element
- */
+     * \return the number of vertices in an element
+     */
     size_type numLocalVertices() const
     {
         return super_elements::element_type::numLocalVertices;
     }
 
     /**
- * \return the number of faces
- */
+     * \return the number of faces
+     */
     size_type numFaces() const
     {
         return this->faces().size();

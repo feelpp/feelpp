@@ -76,8 +76,6 @@ public:
 
     //___________________________________________________________________________________//
     // assembly using bc
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
     void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
@@ -95,26 +93,6 @@ public:
 
     //___________________________________________________________________________________//
 
-    bool hasDirichletBC() const
-    {
-        return ( !M_bcDirichlet.empty() ||
-                 !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                 !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                 !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-    }
-
-private :
-    map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
-    map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
-    map_vector_fields<super_type::nDim,1,2> M_bcRobin;
-    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
-    map_vector_field<super_type::nDim,1,2> M_bcNeumannEulerianFrameVectorial;
-    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannEulerianFrameTensor2;
-
-    map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 };
 
 } // namespace FeelModels

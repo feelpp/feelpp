@@ -13,14 +13,15 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( element_fluid_external_storage_type const& U,
-                                                             sparse_matrix_ptrtype& J, vector_ptrtype& R,
-                                                             bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
 
     this->log("FluidMechanics","updateJacobianModel", "start" );
     boost::mpi::timer t1;
+
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool _BuildCstPart = data.buildCstPart();
 
     //--------------------------------------------------------------------------------------------------//
 

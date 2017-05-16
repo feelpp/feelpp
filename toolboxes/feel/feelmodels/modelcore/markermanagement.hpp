@@ -214,10 +214,10 @@ namespace detail
 {
 
 template <typename MeshType>
-std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
-distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
+std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
+distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::set<std::string> const& listMarker )
 {
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
     for ( std::string const& marker : listMarker )
     {
         if ( !mesh->hasMarker( marker ) ) continue;
@@ -239,28 +239,33 @@ distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::l
         }
         else
         {
-            //std::cout << "unknow marker " << marker << " with dim " << mesh->markerDim( marker ) << "\n";
+            std::get<3>( res ).push_back( marker );
+            //std::cout << "has element marker " << marker << "\n";
         }
     }
     return res;
 }
 
 template <typename MeshType>
-std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> >
+std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
+distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::list<std::string> const& listMarker )
+{
+    std::set<std::string> setOfMarkers(listMarker.begin(),listMarker.end());
+    return distributeMarkerListOnSubEntity( mesh,setOfMarkers );
+}
+
+template <typename MeshType>
+std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> >
 distributeMarkerListOnSubEntity( boost::shared_ptr<MeshType> const& mesh, std::initializer_list< std::list<std::string> > const& listOflistMarker )
 {
-    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > res;
+    std::set<std::string> setOfMarkers;
     for ( auto const& listMarker : listOflistMarker )
     {
-        auto localres = distributeMarkerListOnSubEntity( mesh,listMarker );
-        for ( std::string const& mark : std::get<0>( localres ) )
-            std::get<0>( res ).push_back( mark );
-        for ( std::string const& mark : std::get<1>( localres ) )
-            std::get<1>( res ).push_back( mark );
-        for ( std::string const& mark : std::get<2>( localres ) )
-            std::get<2>( res ).push_back( mark );
+        for (std::string const& mark : listMarker )
+            setOfMarkers.insert( mark );
     }
-    return res;
+    return distributeMarkerListOnSubEntity( mesh,setOfMarkers );
 }
 
 
