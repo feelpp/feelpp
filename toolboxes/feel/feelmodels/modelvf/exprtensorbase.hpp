@@ -148,6 +148,8 @@ namespace FeelModels
         {}
         virtual ~tensorBase() {}
 
+        void setGmc( Geo_t const& geom ) { M_geot = fusion::at_key<key_type>( geom ); }
+
         gmc_ptrtype const& gmc() const { return M_geot; }
         basis_fec_test_ptrtype const& fecTest() const { return M_fecTest; }
         basis_fec_trial_ptrtype const& fecTrial() const { return M_fecTrial; }
