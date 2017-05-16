@@ -1,6 +1,7 @@
 {
     "Name": "Square2d",
     "ShortName":"Square2d",
+    "Model": "Stokes",
     "Parameters":
     {
         "gammaDot": { "value":"2" },
