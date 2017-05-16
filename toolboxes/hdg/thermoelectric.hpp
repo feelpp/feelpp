@@ -72,11 +72,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::ThermoElectricHDG( std::string prefix,
     M_prefixThermo(prefixThermo),
     M_prefixElectro(prefixElectro)
 {
+    tic();
     M_thermo = thermo_type::New(M_prefixThermo);
     M_electro = electro_type::New(M_prefixElectro);
     M_mesh = loadMesh( new mesh_type );
     M_thermo->init( M_mesh );
     M_electro->init( M_mesh );
+    toc("init");
 }
 
 template<int Dim, int OrderT, int OrderV>
@@ -86,26 +88,30 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     auto electroMat = M_electro->modelProperties().materials();
     auto thermoMat = M_thermo->modelProperties().materials();
 
+    tic();
     M_electro->assembleCstPart();
+    toc("assembleCstElectro");
+    tic();
     M_thermo->assembleCstPart();
+    toc("assembleCstThermo");
 
     // first iteration
     M_electro->copyCstPart();
-    M_electro->assembleConductivityTerm( false );
+    M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
 
     M_thermo->copyCstPart();
-    M_thermo->assembleConductivityTerm( false );
+    M_thermo->updateConductivityTerm( false );
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
     {
         std::string marker = pairMat.first;
         auto mat = pairMat.second;
-        auto cond = getScalar(soption(prefixvm(M_prefixElectro,"conductivity_json")));
-        auto rhs = inner(M_current)/cond;
+        auto cond = mat.getScalar(soption(prefixvm(M_prefixElectro,"conductivity_json")));
+        auto rhs = inner(idv(M_current))/cond;
         M_thermo->assemblePotentialRHS( rhs, marker);
     }
     M_thermo->solve();
@@ -179,7 +185,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
             auto sigma = mat.getScalar(soption(prefixvm(M_prefixElectro,"conductivityNL_json")),
                                        {"T"}, {idv(M_temperature)},
                                        {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
-            auto rhs = inner(M_current)/sigma;
+            auto rhs = inner(idv(M_current))/sigma;
             M_thermo->assemblePotentialRHS( rhs, marker);
         }
         toc("assembleThermo");
