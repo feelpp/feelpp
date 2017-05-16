@@ -238,6 +238,7 @@ public:
     virtual void assembleAll();
 	virtual void assembleCstPart();
     virtual void assembleNonCstPart();
+    void copyCstPart();
 
     void assembleRHS();
     template<typename ExprT> void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");
@@ -559,6 +560,20 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
+{
+    M_F->zero();
+
+#ifndef USE_SAME_MAT
+	M_A_cst->close();
+    M_A->zero();
+    M_A->close();
+	// copy constant parts of the matrix
+    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
+#endif
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 {
 
@@ -653,12 +668,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNonCstPart()
 {
-#ifndef USE_SAME_MAT
-	// M_A->zero();
-	M_A_cst->close();
-	// copy constant parts of the matrix
-    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
-#endif
+    this->copyCstPart();
 
     modelProperties().parameters().updateParameterValues();
 
@@ -745,8 +755,6 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void 
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
 {
-    M_F->zero();
-
     // (p_old,w)_Omega	
     if ( !this->isStationary() )
 	{

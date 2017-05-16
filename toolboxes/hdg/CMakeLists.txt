@@ -45,6 +45,16 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
+foreach(D 2 3)
+  foreach(P RANGE 0 4 0) #3 
+    feelpp_add_application( thermoelectricHDG_${D}DP${P}
+                            SRCS thermoelectric.hpp thermoelectric_main.cpp
+                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                            LINK_LIBRARIES feelpp_modelcore )
+  endforeach()
+endforeach()
+
+
 feelpp_add_testcase(bitter)
 feelpp_add_testcase(cylinder)
 feelpp_add_testcase(testDarcy)
