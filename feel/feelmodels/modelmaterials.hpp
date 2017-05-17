@@ -318,7 +318,7 @@ struct ModelMaterial
 
 private:
 
-    WorldComm const& M_worldComm;
+    WorldComm const * M_worldComm;
     std::string M_name; /*!< Material name*/
     pt::ptree M_p;
     std::string M_directoryLibExpr;
@@ -363,7 +363,7 @@ public:
 private:
     void setup();
 private:
-    WorldComm const& M_worldComm;
+    WorldComm const* M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 

@@ -8,6 +8,9 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -241,7 +244,9 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
 
     if ( M_stabilizationGLS )
     {
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
+        typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
         M_stabilizationGLSParameter->init();
     }
 
@@ -661,102 +666,110 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
 }
 
 
-template< int StabParamType,typename ThermoDynType>
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-updateLinearPDEStabilizationGLS( ThermoDynType const& thermodyn, ModelAlgebraic::DataUpdateLinear & data )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
-    if ( !thermodyn.fieldVelocityConvectionIsUsedAndOperational() || buildCstPart )
+    if ( !this->fieldVelocityConvectionIsUsedAndOperational() || buildCstPart )
         return;
 
-    auto mesh = thermodyn.mesh();
-    auto Xh = thermodyn.spaceTemperature();
-    auto const& u = thermodyn.fieldTemperature();
-    auto const& v = thermodyn.fieldTemperature();
+    auto mesh = this->mesh();
+    auto Xh = this->spaceTemperature();
+    auto const& u = this->fieldTemperature();
+    auto const& v = this->fieldTemperature();
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=thermodyn.rowStartInMatrix(),
-                                              _colstart=thermodyn.colStartInMatrix() );
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
     auto myLinearForm = form1( _test=Xh, _vector=F,
-                               _rowstart=thermodyn.rowStartInVector() );
+                               _rowstart=this->rowStartInVector() );
 
-    if ( thermodyn.fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
+    if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
     {
-        auto kappa = idv(thermodyn.thermalProperties()->fieldThermalConductivity());
-        auto thecoeff = idv(thermodyn.thermalProperties()->fieldRho())*idv(thermodyn.thermalProperties()->fieldHeatCapacity());
-        auto uconv=thecoeff*idv(thermodyn.fieldVelocityConvection());
-        auto tau = thermodyn.stabilizationGLSParameter()->tau( uconv, kappa, mpl::int_<StabParamType>() );
+        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+        auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
+        auto uconv=thecoeff*idv(this->fieldVelocityConvection());
+#if 1
+        auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),uconv, kappa );
+#else
+        static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
+        typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
+        auto tau =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( this->stabilizationGLSParameter() )->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+        std::cout << "decltype(tau)::imorder=" << decltype(tau)::imorder << "\n";
+        std::cout << "decltype(tau)::imIsPoly=" << decltype(tau)::imIsPoly << "\n";
 
-        if ( ThermoDynType::nOrderTemperature <= 1 || thermodyn.stabilizationGLSType() == "supg"  )
+#endif
+        if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg"  )
         {
             auto stab_test = grad(u)*uconv;
-            if (!thermodyn.isStationary())
+            if (!this->isStationary())
             {
-                auto stab_residual_bilinear = thecoeff*(idt(u)*thermodyn.timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(thermodyn.fieldVelocityConvection()) );
+                auto stab_residual_bilinear = thecoeff*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(this->fieldVelocityConvection()) );
                 bilinearForm_PatternCoupled +=
                     integrate( _range=elements(mesh),
-                               _expr=val(tau)*stab_residual_bilinear*stab_test,
-                               _geomap=thermodyn.geomap() );
-                auto rhsTimeStep = thermodyn.timeStepBdfTemperature()->polyDeriv();
+                               _expr=tau*stab_residual_bilinear*stab_test,
+                               _geomap=this->geomap() );
+                auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
                 auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
                 myLinearForm +=
                     integrate( _range=elements(mesh),
                                _expr= val(tau*stab_residual_linear)*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _geomap=this->geomap() );
             }
             else
             {
-                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(thermodyn.fieldVelocityConvection());
+                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(this->fieldVelocityConvection());
                 bilinearForm_PatternCoupled +=
                     integrate( _range=elements(mesh),
-                               _expr=val(tau)*stab_residual_bilinear*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _expr=tau*stab_residual_bilinear*stab_test,
+                               _geomap=this->geomap() );
             }
-            for( auto const& d : thermodyn.bodyForces() )
+            for( auto const& d : this->bodyForces() )
             {
                 auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr=val(tau)*expression(d)*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _expr=tau*expression(d)*stab_test,
+                               _geomap=this->geomap() );
             }
         }
-        else if ( ( thermodyn.stabilizationGLSType() == "gls" ) || ( thermodyn.stabilizationGLSType() == "unusual-gls" ) )
+        else if ( ( this->stabilizationGLSType() == "gls" ) || ( this->stabilizationGLSType() == "unusual-gls" ) )
         {
-            int stabCoeffDiffusion = (thermodyn.stabilizationGLSType() == "gls")? 1 : -1;
+            int stabCoeffDiffusion = (this->stabilizationGLSType() == "gls")? 1 : -1;
             auto stab_test = grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
-            if (!thermodyn.isStationary())
+            if (!this->isStationary())
             {
-                auto stab_residual_bilinear = thecoeff*(idt(u)*thermodyn.timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(thermodyn.fieldVelocityConvection()) ) - kappa*laplaciant(u);
+                auto stab_residual_bilinear = thecoeff*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(this->fieldVelocityConvection()) ) - kappa*laplaciant(u);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=elements(mesh),
-                               _expr=val(tau)*stab_residual_bilinear*stab_test,
-                               _geomap=thermodyn.geomap() );
-                auto rhsTimeStep = thermodyn.timeStepBdfTemperature()->polyDeriv();
+                               _expr=tau*stab_residual_bilinear*stab_test,
+                               _geomap=this->geomap() );
+                auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
                 auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
                 myLinearForm +=
                     integrate( _range=elements(mesh),
                                _expr= val(tau*stab_residual_linear)*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _geomap=this->geomap() );
             }
             else
             {
-                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(thermodyn.fieldVelocityConvection()) - kappa*laplaciant(u);
+                auto stab_residual_bilinear = thecoeff*gradt(u)*idv(this->fieldVelocityConvection()) - kappa*laplaciant(u);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=elements(mesh),
-                               _expr=val(tau)*stab_residual_bilinear*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _expr=tau*stab_residual_bilinear*stab_test,
+                               _geomap=this->geomap() );
             }
-            for( auto const& d : thermodyn.bodyForces() )
+            for( auto const& d : this->bodyForces() )
             {
                 auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
-                               _expr=val(tau)*expression(d)*stab_test,
-                               _geomap=thermodyn.geomap() );
+                               _expr=tau*expression(d)*stab_test,
+                               _geomap=this->geomap() );
             }
         }
     }
@@ -886,10 +899,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     // update stabilization gls
     if ( M_stabilizationGLS )
     {
-        if ( M_stabilizationGLSParameter->method() == "eigenvalue" )
-            updateLinearPDEStabilizationGLS<0>( *this, data );
-        else if ( M_stabilizationGLSParameter->method() == "doubly-asymptotic-approximation" )
-            updateLinearPDEStabilizationGLS<2>( *this, data );
+        this->updateLinearPDEStabilizationGLS( data );
     }
 
     // update bc
