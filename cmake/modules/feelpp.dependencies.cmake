@@ -1207,6 +1207,7 @@ if ( FEELPP_ENABLE_VTK )
         # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
         set(FEELPP_HAS_PARAVIEW 1)
+        set(FEELPP_PARAVIEW_DIR ${ParaView_DIR})
         # Check for version to ensure that we are able to
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
@@ -1237,6 +1238,7 @@ if ( FEELPP_ENABLE_VTK )
             include(${VTK_USE_FILE})
 
             set(FEELPP_HAS_VTK 1)
+            set(FEELPP_VTK_DIR ${VTK_DIR})
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
 
             # Check for MPI support in VTK
