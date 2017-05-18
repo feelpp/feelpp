@@ -1603,17 +1603,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
         reinitMethod = "Hamilton-Jacobi";
 
     std::string scalarSmootherParameters;
-    double scalarSmootherCoeff = this->smoother()->epsilon() * Order / this->mesh()->hAverage();
-    scalarSmootherParameters = "coeff (h*c/order) = " 
-        + std::to_string(this->smoother()->epsilon())
-        + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(scalarSmootherCoeff) + " / " + std::to_string(Order) + ")"
-        ;
+    if( M_smoother )
+    {
+        double scalarSmootherCoeff = this->smoother()->epsilon() * Order / this->mesh()->hAverage();
+        scalarSmootherParameters = "coeff (h*c/order) = " 
+            + std::to_string(this->smoother()->epsilon())
+            + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(scalarSmootherCoeff) + " / " + std::to_string(Order) + ")"
+            ;
+    }
     std::string vectorialSmootherParameters;
-    double vectorialSmootherCoeff = this->smootherVectorial()->epsilon() * Order / this->mesh()->hAverage();
-    vectorialSmootherParameters = "coeff (h*c/order) = " 
-        + std::to_string(this->smootherVectorial()->epsilon())
-        + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(vectorialSmootherCoeff) + " / " + std::to_string(Order) + ")"
-        ;
+    if( M_smootherVectorial )
+    {
+        double vectorialSmootherCoeff = this->smootherVectorial()->epsilon() * Order / this->mesh()->hAverage();
+        vectorialSmootherParameters = "coeff (h*c/order) = " 
+            + std::to_string(this->smootherVectorial()->epsilon())
+            + " (" + std::to_string(this->mesh()->hAverage()) + " * " + std::to_string(vectorialSmootherCoeff) + " / " + std::to_string(Order) + ")"
+            ;
+    }
 
     std::string restartMode = (this->doRestart())? "ON": "OFF";
 
@@ -1655,9 +1661,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize stretch augmented  : " << std::boolalpha << this->M_reinitStretchAugmented;
 
-    *_ostr << "\n   Smoothers Parameters"
-           << "\n     -- scalar smoother    : " << scalarSmootherParameters
-           << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
+    if( M_smoother || M_smootherVectorial )
+    *_ostr << "\n   Smoothers Parameters";
+    if( M_smoother )
+    *_ostr << "\n     -- scalar smoother    : " << scalarSmootherParameters;
+    if( M_smootherVectorial )
+    *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";
     if( this->hasGeofileStr() )
