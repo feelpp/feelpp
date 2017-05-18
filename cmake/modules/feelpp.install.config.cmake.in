@@ -1,8 +1,10 @@
 
-if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+set(_FEELPP_CONFIG_LIB_FILE @FEELPP_CONFIG_LIB_FILE@)
+
+if ( EXISTS ${_FEELPP_CONFIG_LIB_FILE} )
 
   set(FEELPP_DONT_SETUP_CMAKE 1)
-  include(${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake)
+  include( ${_FEELPP_CONFIG_LIB_FILE})
   unset(FEELPP_DONT_SETUP_CMAKE)
 
   string(REPLACE ${FEELPP_BINARY_BUILD_DIR}/feel/ ${FEELPP_INSTALL_DIR}/lib/  FEELPP_LIBRARY  "${FEELPP_LIBRARY}" )
@@ -68,7 +70,7 @@ if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
   file( WRITE ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/feelpp.include.config.cmake
     ${FEELPP_INCLUDE_DIR_TEXT} )
 
-  file(INSTALL ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
+  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
     DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/
     )
 endif()
