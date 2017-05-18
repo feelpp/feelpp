@@ -396,9 +396,6 @@ add_custom_target(install-testcase
   )
 
 add_custom_target(check-full COMMAND "ctest")
-IF(FEELPP_ENABLE_TESTS )
-  add_dependencies(check-full testsuite)
-endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
@@ -408,6 +405,7 @@ endif()
 #add_dependencies(check examples)
 IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
+  add_dependencies(check-full testsuite)
 endif()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
