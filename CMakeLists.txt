@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 3.1.3)
 if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
@@ -396,9 +396,6 @@ add_custom_target(install-testcase
   )
 
 add_custom_target(check-full COMMAND "ctest")
-IF(FEELPP_ENABLE_TESTS )
-  add_dependencies(check-full testsuite)
-endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
@@ -408,6 +405,7 @@ endif()
 #add_dependencies(check examples)
 IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
+  add_dependencies(check-full testsuite)
 endif()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
@@ -466,7 +464,7 @@ include(feelpp.directive)
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
 # The add_subdirectory is way too soon to get those values
-set(config_file "cmake/modules/Feel++Config.cmake")
-configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
-
+# The install command of this file is located in cmake/module/CMakeLists (because of feelpp-install-lib target)
+set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/cmake/modules/feelpp.install.config.cmake @ONLY)

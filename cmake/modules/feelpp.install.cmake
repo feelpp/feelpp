@@ -109,9 +109,6 @@ ENDIF()
 #
 set(_INSTALL_FEELPP_LIB_COMMAND ${CMAKE_COMMAND})
 
-set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-  -P "${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake")
-
 if ( FEELPP_HAS_GFLAGS )
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/gflags/cmake_install.cmake")
 endif()
