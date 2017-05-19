@@ -39,13 +39,35 @@ int main(int argc, char *argv[])
     decltype( IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(mesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) ) ) Idh ;
     decltype( IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(mesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) ) ) Idhv;
 
+    std::list<std::string> listSubmesh;
 
-    if ( soption( "mixedelasticity.gmsh.submesh" ).empty() )
+    std::string unseparatedList = soption( "mixedelasticity.gmsh.submesh");
+
+    char help;
+    std::string nameSubmesh;
+    for ( int i = 0; i < unseparatedList.size(); i++)
+    {
+
+        help = unseparatedList[i];
+        if ( help == ',' || i == unseparatedList.size()-1 )
+        {        
+            if ( i ==  unseparatedList.size()-1)
+                nameSubmesh.push_back(help);
+            listSubmesh.push_back(nameSubmesh);
+            nameSubmesh.erase();
+        }
+        else
+        {
+            nameSubmesh.push_back(help);
+        }
+    }
+
+    if ( listSubmesh.empty() )
         ME -> init(mesh);
     else
     {
-        Feel::cout << "Using submesh: " << soption("mixedelasticity.gmsh.submesh") << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements(mesh,soption("mixedelasticity.gmsh.submesh")), Environment::worldComm() );
+        Feel::cout << "Using submesh: " << listSubmesh << std::endl;
+        auto cmesh = createSubmesh( mesh, markedelements( mesh, listSubmesh ), Environment::worldComm() );
         Idh = IPtr( _domainSpace=Pdhv<FEELPP_ORDER>(cmesh), _imageSpace=Pdhv<FEELPP_ORDER>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhms<FEELPP_ORDER>(cmesh), _imageSpace=Pdhms<FEELPP_ORDER>(mesh) );
         ME -> init( cmesh, mesh );
