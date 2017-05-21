@@ -1294,3 +1294,5 @@ epvector mul::expandchildren(unsigned options) const
 GINAC_BIND_UNARCHIVER(mul);
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

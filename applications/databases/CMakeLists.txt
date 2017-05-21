@@ -22,28 +22,26 @@
 #
 #
 
-if ( NOT TARGET quickstart )
-  add_custom_target(app-databases)
-endif()
-
 if (FEELPP_HAS_HDF5 )
+
+  if ( NOT TARGET app-databases )
+    add_custom_target(app-databases)
+  endif()
+
   if ( FEELPP_HAS_ACUSIM )
     feelpp_add_application( converter_acusim SRCS converter_database_acusim.cpp INCLUDE_IN_ALL PROJECT databases INSTALL EXEC DB_CONVERTER)
   endif()
   feelpp_add_application( export SRCS export_database.cpp INCLUDE_IN_ALL PROJECT databases INSTALL EXEC DB_EXPORT)
   feelpp_add_application( pod SRCS pod_database.cpp INCLUDE_IN_ALL PROJECT databases INSTALL EXEC DB_POD)
-endif()
-add_dependencies(app-databases ${DB_CONVERTER} ${DB_EXPORT} ${DB_POD})
-add_custom_target(install-app-databases
-  DEPENDS
-  app-databases
-  COMMAND
-  "${CMAKE_COMMAND}"
-  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
+
+  add_dependencies(app-databases ${DB_CONVERTER} ${DB_EXPORT} ${DB_POD})
+  add_custom_target(install-app-databases
+    DEPENDS
+    app-databases
+    COMMAND
+    "${CMAKE_COMMAND}"
+    -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake")
 
 
-if ( NOT TARGET install-feelpp-base )
-  add_custom_target( install-feelpp-base DEPENDS install-app-databases)
-else()
-  add_dependencies(install-feelpp-base install-app-databases)
+
 endif()

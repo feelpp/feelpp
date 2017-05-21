@@ -55,7 +55,6 @@ if ( FEELPP_ENABLE_IPOPT )
       #ADD_DEFINITIONS( -DFEELPP_HAS_IPOPT )
       #ADD_DEFINITIONS( -fPIC )
 
-      SET(FEELPP_LIBRARIES feelpp_ipopt ${FEELPP_LIBRARIES})
       SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
       #add_subdirectory(contrib/ipopt)
 
@@ -65,6 +64,11 @@ if ( FEELPP_ENABLE_IPOPT )
 
       # Compile/copy header in cmake binary dirs.
       include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
+
+      add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ipopt)
+      list(APPEND FEELPP_LIBRARIES feelpp_ipopt)
+      add_dependencies(contrib feelpp_ipopt)
+
     endif()
   endif()
 endif()

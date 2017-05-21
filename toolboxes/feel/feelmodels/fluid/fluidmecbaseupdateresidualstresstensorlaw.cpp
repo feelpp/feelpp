@@ -15,20 +15,17 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( element_fluid_external_storage_type/*element_fluid_type*/ const& U,
-                                                             vector_ptrtype& R,
-                                                             bool BuildCstPart,
-                                                             bool UseJacobianLinearTerms ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
-
-    //if (this->stressTensorLawType() == "newtonian" && UseJacobianLinearTerms ) return;
-
-    //!this->velocityDivIsEqualToZero() && BuildCstPart
 
     this->log("FluidMechanics","updateResidualModel", "start for " + this->densityViscosityModel()->dynamicViscosityLaw() );
 
     boost::mpi::timer thetimer,thetimer2;
+    vector_ptrtype& R = data.residual();
+    bool BuildCstPart = data.buildCstPart();
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();

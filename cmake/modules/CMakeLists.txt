@@ -48,5 +48,6 @@ FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 #   ResolveCompilerPaths.cmake
 #   UseLATEX.cmake )
 
-INSTALL(FILES ${modules} DESTINATION share/feel/cmake/modules COMPONENT Devel)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/feelpp.install.config.cmake COMPONENT Devel)

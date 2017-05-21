@@ -256,3 +256,4 @@ const constant Euler("Euler", EulerEvalf, "\\gamma_E", domain::positive);
 const constant Catalan("Catalan", CatalanEvalf, "G", domain::positive);
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
