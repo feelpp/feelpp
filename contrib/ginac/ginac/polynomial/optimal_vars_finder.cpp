@@ -152,3 +152,4 @@ exvector gcd_optimal_variables_order(const ex& a, const ex& b)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

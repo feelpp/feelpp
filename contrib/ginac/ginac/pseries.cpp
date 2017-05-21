@@ -1288,3 +1288,4 @@ ex ex::series(const ex & r, int order, unsigned options) const
 GINAC_BIND_UNARCHIVER(pseries);
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
