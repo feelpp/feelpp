@@ -1,8 +1,12 @@
 
-if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+set(_FEELPP_CONFIG_LIB_FILE @FEELPP_CONFIG_LIB_FILE@)
+set(FEELPP_BINARY_BUILD_DIR @FEELPP_BINARY_DIR@)
+set(FEELPP_SOURCE_BUILD_DIR @FEELPP_SOURCE_DIR@)
+
+if ( EXISTS ${_FEELPP_CONFIG_LIB_FILE} )
 
   set(FEELPP_DONT_SETUP_CMAKE 1)
-  include(${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake)
+  include( ${_FEELPP_CONFIG_LIB_FILE})
   unset(FEELPP_DONT_SETUP_CMAKE)
 
   string(REPLACE ${FEELPP_BINARY_BUILD_DIR}/feel/ ${FEELPP_INSTALL_DIR}/lib/  FEELPP_LIBRARY  "${FEELPP_LIBRARY}" )
@@ -36,8 +40,9 @@ if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
     list(APPEND FEELPP_LIBRARIES_WITH_SPACE " ${THELIB} ")
   endforeach()
   set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY ${FEELPP_LIBRARY} )\nset(FEELPP_LIBRARIES ${FEELPP_LIBRARIES_WITH_SPACE})" )
-  file( WRITE ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/feelpp.libraries.config.cmake
-    ${FEELPP_LIBRARIES_TEXT} )
+  file( WRITE ${FEELPP_BINARY_BUILD_DIR}${CMAKE_FILES_DIRECTORY}/feelpp.libraries.config.cmake ${FEELPP_LIBRARIES_TEXT} )
+  file( INSTALL ${FEELPP_BINARY_BUILD_DIR}${CMAKE_FILES_DIRECTORY}/feelpp.libraries.config.cmake
+    DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/ )
 
   set(FEELPP_INCLUDE_DIR_WITH_SPACE)
   foreach( THEINC ${FEELPP_INCLUDE_DIR} )
@@ -65,10 +70,11 @@ if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
 
   set(FEELPP_INCLUDE_DIR_TEXT "set(FEELPP_INCLUDE_DIR ${FEELPP_INCLUDE_DIR_WITH_SPACE})")
   #string(REPLACE ";" "" FEELPP_INCLUDE_DIR_TEXT ${FEELPP_INCLUDE_DIR_TEXT} )
-  file( WRITE ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/feelpp.include.config.cmake
-    ${FEELPP_INCLUDE_DIR_TEXT} )
+  file( WRITE ${FEELPP_BINARY_BUILD_DIR}${CMAKE_FILES_DIRECTORY}/feelpp.include.config.cmake ${FEELPP_INCLUDE_DIR_TEXT} )
+  file( INSTALL ${FEELPP_BINARY_BUILD_DIR}${CMAKE_FILES_DIRECTORY}/feelpp.include.config.cmake
+    DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/ )
 
-  file(INSTALL ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
+  file(INSTALL ${FEELPP_BINARY_BUILD_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
     DESTINATION ${FEELPP_INSTALL_DIR}/share/feelpp/feel/cmake/modules/
     )
 endif()
