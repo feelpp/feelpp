@@ -464,7 +464,7 @@ include(feelpp.directive)
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
 # The add_subdirectory is way too soon to get those values
-set(config_file "cmake/modules/Feel++Config.cmake")
-configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
-
+# The install command of this file is located in cmake/module/CMakeLists (because of feelpp-install-lib target)
+set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/cmake/modules/feelpp.install.config.cmake @ONLY)
