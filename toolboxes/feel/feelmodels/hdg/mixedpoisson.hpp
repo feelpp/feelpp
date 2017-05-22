@@ -566,7 +566,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
 
 #ifndef USE_SAME_MAT
 	M_A_cst->close();
-    M_A->zero();
+    //M_A->zero();
     M_A->close();
 	// copy constant parts of the matrix
     MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
