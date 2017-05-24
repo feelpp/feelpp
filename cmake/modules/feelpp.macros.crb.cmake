@@ -115,8 +115,10 @@ if ( FEELPP_HAS_OPENTURNS )
 
   add_dependencies(crb ${CRB_PYTHON_NAME})
 
+  if ( 0 ) #TODO
   install(TARGETS ${CRB_PYTHON_NAME} DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CRB_PYTHON_NAME}.xml" DESTINATION lib/openturns/wrappers/ COMPONENT Bin)
+  endif()
 
   if ( CRB_PYTHON_SCRIPTS )
     foreach(  script ${CRB_PYTHON_SCRIPTS} )
