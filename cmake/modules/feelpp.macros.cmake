@@ -639,3 +639,6 @@ macro (feelpp_add_man NAME MAN SECT)
       endif()
 
   endmacro (feelpp_add_man)
+
+  # CRB cmake macros
+  include(feelpp.macros.crb)
