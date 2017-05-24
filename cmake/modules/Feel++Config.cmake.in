@@ -31,6 +31,8 @@ set(FEELPP_CXX_STANDARD_REQUIRED @CMAKE_CXX_STANDARD_REQUIRED@)
 set(FEELPP_C_FLAGS "@CMAKE_C_FLAGS@")
 set(FEELPP_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
 
+set(FEELPP_CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@)
+
 set(FEELPP_ENABLED_OPTIONS "@FEELPP_ENABLED_OPTIONS@")
 # Feel++ mesh configuration
 set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
@@ -111,5 +113,6 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   include(feelpp.host)
   include(feelpp.macros)
 
+  MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
 endif()
