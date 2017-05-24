@@ -42,7 +42,6 @@ endif()
 add_custom_target(crb)
 set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-include(UseCRB)
 
 include_directories(${FEELPP_CRB_SOURCE_DIR})
 include_directories(${FEELPP_CRB_BINARY_DIR})
