@@ -27,7 +27,7 @@ include_directories(
   )
 
 #files(GLOB pyfiles "*.py")
-if ( FEELPP_ENABLE_OPENTURNS )
+if ( FEELPP_HAS_OPENTURNS )
  crb_add_python_module( opuseadsmfem opuseadsmfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadsmfemtest.py )
  crb_add_python_module( opuseadspfem opuseadspfem_wrapper.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} SCRIPTS opuseadspfemtest.py )
  #crb_add_python_module( opuseadscrb opuseadscrb_wrapper.cpp LINK_LIBRARIES feel++_crb_models SCRIPTS opuseadscrbtest.py )
