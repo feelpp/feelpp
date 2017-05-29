@@ -299,9 +299,7 @@ ConverterAcusimDatabase<MeshType>::loadMesh()
 	//int nNodes =0;
 	//bool success = adbGetInt0  ( M_adbHd, (char*)"nNodes",&nNodes);
 
-    
-
-	double crd[M_nNodes*3];
+    double *crd = new double[M_nNodes*3];
 	std::cout << "PO : load nNodes " << M_nNodes << "\n";
     success = adbGetReals0 ( M_adbHd,(char*)"crd", crd, 3 ,M_nNodes);
 
@@ -321,6 +319,7 @@ ConverterAcusimDatabase<MeshType>::loadMesh()
          pt.setProcessId( partId );
          mesh->addPoint( pt );
 	  }
+    delete [] crd;
 
     //-------------------------------------------------------------//
     // load mesh elements
