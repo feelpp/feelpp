@@ -2,15 +2,68 @@
 
 set -eo pipefail
 #set -x
-ECHO=${ECHO:-}
-PROJECT=${1:-${PROJECT}}
-TARGET=${2:-${TARGET:-ubuntu:17.04}}
-BRANCH=${3:-${BRANCH:-master}}
+
+# default values
+TARGET=ubuntu:16.10
+BRANCH=master
 URL=https://www.github.com/feelpp/
-FROM=${4:-${FROM:-feelpp/feelpp-base}}
-FEELPP_BRANCH=${5:-${FEELPP_BRANCH:-develop}}
-JOBS=${6:-${BUILD_JOBS:-10}}
+FEELPP_BRANCH=develop
+BUILD_JOBS=10
+FROM=feelpp/feelpp-base
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
+CMAKE_FLAGS=""
+
+for i in "$@"
+do
+    case $i in
+        -p=*|--project=*)
+            PROJECT="${i#*=}"
+            shift # past argument=value
+            ;;
+        -t=*|--target=*)
+            TARGET="${i#*=}"
+            shift # past argument=value
+            ;;
+        -b=*|--branch=*)
+            BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -f=*|--from=*)
+            FROM="${i#*=}"
+            shift # past argument=value
+            ;;
+        --feelpp-branch=*)
+            FEELPP_BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -j=*|--jobs=*)
+            BUILD_JOBS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -c=*|--cmake-flags=*)
+            CMAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -d=*|--feelpp-dir=*)
+            FEELPP_DIR="${i#*=}"
+            shift # past argument=value
+            ;;                       
+        *)
+            # unknown option
+            ;;
+    esac
+done
+
+echo "PROJECT=${PROJECT}"
+echo "TARGET=${TARGET}"
+echo "BRANCH=${BRANCH}"
+echo "URL=${URL}"
+echo "FROM=${FROM}"
+echo "FEELPP_BRANCH=${FEELPP_BRANCH}"
+echo "BUILD_JOBS=${BUILD_JOBS}"
+echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
+echo "FEELPP_DIR=${FEELPP_DIR}"
+
 
 # Combines a dockerfile template with a generated FROM line
 dockerfile_from() {
@@ -54,11 +107,12 @@ dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}
 
 ${ECHO} docker build \
        --tag=feelpp/$PROJECT:${tag} \
-       --build-arg=BUILD_JOBS=${JOBS}\
-       --build-arg=URL=${URL}\
-       --build-arg=BRANCH=${BRANCH}\
-       --build-arg=PROJECT=${PROJECT}\
+       --build-arg=BUILD_JOBS="${BUILD_JOBS}"\
+       --build-arg=URL="${URL}"\
+       --build-arg=BRANCH="${BRANCH}"\
+       --build-arg=PROJECT="${PROJECT}"\
        --build-arg=GITHUB_OAUTH=${GITHUB_OAUTH}\
+       --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}"\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
        --no-cache=true \
