@@ -10,7 +10,8 @@ feelpp_build()
     BRANCH=$3
     NJOBS=${4:-10}
     CMAKE_FLAGS=${5:-}
-    FEELPP_SRC_DIR=${6:-$HOME/src/}
+    MAKE_FLAGS=${6:-VERBOSE=0}
+    FEELPP_SRC_DIR=${7:-$HOME/src/}
     FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
     
   echo "--- Building Project $1 ..."
@@ -30,7 +31,7 @@ feelpp_build()
         mkdir -p build && cd build
         echo "$FEELPP_SRC_DIR/feelpp/configure -r --root=\"/tmp/$1\" --cmakeflags=\"-DCMAKE_INSTALL_PREFIX=${FEELPP_DIR} ${CMAKE_FLAGS}\";"
         $FEELPP_SRC_DIR/feelpp/configure -r --root="/tmp/$1" --cmakeflags="-DCMAKE_INSTALL_PREFIX=${FEELPP_DIR} ${CMAKE_FLAGS}";
-        make -j $NJOBS VERBOSE=1
+        make -j $NJOBS ${MAKE_FLAGS}
         # install requires sudo
         sudo make install
 #        if [ -f ../WELCOME.$1 ]; then
