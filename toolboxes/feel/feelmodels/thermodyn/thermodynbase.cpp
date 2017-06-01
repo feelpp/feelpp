@@ -9,7 +9,7 @@
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
-#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
+//#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
 namespace Feel
 {
@@ -244,8 +244,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
 
     if ( M_stabilizationGLS )
     {
-        static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
-        typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
+        typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
         M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
         M_stabilizationGLSParameter->init();
     }
@@ -688,12 +687,18 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
     auto myLinearForm = form1( _test=Xh, _vector=F,
                                _rowstart=this->rowStartInVector() );
 
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
-    {
+    //if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
+    //{
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
         auto uconv=thecoeff*idv(this->fieldVelocityConvection());
-#if 1
+        auto rangeStabUsed = elements(mesh);
+#if 0
+        typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
+        auto stabGLSParam =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( this->stabilizationGLSParameter() );
+        stabGLSParam->updateTau(uconv, kappa, rangeStabUsed);
+        auto tau = idv(stabGLSParam->fieldTau());
+#elif 1
         auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),uconv, kappa );
 #else
         static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
@@ -772,7 +777,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
                                _geomap=this->geomap() );
             }
         }
-    }
+        //}
 
 }
 
