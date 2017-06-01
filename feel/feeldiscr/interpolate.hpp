@@ -29,6 +29,8 @@
 #ifndef __interpolate_H
 #define __interpolate_H 1
 
+#include <feel/feelmesh/intersect.hpp>
+
 namespace Feel
 {
 enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
@@ -115,19 +117,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->buildDofTableMPIExtended();
     bool outputUseDofTableMPIExtended = space->dof()->buildDofTableMPIExtended();
     bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && inputUseDofTableMPIExtended && outputUseDofTableMPIExtended );
-    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
-    auto it = rangeElt.template get<1>();
-    auto en = rangeElt.template get<2>();
 
     bool applyVectorSync = !upExtendedElt && outputUseDofTableMPIExtended;
-
-    if ( it == en )
-    {
-        if ( applyVectorSync )
-            sync( interp, "=" );
-        return;
-    }
 
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
 
@@ -138,6 +129,29 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( ( MeshBase* )f.functionSpace()->mesh().get() == ( MeshBase* )space->mesh().get() )
     {
+
+        typename FunctionType::functionspace_type::range_mesh_elements_type rangeElt;
+        if ( f.functionSpace()->dof()->hasRangeMeshElements() && space->dof()->hasRangeMeshElements() )
+            rangeElt = intersect( f.functionSpace()->dof()->rangeMeshElements(), space->dof()->rangeMeshElements() );
+        else if ( f.functionSpace()->dof()->hasRangeMeshElements() )
+            rangeElt = f.functionSpace()->dof()->rangeMeshElements();
+        else if ( space->dof()->hasRangeMeshElements() )
+            rangeElt = space->dof()->rangeMeshElements();
+        else
+        {
+            EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+            rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
+        }
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+
+        if ( it == en )
+        {
+            if ( applyVectorSync )
+                sync( interp, "=" );
+            return;
+        }
+
         DVLOG(2) << "[interpolate] Same mesh but not same space\n";
 
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
@@ -207,6 +221,19 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     else // INTERPOLATE_DIFFERENT_MESH
     {
+        EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
+        auto it = rangeElt.template get<1>();
+        auto en = rangeElt.template get<2>();
+
+        if ( it == en )
+        {
+            if ( applyVectorSync )
+                sync( interp, "=" );
+            return;
+        }
+
+
         DVLOG(2) << "[interpolate] different meshes\n";
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
         // get only one point

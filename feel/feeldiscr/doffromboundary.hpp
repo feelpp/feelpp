@@ -155,6 +155,20 @@ public:
             addEdgeBoundaryDof( it, useConnection0, lcEdge );
             addFaceBoundaryDof( it, useConnection0, lcFace );
         }
+    template<typename FaceIterator>
+    void add( FaceIterator it, uint8_type connectionId )
+        {
+            auto const& face = boost::unwrap_ref( *it );
+            bool useConnection0 = (connectionId == 0);
+
+            uint16_type lcVertex = 0;
+            uint16_type lcEdge = 0;
+            uint16_type lcFace = 0;
+
+            addVertexBoundaryDof( it, useConnection0, lcVertex );
+            addEdgeBoundaryDof( it, useConnection0, lcEdge );
+            addFaceBoundaryDof( it, useConnection0, lcFace );
+        }
 
     //@}
 
