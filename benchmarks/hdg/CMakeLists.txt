@@ -188,12 +188,12 @@ endforeach()
 
 ###################################################
 
-foreach(D RANGE 2 3 2)
+foreach(D RANGE 2 3 1)
   foreach(P RANGE 0 4 1) #3
     foreach(N RANGE 1 2 1)
-      foreach(E 4 )
-        feelpp_add_application( elasticity_conv_${D}DP${P}G${N}E${E}
-                                SRCS convelasticity_main.cpp convelasticity.hpp
+      foreach(E 2 4 1)
+        feelpp_add_application( cvg_mixedelasticity_${D}DP${P}G${N}E${E}
+                                SRCS cvg_mixedelasticity_main.cpp cvg_mixedelasticity.hpp
                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_EXP_ORDER=${E}
                                 # INCLUDE_IN_ALL
                                 LINK_LIBRARIES feelpp_modelcore )
