@@ -1397,6 +1397,7 @@ public:
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
+    typedef elements_reference_wrapper_t<mesh_type> range_mesh_elements_type;
 
     template<typename BasisType>
     struct GetNComponents
@@ -3869,6 +3870,7 @@ public:
      * \param mesh a mesh data structure
      */
     FunctionSpace( mesh_ptrtype const& mesh,
+                   range_mesh_elements_type const& rangeMeshElt,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
@@ -3879,7 +3881,7 @@ public:
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        this->init( mesh, mesh_components, periodicity );
+        this->init( mesh, rangeMeshElt, mesh_components, periodicity );
     }
 
     FunctionSpace( mesh_ptrtype const& mesh,
@@ -3937,20 +3939,22 @@ public:
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                        ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
+                                       ( range, (range_mesh_elements_type) , range_mesh_elements_type())
                                      )
                                    )
     {
-        return NewImpl( mesh, worldscomm, components, periodicity, extended_doftable );
+        return NewImpl( mesh, range, worldscomm, components, periodicity, extended_doftable );
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
+                                 range_mesh_elements_type const& rangeMeshElt,
                                  std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
     {
 
-        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm, extendedDofTable ) );
+        return pointer_type( new functionspace_type( __m, rangeMeshElt, mesh_components, periodicity, worldsComm, extendedDofTable ) );
     }
 
     template<typename ...FSpaceList>
@@ -3998,6 +4002,7 @@ public:
      * initialize the function space
      */
     void init( mesh_ptrtype const& mesh,
+               range_mesh_elements_type const& rangeMeshElt,
                size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                periodicity_type periodicity = periodicity_type() )
     {
@@ -4007,7 +4012,7 @@ public:
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity, std::vector<Dof >(), mpl::bool_<is_composite>() );
+        this->init( mesh, rangeMeshElt, mesh_components, periodicity, std::vector<Dof >(), mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
@@ -4811,11 +4816,13 @@ protected:
 private:
 
     FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                range_mesh_elements_type const& rangeMeshElt,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
                                 std::vector<Dof > const& dofindices,
                                 mpl::bool_<false> );
     FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                range_mesh_elements_type const& rangeMeshElt,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
                                 std::vector<Dof > const& dofindices,
@@ -4964,10 +4971,11 @@ const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nRealComponent
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-        size_type mesh_components,
-        periodicity_type const& periodicity,
-        std::vector<Dof> const& dofindices,
-        mpl::bool_<false> )
+                                         range_mesh_elements_type const& rangeMeshElt,
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<Dof> const& dofindices,
+                                         mpl::bool_<false> )
 {
     DVLOG(2) << "calling init(<space>) begin\n";
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
@@ -5008,7 +5016,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     M_dof->setDofIndices( dofindices );
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
-
+    if ( boost::get<3>( rangeMeshElt ) )
+        M_dof->setRangeMeshElements( rangeMeshElt );
     M_dof->build( M_mesh );
 
     M_dofOnOff = M_dof;
@@ -5029,6 +5038,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
+                                         range_mesh_elements_type const& rangeMeshElt,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
                                          std::vector<Dof> const& dofindices,
@@ -5241,7 +5251,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
+        auto rangeMeshElt = (M_dof && M_dof->hasRangeMeshElements())? M_dof->rangeMeshElements() : typename component_functionspace_type::range_mesh_elements_type();
         M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
+                                                                                          rangeMeshElt,
                                                                                           MESH_COMPONENTS_DEFAULTS,
                                                                                           M_periodicity,
                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ),

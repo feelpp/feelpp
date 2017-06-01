@@ -172,6 +172,7 @@ public:
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
+    typedef elements_reference_wrapper_t<mesh_type> range_mesh_elements_type;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
@@ -406,6 +407,22 @@ public:
     mesh_type* mesh() { return M_mesh; }
     mesh_type* mesh() const { return M_mesh; }
 
+    /**
+     * specify a custom range of mesh elements where the doftable is built
+     */
+    void setRangeMeshElements( range_mesh_elements_type const& range ) { M_rangeMeshElt = range; }
+    /**
+     * \return true if a custom range of mesh elements has been given
+     */
+    bool hasRangeMeshElements() const { return M_rangeMeshElt.get_ptr() != 0; }
+    /**
+     * \return the range of mesh elements (error if not given)
+     */
+    range_mesh_elements_type const& rangeMeshElements() const
+        {
+            CHECK(this->hasRangeMeshElements()) << "no range of mesh elements";
+            return *M_rangeMeshElt;
+        }
     /**
      * \return the number of dof for faces on the boundary
      */
@@ -1419,6 +1436,8 @@ private:
 private:
 
     mesh_type* M_mesh;
+    boost::optional<range_mesh_elements_type> M_rangeMeshElt;
+
     fe_ptrtype M_fe;
 
     reference_convex_type M_convex_ref;
@@ -1675,6 +1694,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     tic();
     tic();
     M_mesh = boost::addressof( M );
+
     toc("DofTable::adress", FLAGS_v>0);
     tic();
     VLOG(2) << "[Dof::build] initDofMap\n";
@@ -1892,10 +1912,13 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
     toc("DofTable::reordering global id in doftable", FLAGS_v>0);
     tic();
-    EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    for ( auto const& eltRange : elements( M,entityProcess) )
+    //EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    auto rangeMeshElt = (this->hasRangeMeshElements())?
+        this->rangeMeshElements() :
+        elements(M, ( (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY) );
+    for ( auto const& eltWrap : rangeMeshElt )//elements( M,entityProcess) )
     {
-        auto const& elt = boost::unwrap_ref(eltRange);
+        auto const& elt = boost::unwrap_ref(eltWrap);
         size_type elid= elt.id();
         if ( is_mortar && elt.isOnBoundary() )
         {
@@ -2275,9 +2298,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         std::cout << "   . buildDofMap allocation done in " << ltim.elapsed() << "s\n";
     ltim.restart();
     // compute the number of dof on current processor
-    auto rangeElements = M.elementsWithProcessId();
-    auto it_elt = std::get<0>( rangeElements );
-    auto en_elt = std::get<1>( rangeElements );
+    auto rangeElements = (this->hasRangeMeshElements())? this->rangeMeshElements() : elements(M);
+    auto it_elt = boost::get<1>( rangeElements );
+    auto en_elt = boost::get<2>( rangeElements );
     bool hasNoElt = ( it_elt == en_elt );
 
     //size_type n_elts = std::distance( it_elt, en_elt);
@@ -2469,40 +2492,75 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     //
     // Face dof
     //
-    auto rangeFaces = M.facesWithProcessId( M.worldComm().localRank() );
-    auto __face_it = std::get<0>( rangeFaces );
-    auto __face_en = std::get<1>( rangeFaces );
-    // const size_type nF = M.faces().size();
-    const size_type nF = std::distance( __face_it, __face_en );
-    int ntldof = nLocalDofOnFace();
-
-    DVLOG(2) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
-    DVLOG(2) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
     DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
-    for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
+    if ( this->hasRangeMeshElements() )
     {
-        auto const& face = boost::unwrap_ref( *__face_it );
-        LOG_IF(WARNING, !face.isConnectedTo0() )
-            << "face " << face.id() << " not connected"
-            << " hasMarker : " << face.hasMarker()
-            << " connectedTo0 : " << face.isConnectedTo0()
-            << " connectedTo1 : " << face.isConnectedTo1();
+        std::unordered_map<size_type,std::pair<const face_type*,uint8_type> > facesInRangeElt;
+        for (auto const& eltWrap : this->rangeMeshElements() )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            size_type eltId = elt.id();
+            for ( uint16_type i = 0; i < element_type::numTopologicalFaces; ++i )
+            {
+                const face_type * faceit = elt.facePtr(i);
+                size_type faceId = faceit->id();
+                auto itFindFace = facesInRangeElt.find( faceId );
+                if ( itFindFace != facesInRangeElt.end() )
+                    continue;
+                if ( faceit->isConnectedTo0() && ( faceit->element(0).id() == eltId ) )
+                    facesInRangeElt[faceId] = std::make_pair( faceit, 0 );
+                else //if ( faceit->isConnectedTo1() && ( faceit->element(1).id() == eltId ) )
+                    facesInRangeElt[faceId] = std::make_pair( faceit, 1 );
+            }
+        }
 
-        if ( !face.isConnectedTo0() ) continue;
+        int ncdof = is_product ? nComponents : 1 ;
+        for (auto const& faceData : facesInRangeElt )
+        {
+            size_type faceId = faceData.first;
+            const face_type* faceit = faceData.second.first;
+            uint8_type connectionId = faceData.second.second;
+            M_face_l2g[ faceId ].resize( nDofF*ncdof );
+            dfb.add( faceit, connectionId );
+        }
+    }
+    else
+    {
+        auto rangeFaces = M.facesWithProcessId( M.worldComm().localRank() );
+        auto __face_it = std::get<0>( rangeFaces );
+        auto __face_en = std::get<1>( rangeFaces );
+        // const size_type nF = M.faces().size();
+        const size_type nF = std::distance( __face_it, __face_en );
+        int ntldof = nLocalDofOnFace();
+
+        DVLOG(2) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
+        DVLOG(2) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
+
+        for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
+        {
+            auto const& face = boost::unwrap_ref( *__face_it );
+            LOG_IF(WARNING, !face.isConnectedTo0() )
+                << "face " << face.id() << " not connected"
+                << " hasMarker : " << face.hasMarker()
+                << " connectedTo0 : " << face.isConnectedTo0()
+                << " connectedTo1 : " << face.isConnectedTo1();
+
+            if ( !face.isConnectedTo0() ) continue;
 
 #if !defined(NDEBUG)
 
-        if (  face.isOnBoundary() )
-            DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << face.id()
-                     << " hasMarker: " << face.hasMarker()<< "\n";
+            if (  face.isOnBoundary() )
+                DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << face.id()
+                         << " hasMarker: " << face.hasMarker()<< "\n";
 
-        else
-            DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
+            else
+                DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
 
 #endif
-        int ncdof = is_product ? nComponents : 1 ;
-        M_face_l2g[ face.id()].resize( nDofF*ncdof );
-        dfb.add( __face_it );
+            int ncdof = is_product ? nComponents : 1 ;
+            M_face_l2g[ face.id()].resize( nDofF*ncdof );
+            dfb.add( __face_it );
+        }
     }
 
 #if 0 //!defined(NDEBUG)

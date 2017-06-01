@@ -680,6 +680,7 @@ public:
                     else
                     {
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                       typename scalar_p1_space_type::range_mesh_elements_type(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename scalar_p1_space_type::periodicity_type(),
                                                                                        func.worldsComm(),
@@ -697,6 +698,7 @@ public:
                 if ( M_mesh.get() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
                 {
                     M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                             typename scalar_p1_space_type::range_mesh_elements_type(),
                                                                              MESH_RENUMBER | MESH_CHECK,
                                                                              typename scalar_p1_space_type::periodicity_type(),
                                                                              func.worldsComm(),
@@ -741,6 +743,7 @@ public:
                 if ( !M_ts->M_vector_p1 )
                 {
                     M_ts->M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                                   typename vector_p1_space_type::range_mesh_elements_type(),
                                                                                     MESH_RENUMBER | MESH_CHECK,
                                                                                     typename vector_p1_space_type::periodicity_type(),
                                                                                     func.worldsComm(),
@@ -757,6 +760,7 @@ public:
                 if ( M_mesh.get() != M_ts->M_vector_p1->mesh() && !M_vector_p1 )
                 {
                     M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                             typename vector_p1_space_type::range_mesh_elements_type(),
                                                                              MESH_RENUMBER | MESH_CHECK,
                                                                              typename vector_p1_space_type::periodicity_type(),
                                                                              func.worldsComm(),
@@ -829,6 +833,7 @@ public:
                 if ( !M_ts->M_tensor2_p1 )
                 {
                     M_ts->M_tensor2_p1 = boost::make_shared<tensor2_p1_space_type> ( M_mesh.get(),
+                                                                                     typename tensor2_p1_space_type::range_mesh_elements_type(),
                                                                                      MESH_RENUMBER | MESH_CHECK,
                                                                                      typename tensor2_p1_space_type::periodicity_type(),
                                                                                      func.worldsComm(),
@@ -845,6 +850,7 @@ public:
             if ( M_mesh.get() != M_ts->M_tensor2_p1->mesh() && !M_tensor2_p1 )
                 {
                     M_tensor2_p1 = boost::make_shared<tensor2_p1_space_type> ( M_mesh.get(),
+                                                                               typename tensor2_p1_space_type::range_mesh_elements_type(),
                                                                                MESH_RENUMBER | MESH_CHECK,
                                                                                typename tensor2_p1_space_type::periodicity_type(),
                                                                                func.worldsComm(),
@@ -918,6 +924,7 @@ public:
                 if ( !M_ts->M_tensor2symm_p1 )
                 {
                     M_ts->M_tensor2symm_p1 = boost::make_shared<tensor2symm_p1_space_type> ( M_mesh.get(),
+                                                                                             typename tensor2symm_p1_space_type::range_mesh_elements_type(),
                                                                                      MESH_RENUMBER | MESH_CHECK,
                                                                                      typename tensor2symm_p1_space_type::periodicity_type(),
                                                                                      func.worldsComm(),
@@ -934,6 +941,7 @@ public:
             if ( M_mesh.get() != M_ts->M_tensor2symm_p1->mesh() && !M_tensor2symm_p1 )
                 {
                     M_tensor2symm_p1 = boost::make_shared<tensor2symm_p1_space_type> ( M_mesh.get(),
+                                                                                       typename tensor2symm_p1_space_type::range_mesh_elements_type(),
                                                                                MESH_RENUMBER | MESH_CHECK,
                                                                                typename tensor2symm_p1_space_type::periodicity_type(),
                                                                                func.worldsComm(),
@@ -1021,6 +1029,7 @@ public:
                     {
                         bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                         M_ts->M_scalar_p1 = boost::make_shared<scalar_p1_space_type> ( M_mesh.get(),
+                                                                                       typename scalar_p1_space_type::range_mesh_elements_type(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename scalar_p1_space_type::periodicity_type(),
                                                                                        func.worldsComm(),
@@ -1050,6 +1059,7 @@ public:
                 if ( !M_ts->M_vector_p0 )
                 {
                     M_ts->M_vector_p0 = boost::make_shared<vector_p0_space_type> ( M_mesh.get(),
+                                                                                   typename vector_p0_space_type::range_mesh_elements_type(),
                                                                                    MESH_RENUMBER | MESH_CHECK,
                                                                                    typename vector_p0_space_type::periodicity_type(),
                                                                                    func.worldsComm(),
@@ -1066,6 +1076,7 @@ public:
                 if (  M_mesh.get() != M_ts->M_vector_p0->mesh() && !M_vector_p0 )
                 {
                     M_vector_p0 = boost::make_shared<vector_p0_space_type> ( M_mesh.get(),
+                                                                             typename vector_p0_space_type::range_mesh_elements_type(),
                                                                              MESH_RENUMBER | MESH_CHECK,
                                                                              typename vector_p0_space_type::periodicity_type(),
                                                                              func.worldsComm(),
@@ -1088,6 +1099,7 @@ public:
                     if ( !M_ts->M_vector_p1 )
                     {
                         M_ts->M_vector_p1 = boost::make_shared<vector_p1_space_type> ( M_mesh.get(),
+                                                                                       typename vector_p1_space_type::range_mesh_elements_type(),
                                                                                        MESH_RENUMBER | MESH_CHECK,
                                                                                        typename vector_p1_space_type::periodicity_type(),
                                                                                        func.worldsComm(),
@@ -1117,6 +1129,7 @@ public:
                 if ( !M_ts->M_tensor2_p0 )
                 {
                     M_ts->M_tensor2_p0 = boost::make_shared<tensor2_p0_space_type> ( M_mesh.get(),
+                                                                                     typename tensor2_p0_space_type::range_mesh_elements_type(),
                                                                                    MESH_RENUMBER | MESH_CHECK,
                                                                                    typename tensor2_p0_space_type::periodicity_type(),
                                                                                    func.worldsComm(),
@@ -1133,6 +1146,7 @@ public:
                 if (  M_mesh.get() != M_ts->M_tensor2_p0->mesh() && !M_tensor2_p0 )
                 {
                     M_tensor2_p0 = boost::make_shared<tensor2_p0_space_type> ( M_mesh.get(),
+                                                                               typename tensor2_p0_space_type::range_mesh_elements_type(),
                                                                              MESH_RENUMBER | MESH_CHECK,
                                                                              typename tensor2_p0_space_type::periodicity_type(),
                                                                              func.worldsComm(),
@@ -1163,6 +1177,7 @@ public:
                 if ( !M_ts->M_tensor2symm_p0 )
                 {
                     M_ts->M_tensor2symm_p0 = boost::make_shared<tensor2symm_p0_space_type> ( M_mesh.get(),
+                                                                                             typename tensor2symm_p0_space_type::range_mesh_elements_type(),
                                                                                    MESH_RENUMBER | MESH_CHECK,
                                                                                    typename tensor2symm_p0_space_type::periodicity_type(),
                                                                                    func.worldsComm(),
@@ -1179,6 +1194,7 @@ public:
                 if (  M_mesh.get() != M_ts->M_tensor2symm_p0->mesh() && !M_tensor2symm_p0 )
                 {
                     M_tensor2symm_p0 = boost::make_shared<tensor2symm_p0_space_type> ( M_mesh.get(),
+                                                                                       typename tensor2symm_p0_space_type::range_mesh_elements_type(),
                                                                              MESH_RENUMBER | MESH_CHECK,
                                                                              typename tensor2symm_p0_space_type::periodicity_type(),
                                                                              func.worldsComm(),
@@ -1342,6 +1358,7 @@ public:
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 M_ts->M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                               typename scalar_p0_space_type::range_mesh_elements_type(),
                                                                                MESH_RENUMBER | MESH_CHECK,
                                                                                typename scalar_p0_space_type::periodicity_type(),
                                                                                worldsComm,
@@ -1358,6 +1375,7 @@ public:
             {
                 bool extendeddof = (soption(_name="exporter.format") == "ensightgold");
                 M_scalar_p0 = boost::make_shared<scalar_p0_space_type> ( M_mesh.get(),
+                                                                         typename scalar_p0_space_type::range_mesh_elements_type(),
                                                                          MESH_RENUMBER | MESH_CHECK,
                                                                          typename scalar_p0_space_type::periodicity_type(),
                                                                          worldsComm,
