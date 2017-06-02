@@ -1,0 +1,2 @@
+feelpp_add_application( thermoelectric SRCS thermoelectric.hpp thermoelectric_main.cpp )
+feelpp_add_testcase( th-crb-quarterturn )
