@@ -127,3 +127,4 @@ IF ( FEELPP_ENABLE_CRB_EEG )
 ENDIF()
 
 add_subdirectory(minimal)
+add_subdirectory(thermoelectric)
