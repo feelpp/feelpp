@@ -129,14 +129,15 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( ( MeshBase* )f.functionSpace()->mesh().get() == ( MeshBase* )space->mesh().get() )
     {
-
-        typename FunctionType::functionspace_type::range_mesh_elements_type rangeElt;
-        if ( f.functionSpace()->dof()->hasRangeMeshElements() && space->dof()->hasRangeMeshElements() )
-            rangeElt = intersect( f.functionSpace()->dof()->rangeMeshElements(), space->dof()->rangeMeshElements() );
-        else if ( f.functionSpace()->dof()->hasRangeMeshElements() )
-            rangeElt = f.functionSpace()->dof()->rangeMeshElements();
-        else if ( space->dof()->hasRangeMeshElements() )
-            rangeElt = space->dof()->rangeMeshElements();
+        elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
+        bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
+        bool hasMeshSupportPartialImage = space->dof()->hasMeshSupport() && space->dof()->meshSupport()->isPartialSupport();
+        if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+            rangeElt = intersect( f.functionSpace()->dof()->meshSupport()->rangeElements(), space->dof()->meshSupport()->rangeElements() );
+        else if ( hasMeshSupportPartialDomain )
+            rangeElt = f.functionSpace()->dof()->meshSupport()->rangeElements();
+        else if ( hasMeshSupportPartialImage )
+            rangeElt = space->dof()->meshSupport()->rangeElements();
         else
         {
             EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;

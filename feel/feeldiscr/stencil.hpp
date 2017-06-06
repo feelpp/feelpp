@@ -654,7 +654,7 @@ public :
     rangeiterator(mpl::bool_<true> /**/) const
     {
         std::list<typename rangeiteratorType<I,J>::defaultrange_type> res;
-        res.push_back( _M_X1->dof()->hasRangeMeshElements()? _M_X1->dof()->rangeMeshElements() : elements( _M_X1->mesh() ) );
+        res.push_back( _M_X1->dof()->hasMeshSupport()? _M_X1->dof()->meshSupport()->rangeElements() : elements( _M_X1->mesh() ) );
         return res;
     }
     template <int I,int J>
