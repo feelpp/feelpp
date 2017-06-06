@@ -51,7 +51,8 @@ public :
         M_mesh( mesh ),
         M_rangeElements( elements(mesh) ),
         M_isFullSupport( true ),
-        M_hasUpdatedParallelData( false )
+        M_hasUpdatedParallelData( false ),
+        M_hasUpdatedBoundaryFaces( false )
         {}
 
     MeshSupport( mesh_ptrtype const& mesh, range_elements_type const& rangeElements )
@@ -59,7 +60,8 @@ public :
         M_mesh( mesh ),
         M_rangeElements( rangeElements ),
         M_isFullSupport( false ),
-        M_hasUpdatedParallelData( false )
+        M_hasUpdatedParallelData( false ),
+        M_hasUpdatedBoundaryFaces( false )
         {}
 
     bool isFullSupport() const { return M_isFullSupport; }
@@ -67,6 +69,7 @@ public :
 
     range_elements_type const& rangeElements() const { return M_rangeElements; }
     range_faces_type const& rangeInterProcessFaces() const { return M_rangeInterProcessFaces; }
+    range_faces_type const& rangeBoundaryFaces() const { return M_rangeBoundaryFaces; }
 
     bool hasGhostElement( size_type eltId ) const { return M_rangeMeshElementsGhostIds.find( eltId ) != M_rangeMeshElementsGhostIds.end(); }
 
@@ -82,6 +85,18 @@ public :
 
             M_hasUpdatedParallelData = true;
         }
+    void updateBoundaryFaces()
+        {
+            if ( M_hasUpdatedBoundaryFaces )
+                return;
+
+            if ( M_isFullSupport )
+                this->updateBoundaryFacesFullSupport();
+            else
+                this->updateBoundaryFacesPartialSupport();
+
+            M_hasUpdatedBoundaryFaces = true;
+        }
 private :
     void updateParallelDataFullSupport()
         {
@@ -89,6 +104,12 @@ private :
         }
     void updateParallelDataPartialSupport()
         {
+            typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myipfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
+            if ( M_mesh->worldComm().localSize() == 1 )
+            {
+                M_rangeInterProcessFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces );
+                return;
+            }
             // prepare data to send with mpi
             std::map< rank_type, std::vector<size_type> > dataToSend;
             std::map< rank_type, std::vector<size_type> > dataToRecv;
@@ -130,7 +151,6 @@ private :
                 }
             }
 
-            typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myipfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             for ( auto const& eltWrap : this->rangeElements() )
             {
                 auto const& elt = unwrap_ref( eltWrap );
@@ -156,14 +176,49 @@ private :
 
         }
 
+    void updateBoundaryFacesFullSupport()
+        {
+            M_rangeBoundaryFaces = boundaryfaces(M_mesh);
+        }
+    void updateBoundaryFacesPartialSupport()
+        {
+            this->updateParallelData();
+
+            std::unordered_map<size_type,uint8_type> faceInRange;
+            for ( auto const& eltWrap : this->rangeElements() )
+            {
+                auto const& elt = unwrap_ref( eltWrap );
+                for ( uint16_type i = 0; i < mesh_type::element_type::numTopologicalFaces; ++i )
+                {
+                    auto const& face = elt.face(i);
+                    if ( faceInRange.find( face.id() ) != faceInRange.end() )
+                        faceInRange[face.id()] = 2;
+                    else
+                        faceInRange[face.id()] = 1;
+                }
+            }
+            for ( auto const& faceWrap : this->rangeInterProcessFaces() )
+                faceInRange[unwrap_ref(faceWrap).id()] = 3;
+
+            typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype mybfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
+            for ( auto const& faceData : faceInRange )
+            {
+                if ( faceData.second != 1 )
+                    continue;
+                mybfaces->push_back( boost::cref( M_mesh->face( faceData.first ) ) );
+            }
+            M_rangeBoundaryFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces );
+        }
 private :
     mesh_ptrtype M_mesh;
     range_elements_type M_rangeElements;
     range_faces_type M_rangeInterProcessFaces;
+    range_faces_type M_rangeBoundaryFaces;
     std::unordered_set<size_type> M_rangeMeshElementsGhostIds;
 
     bool M_isFullSupport;
     bool M_hasUpdatedParallelData;
+    bool M_hasUpdatedBoundaryFaces;
 
 };
 
