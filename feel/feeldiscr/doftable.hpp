@@ -118,6 +118,8 @@ struct hash<std::tuple<TT...>>
 #include <feel/feeldiscr/doffromedge.hpp>
 #include <feel/feeldiscr/doffromperiodic.hpp>
 
+#include <feel/feelmesh/meshsupport.hpp>
+
 namespace Feel
 {
 namespace detail {
@@ -172,7 +174,9 @@ public:
     static const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
-    typedef elements_reference_wrapper_t<mesh_type> range_mesh_elements_type;
+    typedef MeshSupport<mesh_type> mesh_support_type;
+    typedef std::shared_ptr<mesh_support_type> mesh_support_ptrtype;
+
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::face_type face_type;
@@ -408,21 +412,30 @@ public:
     mesh_type* mesh() const { return M_mesh; }
 
     /**
-     * specify a custom range of mesh elements where the doftable is built
+     * set a mesh support where the doftable is built
      */
-    void setRangeMeshElements( range_mesh_elements_type const& range ) { M_rangeMeshElt = range; }
-    /**
-     * \return true if a custom range of mesh elements has been given
-     */
-    bool hasRangeMeshElements() const { return M_rangeMeshElt.get_ptr() != 0; }
-    /**
-     * \return the range of mesh elements (error if not given)
-     */
-    range_mesh_elements_type const& rangeMeshElements() const
+    void setMeshSupport( mesh_support_ptrtype const& meshSupport )
         {
-            CHECK(this->hasRangeMeshElements()) << "no range of mesh elements";
-            return *M_rangeMeshElt;
+            M_meshSupport = meshSupport;
         }
+    /**
+     * \return mesh support
+     */
+    mesh_support_ptrtype meshSupport() const
+        {
+            return M_meshSupport;
+        }
+    /**
+     * \return true if a mesh support object is defined
+     */
+    bool hasMeshSupport() const
+        {
+            if ( M_meshSupport )
+                return true;
+            else
+                return false;
+        }
+
     /**
      * \return the number of dof for faces on the boundary
      */
@@ -1436,7 +1449,7 @@ private:
 private:
 
     mesh_type* M_mesh;
-    boost::optional<range_mesh_elements_type> M_rangeMeshElt;
+    mesh_support_ptrtype M_meshSupport;
 
     fe_ptrtype M_fe;
 
@@ -1913,8 +1926,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     toc("DofTable::reordering global id in doftable", FLAGS_v>0);
     tic();
     //EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeMeshElt = (this->hasRangeMeshElements())?
-        this->rangeMeshElements() :
+    auto rangeMeshElt = (this->hasMeshSupport())?
+        this->meshSupport()->rangeElements() :
         elements(M, ( (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY) );
     for ( auto const& eltWrap : rangeMeshElt )//elements( M,entityProcess) )
     {
@@ -2298,7 +2311,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         std::cout << "   . buildDofMap allocation done in " << ltim.elapsed() << "s\n";
     ltim.restart();
     // compute the number of dof on current processor
-    auto rangeElements = (this->hasRangeMeshElements())? this->rangeMeshElements() : elements(M);
+    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
     auto it_elt = boost::get<1>( rangeElements );
     auto en_elt = boost::get<2>( rangeElements );
     bool hasNoElt = ( it_elt == en_elt );
@@ -2493,10 +2506,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     // Face dof
     //
     DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
-    if ( this->hasRangeMeshElements() )
+    if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )
     {
         std::unordered_map<size_type,std::pair<const face_type*,uint8_type> > facesInRangeElt;
-        for (auto const& eltWrap : this->rangeMeshElements() )
+        for (auto const& eltWrap : this->meshSupport()->rangeElements() )
         {
             auto const& elt = unwrap_ref( eltWrap );
             size_type eltId = elt.id();
@@ -2616,9 +2629,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     //const uint16_type ndofv = fe_type::nDof;
 
+#if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
     auto it_elt = std::get<0>( rangeElements );
     auto en_elt = std::get<1>( rangeElements );
+#else
+    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
+    auto it_elt = boost::get<1>( rangeElements );
+    auto en_elt = boost::get<2>( rangeElements );
+#endif
 
     if ( it_elt == en_elt )
         return;
@@ -2746,10 +2765,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 
-
+#if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
     auto it_elt = std::get<0>( rangeElements );
     auto en_elt = std::get<1>( rangeElements );
+#else
+    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
+    auto it_elt = boost::get<1>( rangeElements );
+    auto en_elt = boost::get<2>( rangeElements );
+#endif
 
     if ( it_elt == en_elt )
         return;
