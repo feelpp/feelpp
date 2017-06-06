@@ -81,3 +81,5 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( element0D )
+
+feelpp_add_test( space_on_range )
