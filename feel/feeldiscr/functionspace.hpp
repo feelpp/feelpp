@@ -1203,6 +1203,45 @@ struct BasisOrder
     }
 };
 
+template<typename SpaceType>
+struct createWorldsComm
+{
+    typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
+    typedef typename SpaceType::meshes_list meshes_list;
+    static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
+
+    struct UpdateWorldsComm
+    {
+        UpdateWorldsComm( createWorldsComm<SpaceType> & cwc )
+            :
+            M_cwc( cwc )
+            {}
+        template<typename T>
+        void operator()( T const& t) const
+            {
+                M_cwc.M_worldsComm.push_back( t->worldComm() );
+            }
+        createWorldsComm<SpaceType> & M_cwc;
+    };
+
+    createWorldsComm( mesh_ptrtype const& mesh )
+        {
+            this->init<useMeshesList>( mesh );
+        }
+    template<bool _UseMeshesList >
+    void init( mesh_ptrtype const& mesh, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
+        {
+            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm() );
+        }
+    template<bool _UseMeshesList >
+    void init( mesh_ptrtype const& mesh, typename std::enable_if< _UseMeshesList >::type* = nullptr )
+        {
+            boost::fusion::for_each( mesh, UpdateWorldsComm( *this ) );
+        }
+    std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
+
+    std::vector<WorldComm> M_worldsComm;
+};
 
 template<typename SpaceType>
 struct createMeshSupport
@@ -1211,8 +1250,7 @@ struct createMeshSupport
     typedef typename fusion::result_of::at_c<mesh_support_vector_type,0>::type _mesh_support_ptrtype;
     typedef typename boost::remove_reference<_mesh_support_ptrtype>::type mesh_support_ptrtype;
     typedef typename mesh_support_ptrtype::element_type mesh_support_type;
-    typedef typename mesh_support_type::mesh_type mesh_type;
-    typedef typename mesh_support_type::mesh_ptrtype mesh_ptrtype;
+    typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
@@ -1259,7 +1297,11 @@ struct createMeshSupport
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
                     return;
-                CHECK( false ) << "TODO";
+                typedef typename fusion::result_of::at_c<mesh_support_vector_type,T::value>::type _submesh_support_ptrtype;
+                typedef typename boost::remove_reference<_submesh_support_ptrtype>::type submesh_support_ptrtype;
+                typedef typename submesh_support_ptrtype::element_type submesh_support_type;
+                auto const& mesh = boost::fusion::at_c<T::value>( M_cms.M_mesh );
+                meshSupport.reset( new submesh_support_type(mesh) );
             }
 
         createMeshSupport<SpaceType> & M_cms;
@@ -1267,21 +1309,20 @@ struct createMeshSupport
 
     createMeshSupport( mesh_ptrtype const& mesh, mesh_support_vector_type const& meshSupport )
         :
+        M_mesh( mesh ),
         M_meshSupportVector( meshSupport )
         {
             this->init<useMeshesList>(mesh);
         }
     createMeshSupport( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt )
+        :
+        M_mesh( mesh )
         {
-            if ( boost::get<3>( rangeMeshElt ) )
-                M_meshSupport0.reset( new mesh_support_type(mesh,rangeMeshElt) );
-            else
-                M_meshSupport0.reset( new mesh_support_type(mesh) );
-
-            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
+            this->init2<useMeshesList>(mesh,rangeMeshElt);
         }
     createMeshSupport( mesh_ptrtype const& mesh, mesh_support_ptrtype const& meshSupport )
+        :
+        M_mesh( mesh )
         {
             M_meshSupport0 = meshSupport;
             mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
@@ -1305,6 +1346,24 @@ struct createMeshSupport
             mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
             boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
         }
+    template<bool _UseMeshesList >
+    void init2( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
+        {
+            if ( boost::get<3>( rangeMeshElt ) )
+                M_meshSupport0.reset( new mesh_support_type(mesh,rangeMeshElt) );
+            else
+                M_meshSupport0.reset( new mesh_support_type(mesh) );
+
+            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
+            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
+        }
+    template<bool _UseMeshesList >
+    void init2( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt, typename std::enable_if< _UseMeshesList >::type* = nullptr )
+        {
+            CHECK( false ) << "not allowed";
+        }
+
+    mesh_ptrtype const& M_mesh;
     mesh_support_vector_type M_meshSupportVector;
     mesh_support_ptrtype M_meshSupport0;
 };
@@ -4072,7 +4131,7 @@ public:
                                        ( mesh,* )
                                      )
                                      ( optional
-                                       ( worldscomm, *, std::vector<WorldComm>(nSpaces,mesh->worldComm()) )
+                                       ( worldscomm, *, Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm() )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
                                        ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
