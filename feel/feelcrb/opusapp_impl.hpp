@@ -31,116 +31,6 @@ template<typename ModelType,
          template < typename ReducedMethod > class RM,
          template < typename ModelInterface > class Model>
 void
-OpusApp<ModelType,RM,Model>::SER()
-{
-    bool do_offline_eim = false;
-
-    int nb_levels = ioption( _name="ser.nb-levels" );
-    for( int ser_level=0; ser_level < nb_levels; ++ser_level )
-    {
-        if ( ser_level > 0 )
-        {
-            crbs.push_back( newCRB( ser_level ) );
-            crb = crbs.back();
-        }
-
-        // Identifiy is offline eim still needs to be done
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-        for( auto eim_sc : eim_sc_vector )
-            do_offline_eim = do_offline_eim || eim_sc->offlineStep();
-        for( auto eim_sd : eim_sd_vector )
-            do_offline_eim = do_offline_eim || eim_sd->offlineStep();
-
-        do
-        {
-            //Begin with rb since first eim has already been built in initModel
-            //this->loadDB(); // update AffineDecomposition and enrich RB database
-            tic();
-            crb->setOfflineStep( true );
-            do  // SER r-adaptation for RB
-            {
-                crb->setAdaptationSER( false ); //re-init to false
-                crb->offline();
-            }
-            while(crb->adaptationSER());
-            toc("SER - crb offline", FLAGS_v>0);
-
-            crb->setRebuild( false ); //do not rebuild since co-build is not finished
-            int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
-
-            tic();
-            if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
-            {
-                do_offline_eim = false; //re-init
-                for( auto eim_sc : eim_sc_vector )
-                {
-                    eim_sc->setRestart( false ); //do not restart since co-build is not finished
-
-                    if( use_rb )
-                    {
-                        if ( crbs.size() > 1 )
-                        {
-                            CHECK( crbs.size() == models.size() );
-                            eim_sc->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sc->setModel( models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sc->setRB( crb ); // current crb (first level)
-                            eim_sc->setModel( model );
-                        }
-                    }
-                    do //r-adaptation for EIM
-                    {
-                        eim_sc->setAdaptationSER( false ); //re-init to false
-                        eim_sc->offline();
-                    }
-                    while( eim_sc->adaptationSER() );
-
-                    do_offline_eim = do_offline_eim || eim_sc->offlineStep();
-                }
-                for( auto eim_sd : eim_sd_vector )
-                {
-                    eim_sd->setRestart( false ); //do not restart since co-build is not finished
-                    //eim_sd->setAdaptationSER( false ); //re-init to false
-
-                    if( use_rb )
-                    {
-                        if ( crbs.size() > 1 )
-                        {
-                            CHECK( crbs.size() == models.size() );
-                            eim_sd->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( model );
-                        }
-                    }
-                    do //r-adaptation for EIM
-                    {
-                        eim_sd->setAdaptationSER( false ); //re-init to false
-                        eim_sd->offline();
-                    }
-                    while( eim_sd->adaptationSER() );
-
-                    do_offline_eim = do_offline_eim || eim_sd->offlineStep();
-                }
-
-                model->assemble(); //Affine decomposition has changed since eim has changed
-            }
-            toc("SER - eim offline + re-assemble", FLAGS_v>0);
-        }
-        while( crb->offlineStep() );
-    } // ser level
-}
-
-template<typename ModelType,
-         template < typename ReducedMethod > class RM,
-         template < typename ModelInterface > class Model>
-void
 OpusApp<ModelType,RM,Model>::run()
 {
     bool export_solution = boption(_name=_o( this->about().appName(),"export-solution" ));
@@ -175,7 +65,8 @@ OpusApp<ModelType,RM,Model>::run()
     tic();
     if( model->hasEim() && model->useSER() )
     {
-        this->SER(); // Simultaneous EIM - RB
+        M_ser = boost::make_shared<ser_type>( crb, model );
+        M_ser->run();
     }
     this->loadDB();
     toc("Offline", FLAGS_v>0);
@@ -639,7 +530,9 @@ OpusApp<ModelType,RM,Model>::run()
             exporterName = Environment::about().appName() + "-l" + std::to_string(ser_level);
         auto e = exporter( _mesh= model->functionSpace()->mesh(), _name=exporterName );
 
-        crb = crbs[ser_level];
+        if ( ser_level>0 )
+            crb = M_ser->crb( ser_level );
+
         curpar=0;
 
         for( auto mu : *Sampling )
@@ -1856,7 +1749,7 @@ OpusApp<ModelType,RM,Model>::run()
         }
 
         //model->computationalTimeEimStatistics();
-        
+
         if( export_solution )
             e->save();
 

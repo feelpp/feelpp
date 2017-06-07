@@ -19,7 +19,7 @@ if ( FEELPP_HAS_OCTAVE )
 #  MESSAGE("    Cfg file: ${OCTAVE_MODULE_CFG}")
   set(octname ${OCTAVE_MODULE_NAME}.oct)
   add_library(${octname}  MODULE  ${OCTAVE_MODULE_SOURCES}  )
-  target_link_libraries( ${octname} ${FEELPP_LIBRARIES} ${OCTAVE_MODULE_LINK_LIBRARIES} )
+  target_link_libraries( ${octname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${OCTAVE_MODULE_LINK_LIBRARIES} )
   set_target_properties( ${octname} PROPERTIES PREFIX "" )
   set_target_properties( ${octname} PROPERTIES SUFFIX "" )
   set_property(TARGET ${octname} PROPERTY LABELS crb)
@@ -48,7 +48,7 @@ endmacro(crb_add_octave_module)
 macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
-    "SOURCES;LINK_LIBRARIES;CFG;GEO"
+    "SOURCES;LINK_LIBRARIES;CFG;GEO;PROJECT;EXEC;MAN"
     "TEST"
     ${ARGN}
     )
@@ -64,9 +64,16 @@ macro(crb_add_executable)
     MESSAGE("    Geo file: ${CRB_EXEC_GEO}")
   endif()
 
-  set(execname crb_${CRB_EXEC_NAME})
+  if ( CRB_EXEC_PROJECT )
+    set(execname feelpp_crb_${CRB_EXEC_PROJECT}_${CRB_EXEC_NAME})
+  else()
+    set(execname feelpp_crb_${CRB_EXEC_NAME})
+  endif()
+  if  (CRB_EXEC_EXEC )
+    set( ${CRB_EXEC_EXEC} ${execname} )
+  endif()
   add_executable(${execname}    ${CRB_EXEC_SOURCES} )
-  target_link_libraries( ${execname} ${FEELPP_LIBRARIES} ${CRB_EXEC_LINK_LIBRARIES} )
+  target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}  )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   if ( CRB_EXEC_TEST )
@@ -108,7 +115,7 @@ if ( FEELPP_HAS_OPENTURNS )
   CDR(CRB_PYTHON_SOURCES ${CRB_PYTHON_DEFAULT_ARGS})
 
   add_library( ${CRB_PYTHON_NAME} MODULE  ${CRB_PYTHON_SOURCES}  )
-  target_link_libraries( ${CRB_PYTHON_NAME} ${FEELPP_LIBRARIES} ${CRB_PYTHON_LINK_LIBRARIES}  ${OpenTURNS_LIBRARIES} )
+  target_link_libraries( ${CRB_PYTHON_NAME} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${CRB_PYTHON_LINK_LIBRARIES}  ${OpenTURNS_LIBRARIES} )
   set_target_properties( ${CRB_PYTHON_NAME} PROPERTIES PREFIX "" )
   set_property(TARGET ${CRB_PYTHON_NAME} PROPERTY LABELS crb)
   #configure_file(${CRB_PYTHON_NAME}.xml.in ${CRB_PYTHON_NAME}.xml)
@@ -216,7 +223,7 @@ int main( int argc, char** argv )
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS} 
       GEO ${CRB_MODEL_GEO} 
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
       CFG ${CRB_MODEL_CFG} )
   endif()
 

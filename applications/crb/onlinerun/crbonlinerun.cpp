@@ -40,7 +40,7 @@ loadCrbOnline( std::string const& filename )
 
     boost::shared_ptr<ModelType> model( new ModelType );
     model->loadJson( filename, "crbmodel" );
-    boost::shared_ptr<crbmodel_type> crbmodel( new crbmodel_type( model, Feel::CRBModelMode::CRB, false ) );
+    boost::shared_ptr<crbmodel_type> crbmodel( new crbmodel_type( model, false ) );
     crbmodel->loadJson( filename, "crbmodel" );
 
     crb.reset( new crb_type );
