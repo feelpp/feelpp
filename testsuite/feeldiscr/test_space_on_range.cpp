@@ -1,32 +1,29 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
-   This file is part of the Feel++ library
+ This file is part of the Feel++ library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 27 Sep 2014
+ Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
+ Date: 7 june 2017
 
-   Copyright (C) 2014-2016 Feel++ Consortium
+ Copyright (C) 2017 Feel++ Consortium
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
 
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-// Boost.Test
-//#define BOOST_TEST_MAIN
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space on range testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
 
 #include <testsuite/testsuite.hpp>
 
@@ -69,7 +66,6 @@ BOOST_AUTO_TEST_CASE( test_2d )
     chiShapePS.on(_range=therange,_expr=Px()*Py());
     err = normL2(_range=therange,_expr=idv(chiShapeFS)-idv(chiShapePS));
     BOOST_CHECK_SMALL( err,1e-12 );
-    std::cout << "err="<<err<<"\n";
     double chiFSnorm2 = chiShapeFS.l2Norm();
     double chiPSnorm2 = chiShapePS.l2Norm();
     BOOST_CHECK( chiFSnorm2 > chiPSnorm2 );
@@ -96,8 +92,57 @@ BOOST_AUTO_TEST_CASE( test_2d )
     e->add( "chi-partial-support", chiShapeFS );
     e->add( "chi-full-support", chiShapePS );
     e->save();
-
 }
 
+BOOST_AUTO_TEST_CASE( test_composite_2d )
+{
+    using namespace Feel;
+    typedef Mesh<Simplex<2,1>> mesh_type;
+    auto mesh = loadMesh(_mesh=new mesh_type );
+
+    typedef FunctionSpace<mesh_type,bases<Lagrange<2,Vectorial>,Lagrange<2,Scalar> > > space_type;
+
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2) );
+    auto therange = concatenate(r1,r2);
+    auto VhPS1 = space_type::New(_mesh=mesh,_range=therange);
+    BOOST_TEST_MESSAGE( "VhPS1->nDof() : " << VhPS1->nDof() );
+
+    auto supp1 = std::make_shared<MeshSupport<mesh_type>>(mesh,r1);
+    auto supp2 = std::make_shared<MeshSupport<mesh_type>>(mesh,r2);
+    auto VhPS2 = space_type::New(_mesh=mesh,_range=fusion::make_vector(supp1,supp2));
+    BOOST_TEST_MESSAGE( "VhPS2->nDof() : " << VhPS2->nDof() );
+
+    auto VhFS = space_type::New(_mesh=mesh);
+    BOOST_TEST_MESSAGE( "VhFS->nDof() : " << VhFS->nDof() );
+
+    auto fieldFS_U = VhFS->element();
+    auto fieldFS_u = fieldFS_U.element<0>();
+    auto fieldFS_p = fieldFS_U.element<1>();
+    fieldFS_u.on(_range=therange,_expr=3*one());
+    fieldFS_p.on(_range=therange,_expr=cst(4.));
+    auto fieldPS1_U = VhPS1->element();
+    auto fieldPS1_u = fieldPS1_U.element<0>();
+    auto fieldPS1_p = fieldPS1_U.element<1>();
+    fieldPS1_u.setConstant(3.);
+    fieldPS1_p.setConstant(4.);
+    double err1_u = normL2(_range=therange,_expr=idv(fieldFS_u)-idv(fieldPS1_u));
+    BOOST_CHECK_SMALL( err1_u,1e-12 );
+    double err1_p = normL2(_range=therange,_expr=idv(fieldFS_p)-idv(fieldPS1_p));
+    BOOST_CHECK_SMALL( err1_p,1e-12 );
+
+    fieldFS_U.zero();
+    fieldFS_u.on(_range=r1,_expr=3*one());
+    fieldFS_p.on(_range=r2,_expr=cst(4.));
+    auto fieldPS2_U = VhPS2->element();
+    auto fieldPS2_u = fieldPS2_U.element<0>();
+    auto fieldPS2_p = fieldPS2_U.element<1>();
+    fieldPS2_u.setConstant(3.);
+    fieldPS2_p.setConstant(4.);
+    double err2_u = normL2(_range=r1,_expr=idv(fieldFS_u)-idv(fieldPS2_u));
+    BOOST_CHECK_SMALL( err2_u,1e-12 );
+    double err2_p = normL2(_range=r2,_expr=idv(fieldFS_p)-idv(fieldPS2_p));
+    BOOST_CHECK_SMALL( err2_p,1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
