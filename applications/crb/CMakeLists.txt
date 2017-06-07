@@ -65,7 +65,7 @@ OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
 
 set(FEELPP_CRB_LIBRARIES)
 IF ( FEELPP_ENABLE_CRB_EADS )
-  add_subdirectory(eads)
+  #add_subdirectory(eads)
 ENDIF()
 
 IF ( FEELPP_ENABLE_CRB_HEAT2D )

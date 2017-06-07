@@ -239,6 +239,11 @@ public:
             this->init();
     }
 
+    FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
+        :
+        CRBModel( level, doInit )
+        {}
+        
     CRBModel( model_ptrtype const& model , bool doInit = true )
         :
         M_Aqm(),
@@ -262,6 +267,11 @@ public:
             this->init();
     }
 
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , CRBModelMode mode, bool doInit = true )
+        :
+        CRBModel( model, doInit )
+        {}
+    
     /**
      * copy constructor
      */
