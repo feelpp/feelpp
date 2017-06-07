@@ -464,55 +464,77 @@ struct H
     array_type M_hess;
 };
 
-template<typename MeshPtrType, typename PeriodicityType = Periodicity<NoPeriodicity> >
+template<typename SpaceType>
 struct InitializeSpace
 {
-    InitializeSpace( MeshPtrType const& mesh,
+    typedef typename SpaceType::functionspace_vector_type functionspace_vector_type;
+    typedef typename SpaceType::mesh_ptrtype MeshPtrType;
+    typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
+    typedef typename SpaceType::periodicity_type PeriodicityType;
+    InitializeSpace( functionspace_vector_type & functionspaces,
+                     MeshPtrType const& mesh,
+                     mesh_support_vector_type const& meshSupport,
                      PeriodicityType const& periodicity,
                      std::vector<Dof> const& dofindices,
                      std::vector<WorldComm> const & worldsComm,
                      std::vector<bool> extendedDofTable )
         :
+        M_functionspaces( functionspaces ),
         M_cursor( 0 ),
         M_worldsComm( worldsComm ),
         M_mesh( mesh ),
+        M_meshSupport( meshSupport ),
         M_dofindices( dofindices ),
         M_periodicity( periodicity ),
         M_extendedDofTable( extendedDofTable )
     {}
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( T const& t ) const
     {
-        operator()( x, is_shared_ptr<MeshPtrType>() );
+        operator()( t, is_shared_ptr<MeshPtrType>() );
     }
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
+    void operator()( T const& t, mpl::bool_<true> ) const
     {
-        auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
-        x = boost::shared_ptr<T>( new T( M_mesh, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
-                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
-        FEELPP_ASSERT( x ).error( "invalid function space" );
+        typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
+        typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
+        typedef typename subspace_ptrtype::element_type subspace_type;
+
+        auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
+        auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
+        auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
+        subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
+                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+        FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
     }
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x, mpl::bool_<false> ) const
+    void operator()( T const& t, mpl::bool_<false> ) const
     {
-        auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
+        typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
+        typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
+        typedef typename subspace_ptrtype::element_type subspace_type;
 
+        auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
+        auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
         // look for T::mesh_ptrtype in MeshPtrType
-        auto m = *fusion::find<typename T::mesh_ptrtype>(M_mesh);
-        x = boost::shared_ptr<T>( new T( m, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
-                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
-        FEELPP_ASSERT( x ).error( "invalid function space" );
+        //auto m = *fusion::find<typename subspace_type::mesh_ptrtype>(M_mesh);
+        auto m = boost::fusion::at_c<T::value>( M_mesh );
+        auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
+        subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
+                                                        std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                                        std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+        FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
     }
+    functionspace_vector_type & M_functionspaces;
     mutable uint16_type M_cursor;
     std::vector<WorldComm> M_worldsComm;
     MeshPtrType M_mesh;
+    mesh_support_vector_type const& M_meshSupport;
     std::vector<Dof> const& M_dofindices;
     PeriodicityType M_periodicity;
     std::vector<bool> M_extendedDofTable;
@@ -3999,6 +4021,7 @@ public:
     }
 
     FunctionSpace( mesh_ptrtype const& mesh,
+                   mesh_support_vector_type const& meshSupport,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
@@ -4009,7 +4032,7 @@ public:
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
-        this->init( mesh, 0, dofindices, periodicity );
+        this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
     FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
@@ -4132,6 +4155,7 @@ public:
     }
 
     void init( mesh_ptrtype const& mesh,
+               mesh_support_vector_type const& meshSupport,
                size_type mesh_components,
                std::vector<Dof > const& dofindices,
                periodicity_type periodicity = periodicity_type() )
@@ -4143,7 +4167,7 @@ public:
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
+        this->init( mesh, meshSupport, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
 #if !defined(__INTEL_COMPILER )
         if(boption( "connect"))
@@ -5163,11 +5187,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_mesh = __m;
 
     // todo : check worldsComm size and M_functionspaces are the same!
-    fusion::for_each( M_functionspaces,
-                      Feel::detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
-                                                                                    dofindices,
-                                                                                    this->worldsComm(),
-                                                                                    this->extendedDofTableComposite() ) );
+    mpl::range_c<int,0,nSpaces> keySpaces;
+    fusion::for_each( keySpaces,
+                      Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport, periodicity,
+                                                                         dofindices,
+                                                                         this->worldsComm(),
+                                                                         this->extendedDofTableComposite() ) );
 
     this->initList();
 }
