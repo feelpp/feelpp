@@ -85,6 +85,6 @@ INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
 # endif()
 
 # add feelpp into FEELPP_LIBRARIES
-list(APPEND FEELPP_LIBRARIES feelpp)
+set(FEELPP_LIBRARIES feelpp ${FEELPP_LIBRARIES} PARENT_SCOPE)
 
 include(feelpp.lib.install)
