@@ -213,7 +213,7 @@ public:
      */
     //@{
 
-    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true )
+    CRBModel( int level=0, bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -222,7 +222,6 @@ public:
         M_Fqm(),
         M_model( new model_type ),
         M_is_initialized( false ),
-        M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
@@ -240,7 +239,12 @@ public:
             this->init();
     }
 
-    CRBModel( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
+    FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
+        :
+        CRBModel( level, doInit )
+        {}
+        
+    CRBModel( model_ptrtype const& model , bool doInit = true )
         :
         M_Aqm(),
         M_InitialGuessV(),
@@ -249,7 +253,6 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_mode( mode ),
         M_backend( backend() ),
         M_backend_primal( backend( _name="backend-primal") ),
         M_backend_dual( backend( _name="backend-dual") ),
@@ -264,6 +267,11 @@ public:
             this->init();
     }
 
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , CRBModelMode mode, bool doInit = true )
+        :
+        CRBModel( model, doInit )
+        {}
+    
     /**
      * copy constructor
      */
@@ -276,7 +284,6 @@ public:
         M_Fqm( o.M_Fqm ),
         M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
-        M_mode( o.M_mode ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
@@ -333,14 +340,6 @@ public:
         }
 
         M_model->buildGinacBetaExpressions( M_model->parameterSpace()->min() );
-
-        if ( M_mode != CRBModelMode::CRB_ONLINE &&
-                M_mode != CRBModelMode::SCM_ONLINE )
-        {
-            //the model is already initialized
-            //std::cout << "  -- init FEM  model\n";
-            //M_model->init();
-        }
 
         auto Xh = M_model->functionSpace();
         M_u = Xh->element();
@@ -2810,7 +2809,6 @@ private:
     bool M_is_initialized;
 
     //! mode for CRBModel
-    CRBModelMode M_mode;
 
 
     backend_ptrtype M_backend;
