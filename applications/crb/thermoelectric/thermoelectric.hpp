@@ -584,7 +584,7 @@ Thermoelectric::computeTruthCurrentDensity( parameter_type const& mu )
     auto VT = this->solve(mu);
     auto V = VT.template element<0>();
     auto sigma = mu.parameterNamed("sigma");
-    auto Vh = Xh->template functionSpace<0>();
+    auto Vh = vec_space_type::New(M_mesh);
     auto j = Vh->element();
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
     return j;
