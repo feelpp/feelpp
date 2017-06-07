@@ -144,5 +144,44 @@ BOOST_AUTO_TEST_CASE( test_composite_2d )
     double err2_p = normL2(_range=r2,_expr=idv(fieldFS_p)-idv(fieldPS2_p));
     BOOST_CHECK_SMALL( err2_p,1e-12 );
 }
+BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
+{
+    using namespace Feel;
+    static const uint16_type nDim = 2;
+    typedef Mesh<Simplex<nDim,1>> mesh_type;
+    auto mesh = loadMesh(_mesh=new mesh_type );
+
+    typedef Mesh<Simplex<nDim-1,1,nDim>> submesh_type;
+    auto submesh = createSubmesh(mesh,boundaryfaces(mesh) );
+
+    typedef FunctionSpace< meshes<mesh_type,submesh_type>,bases<Lagrange<2,Scalar>,Lagrange<2,Scalar> > > space_type;
+
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
+    auto r2 = elements(submesh, Px()*Py()<cst(0.25) );
+
+    auto supp1 = std::make_shared<MeshSupport<mesh_type>>(mesh,r1);
+    auto supp2 = std::make_shared<MeshSupport<submesh_type>>(submesh,r2);
+    auto VhPS = space_type::New(_mesh=fusion::make_vector(mesh,submesh),_range=fusion::make_vector(supp1,supp2));
+    BOOST_TEST_MESSAGE( "VhPS->nDof() : " << VhPS->nDof() );
+
+    auto VhFS = space_type::New(_mesh=fusion::make_vector(mesh,submesh));
+    BOOST_TEST_MESSAGE( "VhFS->nDof() : " << VhFS->nDof() );
+
+    auto fieldFS_U = VhFS->element();
+    auto fieldFS_u1 = fieldFS_U.element<0>();
+    auto fieldFS_u2 = fieldFS_U.element<1>();
+    fieldFS_u1.on(_range=r1,_expr=cst(3.));
+    fieldFS_u2.on(_range=r2,_expr=cst(4.));
+
+    auto fieldPS_U = VhPS->element();
+    auto fieldPS_u1 = fieldPS_U.element<0>();
+    auto fieldPS_u2 = fieldPS_U.element<1>();
+    fieldPS_u1.setConstant(3.);
+    fieldPS_u2.setConstant(4.);
+    double err_u1 = normL2(_range=r1,_expr=idv(fieldFS_u1)-idv(fieldPS_u1));
+    BOOST_CHECK_SMALL( err_u1,1e-12 );
+    double err_u2 = normL2(_range=r2,_expr=idv(fieldFS_u2)-idv(fieldPS_u2));
+    BOOST_CHECK_SMALL( err_u2,1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
