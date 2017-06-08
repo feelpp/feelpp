@@ -6,7 +6,7 @@ install(TARGETS feelpp-applications-crb-thermalbuilding DESTINATION lib/ COMPONE
 set(FEELPP_CRB_thermalbuilding_LIBRARIES feelpp-applications-crb-thermalbuilding PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_thermalbuilding_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(thermalbuilding ThermalBuilding HDRS thermalbuilding.hpp
+crb_add_model(thermalbuilding CrbModelThermalBuilding HDRS thermalbuilding.hpp
   LINK_LIBRARIES feelpp-applications-crb-thermalbuilding )
 
 feelpp_add_testcase(thermalbuilding PREFIX feelpp_crb CATEGORY CRB)
