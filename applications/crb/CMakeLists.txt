@@ -84,6 +84,8 @@ ENDIF()
 if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
     add_subdirectory(linearelasticity3d)
 endif()
+add_subdirectory(thermalbuilding)
+add_subdirectory(opusheat)
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)
