@@ -53,7 +53,9 @@ IF( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang") OR
     ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
 
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
+  #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${FEELPP_STD_CPP}" )
+  set(CMAKE_CXX_STANDARD ${FEELPP_STD_CPP})
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
   if ( NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024" )
@@ -1151,6 +1153,7 @@ IF ( FEELPP_ENABLE_OPENTURNS )
     INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
     #SET(FEELPP_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEELPP_LIBRARIES})
     # now OpenTURNS_LIBRARIES are used in crb_add_python_module
+    set(FEELPP_HAS_OPENTURNS 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenTURNS" )
   endif( OPENTURNS_FOUND )
 endif()
@@ -1205,6 +1208,7 @@ if ( FEELPP_ENABLE_VTK )
         # Mark VTK and ParaView as available
         set(FEELPP_HAS_VTK 1)
         set(FEELPP_HAS_PARAVIEW 1)
+        set(FEELPP_PARAVIEW_DIR ${ParaView_DIR})
         # Check for version to ensure that we are able to
         # use an external communicator
         set(VTK_HAS_PARALLEL 0)
@@ -1235,6 +1239,7 @@ if ( FEELPP_ENABLE_VTK )
             include(${VTK_USE_FILE})
 
             set(FEELPP_HAS_VTK 1)
+            set(FEELPP_VTK_DIR ${VTK_DIR})
             MESSAGE(STATUS "[feelpp] Found VTK ${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}")# ${VTK_LIBRARIES}")
 
             # Check for MPI support in VTK
@@ -1345,7 +1350,7 @@ if ( FEELPP_ENABLE_OCTAVE )
     message(STATUS "[feelpp] include dir: ${OCTINCLUDEDIR}" )
 
     INCLUDE_DIRECTORIES( ${OCTINCLUDEDIR} )
-
+    set(FEELPP_HAS_OCTAVE 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Octave" )
   endif( OCTAVE_FOUND )
 endif( FEELPP_ENABLE_OCTAVE)
@@ -1533,7 +1538,7 @@ foreach( THELIB ${FEELPP_LIBRARIES} )
     list(APPEND FEELPP_LIBRARIES_WITH_SPACE " ${THELIB} " )
   endif()
 endforeach()
-set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY $<TARGET_FILE:feelpp> )\nset(FEELPP_LIBRARIES ${FEELPP_LIBRARIES_WITH_SPACE})" )
+set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY $<TARGET_FILE:feelpp> )\nset(FEELPP_LIBRARIES \${FEELPP_LIBRARY} ${FEELPP_LIBRARIES_WITH_SPACE})" )
 string(REPLACE ";" "" FEELPP_LIBRARIES_TEXT ${FEELPP_LIBRARIES_TEXT} )
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.libraries.config.cmake
   CONTENT ${FEELPP_LIBRARIES_TEXT} )
