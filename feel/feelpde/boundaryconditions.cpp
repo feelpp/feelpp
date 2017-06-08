@@ -86,6 +86,7 @@ BoundaryConditions::setup()
             for( auto const& c : f.second ) // condition
             {
                 auto bcdatatype  = c.second.get("type","expression");
+                std::string params = c.second.get("params", "");
                 //std::cout << "bcdatatype = " << bcdatatype << std::endl;
                 if ( bcdatatype == "file" )
                 {
@@ -95,7 +96,7 @@ BoundaryConditions::setup()
                         auto abscissa= c.second.get<std::string>("abscissa");
                         auto ordinate= c.second.get<std::string>("ordinate");
                         LOG(INFO) << "adding boundary " << c.first << " with filename " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate ) );
+                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, abscissa, ordinate, params ) );
                     }
                     catch( ... )
                     {
@@ -109,7 +110,7 @@ BoundaryConditions::setup()
                     {
                         auto e= c.second.get<std::string>("expr");
                         LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), std::string("") ) );
+                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), std::string(""), params ) );
                     }
                     catch( ... )
                     {
@@ -118,12 +119,12 @@ BoundaryConditions::setup()
                             auto e1= c.second.get<std::string>("expr1");
                             auto e2= c.second.get<std::string>("expr2");
                             LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, std::string("") ) );
+                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, std::string(""), params ) );
                         }
                         catch( ... )
                         {
                             LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), std::string("") ) );
+                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), std::string(""), params ) );
                         }
                     }
                 }
@@ -172,6 +173,7 @@ BoundaryConditions::saveMD(std::ostream &os)
        os << "<li>" << iiit->expression()  << "</li>";
        os << "<li>" << iiit->expression1() << "</li>";
        os << "<li>" << iiit->expression2() << "</li>";
+       os << "<li>" << iiit->parameters() << "</li>";
      }
     }
     os << "</ul>|\n";
