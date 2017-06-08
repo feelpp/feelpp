@@ -84,4 +84,7 @@ INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
 #     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
 # endif()
 
+# add feelpp into FEELPP_LIBRARIES
+set(FEELPP_LIBRARIES feelpp ${FEELPP_LIBRARIES} PARENT_SCOPE)
+
 include(feelpp.lib.install)

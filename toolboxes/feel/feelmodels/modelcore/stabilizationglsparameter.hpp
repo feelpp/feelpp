@@ -10,6 +10,7 @@
 //#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 
+#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
 namespace Feel {
 
@@ -30,6 +31,7 @@ public :
     using space_t = Pdh_type<mesh_t,nOrder>;
     using space_ptr_t = boost::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;
+    using element_ptr_t = typename space_t::element_ptrtype;
 #if 0
     using space_P0_t = Pdh_type<mesh_t,0>;
     using space_P0_ptr_t = boost::shared_ptr<space_P0_t>;
@@ -38,8 +40,8 @@ public :
 
     StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix )
         :
-        super_type( mesh, prefix ),
-        M_Xh( Pdh<nOrder>(mesh) )
+        super_type( mesh, prefix )
+        //M_Xh( Pdh<nOrder>(mesh) )
 #if 0
         ,
         M_spaceP0( Pdh<0>(mesh) ),
@@ -51,6 +53,17 @@ public :
         {}
 
     void init();
+
+
+    template<bool HasConvectionExpr=true, bool HasCoeffDiffusionExpr=true, typename ExprConvectiontype, typename ExprCoeffDiffusionType, typename RangeType>
+    void updateTau( ExprConvectiontype const& exprConvection, ExprCoeffDiffusionType const& exprCoeffDiffusion, RangeType const& RangeStab )
+        {
+            auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr<HasConvectionExpr,HasCoeffDiffusionExpr>( *this, exprConvection, exprCoeffDiffusion );
+            M_fieldTau->on(_range=RangeStab,_expr=tau);
+        }
+
+    element_ptr_t const& fieldTauPtr() const { return M_fieldTau; }
+    element_t const& fieldTau() const { return *M_fieldTau; }
 
 #if 0
     template<typename ExprConvectiontype, typename ExprCoeffDiffusionType>
@@ -79,6 +92,8 @@ public :
 
 private :
     space_ptr_t M_Xh;
+    element_ptr_t M_fieldTau;
+    element_ptr_t M_fieldDelta;
 #if 0
     space_P0_ptr_t M_spaceP0;
     element_P0_t M_hSize, M_lambdaK, M_sqrtLambdaK, M_mK;
@@ -91,6 +106,11 @@ void
 StabilizationGLSParameter<MeshType,OrderPoly>::init()
 {
     auto mesh = this->M_mesh;
+    if ( !M_Xh )
+    {
+        M_Xh = Pdh<nOrder>(mesh);
+        M_fieldTau = M_Xh->elementPtr();
+    }
 
 #if 0
     if ( this->M_hSizeMethod == "hmin" )
@@ -115,8 +135,18 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
     // Stabilization : computation of lambdaK
     if ( this->M_method == "eigenvalue" || this->M_method == "eigenvalue-simplified" )
     {
-        if ( !M_Xh )
-            M_Xh = Pdh<nOrder>(mesh);
+        this->M_lambdaKValues.clear();
+        this->M_sqrtLambdaKValues.clear();
+        this->M_mKValues.clear();
+
+        if ( nOrder == 1 )
+        {
+            for ( auto const elt : allelements(mesh) )
+                this->M_mKValues[elt.id()] = 1./3;
+        }
+        else
+        {
+
         auto Ph = M_Xh;
         auto w = Ph->element();
 
@@ -137,9 +167,6 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatA(0,0);
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> localEigenMatB(0,0);
 
-        this->M_lambdaKValues.clear();
-        this->M_sqrtLambdaKValues.clear();
-        this->M_mKValues.clear();
         for ( auto const& eltWrap : elements(this->M_mesh) )
         {
             auto const& elt = unwrap_ref( eltWrap );
@@ -176,6 +203,7 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         auto cK = cst(1.)/(idv(M_lambdaK)*pow(idv(M_hSize),2));
         M_mK.on(_range=elements(mesh),_expr=min( cst(1./3.),2*cK ) );
 #endif
+        }
     }
 }
 
