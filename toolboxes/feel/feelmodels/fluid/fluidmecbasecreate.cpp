@@ -10,6 +10,7 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -981,7 +982,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // init stabilization
     if ( M_stabilizationGLS )
     {
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
+        typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_impl_type;
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
         M_stabilizationGLSParameter->init();
         if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
         {
