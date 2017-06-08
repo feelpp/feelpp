@@ -216,8 +216,7 @@ public:
     typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
     //___________________________________________________________________________________//
     // stabilization
-    static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
-    typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+    typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
     typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
