@@ -4065,7 +4065,7 @@ public:
      * \param mesh a mesh data structure
      */
     FunctionSpace( mesh_ptrtype const& mesh,
-                   mesh_support_vector_type const& meshSupport,
+                   mesh_support_vector_type const& meshSupport = mesh_support_vector_type(),
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
