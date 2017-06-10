@@ -1244,6 +1244,20 @@ struct createWorldsComm
 };
 
 template<typename SpaceType>
+std::vector<bool>
+createInfoExtendedDofTable( bool b )
+{
+    return std::vector<bool>( SpaceType::nSpaces,b );
+}
+template<typename SpaceType>
+std::vector<bool>
+createInfoExtendedDofTable( std::vector<bool> const& b )
+{
+    CHECK( b.size() == SpaceType::nSpaces ) << "invalid extended doftable info vector size : " << b.size() << " should be : " << SpaceType::nSpaces;
+    return b;
+}
+
+template<typename SpaceType>
 struct createMeshSupport
 {
     typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
@@ -4140,7 +4154,8 @@ public:
                                    )
     {
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
-        return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, extended_doftable );
+        std::vector<bool> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
+        return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt );
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
