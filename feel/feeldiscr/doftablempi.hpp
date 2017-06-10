@@ -1730,12 +1730,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myGhostEltsExtended( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
+#if 0
     auto rangeInterProcessFaces = mesh.interProcessFaces();
     auto face_it = std::get<0>( rangeInterProcessFaces );
     auto const face_en = std::get<1>( rangeInterProcessFaces );
-    for ( ; face_it!=face_en ; ++face_it )
+#endif
+    auto rangeInterProcessFaces = (this->hasMeshSupport())? this->meshSupport()->rangeInterProcessFaces() : interprocessfaces(mesh);
+    //for ( ; face_it!=face_en ; ++face_it )
+    for ( auto const& faceWrap : rangeInterProcessFaces )
     {
-        auto const& faceip = boost::unwrap_ref( *face_it );
+        auto const& faceip = boost::unwrap_ref( faceWrap );//*face_it );
         auto const& elt0 = faceip.element0();
         auto const& elt1 = faceip.element1();
         const bool elt0isGhost = elt0.isGhostCell();
@@ -2100,6 +2104,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
 }
 
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtendedGhostMap( mesh_type& mesh ) const
@@ -2130,7 +2135,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtend
                                             myGhostEltsExtended->begin(),myGhostEltsExtended->end(),myGhostEltsExtended );
     this->generateDofPoints( myrangeGhost );
 }
-
+#endif
 
 } // namespace Feel
 

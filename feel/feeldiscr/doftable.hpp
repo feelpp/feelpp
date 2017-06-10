@@ -1283,7 +1283,13 @@ public:
             this->generateDofPoints(M);
 
             if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
-                this->generateDofPointsExtendedGhostMap(M);
+            {
+                auto rangeExtendedElements = (this->hasMeshSupport())?
+                    this->meshSupport()->rangeElements( EntityProcessType::GHOST_ONLY ) :
+                    elements( M, EntityProcessType::GHOST_ONLY );
+                this->generateDofPoints( rangeExtendedElements );
+                //this->generateDofPointsExtendedGhostMap(M);
+            }
         }
 
     /**
@@ -1705,10 +1711,15 @@ void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
     tic();
-    tic();
     M_mesh = boost::addressof( M );
-
-    toc("DofTable::adress", FLAGS_v>0);
+#if 0
+    if ( this->hasMeshSupport() )
+    {
+        tic();
+        this->meshSupport()->updateBoundaryInternalFaces();
+        toc("DofTable::meshSupport::updateBoundaryInternalFaces", FLAGS_v>0);
+    }
+#endif
     tic();
     VLOG(2) << "[Dof::build] initDofMap\n";
     this->initDofMap( M );
@@ -1925,11 +1936,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
     toc("DofTable::reordering global id in doftable", FLAGS_v>0);
     tic();
-    //EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeMeshElt = (this->hasMeshSupport())?
-        this->meshSupport()->rangeElements() :
-        elements(M, ( (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY) );
-    for ( auto const& eltWrap : rangeMeshElt )//elements( M,entityProcess) )
+        this->meshSupport()->rangeElements( entityProcess ) :
+        elements( M, entityProcess );
+    for ( auto const& eltWrap : rangeMeshElt )
     {
         auto const& elt = boost::unwrap_ref(eltWrap);
         size_type elid= elt.id();
