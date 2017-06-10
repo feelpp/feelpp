@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.6,2)*/ < pow(cst(0.15),2) );
     auto therange = concatenate(r1,r2);
     typedef FunctionSpace<mesh_type,bases<Lagrange<1,Scalar,Discontinuous> > > space_type;
-    auto Vh = space_type::New(_mesh=mesh,_extended_doftable=std::vector<bool>(1,true),_range=therange);
+    auto Vh = space_type::New(_mesh=mesh,_extended_doftable=true,_range=therange);
 
     auto u = Vh->element();
     auto v = Vh->element();
