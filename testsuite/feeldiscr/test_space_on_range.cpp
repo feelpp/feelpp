@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto u = VhPS->element("u");
     auto v = VhPS->element("v");
     BOOST_CHECK( VhPS->dof()->hasMeshSupport() );
-    VhPS->dof()->meshSupport()->updateBoundaryFaces();
+    VhPS->dof()->meshSupport()->updateBoundaryInternalFaces();
     auto myboundaryfaces = VhPS->dof()->meshSupport()->rangeBoundaryFaces();
     auto l = form1( _test=VhPS );
     l = integrate(_range=therange,
@@ -182,6 +182,38 @@ BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
     BOOST_CHECK_SMALL( err_u1,1e-12 );
     double err_u2 = normL2(_range=r2,_expr=idv(fieldFS_u2)-idv(fieldPS_u2));
     BOOST_CHECK_SMALL( err_u2,1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_extended_2d )
+{
+    using namespace Feel;
+    typedef Mesh<Simplex<2>> mesh_type;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.5,2)*/ < pow(cst(0.23),2) );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.6,2)*/ < pow(cst(0.15),2) );
+    auto therange = concatenate(r1,r2);
+    typedef FunctionSpace<mesh_type,bases<Lagrange<1,Scalar,Discontinuous> > > space_type;
+    auto Vh = space_type::New(_mesh=mesh,_extended_doftable=std::vector<bool>(1,true),_range=therange);
+
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto l = form1( _test=Vh );
+    l = integrate(_range=therange,
+                  _expr=id(v));
+
+    auto a = form2( _trial=Vh, _test=Vh,
+                    _pattern=size_type(Pattern::EXTENDED) );
+    a = integrate(_range=therange,
+                  _expr=gradt(u)*trans(grad(v)) );
+    Vh->dof()->meshSupport()->updateBoundaryInternalFaces();
+    auto myinternalfaces = Vh->dof()->meshSupport()->rangeInternalFaces();
+    a +=integrate( _range=myinternalfaces,
+                   _expr=-averaget( gradt( u ) )*jump( id( v ) )
+                   -average( grad( v ) )*jumpt( idt( u ) )
+                   + 50* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace() );
+    auto myboundaryfaces = Vh->dof()->meshSupport()->rangeBoundaryFaces();
+    a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
+    a.solve(_rhs=l,_solution=u,_rebuild=true);
 }
 BOOST_AUTO_TEST_SUITE_END()
 
