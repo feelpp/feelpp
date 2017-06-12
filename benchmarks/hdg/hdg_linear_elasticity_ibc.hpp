@@ -262,6 +262,8 @@ Hdg<Dim, OrderP, OrderG>::convergence()
                                  _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         }
 
+        std::vector<std::string> M_IBCList;
+        M_IBCList.push_back("integral");
 
         // Check bc
         if ( mesh->hasFaceMarker("Dirichlet") )
@@ -279,41 +281,67 @@ Hdg<Dim, OrderP, OrderG>::convergence()
             // auto ind = i == 0 ? "" : std::to_string(i+1);
             // std::string marker = boost::str(boost::format("ibc%1%") % ind );
         
-            if ( mesh->hasFaceMarker( "Ibc" ) )
+            if ( mesh->hasFaceMarker( M_IBCList[i] ) )
                 Feel::cout << "Ibc: yes" << std::endl;
             else
                 Feel::cout << "WARNING!! Ibc not found" << std::endl;
                 
         }
 
+
+
+    auto complement_integral_bdy = complement(faces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
+        for( int i = 0; i < M_IBCList.size(); i++ )
+        {
+            if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
+            return true;
+        }
+        return false;
+    });
+
+    auto gammaMinusIntegral = complement(boundaryfaces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
+        for( int i = 0; i < M_IBCList.size(); i++ )
+        {
+            if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
+                return true;
+        }
+        return false;
+    });
+
+
+
+        /*  OLD
         auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) {
             for( int i = 0; i < ioption("nb_ibc"); ++i )
             {
                 auto ind = i == 0 ? "" : std::to_string(i+1);
-                // std::string marker = boost::str(boost::format("ibc%1%") % ind );
-                std::string marker = "Ibc";
+                std::string marker = boost::str(boost::format("Ibc%1%") % ind );
                 if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
                     return true;
             }
             return false;
-        });
+        }) ;
+
+
         auto gammaMinusIntegral = complement(boundaryfaces(mesh), [&mesh]( auto const& e ) {
             for( int i = 0; i < ioption("nb_ibc"); ++i )
             {
                 auto ind = i == 0 ? "" : std::to_string(i+1);
-                std::string marker = "Ibc"; // boost::str(boost::format("ibc%1%") % ind );
+                std::string marker = boost::str(boost::format("Ibc%1%") % ind );
                 if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
                     return true;
             }
             return false;
         });
+        */
+
         auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
         std::vector<std::string> ibc_markers(ioption("nb_ibc"));
-        for( int i = 0; i < ioption("nb_ibc"); ++i )
+        for( int i = 0; i < ioption("nb_ibc"); i++ )
         {
-            auto ind = i == 0 ? "" : std::to_string(i+1);
-            std::string marker = "Ibc"; // boost::str(boost::format("ibc%1%") % ind );
-            ibc_markers.push_back( marker );
+            // auto ind = i == 0 ? "" : std::to_string(i+1);
+            // std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+            ibc_markers.push_back( M_IBCList[i] );
         }
         auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh,ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
 
@@ -330,12 +358,13 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         toc("spaces",true);
 
+        /*
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
-        // CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
+        CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh " << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
         auto Xh = Pdh<0>(face_mesh);
         auto uf = Xh->element(cst(1.));
-        //CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
-
+        CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
+        */
         cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
              << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
              << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl
@@ -355,6 +384,7 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         auto nu    = Ch->element( "nu" );
         auto uI    = Ch->element( "uI" );
 
+        Feel::cout << __LINE__ << std::endl;
 
         // Number of dofs associated with each space
         auto nDofsigma = sigma.functionSpace()->nDof();
@@ -405,6 +435,8 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         cout << "rhs3 works fine" << std::endl;
         
+        Feel::cout << __LINE__ << std::endl;
+        
         a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
@@ -413,11 +445,14 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
                                   _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
                                            trans(idt(uhat))*rightface(id(v)*N())) );
-        a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+        a( 0_c, 2_c) += integrate(_range=gammaMinusIntegral,            // boundaryfaces(mesh),
                                   _expr=-trans(idt(uhat))*(id(v)*N()));
 
         a( 1_c, 0_c) += integrate(_range=elements(mesh),
                                   _expr=(trans(id(w))*divt(sigma)));
+
+        Feel::cout << __LINE__ << std::endl;
+
         // begin dp: here we need to put the projection of u on the faces
         a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
                                   ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
@@ -430,7 +465,7 @@ Hdg<Dim, OrderP, OrderG>::convergence()
                                   ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
                                     rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
 
-        a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
+        a( 1_c, 2_c) += integrate(_range=gammaMinusIntegral,             // boundaryfaces(mesh),
                                   _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
 
@@ -460,13 +495,16 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         toc("matrices",true);
 
-    
+   
+        Feel::cout << __LINE__ << std::endl;
+ 
         tic();
-        for( int i = 0; i < ioption("nb_ibc"); ++i )
+        for( int i = 0; i < ioption("nb_ibc"); i++ )
         {
-            auto ind = i == 0 ? "" : std::to_string(i+1);
-            std::string marker = "Ibc" ; // boost::str(boost::format("ibc%1%") % ind );
+            // std::string marker = boost::str(boost::format("Ibc%1%") % (i == 0 ? "" : std::to_string(i+1)) );
+            std::string marker = M_IBCList[i];
 
+        Feel::cout << __LINE__ << std::endl;
             // <lambda, v.n>_Gamma_I
             a( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
  
@@ -488,10 +526,12 @@ Hdg<Dim, OrderP, OrderG>::convergence()
             double meas = integrate( _range=markedfaces(mesh, marker), _expr=cst(1.0)).evaluate()(0,0);
             // <F_target,m>_Gamma_I
             rhs(3_c,i) += integrate( _range=markedfaces(mesh, marker), _expr=inner(sigma_exact*N(),id(nu))/meas);
+        Feel::cout << __LINE__ << std::endl;
  
         }
         toc("assembled ibc", true);
 
+        Feel::cout << __LINE__ << std::endl;
 
         tic();
         auto U = ps.element();
