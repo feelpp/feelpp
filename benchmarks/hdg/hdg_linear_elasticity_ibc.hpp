@@ -384,20 +384,15 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         auto nu    = Ch->element( "nu" );
         auto uI    = Ch->element( "uI" );
 
-        Feel::cout << __LINE__ << std::endl;
-
         // Number of dofs associated with each space
         auto nDofsigma = sigma.functionSpace()->nDof();
         auto nDofu     = u.functionSpace()->nDof();
         auto nDofuhat  = uhat.functionSpace()->nDof();
 
-
     	// auto lambda = expr(soption("lambda"));
     	// auto mu     = expr(soption("mu"));
     	auto c1     = cst(0.5)/mu;
    	 	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
-
-
 
 		tic();
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
@@ -435,7 +430,6 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
         cout << "rhs3 works fine" << std::endl;
         
-        Feel::cout << __LINE__ << std::endl;
         
         a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
         a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
@@ -451,7 +445,6 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         a( 1_c, 0_c) += integrate(_range=elements(mesh),
                                   _expr=(trans(id(w))*divt(sigma)));
 
-        Feel::cout << __LINE__ << std::endl;
 
         // begin dp: here we need to put the projection of u on the faces
         a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
@@ -496,7 +489,6 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         toc("matrices",true);
 
    
-        Feel::cout << __LINE__ << std::endl;
  
         tic();
         for( int i = 0; i < ioption("nb_ibc"); i++ )
@@ -504,7 +496,6 @@ Hdg<Dim, OrderP, OrderG>::convergence()
             // std::string marker = boost::str(boost::format("Ibc%1%") % (i == 0 ? "" : std::to_string(i+1)) );
             std::string marker = M_IBCList[i];
 
-        Feel::cout << __LINE__ << std::endl;
             // <lambda, v.n>_Gamma_I
             a( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
  
@@ -526,12 +517,10 @@ Hdg<Dim, OrderP, OrderG>::convergence()
             double meas = integrate( _range=markedfaces(mesh, marker), _expr=cst(1.0)).evaluate()(0,0);
             // <F_target,m>_Gamma_I
             rhs(3_c,i) += integrate( _range=markedfaces(mesh, marker), _expr=inner(sigma_exact*N(),id(nu))/meas);
-        Feel::cout << __LINE__ << std::endl;
  
         }
         toc("assembled ibc", true);
 
-        Feel::cout << __LINE__ << std::endl;
 
         tic();
         auto U = ps.element();
