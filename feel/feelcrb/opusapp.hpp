@@ -33,6 +33,7 @@
 
 #include <feel/feel.hpp>
 
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/ser.hpp>
@@ -234,7 +235,7 @@ public:
     crb_ptrtype newCRB( int level=0 )
         {
             model = boost::make_shared<crbmodel_type>( level);
-            return boost::make_shared<crb_type>( this->about().appName() + "-" + std::to_string(level), model );
+            return boost::make_shared<crb_type>( this->about().appName(), model );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }

@@ -1,8 +1,31 @@
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Vincent Chabannes <vincent.chabannes@cemosis.fr>
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 11 Jun 2017
+//! @copyright 2017 Feel++ Consortium
+//!
+#include <boost/dll.hpp>
 
-#include <heat3d/heat3d.hpp>
-#include <linearelasticity3d/linearelasticity3d.hpp>
-//#include <BenchmarkGrepl/benchmarkgrepl-linear-elliptic.hpp>
-//#include <BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic.hpp>
+#include <feel/feelcrb/options.hpp>
+#include <feel/feelcrb/crbplugin_interface.hpp>
 
 std::string
 loadModelName( std::string const& filename )
@@ -25,48 +48,32 @@ loadModelName( std::string const& filename )
     std::string modelName = ptreeCrbModel.template get<std::string>( "model-name" );
     return modelName;
 }
-
-template <typename ModelType>
-boost::shared_ptr<Feel::CRB<Feel::CRBModel< ModelType> > >
-loadCrbOnline( std::string const& filename )
-{
-    using namespace Feel;
-    typedef Feel::CRBModel< ModelType > crbmodel_type;
-    typedef Feel::CRB<crbmodel_type> crb_type;
-    boost::shared_ptr<crb_type> crb;
-
-    if ( !fs::exists( filename ) )
-        return crb;
-
-    boost::shared_ptr<ModelType> model( new ModelType );
-    model->loadJson( filename, "crbmodel" );
-    boost::shared_ptr<crbmodel_type> crbmodel( new crbmodel_type( model, false ) );
-    crbmodel->loadJson( filename, "crbmodel" );
-
-    crb.reset( new crb_type );
-    crb->setTruthModel( crbmodel );
-    crb->loadJson( filename );
-//crb->setOfflineStep( false );
-
-    return crb;
-}
-template <typename ModelType>
 bool
-runCrbOnline( std::string const& filename )
+runCrbOnline()
 {
     using namespace Feel;
-
-    auto crb = loadCrbOnline<ModelType>( Environment::expand( soption(_name="db.filename") ) );
-    if ( !crb )
-    {
-        std::cout << "failure in crb loading -> exit program\n";
-        return false;
-    }
+    namespace dll=boost::dll;
+    std::string dirname = Environment::expand( soption(_name="plugin.dir") );
+    std::string pluginname = Environment::expand( soption(_name="plugin.name") );
+    std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
+    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".json")).string() ;
+    
+    boost::function<crbpluginapi_create_t> creator;
+    fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + ".so");
+    
+    creator = boost::dll::import_alias<crbpluginapi_create_t>(pname,
+                                                              "create_crbplugin",
+                                                              dll::load_mode::append_decorations );
+    auto plugin = creator();
+    std::cout << "Loaded the plugin " << plugin->name() << std::endl
+              << " . from " << pname.string() << std::endl
+              << " . using db " << jsonfilename << std::endl;
+    plugin->loadDB( jsonfilename );
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;//Feel::doption(Feel::_name="crb.online-tolerance");
     bool print_rb_matrix = false;//boption(_name="crb.print-rb-matrix");
-    auto muspace = crb->Dmu();
+    auto muspace = plugin->parameterSpace();
 
     std::ostringstream ostrmumin,ostrmumax;
     auto mumin=muspace->min();
@@ -88,7 +95,7 @@ runCrbOnline( std::string const& filename )
         inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
     {
-        CHECK( inputParameter.size() == muspace->dimension() ) << "paramter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension();
+        CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension();
         auto mu = muspace->element();
         for ( uint16_type d=0;d<muspace->dimension();++d)
             mu(d)=inputParameter[d];
@@ -102,10 +109,8 @@ runCrbOnline( std::string const& filename )
     }
 
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
-    boost::shared_ptr<Exporter<typename ModelType::mesh_type> > fieldExporter;
     if ( loadFiniteElementDatabase )
-        fieldExporter = exporter( _mesh=crb->model()->rBFunctionSpace()->mesh() );
-
+        plugin->initExporter();
 
     int nSamples = mysampling->size();
     for ( int k=0;k<nSamples;++k )
@@ -118,24 +123,20 @@ runCrbOnline( std::string const& filename )
         std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
         //auto mu = crb->Dmu()->element();
         //std::cout << "input mu\n" << mu << "\n";
-        auto crbResult = crb->run( mu, time_crb, online_tol, -1, print_rb_matrix);
+        auto crbResult = plugin->run( mu, time_crb, online_tol, -1, print_rb_matrix);
         auto resOuptut = boost::get<0>( crbResult );
         auto resError = boost::get<0>( boost::get<6>( crbResult ) );
         std::cout << "output " << resOuptut.back() << "\n";
         std::cout << "err " << resError.back() << "\n";
 
+
         if ( loadFiniteElementDatabase )
         {
-            auto const& solutions = crbResult.template get<2>();
-            auto uN = crb->model()->rBFunctionSpace()->element();
-            //auto const& uN = solutions.template get<0>();
-            uN.container() = solutions.template get<0>().back();
-            auto sol = crb->model()->rBFunctionSpace()->expansion( uN );
-            fieldExporter->add( (boost::format("sol-%1%")%k).str(), sol );
+            plugin->exportField( (boost::format("sol-%1%")%k).str(), crbResult );
         }
-    }
+   }
     if ( loadFiniteElementDatabase )
-        fieldExporter->save();
+        plugin->saveExporter();
 
     return true;
 
@@ -147,12 +148,16 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description crbonlinerunoptions( "crb online run options" );
 	crbonlinerunoptions.add_options()
-        ( "db.filename", po::value<std::string>()->default_value( "" ), "database filename" )
+        ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
+        ( "plugin.name", po::value<std::string>(), "CRB online code name" )
+        ( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
+        ( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
 	 	;
 	po::options_description crbonlinerunliboptions( "crb online run lib options" );
+#if 1
     crbonlinerunliboptions.add(crbOptions())
         .add(crbSEROptions())
         .add(eimOptions())
@@ -161,7 +166,7 @@ int main(int argc, char**argv )
         .add(backend_options("backend-dual"))
         .add(backend_options("backend-l2"))
         ;
-
+#endif
 	Environment env( _argc=argc, _argv=argv,
                      _desc=crbonlinerunoptions,
                      _desc_lib=crbonlinerunliboptions.add( feel_options() ),
@@ -169,24 +174,7 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    std::string jsonfilename = Environment::expand( soption(_name="db.filename") );
-    std::string modelName = loadModelName( jsonfilename );
-    bool successrun = false;
-    if ( modelName == "Heat3d" )
-        successrun = runCrbOnline<Heat3d>( jsonfilename );
-    else if ( modelName == "LinearElasticity" )
-        successrun = runCrbOnline<LinearElasticity3d>( jsonfilename );
-#if 0
-    else if ( modelName == "BenchMarkGreplLinearElliptic1" )
-        successrun = runCrbOnline<BenchmarkGreplLinearElliptic<1>>( jsonfilename );
-    else if ( modelName == "BenchMarkGreplNonlinearElliptic1" )
-        successrun = runCrbOnline<BenchmarkGreplNonlinearElliptic<1,2>>( jsonfilename );
-#endif
-    else
-    {
-        std::cout << "invalid modelName : " <<  modelName << "\n";
-        return 0;
-    }
+    runCrbOnline();
 
     return 0;
 }

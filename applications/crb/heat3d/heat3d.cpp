@@ -1,5 +1,6 @@
+#include <feel/feelcrb/crbplugin.hpp>
 
-#include "heat3d.hpp"
+#include <heat3d.hpp>
 
 //#include <4fastsim/crbmodels/common/sourcecrbmodel.hpp>
 
@@ -233,4 +234,6 @@ Heat3d::updateFieldsExported( SourceCrbInterface * pvsource, element_type & feFi
     }
 }
 #endif
+
+FEELPP_CRB_PLUGIN( Heat3d, "heat3d" )
 } // namespace Feel

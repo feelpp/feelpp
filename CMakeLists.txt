@@ -144,6 +144,7 @@ SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmak
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/machines)
 
+include(feelpp.dirs)
 # set the Feel++ version
 include(feelpp.version)
 

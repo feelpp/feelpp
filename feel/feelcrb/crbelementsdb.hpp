@@ -174,6 +174,7 @@ public :
     void setModel( model_ptrtype const& model )
     {
         M_model = model;
+        this->setDBDirectory( M_model->id() );
         M_rbSpace = model->rBFunctionSpace();
     }
 
@@ -219,7 +220,9 @@ CRBElementsDB<ModelType>::saveDB()
     else
     /* save in boost format by default */
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        auto p = this->dbLocalPath() / this->dbFilename();
+        std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
+        fs::ofstream ofs( p );
 
         if ( ofs )
         {
