@@ -1499,6 +1499,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
         for ( const size_type domain_eid : domains_eid_set )
         {
+            if ( hasMeshSupportPartialX2 )
+            {
+                if ( !_M_X2->dof()->meshSupport()->hasElement( domain_eid ) )
+                    continue;
+            }
+
             if ( trial_space_type::dof_type::is_mortar )
                 element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
 
@@ -1572,7 +1578,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                                     {
                                         if ( hasMeshSupportPartialX2 )
                                         {
-                                            if ( !_M_X2->dof()->isElementDone(neighborEltIdTrial) )
+                                            if ( !_M_X2->dof()->meshSupport()->hasElement( neighborEltIdTrial ) )
                                                 continue;
                                         }
 
