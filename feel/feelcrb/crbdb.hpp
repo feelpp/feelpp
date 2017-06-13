@@ -75,6 +75,10 @@ public:
     CRBDB( std::string const& name = "defaultname_crbdb",
            WorldComm const& worldComm = Environment::worldComm() );
 
+    CRBDB( std::string const& name,
+           uuids::uuid const& i,
+           WorldComm const& worldComm = Environment::worldComm() );
+    
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -104,6 +108,23 @@ public:
         return M_name;
     }
 
+    //!
+    //! @return the uuid of the CRBDB
+    //!
+    uuids::uuid const& id() const
+    {
+        return M_uuid;
+    }
+
+    //!
+    //! set UUID 
+    //!
+    void setId( uuids::uuid const& i )
+        {
+            M_uuid = i;
+            this->setDBDirectory( M_uuid );
+        } 
+        
     //! \return the DB filename
     std::string jsonFilename() const
         {
@@ -120,6 +141,11 @@ public:
     {
         return M_dbDirectory;
     }
+
+    //!
+    //! set the DB directory according to a UUID
+    //!
+    void setDBDirectory( uuids::uuid const& i );
 
     //! \return sub directory
     std::string const& dbSubDirectory() const
@@ -242,6 +268,7 @@ private:
     WorldComm const& M_worldComm;
 
     std::string M_name;
+    uuids::uuid M_uuid;
     std::string M_dbfilename;
     std::string M_dbDirectory;
     std::string M_dbSubDirectory;

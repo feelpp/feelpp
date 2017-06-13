@@ -26,6 +26,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-15
  */
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 //#include <boost/assign/std/vector.hpp>
@@ -34,27 +38,35 @@
 
 namespace Feel
 {
-
 CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
+    :
+    CRBDB( name, Environment::randomUUID(true), worldComm )
+{}
+
+CRBDB::CRBDB( std::string const& name, uuids::uuid const& uuid, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
     M_name( algorithm::to_lower_copy(name) ),
+    M_uuid( uuid ),
     M_isloaded( false )
 {
-    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
-                           %M_name
-                           %this->worldComm().globalRank()
-                           ).str() );
+    this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name ).str() );
 
-    std::string database_subdir = "default_repo";
-    database_subdir = ( boost::format("%1%/np_%2%")
-                        %M_name
-                        %this->worldComm().globalSize() ).str();
-    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
-                              % Feel::Environment::rootRepository()
-                              % database_subdir ).str();
+    this->setDBDirectory( M_uuid );
 }
 
+void
+CRBDB::setDBDirectory( uuids::uuid const& i )
+{
+    M_uuid = i;
+    std::string database_subdir = ( boost::format( "%1%/%2%" )% M_name % uuids::to_string(M_uuid)).str();
+    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
+                      % Feel::Environment::rootRepository()
+                      % database_subdir ).str();
+    if ( Environment::isMasterRank() )
+        std::cout << " . db directory : " << this->dbDirectory() << std::endl
+                  << " . db filename : " << this->dbFilename() << std::endl;
+}
 //! destructor
 CRBDB::~CRBDB()
 {}

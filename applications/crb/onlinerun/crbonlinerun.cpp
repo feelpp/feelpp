@@ -55,7 +55,8 @@ runCrbOnline()
     namespace dll=boost::dll;
     std::string dirname = Environment::expand( soption(_name="plugin.dir") );
     std::string pluginname = Environment::expand( soption(_name="plugin.name") );
-    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / "np_1" / fs::path(pluginname+"-0-1-1.crb.json")).string() ;
+    std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
+    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".json")).string() ;
     
     boost::function<crbpluginapi_create_t> creator;
     fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + ".so");
@@ -149,6 +150,7 @@ int main(int argc, char**argv )
 	crbonlinerunoptions.add_options()
         ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
         ( "plugin.name", po::value<std::string>(), "CRB online code name" )
+        ( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
         ( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
