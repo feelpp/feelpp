@@ -215,5 +215,34 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
     a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
     a.solve(_rhs=l,_solution=u,_rebuild=true);
 }
+BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
+{
+    using namespace Feel;
+    typedef Mesh<Simplex<2>> mesh_type;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2) );
+    auto therange = concatenate(r1,r2);
+    typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar> > > space_type;
+    auto Vh = space_type::New(_mesh=mesh,_range=therange);
+
+    Vh->dof()->meshSupport()->updateBoundaryInternalFaces();
+    auto myboundaryfaces = Vh->dof()->meshSupport()->rangeBoundaryFaces();
+
+    double int1 = integrate(_range=myboundaryfaces,_expr=cst(1.)).evaluate()(0,0);
+    auto uPS =  Vh->element(cst(1.));
+
+    auto l = form1( _test=Vh );
+    l = integrate(_range= myboundaryfaces,_expr=id(uPS));
+    l.vectorPtr()->close();
+    double int1PS = inner_product( *l.vectorPtr(),uPS);
+    BOOST_CHECK_SMALL( std::abs(int1PS-int1),1e-12 );
+
+    auto a = form2( _trial=Vh, _test=Vh);
+    a = integrate(_range=myboundaryfaces,_expr=id(uPS)*idt(uPS));
+    a.matrixPtr()->close();
+    double int2PS = a.matrixPtr()->energy(uPS,uPS);
+    BOOST_CHECK_SMALL( std::abs(int2PS-int1),1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
