@@ -195,17 +195,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
 
-    // functionspace
-    M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
-    M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
-    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
-
     // physical properties
-    M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
-    M_electricProperties->initFromSpace( M_XhScalarP0 );
-    M_electricProperties->updateFromModelMaterials( this->modelProperties().materials() );
+    M_electricProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
+    // functionspace
+    if ( M_electricProperties->isDefinedOnWholeMesh() )
+    {
+        M_rangeMeshElements = elements(M_mesh);
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
+    }
+    else
+    {
+        M_rangeMeshElements = markedelements(M_mesh, M_electricProperties->markers());
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+    }
+    M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
+    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
 
     // backend : use worldComm of Xh
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
@@ -495,7 +502,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
     /*if ( M_computeElectricFieldProjType == "L2" )
      *M_fieldElectricFieldContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
      else*/ if ( M_computeElectricFieldProjType == "nodal" )
-        M_fieldElectricField->on(_range=elements(M_fieldElectricField->functionSpace()->mesh()),
+        M_fieldElectricField->on(_range=M_rangeMeshElements,
                                  _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
@@ -587,7 +594,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     if ( buildCstPart )
     {
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= sigma*inner(gradt(v),grad(v)),
                        _geomap=this->geomap() );
     }
@@ -619,7 +626,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
     auto sigma = idv(M_electricProperties->fieldElectricConductivity());
     form1( _test=XhT,_vector=F,
            _rowstart=M_thermodynModel->rowStartInVector() ) +=
-        integrate( _range=elements(mesh),
+        integrate( _range=M_rangeMeshElements,
                        _expr= sigma*inner(gradv(v),gradv(v))*id(t),
                        _geomap=this->geomap() );
 
@@ -687,7 +694,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     if ( buildCstPart )
     {
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= sigma*inner(gradt(v),grad(v)),
                        _geomap=this->geomap() );
     }
@@ -697,7 +704,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                _pattern=size_type(Pattern::COUPLED),
                _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
                _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential  ) +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
                        _geomap=this->geomap() );
     }
@@ -805,14 +812,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if (!buildCstPart && !UseJacobianLinearTerms )
     {
         myLinearFormElectric +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= sigma*inner(gradv(v),grad(v)),
                        _geomap=this->geomap() );
     }
     if ( !buildCstPart )
     {
         myLinearFormThermo +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
                        _geomap=this->geomap() );
     }
@@ -913,16 +920,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R,
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= -expression(d)*id(v),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= -expression(d)*id(v),
-                               _geomap=this->geomap() );
+            auto rangeEltUsed = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeEltUsed,
+                           _expr= -expression(d)*id(v),
+                           _geomap=this->geomap() );
         }
     }
 }
@@ -979,16 +981,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
+            auto rangeEltUsed = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeEltUsed,
+                           _expr= expression(d)*id(v),
+                           _geomap=this->geomap() );
         }
     }
 

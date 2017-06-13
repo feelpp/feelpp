@@ -190,13 +190,14 @@ private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;
     element_electricpotential_ptrtype M_fieldElectricPotential;
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
     // physical parameter
-    space_scalar_P0_ptrtype M_XhScalarP0;
+    //space_scalar_P0_ptrtype M_XhScalarP0;
     electricproperties_ptrtype M_electricProperties;
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
