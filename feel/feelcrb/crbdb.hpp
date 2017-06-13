@@ -72,7 +72,8 @@ public:
     //@{
 
     //! default constructor
-    CRBDB( std::string const& name = "defaultname_crbdb", WorldComm const& worldComm = Environment::worldComm() );
+    CRBDB( std::string const& name = "defaultname_crbdb",
+           WorldComm const& worldComm = Environment::worldComm() );
 
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
@@ -103,6 +104,11 @@ public:
         return M_name;
     }
 
+    //! \return the DB filename
+    std::string jsonFilename() const
+        {
+            return fs::path( M_dbfilename ).stem().string()+".json";
+        }
     //! \return the DB filename
     std::string const& dbFilename() const
     {

@@ -274,7 +274,7 @@ public :
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
-        M_name( name ),
+        M_name( algorithm::to_lower_copy(name) ),
         M_is_initialized( false )
     {}
 
@@ -288,7 +288,7 @@ public :
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_name = name; }
+    void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
 
     /**
      * \return the mpi communicators
@@ -587,7 +587,7 @@ public :
      */
     void updatePropertyTree( boost::property_tree::ptree & ptree ) const
     {
-        ptree.add( "model-name", this->modelName() );
+        ptree.add( "name", this->modelName());
 
         boost::property_tree::ptree ptreeParameterSpace;
         this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );

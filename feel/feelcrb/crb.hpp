@@ -277,7 +277,7 @@ public:
          WorldComm const& worldComm = Environment::worldComm() )
         :
         super( name, worldComm ),
-        M_elements_database( ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+        M_elements_database( name,
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model(),
@@ -327,6 +327,8 @@ public:
                                  % ioption(_name="crb.output-index")
                                  % ioption(_name="crb.error-type") ).str();
         this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
+        M_elements_database.setDBFilename( ( boost::format( "%1%.elements" ) % dbprefix ).str() );
+
     }
 
     //! constructor from command line options
@@ -623,6 +625,11 @@ public:
         if ( M_scmM )
             M_scmM->setTruthModel( M_model );
     }
+
+    //!
+    //! return the SER Level, default is 0
+    //!
+    int level() const { return M_model->level(); }
 
     //! set max iteration number
     void setMaxIter( int K )
@@ -2339,6 +2346,7 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
@@ -11273,9 +11281,9 @@ CRB<TruthModelType>::saveDB()
         }
 
 
-        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
         //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
-        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
+        std::string filenameJson = (this->dbLocalPath()/fs::path(this->jsonFilename())).string();
+        std::cout << "saveDB: " << filenameJson << std::endl;
         boost::property_tree::ptree ptree;
 
         boost::property_tree::ptree ptreeCrbModel;
