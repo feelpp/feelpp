@@ -92,11 +92,12 @@ public :
         }
 #endif
         if ( M_fileFormat == "hdf5" )
-            this->setDBFilename( ( boost::format( "%1%.h5" )
-                                   %this->name() ).str() );
+            this->setDBFilename( ( boost::format( "%1%.%2%.h5" )
+                                   %this->name()%ext ).str() );
         else
-            this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+            this->setDBFilename( ( boost::format( "%1%.%2%_p%3%.crbdb" )
                                    %this->name()
+                                   %ext
                                    %this->worldComm().globalRank()
                                    ).str() );
     }

@@ -45,7 +45,7 @@ loadModelName( std::string const& filename )
     boost::property_tree::read_json( istr, ptree );
 
     auto const& ptreeCrbModel = ptree.get_child( "crbmodel" );
-    std::string modelName = ptreeCrbModel.template get<std::string>( "model-name" );
+    std::string modelName = ptreeCrbModel.template get<std::string>( "name" );
     return modelName;
 }
 bool
@@ -56,7 +56,7 @@ runCrbOnline()
     std::string dirname = Environment::expand( soption(_name="plugin.dir") );
     std::string pluginname = Environment::expand( soption(_name="plugin.name") );
     std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
-    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".json")).string() ;
+    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
     
     boost::function<crbpluginapi_create_t> creator;
     fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + ".so");
