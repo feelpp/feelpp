@@ -136,11 +136,6 @@ macro(crb_add_library)
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(TARGETS ${execname}  DESTINATION lib COMPONENT Libs)
 
-  # add manual page
-  if ( FEELPP_LIB_MAN )
-    feelpp_add_man( ${execname} ${FEELPP_LIB_MAN} 1 )
-  endif( FEELPP_LIB_MAN )
-  
 endmacro(crb_add_library)
 
 

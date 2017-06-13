@@ -212,9 +212,14 @@ public:
     /** @name Constructors, destructor
      */
     //@{
-
-    CRBModel( int level=0, bool doInit = true )
+    CRBModel( bool doInit = true )
         :
+        CRBModel( 0, doInit )
+        {}
+        
+    CRBModel( int level, bool doInit = true )
+        :
+        M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
         M_InitialGuessVector(),
@@ -233,8 +238,6 @@ public:
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
     {
-        if ( level != 0 )
-            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
         if ( doInit )
             this->init();
     }
@@ -447,6 +450,12 @@ public:
      */
     model_ptrtype & model() { return M_model; }
 
+    //!
+    //! in case of hierarchy of models, return level index.
+    //! default value is 0
+    //!
+    int level() const { return M_level; }
+    
     /**
      * create a new matrix
      * \return the newly created matrix
@@ -2806,7 +2815,9 @@ protected:
 
 
 private:
-    bool M_is_initialized;
+    int M_level = 0;
+    
+    bool M_is_initialized = false;
 
     //! mode for CRBModel
 

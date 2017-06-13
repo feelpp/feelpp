@@ -219,7 +219,9 @@ CRBElementsDB<ModelType>::saveDB()
     else
     /* save in boost format by default */
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        auto p = this->dbLocalPath() / this->dbFilename();
+        std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
+        fs::ofstream ofs( p );
 
         if ( ofs )
         {

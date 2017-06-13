@@ -235,7 +235,7 @@ public:
     crb_ptrtype newCRB( int level=0 )
         {
             model = boost::make_shared<crbmodel_type>( level);
-            return boost::make_shared<crb_type>( this->about().appName() + "-" + std::to_string(level), model );
+            return boost::make_shared<crb_type>( this->about().appName(), model );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
