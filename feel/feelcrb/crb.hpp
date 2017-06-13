@@ -323,11 +323,8 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
-        std::string dbprefix = ( boost::format( "%1%-%2%-%3%" ) % this->name()
-                                 % ioption(_name="crb.output-index")
-                                 % ioption(_name="crb.error-type") ).str();
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-        M_elements_database.setDBFilename( ( boost::format( "%1%.elements" ) % dbprefix ).str() );
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % name ).str() );
+        M_elements_database.setDBFilename( ( boost::format( "%1%.elements.crbdb" ) % name ).str() );
 
     }
 
@@ -570,7 +567,8 @@ public:
             M_output_index = M_prev_o;
 
         //std::cout << " -- crb set output index to " << M_output_index << " (max output = " << M_model->Nl() << ")\n";
-        this->setDBFilename( ( boost::format( "%1%-%2%-%3%.crbdb" ) % this->name() % M_output_index % M_error_type ).str() );
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % this->name() ).str() );
+        //this->setDBFilename( ( boost::format( "%1%-%2%-%3%.crbdb" ) % this->name() % M_output_index % M_error_type ).str() );
 
         if ( M_output_index != M_prev_o )
             this->loadDB();
@@ -603,6 +601,7 @@ public:
         if ( !model )
             return;
         M_model = model;
+        this->setDBDirectory( M_model->id() );
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
         M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
