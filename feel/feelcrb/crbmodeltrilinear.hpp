@@ -159,28 +159,22 @@ public:
      */
     //@{
 
-    CRBModelTrilinear()
+    CRBModelTrilinear( int level=0, bool doInit=true )
         :
-        super()
+        super(level,doInit)
     {
-        this->init();
+        //this->init();
     }
 
-    CRBModelTrilinear( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
-        :
-        super( vm, mode )
-    {
-        this->init();
-    }
 
     /**
      * \param model the model to be used
      */
-    CRBModelTrilinear( model_ptrtype & model )
+    CRBModelTrilinear( model_ptrtype const& model, bool doInit=true )
         :
-        super( model )
+        super( model, doInit )
     {
-        this->init();
+        //this->init();
     }
 
     /**
@@ -190,7 +184,7 @@ public:
         :
         super( o )
     {
-        this->init();
+        //this->init();
     }
 
     //! destructor
