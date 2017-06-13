@@ -35,6 +35,12 @@
 /* define prefix dir for feel installation */
 #cmakedefine FEELPP_PREFIX @FEELPP_PREFIX@
 
+/* define prefix dir for feel installation */
+#cmakedefine FEELPP_INSTALL_DIR @FEELPP_INSTALL_DIR@
+
+/* define lib dir for feel installation */
+#cmakedefine FEELPP_LIBDIR @FEELPP_LIBDIR@
+
 /* define data dir for feel installation */
 #cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
 
