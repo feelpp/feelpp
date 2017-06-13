@@ -62,7 +62,10 @@ public :
         M_isFullSupport( false ),
         M_hasUpdatedParallelData( false ),
         M_hasUpdatedBoundaryInternalFaces( false )
-        {}
+        {
+            for (auto const& eltWrap : M_rangeElements )
+                M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
+        }
 
     bool isFullSupport() const { return M_isFullSupport; }
     bool isPartialSupport() const { return !M_isFullSupport; }
@@ -111,7 +114,25 @@ public :
             return rangeExtendedElements;
         }
 
-    bool hasGhostElement( size_type eltId ) const { return M_rangeMeshElementsGhostIds.find( eltId ) != M_rangeMeshElementsGhostIds.end(); }
+    bool hasElement( size_type eltId ) const
+        {
+            if ( M_isFullSupport )
+                return M_mesh->hasElement( eltId );
+            else
+                return M_rangeMeshElementsIdsPartialSupport.find( eltId ) != M_rangeMeshElementsIdsPartialSupport.end();
+        }
+    bool hasGhostElement( size_type eltId ) const
+        {
+            if ( M_isFullSupport )
+            {
+                if ( M_mesh->hasElement( eltId ) )
+                    return M_mesh->element( eltId ).isGhostCell();
+                else
+                    return false;
+            }
+            else
+                return M_rangeMeshElementsGhostIdsPartialSupport.find( eltId ) != M_rangeMeshElementsGhostIdsPartialSupport.end();
+        }
 
     void updateParallelData()
         {
@@ -187,9 +208,12 @@ private :
                 for ( size_type eltId : dataToRecvByProc.second )
                 {
                     if ( ghostEltIdsInMesh.find( eltId ) != ghostEltIdsInMesh.end() )
-                        M_rangeMeshElementsGhostIds.insert( eltId );
+                        M_rangeMeshElementsGhostIdsPartialSupport.insert( eltId );
                 }
             }
+
+            for ( size_type eltId : M_rangeMeshElementsGhostIdsPartialSupport )
+                M_rangeMeshElementsIdsPartialSupport.insert( eltId );
 
             for ( auto const& eltWrap : this->rangeElements() )
             {
@@ -208,7 +232,7 @@ private :
                     const bool elt0isGhost = elt0.isGhostCell();
                     auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
                     auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-                    if ( M_rangeMeshElementsGhostIds.find( eltOffProc.id() ) == M_rangeMeshElementsGhostIds.end() )
+                    if ( M_rangeMeshElementsGhostIdsPartialSupport.find( eltOffProc.id() ) == M_rangeMeshElementsGhostIdsPartialSupport.end() )
                         continue;
                     myipfaces->push_back( boost::cref( face ) );
                 }
@@ -268,7 +292,8 @@ private :
     range_faces_type M_rangeInterProcessFaces;
     range_faces_type M_rangeBoundaryFaces;
     range_faces_type M_rangeInternalFaces;
-    std::unordered_set<size_type> M_rangeMeshElementsGhostIds;
+    std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
+    std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
 
     bool M_isFullSupport;
     bool M_hasUpdatedParallelData;
