@@ -51,6 +51,7 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+
 #include <gflags/gflags.h>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -1588,6 +1589,17 @@ Environment::exportsRepository()
     return (S_appdir / "exports").string();
 }
 
+uuids::uuid
+Environment::randomUUID( bool parallel )
+{
+    auto uuid = S_generator();
+    if ( parallel )
+    {
+        // overwrite uuid with the uuid from master rank process
+        //mpi::broadcast( Environment::worldComm().globalComm(), uuid, 0 );
+    }
+    return uuid;
+}
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
@@ -2240,6 +2252,7 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),

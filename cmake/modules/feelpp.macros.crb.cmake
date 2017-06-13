@@ -76,6 +76,12 @@ macro(crb_add_executable)
   target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}  )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+
+  # add manual page
+  if ( CRB_EXEC_MAN )
+    feelpp_add_man( ${execname} ${CRB_EXEC_MAN} 1 )
+  endif( CRB_EXEC_MAN )
+  
   if ( CRB_EXEC_TEST )
     add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
     set_property(TEST ${execname} PROPERTY LABELS crb)
@@ -100,6 +106,38 @@ macro(crb_add_executable)
   endif()
 
 endmacro(crb_add_executable)
+
+macro(crb_add_library)
+
+  PARSE_ARGUMENTS(CRB_LIB
+    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN"
+    "TEST"
+    ${ARGN}
+    )
+  CAR(CRB_LIB_NAME ${CRB_LIB_DEFAULT_ARGS})
+
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for Crb application ${CRB_LIB_NAME}")
+    MESSAGE("    Sources: ${CRB_LIB_SRCS}")
+    MESSAGE("    Link libraries: ${CRB_LIB_LINK_LIBRARIES}")
+  endif()
+
+  if ( CRB_LIB_PROJECT )
+    set(execname feelpp_crb_${CRB_LIB_PROJECT}_${CRB_LIB_NAME})
+  else()
+    set(execname feelpp_crb_${CRB_LIB_NAME})
+  endif()
+  if  (CRB_LIB_EXEC )
+    set( ${CRB_LIB_EXEC} ${execname} )
+  endif()
+  add_library(${execname}  SHARED  ${CRB_LIB_SRCS} )
+  target_compile_options(${execname} PRIVATE -fvisibility=hidden)
+  target_link_libraries( ${execname} ${CRB_LIB_LINK_LIBRARIES} ${FEELPP_LIBRARIES}  )
+  set_property(TARGET ${execname} PROPERTY LABELS crb)
+  INSTALL(TARGETS ${execname}  DESTINATION lib COMPONENT Libs)
+
+endmacro(crb_add_library)
+
 
 #
 # crb_add_python_module
