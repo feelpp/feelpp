@@ -276,8 +276,9 @@ public:
     CRB( std::string const& name = "defaultname_crb",
          WorldComm const& worldComm = Environment::worldComm() )
         :
-        super( name, worldComm ),
+        super( name, "crb", worldComm ),
         M_elements_database( name,
+                             "elements",
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model(),
@@ -292,8 +293,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name+"_scmA", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name+"_scmM", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -323,9 +324,6 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % name ).str() );
-        M_elements_database.setDBFilename( ( boost::format( "%1%.elements.crbdb" ) % name ).str() );
-
     }
 
     //! constructor from command line options
@@ -567,8 +565,6 @@ public:
             M_output_index = M_prev_o;
 
         //std::cout << " -- crb set output index to " << M_output_index << " (max output = " << M_model->Nl() << ")\n";
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % this->name() ).str() );
-        //this->setDBFilename( ( boost::format( "%1%-%2%-%3%.crbdb" ) % this->name() % M_output_index % M_error_type ).str() );
 
         if ( M_output_index != M_prev_o )
             this->loadDB();

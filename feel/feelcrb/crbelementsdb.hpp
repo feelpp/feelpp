@@ -77,9 +77,10 @@ public :
 
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
+                   std::string const& ext = "elements",
                    WorldComm const& worldComm = Environment::worldComm() )
     :
-        super( name, worldComm ),
+        super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
         M_N( 0 )
     {
@@ -101,9 +102,10 @@ public :
     }
 
     CRBElementsDB( std::string const& name,
+                   std::string const& ext,
                    model_ptrtype const & model )
         :
-        CRBElementsDB( name )
+        CRBElementsDB( name, ext )
         {
             M_model = model;
         }

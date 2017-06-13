@@ -1287,9 +1287,10 @@ public:
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
-                     std::string const& name )
+                     std::string const& name,
+                     uuids::uuid const& uid )
         :
-        super_type( name ),
+        super_type( modelname, name, uid ),
         M_fspace(),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1802,7 +1803,7 @@ public:
                  std::string const& dbfilename,
                  std::string const& dbdirectory)
         :
-        super( space, model->parameterSpace(), sampling, model->modelName(), name ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name, model->id() ),
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
