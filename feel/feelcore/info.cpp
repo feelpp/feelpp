@@ -88,6 +88,12 @@ Info::prefix()
 }
 
 char const*
+Info::libdir()
+{
+    return stringize( FEELPP_LIBDIR );
+}
+
+char const*
 Info::datadir()
 {
     return stringize( FEELPP_DATADIR );
