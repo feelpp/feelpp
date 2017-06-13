@@ -671,7 +671,9 @@ public:
      */
     localglobal_indices_type const& localToGlobalIndices( size_type ElId ) const
         {
-            return M_locglob_indices[ElId];
+            auto itFindElt = M_locglob_indices.find( ElId );
+            DCHECK( itFindElt != M_locglob_indices.end() ) << "no locglob_indices in elt : " << ElId;
+            return itFindElt->second;
         }
 
     /**
@@ -679,7 +681,7 @@ public:
      */
     localglobal_indices_type localToGlobalIndices( size_type ElId, std::vector<size_type> const& basisToContainerGlobalProcess ) const
         {
-            auto const& basisIndices = M_locglob_indices[ElId];
+            auto const& basisIndices = this->localToGlobalIndices( ElId );
             int nLocalDof = basisIndices.size();
             localglobal_indices_type res = localglobal_indices_type::Zero( basisIndices.size() );
             for ( int j=0 ; j<nLocalDof ; ++j )
@@ -690,10 +692,10 @@ public:
     /**
      * \return the signs of the global dof (=1 in nodal case, +-1 in modal case)
      */
-    localglobal_indices_type const& localToGlobalSigns( size_type ElId )
+    localglobal_indices_type const& localToGlobalSigns( size_type ElId ) const
         {
             if ( is_hdiv_conforming || is_hcurl_conforming )
-                return M_locglob_signs[ElId];
+                return M_locglob_signs.find( ElId )->second;
             else
                 return M_locglob_nosigns;
         }
@@ -1493,7 +1495,10 @@ private:
     /// a view of the dof container
     //dof_container_type M_dof_view;
 
-    typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+    //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
+    typedef typename std::unordered_map<size_type,localglobal_indices_type,
+                                        std::hash<size_type>,std::equal_to<size_type>,
+                                        Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > > vector_indices_type;
 
 
     vector_indices_type M_locglob_indices;
@@ -1660,7 +1665,8 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& M )
 {
-    M_n_el = M.numElements();
+    size_type numMeshElements = (this->hasMeshSupport())? this->meshSupport()->numElements() : M.numElements();
+    M_n_el = numMeshElements;
 
     size_type nldof =
         fe_type::nDofPerVolume * element_type::numVolumes +
@@ -1691,16 +1697,40 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     // initialize the local to global map and fill it with invalid
     // values that will allow to check whether we have a new dof or
     // not when building the table
-    const size_type nV = M.numElements();
+    const size_type nV = numMeshElements;
     int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
 
-    M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+    //M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
+    M_locglob_indices.reserve( nV );
     this->initNumberOfDofIdToContainerId( 1 );
 
     if ( is_hdiv_conforming || is_hcurl_conforming )
-        M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
+    {
+        //M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
+        M_locglob_signs.reserve( nV );
+    }
     else
         M_locglob_nosigns = localglobal_indices_type::Ones( nDofPerElement );
+
+    if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )
+    {
+        for ( size_type eltId : this->meshSupport()->rangeMeshElementsIdsPartialSupport() )
+        {
+            M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
+            if ( is_hdiv_conforming || is_hcurl_conforming )
+                M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
+        }
+    }
+    else
+    {
+        for ( auto const& elt : allelements( M ) )
+        {
+            size_type eltId = elt.id();
+            M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
+            if ( is_hdiv_conforming || is_hcurl_conforming )
+                M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
+        }
+    }
 
     const bool doperm = ( ( ( Shape == SHAPE_TETRA ) && ( nOrder > 2 ) ) || ( ( Shape == SHAPE_HEXA ) && ( nOrder > 1 ) ) );
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
@@ -1712,14 +1742,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
     tic();
     M_mesh = boost::addressof( M );
-#if 0
+
     if ( this->hasMeshSupport() )
     {
         tic();
+        this->meshSupport()->updateParallelData();
+#if 0
         this->meshSupport()->updateBoundaryInternalFaces();
-        toc("DofTable::meshSupport::updateBoundaryInternalFaces", FLAGS_v>0);
-    }
 #endif
+        toc("DofTable::meshSupport", FLAGS_v>0);
+    }
+
     tic();
     VLOG(2) << "[Dof::build] initDofMap\n";
     this->initDofMap( M );
