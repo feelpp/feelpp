@@ -33,6 +33,7 @@
 
 #include <feel/feel.hpp>
 
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/ser.hpp>

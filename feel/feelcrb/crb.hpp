@@ -34,7 +34,7 @@
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "boost/tuple/tuple_io.hpp"
+#include <boost/tuple/tuple_io.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bimap.hpp>
@@ -57,6 +57,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -69,6 +70,8 @@
 #include <feel/feelts/bdf.hpp>
 
 #include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelcrb/crbdata.hpp>
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
@@ -214,8 +217,8 @@ public:
     typedef std::vector<double> vector_double_type;
     typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
 
-    typedef Eigen::VectorXd vectorN_type;
-    typedef Eigen::MatrixXd matrixN_type;
+    using vectorN_type = Feel::vectorN_type;
+    using matrixN_type = Feel::matrixN_type;
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
@@ -273,8 +276,7 @@ public:
     CRB( std::string const& name = "defaultname_crb",
          WorldComm const& worldComm = Environment::worldComm() )
         :
-        super( ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
-               worldComm ),
+        super( name, worldComm ),
         M_elements_database( ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
@@ -321,7 +323,10 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
+        std::string dbprefix = ( boost::format( "%1%-%2%-%3%" ) % this->name()
+                                 % ioption(_name="crb.output-index")
+                                 % ioption(_name="crb.error-type") ).str();
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
     }
 
     //! constructor from command line options
@@ -1129,12 +1134,14 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu,
-                                                                                                                           vectorN_type & time,
-                                                                                                                           double eps = 1e-6,
-                                                                                                                           int N = -1,
-                                                                                                                           bool print_rb_matrix=false );
-
+    //boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple >
+    CRBResults
+    run( parameter_type const& mu,
+         vectorN_type & time,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false );
+    
     /**
      * run the certified reduced basis with P parameters and returns 1 output
      */
@@ -1560,8 +1567,6 @@ protected:
     mutable std::pair<int,double> online_iterations_summary;
 };
 
-po::options_description crbOptions( std::string const& prefix = "" );
-po::options_description crbSEROptions( std::string const& prefix = "" );
 
 
 
@@ -9667,8 +9672,9 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 }
 
 template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
-                      double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+//typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
+//double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+CRBResults
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
     //int Nwn = M_N;
@@ -9770,7 +9776,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
-    return boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds );
+    return CRBResults(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
 }
 
 

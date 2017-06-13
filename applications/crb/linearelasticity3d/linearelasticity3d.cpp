@@ -1,5 +1,6 @@
-
-#include "linearelasticity3d.hpp"
+#include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS   
+#include <feel/feelcrb/crbplugin.hpp>
+#include <linearelasticity3d.hpp>
 
 namespace Feel
 {
@@ -29,7 +30,9 @@ makeLinearElasticity3dAbout( std::string const& str )
 LinearElasticity3d::LinearElasticity3d()
     :
     super_type( "LinearElasticity" )
-{}
+{
+    
+}
 
 void
 LinearElasticity3d::initBetaQ()
@@ -87,6 +90,7 @@ LinearElasticity3d::initModel()
     std::vector<std::pair<std::string,std::string> > markersBases = { { "mat-base1", "base1" },{ "mat-base2", "base2" },{ "mat-base3", "base3" } };
 
     /// [parameters]
+    Dmu->setDimension( 5 );
     auto mu_min = Dmu->element();
     //mu_min << 1.e5,1.e5,1.e5,1.e5,1. ;
     mu_min << 1.e6,1.e6,1.e6,1.e6,1.e3 ;
@@ -214,5 +218,5 @@ LinearElasticity3d::output( int output_index, parameter_type const& mu , element
     return output;
 }
 
-
+FEELPP_CRB_PLUGIN( Heat3d, "LinearElasticity3d" )
 } // namespace Feel

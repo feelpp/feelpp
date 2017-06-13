@@ -29,15 +29,16 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 //#include <boost/assign/std/vector.hpp>
-
+#include <boost/algorithm/string.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 
 namespace Feel
 {
+
 CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
-    M_name( name ),
+    M_name( algorithm::to_lower_copy(name) ),
     M_isloaded( false )
 {
     this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
@@ -46,11 +47,10 @@ CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
                            ).str() );
 
     std::string database_subdir = "default_repo";
-    if( Environment::vm().count( "crb.results-repo-name" ) )
-        database_subdir = ( boost::format("%1%/np_%2%")
-                            %soption(_name="crb.results-repo-name")
-                            %this->worldComm().globalSize() ).str();
-    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
+    database_subdir = ( boost::format("%1%/np_%2%")
+                        %M_name
+                        %this->worldComm().globalSize() ).str();
+    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
                               % Feel::Environment::rootRepository()
                               % database_subdir ).str();
 }
