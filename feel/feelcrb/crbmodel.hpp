@@ -216,10 +216,17 @@ public:
         :
         CRBModel( 0, doInit )
         {}
-        
     CRBModel( int level, bool doInit = true )
         :
-        M_uuid( Environment::randomUUID(true) ),
+        CRBModel( Environment::randomUUID( true ), level, false )
+        {
+            if ( doInit )
+                this->init();
+        }
+    
+    CRBModel( uuids::uuid const& uid, int level, bool doInit = true )
+        :
+        M_uuid( uid ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -296,6 +303,13 @@ public:
     //! unique id for CRB Model
     //!
     uuids::uuid id() const { return M_uuid; }
+
+    //!
+    //! set uuid for CRB Model
+    //! @warning be extra careful here, \c setId should be called before any
+    //! CRB type object is created because they use the id 
+    //!
+    void setId( uuids::uuid const& i ) { M_uuid = i; }
     
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()

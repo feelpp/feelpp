@@ -38,19 +38,23 @@
 
 namespace Feel
 {
-CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, WorldComm const& worldComm )
     :
-    CRBDB( name, Environment::randomUUID(true), worldComm )
+    CRBDB( name, ext, Environment::randomUUID(true), worldComm )
 {}
 
-CRBDB::CRBDB( std::string const& name, uuids::uuid const& uuid, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
     M_name( algorithm::to_lower_copy(name) ),
+    M_ext( ext ),
     M_uuid( uuid ),
     M_isloaded( false )
 {
-    this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name ).str() );
+    if ( M_ext.empty() )
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name%M_ext ).str() );
+    else
+        this->setDBFilename( ( boost::format( "%1%.%2%.crbdb" ) %M_name%M_ext ).str() );
 
     this->setDBDirectory( M_uuid );
 }

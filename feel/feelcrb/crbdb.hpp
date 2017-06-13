@@ -71,11 +71,15 @@ public:
      */
     //@{
 
+    CRBDB() = delete;
+    
     //! default constructor
-    CRBDB( std::string const& name = "defaultname_crbdb",
+    CRBDB( std::string const& name,
+           std::string const& ext, 
            WorldComm const& worldComm = Environment::worldComm() );
 
     CRBDB( std::string const& name,
+           std::string const& ext,
            uuids::uuid const& i,
            WorldComm const& worldComm = Environment::worldComm() );
     
@@ -108,6 +112,11 @@ public:
         return M_name;
     }
 
+    //!
+    //! return extension
+    //!
+    std::string const& extension() const { return M_ext; }
+    
     //!
     //! @return the uuid of the CRBDB
     //!
@@ -268,6 +277,7 @@ private:
     WorldComm const& M_worldComm;
 
     std::string M_name;
+    std::string M_ext;
     uuids::uuid M_uuid;
     std::string M_dbfilename;
     std::string M_dbDirectory;
