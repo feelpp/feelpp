@@ -114,6 +114,13 @@ public :
             return rangeExtendedElements;
         }
 
+    size_type numElements() const
+        {
+            if ( M_isFullSupport )
+                return M_mesh->numElements();
+            else
+                return M_rangeMeshElementsIdsPartialSupport.size();
+        }
     bool hasElement( size_type eltId ) const
         {
             if ( M_isFullSupport )
@@ -133,6 +140,9 @@ public :
             else
                 return M_rangeMeshElementsGhostIdsPartialSupport.find( eltId ) != M_rangeMeshElementsGhostIdsPartialSupport.end();
         }
+
+    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const { return M_rangeMeshElementsIdsPartialSupport; }
+    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const { return M_rangeMeshElementsGhostIdsPartialSupport; }
 
     void updateParallelData()
         {
