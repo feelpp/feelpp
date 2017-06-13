@@ -10,31 +10,25 @@
 namespace Feel
 {
 
-po::options_description
-makeCrbModelThermalBuildingOptions();
-AboutData
-makeCrbModelThermalBuildingAbout( std::string const& str = "thermalbuilding" );
+FEELPP_EXPORT po::options_description
+makeThermalBuildingOptions();
+FEELPP_EXPORT AboutData
+makeThermalBuildingAbout( std::string const& str = "thermalbuilding" );
 
-struct CrbModelThermalBuildingConfig
+struct FEELPP_EXPORT ThermalBuildingConfig
 {
     typedef Mesh<Simplex<3>> mesh_type;
     typedef Pch_type<mesh_type,1> space_type;
     static const int options = TimeIndependent;
 
-    struct ParameterDefinition
-    {
-        static const uint16_type ParameterSpaceDimension = 7;
-        typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    };
-
 };
 
-class CrbModelThermalBuilding : public ModelCrbBase<CrbModelThermalBuildingConfig::ParameterDefinition, CrbModelThermalBuildingConfig::space_type >
+class FEELPP_EXPORT ThermalBuilding : public ModelCrbBase<ParameterSpace<>, ThermalBuildingConfig::space_type >
 {
-    typedef ModelCrbBase<CrbModelThermalBuildingConfig::ParameterDefinition, CrbModelThermalBuildingConfig::space_type, CrbModelThermalBuildingConfig::options > super_type;
+    typedef ModelCrbBase<ParameterSpace<>, ThermalBuildingConfig::space_type, ThermalBuildingConfig::options > super_type;
 public:
 
-    CrbModelThermalBuilding();
+    ThermalBuilding();
 
     //! initialisation of the model
     void initModel();

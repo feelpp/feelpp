@@ -155,13 +155,23 @@ public:
      */
     //@{
 
-    //! set the DB filename
+    //!
+    //! set the name of the model for the DB
+    //! @code
+    //! this->setName( "heat" );
+    //! @endcode
+    //!
     void setName( std::string const& name )
     {
         M_name = name;
     }
 
-    //! set the DB filename
+    //!
+    //! set the name of the model for the DB
+    //! @code
+    //! this->setDBFilename( "heat.crbdb" );
+    //! @endcode
+    //!
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;

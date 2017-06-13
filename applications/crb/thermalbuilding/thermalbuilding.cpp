@@ -1,13 +1,38 @@
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 12 Jun 2017
+//! @copyright 2017 Feel++ Consortium
+//!
 
+#include <feel/feelcrb/crbplugin.hpp>
 #include "thermalbuilding.hpp"
 
 namespace Feel
 {
 
 po::options_description
-makeCrbModelThermalBuildingOptions()
+makeThermalBuildingOptions()
 {
-    po::options_description myoptions( "CrbModelThermalBuilding options" );
+    po::options_description myoptions( "ThermalBuilding options" );
     myoptions.add_options()
         ( "thermal-building.gamma", po::value<double>()->default_value( 10 ), "penalisation term" )
         ( "thermal-building.conductivity.air", po::value<double>()->default_value( /*0.0262*4*/ /*2.9*/ 1. ), "conductivity.air" )
@@ -17,7 +42,7 @@ makeCrbModelThermalBuildingOptions()
     return myoptions;
 }
 AboutData
-makeCrbModelThermalBuildingAbout( std::string const& str )
+makeThermalBuildingAbout( std::string const& str )
 {
     Feel::AboutData about( /*AppName  */ str.c_str(),
                            /*ProgName */ str.c_str(),
@@ -28,13 +53,13 @@ makeCrbModelThermalBuildingAbout( std::string const& str )
     return about;
 }
 
-CrbModelThermalBuilding::CrbModelThermalBuilding()
+ThermalBuilding::ThermalBuilding()
     :
     super_type( "ThermalBuilding" )
 {}
 
 void
-CrbModelThermalBuilding::initBetaQ()
+ThermalBuilding::initBetaQ()
 {
     M_Qa=2;//1;
     M_Nl=2;
@@ -51,7 +76,7 @@ CrbModelThermalBuilding::initBetaQ()
 }
 
 void
-CrbModelThermalBuilding::initDataStructureAffineDecomposition()
+ThermalBuilding::initDataStructureAffineDecomposition()
 {
     this->initBetaQ();
 #if 0
@@ -72,8 +97,8 @@ CrbModelThermalBuilding::initDataStructureAffineDecomposition()
 
 }
 
-CrbModelThermalBuilding::super_type::betaq_type
-CrbModelThermalBuilding::computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent )
+ThermalBuilding::super_type::betaq_type
+ThermalBuilding::computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent )
 {
     if ( this->M_betaAq.empty() )
         this->initBetaQ();
@@ -88,24 +113,24 @@ CrbModelThermalBuilding::computeBetaQ( parameter_type const& mu , double time , 
     return boost::make_tuple( this->M_betaAq, this->M_betaFq );
 
 }
-CrbModelThermalBuilding::super_type::betaq_type
-CrbModelThermalBuilding::computeBetaQ( parameter_type const& mu )
+ThermalBuilding::super_type::betaq_type
+ThermalBuilding::computeBetaQ( parameter_type const& mu )
 {
     return this->computeBetaQ( mu,0, false );
 }
 
 void
-CrbModelThermalBuilding::initModel()
+ThermalBuilding::initModel()
 {
     CHECK( is_linear && !is_time_dependent ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
     LOG_IF( WARNING, ((Options&NonLinear) == NonLinear) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
     LOG_IF( WARNING, ((Options&TimeDependent) == TimeDependent) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
 
-    auto mesh = loadMesh( _mesh=new CrbModelThermalBuildingConfig::mesh_type,
+    auto mesh = loadMesh( _mesh=new ThermalBuildingConfig::mesh_type,
                           _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
                           _savehdf5=0 );
 
-    this->setFunctionSpaces( CrbModelThermalBuildingConfig::space_type::New( mesh ) );
+    this->setFunctionSpaces( ThermalBuildingConfig::space_type::New( mesh ) );
     //this->setSymbolicExpressionBuildDir("$repository/crb/thermalbuilding/symbolicexpr/");
 
     if( Environment::worldComm().isMasterRank() )
@@ -120,6 +145,7 @@ CrbModelThermalBuilding::initModel()
     M_Ql[1]=1;
     this->initDataStructureAffineDecomposition();
 
+    Dmu->setDimension( 7 );
 #if 1
     // 0.24275
     /// [parameters]
@@ -146,7 +172,7 @@ CrbModelThermalBuilding::initModel()
     this->assembleData();
 }
 void
-CrbModelThermalBuilding::assembleData()
+ThermalBuilding::assembleData()
 {
     auto mesh = this->Xh->mesh();
     auto u = this->Xh->element();
@@ -240,7 +266,7 @@ CrbModelThermalBuilding::assembleData()
 
 }
 double
-CrbModelThermalBuilding::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
+ThermalBuilding::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
     //CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
@@ -255,16 +281,16 @@ CrbModelThermalBuilding::output( int output_index, parameter_type const& mu , el
     else if ( output_index == 1 )
     {
         output = mean(markedelements(mesh,"air" ),idv(u))(0,0);
-        std::cout << " CrbModelThermalBuilding::output " << output << "\n";
+        std::cout << " ThermalBuilding::output " << output << "\n";
     }
     // else if ( output_index == 2 )
     // {
     //     output = mean(elements(mesh),idv(u)).evaluat()(0,0);
     // }
     else
-        throw std::logic_error( "[CrbModelThermalBuilding::output] error with output_index : only 0 or 1 " );
+        throw std::logic_error( "[ThermalBuilding::output] error with output_index : only 0 or 1 " );
     return output;
 
 }
-
+FEELPP_CRB_PLUGIN( ThermalBuilding, "thermalbuilding" )
 } // namespace Feel

@@ -3506,6 +3506,5 @@ eimBasisExpression(int m, ExprType const& expr, EimType const& eim)
     return boost::any_cast<basis_type>(any_type);
 }
 
-po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
