@@ -1,0 +1,35 @@
+{
+    "Name": "Square2d",
+    "ShortName":"Square2d",
+    "Model":"Navier-Stokes",
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Left":
+                {
+                    "expr":"{0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+    }
+
+}

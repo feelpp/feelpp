@@ -552,11 +552,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
                                    ( mpd, ( int ), ioption(_name="solvereigen.mpd") )
                                    ( interval_a, ( double ), doption("solvereigen.interval-a") )
                                    ( interval_b, ( double ), doption("solvereigen.interval-b") )
-#if FEELPP_HAS_PETSC
-                                   ( backend,( BackendType ), BACKEND_PETSC )
-#else
-                                   ( backend,( BackendType ), BACKEND_EIGEN )
-#endif
+                                   ( backend,( BackendType ), BACKEND_DEFAULT )
                                    ( solver,( EigenSolverType ), KRYLOVSCHUR )
                                    ( problem,( EigenProblemType ), GHEP )
                                    ( transform,( SpectralTransformType ), SHIFT )

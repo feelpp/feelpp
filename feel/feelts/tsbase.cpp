@@ -55,24 +55,24 @@ TSBase::TSBase()
     M_prefix()
 {}
 
-TSBase::TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
+TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm )
     :
     M_name( name ),
-    M_time( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
+    M_time( doption(_prefix=prefix,_name="ts.time-initial") ),
     M_iteration( 0 ),
-    M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
-    M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
-    M_dt( vm[prefixvm( prefix, "bdf.time-step" )].as<double>() ),
+    M_Ti( doption(_prefix=prefix,_name="ts.time-initial") ),
+    M_Tf( doption(_prefix=prefix,_name="ts.time-final") ),
+    M_dt( doption(_prefix=prefix,_name="ts.time-step") ),
     M_state( TS_UNITIALIZED ),
     M_n_restart( 0 ),
-    M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
-    M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
-    M_restartStepBeforeLastSave( vm[prefixvm( prefix, "bdf.restart.step-before-last-save" )].as<int>() ),
-    M_restartAtLastSave( vm[prefixvm( prefix, "bdf.restart.at-last-save" )].as<bool>() ),
-    M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
-    M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
-    M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
-    M_fileFormat( soption( _name="bdf.file-format",_prefix=prefix ) ),
+    M_restart( boption(_prefix=prefix,_name="ts.restart") ),
+    M_restartPath( soption(_prefix=prefix,_name="ts.restart.path") ),
+    M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save") ),
+    M_restartAtLastSave( boption(_prefix=prefix,_name="ts.restart.at-last-save") ),
+    M_saveInFile( boption(_prefix=prefix,_name="ts.save") ),
+    M_saveFreq( ioption(_prefix=prefix,_name="ts.save.freq") ),
+    M_rankProcInNameOfFiles( boption(_prefix=prefix,_name="ts.rank-proc-in-files-name") ),
+    M_fileFormat( soption(_prefix=prefix,_name="ts.file-format") ),
     M_worldComm( worldComm ),
     M_prefix( prefix )
 {}

@@ -1,33 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-09
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file meshbase.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-09
- */
-#ifndef __MeshBase_H
-#define __MeshBase_H 1
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2005-2006 EPFL
+//! @copyright 2011-2017 Feel++ Consortium
+//!
+#ifndef FEELPP_MESHBASE_HPP
+#define FEELPP_MESHBASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
@@ -38,10 +34,13 @@ namespace Feel
 {
 class SubMeshData;
 
-/**
- * Components of a mesh that can be enabled or disabled when calling
- * \c updateForUse()
- */
+//!
+//! @brief Mesh components enum
+//! @ingroup Mesh
+//! 
+//! Components of a mesh that can be enabled or disabled when calling
+//! \c updateForUse()
+//!
 enum MeshComponents
 {
     MESH_UPDATE_EDGES     = ( 1 << 0 ),
@@ -54,20 +53,21 @@ enum MeshComponents
     MESH_REMOVE_PERIODIC_FACES_FROM_BOUNDARY = ( 1 << 7 ),
     MESH_NO_UPDATE_MEASURES = ( 1 << 8 ),
     MESH_UPDATE_ELEMENTS_ADJACENCY = ( 1 << 9 ),
-    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 )
+    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 ),
+    MESH_GEOMAP_NOT_CACHED = ( 1 << 11 )
 
 
 };
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
 const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 
-/**
- * \class MeshBase
- * \brief base mesh class
- *
- *  @author Christophe Prud'homme
- *  @see
- */
+//!
+//! @brief base mesh class
+//! @ingroup Mesh
+//!
+//! @author Christophe Prud'homme
+//! @see
+//!/
 class MeshBase
 {
 public:
@@ -201,17 +201,13 @@ public:
      */
     //@{
 
-    /**
-     * set the number of partitions
-     */
+    //! set the number of partitions 
     void setNumberOfPartitions( rank_type n )
     {
         M_n_parts = n;
     }
 
-    /**
-     * set the number of vertices
-     */
+    //! set the number of vertices 
     void setNumVertices( size_type n )
     {
         M_n_vertices = n ;
@@ -478,7 +474,31 @@ public:
             return invalid_size_type_value;
         }
 
-
+    //!
+    //! @return true if the list strings are all  mesh marker
+    //!
+    bool hasAllMarkers( std::initializer_list<std::string> l )
+        {
+            bool f = true;
+            for (auto n : l )
+            {
+                if ( !this->hasMarker( n ) )
+                    f = false;
+            }
+            return f;
+        }
+    //!
+    //! @return true if any of the list string contain a mesh marker
+    //!
+    bool hasAnyMarker( std::initializer_list<std::string> l )
+        {
+            for (auto n : l )
+            {
+                if ( this->hasMarker( n ) )
+                    return true;
+            }
+            return false;
+        }
     /**
      * @return true if \p marker exists, false otherwise
      */
@@ -530,7 +550,7 @@ public:
             return true;
 
         }
-    
+
 
     /**
      * @return the id associated to the \p marker
@@ -591,7 +611,10 @@ public:
         }
 
     /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
+    flag_type markerId( boost::any const& marker ) const;
+
+    /// @return the set of marker id given the marker name \p marker
+    std::set<flag_type> markersId( boost::any const& marker ) const;
 
     //@}
 
@@ -652,7 +675,7 @@ private:
             ar & M_markername;
         }
 protected:
-    
+
     /**
      * marker name dictionnary ( std::string -> <int,int> )
      * get<0>() provides the id
@@ -671,7 +694,7 @@ private:
      * real dimension
      */
     uint16_type M_realdim;
-    
+
     /**
      * encodes components that should be updated
      */

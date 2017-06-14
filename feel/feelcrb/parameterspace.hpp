@@ -1801,6 +1801,11 @@ private:
 
 template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
 
+//!
+//! dynamic parameter space type definition
+//!
+using ParameterSpaceX = ParameterSpace<>;
+
 template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>

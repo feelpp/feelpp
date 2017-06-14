@@ -5,7 +5,7 @@
 # make sure we're interpreted by some minimal autoconf
 AC_PREREQ(2.57)
 
-AC_INIT(glog, 0.3.3, opensource@google.com)
+AC_INIT(glog, 0.3.4, opensource@google.com)
 # The argument here is just something that should be in the current directory
 # (for sanity checking)
 AC_CONFIG_SRCDIR(README)
@@ -47,6 +47,11 @@ AC_CHECK_HEADERS(glob.h)
 # For backtrace with gcc.
 AC_CHECK_HEADERS(unwind.h)
 
+AC_CHECK_HEADER(windows.h, ac_cv_have_windows_h=1, ac_cv_have_windows_h=0)
+if test x"$ac_cv_have_windows_h" = x"1"; then
+  MINGW_CFLAGS=-Isrc/windows
+fi
+
 AC_CHECK_SIZEOF(void *)
 
 # These are the types I need.  We look for them in either stdint.h,
@@ -58,12 +63,21 @@ AC_CHECK_TYPE(__uint16, ac_cv_have___uint16=1, ac_cv_have___uint16=0)
 AC_CHECK_FUNC(sigaltstack,
               AC_DEFINE(HAVE_SIGALTSTACK, 1,
                         [Define if you have the `sigaltstack' function]))
+AC_CHECK_FUNC(sigaction,
+              AC_DEFINE(HAVE_SIGACTION, 1,
+                        [Define if you have the 'sigaction' function]))
 AC_CHECK_FUNC(dladdr,
               AC_DEFINE(HAVE_DLADDR, 1,
                         [Define if you have the `dladdr' function]))
 AC_CHECK_FUNC(fcntl,
               AC_DEFINE(HAVE_FCNTL, 1,
                         [Define if you have the `fcntl' function]))
+AC_CHECK_FUNC(pread,
+              AC_DEFINE(HAVE_PREAD, 1,
+                        [Define if you have the 'pread' function]))
+AC_CHECK_FUNC(pwrite,
+              AC_DEFINE(HAVE_PWRITE, 1,
+                        [Define if you have the 'pwrite' function]))
 
 AX_C___ATTRIBUTE__
 # We only care about these two attributes.
@@ -108,7 +122,7 @@ fi
 # Some of the code in this directory depends on pthreads
 ACX_PTHREAD
 if test x"$acx_pthread_ok" = x"yes"; then
-  # To make libglog depend on libpthread on Linux, we need to add
+  # To make libfeelpp_glog depend on libpthread on Linux, we need to add
   # -lpthread in addition to -pthread.
   AC_CHECK_LIB(pthread, pthread_self)
 fi
@@ -118,17 +132,15 @@ SAVE_CFLAGS="$CFLAGS"
 SAVE_LIBS="$LIBS"
 AC_ARG_WITH(gflags, AS_HELP_STRING[--with-gflags=GFLAGS_DIR],
   GFLAGS_CFLAGS="-I${with_gflags}/include"
-  GFLAGS_LIBS="-L${with_gflags}/lib -lfeelpp_gflags"
+  GFLAGS_LIBS="-L${with_gflags}/lib -lgflags"
   CFLAGS="$CFLAGS $GFLAGS_CFLAGS"
   LIBS="$LIBS $GFLAGS_LIBS"
 )
-
-AC_CHECK_LIB(feelpp_gflags, main, ac_cv_have_libgflags=1, ac_cv_have_libgflags=0)
-
+AC_CHECK_LIB(gflags, main, ac_cv_have_libgflags=1, ac_cv_have_libgflags=0)
 if test x"$ac_cv_have_libgflags" = x"1"; then
   AC_DEFINE(HAVE_LIB_GFLAGS, 1, [define if you have google gflags library])
   if test x"$GFLAGS_LIBS" = x""; then
-    GFLAGS_LIBS="-lfeelpp_gflags"
+    GFLAGS_LIBS="-lgflags"
   fi
 else
   GFLAGS_CFLAGS=
@@ -141,7 +153,8 @@ LIBS="$SAVE_LIBS"
 #               once the m4 macro of Google Mocking becomes ready.
 # Check if there is Google Test library installed.
 AC_CHECK_PROG(GTEST_CONFIG, gtest-config, "yes")
-if test x"$GTEST_CONFIG" = "xyes"; then
+AC_CHECK_LIB(gtest, main, have_gtest_lib="yes")
+if test x"$GTEST_CONFIG" = "xyes" -a x"$have_gtest_lib" = "xyes"; then
   GTEST_CFLAGS=`gtest-config --cppflags --cxxflags`
   GTEST_LIBS=`gtest-config --ldflags --libs`
   AC_DEFINE(HAVE_LIB_GTEST, 1, [define if you have google gtest library])
@@ -213,10 +226,11 @@ AC_SUBST(ac_cv_have_libgflags)
 AC_SUBST(GFLAGS_CFLAGS)
 AC_SUBST(GTEST_CFLAGS)
 AC_SUBST(GMOCK_CFLAGS)
+AC_SUBST(MINGW_CFLAGS)
 AC_SUBST(GFLAGS_LIBS)
 AC_SUBST(GTEST_LIBS)
 AC_SUBST(GMOCK_LIBS)
 
 # Write generated configuration file
 AC_CONFIG_FILES([Makefile src/glog/logging.h src/glog/raw_logging.h src/glog/vlog_is_on.h src/glog/stl_logging.h])
-AC_OUTPUT(libglog.pc)
+AC_OUTPUT(libfeelpp_glog.pc)

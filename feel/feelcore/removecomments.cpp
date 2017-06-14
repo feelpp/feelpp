@@ -41,7 +41,7 @@
 
 namespace Feel 
 {
-
+#pragma GCC visibility push(hidden)
 namespace spirit = boost::spirit;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -107,15 +107,16 @@ struct strip_comments_grammar : spirit::qi::grammar<Iterator>
                               *token(IDANY) >> tok.endcomment 
                           ]
                   |   tok.cppcomment
-                          |   qi::token(IDANY)   [ ostr << _1 ]
+                          |   qi::token(IDANY)   [ ostr << boost::spirit::_1 ]
                           )
                 ;
         }
 
     spirit::qi::rule<Iterator> start;
 };
+#pragma GCC visibility pop
 
-std::string
+FEELPP_EXPORT std::string
 removeComments( std::string str )
 {
     using namespace spirit;

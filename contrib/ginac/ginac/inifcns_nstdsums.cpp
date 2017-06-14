@@ -1747,7 +1747,7 @@ REGISTER_FUNCTION(Li,
                   series_func(Li_series).
                   derivative_func(Li_deriv).
                   print_func<print_latex>(Li_print_latex).
-                  do_not_evalf_params());
+                  do_not_evalf_params())
 
 
 //////////////////////////////////////////////////////////////////////
@@ -2264,7 +2264,7 @@ REGISTER_FUNCTION(S,
                   series_func(S_series).
                   derivative_func(S_deriv).
                   print_func<print_latex>(S_print_latex).
-                  do_not_evalf_params());
+                  do_not_evalf_params())
 
 
 //////////////////////////////////////////////////////////////////////
@@ -3478,7 +3478,7 @@ REGISTER_FUNCTION(H,
                   series_func(H_series).
                   derivative_func(H_deriv).
                   print_func<print_latex>(H_print_latex).
-                  do_not_evalf_params());
+                  do_not_evalf_params())
 
 
 // takes a parameter list for H and returns an expression with corresponding multiple polylogarithms
@@ -4113,3 +4113,5 @@ unsigned zeta2_SERIAL::serial = function::register_new(function_options("zeta", 
 
 } // namespace GiNaC
 
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

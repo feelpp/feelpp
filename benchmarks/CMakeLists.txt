@@ -1,6 +1,6 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-project( feel-benchmarks )
+project( benchmarks )
 
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
@@ -31,6 +31,6 @@ macro(feel_add_bench examplename)
   add_dependencies( benchmarks ${targetname} )
 endmacro(feel_add_bench)
 
-foreach( DIR navierstokes darcy curl perf wrapper/python python compilation magnetostatic hdg )
+foreach( DIR navierstokes darcy curl perf wrapper/python python compilation magnetostatic hdg mesh)
   add_subdirectory( ${DIR} )
 endforeach()

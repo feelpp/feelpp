@@ -415,7 +415,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNESReuse() );
 
         // compute cst jacobian when jacobian is never rebuilt after!
-        if ( reuseJac &&  (!M_reuseJacIsBuild && !M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
+        if ( reuseJac &&  (!M_reuseJacIsBuild && !M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );A->close();M_reuseJacIsBuild=true;}
     }
     else
     {
@@ -447,7 +447,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         M_nlsolver->setReuse( 1, 1 );
 
         this->nlSolver()->jacobian( x, A );
-
+        A->close();
         // call solver which must execute with success
         auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
 

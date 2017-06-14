@@ -21,9 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ON )
 
-if ( FEELPP_ENABLE_NLOPT )
 
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
 
@@ -49,76 +47,82 @@ if ( FEELPP_ENABLE_NLOPT )
       endif()
     endif()
 
-    if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+    # if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
 
-      execute_process(
-        COMMAND  touch  swig/nlopt.scm.in
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-touch"
-        #ERROR_FILE "nlopt-touch-errors"
-        )
-      execute_process(
-        COMMAND autoreconf --verbose --install --force
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
-        #ERROR_FILE "nlopt-autoreconf-errors"
-        )
-      execute_process(
-        COMMAND autoreconf --verbose --install --force
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
-        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
-        #ERROR_FILE "nlopt-autoreconf-errors"
-        )
+    #   execute_process(
+    #     COMMAND  touch  swig/nlopt.scm.in
+    #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
+    #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-touch"
+    #     #ERROR_FILE "nlopt-touch-errors"
+    #     )
+    #   execute_process(
+    #     COMMAND autoreconf --verbose --install --force
+    #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
+    #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
+    #     #ERROR_FILE "nlopt-autoreconf-errors"
+    #     )
+    #   execute_process(
+    #     COMMAND autoreconf --verbose --install --force
+    #     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/contrib/nlopt/
+    #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-autoreconf"
+    #     #ERROR_FILE "nlopt-autoreconf-errors"
+    #     )
 
-      if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/configure )
-          message(FATAL_ERROR "configure not available (Possible cause: autotools might be missing from your system)")
-      endif()
+    #   if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/configure )
+    #       message(FATAL_ERROR "configure not available (Possible cause: autotools might be missing from your system)")
+    #   endif()
 
-      # ensure that build dir is created
-      file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt)
+    #   # ensure that build dir is created
+    #   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt)
 
-      if ( FEELPP_ENABLE_BUILD_STATIC )
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
-          #OUTPUT_QUIET
-          OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
-          #ERROR_FILE "nlopt-configure-errors"
-          )
-      else()
-        execute_process(
-          COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
-          #      OUTPUT_QUIET
-          OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
-          #ERROR_FILE "nlopt-configure-errors"
-          )
-      endif()
-      execute_process(
-        COMMAND make nlopt.hpp
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt/api
-        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-nlopthpp" )
+    #   if ( FEELPP_ENABLE_BUILD_STATIC )
+    #     execute_process(
+    #       COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
+    #       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+    #       #OUTPUT_QUIET
+    #       OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
+    #       #ERROR_FILE "nlopt-configure-errors"
+    #       )
+    #   else()
+    #     execute_process(
+    #       COMMAND ${FEELPP_HOME_DIR}/contrib/nlopt/configure --enable-maintainer-mode --with-cxx=yes --enable-shared CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_CXX_COMPILER}
+    #       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+    #       #      OUTPUT_QUIET
+    #       OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-configure"
+    #       #ERROR_FILE "nlopt-configure-errors"
+    #       )
+    #   endif()
+    #   execute_process(
+    #     COMMAND make nlopt.hpp
+    #     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt/api
+    #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-nlopthpp" )
 
-      # delete all Makefiles before Cmake generate its own
-      execute_process(
-        COMMAND make distclean
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
-        OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-distclean"
-        )
-    endif()
-    if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
-      message(FATAL_ERROR "NLOpt: nlopt.hpp was not generated")
-    else()
-      message(STATUS "NLOpt: nlopt.hpp is generated")
-    endif()
-    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
-    add_subdirectory(contrib/nlopt)
+    #   # delete all Makefiles before Cmake generate its own
+    #   execute_process(
+    #     COMMAND make distclean
+    #     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/nlopt
+    #     OUTPUT_FILE "${CMAKE_SOURCE_DIR}/contrib/nlopt-distclean"
+    #     )
+    # endif()
+    # if (NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/nlopt/api/nlopt.hpp )
+    #   message(FATAL_ERROR "NLOpt: nlopt.hpp was not generated")
+    # else()
+    #   message(STATUS "NLOpt: nlopt.hpp is generated")
+    # endif()
+    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
     include_directories(${NLOPT_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
     SET(FEELPP_HAS_NLOPT 1)
 
-  else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+    add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/nlopt)
+    list(APPEND FEELPP_LIBRARIES feelpp_nlopt)
+    add_dependencies(contrib feelpp_nlopt)
+    if (TARGET _nlopt )
+      add_dependencies(contrib _nlopt)
+    endif()
+
+  else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+        # Contrib installation.
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
       $ENV{FEELPP_DIR}/include/feel/nlopt
@@ -153,4 +157,4 @@ if ( FEELPP_ENABLE_NLOPT )
 
   endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt  )
 
-endif()
+

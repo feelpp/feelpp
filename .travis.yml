@@ -1,34 +1,74 @@
+language: cpp
 git:
   depth: 1
   submodules: false
-
 matrix:
   include:
-      - env: BUILD="ubuntu-14.04,clang-3.6" DOCKERFILE="Dockerfile.dockerhub" TARGET_IMAGE="feelpp/develop:ubuntu-14.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""
+      - os: linux
+        env: BUILD="ubuntu 17.04,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" TARGET_IMAGE="ubuntu:17.04" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O0 -DNDEBUG"
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-14.04,ckang-3.6" DOCKERFILE="Dockerfile.minimal" TARGET_IMAGE="feelpp/develop:minimal" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MINIMAL_BUILD=ON"
+      - os: linux
+        env: BUILD="ubuntu 16.10,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="" CXXFLAGS="-O0 -DNDEBUG"
         sudo: required
         services:
             - docker
-      - env: BUILD="ubuntu-16.10,clang-3.9" DOCKERFILE="Dockerfile-16.10" TARGET_IMAGE="feelpp/develop:latest" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS=""
+      - os: linux
+        env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
         sudo: required
         services:
             - docker
+      - os: linux
+        env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian testing,clang-3.9" FEELPP_CXX="clang++-3.9" FEELPP_CC="clang-3.9" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      - os: linux
+        env: BUILD="debian sid,clang-4.0" FEELPP_CXX="clang++-4.0" FEELPP_CC="clang-4.0" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+        sudo: required
+        services:
+            - docker
+      # - os: osx
+      #   compiler: clang
+      #   env: BUILD="osx clang" FEELPP_CXX="clang++" FEELPP_CC="clang" CXXFLAGS="-O0 -DNDEBUG" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+      #   osx_image: xcode8.2
+
+  allow_failures:
+  - env: BUILD="ubuntu 16.10,gcc-6.2" FEELPP_CXX="g++" FEELPP_CC="gcc" TARGET_IMAGE="ubuntu:16.10" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1" CXXFLAGS="-O0 -DNDEBUG"
+  - env: BUILD="debian testing,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:testing" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  - env: BUILD="debian sid,gcc-6.3" FEELPP_CXX="g++" FEELPP_CC="gcc" CXXFLAGS="-O0 -DNDEBUG" TARGET_IMAGE="debian:sid" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
+  #- env: BUILD="osx clang" FEELPP_CXX="clang++" FEELPP_CC="clang" CXXFLAGS="-O0 -DNDEBUG" TARGET_BRANCH="${TRAVIS_BRANCH}" CMAKE_FLAGS="-DFEELPP_MESH_MAX_ORDER=1"
 
 before_install:
 - echo $TRAVIS_OS_NAME
 - echo $HOME
-- docker --version
-- sudo apt-get update
-- sudo apt-get install -y -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker-engine
-- git clone --depth=1 https://github.com/feelpp/docker
-- cd docker/dockerfiles/develop && docker build -f ${DOCKERFILE} -t ${TARGET_IMAGE} --build-arg=BRANCH=${TARGET_BRANCH} --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" .
+- echo "building ${TRAVIS_BRANCH}..."
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then tools/scripts/travis/build-osx.sh   ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker --version   ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tools/scripts/travis/build-docker.sh   ; fi
 
 install:
-- docker run feelpp/develop:latest true
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker images; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run ${TARGET_IMAGE} true; fi
 
 script:
 - true
 
+notifications:
+  webhooks:
+      urls:
+        - https://webhooks.gitter.im/e/12ef0320a0dce1a9972a
+      on_success: always  # options: [always|never|change] default: always
+      on_failure: always  # options: [always|never|change] default: always
+      on_start: never     # options: [always|never|change] default: always

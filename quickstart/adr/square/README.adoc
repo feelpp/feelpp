@@ -1,0 +1,28 @@
+= Square
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>
+v1.0, 2017/02/20 
+
+NOTE: This test case is shared by the Laplacian and Advection-Diffusion-Reaction applications.
+The latter being configured to solve for a Laplacian problem.
+
+
+== Execution
+
+=== Convection dominanted flow with stem:[Pe > 1]
+
+try without stabilisation
+----
+mpirun -np 4 feelpp_qs_adr_2d --config-file square.cfg --functions.sigma="{1e-4,0,0,1e-4}"
+----
+you get wriggles
+
+try with GaLS stabilisation
+----
+mpirun -np 4 feelpp_qs_adr_2d --config-file square.cfg --functions.sigma="{1e-4,0,0,1e-4}" --stabilisation=1
+----
+The wrigles have now disappeared
+
+With a sufficiently fine mesh, we have stem:[\mathrm{Pe} < 1] and we don't need stabilisation but we pay a high price from the computational point of view
+----
+mpirun -np 4 ../../feelpp_qs_adr_2d --config-file square.cfg  --gmsh.filename square.geo --functions.sigma="{1e-3,0,0,1e-3}"  --gmsh.hsize=1e-2
+----

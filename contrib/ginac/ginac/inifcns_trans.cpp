@@ -135,7 +135,7 @@ REGISTER_FUNCTION(exp, eval_func(exp_eval).
                        real_part_func(exp_real_part).
                        imag_part_func(exp_imag_part).
                        conjugate_func(exp_conjugate).
-                       latex_name("\\exp"));
+                       latex_name("\\exp"))
 
 //////////
 // natural logarithm
@@ -359,7 +359,7 @@ REGISTER_FUNCTION(log, eval_func(log_eval).
                        real_part_func(log_real_part).
                        imag_part_func(log_imag_part).
                        conjugate_func(log_conjugate).
-                       latex_name("\\ln"));
+                       latex_name("\\ln"))
 
 //////////
 // sine (trigonometric function)
@@ -466,7 +466,7 @@ REGISTER_FUNCTION(sin, eval_func(sin_eval).
                        real_part_func(sin_real_part).
                        imag_part_func(sin_imag_part).
                        conjugate_func(sin_conjugate).
-                       latex_name("\\sin"));
+                       latex_name("\\sin"))
 
 //////////
 // cosine (trigonometric function)
@@ -573,7 +573,7 @@ REGISTER_FUNCTION(cos, eval_func(cos_eval).
                        real_part_func(cos_real_part).
                        imag_part_func(cos_imag_part).
                        conjugate_func(cos_conjugate).
-                       latex_name("\\cos"));
+                       latex_name("\\cos"))
 
 //////////
 // tangent (trigonometric function)
@@ -698,7 +698,7 @@ REGISTER_FUNCTION(tan, eval_func(tan_eval).
                        real_part_func(tan_real_part).
                        imag_part_func(tan_imag_part).
                        conjugate_func(tan_conjugate).
-                       latex_name("\\tan"));
+                       latex_name("\\tan"))
 
 //////////
 // inverse sine (arc sine)
@@ -771,7 +771,7 @@ REGISTER_FUNCTION(asin, eval_func(asin_eval).
                         evalf_func(asin_evalf).
                         derivative_func(asin_deriv).
                         conjugate_func(asin_conjugate).
-                        latex_name("\\arcsin"));
+                        latex_name("\\arcsin"))
 
 //////////
 // inverse cosine (arc cosine)
@@ -844,7 +844,7 @@ REGISTER_FUNCTION(acos, eval_func(acos_eval).
                         evalf_func(acos_evalf).
                         derivative_func(acos_deriv).
                         conjugate_func(acos_conjugate).
-                        latex_name("\\arccos"));
+                        latex_name("\\arccos"))
 
 //////////
 // inverse tangent (arc tangent)
@@ -964,7 +964,7 @@ REGISTER_FUNCTION(atan, eval_func(atan_eval).
                         derivative_func(atan_deriv).
                         series_func(atan_series).
                         conjugate_func(atan_conjugate).
-                        latex_name("\\arctan"));
+                        latex_name("\\arctan"))
 
 //////////
 // inverse tangent (atan2(y,x))
@@ -1063,7 +1063,7 @@ static ex atan2_deriv(const ex & y, const ex & x, unsigned deriv_param)
 
 REGISTER_FUNCTION(atan2, eval_func(atan2_eval).
                          evalf_func(atan2_evalf).
-                         derivative_func(atan2_deriv));
+                         derivative_func(atan2_deriv))
 
 //////////
 // hyperbolic sine (trigonometric function)
@@ -1147,7 +1147,7 @@ REGISTER_FUNCTION(sinh, eval_func(sinh_eval).
                         real_part_func(sinh_real_part).
                         imag_part_func(sinh_imag_part).
                         conjugate_func(sinh_conjugate).
-                        latex_name("\\sinh"));
+                        latex_name("\\sinh"))
 
 //////////
 // hyperbolic cosine (trigonometric function)
@@ -1231,7 +1231,7 @@ REGISTER_FUNCTION(cosh, eval_func(cosh_eval).
                         real_part_func(cosh_real_part).
                         imag_part_func(cosh_imag_part).
                         conjugate_func(cosh_conjugate).
-                        latex_name("\\cosh"));
+                        latex_name("\\cosh"))
 
 //////////
 // hyperbolic tangent (trigonometric function)
@@ -1336,7 +1336,7 @@ REGISTER_FUNCTION(tanh, eval_func(tanh_eval).
                         real_part_func(tanh_real_part).
                         imag_part_func(tanh_imag_part).
                         conjugate_func(tanh_conjugate).
-                        latex_name("\\tanh"));
+                        latex_name("\\tanh"))
 
 //////////
 // inverse hyperbolic sine (trigonometric function)
@@ -1397,7 +1397,7 @@ static ex asinh_conjugate(const ex & x)
 REGISTER_FUNCTION(asinh, eval_func(asinh_eval).
                          evalf_func(asinh_evalf).
                          derivative_func(asinh_deriv).
-                         conjugate_func(asinh_conjugate));
+                         conjugate_func(asinh_conjugate))
 
 //////////
 // inverse hyperbolic cosine (trigonometric function)
@@ -1461,7 +1461,7 @@ static ex acosh_conjugate(const ex & x)
 REGISTER_FUNCTION(acosh, eval_func(acosh_eval).
                          evalf_func(acosh_evalf).
                          derivative_func(acosh_deriv).
-                         conjugate_func(acosh_conjugate));
+                         conjugate_func(acosh_conjugate))
 
 //////////
 // inverse hyperbolic tangent (trigonometric function)
@@ -1568,7 +1568,8 @@ REGISTER_FUNCTION(atanh, eval_func(atanh_eval).
                          evalf_func(atanh_evalf).
                          derivative_func(atanh_deriv).
                          series_func(atanh_series).
-                         conjugate_func(atanh_conjugate));
+                         conjugate_func(atanh_conjugate))
 
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
