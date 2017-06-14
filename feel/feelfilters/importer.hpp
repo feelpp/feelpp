@@ -31,21 +31,12 @@
 
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelfilters/enums.hpp>
+
 
 namespace Feel
 {
 
-/**
-  \enum MeshFormat
-*/
-enum MeshFormat
-{
-    MESHPP,
-    INRIA,
-    GMSH,
-    NETGEN,
-    GAMBIT
-};
 
 /**
  * \class Importer
@@ -73,11 +64,14 @@ public:
     /**
      * default constructor. use GMSH as default mesh format
      */
-    Importer( MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
+    Importer( MeshFormat const& _format = GMSH, 
+              FileType t = ASCII,
+              WorldComm const& _worldcomm = Environment::worldComm() )
         :
         M_worldComm( _worldcomm ),
         M_filename(),
-        M_format( _format )
+        M_format( _format ),
+        M_file_type( t )
     {}
 
     /**
@@ -85,11 +79,15 @@ public:
      * @param filename mesh filename to import
      * @param format format of the file
      */
-    Importer( std::string const& _filename,  MeshFormat const& _format = GMSH, WorldComm const& _worldcomm = Environment::worldComm() )
+    Importer( std::string const& _filename,  
+              MeshFormat const& _format = GMSH, 
+              FileType const& _file_type = ASCII, 
+              WorldComm const& _worldcomm = Environment::worldComm() )
         :
         M_worldComm( _worldcomm ),
         M_filename( _filename ),
-        M_format( _format )
+        M_format( _format ),
+        M_file_type( _file_type )
     {}
 
     virtual ~Importer()
@@ -111,6 +109,14 @@ public:
     void setFormat( MeshFormat const& __format )
     {
         M_format = __format;
+    }
+
+    /**
+     * set file type see \p FileType
+     */
+    void setFileType( FileType t ) 
+    {
+        M_file_type = t;
     }
 
     /**
@@ -138,6 +144,11 @@ public:
         return M_worldComm;
     }
 
+    /**
+     * file type see \p FileType
+     */
+    FileType fileType() const { return M_file_type; }
+
 private:
 
     //! communicator
@@ -148,6 +159,9 @@ private:
 
     //! format of the file to import
     MeshFormat M_format;
+
+    //! file type
+    FileType M_file_type;
 };
 }
 

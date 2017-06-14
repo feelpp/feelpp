@@ -65,7 +65,7 @@ makeHeatShieldOptions()
     ( "beta.F1.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F1" )
     ( "beta.M0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for M0" )
     ;
-    return heatshieldoptions.add( bdf_options( "heatshield" ) );
+    return heatshieldoptions.add( bdf_options( "heatshield" ) ).add( ts_options( "heatshield" ) );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )

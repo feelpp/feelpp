@@ -83,7 +83,7 @@ makeHeatSink2DOptions()
     ( "k_fin", Feel::po::value<double>()->default_value( 386 ),
       "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
     ;
-    return heatsink2doptions.add( bdf_options( "heatSink2d" ) );
+    return heatsink2doptions.add( bdf_options( "heatSink2d" ) ).add( ts_options( "heatSink2d" ) );
 }
 AboutData
 makeHeatSink2DAbout( std::string const& str = "heatSink" )
@@ -293,7 +293,13 @@ public:
      */
 
     betaqm_type
-    computeBetaQm( element_type const& T, parameter_type const& mu , double time , bool only_terms_time_dependent=false )
+    computeBetaQm( element_type const& T, parameter_type const& mu, double time , bool only_terms_time_dependent=false )
+    {
+        return computeBetaQm( mu, time, only_terms_time_dependent );
+    }
+
+    betaqm_type
+    computeBetaQm( vectorN_type const& urb, parameter_type const& mu, double time , bool only_terms_time_dependent=false  )
     {
         return computeBetaQm( mu, time, only_terms_time_dependent );
     }

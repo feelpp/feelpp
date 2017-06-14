@@ -184,6 +184,17 @@ Vector<T>::reciprocal ()
 }
 
 
+template<typename T>
+typename Vector<T>::real_type
+Vector<T>::maxWithIndex (int* index) const
+{
+    return 0;
+}
+
+template<typename T>
+void
+Vector<T>::abs ()
+{}
 
 
 #if 0

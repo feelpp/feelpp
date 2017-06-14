@@ -112,16 +112,14 @@ template<typename MeshType>
 void 
 Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
 {
-    for( auto elt : elements(mesh) )
-        mesh->elements().modify( mesh->elementIterator(elt.id()), 
+    for( auto const& elt : elements(mesh) )
+        mesh->elements().modify( mesh->elementIterator( boost::unwrap_ref( elt ).id()),
                                  []( element_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : faces(mesh) )
-        mesh->faces().modify( mesh->faceIterator(elt.id()), 
+    for( auto const& elt : faces(mesh) )
+        mesh->faces().modify( mesh->faceIterator( boost::unwrap_ref( elt ).id()),
                               []( face_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : points(mesh) )
-        mesh->points().modify( mesh->pointIterator(elt.id()), 
-                               []( point_type & e) { e.setProcessId( 0 ); });
-
+    for ( auto itp = mesh->beginPoint(), enp = mesh->endPoint(); itp != enp; ++itp )
+        itp->second.setProcessId( 0 );
 }
 
 

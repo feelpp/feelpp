@@ -2526,9 +2526,10 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
+            for ( auto const& rangeElt : elements( P0h->mesh() ) )
             {
-                size_type eid = elt_it->id();
+                auto const& meshElt = boost::unwrap_ref( rangeElt );
+                size_type eid = meshElt.id();
 
                 size_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
@@ -3691,9 +3692,9 @@ public:
         /*
          *
          */
-        void initSubElementView( mpl::true_ );
+        FEELPP_NO_EXPORT void initSubElementView( mpl::true_ );
 
-        void initSubElementView( mpl::false_ ) {}
+        FEELPP_NO_EXPORT void initSubElementView( mpl::false_ ) {}
 
 
         friend class boost::serialization::access;
@@ -3789,36 +3790,36 @@ public:
     private:
 
         template<typename RangeType, typename ExprType>
-        void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
+        FEELPP_NO_EXPORT void onImpl( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate = true, bool verbose = false )
         {
             onImplBase( r, e, prefix, geomap_strategy, accumulate, verbose, boost::is_std_list<RangeType>()  );
         }
 
         template<typename RangeType, typename ExprType>
-        void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
+        FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
             const int iDim = boost::tuples::template element<0, typename RangeType::value_type>::type::value;
             for ( auto const& r : rList )
                 onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
         }
         template<typename RangeType, typename ExprType>
-        void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
+        FEELPP_NO_EXPORT void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
         {
             const int iDim = boost::tuples::template element<0, RangeType>::type::value;
             onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
         }
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType,IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_ELEMENTS>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_FACES>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_EDGES>  );
 
         template<typename IteratorType, typename ExprType>
-        void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
+        FEELPP_NO_EXPORT void onImpl( std::pair<IteratorType, IteratorType> const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_<MESH_POINTS>  );
 
     private:
 
@@ -4809,42 +4810,42 @@ protected:
 
 private:
 
-    void init( mesh_ptrtype const& mesh,
-               size_type mesh_components,
-               periodicity_type const& periodicity,
-               std::vector<Dof > const& dofindices,
-               mpl::bool_<false> );
-    void init( mesh_ptrtype const& mesh,
-               size_type mesh_components,
-               periodicity_type const& periodicity,
-               std::vector<Dof > const& dofindices,
-               mpl::bool_<true> );
+    FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                size_type mesh_components,
+                                periodicity_type const& periodicity,
+                                std::vector<Dof > const& dofindices,
+                                mpl::bool_<false> );
+    FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
+                                size_type mesh_components,
+                                periodicity_type const& periodicity,
+                                std::vector<Dof > const& dofindices,
+                                mpl::bool_<true> );
     template<typename FSpaceHead, typename... FSpaceTail>
-    void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
+    FEELPP_NO_EXPORT void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
 
-    void initList();
+    FEELPP_NO_EXPORT void initList();
 
     template<typename FSpaceHead>
-    void initHead( FSpaceHead& fspacehead );
+    FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
 
-    size_type nDof( mpl::bool_<false> ) const;
-    size_type nDof( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nDof( mpl::bool_<true> ) const;
 
-    size_type nLocalDof( mpl::bool_<false> ) const;
-    size_type nLocalDof( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDof( mpl::bool_<true> ) const;
 
-    size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
-    size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
-    size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
-    size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhost( mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhost( mpl::bool_<true> ) const;
 
-    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
-    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
-    size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
+    FEELPP_NO_EXPORT size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
 
-    void rebuildDofPoints( mpl::bool_<false> );
-    void rebuildDofPoints( mpl::bool_<true> );
+    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<false> );
+    FEELPP_NO_EXPORT void rebuildDofPoints( mpl::bool_<true> );
 
     friend class ComponentSpace;
     class ComponentSpace
@@ -5310,13 +5311,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         __rt->clear();
         BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
-        typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
-        mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
+        auto rangeElements = M_mesh->elementsWithProcessId();
+        auto it = std::get<0>( rangeElements );
+        auto en = std::get<1>( rangeElements );
 
         for ( size_type __i = 0; it != en; ++__i, ++it )
         {
-            __bb.make( it->G() );
+            auto const& elt = boost::unwrap_ref( *it );
+            __bb.make( elt.G() );
 
             for ( unsigned k=0; k < __bb.min.size(); ++k )
             {
@@ -5324,7 +5326,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
                 __bb.max[k]+=EPS;
             }
 
-            __rt->addBox( __bb.min, __bb.max, it->id() );
+            __rt->addBox( __bb.min, __bb.max, elt.id() );
         }
 
         //__rt->dump();

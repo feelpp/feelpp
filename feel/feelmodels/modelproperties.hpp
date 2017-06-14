@@ -53,7 +53,7 @@ public:
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
-    std::string shortName() const {  return M_shortname; }
+    std::string const& shortName() const {  return M_shortname; }
     void setShortName( std::string const& t) { M_shortname = t; }
 
     std::string const& description() const {  return M_description; }
@@ -65,6 +65,7 @@ public:
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
+    BoundaryConditions const& initialConditions() const { return M_ic; }
 
     ModelParameters & parameters()  {  return M_params; }
     ModelMaterials & materials() {  return M_mat; }
@@ -100,6 +101,7 @@ private:
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
+    BoundaryConditions M_ic; // Initial conditions
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
 };
