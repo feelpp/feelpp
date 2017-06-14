@@ -236,4 +236,15 @@ Heat3d::updateFieldsExported( SourceCrbInterface * pvsource, element_type & feFi
 #endif
 
 FEELPP_CRB_PLUGIN( Heat3d, "heat3d" )
+/*
+include <boost/python.hpp>
+using namespace boost::python;
+
+BOOST_PYTHON_MODULE(heat3d)
+{
+    class_<Heat3d>("Heat3D")
+        .def("parameterSpace", &Heat3d::)
+        .def("set", &World::set)
+        ;
+ }*/
 } // namespace Feel

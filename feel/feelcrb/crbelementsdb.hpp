@@ -177,7 +177,7 @@ public :
     void setModel( model_ptrtype const& model )
     {
         M_model = model;
-        this->setDBDirectory( M_model->id() );
+        this->setDBDirectory( M_model->uuid() );
         M_rbSpace = model->rBFunctionSpace();
     }
 
