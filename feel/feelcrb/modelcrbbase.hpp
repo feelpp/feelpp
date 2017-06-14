@@ -270,10 +270,16 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
-    ModelCrbBase( std::string const& name = "generic-model-name", WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase() = delete;
+    ModelCrbBase( std::string const& name, WorldComm const& worldComm = Environment::worldComm() )
+        :
+        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
+        {}
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
+        M_uuid( uid ),
         M_name( algorithm::to_lower_copy(name) ),
         M_is_initialized( false )
     {}
@@ -289,6 +295,18 @@ public :
      * set the model name
      */
     void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+
+    //!
+    //! unique id for CRB Model
+    //!
+    uuids::uuid  uuid() const { return M_uuid; }
+
+    //!
+    //! set uuid for CRB Model
+    //! @warning be extra careful here, \c setId should be called before any
+    //! CRB type object is created because they use the id 
+    //!
+    void setId( uuids::uuid const& i ) { M_uuid = i; }
 
     /**
      * \return the mpi communicators
@@ -1784,6 +1802,9 @@ public:
     rbfunctionspace_ptrtype XN;
 
 protected :
+
+    
+    uuids::uuid M_uuid;
 
     std::string M_name;
 
