@@ -266,7 +266,7 @@ public:
         if ( !model )
             return;
         M_model = model;
-        this->setDBDirectory( model->id() );
+        this->setDBDirectory( model->uuid() );
         M_Dmu = M_model->parameterSpace();
         M_mu_ref = M_model->refParameter();
 

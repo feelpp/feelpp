@@ -597,7 +597,7 @@ public:
         if ( !model )
             return;
         M_model = model;
-        this->setDBDirectory( M_model->id() );
+        this->setDBDirectory( M_model->uuid() );
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
         M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );

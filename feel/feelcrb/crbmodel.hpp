@@ -216,17 +216,9 @@ public:
         :
         CRBModel( 0, doInit )
         {}
+
     CRBModel( int level, bool doInit = true )
         :
-        CRBModel( Environment::randomUUID( true ), level, false )
-        {
-            if ( doInit )
-                this->init();
-        }
-    
-    CRBModel( uuids::uuid const& uid, int level, bool doInit = true )
-        :
-        M_uuid( uid ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -274,7 +266,6 @@ public:
      */
     CRBModel( CRBModel const & o )
         :
-        M_uuid( o.M_uuid ),
         M_level( o.M_level ),
         M_Aqm( o.M_Aqm ),
         M_InitialGuessV( o.M_InitialGuessV ),
@@ -298,18 +289,6 @@ public:
     //! destructor
     virtual ~CRBModel()
     {}
-
-    //!
-    //! unique id for CRB Model
-    //!
-    uuids::uuid id() const { return M_uuid; }
-
-    //!
-    //! set uuid for CRB Model
-    //! @warning be extra careful here, \c setId should be called before any
-    //! CRB type object is created because they use the id 
-    //!
-    void setId( uuids::uuid const& i ) { M_uuid = i; }
     
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
@@ -458,6 +437,11 @@ public:
      */
     model_ptrtype & model() { return M_model; }
 
+    //!
+    //! get the id of the model
+    //!
+    uuids::uuid uuid() const { return M_model->uuid(); }
+    
     //!
     //! in case of hierarchy of models, return level index.
     //! default value is 0
@@ -2794,8 +2778,6 @@ public:
 
 protected:
 
-    uuids::uuid M_uuid;
-    
     int M_level = 0;
     
     //! affine decomposition terms for the left hand side
