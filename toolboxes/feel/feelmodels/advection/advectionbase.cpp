@@ -135,7 +135,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
         this->build();
 
     // Vector solution
-    this->buildBlockVector();
+    this->buildVectorSolution();
 
     // Time step
     this->initTimeStep();
@@ -334,11 +334,21 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockVector()
+int
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
 {
-    M_blockVectorSolution.resize(1);
+    int nBlock = this->nBlockMatrixGraph();
+    M_blockVectorSolution.resize(nBlock);
     M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    int cptBlock=1;
+    return cptBlock;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildVectorSolution()
+{
+    this->buildBlockVectorSolution();
     M_blockVectorSolution.buildVector( this->backend() );
 }
 
@@ -473,15 +483,45 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::matrixPattern() const
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+int
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+{
+    int nBlock = 1;
+    return nBlock;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+{
+    this->log("AdvectionBase","buildBlockMatrixGraph", "start" );
+    int nBlock = this->nBlockMatrixGraph();
+
+    BlocksBaseGraphCSR blockGraph(nBlock,nBlock);
+    int indexBlock=0;
+
+    blockGraph(indexBlock, indexBlock) = stencil( 
+            _test=this->functionSpace(), _trial=this->functionSpace(),
+            _pattern=this->matrixPattern(),
+            _diag_is_nonzero=(nBlock==1),
+            _close=(nBlock==1)
+            )->graph();
+
+    this->log("Advectionbase","buildBlockMatrixGraph", "finish" );
+    return blockGraph;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 typename ADVECTIONBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
-    return stencil( 
-            _test=this->functionSpace(), _trial=this->functionSpace(),
-            _pattern=this->matrixPattern(),
-            //_diag_is_nonzero=true,
-            _close=true
-            )->graph();
+    auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
+    if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
+        return blockGraph(0,0);
+    else
+        return graph_ptrtype( new graph_type( blockGraph ) );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -682,6 +722,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         double timeElapsedSource = this->timerTool("Solve").stop();
         this->log("Advection","updateLinearPDE","assembly source terms in "+(boost::format("%1% s") %timeElapsedSource).str() );
     }
+
+    // User-defined additional terms
+    this->updateLinearPDEAdditional( A, F, BuildCstPart );
 
     // Stabilization
     this->updateLinearPDEStabilization(A, F, BuildCstPart);
