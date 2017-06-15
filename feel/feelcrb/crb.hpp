@@ -1884,7 +1884,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
-          !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
+          !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished();
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
