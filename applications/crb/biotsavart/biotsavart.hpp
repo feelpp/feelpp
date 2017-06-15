@@ -53,7 +53,7 @@ public:
 };
 #endif
 
-po::options_description biotsavartOptions()
+FEELPP_EXPORT po::options_description biotsavartOptions()
 {
     po::options_description opt("BiotSavart options");
     opt.add_options()
@@ -82,10 +82,11 @@ po::options_description biotsavartOptions()
 }
 
 template<typename te_rb_model_type>
-class BiotSavartCRB : public ModelCrbBase<typename te_rb_model_type::parameter_space_type,
-                                          typename te_rb_model_type::function_space_type,
-                                          NonLinear, // BiotSavart ??
-                                          typename te_rb_model_type::eim_definition_type >
+FEELPP_EXPORT class BiotSavartCRB
+    : public ModelCrbBase<typename te_rb_model_type::parameter_space_type,
+                          typename te_rb_model_type::function_space_type,
+                          NonLinear, // BiotSavart ??
+                          typename te_rb_model_type::eim_definition_type >
 {
     using super_type = ModelCrbBase<typename te_rb_model_type::parameter_space_type,
                                     typename te_rb_model_type::function_space_type,
