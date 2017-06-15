@@ -83,7 +83,7 @@ public:
             return crb->Dmu();
         }
 
-    boost::shared_ptr<CRBModelBase> crbmodel() const
+    boost::shared_ptr<CRBModelBase> crbmodel() const override
         {
             DCHECK( crb ) << "DB not loaded";
             return crb->model();
