@@ -202,7 +202,7 @@ BiotSavartCRB<te_rb_model_type>::BiotSavartCRB()
 
     tic();
     M_teCrbModel = boost::make_shared<te_rb_model_type>(M_meshCond);
-    M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, M_mode);
+    M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel);
     M_crb = boost::make_shared<crb_type>("biotsavart_crb", M_crbModel);
     toc("constructor + eim");
 

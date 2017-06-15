@@ -5,4 +5,4 @@ feelpp_add_application( biotsavartCRB
 feelpp_add_application( biotsavartCRBOpt
                         SRCS biotsavart_opt.cpp biotsavart.hpp )
 
-feelpp_add_testcase( te-crb-quarterturn )
+feelpp_add_testcase( bs-crb-quarterturn )
