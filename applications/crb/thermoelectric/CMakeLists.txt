@@ -31,11 +31,11 @@ set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LIBRA
 set(FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
 
-feelpp_add_application( thermoelectric
+feelpp_add_application( thermoelectricCRB
                         SRCS thermoelectric.hpp thermoelectric_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC )
-feelpp_add_application( nl-thermoelectric
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC} )
+feelpp_add_application( nl-thermoelectricCRB
                         SRCS nlthermoelectric.hpp nlthermoelectric_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC )
+                        LINK_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} )
 
 feelpp_add_testcase( th-crb-quarterturn )
