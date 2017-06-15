@@ -12,6 +12,7 @@ BUILD_JOBS=10
 FROM=feelpp/feelpp-base
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
 CMAKE_FLAGS=""
+MAKE_FLAGS=""
 
 for i in "$@"
 do
@@ -42,6 +43,10 @@ do
             ;;
         -c=*|--cmake-flags=*)
             CMAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -m=*|--make-flags=*)
+            MAKE_FLAGS="${i#*=}"
             shift # past argument=value
             ;;
         -d=*|--feelpp-dir=*)
@@ -113,6 +118,7 @@ ${ECHO} docker build \
        --build-arg=PROJECT="${PROJECT}"\
        --build-arg=GITHUB_OAUTH=${GITHUB_OAUTH}\
        --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}"\
+       --build-arg=MAKE_FLAGS="${MAKE_FLAGS}"\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
        --no-cache=true \

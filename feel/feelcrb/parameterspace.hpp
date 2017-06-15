@@ -262,7 +262,9 @@ public:
         typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
-
+    private:
+        Sampling() {}
+    public:
         Sampling( parameterspace_ptrtype const& space, int N = 0, sampling_ptrtype const& supersampling = sampling_ptrtype() )
             :
             super( N ),
@@ -1128,8 +1130,6 @@ public:
             }
 
     private:
-        Sampling() {}
-    private:
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
             {
                 this->clear();
@@ -1774,6 +1774,11 @@ private:
 };
 
 template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
+
+//!
+//! dynamic parameter space type definition
+//!
+using ParameterSpaceX = ParameterSpace<>;
 
 template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype

@@ -46,6 +46,12 @@
 //#include <mpi4py/mpi4py.h>
 #endif
 
+
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+#include <boost/uuid/uuid_serialize.hpp>         // streaming operators etc.
+
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
@@ -66,6 +72,7 @@ namespace Feel
 {
 namespace tc = termcolor;
 namespace pt =  boost::property_tree;
+namespace uuids =  boost::uuids;
 
 class TimerTable;
 
@@ -597,6 +604,14 @@ public:
     //! the exports repository is a subdirectory of the \c appRepository
     //! containing the results exported during the application execution
     static std::string exportsRepository();
+
+    //!
+    //! Generate a random UUID
+    //!
+    //! the UUID is very very very very likely to be unique as it is encoded into 128 bits
+    //! @param parallel if true generate the same uuid for all MPI process, if false it will be different
+    //!
+    static uuids::uuid randomUUID( bool parallel=true );
     
     //! @}
     
@@ -797,6 +812,9 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_app;
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
+
+    
+    static uuids::random_generator S_generator;
 
     /**
      * Stores the absolute path and executable name

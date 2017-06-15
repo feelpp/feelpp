@@ -19,7 +19,7 @@ if ( FEELPP_HAS_OCTAVE )
 #  MESSAGE("    Cfg file: ${OCTAVE_MODULE_CFG}")
   set(octname ${OCTAVE_MODULE_NAME}.oct)
   add_library(${octname}  MODULE  ${OCTAVE_MODULE_SOURCES}  )
-  target_link_libraries( ${octname} ${FEELPP_LIBRARIES} ${OCTAVE_MODULE_LINK_LIBRARIES} )
+  target_link_libraries( ${octname} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${OCTAVE_MODULE_LINK_LIBRARIES} )
   set_target_properties( ${octname} PROPERTIES PREFIX "" )
   set_target_properties( ${octname} PROPERTIES SUFFIX "" )
   set_property(TARGET ${octname} PROPERTY LABELS crb)
@@ -48,7 +48,7 @@ endmacro(crb_add_octave_module)
 macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
-    "SOURCES;LINK_LIBRARIES;CFG;GEO"
+    "SOURCES;LINK_LIBRARIES;CFG;GEO;PROJECT;EXEC;MAN"
     "TEST"
     ${ARGN}
     )
@@ -64,11 +64,24 @@ macro(crb_add_executable)
     MESSAGE("    Geo file: ${CRB_EXEC_GEO}")
   endif()
 
-  set(execname crb_${CRB_EXEC_NAME})
+  if ( CRB_EXEC_PROJECT )
+    set(execname feelpp_crb_${CRB_EXEC_PROJECT}_${CRB_EXEC_NAME})
+  else()
+    set(execname feelpp_crb_${CRB_EXEC_NAME})
+  endif()
+  if  (CRB_EXEC_EXEC )
+    set( ${CRB_EXEC_EXEC} ${execname} )
+  endif()
   add_executable(${execname}    ${CRB_EXEC_SOURCES} )
-  target_link_libraries( ${execname} ${FEELPP_LIBRARIES} ${CRB_EXEC_LINK_LIBRARIES} )
+  target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}  )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+
+  # add manual page
+  if ( CRB_EXEC_MAN )
+    feelpp_add_man( ${execname} ${CRB_EXEC_MAN} 1 )
+  endif( CRB_EXEC_MAN )
+  
   if ( CRB_EXEC_TEST )
     add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
     set_property(TEST ${execname} PROPERTY LABELS crb)
@@ -94,6 +107,38 @@ macro(crb_add_executable)
 
 endmacro(crb_add_executable)
 
+macro(crb_add_library)
+
+  PARSE_ARGUMENTS(CRB_LIB
+    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN"
+    "TEST"
+    ${ARGN}
+    )
+  CAR(CRB_LIB_NAME ${CRB_LIB_DEFAULT_ARGS})
+
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for Crb application ${CRB_LIB_NAME}")
+    MESSAGE("    Sources: ${CRB_LIB_SRCS}")
+    MESSAGE("    Link libraries: ${CRB_LIB_LINK_LIBRARIES}")
+  endif()
+
+  if ( CRB_LIB_PROJECT )
+    set(execname feelpp_crb_${CRB_LIB_PROJECT}_${CRB_LIB_NAME})
+  else()
+    set(execname feelpp_crb_${CRB_LIB_NAME})
+  endif()
+  if  (CRB_LIB_EXEC )
+    set( ${CRB_LIB_EXEC} ${execname} )
+  endif()
+  add_library(${execname}  SHARED  ${CRB_LIB_SRCS} )
+  target_compile_options(${execname} PRIVATE -fvisibility=hidden)
+  target_link_libraries( ${execname} ${CRB_LIB_LINK_LIBRARIES} ${FEELPP_LIBRARIES}  )
+  set_property(TARGET ${execname} PROPERTY LABELS crb)
+  INSTALL(TARGETS ${execname}  DESTINATION lib COMPONENT Libs)
+
+endmacro(crb_add_library)
+
+
 #
 # crb_add_python_module
 #
@@ -108,7 +153,7 @@ if ( FEELPP_HAS_OPENTURNS )
   CDR(CRB_PYTHON_SOURCES ${CRB_PYTHON_DEFAULT_ARGS})
 
   add_library( ${CRB_PYTHON_NAME} MODULE  ${CRB_PYTHON_SOURCES}  )
-  target_link_libraries( ${CRB_PYTHON_NAME} ${FEELPP_LIBRARIES} ${CRB_PYTHON_LINK_LIBRARIES}  ${OpenTURNS_LIBRARIES} )
+  target_link_libraries( ${CRB_PYTHON_NAME} ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${CRB_PYTHON_LINK_LIBRARIES}  ${OpenTURNS_LIBRARIES} )
   set_target_properties( ${CRB_PYTHON_NAME} PROPERTIES PREFIX "" )
   set_property(TARGET ${CRB_PYTHON_NAME} PROPERTY LABELS crb)
   #configure_file(${CRB_PYTHON_NAME}.xml.in ${CRB_PYTHON_NAME}.xml)
@@ -216,7 +261,7 @@ int main( int argc, char** argv )
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS} 
       GEO ${CRB_MODEL_GEO} 
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
       CFG ${CRB_MODEL_CFG} )
   endif()
 
@@ -240,27 +285,28 @@ int main( int argc, char** argv )
       continue()
     endif()
 
-    configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
-
-
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()
 
-    if ( CRB_MODEL_TEST )
-      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
-        CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
-      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
-    else()
-      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
-        CFG ${CRB_MODEL_CFG} XML ${xml})
-      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    if (EXISTS ${CRB_MODEL_SHORT_NAME}.xml.in )
+      configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
+
+      if ( CRB_MODEL_TEST )
+        crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
+          CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
+        crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+          CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
+      else()
+        crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
+          CFG ${CRB_MODEL_CFG} XML ${xml})
+        crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+          CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+      endif()
     endif()
   endforeach()
 
