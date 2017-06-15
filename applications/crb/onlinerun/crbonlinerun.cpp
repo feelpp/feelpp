@@ -57,10 +57,15 @@ runCrbOnline()
     std::string pluginname = Environment::expand( soption(_name="plugin.name") );
     std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
     std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
-    
+
     boost::function<crbpluginapi_create_t> creator;
-    fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + ".so");
-    
+#if defined( __APPLE__ )
+    std::string libext = ".dylib";
+#else
+    std::string libext = ".so";
+#endif
+    fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + libext);
+
     creator = boost::dll::import_alias<crbpluginapi_create_t>(pname,
                                                               "create_crbplugin",
                                                               dll::load_mode::append_decorations );

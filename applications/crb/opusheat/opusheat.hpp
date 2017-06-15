@@ -15,29 +15,24 @@
 namespace Feel
 {
 
-po::options_description
+FEELPP_EXPORT po::options_description
 makeOpusHeatOptions();
-AboutData
+FEELPP_EXPORT AboutData
 makeOpusHeatAbout( std::string const& str = "opusheat" );
 
-struct OpusHeatConfig
+template<bool IsStationary>
+struct FEELPP_EXPORT OpusHeatConfig
 {
     typedef Mesh<Simplex<2>> mesh_type;
     typedef Pch_type<mesh_type,1> space_type;
-    static const int options = TimeDependent;//TimeIndependent;//TimeDependent;//TimeDependent;//TimeIndependent;
-
-    struct ParameterDefinition
-    {
-        static const uint16_type ParameterSpaceDimension = 6;
-        typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-    };
-
+    static const int options = (IsStationary)? TimeIndependent : TimeDependent;
 };
 
 
-class OpusHeat : public ModelCrbBase< OpusHeatConfig::ParameterDefinition, OpusHeatConfig::space_type, OpusHeatConfig::options >
+template<bool IsStationary>
+class FEELPP_EXPORT OpusHeat : public ModelCrbBase< ParameterSpace<>, typename OpusHeatConfig<IsStationary>::space_type, OpusHeatConfig<IsStationary>::options >
 {
-    typedef ModelCrbBase<OpusHeatConfig::ParameterDefinition, OpusHeatConfig::space_type , OpusHeatConfig::options > super_type;
+    typedef ModelCrbBase<ParameterSpace<>, typename OpusHeatConfig<IsStationary>::space_type , OpusHeatConfig<IsStationary>::options > super_type;
 public:
 
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
@@ -46,6 +41,7 @@ public:
     typedef typename super_type::element_type element_type;
     typedef typename super_type::element_ptrtype element_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::space_type space_type;
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
@@ -55,9 +51,9 @@ public:
 
     void initModel();
 
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ( parameter_type const& mu , double time , bool only_terms_time_dependent=false );
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ( parameter_type const& mu );
 
     double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
@@ -66,14 +62,19 @@ public:
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu );
-private :
+
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
+    void updateSpecificityModel( boost::property_tree::ptree & ptree ) const;
+
+
+  private :
     void initDataStructureAffineDecomposition();
     void assembleData();
 
     void updateBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent );
 
     template<typename ModelType>
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent=false,
                        typename std::enable_if< !ModelType::is_time_dependent >::type* = nullptr )
         {
@@ -82,7 +83,7 @@ private :
         }
 
     template<typename ModelType>
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ_impl( parameter_type const& mu , double time , bool only_terms_time_dependent=false,
                        typename std::enable_if< ModelType::is_time_dependent >::type* = nullptr )
         {
@@ -92,7 +93,7 @@ private :
 
 
     template<typename ModelType>
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ_impl( parameter_type const& mu, typename std::enable_if< !ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,0,false);
@@ -100,7 +101,7 @@ private :
         }
 
     template<typename ModelType>
-    super_type::betaq_type
+    typename super_type::betaq_type
     computeBetaQ_impl( parameter_type const& mu, typename std::enable_if< ModelType::is_time_dependent >::type* = nullptr )
         {
             this->updateBetaQ_impl( mu,0,false);
@@ -114,7 +115,7 @@ private:
     std::vector< int > M_Ql;
     int M_Nl;
 
-    double M_surface;
+    std::map<std::string,double> M_measureMarkedSurface;
     bdf_ptrtype M_bdf;
 
 };
