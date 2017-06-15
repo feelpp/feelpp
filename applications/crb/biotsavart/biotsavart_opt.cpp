@@ -34,6 +34,7 @@ int iter=0;
 int main(int argc, char**argv )
 {
     using namespace Feel;
+    using namespace Feel::cout;
 
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
@@ -72,7 +73,7 @@ int main(int argc, char**argv )
     int N = BS.nbParameters();
 
     auto salgo = soption("nlopt.algo");
-    Feel::cout << "NLOP algorithm: " << salgo << "\n";
+    cout << "NLOP algorithm: " << salgo << "\n";
     auto algo = authAlgo.at(salgo);
     opt::OptimizationNonLinear opt( algo, N );
 
@@ -94,11 +95,11 @@ int main(int argc, char**argv )
     opt.set_ftol_abs( doption("nlopt.ftol_abs") );
 
     // Objective function.
-    auto myfunc = [&]( const std::vector<double> x, std::vector<double> grad, void *my_func_data )->double
+    auto myfunc = [&]( const std::vector<double> &x, std::vector<double> &grad, void *my_func_data )->double
     {
         iter++;
         auto mu = BS.newParameter();
-        for( int i = 0; i < N; ++i ) mu(i) = x[i];
+        mu=Map<Eigen::VectorXd>( x.data(), mu.size());
         BS.online(mu);
         auto B = BS.magneticFlux();
         return B.max();
@@ -107,7 +108,7 @@ int main(int argc, char**argv )
     opt.set_max_objective( myfunc, nullptr );
 
     // inequality constraints
-    auto myconstraint = [&]( const std::vector<double> x, std::vector<double> grad, void *data)->double
+    auto myconstraint = [&]( const std::vector<double> &x, std::vector<double> &grad, void *data)->double
     {
         auto VT = BS.potentialTemperature();
         auto T = VT.template element<1>();
@@ -125,11 +126,11 @@ int main(int argc, char**argv )
     ::nlopt::result result = opt.optimize(x, minf);
 
     double optiTime = toc("optimization", false);
-    Feel::cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
+    cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
 
     // export
     auto mu = BS.newParameter();
-    for( int i = 0; i < N; ++i ) mu(i) = x[i];
+    mu=Map<Eigen::VectorXd>( x.data(), mu.size());
 
     BS.exportResults();
 
@@ -151,37 +152,37 @@ int main(int argc, char**argv )
             Feel::cerr << "NLOPT Forced stop!" << "\n";
             break;
         case::nlopt::SUCCESS:
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
         case ::nlopt::STOPVAL_REACHED:
-            Feel::cout << "NLOPT Stop value reached!" << "\n";
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT Stop value reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
         case ::nlopt::FTOL_REACHED:
-            Feel::cout << "NLOPT ftol reached!" << "\n";
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT ftol reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
         case ::nlopt::XTOL_REACHED:
-            Feel::cout << "NLOPT xtol reached!" << "\n";
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT xtol reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
         case ::nlopt::MAXEVAL_REACHED:
-            Feel::cout << "NLOPT Maximum number of evaluation reached!" << "\n";
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT Maximum number of evaluation reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
         case ::nlopt::MAXTIME_REACHED:
-            Feel::cout << "NLOPT Maximum time reached" << "\n";
-            Feel::cout << "NLOPT coefficient found! (status " << result << ") \n"
+            cout << "NLOPT Maximum time reached" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
                        << mu << "\n"
                        << "Evaluation number: " << iter << "\n";
             break;
