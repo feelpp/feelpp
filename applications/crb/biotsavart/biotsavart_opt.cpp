@@ -49,13 +49,11 @@ int main(int argc, char**argv )
     auto salgo = soption("nlopt.algo");
     Feel::cout << "NLOP algorithm: " << salgo << "\n";
     auto algo = authAlgo.at(salgo);
-    ::nlopt::opt opt( algo, N );
+    opt::OptimizationNonLinear opt( algo, N );
 
     // lower and upper bounds
     auto muMin = BS.parameterSpace()->min();
     auto muMax = BS.parameterSpace()->max();
-    std::vector<double> x(N);
-    for( int i = 0; i < N; ++i ) x[i] = muMin(i);
 
     std::vector<double> lb(muMin.data(), muMin.data()+muMin.size());
     std::vector<double> ub(muMax.data(), muMax.data()+muMax.size());
@@ -71,37 +69,36 @@ int main(int argc, char**argv )
     opt.set_ftol_abs( doption("nlopt.ftol_abs") );
 
     // Objective function.
-    // We could use the vector version here (see ::NLOPT::vfunc).
-    auto myfunc = []( unsigned n, const double *x, double *grad, void *my_func_data )->double
+    auto myfunc = [&]( const std::vector<double> x, std::vector<double> grad, void *my_func_data )->double
     {
-        // iter++;
-        BiotSavartCRB<Thermoelectric>* BS = reinterpret_cast<BiotSavartCRB<Thermoelectric>*>(my_func_data);
-        int N = BS->nbParameters();
-        auto mu = BS->newParameter();
+        iter++;
+        auto mu = BS.newParameter();
         for( int i = 0; i < N; ++i ) mu(i) = x[i];
-        BS->online(mu);
-        auto B = BS->magneticFlux();
+        BS.online(mu);
+        auto B = BS.magneticFlux();
         return B.max();
     };
 
-    opt.set_max_objective( myfunc, &BS );
+    opt.set_max_objective( myfunc, nullptr );
 
     // inequality constraints
-    auto myconstraint = []( unsigned n, const double *x, double *grad, void *data)->double
+    auto myconstraint = [&]( const std::vector<double> x, std::vector<double> grad, void *data)->double
     {
-        BiotSavartCRB<Thermoelectric>* BS = reinterpret_cast<BiotSavartCRB<Thermoelectric>*>(data);
-        auto VT = BS->potentialTemperature();
+        auto VT = BS.potentialTemperature();
         auto T = VT.template element<1>();
         return T.max() - doption("Tcritic");
     };
 
-    opt.add_inequality_constraint(myconstraint, &BS, 1e-8);
+    opt.add_inequality_constraint(myconstraint, nullptr, 1e-8);
 
     // optimization
     double minf;
-
     tic();
+    std::vector<double> x(N);
+    Eigen::VectorXd::Map(x.data(), N) = muMin;
+
     ::nlopt::result result = opt.optimize(x, minf);
+
     double optiTime = toc("optimization", false);
     Feel::cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
 
