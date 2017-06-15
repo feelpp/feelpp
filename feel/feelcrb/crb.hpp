@@ -1645,7 +1645,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
-          !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
+          !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
