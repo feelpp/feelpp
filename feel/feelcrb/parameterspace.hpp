@@ -262,6 +262,7 @@ public:
         typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
+        Sampling() = delete;
 
         Sampling( parameterspace_ptrtype const& space, int N = 0, sampling_ptrtype const& supersampling = sampling_ptrtype() )
             :
@@ -1127,8 +1128,6 @@ public:
                 ptree.add_child( "sampling", ptreeSampling );
             }
 
-    private:
-        Sampling() {}
     private:
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
             {
