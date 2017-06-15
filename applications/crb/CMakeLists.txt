@@ -61,11 +61,11 @@ OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ${FEEL
 OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
-
+OPTION(FEELPP_ENABLE_CRB_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_CRB_ALL})
 
 set(FEELPP_CRB_LIBRARIES)
 IF ( FEELPP_ENABLE_CRB_EADS )
-  add_subdirectory(eads)
+  #add_subdirectory(eads)
 ENDIF()
 
 IF ( FEELPP_ENABLE_CRB_HEAT2D )
@@ -84,6 +84,8 @@ ENDIF()
 if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
     add_subdirectory(linearelasticity3d)
 endif()
+add_subdirectory(thermalbuilding)
+add_subdirectory(opusheat)
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -135,6 +137,11 @@ ENDIF()
 IF ( FEELPP_ENABLE_CRB_EEG )
   add_subdirectory(eeg)
 ENDIF()
+
+IF ( FEELPP_ENABLE_CRB_CONVECTION )
+  add_subdirectory(convection)
+ENDIF()
+
 
 
 add_subdirectory(onlinerun)

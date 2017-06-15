@@ -1287,9 +1287,10 @@ public:
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
-                     std::string const& name )
+                     std::string const& name,
+                     uuids::uuid const& uid )
         :
-        super_type( name ),
+        super_type( modelname, name, uid ),
         M_fspace(),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1314,9 +1315,10 @@ public:
                      parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
-                     std::string const& name )
+                     std::string const& name,
+                     uuids::uuid const& uid )
         :
-        EIMFunctionBase( pspace, sampling, modelname, name )
+        EIMFunctionBase( pspace, sampling, modelname, name, uid )
         {
             M_fspace = fspace;
         }
@@ -1802,7 +1804,7 @@ public:
                  std::string const& dbfilename,
                  std::string const& dbdirectory)
         :
-        super( space, model->parameterSpace(), sampling, model->modelName(), name ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name, model->uuid() ),
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
@@ -2934,7 +2936,7 @@ public:
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
-            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ , CRBModelMode::CRB ) );
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ ) );
         //make sure that the CRB DB is already build
         if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
@@ -3445,6 +3447,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
 
     std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
+    uuids::uuid uuid() const { return M_model.lock()->uuid(); }
     functionspace_ptrtype const& functionSpace() const { return M_model.lock()->functionSpace(); }
     parameterspace_ptrtype const& parameterSpace() const { return M_model.lock()->parameterSpace(); }
 #if 0
@@ -3506,6 +3509,5 @@ eimBasisExpression(int m, ExprType const& expr, EimType const& eim)
     return boost::any_cast<basis_type>(any_type);
 }
 
-po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
