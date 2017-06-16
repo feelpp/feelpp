@@ -82,7 +82,7 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
 }
 
 template<typename te_rb_model_type>
-FEELPP_EXPORT class BiotSavartCRB
+class FEELPP_EXPORT BiotSavartCRB
     : public ModelCrbBase<typename te_rb_model_type::parameter_space_type,
                           typename te_rb_model_type::function_space_type,
                           NonLinear, // BiotSavart ??
