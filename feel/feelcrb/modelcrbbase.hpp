@@ -908,8 +908,7 @@ public :
             std::map<std::string,double> map_symbols;
             for(int i=0; i<musize; i++)
             {
-                symbol = ( boost::format("mu%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+                map_symbols.insert( std::pair<std::string, double>(Dmu->parameterName(i), mu(i)));
             }
 
             M_betaAq.resize( sizeA );
@@ -1025,8 +1024,7 @@ public :
             std::map<std::string,double> map_symbols;
             for(int i=0; i<musize; i++)
             {
-                symbol = ( boost::format("mu%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+                map_symbols.insert( std::pair<std::string, double>(Dmu->parameterName(i), mu(i)));
             }
 
             M_betaAq.resize( sizeA );
@@ -1084,8 +1082,7 @@ public :
         int musize = mu.size();
         for(int i=0; i<musize; i++)
         {
-            std::string symbol = ( boost::format("mu%1%") %i ).str();
-            M_symbols_vec.push_back( symbol );
+            M_symbols_vec.push_back( Dmu->parameterName(i) );
         }
         fs::path dir( Environment::expand( M_symbolicExpressionBuildDir ) );
         if( M_betaAqString.size() > 0 )
