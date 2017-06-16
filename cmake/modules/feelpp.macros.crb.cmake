@@ -285,27 +285,28 @@ int main( int argc, char** argv )
       continue()
     endif()
 
-    configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
-
-
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()
 
-    if ( CRB_MODEL_TEST )
-      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
-        CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
-      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
-    else()
-      crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
-        CFG ${CRB_MODEL_CFG} XML ${xml})
-      crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
-        LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
-        CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+    if (EXISTS ${CRB_MODEL_SHORT_NAME}.xml.in )
+      configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
+
+      if ( CRB_MODEL_TEST )
+        crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
+          CFG ${CRB_MODEL_CFG} XML ${xml} TEST)
+        crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+          CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} TEST )
+      else()
+        crb_add_python_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${pycpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} CLASS ${CRB_MODEL_CLASS}
+          CFG ${CRB_MODEL_CFG} XML ${xml})
+        crb_add_octave_module(crb${CRB_MODEL_SHORT_NAME}${wrapper} ${octcpp}
+          LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} ${Octave_LIBRARIES}
+          CFG ${CRB_MODEL_CFG} SCRIPTS ${CRB_MODEL_SCRIPTS} )
+      endif()
     endif()
   endforeach()
 

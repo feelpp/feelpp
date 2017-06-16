@@ -639,7 +639,9 @@ public :
         }
         ptree.add_child( "eim", ptreeEim );
 
-        this->updateSpecificityModel( ptree );
+        boost::property_tree::ptree ptreeSpecificityOfModel;
+        this->updateSpecificityModel( ptreeSpecificityOfModel );
+        ptree.add_child( "specifity-of-model", ptreeSpecificityOfModel );
     }
     /**
      * \brief load CrbModel from json
@@ -691,7 +693,9 @@ public :
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
 
-        this->setupSpecificityModel( ptree, dbDir );
+        auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
+        if ( ptreeSpecificityOfModel )
+            this->setupSpecificityModel( *ptreeSpecificityOfModel, dbDir );
 
         XN->setModel( this->shared_from_this() );
 

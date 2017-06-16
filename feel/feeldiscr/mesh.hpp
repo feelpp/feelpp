@@ -78,6 +78,19 @@
 
 #include <boost/enable_shared_from_this.hpp>
 
+#if defined(FEELPP_HAS_VTK)
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPoints.h>
+#include <vtkLine.h>
+#include <vtkTriangle.h>
+#include <vtkQuad.h>
+#include <vtkTetra.h>
+#include <vtkHexahedron.h>
+#include <vtkFloatArray.h>
+#include <vtkCellData.h>
+#endif
+
 namespace Feel
 {
 enum class IOStatus { isLoading, isSaving };
@@ -876,6 +889,13 @@ public:
      * Create a P1 mesh from the HO mesh
      */
     P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) const;
+
+#if defined(FEELPP_HAS_VTK)
+    //!
+    //! exporter to VTK data structure
+    //!
+    typename MeshBase::vtk_export_type exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const;
+#endif // FEELPP_HAS_VTK
 
     /**
      * update the Marker2 with a range of elements or faces
@@ -2394,6 +2414,122 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
 
     return new_mesh;
 }
+
+#if defined(FEELPP_HAS_VTK)
+template<typename Shape, typename T, int Tag>
+typename MeshBase::vtk_export_type
+Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const
+{
+    /* Compute element type from the parameters */
+    typedef typename 
+    /* if (Mdim == 1) */
+    mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+        mpl::identity<vtkLine>,
+        /* if (Mdim == 2) */
+        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+            /* if(MShape == SHAPE_TRIANGLE) */
+            typename mpl::if_<mpl::equal_to<mpl::int_<Shape>, mpl::size_t<SHAPE_TRIANGLE> >,
+                mpl::identity<vtkTriangle>,
+                mpl::identity<vtkQuad>
+            >::type,
+            /* if (Mdim == 3) */
+            typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+                /* if(MShape == SHAPE_TETRA) */
+                typename mpl::if_<mpl::equal_to<mpl::int_<Shape>, mpl::size_t<SHAPE_TETRA> >,
+                    mpl::identity<vtkTetra>,
+                    mpl::identity<vtkHexahedron>
+                >::type,
+                /* We should normally not reach this case */
+                /* anyway we set a default vtkTetra for face type */
+                mpl::identity<vtkTetra>
+            >::type
+        >::type
+    >::type::type vtkelement_type;
+
+
+    vtkSmartPointer<vtkUnstructuredGrid> out = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    rank_type currentRank = this->worldComm().localRank();
+
+    auto rangePoints = this->pointsWithProcessId( currentRank );
+    auto itPoint = std::get<0>( rangePoints );
+    auto enPoint = std::get<1>( rangePoints );
+
+    size_type nPoints = std::distance( itPoint,enPoint );
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    points->SetDataTypeToFloat();
+    points->SetNumberOfPoints( nPoints );
+
+    auto mappingWithVTK = std::make_shared<typename MeshBase::MappingDataWithVTK>();
+    auto & mapPointsFeelIdToVTKId = mappingWithVTK->mapPointsFeelIdToVTKId;
+    size_type cptPoint = 0;
+    std::vector<double> node(3,0.);
+    for ( ; itPoint != enPoint ; ++itPoint, ++cptPoint )
+    {
+        auto const& pt = unwrap_ref(*itPoint);
+        if ( nDim >=1 )
+            node[0] = pt.node()[0];
+        if ( nDim >=2 )
+            node[1] = pt.node()[1];
+        if ( nDim >=3 )
+            node[2] = pt.node()[2];
+        points->SetPoint( (vtkIdType)(cptPoint), node.data() );
+        mapPointsFeelIdToVTKId[pt.id()] = cptPoint;
+    }
+    out->SetPoints(points);
+
+    auto rangeElements = this->elementsWithProcessId( currentRank );
+    auto itElement = std::get<0>( rangeElements );
+    auto enElement = std::get<1>( rangeElements );
+
+    auto & mapElementsFeelIdToVTKId = mappingWithVTK->mapElementsFeelIdToVTKId;
+    vtkSmartPointer<vtkelement_type> cell = vtkSmartPointer<vtkelement_type>::New();
+    size_type nCell = std::distance( itElement,enElement );
+    for ( ; itElement != enElement ; ++itElement )
+    {
+        auto const& elt = unwrap_ref( *itElement );
+        for( uint16_type p=0; p < element_type::numVertices/*numPoints*/; ++p )
+        {
+            size_type ptIdFeel = elt.point(p).id();
+            size_type ptIdVTK = mapPointsFeelIdToVTKId.find( ptIdFeel )->second;
+            cell->GetPointIds()->SetId(p, ptIdVTK);
+        }
+        vtkIdType newCellId = out->InsertNextCell(cell->GetCellType(), cell->GetPointIds());
+        mapElementsFeelIdToVTKId[elt.id()] = (size_type)(newCellId);
+    }
+
+    if ( exportMarkers )
+    {
+        vtkSmartPointer<vtkFloatArray> da = vtkSmartPointer<vtkFloatArray>::New();
+        da->SetName( vtkFieldNameMarkers.c_str());
+
+        da->SetNumberOfComponents(1);
+        da->SetNumberOfTuples(nCell);
+
+        float * arrayValue = new float[1];
+
+        for ( itElement = std::get<0>( rangeElements ); itElement != enElement ; ++itElement )
+        {
+            auto const& elt = unwrap_ref( *itElement );
+            if ( elt.hasMarker() )
+                arrayValue[0] = (float)(elt.marker().value());
+            else
+                arrayValue[0] = 0;
+            size_type vtkEltId = mapElementsFeelIdToVTKId.find( elt.id() )->second;
+            da->SetTuple(vtkEltId, arrayValue);
+        }
+
+        delete[] arrayValue;
+
+        out->GetCellData()->AddArray(da);
+    }
+
+    return std::make_pair( out,mappingWithVTK );
+}
+#endif // FEELPP_HAS_VTK
+
+
+
 namespace detail
 {
 template<typename T>

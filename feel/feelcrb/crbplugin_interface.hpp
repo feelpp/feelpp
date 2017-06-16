@@ -29,10 +29,8 @@
 #include <feel/feelconfig.h>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdata.hpp>
-#if defined(FEELPP_HAS_VTK)
-#include <vtkSmartPointer.h>
-#include <vtkUnstructuredGrid.h>
-#endif
+#include <feel/feelmesh/meshbase.hpp>
+#include <feel/feelcrb/crbmodelbase.hpp>
 
 namespace Feel {
 
@@ -52,11 +50,21 @@ public:
     //! load database
     //!
     virtual void loadDB( std::string ) = 0;
-    
+
     //!
     //! @return the parameter space
     //!
     virtual boost::shared_ptr<ParameterSpaceX> parameterSpace() const = 0;
+
+    //!
+    //! @return the crb model
+    //!
+    virtual boost::shared_ptr<CRBModelBase> crbmodel() const = 0;
+
+    //!
+    //! @return the meshes
+    //!
+    virtual std::vector<boost::shared_ptr<MeshBase>> meshes() const = 0;
 
     //!
     //! run the crb online code
@@ -74,7 +82,7 @@ public:
     //! initialize the exporter
     //!
     virtual void initExporter()  = 0;
-    
+
     //!
     //! write to disk the results of the run
     //! @param name the name of the field to exporter
@@ -86,13 +94,6 @@ public:
     //! save exporter
     //!
     virtual void saveExporter() const = 0;
-    
-#if defined(FEELPP_HAS_VTK)
-    //!
-    //! exporter to VTK data structure 
-    //!
-    virtual vtkSmartPointer<vtkUnstructuredGrid> exporterVTK() const = 0;
-#endif // FEELPP_HAS_VTK
 
     //!
     //! virtual destructor
@@ -126,6 +127,27 @@ public:                                                                 \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
         CRBPlugin<classname>( BOOST_PP_STRINGIZE( strname ) )           \
+        {}                                                              \
+                                                                        \
+    /* Factory method */                                                \
+    static boost::shared_ptr<this_t> create()                           \
+        {                                                               \
+            return boost::shared_ptr<this_t>( new this_t() );           \
+        }                                                               \
+};                                                                      \
+                                                                        \
+                                                                        \
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+
+
+#define FEELPP_CRB_PLUGIN_TEMPLATE( classname, classtemplate, strname ) \
+class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<classtemplate> \
+{                                                                       \
+public:                                                                 \
+    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
+    BOOST_PP_CAT(classname,Plugin)()                                    \
+        :                                                               \
+        CRBPlugin<classtemplate>( BOOST_PP_STRINGIZE( strname ) )       \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
