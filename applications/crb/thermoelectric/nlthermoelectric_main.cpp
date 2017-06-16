@@ -41,7 +41,7 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("PoissonCRB")) );
 
-    using rb_model_type = Thermoelectric;
+    using rb_model_type = NLThermoelectric;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
