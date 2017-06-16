@@ -24,7 +24,7 @@
 //!
 
 #include "biotsavart.hpp"
-#include "thermoelectric.hpp"
+#include <thermoelectric.hpp>
 
 namespace Feel {
 
@@ -551,7 +551,9 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
     eM->save();
 }
 
-FEELPP_CRB_PLUGIN( BiotSavartCRB<Thermoelectric>, "biotsavartcrbthermoelectric")
+using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;
+
+FEELPP_CRB_PLUGIN( biotsavartcrbthermoelectric, "biotsavartcrbthermoelectric")
 //FEELPP_CRB_PLUGIN( BiotSavartCRB<NLThermoelectric>, "biotsavartcrbnlthermoelectric")
 
 }
