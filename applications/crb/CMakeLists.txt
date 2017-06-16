@@ -145,6 +145,8 @@ ENDIF()
 
 
 add_subdirectory(onlinerun)
-
+add_subdirectory(minimal)
+add_subdirectory(thermoelectric)
+add_subdirectory(biotsavart)
 
 include(${FEELPP_CRB_SOURCE_DIR}/cmake/feelpp.crb.cmake)
