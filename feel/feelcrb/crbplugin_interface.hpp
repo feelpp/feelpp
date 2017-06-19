@@ -27,6 +27,7 @@
 
 #include <string>
 #include <feel/feelconfig.h>
+#include <feel/feelcore/singleton.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdata.hpp>
 #if defined(FEELPP_HAS_VTK)
@@ -68,6 +69,13 @@ public:
     //!
     virtual CRBResults run( ParameterSpaceX::Element const& mu, 
                             vectorN_type & time, double eps , int N, bool print_rb_matrix ) const = 0;
+
+    virtual CRBResults run( ParameterSpaceX::Element const& mu, 
+                            double eps , int N, bool print_rb_matrix ) const
+        {
+            vectorN_type t;
+            return this->run( mu, t, eps, N, print_rb_matrix );
+        }
 
 
     //!
@@ -113,6 +121,8 @@ protected:
 po::options_description crbPluginOptions( std::string const& prefix = "" );
 
 using crbpluginapi_create_t = boost::shared_ptr<CRBPluginAPI> ();
+using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
+boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, std::string const& n );
 //!
 //! 
 //!

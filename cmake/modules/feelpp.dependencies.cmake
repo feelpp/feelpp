@@ -491,9 +491,13 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
         set(FEELPP_HAS_BOOST_PYTHON 1)
         set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
         set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+
     else()
         message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-    endif()
+      endif()
+      add_subdirectory(pyfeelpp/pybind11)
+      message(STATUS "[pybind11] ${PYBIND11_INCLUDE_DIR}")
+      include_directories(${PYBIND11_INCLUDE_DIR})
 endif()
 
 # Then we try to find rest of the Boost components
@@ -759,6 +763,7 @@ endif()
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 
 
+
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
 #add_subdirectory(contrib/eigen)
@@ -878,6 +883,7 @@ if(FEELPP_ENABLE_PYTHON)
     SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
     set( FEELPP_HAS_PYTHON 1 )
+
   endif()
 
   #
@@ -1515,6 +1521,9 @@ else()
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()
 
+#if ( ${FEELPP_HAS_PYTHON} AND ${FEELPP_HAS_EIGEN3} )
+  add_subdirectory( contrib/minieigen )
+#endif()
 
 # Cleaning variables.
 set( varstoclean

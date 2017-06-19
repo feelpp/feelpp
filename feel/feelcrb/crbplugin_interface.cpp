@@ -29,6 +29,51 @@
 namespace Feel {
 namespace dll = boost::dll;
 
+namespace detail
+{
+class CRBPluginManagerImpl:
+        public std::map<std::string, crbpluginapi_create_ft >,
+        public boost::noncopyable
+{
+public:
+    using value_type = crbpluginapi_create_ft;
+    using key_type = std::string;
+    
+    using crbplugin_manager_type = std::map<key_type, value_type>;
+
+};
+struct CRBPluginManager : public  Feel::Singleton<CRBPluginManagerImpl> {};
+}
+
+boost::shared_ptr<CRBPluginAPI>
+factoryCRBPlugin( std::string const& dirname, std::string const& pluginname )
+{
+    auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
+    if ( p != Feel::detail::CRBPluginManager::instance().end() )
+    {
+        return p->second();
+    }
+    else
+    {
+#if defined( __APPLE__ )
+        std::string libext = ".dylib";
+#else
+        std::string libext = ".so";
+#endif
+        fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + libext);
+        std::cout << "loading " << pname << std::endl;
+
+        Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
+            boost::dll::import_alias<crbpluginapi_create_t>(pname,
+                                                            "create_crbplugin",
+                                                            dll::load_mode::append_decorations );
+        auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
+        auto plugin = p->second();
+        std::cout << "Loaded the plugin " << plugin->name() << std::endl;
+        return plugin;
+    }
+}
+#if 0
 boost::function<crbpluginapi_create_t>
 makeCRBPlugin( std::string const& dirname, std::string const& pluginname )
 {
@@ -46,5 +91,5 @@ makeCRBPlugin( std::string const& dirname, std::string const& pluginname )
     return creator;
 
 }
-
+#endif
 }
