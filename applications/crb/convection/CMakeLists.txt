@@ -2,3 +2,4 @@
 
 add_subdirectory( room )
 add_subdirectory( cavity )
+add_subdirectory( cabin )
