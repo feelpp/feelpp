@@ -36,7 +36,7 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
-
+#include <pybind11/pybind11.h>
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -222,8 +222,10 @@ public:
                  AboutData const& about,
                  std::string directory,
                  bool add_subdir_np = true );
+
 #if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-    Environment( boost::python::list arg );
+    Environment( pybind11::list arg, po::options_description const& desc );
+    Environment( pybind11::list arg );
 #endif
 
 

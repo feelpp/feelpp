@@ -1143,6 +1143,16 @@ public:
          double eps = 1e-6,
          int N = -1,
          bool print_rb_matrix=false );
+
+    CRBResults
+    run( parameter_type const& mu,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false )
+        {
+            vectorN_type times;
+            this->run( mu, times, eps, N, print_rb_matrix );
+        }
     
     /**
      * run the certified reduced basis with P parameters and returns 1 output

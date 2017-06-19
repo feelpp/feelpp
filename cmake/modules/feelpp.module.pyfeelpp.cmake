@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-13
+#       Date: 19 Jun 2017
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,11 +21,17 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-# set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC crbdb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
+#
+# pyfeelpp
+#
 
-
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelcrb "${SRC};${HDR}")
-
+if ( FEELPP_ENABLE_PYFEELPP )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/pyfeelpp/CMakeLists.txt )
+    SET(FEELPP_HAS_PYFEELPP 1)
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} PyFeelpp" )
+    ADD_DEFINITIONS( -DFEELPP_HAS_PYFEELPP )
+  else()
+    MESSAGE(WARNING "[feelpp] PyFeelpp was not found on your system. Either install it or set FEELPP_ENABLE_PYFEELPP to OFF.")
+  endif() 
+endif()

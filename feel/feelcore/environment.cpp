@@ -302,7 +302,7 @@ struct PythonArgs
                 /* Convert python options into argc/argv format */
 
                 argc = boost::python::len( arg );
-
+                
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
@@ -318,11 +318,48 @@ struct PythonArgs
                 argv[argc]=nullptr;
             }
         }
+    PythonArgs( pybind11::list arg )
+        {
+            argc = 0;
+            for (auto item : arg)
+            {
+                ++argc;
+            }
+            argv =new char* [argc+1];
+            int i = 0;
+            for (auto item : arg)
+            {
+                argv[i++] = strdup( std::string(pybind11::str(item) ).c_str() );
+                argv[argc]=nullptr;
+            }
+            
+        }
     static int argc;
     static char** argv;
 };
 int PythonArgs::argc = 1;
 char** PythonArgs::argv = nullptr;
+
+Environment::Environment( pybind11::list arg )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+Environment::Environment( pybind11::list arg, po::options_description const& desc )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+
+#if 0
 Environment::Environment( boost::python::list arg )
     :
 #if BOOST_VERSION >= 105500
@@ -332,6 +369,8 @@ Environment::Environment( boost::python::list arg )
 #endif
 {
 }
+#endif // 0
+
 #endif
 
 #if defined ( FEELPP_HAS_PETSC_H )
