@@ -5,6 +5,7 @@
 void
 ConvectionCrb::updateR( const vector_ptrtype& X, vector_ptrtype& R)
 {
+    LOG(INFO) << "[updateResidual] start\n";
     mesh_ptrtype mesh = Xh->mesh();
     element_type U( Xh, "u" );
     element_type V( Xh, "v" );
@@ -31,6 +32,17 @@ ConvectionCrb::updateR( const vector_ptrtype& X, vector_ptrtype& R)
     R->add( -1, F );
     // add the bilinear part
     R->addVector( X, D );
+
+    double new_rez = R->l2Norm();
+    if ( M_psiT )
+    {
+        if ( M_rez==-1 )
+            M_rez=new_rez;
+        M_delta = M_delta*M_rez/new_rez;
+        Feel::cout<<"psiT : new residual="<<new_rez<<", new delta="<<M_delta <<std::endl;
+        M_rez = new_rez;
+    }
+
 }
 
 
