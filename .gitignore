@@ -10,7 +10,7 @@ build/
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
-/.gitignore~
+*~
 /.kdev4
 /CMakeCache.txt
 /CMakeFiles

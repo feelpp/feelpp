@@ -82,7 +82,21 @@ public:
             DCHECK( crb ) << "DB not loaded";
             return crb->Dmu();
         }
-    
+
+    boost::shared_ptr<CRBModelBase> crbmodel() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            return crb->model();
+        }
+    std::vector<boost::shared_ptr<MeshBase>> meshes() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            std::vector<boost::shared_ptr<MeshBase>> m;
+            m.push_back( crb->model()->rBFunctionSpace()->functionSpace()->mesh() );
+            // TODO composite case with several meshes
+            return m;
+        }
+
     CRBResults run( ParameterSpaceX::Element const& mu, 
                     vectorN_type & time, double eps , int N, bool print_rb_matrix ) const override
         {
@@ -109,13 +123,7 @@ public:
         {
             fieldExporter->save();
         }
-    
-#if defined(FEELPP_HAS_VTK)
-    vtkSmartPointer<vtkUnstructuredGrid> exporterVTK() const override
-        {
-            
-        }
-#endif
+
 protected:
     void setName( std::string const& name ) override
         {

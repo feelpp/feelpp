@@ -49,6 +49,8 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelcrb/crbmodelbase.hpp>
+
 namespace Feel
 {
 enum class CRBModelMode
@@ -72,7 +74,8 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
+class CRBModel : public CRBModelBase,
+                 public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -216,10 +219,9 @@ public:
         :
         CRBModel( 0, doInit )
         {}
-        
+
     CRBModel( int level, bool doInit = true )
         :
-        M_uuid( Environment::randomUUID(true) ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -267,7 +269,6 @@ public:
      */
     CRBModel( CRBModel const & o )
         :
-        M_uuid( o.M_uuid ),
         M_level( o.M_level ),
         M_Aqm( o.M_Aqm ),
         M_InitialGuessV( o.M_InitialGuessV ),
@@ -291,11 +292,6 @@ public:
     //! destructor
     virtual ~CRBModel()
     {}
-
-    //!
-    //! unique id for CRB Model
-    //!
-    uuids::uuid id() const { return M_uuid; }
     
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
@@ -444,6 +440,11 @@ public:
      */
     model_ptrtype & model() { return M_model; }
 
+    //!
+    //! get the id of the model
+    //!
+    uuids::uuid uuid() const { return M_model->uuid(); }
+    
     //!
     //! in case of hierarchy of models, return level index.
     //! default value is 0
@@ -2780,8 +2781,6 @@ public:
 
 protected:
 
-    uuids::uuid M_uuid;
-    
     int M_level = 0;
     
     //! affine decomposition terms for the left hand side
