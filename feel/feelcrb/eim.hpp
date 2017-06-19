@@ -1503,7 +1503,7 @@ public :
         {}
 
     eim_functionspace_ptrtype const& eimFunctionSpace() { return M_eimFunctionSpace; }
-    model_functionspace_ptrtype const& modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
+    model_functionspace_ptrtype const modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
 
     int maxQ() const { return M_max_q; }
     int maxG() const { return M_max_g; }
