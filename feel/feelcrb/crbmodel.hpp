@@ -49,6 +49,8 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelcrb/crbmodelbase.hpp>
+
 namespace Feel
 {
 enum class CRBModelMode
@@ -72,7 +74,8 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
+class CRBModel : public CRBModelBase,
+                 public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 

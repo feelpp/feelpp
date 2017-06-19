@@ -141,6 +141,24 @@ public:
                 return super::operator=( other );
             }
 
+        /**
+         * access element by name
+         */
+        double const& parameterNamed( std::string name ) const
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                return this->operator()( it - paramNames.begin() );
+            }
+
+        void setParameterNamed( std::string name, double value )
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                if( it != paramNames.end() )
+                    this->operator()( it - paramNames.begin() ) = value;
+            }
+
         void setParameterSpace( parameterspace_ptrtype const& space )
             {
                 M_space = space;
@@ -271,6 +289,7 @@ public:
         typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
+    public:
         Sampling( parameterspace_ptrtype const& space, int N = 0, sampling_ptrtype const& supersampling = sampling_ptrtype() )
             :
             super( N ),
@@ -1349,6 +1368,14 @@ public:
     std::string const& parameterName( uint16_type d ) const
         {
             return M_parameterNames[d];
+        }
+
+    /**
+     * \brief name of the parameters
+     */
+    std::vector<std::string> const& parameterNames() const
+        {
+            return M_parameterNames;
         }
 
     //@}
