@@ -77,9 +77,10 @@ public :
 
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
+                   std::string const& ext = "elements",
                    WorldComm const& worldComm = Environment::worldComm() )
     :
-        super( name, worldComm ),
+        super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
         M_N( 0 )
     {
@@ -91,19 +92,21 @@ public :
         }
 #endif
         if ( M_fileFormat == "hdf5" )
-            this->setDBFilename( ( boost::format( "%1%.h5" )
-                                   %this->name() ).str() );
+            this->setDBFilename( ( boost::format( "%1%.%2%.h5" )
+                                   %this->name()%ext ).str() );
         else
-            this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+            this->setDBFilename( ( boost::format( "%1%.%2%_p%3%.crbdb" )
                                    %this->name()
+                                   %ext
                                    %this->worldComm().globalRank()
                                    ).str() );
     }
 
     CRBElementsDB( std::string const& name,
+                   std::string const& ext,
                    model_ptrtype const & model )
         :
-        CRBElementsDB( name )
+        CRBElementsDB( name, ext )
         {
             M_model = model;
         }
@@ -174,7 +177,7 @@ public :
     void setModel( model_ptrtype const& model )
     {
         M_model = model;
-        this->setDBDirectory( M_model->id() );
+        this->setDBDirectory( M_model->uuid() );
         M_rbSpace = model->rBFunctionSpace();
     }
 

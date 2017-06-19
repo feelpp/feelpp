@@ -270,10 +270,16 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
-    ModelCrbBase( std::string const& name = "generic-model-name", WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase() = delete;
+    ModelCrbBase( std::string const& name, WorldComm const& worldComm = Environment::worldComm() )
+        :
+        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
+        {}
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
+        M_uuid( uid ),
         M_name( algorithm::to_lower_copy(name) ),
         M_is_initialized( false )
     {}
@@ -289,6 +295,18 @@ public :
      * set the model name
      */
     void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+
+    //!
+    //! unique id for CRB Model
+    //!
+    uuids::uuid  uuid() const { return M_uuid; }
+
+    //!
+    //! set uuid for CRB Model
+    //! @warning be extra careful here, \c setId should be called before any
+    //! CRB type object is created because they use the id 
+    //!
+    void setId( uuids::uuid const& i ) { M_uuid = i; }
 
     /**
      * \return the mpi communicators
@@ -621,7 +639,9 @@ public :
         }
         ptree.add_child( "eim", ptreeEim );
 
-        this->updateSpecificityModel( ptree );
+        boost::property_tree::ptree ptreeSpecificityOfModel;
+        this->updateSpecificityModel( ptreeSpecificityOfModel );
+        ptree.add_child( "specifity-of-model", ptreeSpecificityOfModel );
     }
     /**
      * \brief load CrbModel from json
@@ -673,7 +693,9 @@ public :
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
 
-        this->setupSpecificityModel( ptree, dbDir );
+        auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
+        if ( ptreeSpecificityOfModel )
+            this->setupSpecificityModel( *ptreeSpecificityOfModel, dbDir );
 
         XN->setModel( this->shared_from_this() );
 
@@ -886,8 +908,7 @@ public :
             std::map<std::string,double> map_symbols;
             for(int i=0; i<musize; i++)
             {
-                symbol = ( boost::format("mu%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+                map_symbols.insert( std::pair<std::string, double>(Dmu->parameterName(i), mu(i)));
             }
 
             M_betaAq.resize( sizeA );
@@ -1003,8 +1024,7 @@ public :
             std::map<std::string,double> map_symbols;
             for(int i=0; i<musize; i++)
             {
-                symbol = ( boost::format("mu%1%") %i ).str();
-                map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
+                map_symbols.insert( std::pair<std::string, double>(Dmu->parameterName(i), mu(i)));
             }
 
             M_betaAq.resize( sizeA );
@@ -1062,8 +1082,7 @@ public :
         int musize = mu.size();
         for(int i=0; i<musize; i++)
         {
-            std::string symbol = ( boost::format("mu%1%") %i ).str();
-            M_symbols_vec.push_back( symbol );
+            M_symbols_vec.push_back( Dmu->parameterName(i) );
         }
         fs::path dir( Environment::expand( M_symbolicExpressionBuildDir ) );
         if( M_betaAqString.size() > 0 )
@@ -1787,6 +1806,9 @@ public:
     rbfunctionspace_ptrtype XN;
 
 protected :
+
+    
+    uuids::uuid M_uuid;
 
     std::string M_name;
 
