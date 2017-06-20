@@ -44,7 +44,7 @@ using namespace Feel::vf;
 #define A_OUT if(Environment::isMasterRank())std::cout
 
 
-class FunctionSpaceDefinition
+class FEELPP_EXPORT FunctionSpaceDefinition
 {
 public :
     static const bool is_time_dependent = false;
@@ -76,7 +76,7 @@ public :
 
 
 
-class ConvectionCrb :
+class FEELPP_EXPORT ConvectionCrb :
     public ModelCrbBase< ParameterSpace<>,
                          FunctionSpaceDefinition >
 {
