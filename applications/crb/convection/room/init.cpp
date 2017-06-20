@@ -4,10 +4,6 @@
 
 using namespace Feel::vf;
 
-ConvectionCrb::ConvectionCrb():
-    M_backend( backend() )
-{}
-
 void ConvectionCrb::initModel()
 {
     // -- MESH SETTING -- //

@@ -43,12 +43,6 @@ using namespace Feel::vf;
 
 #define A_OUT if(Environment::isMasterRank())std::cout
 
-class ParameterDefinition
-{
-public :
-    static const uint16_type ParameterSpaceDimension = CONVECTION_PARAMETER_SPACE_DIMENSION;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-};
 
 class FunctionSpaceDefinition
 {
@@ -80,32 +74,18 @@ public :
     typedef FunctionSpace<mesh_type, single_basis_type> mono_space_type;
 };
 
-template <typename ParameterDefinition, typename FunctionSpaceDefinition >
-class EimDefinition
-{
-public :
-    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef typename FunctionSpaceDefinition::mono_space_type mono_space_type;
-    typedef typename FunctionSpaceDefinition::space_type space_type;
-
-    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fun_type;
-    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fund_type;
-};
 
 
 class ConvectionCrb :
-    public ModelCrbBase< ParameterDefinition,
-                         FunctionSpaceDefinition,
-                         0,
-                         EimDefinition< ParameterDefinition, FunctionSpaceDefinition> >
+    public ModelCrbBase< ParameterSpace<>,
+                         FunctionSpaceDefinition >
 {
 public:
     typedef double value_type;
 
     //@{ /// Model types
-    typedef ModelCrbBase<ParameterDefinition,
-                         FunctionSpaceDefinition,0,
-                         EimDefinition<ParameterDefinition,FunctionSpaceDefinition> > super_type;
+    typedef ModelCrbBase< ParameterSpace<>,
+                          FunctionSpaceDefinition > super_type;
 
     static const uint16_type Order = 1;
     static const bool is_time_dependent = false;
@@ -143,8 +123,7 @@ public:
 
 
     //@{ /// Parameters space
-    static const uint16_type ParameterSpaceDimension = CONVECTION_PARAMETER_SPACE_DIMENSION;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+    typedef ParameterSpace<> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
     typedef parameterspace_type::element_ptrtype parameter_ptrtype;
@@ -225,6 +204,8 @@ public:
     vector_ptrtype residual( const element_type& X );
 
 private:
+    bool M_psiT;
+    double M_delta, M_rez;
     element_ptrtype pT;
 
     // Timers
@@ -242,6 +223,7 @@ private:
     vector_ptrtype F;
 
 };
+
 
 
 
