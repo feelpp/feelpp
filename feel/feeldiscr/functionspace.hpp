@@ -2469,14 +2469,6 @@ public:
         typedef boost::multi_array<_div_type,1> comp_curl_array_type;
 
         /**
-         * \return the map
-         */
-        DataMap const& map() const
-        {
-            return M_functionspace->map();
-        }
-
-        /**
          * \return the mesh associated to the function
          */
         mesh_ptrtype mesh()

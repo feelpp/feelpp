@@ -31,7 +31,9 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdata.hpp>
 #include <feel/feelmesh/meshbase.hpp>
+#include <feel/feeldiscr/doftablebase.hpp>
 #include <feel/feelcrb/crbmodelbase.hpp>
+#include <feel/feelalg/vector.hpp>
 
 namespace Feel {
 
@@ -68,6 +70,20 @@ public:
     virtual std::vector<boost::shared_ptr<MeshBase>> meshes() const = 0;
 
     //!
+    //! @return the doftable with datamap
+    //!
+    virtual std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const = 0;
+
+    //!
+    //! @return an element of the fe space
+    //!
+    virtual boost::shared_ptr<Vector<double>> feElement() const = 0;
+
+    //!
+    //! @return a list of sub-element which composed the element of the fe space
+    //!
+    virtual std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const = 0;
+    //!
     //! run the crb online code
     //! @param mu parameter at which CRB is evaluated
     //! @param time collection of timers (prediction, error bounds)
@@ -85,6 +101,10 @@ public:
             return this->run( mu, t, eps, N, print_rb_matrix );
         }
 
+    //!
+    //! expand the rb field to fe field
+    //!
+    virtual void expansion( vectorN_type const& uRB, Vector<double> & uFE, int N=-1 ) const = 0;
 
     //!
     //! initialize the exporter
