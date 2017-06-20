@@ -34,6 +34,72 @@
 
 namespace Feel {
 
+namespace crbplugin_details
+{
+
+struct DofTablesComposite
+{
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x ) const
+        {
+            doftables.push_back( x->dof() );
+        }
+
+    mutable std::vector<boost::shared_ptr<DofTableBase>> doftables;
+};
+
+template <typename SpaceType>
+std::vector<boost::shared_ptr<DofTableBase>>
+doftables( boost::shared_ptr<SpaceType> const& space, typename std::enable_if< !SpaceType::is_composite >::type* = nullptr )
+{
+    std::vector<boost::shared_ptr<DofTableBase>> dt;
+    dt.push_back( space->dof() );
+    return dt;
+}
+template <typename SpaceType>
+std::vector<boost::shared_ptr<DofTableBase>>
+doftables( boost::shared_ptr<SpaceType> const& space, typename std::enable_if< SpaceType::is_composite >::type* = nullptr )
+{
+    Feel::crbplugin_details::DofTablesComposite dtc;
+    boost::fusion::for_each( space->functionSpaces(),dtc );
+    return dtc.doftables;
+}
+
+
+template <typename ElementType>
+struct SubElementsComposite
+{
+    SubElementsComposite( boost::shared_ptr<ElementType> _uFE ) : uFE( _uFE ) {}
+
+    template <typename T>
+    void operator()( T const& t ) const
+        {
+            subelements.push_back( uFE->template elementPtr<T::value>() );
+        }
+
+    boost::shared_ptr<ElementType> uFE;
+    mutable std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> > subelements;
+};
+
+template <typename ElementType>
+std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> >
+subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< !ElementType::is_composite >::type* = nullptr )
+{
+    std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> > res;
+    res.push_back( uFE );
+    return res;
+}
+template <typename ElementType>
+std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> >
+subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< ElementType::is_composite >::type* = nullptr )
+{
+    mpl::range_c<int,0,ElementType::SpaceType::nSpaces> keySpaces;
+    Feel::crbplugin_details::SubElementsComposite<ElementType> sec(uFE);
+    boost::fusion::for_each( keySpaces, sec );
+    return sec.subelements;
+}
+}
+
 
 //!
 //! Generic Plugin for CRB applications
@@ -42,7 +108,7 @@ template<typename ModelT>
 class CRBPlugin : public CRBPluginAPI
 {
 public:
-    
+
     using model_t = ModelT;
     typedef Feel::CRBModel< model_t > crbmodel_type;
     typedef Feel::CRB<crbmodel_type> crb_type;
@@ -54,7 +120,7 @@ public:
         M_name( name )
         {
         }
-    
+
     std::string const& name() const override
         {
             return M_name;
@@ -70,7 +136,7 @@ public:
             boost::shared_ptr<crbmodel_type> crbmodel( new crbmodel_type( model, false ) );
             crbmodel->loadJson( filename, "crbmodel" );
             std::cout << "loaded crbmodel\n";
-            
+
             crb.reset( new crb_type );
             crb->setTruthModel( crbmodel );
             crb->loadJson( filename );
@@ -97,13 +163,49 @@ public:
             return m;
         }
 
+    std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            if ( crb->model() && crb->model()->rBFunctionSpace() && crb->model()->rBFunctionSpace()->functionSpace() )
+                return std::make_pair( Feel::crbplugin_details::doftables( crb->model()->rBFunctionSpace()->functionSpace() ),
+                                       crb->model()->rBFunctionSpace()->functionSpace()->dof() );
+            else
+                return std::make_pair( std::vector<boost::shared_ptr<DofTableBase>>(), boost::shared_ptr<DataMap>() );
+        }
+
+    boost::shared_ptr<Vector<double>> feElement() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            if ( crb->model() && crb->model()->rBFunctionSpace() && crb->model()->rBFunctionSpace()->functionSpace() )
+                return crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+            else
+                return boost::shared_ptr<Vector<double>>();
+        }
+
+    std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            auto uFE = boost::dynamic_pointer_cast< typename crbmodel_type::space_type::element_type >( u );
+            CHECK( uFE ) << "dynamic_pointer_cast fails : wrong type of element u";
+            return Feel::crbplugin_details::subelements( uFE );
+        }
+
     CRBResults run( ParameterSpaceX::Element const& mu, 
                     vectorN_type & time, double eps , int N, bool print_rb_matrix ) const override
         {
             DCHECK( crb ) << "DB not loaded";
             return crb->run( mu, time, eps, N, print_rb_matrix );
         }
-    
+
+    void expansion( vectorN_type const& uRB, Vector<double> & uFE,  int N ) const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            auto uRBforExpansion = crb->model()->rBFunctionSpace()->element();
+            uRBforExpansion.container() = uRB;
+            crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
+        }
+
+
     void initExporter() override
         {
             fieldExporter = exporter( _mesh=crb->model()->rBFunctionSpace()->mesh() );
