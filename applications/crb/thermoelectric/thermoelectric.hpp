@@ -123,7 +123,8 @@ public:
     using element_ptrtype = super_type::element_ptrtype;
     using J_space_type = FunctionSpaceDefinition::J_space_type;
     using V_space_type = FunctionSpaceDefinition::V_space_type;
-    using V_element_type = typename V_space_type::element_type;
+    using Vh_element_type = typename V_space_type::element_type;
+    using V_view_type = typename element_type::template sub_element_type<0>;
     using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
     using T_view_ptrtype = typename element_type::template sub_element_ptrtype<1>;
     using parameter_type = super_type::parameter_type;
@@ -182,7 +183,7 @@ public:
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     int mMaxSigma();
-    auto eimSigmaQ(int m);
+    Vh_element_type eimSigmaQ(int m);
     vectorN_type eimSigmaBeta( parameter_type const& mu );
     template<typename vec_space_type>
     typename vec_space_type::element_type

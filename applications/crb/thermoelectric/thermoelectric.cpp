@@ -480,10 +480,11 @@ int Thermoelectric::mMaxSigma()
     return 1;
 }
 
-auto Thermoelectric::eimSigmaQ(int m)
+Thermoelectric::Vh_element_type Thermoelectric::eimSigmaQ(int m)
 {
     auto Vh = Xh->template functionSpace<0>();
-    auto q = vf::project( _space=Vh, _range=elements(M_mesh), _expr=cst(1.) );
+    Vh_element_type q( Vh );
+    q.on( _range=elements(M_mesh), _expr=cst(1.) );
     return q;
 }
 
