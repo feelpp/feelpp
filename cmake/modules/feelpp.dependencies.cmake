@@ -495,9 +495,6 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
     else()
         message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
       endif()
-      add_subdirectory(pyfeelpp/pybind11)
-      message(STATUS "[pybind11] ${PYBIND11_INCLUDE_DIR}")
-      include_directories(${PYBIND11_INCLUDE_DIR})
 endif()
 
 # Then we try to find rest of the Boost components
@@ -679,9 +676,12 @@ if(FEELPP_ENABLE_FFTW)
   endif()
 endif()
 
+
 #
 # submodules
 #
+include(feelpp.module.pybind11)
+
 include(feelpp.module.hpddm)
 
 option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
@@ -692,6 +692,7 @@ endif()
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
+
 
 #
 # HARTS
@@ -876,7 +877,7 @@ endif()
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
-  FIND_PACKAGE(PythonLibs)
+  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
   if ( PYTHONLIBS_FOUND )
     message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
@@ -889,7 +890,7 @@ if(FEELPP_ENABLE_PYTHON)
   #
   # Python interp
   #
-  FIND_PACKAGE(PythonInterp REQUIRED)
+  FIND_PACKAGE(PythonInterp 2.7  REQUIRED)
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
