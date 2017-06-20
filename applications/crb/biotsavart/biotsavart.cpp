@@ -22,6 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 //!
+#define FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC
 #include <feel/feelcrb/crbplugin.hpp>
 
 
@@ -554,6 +555,8 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
 }
 
 using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;
+
+template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
 
 FEELPP_CRB_PLUGIN( biotsavartcrbthermoelectric, "biotsavartcrbthermoelectric")
 //FEELPP_CRB_PLUGIN( BiotSavartCRB<NLThermoelectric>, "biotsavartcrbnlthermoelectric")

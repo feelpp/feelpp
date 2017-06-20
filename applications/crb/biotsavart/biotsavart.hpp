@@ -199,6 +199,9 @@ protected:
 
 }; // class BiotSavartCRB
 
+#if !defined(FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC)
+extern template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
+#endif
 } // namespace Feel
 
 

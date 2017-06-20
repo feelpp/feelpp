@@ -27,14 +27,14 @@
 #include <feel/feelopt/nlopt.hpp>
 
 #include "biotsavart.hpp"
-#include "thermoelectric.hpp"
+#include <thermoelectric.hpp>
 
 int iter=0;
 
 int main(int argc, char**argv )
 {
     using namespace Feel;
-    using namespace Feel::cout;
+    using Feel::cout;
 
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
@@ -99,7 +99,7 @@ int main(int argc, char**argv )
     {
         iter++;
         auto mu = BS.newParameter();
-        mu=Map<Eigen::VectorXd>( x.data(), mu.size());
+        mu=Eigen::Map<Eigen::VectorXd const>( x.data(), mu.size());
         BS.online(mu);
         auto B = BS.magneticFlux();
         return B.max();
@@ -130,7 +130,7 @@ int main(int argc, char**argv )
 
     // export
     auto mu = BS.newParameter();
-    mu=Map<Eigen::VectorXd>( x.data(), mu.size());
+    mu=Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
 
     BS.exportResults();
 
