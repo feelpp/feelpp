@@ -22,6 +22,8 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 //!
+#include <feel/feelcrb/crbplugin.hpp>
+
 
 #include "biotsavart.hpp"
 #include <thermoelectric.hpp>

@@ -88,6 +88,7 @@ class FEELPP_EXPORT BiotSavartCRB
                           NonLinear, // BiotSavart ??
                           typename te_rb_model_type::eim_definition_type >
 {
+  public:
     using super_type = ModelCrbBase<typename te_rb_model_type::parameter_space_type,
                                     typename te_rb_model_type::function_space_type,
                                     NonLinear,
@@ -199,8 +200,6 @@ protected:
 }; // class BiotSavartCRB
 
 } // namespace Feel
-
-#include "biotsavart.cpp"
 
 
 #endif

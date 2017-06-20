@@ -22,9 +22,10 @@
 #
 #
 
-include_directories(${CMAKE_SOURCE_DIR}/applications/crb/thermoelectric)
+
 
 crb_add_library( biotsavart SRCS biotsavart.hpp biotsavart.cpp EXEC CRB_LIB_BIOTSAVART )
+target_include_directories(${CRB_LIB_BIOTSAVART} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
 install( FILES biotsavart.hpp thermoelectric.hpp nl-thermoelectric.hpp
          DESTINATION include/feelpp/crb/biotsavart COMPONENT Devel)
 set(FEELPP_CRB_BIOTSAVART_LIBRARIES ${CRB_LIB_BIOTSAVART} PARENT_SCOPE)
