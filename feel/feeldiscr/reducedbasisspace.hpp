@@ -1770,16 +1770,20 @@ public :
             return u;
         }
 
-    space_element_type expansion( element_type const& unknown, int  N=-1)
+    space_element_type expansion( element_type const& uRB, int  N=-1) const
         {
-            int number_of_coeff;
             int basis_size = M_primal_rb_basis.size();
-            if ( N == -1 )
-                number_of_coeff = basis_size;
-            else
-                number_of_coeff = N;
-            FEELPP_ASSERT( number_of_coeff <= basis_size )( number_of_coeff )( basis_size ).error("invalid size");
-            return Feel::expansion( M_primal_rb_basis, unknown , number_of_coeff );
+            int number_of_coeff = ( N == -1 )? basis_size : N;
+            CHECK( number_of_coeff <= basis_size ) << "invalid size : " << number_of_coeff << " must be less or equal than " << basis_size;
+            return Feel::expansion( M_primal_rb_basis, uRB , number_of_coeff );
+        }
+
+    void expansion( element_type const& uRB, Vector<value_type> & uFE, int  N=-1) const
+        {
+            int basis_size = M_primal_rb_basis.size();
+            int number_of_coeff = ( N == -1 )? basis_size : N;
+            CHECK( number_of_coeff <= basis_size ) << "invalid size : " << number_of_coeff << " must be less or equal than " << basis_size;
+            Feel::expansion( M_primal_rb_basis, uRB , uFE, number_of_coeff );
         }
 
 
