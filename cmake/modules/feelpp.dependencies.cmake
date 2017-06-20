@@ -476,7 +476,7 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ON)
 
 # Boost
 SET(BOOST_MIN_VERSION "1.55.0")
@@ -1522,7 +1522,7 @@ else()
 endif()
 
 #if ( ${FEELPP_HAS_PYTHON} AND ${FEELPP_HAS_EIGEN3} )
-  add_subdirectory( contrib/minieigen )
+  #add_subdirectory( contrib/minieigen )
 #endif()
 
 # Cleaning variables.
