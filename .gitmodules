@@ -34,6 +34,6 @@
 [submodule "python/pybind11"]
 	path = python/pybind11
 	url = https://github.com/feelpp/pybind11.git
-[submodule "pyfeelpp/pybind11"]
-	path = pyfeelpp/pybind11
+[submodule "contrib/pybind11"]
+	path = contrib/pybind11
 	url = https://github.com/feelpp/pybind11.git

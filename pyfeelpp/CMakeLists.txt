@@ -39,11 +39,8 @@ if ( NOT TARGET check )
   add_custom_target(check)
 endif()
 
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  add_subdirectory(pybind11)
-endif()
-#pybind11_add_module(pyfeelpp feelcore/python.cpp feelcrb/python.cpp python.cpp)
 pybind11_add_module(pyfeelpp  python.cpp feelcore/python.cpp feelcrb/python.cpp)
+target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIR})
 target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
 
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
