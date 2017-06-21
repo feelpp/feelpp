@@ -32,18 +32,16 @@
 #include <feel/feelfilters/loadcsv.hpp>
 
 #include <boost/property_tree/ptree.hpp>
-#include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
-#include <boost/algorithm/string/split.hpp> // Include for boost::split
 
 namespace Feel
 {
 namespace pt =  boost::property_tree;
 
 //! Boundary condition at marker is an e≈pression string
-class ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string,std::string,std::string,std::string>
+class ExpressionStringAtMarker : public std::tuple<std::string,std::string,std::string,std::string,std::string>
 {
 public:
-    typedef std::tuple<std::string,std::string,std::string,std::string,std::string,std::string> super;
+    typedef std::tuple<std::string,std::string,std::string,std::string,std::string> super;
     enum boundarycondition_t { EXPRESSION = 0, FILE = 1 };
     
     ExpressionStringAtMarker( super && s )
@@ -93,19 +91,9 @@ public:
      */
     std::string const& expression2() const { return std::get<3>( *this ); }
 
-    /**
-     * @return the parameters
-     */
-    std::vector<std::string> parameters() const {
-        std::vector<std::string> params;
-        boost::split(params, std::get<5>( *this ), boost::is_any_of(", ") );
-        return params;
-    }
-
     bool hasExpression() const { return isExpression() && !std::get<2>( *this ).empty(); } 
     bool hasExpression1() const { return isExpression() && !std::get<2>( *this ).empty(); } 
     bool hasExpression2() const { return isExpression() && !std::get<3>( *this ).empty(); }
-    bool hasParameters() const { return !std::get<5>( *this ).empty(); }
 
     std::string filename() const { LOG_IF( ERROR, !isFile() ) << "boundary condition is not given by a file"; return M_filename; }
     bool hasFilename() const { return isFile() && !M_filename.empty(); }
