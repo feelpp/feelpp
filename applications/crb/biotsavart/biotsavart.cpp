@@ -449,7 +449,9 @@ void BiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
     tic();
 
     tic();
-    M_j = M_teCrbModel->template computeTruthCurrentDensity<disc_vec_space_type>(mu);
+    auto Vh = current_space_type::New( M_meshCond );
+    M_j = Vh->element();
+    M_teCrbModel->template computeTruthCurrentDensity( M_j, mu);
     toc("compute j FE");
 
     tic();
@@ -525,7 +527,7 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
     auto V = VT.template element<0>();
     auto T = VT.template element<1>();
 
-    auto Jh = disc_vec_space_type::New(M_Xh->mesh() );
+    auto Jh = current_space_type::New( M_meshCond );
     auto j = Jh->element();
     for( int n = 0; n < M_uN.size(); ++n )
     {
