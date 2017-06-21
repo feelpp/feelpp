@@ -149,69 +149,6 @@ boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, st
 //!
 boost::function<crbpluginapi_create_t> makeCRBPluginCreator( std::string const& dirname, std::string const& pluginname );
 
-#define FEELPP_CRB_PLUGIN( classname, strname )                         \
-    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<CRBModel<classname>> \
-{                                                                       \
-public:                                                                 \
-    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
-    BOOST_PP_CAT(classname,Plugin)()                                    \
-        :                                                               \
-        CRBPlugin<CRBModel<classname>>( BOOST_PP_STRINGIZE( strname ) ) \
-        {}                                                              \
-                                                                        \
-    /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
-        {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
-        }                                                               \
-};                                                                      \
-                                                                        \
-                                                                        \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
-
-#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                         \
-    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
-        public CRBTrilinearPlugin<CRBModelTrilinear<classname>>         \
-{                                                                       \
-public:                                                                 \
-    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
-    BOOST_PP_CAT(classname,Plugin)()                                    \
-        :                                                               \
-        CRBTrilinearPlugin<CRBModelTrilinear<classname>>( BOOST_PP_STRINGIZE( strname ) ) \
-        {}                                                              \
-                                                                        \
-    /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
-        {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
-        }                                                               \
-};                                                                      \
-                                                                        \
-                                                                        \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
-
-
-
-
-#define FEELPP_CRB_PLUGIN_TEMPLATE( classname, classtemplate, strname ) \
-class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<classtemplate> \
-{                                                                       \
-public:                                                                 \
-    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
-    BOOST_PP_CAT(classname,Plugin)()                                    \
-        :                                                               \
-        CRBPlugin<classtemplate>( BOOST_PP_STRINGIZE( strname ) )       \
-        {}                                                              \
-                                                                        \
-    /* Factory method */                                                \
-    static boost::shared_ptr<this_t> create()                           \
-        {                                                               \
-            return boost::shared_ptr<this_t>( new this_t() );           \
-        }                                                               \
-};                                                                      \
-                                                                        \
-                                                                        \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
 
 
 }
