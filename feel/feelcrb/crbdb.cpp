@@ -67,9 +67,6 @@ CRBDB::setDBDirectory( uuids::uuid const& i )
     M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
                       % Feel::Environment::rootRepository()
                       % database_subdir ).str();
-    if ( Environment::isMasterRank() )
-        std::cout << " . db directory : " << this->dbDirectory() << std::endl
-                  << " . db filename : " << this->dbFilename() << std::endl;
 }
 //! destructor
 CRBDB::~CRBDB()
