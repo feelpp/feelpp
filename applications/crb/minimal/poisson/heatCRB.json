@@ -1,0 +1,18 @@
+{
+    "Name": "Poisson",
+    "ShortName": "Poisson",
+    "Model": "poisson-crb",
+    "Parameters":
+    {
+        "kappa":
+        {
+            "min":0.1,
+            "max":10
+        },
+        "flux":
+        {
+            "min":-1,
+            "max":1
+        }
+    }
+}

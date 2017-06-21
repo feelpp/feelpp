@@ -171,13 +171,16 @@ struct matrix_node
 };
 
 //! Eigen type to map matrix_type (row major)
-using em_matrix_row_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
+template<typename T = double>
+using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
 
 //! Eigen type to map matrix_node<>::type
-using em_matrix_col_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+template<typename T = double>
+using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
 
 //! Eigen type to map node_type
-using em_node_type = Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>>;
+template<typename T = double>
+using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
 
 
 inline FEELPP_DEPRECATED

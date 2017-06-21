@@ -85,17 +85,20 @@ makeThermalBlockMinimalVersionAbout( std::string const& str = "thermalBlockminim
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  */
-class ThermalBlockMinimalVersion : public ModelCrbBase< ParameterSpace<8> , decltype(Pch<1>(Mesh<Simplex<2>>::New())) >
+class ThermalBlockMinimalVersion : public ModelCrbBase< ParameterSpaceX , decltype(Pch<1>(Mesh<Simplex<2>>::New())) >
 {
 public:
 
-    typedef ModelCrbBase< ParameterSpace<8> , decltype(Pch<1>(Mesh<Simplex<2>>::New())) > super_type;
-
-    static const uint16_type ParameterSpaceDimension = 8;
+    typedef ModelCrbBase< ParameterSpaceX , decltype(Pch<1>(Mesh<Simplex<2>>::New())) > super_type;
 
     typedef typename super_type::element_type element_type;
     typedef typename super_type::parameter_type parameter_type;
 
+    //!
+    //! constructor
+    //!
+    ThermalBlockMinimalVersion() : super_type( "thermalblockminver" ) {}
+    
     //! initialisation of the model and definition of parameters values
     void initModel();
 
@@ -117,7 +120,6 @@ private:
 void
 ThermalBlockMinimalVersion::initModel()
 {
-
     gamma_dir=doption(_name="gamma_dir");
 
     this->setFunctionSpaces( Pch<1>( loadMesh( _mesh=new Mesh<Simplex<2>> ) ) );
@@ -129,7 +131,7 @@ ThermalBlockMinimalVersion::initModel()
         std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
         std::cout << "Number of dof " << Xh->nDof() << "\n";
     }
-
+    Dmu->setDimension( 8 );
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
     mu_min <<  0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 ;

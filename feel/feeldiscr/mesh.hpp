@@ -1,32 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-07-05
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file mesh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-07-05
- */
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
+//! @date 2005-07-05
+//! @copyright 2005,2006 EPFL
+//! @copyright 2006-2012 Université Joseph Fourier (Grenoble I)
+//! @copyright 2011-2017 Feel++ Consortium
+//!
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
@@ -80,6 +77,19 @@
 #include <boost/preprocessor/facilities/identity.hpp>
 
 #include <boost/enable_shared_from_this.hpp>
+
+#if defined(FEELPP_HAS_VTK)
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPoints.h>
+#include <vtkLine.h>
+#include <vtkTriangle.h>
+#include <vtkQuad.h>
+#include <vtkTetra.h>
+#include <vtkHexahedron.h>
+#include <vtkFloatArray.h>
+#include <vtkCellData.h>
+#endif
 
 namespace Feel
 {
@@ -140,22 +150,22 @@ template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
         public mpl::if_<is_0d<GeoShape>,
-                        mpl::identity<Mesh0D<GeoShape > >,
+                        mpl::identity<Mesh0D<GeoShape,T> >,
                         typename mpl::if_<is_1d<GeoShape>,
-                                          mpl::identity<Mesh1D<GeoShape > >,
+                                          mpl::identity<Mesh1D<GeoShape,T> >,
                                           typename mpl::if_<is_2d<GeoShape>,
-                                                            mpl::identity<Mesh2D<GeoShape> >,
-                                                            mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type,
+                                                            mpl::identity<Mesh2D<GeoShape,T> >,
+                                                            mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
         public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
-                                    mpl::identity<Mesh0D<GeoShape > >,
+                                    mpl::identity<Mesh0D<GeoShape,T> >,
                                     typename mpl::if_<is_1d<GeoShape>,
-                                                      mpl::identity<Mesh1D<GeoShape > >,
+                                                      mpl::identity<Mesh1D<GeoShape,T> >,
                                                       typename mpl::if_<is_2d<GeoShape>,
-                                                                        mpl::identity<Mesh2D<GeoShape> >,
-                                                                        mpl::identity<Mesh3D<GeoShape> > >::type>::type>::type::type;
+                                                                        mpl::identity<Mesh2D<GeoShape,T> >,
+                                                                        mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
 public:
 
 
@@ -403,15 +413,16 @@ public:
     void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
         rank_type nProc = this->worldComm().localSize();
+        rank_type currentRank = this->worldComm().localRank();
 
-        size_type ne = std::distance( this->beginElementWithProcessId(),
-                                      this->endElementWithProcessId() );
-        size_type nf = std::distance( this->beginFaceWithProcessId(),
-                                      this->endFaceWithProcessId() );
-        size_type ned = std::distance( this->beginEdgeWithProcessId(),
-                                       this->endEdgeWithProcessId() );
-        size_type np = std::distance( this->beginPointWithProcessId(),
-                                      this->endPointWithProcessId() );
+        auto rangeElements = this->elementsWithProcessId( currentRank );
+        size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
+        auto rangeFaces = this->facesWithProcessId( currentRank );
+        size_type nf = std::distance( std::get<0>( rangeFaces ), std::get<1>( rangeFaces ) );
+        auto rangeEdges = this->edgesWithProcessId( currentRank );
+        size_type ned = std::distance( std::get<0>( rangeEdges ), std::get<1>( rangeEdges ) );
+        auto rangePoints = this->pointsWithProcessId( currentRank );
+        size_type np = std::distance( std::get<0>( rangePoints ), std::get<1>(rangePoints) );
         size_type nv = this->numVertices();
 
         size_type neall = this->numElements();
@@ -419,9 +430,9 @@ public:
         size_type nedall = this->numEdges();
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.marker().isOn(); } );
-        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.marker().isOn(); } );
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.hasMarker(); } );
+        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );
@@ -496,14 +507,15 @@ public:
     void updateNumGlobalElements( typename std::enable_if<mpl::not_<is_3d<MT>>::value>::type* = nullptr )
     {
         rank_type nProc = this->worldComm().localSize();
-
-        size_type ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                      this->endElementWithProcessId( this->worldComm().rank() ) );
-        size_type nf = std::distance( this->beginFaceWithProcessId( this->worldComm().rank() ),
-                                      this->endFaceWithProcessId( this->worldComm().rank() ) );
+        rank_type currentRank = this->worldComm().localRank();
+        auto rangeElements = this->elementsWithProcessId( currentRank );
+        size_type ne = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
+        auto rangeFaces = this->facesWithProcessId( currentRank );
+        size_type nf = std::distance( std::get<0>( rangeFaces ), std::get<1>( rangeFaces ) );
         size_type ned = 0;
-        size_type np = std::distance( this->beginPointWithProcessId( this->worldComm().rank() ),
-                                      this->endPointWithProcessId( this->worldComm().rank() ) );
+
+        auto rangePoints = this->pointsWithProcessId( currentRank );
+        size_type np = std::distance( std::get<0>( rangePoints ), std::get<1>(rangePoints) );
         size_type nv = this->numVertices();
 
         size_type neall = this->numElements();
@@ -511,11 +523,11 @@ public:
         size_type nedall = 0;
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.marker().isOn(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
         size_type nedmarkedall = 0;
-        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( point_type const& thepoint ) { return thepoint.marker().isOn(); } );
+        size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 
         M_statElements.resize( nProc,std::make_tuple(0,0) );
@@ -878,6 +890,13 @@ public:
      */
     P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) const;
 
+#if defined(FEELPP_HAS_VTK)
+    //!
+    //! exporter to VTK data structure
+    //!
+    typename MeshBase::vtk_export_type exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const;
+#endif // FEELPP_HAS_VTK
+
     /**
      * update the Marker2 with a range of elements or faces
      * if elements -> update marker2 for this elements
@@ -1217,6 +1236,11 @@ private:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
+
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<0> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<1> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<2> );
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1628,7 +1652,7 @@ public:
          */
         FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
                                               std::list< std::pair<size_type, uint> > & listTri );
-        
+
         /*---------------------------------------------------------------
          * computed barycenter
          */
@@ -2091,9 +2115,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         new_elem.setId ( n_new_elem );
         new_element_numbers[old_elem.id()]= n_new_elem;
         // set element markers
-        new_elem.setMarker( old_elem.marker().value() );
-        new_elem.setMarker2( old_elem.marker2().value() );
-        new_elem.setMarker3( old_elem.marker3().value() );
+        new_elem.setMarkers( old_elem.markers() );
         // partitioning update
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setProcessId(old_elem.processId());
@@ -2161,9 +2183,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 // set id of face
                 new_face.setId( n_new_faces );
                 // set face markers
-                new_face.setMarker( old_face.marker().value() );
-                new_face.setMarker2( old_face.marker2().value() );
-                new_face.setMarker2( old_face.marker3().value() );
+                new_face.setMarkers( old_face.markers() );
                 // partitioning update
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setProcessId(old_face.processId());
@@ -2213,7 +2233,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     for ( ; face_it!=face_en ; ++face_it )
     {
         auto const& old_face = *face_it;
-        if ( old_face.marker().isOff() ) continue;
+        if ( !old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
         // is on boundary
@@ -2221,9 +2241,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         // set id of face
         new_face.setId( n_new_faces );
         // set face markers
-        new_face.setMarker( old_face.marker().value() );
-        new_face.setMarker2( old_face.marker2().value() );
-        new_face.setMarker2( old_face.marker3().value() );
+        new_face.setMarkers( old_face.markers() );
         // partitioning update
         new_face.setProcessIdInPartition( old_face.pidInPartition() );
         new_face.setProcessId(old_face.processId());
@@ -2294,7 +2312,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
             const int nbDataToTreat = dataToRecv.size();
             for ( int k=0;k<nbDataToTreat;++k )
             {
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
                 new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
             }
         }
@@ -2367,7 +2385,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 size_type idEltAsked;
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
                 new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
             }
         }
@@ -2396,6 +2414,122 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
 
     return new_mesh;
 }
+
+#if defined(FEELPP_HAS_VTK)
+template<typename Shape, typename T, int Tag>
+typename MeshBase::vtk_export_type
+Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const
+{
+    /* Compute element type from the parameters */
+    typedef typename 
+    /* if (Mdim == 1) */
+    mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+        mpl::identity<vtkLine>,
+        /* if (Mdim == 2) */
+        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
+            /* if(MShape == SHAPE_TRIANGLE) */
+            typename mpl::if_<mpl::equal_to<mpl::int_<Shape>, mpl::size_t<SHAPE_TRIANGLE> >,
+                mpl::identity<vtkTriangle>,
+                mpl::identity<vtkQuad>
+            >::type,
+            /* if (Mdim == 3) */
+            typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+                /* if(MShape == SHAPE_TETRA) */
+                typename mpl::if_<mpl::equal_to<mpl::int_<Shape>, mpl::size_t<SHAPE_TETRA> >,
+                    mpl::identity<vtkTetra>,
+                    mpl::identity<vtkHexahedron>
+                >::type,
+                /* We should normally not reach this case */
+                /* anyway we set a default vtkTetra for face type */
+                mpl::identity<vtkTetra>
+            >::type
+        >::type
+    >::type::type vtkelement_type;
+
+
+    vtkSmartPointer<vtkUnstructuredGrid> out = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    rank_type currentRank = this->worldComm().localRank();
+
+    auto rangePoints = this->pointsWithProcessId( currentRank );
+    auto itPoint = std::get<0>( rangePoints );
+    auto enPoint = std::get<1>( rangePoints );
+
+    size_type nPoints = std::distance( itPoint,enPoint );
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    points->SetDataTypeToFloat();
+    points->SetNumberOfPoints( nPoints );
+
+    auto mappingWithVTK = std::make_shared<typename MeshBase::MappingDataWithVTK>();
+    auto & mapPointsFeelIdToVTKId = mappingWithVTK->mapPointsFeelIdToVTKId;
+    size_type cptPoint = 0;
+    std::vector<double> node(3,0.);
+    for ( ; itPoint != enPoint ; ++itPoint, ++cptPoint )
+    {
+        auto const& pt = unwrap_ref(*itPoint);
+        if ( nDim >=1 )
+            node[0] = pt.node()[0];
+        if ( nDim >=2 )
+            node[1] = pt.node()[1];
+        if ( nDim >=3 )
+            node[2] = pt.node()[2];
+        points->SetPoint( (vtkIdType)(cptPoint), node.data() );
+        mapPointsFeelIdToVTKId[pt.id()] = cptPoint;
+    }
+    out->SetPoints(points);
+
+    auto rangeElements = this->elementsWithProcessId( currentRank );
+    auto itElement = std::get<0>( rangeElements );
+    auto enElement = std::get<1>( rangeElements );
+
+    auto & mapElementsFeelIdToVTKId = mappingWithVTK->mapElementsFeelIdToVTKId;
+    vtkSmartPointer<vtkelement_type> cell = vtkSmartPointer<vtkelement_type>::New();
+    size_type nCell = std::distance( itElement,enElement );
+    for ( ; itElement != enElement ; ++itElement )
+    {
+        auto const& elt = unwrap_ref( *itElement );
+        for( uint16_type p=0; p < element_type::numVertices/*numPoints*/; ++p )
+        {
+            size_type ptIdFeel = elt.point(p).id();
+            size_type ptIdVTK = mapPointsFeelIdToVTKId.find( ptIdFeel )->second;
+            cell->GetPointIds()->SetId(p, ptIdVTK);
+        }
+        vtkIdType newCellId = out->InsertNextCell(cell->GetCellType(), cell->GetPointIds());
+        mapElementsFeelIdToVTKId[elt.id()] = (size_type)(newCellId);
+    }
+
+    if ( exportMarkers )
+    {
+        vtkSmartPointer<vtkFloatArray> da = vtkSmartPointer<vtkFloatArray>::New();
+        da->SetName( vtkFieldNameMarkers.c_str());
+
+        da->SetNumberOfComponents(1);
+        da->SetNumberOfTuples(nCell);
+
+        float * arrayValue = new float[1];
+
+        for ( itElement = std::get<0>( rangeElements ); itElement != enElement ; ++itElement )
+        {
+            auto const& elt = unwrap_ref( *itElement );
+            if ( elt.hasMarker() )
+                arrayValue[0] = (float)(elt.marker().value());
+            else
+                arrayValue[0] = 0;
+            size_type vtkEltId = mapElementsFeelIdToVTKId.find( elt.id() )->second;
+            da->SetTuple(vtkEltId, arrayValue);
+        }
+
+        delete[] arrayValue;
+
+        out->GetCellData()->AddArray(da);
+    }
+
+    return std::make_pair( out,mappingWithVTK );
+}
+#endif // FEELPP_HAS_VTK
+
+
+
 namespace detail
 {
 template<typename T>

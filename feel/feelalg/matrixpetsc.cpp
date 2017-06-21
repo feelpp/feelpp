@@ -1659,8 +1659,18 @@ MatrixPetsc<T>::operator () ( const size_type i,
     if ( !this->closed() )
         this->close();
 
-    ierr = MatGetRow( M_mat, i_val, &ncols, &petsc_cols, &petsc_row );
-    CHKERRABORT( this->comm(),ierr );
+    if ( this->comm().size()>1 )
+    {
+        i_val = this->mapRow().mapGlobalProcessToGlobalCluster( i );
+        j_val = this->mapCol().mapGlobalProcessToGlobalCluster( j );
+        ierr = MatGetRow( M_mat, i_val, &ncols, &petsc_cols, &petsc_row );
+        CHKERRABORT( this->comm(),ierr );
+    }
+    else
+    {
+        ierr = MatGetRow( M_mat, i_val, &ncols, &petsc_cols, &petsc_row );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
     // Perform a binary search to find the contiguous index in
     // petsc_cols (resp. petsc_row) corresponding to global index j_val

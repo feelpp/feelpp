@@ -1,33 +1,42 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 03 May 2017
+//! @copyright 2017 Feel++ Consortium
+//!
 
 #include <feel/feel.hpp>
 
-int main(int argc, char**argv )
+template<typename SpacePtrType>
+void
+stokes(SpacePtrType Vh)
 {
     using namespace Feel;
-	po::options_description laplacianoptions( "Stokes options" );
-	laplacianoptions.add_options()
-        ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
-        ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-		;
-
-	Environment env( _argc=argc, _argv=argv,
-                   _desc=laplacianoptions,
-                   _about=about(_name="qs_stokes",
-                                _author="Feel++ Consortium",
-                                _email="feelpp-devel@feelpp.org"));
-
     tic();
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
-    toc("loadMesh");
-
-    tic();
-    auto Vh = THch<1>( mesh );
+    auto mesh = Vh->mesh();
     auto U = Vh->element("U");
-    auto u = U.element<0>();
-    auto p = U.element<1>();
-    auto v = U.element<0>();
-    auto q = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
+    auto v = U.template element<0>();
+    auto q = U.template element<1>();
     auto mu = doption(_name="mu");
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
@@ -65,5 +74,35 @@ int main(int argc, char**argv )
     e->add( "p", p );
     e->save();
     toc("Exporter");
+}
+int main(int argc, char**argv )
+{
+    using namespace Feel;
+	po::options_description laplacianoptions( "Stokes options" );
+	laplacianoptions.add_options()
+        ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
+        ( "space", po::value<std::string>()->default_value( "P2P1" ), "space type: P2P1(default), P1P1, P1P0" )
+        ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+		;
+
+	Environment env( _argc=argc, _argv=argv,
+                   _desc=laplacianoptions,
+                   _about=about(_name="qs_stokes",
+                                _author="Feel++ Consortium",
+                                _email="feelpp-devel@feelpp.org"));
+
+    tic();
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+    toc("loadMesh");
+
+    if ( soption("space") == "P1P0" )
+        stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
+    else if ( soption("space") == "P1P1" )
+        stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
+    else
+    {
+        // default P2P1: good space
+        stokes( THch<1>( mesh ) );
+    }
     return 0;
 }

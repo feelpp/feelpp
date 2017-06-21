@@ -28,3 +28,12 @@
 [submodule "contrib/ipopt"]
 	path = contrib/ipopt
 	url = https://github.com/feelpp/Ipopt.git
+[submodule "contrib/minieigen"]
+	path = contrib/minieigen
+	url = https://github.com/feelpp/minieigen.git
+[submodule "python/pybind11"]
+	path = python/pybind11
+	url = https://github.com/feelpp/pybind11.git
+[submodule "contrib/pybind11"]
+	path = contrib/pybind11
+	url = https://github.com/feelpp/pybind11.git

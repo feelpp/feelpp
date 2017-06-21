@@ -58,7 +58,7 @@ class MeshStructured: public Mesh<Hypercube<2>>
     //!
     //!
     //MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
-    MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const&, bool withCoord );
+    MeshStructured( int nx, int ny, double pixelsize, holo3_image<float> cx, holo3_image<float> cy, WorldComm const&, std::string pathPoly, bool withCoord, bool withPoly);
     //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
 
     void updateGhostCellInfoByUsingNonBlockingComm(
@@ -83,12 +83,11 @@ class MeshStructured: public Mesh<Hypercube<2>>
    size_type M_ny; // Global Y number of elements
    holo3_image<float> M_cx; // X-coordinates for nodes
    holo3_image<float> M_cy; // Y-coordinates for nodes
-    int M_l_nx; // local X number of elements (ghost excluded!)
-    int M_l_ny; // local Y number of elements
-    int M_s_x; // local first x index (0 for first element)
-    int M_s_y; // local first y index (0 for first element)
-
-    double M_pixelsize;
+   int M_l_nx; // local X number of elements (ghost excluded!)
+   int M_l_ny; // local Y number of elements
+   int M_s_x; // local first x index (0 for first element)
+   int M_s_y; // local first y index (0 for first element)
+   double M_pixelsize;
     // std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
     // std::vector<rank_type> ghosts;
     // std::map<int,int> __idGmshToFeel;

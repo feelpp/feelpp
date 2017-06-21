@@ -110,3 +110,4 @@ bool divide_in_z_p(const ex &a, const ex &b, ex &q, const exvector& vars, const 
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

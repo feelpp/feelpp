@@ -1021,8 +1021,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     matrixN_type sigma_eigen_matrix;
 
     auto dof = M_XhStressTensor->dof();
-    for ( auto const& elt : elements(this->mesh()) )
+    for ( auto const& eltWrap : elements(this->mesh()) )
     {
+        auto const& elt = boost::unwrap_ref( eltWrap );
         int nLocDofPerComp = dof->nLocalDof( true );
         for ( size_type j =0; j < nLocDofPerComp;++j )
         {
@@ -1287,8 +1288,156 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
     M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
 }
 
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    if ( !this->isStandardModel() )
+        return;
+
+    auto XhDisp = this->functionSpaceDisplacement();
+    auto XhCompDisp = XhDisp->compSpace();
+    static const uint16_type nDofComponentsDisp = XhDisp->dof()->nDofComponents();
+    auto mesh = this->mesh();
+
+    std::set<std::string> dispMarkers;
+    std::map<ComponentType,std::set<std::string> > compDispMarkers;
+
+    auto & dofsWithValueImposedDisp = M_dofsWithValueImposed["displacement"];
+    dofsWithValueImposedDisp.clear();
+
+    // strong Dirichlet bc on displacement from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        dispMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    // strong Dirichlet bc on displacement component from expression
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
+        }
+    }
+
+
+
+    //-------------------------------------//
+    // distribute mesh markers by entity
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersDispByEntities;
+    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompDispByEntities;
+    meshMarkersDispByEntities = detail::distributeMarkerListOnSubEntity( mesh, dispMarkers );
+    for ( auto const& compMarkerPair : compDispMarkers )
+    {
+        meshMarkersCompDispByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
+    }
+    //-------------------------------------//
+    // on topological faces
+    auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesDisp ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhDisp->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        {
+            dofsWithValueImposedDisp.insert( it->index() );
+        }
+    }
+    // on marked edges (only 3d)
+    auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
+    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesDisp ) )
+    {
+        auto const& edge = unwrap_ref( edgeWrap );
+        auto itEltInfo = edge.elements().begin();
+        if ( itEltInfo == edge.elements().end() )
+            continue;
+        size_type eid = itEltInfo->first;
+        uint16_type edgeid_in_element = itEltInfo->second;
+        for( auto const& ldof : XhDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+        {
+            dofsWithValueImposedDisp.insert( ldof.index() );
+        }
+    }
+    // on marked points
+    auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
+    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsDisp ) )
+    {
+        auto const& point = unwrap_ref( pointWrap );
+        auto itPointInfo = point.elements().begin();
+        if ( itPointInfo == point.elements().end() )
+            continue;
+        size_type eid = itPointInfo->first;
+        uint16_type ptid_in_element = itPointInfo->second;
+        for( uint16_type c = 0; c < nDofComponentsDisp; ++c )
+        {
+            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+            dofsWithValueImposedDisp.insert( index );
+        }
+    }
+    //-------------------------------------//
+    // on disp components
+    for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
+    {
+        ComponentType comp = meshMarkersPair.first;
+        int compDofShift = ((int)comp);
+        // topological faces
+        auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
+        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompDisp ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = XhCompDisp->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                size_type compdof = it->index();
+                size_type thedof = compDofShift +  nDofComponentsDisp*compdof;
+                dofsWithValueImposedDisp.insert( thedof );
+            }
+        }
+        // edges (only 3d)
+        auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
+        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompDisp ) )
+        {
+            auto const& edge = unwrap_ref( edgeWrap );
+            auto itEltInfo = edge.elements().begin();
+            if ( itEltInfo == edge.elements().end() )
+                continue;
+            size_type eid = itEltInfo->first;
+            uint16_type edgeid_in_element = itEltInfo->second;
+            for( auto const& ldof : XhCompDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type compdof = ldof.index();
+                size_type thedof = compDofShift + nDofComponentsDisp*compdof;
+                dofsWithValueImposedDisp.insert( ldof.index() );
+            }
+        }
+        // points
+        auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
+        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompDisp ) )
+        {
+            auto const& point = unwrap_ref( pointWrap );
+            auto itPointInfo = point.elements().begin();
+            if ( itPointInfo == point.elements().end() )
+                continue;
+            size_type eid = itPointInfo->first;
+            uint16_type ptid_in_element = itPointInfo->second;
+            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
+            dofsWithValueImposedDisp.insert( index );
+        }
+    }
+
+
+
+
+
+    
+
+}
 
 } // FeelModels
+
 
 } // Feel
 

@@ -4113,3 +4113,5 @@ unsigned zeta2_SERIAL::serial = function::register_new(function_options("zeta", 
 
 } // namespace GiNaC
 
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

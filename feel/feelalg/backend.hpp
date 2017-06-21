@@ -1250,7 +1250,10 @@ public:
 
         //this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
+        {
             this->nlSolver()->jacobian( _sol, jacobian );
+            jacobian->close();
+        }
 
         if ( prec && !this->nlSolver()->initialized() )
             this->nlSolver()->attachPreconditioner( prec );
