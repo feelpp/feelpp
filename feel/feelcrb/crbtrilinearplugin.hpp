@@ -18,37 +18,41 @@
 //!
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 15 Jun 2017
+//! @date 10 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
 
-#include <feel/feel.hpp>
-#include <mpi4py/mpi4py.h>
+#ifndef FEELPP_CRBTRILINEARPLUGIN_HPP
+#define FEELPP_CRBTRILINEARPLUGIN_HPP 1
 
-#include <boost/shared_ptr.hpp>
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/preprocessor.hpp>
-#include <boost/parameter/binding.hpp>
-//#include <boost/parameter/python.hpp>
-#include <boost/mpl/vector.hpp>
+#include <feel/feelcrb/crb_trilinear.hpp>
+#include <feel/feelcrb/crbmodeltrilinear.hpp>
+#include <feel/feelcrb/crbplugin.hpp>
 
-#include<feel/feelcore/environment.hpp>
+namespace Feel {
 
-namespace py = pybind11;
-void export_core( py::module& m )
+//!
+//! Generic Plugin for CRB Trilinear applications
+//!
+
+template <typename ModelT>
+class CRBTrilinearPlugin : public CRBPlugin<ModelT>
 {
-    using namespace Feel;
+public :
+    typedef CRBPlugin<ModelT> super_type;
+    //typedef Feel::CRBModelTrilinear<ModelT > crbmodel_type;
+    typedef Feel::CRBTrilinear<ModelT> crbtrilinear_type;
 
-    if (import_mpi4py()<0) return ;
-    
-    py::class_<Environment>(m,"Environment")
-        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
-        .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions()) 
-        .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy);
-    
-    py::class_<WorldComm>(m,"WorldComm")
-        .def(py::init<>());
-    
-    py::class_<po::options_description>(m,"OptionsDescription");
+    CRBTrilinearPlugin( std::string const& name ) :
+        super_type( name )
+
+    {
+        this->crb.reset( new crbtrilinear_type );
+    }
+
+};
+
+
 }
+
+#endif

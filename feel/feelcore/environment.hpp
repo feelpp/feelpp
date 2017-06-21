@@ -36,15 +36,18 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <pybind11/pybind11.h>
 #include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#include <pybind11/pybind11.h>
+
+#if defined(FEELPP_HAS_BOOST_PYTHON)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
 //#include <mpi4py/mpi4py.h>
-#endif
+#endif // FEELPP_HAS_BOOST_PYTHON
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
 
 
 #include <boost/uuid/uuid.hpp>            // uuid class
@@ -223,7 +226,7 @@ public:
                  std::string directory,
                  bool add_subdir_np = true );
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     Environment( pybind11::list arg, po::options_description const& desc );
     Environment( pybind11::list arg );
 #endif
