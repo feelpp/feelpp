@@ -486,10 +486,10 @@ int Thermoelectric::mMaxSigma()
     return 1;
 }
 
-Thermoelectric::Vh_element_type Thermoelectric::eimSigmaQ(int m)
+Thermoelectric::q_sigma_element_type Thermoelectric::eimSigmaQ(int m)
 {
     auto Vh = Xh->template functionSpace<0>();
-    Vh_element_type q( Vh );
+    q_sigma_element_type q = Vh->element();
     q.on( _range=elements(M_mesh), _expr=cst(1.) );
     return q;
 }
@@ -501,17 +501,13 @@ Thermoelectric::vectorN_type Thermoelectric::eimSigmaBeta( parameter_type const&
     return beta;
 }
 
-template<typename vec_space_type>
-typename vec_space_type::element_type
-Thermoelectric::computeTruthCurrentDensity( parameter_type const& mu )
+void Thermoelectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu )
 {
     auto VT = this->solve(mu);
     auto V = VT.template element<0>();
     auto sigma = mu.parameterNamed("sigma");
-    auto Vh = vec_space_type::New(M_mesh);
-    auto j = Vh->element();
+    auto Vh = j.functionSpace();
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
-    return j;
 }
 
 FEELPP_CRB_PLUGIN( Thermoelectric, "thermoelectric")
