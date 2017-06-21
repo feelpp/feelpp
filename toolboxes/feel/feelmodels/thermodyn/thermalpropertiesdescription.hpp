@@ -88,68 +88,93 @@ namespace FeelModels
         element_ptrtype const& fieldRhoPtr() const { return M_fieldRho; }
         element_ptrtype const& fieldThermalExpansionPtr() const { return M_fieldThermalExpansion; }
 
-        void setCstThermalConductivity( double val, std::string const& marker = "" )
+        void setCstThermalConductivity( double val, std::string const& marker = "", bool update = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstThermalConductivity[markerUsed]=val;
-            this->updateThermalConductivity( cst(val), marker );
+            if ( update )
+                this->updateThermalConductivity( cst(val), marker );
         }
-        void setCstHeatCapacity( double val, std::string const& marker = "" )
+        void setCstHeatCapacity( double val, std::string const& marker = "", bool update = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstHeatCapacity[markerUsed]=val;
-            this->updateHeatCapacity( cst(val), marker );
+            if ( update )
+                this->updateHeatCapacity( cst(val), marker );
         }
-        void setCstRho( double val, std::string const& marker = "" )
+        void setCstRho( double val, std::string const& marker = "", bool update = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstRho[markerUsed]=val;
-            this->updateRho( vf::cst(val), marker );
+            if ( update )
+                this->updateRho( vf::cst(val), marker );
         }
-        void setCstThermalExpansion( double val, std::string const& marker = "" )
+        void setCstThermalExpansion( double val, std::string const& marker = "", bool update = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstThermalExpansion[markerUsed]=val;
-            this->updateThermalExpansion( vf::cst(val), marker );
+            if ( update )
+                this->updateThermalExpansion( vf::cst(val), marker );
         }
 
+        template < typename ExprT >
+        void setThermalConductivity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+        {
+            this->updateThermalConductivity( vfexpr,marker);
+            if ( M_fieldThermalConductivity )
+                this->setCstThermalConductivity( M_fieldThermalConductivity->min(), marker, false );
+        }
         template < typename ExprT >
         void updateThermalConductivity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
         {
             if ( !M_fieldThermalConductivity ) return;
-            if ( marker.empty() )
-                M_fieldThermalConductivity->on(_range=elements( M_space->mesh()),_expr=__expr);
-            else
-                M_fieldThermalConductivity->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
+            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
+            M_fieldThermalConductivity->on(_range=rangeEltUsed,_expr=__expr);
+        }
+
+        template < typename ExprT >
+        void setHeatCapacity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+        {
+            this->updateHeatCapacity( vfexpr,marker);
+            if ( M_fieldHeatCapacity )
+                this->setCstHeatCapacity( M_fieldHeatCapacity->min(), marker, false );
         }
         template < typename ExprT >
         void updateHeatCapacity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
         {
             if ( !M_fieldHeatCapacity ) return;
-            if ( marker.empty() )
-                M_fieldHeatCapacity->on(_range=elements( M_space->mesh()),_expr=__expr);
-            else
-                M_fieldHeatCapacity->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
+            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
+            M_fieldHeatCapacity->on(_range=rangeEltUsed,_expr=__expr);
         }
 
+        template < typename ExprT >
+        void setRho( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+        {
+            this->updateRho( vfexpr,marker);
+            if ( M_fieldRho )
+                this->setCstRho( M_fieldRho->min(), marker, false );
+        }
         template < typename ExprT >
         void updateRho(vf::Expr<ExprT> const& __expr, std::string const& marker = "")
         {
             if ( !M_fieldRho ) return;
-            if ( marker.empty() )
-                M_fieldRho->on(_range=elements( M_space->mesh()),_expr=__expr);
-            else
-                M_fieldRho->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
+            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
+            M_fieldRho->on(_range=rangeEltUsed,_expr=__expr);
         }
 
+        template < typename ExprT >
+        void setThermalExpansion( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+        {
+            this->updateThermalExpansion( vfexpr,marker);
+            if ( M_fieldThermalExpansion )
+                this->setCstThermalExpansion( M_fieldRho->min(), marker, false );
+        }
         template < typename ExprT >
         void updateThermalExpansion(vf::Expr<ExprT> const& __expr, std::string const& marker = "")
         {
             if ( !M_fieldThermalExpansion ) return;
-            if ( marker.empty() )
-                M_fieldThermalExpansion->on(_range=elements( M_space->mesh()),_expr=__expr);
-            else
-                M_fieldThermalExpansion->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
+            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
+            M_fieldThermalExpansion->on(_range=rangeEltUsed,_expr=__expr);
         }
 
         void updateFromModelMaterials( ModelMaterials const& mat )
@@ -162,10 +187,26 @@ namespace FeelModels
                 auto const& matmarker = m.first;
                 //LOG(INFO) << "set material " << mat.name() << " associated to marker : " << matmarker<< "\n";
                 M_markers.insert( matmarker );
-                this->setCstRho( mat.rho(), matmarker );
-                this->setCstThermalConductivity( mat.k11(), matmarker );
-                this->setCstHeatCapacity( mat.Cp(), matmarker );
-                this->setCstThermalExpansion( mat.beta(), matmarker );
+
+                if ( mat.hasPropertyExprScalar("rho") )
+                    this->setRho( mat.propertyExprScalar("rho"),matmarker );
+                else
+                    this->setCstRho( mat.propertyConstant("rho"), matmarker );
+
+                if ( mat.hasPropertyExprScalar("k11") )
+                    this->setRho( mat.propertyExprScalar("k11"),matmarker );
+                else
+                    this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
+
+                if ( mat.hasPropertyExprScalar("Cp") )
+                    this->setRho( mat.propertyExprScalar("Cp"),matmarker );
+                else
+                    this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
+
+                if ( mat.hasPropertyExprScalar("beta") )
+                    this->setRho( mat.propertyExprScalar("beta"),matmarker );
+                else
+                    this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
             }
         }
 

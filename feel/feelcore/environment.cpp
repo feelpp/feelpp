@@ -51,6 +51,7 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+
 #include <gflags/gflags.h>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -291,9 +292,10 @@ Environment::Environment( int& argc, char**& argv )
 
 
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 struct PythonArgs
 {
+#if defined(FEELPP_HAS_BOOST_PYTHON) 
     PythonArgs( boost::python::list arg )
         {
             if ( argv == nullptr )
@@ -301,7 +303,7 @@ struct PythonArgs
                 /* Convert python options into argc/argv format */
 
                 argc = boost::python::len( arg );
-
+                
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
@@ -317,11 +319,49 @@ struct PythonArgs
                 argv[argc]=nullptr;
             }
         }
+#endif
+    PythonArgs( pybind11::list arg )
+        {
+            argc = 0;
+            for (auto item : arg)
+            {
+                ++argc;
+            }
+            argv =new char* [argc+1];
+            int i = 0;
+            for (auto item : arg)
+            {
+                argv[i++] = strdup( std::string(pybind11::str(item) ).c_str() );
+                argv[argc]=nullptr;
+            }
+            
+        }
     static int argc;
     static char** argv;
 };
 int PythonArgs::argc = 1;
 char** PythonArgs::argv = nullptr;
+
+Environment::Environment( pybind11::list arg )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+Environment::Environment( pybind11::list arg, po::options_description const& desc )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+
+#if 0
 Environment::Environment( boost::python::list arg )
     :
 #if BOOST_VERSION >= 105500
@@ -331,7 +371,9 @@ Environment::Environment( boost::python::list arg )
 #endif
 {
 }
-#endif
+#endif // 0
+
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
 
 #if defined ( FEELPP_HAS_PETSC_H )
 void
@@ -1588,6 +1630,17 @@ Environment::exportsRepository()
     return (S_appdir / "exports").string();
 }
 
+uuids::uuid
+Environment::randomUUID( bool parallel )
+{
+    auto uuid = S_generator();
+    if ( parallel )
+    {
+        // overwrite uuid with the uuid from master rank process
+        //mpi::broadcast( Environment::worldComm().globalComm(), uuid, 0 );
+    }
+    return uuid;
+}
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
@@ -2240,6 +2293,7 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),

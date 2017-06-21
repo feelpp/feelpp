@@ -168,14 +168,14 @@ endif()
 install(TARGETS feelpp_ginac LIBRARY DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs
   RUNTIME DESTINATION "${BIN_INSTALL_DIR}" COMPONENT Libs
   ARCHIVE DESTINATION "${LIB_INSTALL_DIR}" COMPONENT Libs)
-install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac" COMPONENT Devel)
+install(FILES ${ginaclib_public_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/feelpp/ginac" COMPONENT Devel)
 
 ## Feel++ modification
 ## Those headers will be installed twice, Needed for custom installations to properly work and not breaking codes for now
 set(ginaclib_public_parser_headers
       parser/parser.h
       parser/parse_context.h)
-install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/ginac/parser" COMPONENT Devel)
+install(FILES ${ginaclib_public_parser_headers} DESTINATION "${INCLUDE_INSTALL_DIR}/feelpp/ginac/parser" COMPONENT Devel)
 ## End Feel++ modification
 
 

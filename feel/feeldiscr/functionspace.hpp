@@ -2469,14 +2469,6 @@ public:
         typedef boost::multi_array<_div_type,1> comp_curl_array_type;
 
         /**
-         * \return the map
-         */
-        DataMap const& map() const
-        {
-            return M_functionspace->map();
-        }
-
-        /**
          * \return the mesh associated to the function
          */
         mesh_ptrtype mesh()
@@ -2526,9 +2518,10 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
+            for ( auto const& rangeElt : elements( P0h->mesh() ) )
             {
-                size_type eid = elt_it->id();
+                auto const& meshElt = boost::unwrap_ref( rangeElt );
+                size_type eid = meshElt.id();
 
                 size_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
@@ -5310,13 +5303,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         __rt->clear();
         BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
-        typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
-        mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
+        auto rangeElements = M_mesh->elementsWithProcessId();
+        auto it = std::get<0>( rangeElements );
+        auto en = std::get<1>( rangeElements );
 
         for ( size_type __i = 0; it != en; ++__i, ++it )
         {
-            __bb.make( it->G() );
+            auto const& elt = boost::unwrap_ref( *it );
+            __bb.make( elt.G() );
 
             for ( unsigned k=0; k < __bb.min.size(); ++k )
             {
@@ -5324,7 +5318,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
                 __bb.max[k]+=EPS;
             }
 
-            __rt->addBox( __bb.min, __bb.max, it->id() );
+            __rt->addBox( __bb.min, __bb.max, elt.id() );
         }
 
         //__rt->dump();

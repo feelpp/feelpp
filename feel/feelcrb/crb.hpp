@@ -34,7 +34,7 @@
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "boost/tuple/tuple_io.hpp"
+#include <boost/tuple/tuple_io.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bimap.hpp>
@@ -57,6 +57,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -69,6 +70,8 @@
 #include <feel/feelts/bdf.hpp>
 
 #include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelcrb/crbdata.hpp>
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
@@ -214,8 +217,8 @@ public:
     typedef std::vector<double> vector_double_type;
     typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
 
-    typedef Eigen::VectorXd vectorN_type;
-    typedef Eigen::MatrixXd matrixN_type;
+    using vectorN_type = Feel::vectorN_type;
+    using matrixN_type = Feel::matrixN_type;
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
@@ -273,9 +276,9 @@ public:
     CRB( std::string const& name = "defaultname_crb",
          WorldComm const& worldComm = Environment::worldComm() )
         :
-        super( ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
-               worldComm ),
-        M_elements_database( ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+        super( name, "crb", worldComm ),
+        M_elements_database( name,
+                             "elements",
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model(),
@@ -290,8 +293,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name+"_scmA", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name+"_scmM", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -321,7 +324,6 @@ public:
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
     {
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
     }
 
     //! constructor from command line options
@@ -512,7 +514,6 @@ public:
             M_output_index = M_prev_o;
 
         //std::cout << " -- crb set output index to " << M_output_index << " (max output = " << M_model->Nl() << ")\n";
-        this->setDBFilename( ( boost::format( "%1%-%2%-%3%.crbdb" ) % this->name() % M_output_index % M_error_type ).str() );
 
         if ( M_output_index != M_prev_o )
             this->loadDB();
@@ -545,6 +546,7 @@ public:
         if ( !model )
             return;
         M_model = model;
+        this->setDBDirectory( M_model->uuid() );
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
         M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
@@ -567,6 +569,11 @@ public:
         if ( M_scmM )
             M_scmM->setTruthModel( M_model );
     }
+
+    //!
+    //! return the SER Level, default is 0
+    //!
+    int level() const { return M_model->level(); }
 
     //! set max iteration number
     void setMaxIter( int K )
@@ -1139,11 +1146,23 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu,
-                                                                                                                           vectorN_type & time,
-                                                                                                                           double eps = 1e-6,
-                                                                                                                           int N = -1,
-                                                                                                                           bool print_rb_matrix=false );
+    //boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple >
+    CRBResults
+    run( parameter_type const& mu,
+         vectorN_type & time,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false );
+
+    CRBResults
+    run( parameter_type const& mu,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false )
+        {
+            vectorN_type times;
+            this->run( mu, times, eps, N, print_rb_matrix );
+        }
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1397,7 +1416,7 @@ protected:
     scm_ptrtype M_scmM;
 
     //export
-    export_ptrtype M_exporter;
+    mutable export_ptrtype M_exporter;
 
 #if 0
     array_2_type M_C0_pr;
@@ -1581,8 +1600,6 @@ protected:
     mutable std::pair<int,double> online_iterations_summary;
 };
 
-po::options_description crbOptions( std::string const& prefix = "" );
-po::options_description crbSEROptions( std::string const& prefix = "" );
 
 
 template<typename TruthModelType>
@@ -1657,7 +1674,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
-          !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
+          !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
@@ -1896,7 +1913,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
-          !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
+          !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished();
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
@@ -2315,6 +2332,7 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
@@ -9189,8 +9207,9 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, bool dual )
 
 
 template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
-                      double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+//typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
+//double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+CRBResults
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
     //int Nwn = M_N;
@@ -9292,7 +9311,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
-    return boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds );
+    return CRBResults(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
 }
 
 
@@ -11304,9 +11323,10 @@ CRB<TruthModelType>::saveJson()
 {
     if ( this->worldComm().isMasterRank() )
     {
-        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
         //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
-        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
+        std::string filenameJson = (this->dbLocalPath()/fs::path(this->jsonFilename())).string();
+        std::cout << "saveDB: " << filenameJson << std::endl;
+
         boost::property_tree::ptree ptree;
 
         boost::property_tree::ptree ptreeCrbModel;
@@ -11403,7 +11423,6 @@ CRB<TruthModelType>::saveDB()
         }
     }
     saveJson();
-
 }
 
 template<typename TruthModelType>

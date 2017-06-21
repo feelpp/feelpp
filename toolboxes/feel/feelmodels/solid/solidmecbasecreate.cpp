@@ -859,6 +859,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     // init post-processinig (exporter, measure at point, ...)
     this->initPostProcess();
 
+    this->updateBoundaryConditionsForUse();
 
     // update block vector (index + data struct)
     if (this->isStandardModel())

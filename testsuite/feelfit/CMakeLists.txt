@@ -24,8 +24,6 @@
 
 set_directory_properties(PROPERTIES LABEL testfit )
 
-INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-feelpp_add_test( nofeel_interpolator CFG data.txt)
+feelpp_add_test( fit_interpolator )
 feelpp_add_test( fit CFG test_fit.cfg )
 
