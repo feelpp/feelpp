@@ -80,9 +80,20 @@ public:
     virtual boost::shared_ptr<Vector<double>> feElement() const = 0;
 
     //!
-    //! @return a list of sub-element which composed the element of the fe space
+    //! @return a list of sub-element which compose the element of the fe space
     //!
     virtual std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const = 0;
+
+    //!
+    //! @return reduced basis functions primal
+    //!
+    virtual std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const = 0;
+
+    //!
+    //! @return reduced basis functions dual
+    //!
+    virtual std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const = 0;
+
     //!
     //! run the crb online code
     //! @param mu parameter at which CRB is evaluated
