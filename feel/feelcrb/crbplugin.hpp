@@ -41,7 +41,7 @@ namespace crbplugin_details
 struct DofTablesComposite
 {
     template <typename T>
-    void operator()( boost::shared_ptr<T> & x ) const
+    void operator()( boost::shared_ptr<T> const& x ) const
         {
             doftables.push_back( x->dof() );
         }
@@ -94,7 +94,7 @@ template <typename ElementType>
 std::vector<boost::shared_ptr<Vector<typename ElementType::value_type>> >
 subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< ElementType::is_composite >::type* = nullptr )
 {
-    mpl::range_c<int,0,ElementType::SpaceType::nSpaces> keySpaces;
+    mpl::range_c<int,0,ElementType::functionspace_type::nSpaces> keySpaces;
     Feel::crbplugin_details::SubElementsComposite<ElementType> sec(uFE);
     boost::fusion::for_each( keySpaces, sec );
     return sec.subelements;
@@ -190,6 +190,35 @@ public:
             auto uFE = boost::dynamic_pointer_cast< typename crbmodel_type::space_type::element_type >( u );
             CHECK( uFE ) << "dynamic_pointer_cast fails : wrong type of element u";
             return Feel::crbplugin_details::subelements( uFE );
+        }
+
+    std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            auto const& rbPrimal = crb->model()->rBFunctionSpace()->primalRB();
+            int nBasis = rbPrimal.size();
+            std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
+            for ( int k=0;k<nBasis;++k )
+            {
+                auto u = crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+                *u = rbPrimal[k];
+                res[k] = u;
+            }
+            return res;
+        }
+    std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const override
+        {
+            DCHECK( crb ) << "DB not loaded";
+            auto const& rbDual = crb->model()->rBFunctionSpace()->dualRB();
+            int nBasis = rbDual.size();
+            std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
+            for ( int k=0;k<nBasis;++k )
+            {
+                auto u = crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+                *u = rbDual[k];
+                res[k] = u;
+            }
+            return res;
         }
 
     CRBResults run( ParameterSpaceX::Element const& mu,
