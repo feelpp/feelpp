@@ -25,7 +25,7 @@
 #ifndef FEELPP_CRBPLUGIN_HPP
 #define FEELPP_CRBPLUGIN_HPP 1
 
-#include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS   
+#include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS
 
 #include <feel/options.hpp>
 #include <feel/feelcrb/crbplugin_interface.hpp>
@@ -109,8 +109,9 @@ class CRBPlugin : public CRBPluginAPI
 {
 public:
 
-    using model_t = ModelT;
-    typedef Feel::CRBModel< model_t > crbmodel_type;
+    typedef typename ModelT::model_type model_t;
+    typedef ModelT crbmodel_type;
+
     typedef Feel::CRB<crbmodel_type> crb_type;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = boost::shared_ptr<Exporter<mesh_t> >;
@@ -119,6 +120,7 @@ public:
         :
         M_name( name )
         {
+            crb.reset( new crb_type );
         }
 
     std::string const& name() const override
@@ -137,7 +139,6 @@ public:
             crbmodel->loadJson( filename, "crbmodel" );
             std::cout << "loaded crbmodel\n";
 
-            crb.reset( new crb_type );
             crb->setTruthModel( crbmodel );
             crb->loadJson( filename );
             std::cout << "Loaded " << filename << std::endl;
@@ -162,6 +163,7 @@ public:
             // TODO composite case with several meshes
             return m;
         }
+
 
     std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const override
         {
@@ -190,7 +192,7 @@ public:
             return Feel::crbplugin_details::subelements( uFE );
         }
 
-    CRBResults run( ParameterSpaceX::Element const& mu, 
+    CRBResults run( ParameterSpaceX::Element const& mu,
                     vectorN_type & time, double eps , int N, bool print_rb_matrix ) const override
         {
             DCHECK( crb ) << "DB not loaded";
@@ -204,6 +206,7 @@ public:
             uRBforExpansion.container() = uRB;
             crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
         }
+
 
 
     void initExporter() override
