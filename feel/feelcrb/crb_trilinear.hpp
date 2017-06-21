@@ -277,7 +277,7 @@ public:
     void displayVector(const map_dense_vector_type& V ) const ;
     void displayVector(const vectorN_type& V ) const ;
     void displayMatrix(const matrixN_type& M ) const ;
-#if 0
+#if 1
     /**
      * save the CRB database
      */
@@ -999,8 +999,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
-    if( enable )
+    if( boption("crb.enable-convection-terms")  )
     {
         int qatri = this->M_model->QaTri();
         for ( size_type q = 0; q < qatri; ++q )
@@ -1016,7 +1015,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
 
-    if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
+    if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
         auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
@@ -1118,7 +1117,6 @@ template<class Archive>
 void
 CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
-
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRBTrilinear::load] version"<< version <<std::endl;
@@ -1143,64 +1141,20 @@ CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
 }
 
-#if 0
 template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
-    if ( this->worldComm().isMasterRank() )
+    if ( ofs )
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-        if ( ofs )
-        {
-            boost::archive::text_oarchive oa( ofs );
-            // write class instance to archive
-            oa << *this;
-            // archive and stream closed when destructors are called
-        }
-
-        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
-        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
-        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
-        boost::property_tree::ptree ptree;
-
-        boost::property_tree::ptree ptreeCrbModel;
-        this->M_model->updatePropertyTree( ptreeCrbModel );
-        ptree.add_child( "crbmodel", ptreeCrbModel );
-
-        boost::property_tree::ptree ptreeReducedBasisSpace;
-        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
-        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
-        ptreeReducedBasisSpace.add( "database-filename", this->M_elements_database.dbFilename() );
-        ptreeReducedBasisSpace.add( "dimension", this->M_N );
-        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
-
-        boost::property_tree::ptree ptreeCrb;//Database;
-        ptreeCrb.add( "dimension", this->M_N );
-        ptreeCrb.add( "name", this->name() );
-        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
-        ptreeCrb.add( "database-filename", this->dbFilename() );
-        ptreeCrb.add( "has-solve-dual-problem",this->M_solve_dual_problem );
-        ptree.add_child( "crb", ptreeCrb );
-
-        if ( this->M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-        {
-            boost::property_tree::ptree ptreeParameterScmA;
-            this->M_scmA->updatePropertyTree( ptreeParameterScmA );
-            ptree.add_child( "scmA", ptreeParameterScmA );
-            if ( !this->M_model->isSteady() )
-            {
-                boost::property_tree::ptree ptreeParameterScmM;
-                this->M_scmM->updatePropertyTree( ptreeParameterScmM );
-                ptree.add_child( "scmM", ptreeParameterScmM );
-            }
-        }
-
-        write_json( filenameJson, ptree );
+        boost::archive::text_oarchive oa( ofs );
+        // write class instance to archive
+        oa << *this;
+        // archive and stream closed when destructors are called
     }
-
-
+    this->saveJson();
 }
 
 template<typename TruthModelType>
@@ -1231,10 +1185,8 @@ CRBTrilinear<TruthModelType>::loadDB()
     }
 
     return false;
-
 }
 
-#endif
 } // Feel
 namespace boost
 {

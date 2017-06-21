@@ -89,12 +89,12 @@ public:
     //! @param time collection of timers (prediction, error bounds)
     //! @param eps max tolerance for the evaluation
     //! @param N number of basis functions
-    //! @param print_rb_matrix print the reduced matrix 
+    //! @param print_rb_matrix print the reduced matrix
     //!
-    virtual CRBResults run( ParameterSpaceX::Element const& mu, 
+    virtual CRBResults run( ParameterSpaceX::Element const& mu,
                             vectorN_type & time, double eps , int N, bool print_rb_matrix ) const = 0;
 
-    virtual CRBResults run( ParameterSpaceX::Element const& mu, 
+    virtual CRBResults run( ParameterSpaceX::Element const& mu,
                             double eps , int N, bool print_rb_matrix ) const
         {
             vectorN_type t;
@@ -145,18 +145,18 @@ using crbpluginapi_create_t = boost::shared_ptr<CRBPluginAPI> ();
 using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
 boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, std::string const& n );
 //!
-//! 
+//!
 //!
 boost::function<crbpluginapi_create_t> makeCRBPluginCreator( std::string const& dirname, std::string const& pluginname );
 
 #define FEELPP_CRB_PLUGIN( classname, strname )                         \
-class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<classname>   \
+    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<CRBModel<classname>> \
 {                                                                       \
 public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname>( BOOST_PP_STRINGIZE( strname ) )           \
+        CRBPlugin<CRBModel<classname>>( BOOST_PP_STRINGIZE( strname ) ) \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -168,6 +168,29 @@ public:                                                                 \
                                                                         \
                                                                         \
 BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+
+#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                         \
+    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
+        public CRBTrilinearPlugin<CRBModelTrilinear<classname>>         \
+{                                                                       \
+public:                                                                 \
+    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
+    BOOST_PP_CAT(classname,Plugin)()                                    \
+        :                                                               \
+        CRBTrilinearPlugin<CRBModelTrilinear<classname>>( BOOST_PP_STRINGIZE( strname ) ) \
+        {}                                                              \
+                                                                        \
+    /* Factory method */                                                \
+    static boost::shared_ptr<this_t> create()                           \
+        {                                                               \
+            return boost::shared_ptr<this_t>( new this_t() );           \
+        }                                                               \
+};                                                                      \
+                                                                        \
+                                                                        \
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+
+
 
 
 #define FEELPP_CRB_PLUGIN_TEMPLATE( classname, classtemplate, strname ) \

@@ -8,6 +8,6 @@ set( FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_CABIN_LIBRARIES PAR
 
 feelpp_add_application( cabinapp
                         SRCS main.cpp
-                        #LINK_LIBRARIES ${CRB_LIB_CABIN}
-                        SRCS main.cpp ../residual.cpp ../jacobian.cpp ../other.cpp init.cpp specific.cpp
+                        LINK_LIBRARIES ${CRB_LIB_CABIN}
+                        #SRCS main.cpp ../residual.cpp ../jacobian.cpp ../other.cpp init.cpp specific.cpp
                         CFG cabin.cfg GEO cabin.geo )                            
