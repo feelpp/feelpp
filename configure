@@ -54,7 +54,7 @@ if [ "X${BUILDROOT}" = "X" ]; then
   fi
 fi
 BUILDTYPE=Release
-_WANT_PCH=yes
+_WANT_PCH=no
 _WANT_PYTHON=yes
 _WANT_CLING=yes
 _WANT_VERBOSE=no
