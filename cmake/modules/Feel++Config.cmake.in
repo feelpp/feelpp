@@ -115,6 +115,10 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   include(feelpp.host)
   include(feelpp.macros)
 
+  if ( FEELPP_HAS_PYBIND11 )
+    include(pybind11Tools)
+  endif()
+  
   MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
 endif()

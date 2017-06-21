@@ -30,7 +30,7 @@
 //#include <pybind11/numpy.h>
 
 
-#include <feel/feelcore/feelmacros.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcrb/crbdata.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbplugin_interface.hpp>
