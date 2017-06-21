@@ -476,10 +476,10 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ON)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
-SET(BOOST_MIN_VERSION "1.55.0")
+SET(BOOST_MIN_VERSION "1.61.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -490,7 +490,7 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
     if(Boost_PYTHON_FOUND)
         set(FEELPP_HAS_BOOST_PYTHON 1)
         set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
 
     else()
         message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )

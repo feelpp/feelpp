@@ -292,9 +292,10 @@ Environment::Environment( int& argc, char**& argv )
 
 
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 struct PythonArgs
 {
+#if defined(FEELPP_HAS_BOOST_PYTHON) 
     PythonArgs( boost::python::list arg )
         {
             if ( argv == nullptr )
@@ -318,6 +319,7 @@ struct PythonArgs
                 argv[argc]=nullptr;
             }
         }
+#endif
     PythonArgs( pybind11::list arg )
         {
             argc = 0;
@@ -371,7 +373,7 @@ Environment::Environment( boost::python::list arg )
 }
 #endif // 0
 
-#endif
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
 
 #if defined ( FEELPP_HAS_PETSC_H )
 void
