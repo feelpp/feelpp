@@ -680,7 +680,6 @@ endif()
 #
 # submodules
 #
-include(feelpp.module.pybind11)
 
 include(feelpp.module.hpddm)
 
@@ -901,6 +900,9 @@ if(FEELPP_ENABLE_PYTHON)
     message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
   endif()
 endif()
+
+# include pybind11 after python cmake macros to avoid detecting different python versions
+include(feelpp.module.pybind11)
 
 #
 # Petsc
