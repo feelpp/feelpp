@@ -392,9 +392,10 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression1());
-        if( exAtM.hasParameters() )
-            for( auto const& param : exAtM.parameters() )
-                e.setParameterValues( { param, mu.parameterNamed(param) } );
+        auto symb = e.expression().symbols();
+        if( symb.size() > 0 )
+            for( auto const& param : symb )
+                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
         M_betaAqm[idx++][0] = e.evaluate();
     }
 
@@ -404,9 +405,10 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
-        if( exAtM.hasParameters() )
-            for( auto const& param : exAtM.parameters() )
-                e.setParameterValues( { param, mu.parameterNamed(param) } );
+        auto symb = e.expression().symbols();
+        if( symb.size() > 0 )
+            for( auto const& param : symb )
+                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
         for( int m = 0; m < betaEimSigma.size(); ++m )
             M_betaFqm[0][idx][m] = betaEimSigma(m)*e.evaluate();
         idx++;
@@ -414,9 +416,10 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression2());
-        if( exAtM.hasParameters() )
-            for( auto const& param : exAtM.parameters() )
-                e.setParameterValues( { param, mu.parameterNamed(param) } );
+        auto symb = e.expression().symbols();
+        if( symb.size() > 0 )
+            for( auto const& param : symb )
+                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
         M_betaFqm[0][idx++][0] = e.evaluate();
     }
 }
@@ -501,9 +504,10 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["potential"]["Dirichlet"] )
         {
             auto e = expr(exAtM.expression());
-            if( exAtM.hasParameters() )
-                for( auto const& param : exAtM.parameters() )
-                    e.setParameterValues( { param, mu.parameterNamed(param) } );
+            auto symb = e.expression().symbols();
+            if( symb.size() > 0 )
+                for( auto const& param : symb )
+                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
 
             f += integrate( markedfaces(M_mesh, exAtM.marker() ),
                             sigma*e*(gamma/hFace()*id(phiV) -  grad(phiV)*N()) );
@@ -519,9 +523,10 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["temperature"]["Robin"] )
         {
             auto e = expr(exAtM.expression1());
-            if( exAtM.hasParameters() )
-                for( auto const& param : exAtM.parameters() )
-                    e.setParameterValues( { param, mu.parameterNamed(param) } );
+            auto symb = e.expression().symbols();
+            if( symb.size() > 0 )
+                for( auto const& param : symb )
+                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
             aT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                              e*inner(idt(T), id(phiT)) );
         }
@@ -535,9 +540,10 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["temperature"]["Robin"] )
         {
             auto e = expr(exAtM.expression2());
-            if( exAtM.hasParameters() )
-                for( auto const& param : exAtM.parameters() )
-                    e.setParameterValues( { param, mu.parameterNamed(param) } );
+            auto symb = e.expression().symbols();
+            if( symb.size() > 0 )
+                for( auto const& param : symb )
+                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
             fT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                              e*id(phiT) );
         }
