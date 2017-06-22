@@ -152,6 +152,11 @@ public:
     }
 
     //!
+    //! set the DB directory according to a name and a UUID
+    //!
+    void setDBDirectory( std::string const& name, uuids::uuid const& i );
+
+    //!
     //! set the DB directory according to a UUID
     //!
     void setDBDirectory( uuids::uuid const& i );
