@@ -119,17 +119,22 @@ public:
     using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition>;
 
     using value_type = double;
+    using space_type = super_type::space_type;
     using element_type = super_type::element_type;
     using element_ptrtype = super_type::element_ptrtype;
     using J_space_type = FunctionSpaceDefinition::J_space_type;
-    using V_space_type = FunctionSpaceDefinition::V_space_type;
-    using Vh_element_type = typename V_space_type::element_type;
+    // using V_space_type = FunctionSpaceDefinition::V_space_type;
+    // using Vh_element_type = typename V_space_type::element_type;
+    using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
+    using q_sigma_element_type = q_sigma_space_type::element_type;
     using V_view_type = typename element_type::template sub_element_type<0>;
     using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
     using T_view_ptrtype = typename element_type::template sub_element_ptrtype<1>;
     using parameter_type = super_type::parameter_type;
     using mesh_type = super_type::mesh_type;
     using mesh_ptrtype = super_type::mesh_ptrtype;
+    using current_space_type = FunctionSpace<mesh_type, bases<Lagrange<1, Vectorial> > >;
+    using current_element_type = typename current_space_type::element_type;
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
     using vectorN_type = super_type::vectorN_type;
@@ -183,11 +188,9 @@ public:
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     int mMaxSigma();
-    Vh_element_type eimSigmaQ(int m);
+    q_sigma_element_type eimSigmaQ(int m);
     vectorN_type eimSigmaBeta( parameter_type const& mu );
-    template<typename vec_space_type>
-    typename vec_space_type::element_type
-    computeTruthCurrentDensity( parameter_type const& mu );
+    void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
 }; // Thermoelectric class
 
 } // namespace Feel

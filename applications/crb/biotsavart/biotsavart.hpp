@@ -32,6 +32,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <thermoelectric.hpp>
 
 namespace Feel
 {
@@ -132,12 +133,14 @@ class FEELPP_EXPORT BiotSavartCRB
     using vec_element_type = typename vec_space_type::element_type;
     using vec_element_ptrtype = boost::shared_ptr<vec_element_type>;
 
-    using disc_vec_fct_type = Lagrange<0, Vectorial, Discontinuous>;
-    using disc_vec_basis_type = bases<disc_vec_fct_type>;
-    using disc_vec_space_type = FunctionSpace<mesh_type, disc_vec_basis_type>;
-    using disc_vec_space_ptrtype = boost::shared_ptr<disc_vec_space_type>;
-    using disc_vec_element_type = typename disc_vec_space_type::element_type;
-    using disc_vec_element_ptrtype = boost::shared_ptr<disc_vec_element_type>;
+    // using disc_vec_fct_type = Lagrange<0, Vectorial, Discontinuous>;
+    // using disc_vec_basis_type = bases<disc_vec_fct_type>;
+    // using disc_vec_space_type = FunctionSpace<mesh_type, disc_vec_basis_type>;
+    // using disc_vec_space_ptrtype = boost::shared_ptr<disc_vec_space_type>;
+    // using disc_vec_element_type = typename disc_vec_space_type::element_type;
+    // using disc_vec_element_ptrtype = boost::shared_ptr<disc_vec_element_type>;
+    using current_element_type = typename te_rb_model_type::current_element_type;
+    using current_space_type = typename te_rb_model_type::current_space_type;
 
     using dof_point_type = boost::tuple<node_type, size_type, uint16_type >;
     using dof_points_type = typename std::vector<dof_point_type>;
@@ -186,7 +189,7 @@ protected:
     vec_space_ptrtype M_XhMgn;
     element_type M_VT;
     vec_element_type M_B;
-    disc_vec_element_type M_j;
+    current_element_type M_j;
     vec_element_type M_BFe;
     vectorN_type M_uN;
     eigen_vector_type M_betaMu;
