@@ -97,7 +97,7 @@ void run( bool useSMD )
                            _expr=idt(u1)*id(u2) );
     double energyElementA = bfElementA(u2,u1);
     BOOST_CHECK_CLOSE( energyElementA, 0.36, 1e-12 );
-    cout << "energyElementA " << energyElementA << " [0.36]\n";
+    Feel::cout << "energyElementA " << energyElementA << " [0.36]\n";
 
     //-----------------------------------------------------------//
     auto rElementB = stencilRange<0,0>(elements(mesh2));
@@ -111,7 +111,7 @@ void run( bool useSMD )
                            _expr=idt(u2)*id(u1) );
     double energyElementB = bfElementB(u1,u2);
     BOOST_CHECK_CLOSE( energyElementB, 0.36, 1e-12 );
-    cout << "energyElementB " << energyElementB << " [0.36]\n";
+    Feel::cout << "energyElementB " << energyElementB << " [0.36]\n";
 
     //-----------------------------------------------------------//
     auto rElementC = stencilRange<0,0>(markedelements(mesh1,listMarkers));
@@ -124,7 +124,7 @@ void run( bool useSMD )
                            _expr=idt(u1)*id(u3) );
     double energyElementC = bfElementC(u3,u1);
     BOOST_CHECK_CLOSE( energyElementC, 1., 1e-12 );
-    cout << "energyElementC " << energyElementC << " [1]\n";
+    Feel::cout << "energyElementC " << energyElementC << " [1]\n";
 
 
     auto matElementD = backend()->newMatrix(_test=Xh3,_trial=Xh3);
@@ -132,7 +132,7 @@ void run( bool useSMD )
     bfElementD = integrate(_range=elements(mesh3),
                            _expr=idt(u3)*id(u3) );
     double energyElementD = bfElementD(u3,u3);
-    cout << "energyElementD " << energyElementD << " [1]\n";
+    Feel::cout << "energyElementD " << energyElementD << " [1]\n";
 
     //-----------------------------------------------------------//
     //-----------------------------------------------------------//
@@ -147,7 +147,7 @@ void run( bool useSMD )
                                 _expr=idt(u2)*id(u2) );
     double energyFacesStandard = bfFacesStandard(u2,u2);
     BOOST_CHECK_CLOSE( energyFacesStandard, 2.4, 1e-12 );
-    cout << "energyFacesStandard " << energyFacesStandard << " [2.4]\n";
+    Feel::cout << "energyFacesStandard " << energyFacesStandard << " [2.4]\n";
 
     //-----------------------------------------------------------//
     auto rFacesNonStandardA = stencilRange<0,0>( boundaryfaces(mesh2) );
@@ -168,7 +168,7 @@ void run( bool useSMD )
                                     _expr=idt(u2)*id(u1) );
     double energyFacesNonStandardA = bfFacesNonStandardA(u1,u2);
     BOOST_CHECK_CLOSE( energyFacesNonStandardA, 2.4, 1e-12 );
-    cout << "energyFacesNonStandardA " << energyFacesNonStandardA << " [2.4]\n";
+    Feel::cout << "energyFacesNonStandardA " << energyFacesNonStandardA << " [2.4]\n";
 
     //-----------------------------------------------------------//
 
@@ -182,7 +182,7 @@ void run( bool useSMD )
                                     _expr=idt(u2)*id(u1) );
     double energyFacesNonStandardB = bfFacesNonStandardB(u1,u2);
     BOOST_CHECK_CLOSE( energyFacesNonStandardB, 2.4, 1e-12 );
-    cout << "energyFacesNonStandardB " << energyFacesNonStandardB << " [2.4]\n";
+    Feel::cout << "energyFacesNonStandardB " << energyFacesNonStandardB << " [2.4]\n";
 
     //-----------------------------------------------------------//
     auto rFacesNonStandardC = stencilRange<0,0>(markedfaces(mesh1,"cylinder"));
@@ -196,7 +196,7 @@ void run( bool useSMD )
                                     _expr=idt(u1)*id(u2) );
     double energyFacesNonStandardC = bfFacesNonStandardC(u2,u1);
     BOOST_CHECK_CLOSE( energyFacesNonStandardC, 2.4, 1e-12 );
-    cout << "energyFacesNonStandardC " << energyFacesNonStandardC << " [2.4]\n";
+    Feel::cout << "energyFacesNonStandardC " << energyFacesNonStandardC << " [2.4]\n";
 
     //-----------------------------------------------------------//
     if ( ctxRelationLoc )
@@ -216,7 +216,7 @@ void run( bool useSMD )
         double v1 = integrate(_range=markedfaces(mesh3,"cylinder"),//boundaryfaces(mesh2),
                               _expr=leftfacev(cst(1.))+rightfacev(cst(1.)) ).evaluate()(0,0);
         BOOST_CHECK_CLOSE( energyFacesNonStandardD, v1, 1e-12 ); // use to be 9.6
-        cout << "energyFacesNonStandardD " << energyFacesNonStandardD << " [4.8] v=" << v << " v1=" << v1 << "\n";
+        Feel::cout << "energyFacesNonStandardD " << energyFacesNonStandardD << " [4.8] v=" << v << " v1=" << v1 << "\n";
     }
 
     //-----------------------------------------------------------//
@@ -234,7 +234,7 @@ void run( bool useSMD )
                                         _expr=idt(u3)*id(u1) );
         double energyFacesNonStandardE = bfFacesNonStandardE(u1,u3);
         BOOST_CHECK_CLOSE( energyFacesNonStandardE, 2.4, 1e-12 );
-        cout << "energyFacesNonStandardE " << energyFacesNonStandardE << " [2.4]\n";
+        Feel::cout << "energyFacesNonStandardE " << energyFacesNonStandardE << " [2.4]\n";
     }
 
 }
