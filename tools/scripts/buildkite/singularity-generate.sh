@@ -1,6 +1,6 @@
 #!/bin/sh
 
-containers="feelpp/feelpp-toolboxes:latest feelpp/feelpp-libs feelpp/feelpp-crb"
+containers="$1"
 
 set -euo pipefail
 
