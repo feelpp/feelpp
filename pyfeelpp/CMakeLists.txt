@@ -42,10 +42,18 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   list(APPEND CMAKE_MODULE_PATH "/usr/local/share/cmake/pybind11")
   include(pybind11Tools)
 endif()
-pybind11_add_module(pyfeelpp  python.cpp feelcore/python.cpp feelcrb/python.cpp)
-target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
+pybind11_add_module(_pyfeelpp python.cpp)
+target_include_directories(_pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( _pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
+configure_file(__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
 
+
+add_subdirectory(core)
+add_subdirectory(crb)
+
+#
+# setup
+#
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 configure_file(${SETUP_PY_IN} ${SETUP_PY})

@@ -36,7 +36,7 @@
 #include<feel/feelcore/environment.hpp>
 
 namespace py = pybind11;
-void export_core( py::module& m )
+PYBIND11_MODULE(_core, m )
 {
     using namespace Feel;
 
@@ -45,7 +45,10 @@ void export_core( py::module& m )
     py::class_<Environment>(m,"Environment")
         .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions()) 
-        .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy);
+        .def_static("worldComm",&Feel::Environment::worldComm, "get the Environment WorldComm",py::return_value_policy::copy)
+        .def_static("rootRepository",&Feel::Environment::rootRepository,"get the root repository for Feel++, default $HOME/feel",py::return_value_policy::move)
+        .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
+        ;
     
     py::class_<WorldComm>(m,"WorldComm")
         .def(py::init<>());
