@@ -52,18 +52,23 @@ CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const
     M_isloaded( false )
 {
     if ( M_ext.empty() )
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name%M_ext ).str() );
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name ).str() );
     else
         this->setDBFilename( ( boost::format( "%1%.%2%.crbdb" ) %M_name%M_ext ).str() );
 
-    this->setDBDirectory( M_uuid );
+    this->setDBDirectory( M_name, M_uuid );
 }
 
 void
 CRBDB::setDBDirectory( uuids::uuid const& i )
 {
+    this->setDBDirectory( M_name, i );
+}
+void
+CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
+{
     M_uuid = i;
-    std::string database_subdir = ( boost::format( "%1%/%2%" )% M_name % uuids::to_string(M_uuid)).str();
+    std::string database_subdir = ( boost::format( "%1%/%2%" )% name % uuids::to_string(M_uuid)).str();
     M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
                       % Feel::Environment::rootRepository()
                       % database_subdir ).str();

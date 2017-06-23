@@ -33,8 +33,6 @@ endif()
 
 enable_testing()
 
-find_program(PYTHON "python")
-
 if ( NOT TARGET check )
   add_custom_target(check)
 endif()
@@ -52,5 +50,4 @@ set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
-install(CODE "execute_process(COMMAND export CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_C_COMPILER} COMMAND ${PYTHON} ${SETUP_PY} install)")
-
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")
