@@ -7,21 +7,13 @@ using namespace Feel::vf;
 void ConvectionCrb::initModel()
 {
     // -- MESH SETTING -- //
-    mesh_ptrtype mesh;
-    if ( soption( "gmsh.filename" ) == "untitled.geo" )
-        throw std::logic_error( "[Cavity CRB Model:initialization] You did not provide a geometry, this model wont work on default geometry" );
-    else
-    {
-        A_OUT << "Mesh read in file : " << soption( "gmsh.filename" ) << "\n";
-        LOG(INFO) << "Mesh read in file : " << soption( "gmsh.filename" ) << "\n";
-        mesh  =  loadMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER);
-    }
+    auto mesh  =  loadMesh( _mesh=new mesh_type );
 
     // -- FUNCTION SPACES AND ELEMENTS SETTING -- //
     this->setFunctionSpaces( space_type::New(mesh) );
     pT = element_ptrtype( new element_type( Xh ) );
-    A_OUT << "Number of dof : "<< Xh->nDof() << std::endl;
+
+    Feel::cout << "Number of dof : "<< Xh->nDof() << std::endl;
     LOG(INFO) << "Number of dof : "<< Xh->nDof();
     element_type U( Xh, "u" );
     element_type V( Xh, "v" );
@@ -36,6 +28,7 @@ void ConvectionCrb::initModel()
     element_t_type s = V. element<3>();
 
     // -- PARAMETERS SETTING -- //
+    Dmu->setDimension( 2 );
     auto mu_min = Dmu->element();
     mu_min << doption( "Grmin" ), doption( "Prmin" );
     auto mu_max = Dmu->element();

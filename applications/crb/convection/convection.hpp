@@ -20,6 +20,7 @@
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feelcrb/crbtrilinearplugin.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;
