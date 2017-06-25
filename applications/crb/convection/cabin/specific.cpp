@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 */
 
 #include "../convection.hpp"
-#include <feel/feelcrb/crbtrilinearplugin.hpp>
+
 
 std::string ConvectionCrb::name()
 {
@@ -78,7 +78,7 @@ ConvectionCrb::betaqm_type ConvectionCrb::computeBetaQm( parameter_type const& m
         M_betaFqm[0][k].resize(1);
     M_betaFqm[0][0][0] = mu(0); // inlet temperature
     M_betaFqm[0][1][0] = mu(1); // inlet velocity
-    M_betaFqm[0][2][0] = mu(2); // passengers flux
+    M_betaFqm[0][2][0] = 1; // passengers flux
 
     M_betaFqm[1].resize( Ql( 1 ) );
     M_betaFqm[1][0].resize(1);
@@ -96,10 +96,11 @@ void
 ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     A_OUT << "Resolution for mu=( " << mu(0)<<" , "
-          << mu(1) << " , "
-          << mu(2) << " )\n";
+          << mu(1) << " )\n";
     T->zero();
     using namespace vf;
+
+    M_backend=backend();
 
     M_backend->nlSolver()->jacobian =
         boost::bind( &self_type::updateJ, boost::ref( *this ), _1, _2 );
