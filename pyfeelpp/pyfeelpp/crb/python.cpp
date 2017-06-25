@@ -173,7 +173,7 @@ protected:
 
 
 namespace py = pybind11;
-void export_crb( py::module& m )
+PYBIND11_MODULE( _crb, m )
 {
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins" );

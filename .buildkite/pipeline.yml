@@ -51,3 +51,6 @@ steps:
    branches: develop master
    env:
      TARGET: ubuntu:16.10
+ - wait
+ - command: tools/scripts/buildkite/singularity-generate.sh feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+   name: ":singularity: generate images :"
