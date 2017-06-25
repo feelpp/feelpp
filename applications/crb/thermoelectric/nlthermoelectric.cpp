@@ -599,7 +599,7 @@ int NLThermoelectric::mMaxSigma()
     return eimSigma->mMax();
 }
 
-auto NLThermoelectric::eimSigmaQ(int m)
+NLThermoelectric::q_sigma_element_type NLThermoelectric::eimSigmaQ(int m)
 {
     auto eimSigma = this->scalarContinuousEim()[0];
     return eimSigma->q()[m];
@@ -611,19 +611,15 @@ NLThermoelectric::vectorN_type NLThermoelectric::eimSigmaBeta( parameter_type co
     return eimSigma->beta(mu);
 }
 
-template<typename vec_space_type>
-typename vec_space_type::element_type
-NLThermoelectric::computeTruthCurrentDensity( parameter_type const& mu )
+void NLThermoelectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu )
 {
     auto VT = this->solve(mu);
     auto V = VT.template element<0>();
     auto T = VT.template element<1>();
     auto T0 = 293.0;
     auto sigma = mu.parameterNamed("sigma")/(cst(1.) + mu.parameterNamed("alpha")*(idv(T) - T0) );
-    auto Vh = vec_space_type::New(M_mesh);
-    auto j = Vh->element();
+    auto Vh = j.functionSpace();
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
-    return j;
 }
 
 FEELPP_CRB_PLUGIN( NLThermoelectric, "nlthermoelectric")

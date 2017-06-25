@@ -101,6 +101,7 @@ public :
     typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef typename FunctionSpaceDefinition::J_space_type J_space_type;
     using space_eim_type = typename FunctionSpaceDefinition::space_eim_type;
+    using element_eim_type = typename space_eim_type::element_type;
 
     /* EIM */
     // Scalar continuous //
@@ -127,23 +128,35 @@ public:
     using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition>;
 
     using value_type = double;
+
+    using mesh_type = super_type::mesh_type;
+    using mesh_ptrtype = super_type::mesh_ptrtype;
+
+    using space_type = super_type::space_type;
     using element_type = super_type::element_type;
     using element_ptrtype = super_type::element_ptrtype;
+
     using J_space_type = FunctionSpaceDefinition::J_space_type;
+    using q_sigma_space_type = eim_definition_type::space_eim_type;
+    using q_sigma_element_type = eim_definition_type::element_eim_type;
     using V_space_type = FunctionSpaceDefinition::V_space_type;
     using T_space_type = FunctionSpaceDefinition::space_eim_type;
     using V_element_type = typename V_space_type::element_type;
     using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
     using T_view_ptrtype = typename element_type::template sub_element_ptrtype<1>;
-    using parameter_type = super_type::parameter_type;
-    using mesh_type = super_type::mesh_type;
-    using mesh_ptrtype = super_type::mesh_ptrtype;
+
+    using current_space_type = FunctionSpace<mesh_type, bases<Lagrange<1, Vectorial> > >;
+    using current_element_type = typename current_space_type::element_type;
+
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
+
+    using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
     using beta_vector_type = typename super_type::beta_vector_type;
     using beta_type = boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >;
     using affine_decomposition_type = typename super_type::affine_decomposition_type;
+
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
 
 private:
@@ -191,11 +204,9 @@ public:
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     int mMaxSigma();
-    auto eimSigmaQ(int m);
+    q_sigma_element_type eimSigmaQ(int m);
     vectorN_type eimSigmaBeta( parameter_type const& mu );
-    template<typename vec_space_type>
-    typename vec_space_type::element_type
-    computeTruthCurrentDensity( parameter_type const& mu );
+    void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
 }; // NLThermoelectric class
 
 } // namespace Feel
