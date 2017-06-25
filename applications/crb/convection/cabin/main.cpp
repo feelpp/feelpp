@@ -27,8 +27,7 @@ inline po::options_description makeOptions()
         ( "UinletMin", po::value<double>()->default_value( 0.25 ), "mu1 : inlet min velocity" )
         ( "UinletMax", po::value<double>()->default_value( 0.25 ), "mu1 : inlet max velocity" )
 
-        ( "FluxMin", po::value<double>()->default_value( 0.25 ), "mu2 passengers min flux" )
-        ( "FluxMax", po::value<double>()->default_value( 0.25 ), "mu2 passengers max flux" )
+        ( "passengers-flux", po::value<double>()->default_value( 35 ), "passengers flux" )
 
         ( "psiT", po::value<bool>()->default_value( false ), "" )
         ( "delta0", po::value<double>()->default_value( 1 ), "" )

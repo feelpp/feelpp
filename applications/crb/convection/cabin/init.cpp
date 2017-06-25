@@ -28,11 +28,11 @@ void ConvectionCrb::initModel()
     element_t_type s = V. element<3>();
 
     // -- PARAMETERS SETTING -- //
-    Dmu->setDimension( 3 );
+    Dmu->setDimension( 2 );
     auto mu_min = Dmu->element();
-    mu_min << doption( "TinletMin" ), doption("UinletMin"), doption( "FluxMin" );
+    mu_min << doption( "TinletMin" ), doption("UinletMin");
     auto mu_max = Dmu->element();
-    mu_max << doption( "TinletMax" ), doption("UinletMax"), doption( "FluxMax" );
+    mu_max << doption( "TinletMax" ), doption("UinletMax");
     Dmu->setMin( mu_min );
     Dmu->setMax( mu_max );
 
@@ -132,9 +132,10 @@ void ConvectionCrb::initModel()
 
 
     // weak Dirichlet on temperature passengers
+    double flux = doption( "passengers-flux" );
     form1( Xh, _vector=M_Fqm[0][2][0] )
         = integrate ( markedfaces( mesh, "passengers"),
-                      id(s)/rho/Cp );
+                      flux*id(s)/rho/Cp );
 
 
     for (int i=0 ; i<Ql(0) ; i++ )
