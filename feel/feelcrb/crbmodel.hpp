@@ -49,6 +49,8 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelcrb/crbmodelbase.hpp>
+
 namespace Feel
 {
 enum class CRBModelMode
@@ -72,7 +74,8 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
+class CRBModel : public CRBModelBase,
+                 public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -213,39 +216,14 @@ public:
      */
     //@{
 
-    CRBModel( int level=0, bool doInit = true )
+    CRBModel( crb::stage stage, int level = 0 )
         :
-        M_Aqm(),
-        M_InitialGuessV(),
-        M_InitialGuessVector(),
-        M_Mqm(),
-        M_Fqm(),
-        M_model( new model_type ),
-        M_is_initialized( false ),
-        M_backend( backend() ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_has_eim( false ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
+        CRBModel( boost::make_shared<model_type>(), stage, level )
     {
-        if ( level != 0 )
-            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
-        if ( doInit )
-            this->init();
     }
-
-    FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
+    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
         :
-        CRBModel( level, doInit )
-        {}
-        
-    CRBModel( model_ptrtype const& model , bool doInit = true )
-        :
+        M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
         M_InitialGuessVector(),
@@ -253,23 +231,49 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_backend( backend() ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
+        M_backend( (stage==crb::stage::offline)?backend():nullptr ),
+        M_backend_primal( (stage==crb::stage::offline)?backend( _name="backend-primal"):nullptr ),
+        M_backend_dual( (stage==crb::stage::offline)?backend( _name="backend-dual"):nullptr ),
+        M_backend_l2( (stage==crb::stage::offline)?backend( _name="backend-l2"):nullptr ),
+        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
+
+        {
+            M_model = model;
+            if ( stage == crb::stage::offline )
+                this->init();
+        }
+
+    
+    FEELPP_DEPRECATED CRBModel( bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, 0 )
+        {}
+
+    FEELPP_DEPRECATED CRBModel( int level, bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
     {
-        if ( doInit )
-            this->init();
     }
+
+    FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
+        {}
+        
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , bool doInit = true )
+        :
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
+        {
+        }
 
     FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , CRBModelMode mode, bool doInit = true )
         :
-        CRBModel( model, doInit )
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
         {}
     
     /**
@@ -277,6 +281,7 @@ public:
      */
     CRBModel( CRBModel const & o )
         :
+        M_level( o.M_level ),
         M_Aqm( o.M_Aqm ),
         M_InitialGuessV( o.M_InitialGuessV ),
         M_InitialGuessVector( o.M_InitialGuessVector ),
@@ -299,7 +304,7 @@ public:
     //! destructor
     virtual ~CRBModel()
     {}
-
+    
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
     {
@@ -429,6 +434,11 @@ public:
      */
     //@{
 
+    //!
+    //! world communicator
+    //!
+    WorldComm const& worldComm() const { return M_model->worldComm(); }
+    
     /**
      * \return  the \p variables_map
      */
@@ -447,6 +457,17 @@ public:
      */
     model_ptrtype & model() { return M_model; }
 
+    //!
+    //! get the id of the model
+    //!
+    uuids::uuid uuid() const { return M_model->uuid(); }
+    
+    //!
+    //! in case of hierarchy of models, return level index.
+    //! default value is 0
+    //!
+    int level() const { return M_level; }
+    
     /**
      * create a new matrix
      * \return the newly created matrix
@@ -1098,6 +1119,9 @@ public:
      */
     void loadJson( std::string const& filename, std::string const& childname = "" )
         {
+            // first the underlying model
+            M_model->loadJson( filename, "crbmodel" );
+            
             if ( !fs::exists( filename ) )
             {
                 LOG(INFO) << "Could not find " << filename << std::endl;
@@ -2777,7 +2801,8 @@ public:
 
 protected:
 
-
+    int M_level = 0;
+    
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
@@ -2806,7 +2831,9 @@ protected:
 
 
 private:
-    bool M_is_initialized;
+    
+    
+    bool M_is_initialized = false;
 
     //! mode for CRBModel
 
@@ -2917,7 +2944,7 @@ struct PreAssembleMassMatrixInCompositeCase
         auto Xh = M_composite_u.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
-        auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*id( v ) ) ;
+        auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*vf::id( v ) ) ;
         auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
 
         //each composant of the affine decomposition
@@ -2985,7 +3012,7 @@ struct AssembleMassMatrixInCompositeCase
         mesh_ptrtype mesh = Xh->mesh();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
+            integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
 
@@ -3043,7 +3070,7 @@ struct AssembleInitialGuessVInCompositeCase
             {
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
-                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*id( v ) );
+                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*vf::id( v ) );
             }
         }
     }
@@ -3077,7 +3104,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
 
-    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( M_u ),id( M_v ) ) );
+    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( M_u ),vf::id( M_v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -3132,7 +3159,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     auto mesh = Xh->mesh();
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=inner(idt( M_u ),id( M_v ) )  );
+        integrate( _range=elements( mesh ), _expr=inner(idt( M_u ),vf::id( M_v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -3221,7 +3248,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( M_v ) )  );
+                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),vf::id( M_v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }

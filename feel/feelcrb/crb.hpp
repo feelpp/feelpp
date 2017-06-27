@@ -34,7 +34,7 @@
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "boost/tuple/tuple_io.hpp"
+#include <boost/tuple/tuple_io.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bimap.hpp>
@@ -57,6 +57,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -69,6 +70,8 @@
 #include <feel/feelts/bdf.hpp>
 
 #include <feel/feelcrb/crbenums.hpp>
+#include <feel/feelcrb/crbdata.hpp>
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
@@ -214,8 +217,8 @@ public:
     typedef std::vector<double> vector_double_type;
     typedef boost::shared_ptr<vector_double_type> vector_double_ptrtype;
 
-    typedef Eigen::VectorXd vectorN_type;
-    typedef Eigen::MatrixXd matrixN_type;
+    using vectorN_type = Feel::vectorN_type;
+    using matrixN_type = Feel::matrixN_type;
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
@@ -270,15 +273,31 @@ public:
     //@{
 
     //! default constructor
-    CRB( std::string const& name = "defaultname_crb",
-         WorldComm const& worldComm = Environment::worldComm() )
+    CRB( crb::stage stage = crb::stage::online )
         :
-        super( ( boost::format( "%1%-%2%-%3%" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
-               worldComm ),
-        M_elements_database( ( boost::format( "%1%-%2%-%3%-elements" ) % name % ioption(_name="crb.output-index") % ioption(_name="crb.error-type") ).str(),
+        CRB( "noname", boost::make_shared<truth_model_type>(stage), stage )
+        {
+        
+        }
+    
+    CRB( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        CRB( name, boost::make_shared<truth_model_type>(stage), stage )
+    {
+        
+    }
+
+    //! constructor from command line options
+    CRB( std::string const& name,
+         truth_model_ptrtype const & model,
+         crb::stage stage = crb::stage::online )
+        :
+        super( name, "crb", model->worldComm()),
+        M_elements_database( name,
+                             "elements",
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
-        M_model(),
+        M_model( boost::make_shared<truth_model_type>(stage) ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
         M_iter_max( ioption(_name="crb.dimension-max") ),
@@ -290,8 +309,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name+"_scmA", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name+"_scmM", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -320,99 +339,92 @@ public:
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
-    {
-        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
-    }
-
-    //! constructor from command line options
-    CRB( std::string const& name,
-         truth_model_ptrtype const & model )
-        :
-        CRB( name )
-    {
-        this->setTruthModel( model );
-
-        if ( !M_rebuild && this->loadDB() )
         {
-            if( this->worldComm().isMasterRank() )
-                std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-            LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
-
-            M_elements_database.setMN( M_N );
-            if( M_loadElementsDb )
+            this->setTruthModel( model );
+            if ( stage == crb::stage::offline )
             {
-                if( M_elements_database.loadDB() )
+                if ( !M_rebuild && this->loadDB() )
                 {
                     if( this->worldComm().isMasterRank() )
-                        std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                    auto basis_functions = M_elements_database.wn();
-                    M_model->rBFunctionSpace()->setBasis( basis_functions );
-                }
-                else
-                    M_N = 0;
-            }
-            if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-            {
-                if ( M_scmA->loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
-                    LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
-                }
-                else
-                    M_N = 0;
+                        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
+                    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
 
-                if ( !M_model->isSteady() )
-                {
-                    if ( M_scmM->loadDB() )
+                    M_elements_database.setMN( M_N );
+                    if( M_loadElementsDb )
                     {
-                        if( this->worldComm().isMasterRank() )
-                            std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                        LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                        if( M_elements_database.loadDB() )
+                        {
+                            if( this->worldComm().isMasterRank() )
+                                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+                            auto basis_functions = M_elements_database.wn();
+                            M_model->rBFunctionSpace()->setBasis( basis_functions );
+                        }
+                        else
+                            M_N = 0;
                     }
-                    else
-                        M_N = 0;
+                    if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+                    {
+                        if ( M_scmA->loadDB() )
+                        {
+                            if( this->worldComm().isMasterRank() )
+                                std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
+                            LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
+                        }
+                        else
+                            M_N = 0;
+
+                        if ( !M_model->isSteady() )
+                        {
+                            if ( M_scmM->loadDB() )
+                            {
+                                if( this->worldComm().isMasterRank() )
+                                    std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                                LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                            }
+                            else
+                                M_N = 0;
+                        }
+                    }
                 }
+
+                if ( M_N == 0 )
+                {
+                    if( this->worldComm().isMasterRank() )
+                        std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+                    LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+                }
+
+                // fe vector is requiert in online : must not be TODO
+                if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
+
+                // define offline backend and preconditioner
+                M_backend =  backend();
+                M_backend_primal = backend(_name="backend-primal");
+                M_backend_dual = backend(_name="backend-dual");
+
+                if( boption(_name="crb.use-primal-pc") )
+                {
+                    M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                             _backend= M_backend_primal,
+                                                             _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                             _worldcomm=M_backend_primal->comm(),
+                                                             _prefix=M_backend_primal->prefix() ,
+                                                             _rebuild=M_model->useSER());
+                }
+
+                M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                       _backend= M_backend_dual,
+                                                       _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                       _worldcomm=M_backend_dual->comm(),
+                                                       _prefix=M_backend_dual->prefix() ,
+                                                       _rebuild=M_model->useSER());
             }
         }
 
-        if ( M_N == 0 )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-        }
 
-        // fe vector is requiert in online : must not be TODO
-        if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
-            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
-
-        // define offline backend and preconditioner
-        M_backend =  backend();
-        M_backend_primal = backend(_name="backend-primal");
-        M_backend_dual = backend(_name="backend-dual");
-
-        if( boption(_name="crb.use-primal-pc") )
-        {
-            M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                                     _backend= M_backend_primal,
-                                                     _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                                     _worldcomm=M_backend_primal->comm(),
-                                                     _prefix=M_backend_primal->prefix() ,
-                                                     _rebuild=M_model->useSER());
-        }
-
-        M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                               _backend= M_backend_dual,
-                                               _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                               _worldcomm=M_backend_dual->comm(),
-                                               _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=M_model->useSER());
-    }
-
-
-    //! copy constructor
+    //! Copy constructor
     CRB( CRB const & o )
         :
         super( o ),
@@ -563,7 +575,6 @@ public:
             M_output_index = M_prev_o;
 
         //std::cout << " -- crb set output index to " << M_output_index << " (max output = " << M_model->Nl() << ")\n";
-        this->setDBFilename( ( boost::format( "%1%-%2%-%3%.crbdb" ) % this->name() % M_output_index % M_error_type ).str() );
 
         if ( M_output_index != M_prev_o )
             this->loadDB();
@@ -596,12 +607,13 @@ public:
         if ( !model )
             return;
         M_model = model;
+        this->setDBDirectory( M_model->uuid() );
         M_Dmu = M_model->parameterSpace();
-        M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        M_Xi = boost::make_shared<sampling_type>( M_Dmu );
+        M_WNmu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
         //M_WNmu_complement(),
-        M_primal_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
-        M_dual_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        M_primal_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+        M_dual_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
 
         M_elements_database.setModel( model );
 #if 0
@@ -619,6 +631,11 @@ public:
             M_scmM->setTruthModel( M_model );
     }
 
+    //!
+    //! return the SER Level, default is 0
+    //!
+    int level() const { return M_model->level(); }
+
     //! set max iteration number
     void setMaxIter( int K )
     {
@@ -631,6 +648,22 @@ public:
         M_factor = Factor;
     }
 
+    //!
+    //! set load finite element basis functions from DB  to \p r
+    //!
+    void setLoadBasisFromDB( bool r )
+    {
+        M_loadElementsDb = r;
+    }
+
+    //!
+    //! @return boolean to load element basis functions from DB
+    //!
+    bool loadBasisFromDB() const
+    {
+        return M_loadElementsDb;
+    }
+    
     //! set boolean indicates if we are in offline_step or not
     void setOfflineStep( bool b )
     {
@@ -1129,11 +1162,35 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu,
-                                                                                                                           vectorN_type & time,
-                                                                                                                           double eps = 1e-6,
-                                                                                                                           int N = -1,
-                                                                                                                           bool print_rb_matrix=false );
+    //boost::tuple<std::vector<double>,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple >
+    CRBResults
+    run( parameter_type const& mu,
+         vectorN_type & time,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false );
+
+    CRBResults
+    run( parameter_type const& mu,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false )
+        {
+            vectorN_type times;
+            return this->run( mu, times, eps, N, print_rb_matrix );
+        }
+    std::vector<CRBResults>
+    run( std::vector<parameter_type> const& S,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false )
+        {
+            std::vector<CRBResults> res;
+            res.reserve( S.size() );
+            for( auto const& mu : S )
+                res.push_back( this->run( mu, eps, N, print_rb_matrix ) );
+            return res;
+        }
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1185,7 +1242,7 @@ public:
      * \param loadingContext : 0 minimal crb online run, 1 with fe reduced basis
      */
     void loadJson( std::string const& filename, size_type loadingContext = 0 );
-
+    void saveJson();
     /**
      * \brief setup Crb from property_tree::ptree
      * \param ptree : input property_tree::ptree
@@ -1376,7 +1433,7 @@ protected:
     scm_ptrtype M_scmM;
 
     //export
-    export_ptrtype M_exporter;
+    mutable export_ptrtype M_exporter;
 
 #if 0
     array_2_type M_C0_pr;
@@ -1560,8 +1617,6 @@ protected:
     mutable std::pair<int,double> online_iterations_summary;
 };
 
-po::options_description crbOptions( std::string const& prefix = "" );
-po::options_description crbSEROptions( std::string const& prefix = "" );
 
 
 
@@ -1638,7 +1693,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
     bool POD_WN = boption(_name="crb.apply-POD-to-WN") ;
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
-          !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
+          !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
           M_bdf_primal->next() , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
@@ -1877,7 +1932,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
-          !M_bdf_dual->isFinished() , !M_bdf_dual_save->isFinished();
+          !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished();
           M_bdf_dual->next() , M_bdf_dual_save->next() )
     {
 
@@ -2334,6 +2389,7 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
@@ -9667,8 +9723,9 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 }
 
 template<typename TruthModelType>
-typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
-                      double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+//typename boost::tuple<std::vector<double>,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
+//double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
+CRBResults
 CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double eps , int N, bool print_rb_matrix)
 {
     //int Nwn = M_N;
@@ -9770,7 +9827,9 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
-    return boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds );
+    CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
+    r.setParameter( mu );
+    return r;
 }
 
 
@@ -11195,6 +11254,9 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingContext )
 {
+    // first load the model
+    M_model->loadJson( filename, "crbmodel" );
+    
     if ( !fs::exists( filename ) )
     {
         LOG(INFO) << "Could not find " << filename << std::endl;
@@ -11211,6 +11273,57 @@ CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingCon
     boost::property_tree::read_json( istr, ptree );
     this->setup( ptree, loadingContext, dbDir );
 }
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::saveJson()
+{
+    if ( this->worldComm().isMasterRank() )
+    {
+        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
+        std::string filenameJson = (this->dbLocalPath()/fs::path(this->jsonFilename())).string();
+        std::cout << "saveDB: " << filenameJson << std::endl;
+        boost::property_tree::ptree ptree;
+
+        boost::property_tree::ptree ptreeCrbModel;
+        M_model->updatePropertyTree( ptreeCrbModel );
+        ptree.add_child( "crbmodel", ptreeCrbModel );
+
+        boost::property_tree::ptree ptreeReducedBasisSpace;
+        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
+        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
+        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
+        ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
+        ptreeReducedBasisSpace.add( "dimension", M_N );
+        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
+
+        boost::property_tree::ptree ptreeCrb;//Database;
+        ptreeCrb.add( "dimension", M_N );
+        ptreeCrb.add( "name", this->name() );
+        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
+        ptreeCrb.add( "database-filename", this->dbFilename() );
+        ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptree.add_child( "crb", ptreeCrb );
+
+        if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+        {
+            boost::property_tree::ptree ptreeParameterScmA;
+            M_scmA->updatePropertyTree( ptreeParameterScmA );
+            ptree.add_child( "scmA", ptreeParameterScmA );
+            if ( !M_model->isSteady() )
+            {
+                boost::property_tree::ptree ptreeParameterScmM;
+                M_scmM->updatePropertyTree( ptreeParameterScmM );
+                ptree.add_child( "scmM", ptreeParameterScmM );
+            }
+        }
+
+        write_json( filenameJson, ptree );
+    }
+
+}
+
+
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir )
@@ -11265,50 +11378,8 @@ CRB<TruthModelType>::saveDB()
             oa << *this;
             // archive and stream closed when destructors are called
         }
-
-
-        std::string crbjsonFilename = (boost::format("%1%.crb.json")%this->name()).str();
-        //std::string filenameJson = (this->dbLocalPath()/fs::path("crb.json")).string();
-        std::string filenameJson = (this->dbLocalPath()/fs::path(crbjsonFilename)).string();
-        boost::property_tree::ptree ptree;
-
-        boost::property_tree::ptree ptreeCrbModel;
-        M_model->updatePropertyTree( ptreeCrbModel );
-        ptree.add_child( "crbmodel", ptreeCrbModel );
-
-        boost::property_tree::ptree ptreeReducedBasisSpace;
-        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
-        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
-        ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
-        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
-        ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
-        ptreeReducedBasisSpace.add( "dimension", M_N );
-        ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
-
-        boost::property_tree::ptree ptreeCrb;//Database;
-        ptreeCrb.add( "dimension", M_N );
-        ptreeCrb.add( "name", this->name() );
-        // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
-        ptreeCrb.add( "database-filename", this->dbFilename() );
-        ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
-        ptree.add_child( "crb", ptreeCrb );
-
-        if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-        {
-            boost::property_tree::ptree ptreeParameterScmA;
-            M_scmA->updatePropertyTree( ptreeParameterScmA );
-            ptree.add_child( "scmA", ptreeParameterScmA );
-            if ( !M_model->isSteady() )
-            {
-                boost::property_tree::ptree ptreeParameterScmM;
-                M_scmM->updatePropertyTree( ptreeParameterScmM );
-                ptree.add_child( "scmM", ptreeParameterScmM );
-            }
-        }
-
-        write_json( filenameJson, ptree );
     }
-
+    saveJson();
 }
 
 template<typename TruthModelType>

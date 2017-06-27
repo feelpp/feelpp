@@ -107,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
@@ -144,6 +145,7 @@ SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmak
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/machines)
 
+include(feelpp.dirs)
 # set the Feel++ version
 include(feelpp.version)
 
@@ -426,6 +428,11 @@ include(feelpp.module.quickstart)
 if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
+endif()
+
+include(feelpp.module.pyfeelpp)
+if ( FEELPP_HAS_PYFEELPP )
+  add_subdirectory(pyfeelpp)
 endif()
 
 include(feelpp.module.toolboxes)

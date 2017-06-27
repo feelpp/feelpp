@@ -176,7 +176,7 @@ public:
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_grepl" );}
-
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
     space_ptrtype const& functionSpace() const { return Xh; }
 
     element_type solve( parameter_type const& mu )

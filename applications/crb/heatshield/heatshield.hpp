@@ -117,11 +117,11 @@ public :
  * @see
  */
 template<int Order>
-class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order>, TimeDependent >
+class HeatShield : public ModelCrbBase< ParameterSpaceX, FunctionSpaceDefinition<Order>, TimeDependent >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> , TimeDependent > super_type;
+    typedef ModelCrbBase<ParameterSpaceX, FunctionSpaceDefinition<Order> , TimeDependent > super_type;
 
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
     typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
@@ -147,6 +147,7 @@ public:
 
     using super_type::computeBetaQm;
 
+    HeatShield() : super_type("heatshield") {}
     //! initialization of the model
     void initModel();
     //@}
@@ -499,6 +500,7 @@ void HeatShield<Order>::initModel()
     if( M_use_ginac )
         buildGinacExpressions();
 
+    this->Dmu->setDimension(2);
     //typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     auto mu_min = this->Dmu->element();
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;

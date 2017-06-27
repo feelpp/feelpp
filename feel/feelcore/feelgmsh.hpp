@@ -27,8 +27,16 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include <Gmsh.h>
 #include <GmshVersion.h>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
