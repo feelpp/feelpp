@@ -75,8 +75,8 @@ SER<CRBType>::run()
     {
         if ( ser_level > 0 ) // create new crb and model
         {
-            auto model = boost::make_shared<crbmodel_type>( ser_level );
-            auto crb = boost::make_shared<crb_type>( Environment::about().appName() + "-" + std::to_string(ser_level), model );
+            auto model = boost::make_shared<crbmodel_type>( crb::stage::offline, ser_level );
+            auto crb = boost::make_shared<crb_type>( Environment::about().appName(), model, crb::stage::offline );
             M_models.push_back( model );
             M_crbs.push_back( crb );
         }
