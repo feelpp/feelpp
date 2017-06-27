@@ -167,7 +167,7 @@ po::options_description crbPluginOptions( std::string const& prefix = "" );
 
 using crbpluginapi_create_t = boost::shared_ptr<CRBPluginAPI> ();
 using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
-boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, std::string const& n );
+boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, std::string const& n, std::string const& pluginlibname = "" );
 //!
 //!
 //!
