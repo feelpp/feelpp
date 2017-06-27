@@ -30,6 +30,7 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdata.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feeldiscr/doftablebase.hpp>
 #include <feel/feelcrb/crbmodelbase.hpp>
@@ -52,8 +53,14 @@ public:
     //!
     //! load database
     //!
-    virtual void loadDB( std::string ) = 0;
+    virtual void loadDB( std::string const&, crb::load l = crb::load::rb ) = 0;
 
+    //!
+    //! load database from db id.
+    //! we already know the \p name() of the model, we only need the \p id and the \p root repository
+    //!
+    virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) = 0;
+        
     //!
     //! @return the parameter space
     //!
@@ -111,6 +118,12 @@ public:
             vectorN_type t;
             return this->run( mu, t, eps, N, print_rb_matrix );
         }
+
+    //!
+    //! run plugin over a parameter sampling
+    //!
+    virtual std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S,
+                                         double eps , int N, bool print_rb_matrix ) const = 0;
 
     //!
     //! expand the rb field to fe field

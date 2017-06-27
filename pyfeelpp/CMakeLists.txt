@@ -43,7 +43,7 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
-add_subdirectory(pyfeelpp)
+#add_subdirectory(pyfeelpp)
 
 #
 # setup

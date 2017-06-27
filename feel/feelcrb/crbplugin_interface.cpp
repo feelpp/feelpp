@@ -61,7 +61,7 @@ factoryCRBPlugin( std::string const& dirname, std::string const& pluginname )
         std::string libext = ".so";
 #endif
         fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + libext);
-        std::cout << "loading " << pname << std::endl;
+        //std::cout << "loading " << pname.string() << std::endl;
 
         Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
             boost::dll::import_alias<crbpluginapi_create_t>(pname,
@@ -69,7 +69,7 @@ factoryCRBPlugin( std::string const& dirname, std::string const& pluginname )
                                                             dll::load_mode::append_decorations );
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
         auto plugin = p->second();
-        std::cout << "Loaded the plugin " << plugin->name() << std::endl;
+        //std::cout << "Loaded the plugin " << plugin->name().c_str() << std::endl;
         return plugin;
     }
 }
