@@ -26,35 +26,53 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-15
  */
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 //#include <boost/assign/std/vector.hpp>
-
+#include <boost/algorithm/string.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 
 namespace Feel
 {
-CRBDB::CRBDB( std::string const& name, WorldComm const& worldComm )
+CRBDB::CRBDB( std::string const& name, std::string const& ext, WorldComm const& worldComm )
+    :
+    CRBDB( name, ext, Environment::randomUUID(true), worldComm )
+{}
+
+CRBDB::CRBDB( std::string const& name, std::string const& ext, uuids::uuid const& uuid, WorldComm const& worldComm )
     :
     M_worldComm( worldComm ),
-    M_name( name ),
+    M_name( algorithm::to_lower_copy(name) ),
+    M_ext( ext ),
+    M_uuid( uuid ),
     M_isloaded( false )
 {
-    this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
-                           %M_name
-                           %this->worldComm().globalRank()
-                           ).str() );
+    if ( M_ext.empty() )
+        this->setDBFilename( ( boost::format( "%1%.crbdb" ) %M_name ).str() );
+    else
+        this->setDBFilename( ( boost::format( "%1%.%2%.crbdb" ) %M_name%M_ext ).str() );
 
-    std::string database_subdir = "default_repo";
-    if( Environment::vm().count( "crb.results-repo-name" ) )
-        database_subdir = ( boost::format("%1%/np_%2%")
-                            %soption(_name="crb.results-repo-name")
-                            %this->worldComm().globalSize() ).str();
-    M_dbDirectory = ( boost::format( "%1%/db/crb/%2%" )
-                              % Feel::Environment::rootRepository()
-                              % database_subdir ).str();
+    this->setDBDirectory( M_name, M_uuid );
 }
 
+void
+CRBDB::setDBDirectory( uuids::uuid const& i )
+{
+    this->setDBDirectory( M_name, i );
+}
+void
+CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
+{
+    M_uuid = i;
+    std::string database_subdir = ( boost::format( "%1%/%2%" )% name % uuids::to_string(M_uuid)).str();
+    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
+                      % Feel::Environment::rootRepository()
+                      % database_subdir ).str();
+}
 //! destructor
 CRBDB::~CRBDB()
 {}

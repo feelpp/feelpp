@@ -25,7 +25,7 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls python fit models)
+SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach() 
@@ -85,6 +85,6 @@ INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
 # endif()
 
 # add feelpp into FEELPP_LIBRARIES
-list(APPEND FEELPP_LIBRARIES feelpp)
+set(FEELPP_LIBRARIES feelpp ${FEELPP_LIBRARIES} PARENT_SCOPE)
 
 include(feelpp.lib.install)

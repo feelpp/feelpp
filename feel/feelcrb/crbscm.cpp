@@ -33,7 +33,7 @@
 
 namespace Feel
 {
-Feel::po::options_description
+po::options_description
 crbSCMOptions( std::string const& prefix )
 {
     Feel::po::options_description crbscmoptions( "CRB SCM Options" );

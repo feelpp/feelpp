@@ -476,10 +476,10 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
-SET(BOOST_MIN_VERSION "1.55.0")
+SET(BOOST_MIN_VERSION "1.61.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -490,10 +490,11 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
     if(Boost_PYTHON_FOUND)
         set(FEELPP_HAS_BOOST_PYTHON 1)
         set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
+
     else()
         message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-    endif()
+      endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -675,9 +676,11 @@ if(FEELPP_ENABLE_FFTW)
   endif()
 endif()
 
+
 #
 # submodules
 #
+
 include(feelpp.module.hpddm)
 
 option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
@@ -688,6 +691,7 @@ endif()
 include(feelpp.module.cereal)
 include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
+
 
 #
 # HARTS
@@ -757,6 +761,7 @@ if ( FEELPP_HAS_EIGEN3 )
   unset(PKGCONFIG_INSTALL_DIR CACHE)
 endif()
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
+
 
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
@@ -871,19 +876,20 @@ endif()
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
-  FIND_PACKAGE(PythonLibs)
+  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
   if ( PYTHONLIBS_FOUND )
     message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
     SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
     set( FEELPP_HAS_PYTHON 1 )
+
   endif()
 
   #
   # Python interp
   #
-  FIND_PACKAGE(PythonInterp REQUIRED)
+  FIND_PACKAGE(PythonInterp 2.7  REQUIRED)
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
@@ -894,6 +900,9 @@ if(FEELPP_ENABLE_PYTHON)
     message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
   endif()
 endif()
+
+# include pybind11 after python cmake macros to avoid detecting different python versions
+include(feelpp.module.pybind11)
 
 #
 # Petsc
@@ -1515,6 +1524,9 @@ else()
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()
 
+#if ( ${FEELPP_HAS_PYTHON} AND ${FEELPP_HAS_EIGEN3} )
+  #add_subdirectory( contrib/minieigen )
+#endif()
 
 # Cleaning variables.
 set( varstoclean

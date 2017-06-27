@@ -6,6 +6,8 @@ endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
+# define CMAKE_INSTALL_DOCDIR
+include(GNUInstallDirs)
 
 
 # list the subdicrectories of directory 'curdir'

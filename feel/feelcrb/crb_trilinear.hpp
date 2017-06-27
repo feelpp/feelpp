@@ -172,29 +172,38 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRBTrilinear()
+    CRBTrilinear( crb::stage stage = crb::stage::online )
         :
-        super_crb(),
-        M_crbdb()
-    {
-
-    }
+        super_crb( stage )
+        {}
+    CRBTrilinear( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
+        {
+        
+        }
+    CRBTrilinear( std::string const& name,
+                  truth_model_ptrtype const & model,
+                  crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, model, stage )
+        {}
+    //! default constructor
+    FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
+                                    WorldComm const& worldComm = Environment::worldComm() )
+        :
+        super_crb( name, worldComm )
+        {}
 
     //! constructor from command line options
-    CRBTrilinear( std::string  name,
-         po::variables_map const& vm,
-         truth_model_ptrtype const & model )
+    FEELPP_DEPRECATED CRBTrilinear( std::string  name,
+                                    truth_model_ptrtype const & model )
         :
-        super_crb( name, vm , model ),
-        M_crbdb( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
-                 name,
-                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % ioption(_name="crb.output-index") % option(_name="crb.error-type") ).str(),
-                 vm )
+        super_crb( name, model )
     {
-        this->setTruthModel( model );
-        if ( M_crbdb.loadDB() )
-            LOG(INFO) << "Database " << M_crbdb.lookForDB() << " available and loaded\n";
+        /*this->setTruthModel( model );
+        if ( this->loadDB() )
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
 
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         this->M_elements_database.setMN( this->M_N );
@@ -207,7 +216,7 @@ public:
         else
         {
             LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-        }
+            }*/
 
     }
 
@@ -215,8 +224,7 @@ public:
     //! copy constructor
     CRBTrilinear( CRBTrilinear const & o )
         :
-        super_crb( o ),
-        M_crbdb( o )
+        super_crb( o )
     {}
 
     //! destructor
@@ -248,8 +256,13 @@ public:
      *\return compute online the lower bound
      *\and also condition number of matrix A
      */
-    boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
+    boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu,
+                                                            std::vector< vectorN_type >& uN,
+                                                            std::vector< vectorN_type >& uNdu ,
+                                                            std::vector<vectorN_type> & uNold,
+                                                            std::vector<vectorN_type> & uNduold,
+                                                            bool print_rb_matrix=false, int K=0,
+                                                            bool computeOutput = true ) const;
 
     /**
      * Offline computation
@@ -280,7 +293,7 @@ public:
     void displayVector(const map_dense_vector_type& V ) const ;
     void displayVector(const vectorN_type& V ) const ;
     void displayMatrix(const matrixN_type& M ) const ;
-
+#if 1
     /**
      * save the CRB database
      */
@@ -290,15 +303,11 @@ public:
      * load the CRB database
      */
     bool loadDB();
-
+#endif
     //@}
 
 
 private:
-    CRBDB M_crbdb;
-
-    //crb_elements_db_type M_elements_database;
-
     std::vector < std::vector < matrixN_type> >  M_Aqm_tril_pr;
     mutable matrixN_type M_bilinear_terms;
     mutable vectorN_type M_linear_terms;
@@ -324,6 +333,13 @@ template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::convergence_type
 CRBTrilinear<TruthModelType>::offline()
 {
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( this->dbLocalPath() ) )
+            fs::create_directories( this->dbLocalPath() );
+    }
+    this->worldComm().barrier();
 
     int proc_number = this->worldComm().globalRank();
 
@@ -617,7 +633,7 @@ CRBTrilinear<TruthModelType>::offline()
         //no dual problem was solved
         this->M_model->rBFunctionSpace()->addDualBasisElement( *u );
 
-	    int number_of_added_elements=1;
+        int number_of_added_elements=1;
         this->M_N+=number_of_added_elements;
 
         if ( orthonormalize_primal )
@@ -736,9 +752,11 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) <<"========================================"<<"\n";
 
         //save DB after adding an element
-        saveDB();
+        tic();
+        this->saveDB();
         this->M_elements_database.setWn( boost::make_tuple( this->M_model->rBFunctionSpace()->primalRB() , this->M_model->rBFunctionSpace()->dualRB() ) );
         this->M_elements_database.saveDB();
+        toc("Saving the Database");
     }
 
 
@@ -751,7 +769,7 @@ CRBTrilinear<TruthModelType>::offline()
         std::vector<std::string> names;
         wn.push_back( this->M_model->rBFunctionSpace()->primalRB() );
         names.push_back( "primal" );
-        this->exportBasisFunctions( boost::make_tuple( wn ,names ) );
+        //this->exportBasisFunctions( boost::make_tuple( wn ,names ) );
 
         if ( orthonormalize_primal )
             LOG(INFO)<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized";
@@ -784,7 +802,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
                                   std::vector< vectorN_type >& uNdu,
                                   std::vector<vectorN_type> & uNold,
                                   std::vector<vectorN_type> & uNduold,
-                                  bool print_rb_matrix, int K ) const
+                                  bool print_rb_matrix, int K,
+                                  bool computeOutput ) const
 {
     uN.resize(1);
     if ( N > this->M_N ) N =this->M_N;
@@ -996,8 +1015,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
-    if( enable )
+    if( boption("crb.enable-convection-terms")  )
     {
         int qatri = this->M_model->QaTri();
         for ( size_type q = 0; q < qatri; ++q )
@@ -1013,7 +1031,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
 
-    if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
+    if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
         auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
@@ -1090,6 +1108,7 @@ CRBTrilinear<TruthModelType>::save( Archive & ar, const unsigned int version ) c
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRBTrilinear::save] version : "<<version<<std::endl;
+    ar & boost::serialization::base_object<super_crb>( *this );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
@@ -1114,15 +1133,14 @@ template<class Archive>
 void
 CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
-
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRBTrilinear::load] version"<< version <<std::endl;
-
+    ar & boost::serialization::base_object<super_crb>( *this );
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
 
-	ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
+    ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
     ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
@@ -1139,14 +1157,11 @@ CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
 }
 
-
 template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
-    super_crb::saveDB();
-
-    fs::ofstream ofs( M_crbdb.dbLocalPath() / M_crbdb.dbFilename() );
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
     {
@@ -1155,19 +1170,17 @@ CRBTrilinear<TruthModelType>::saveDB()
         oa << *this;
         // archive and stream closed when destructors are called
     }
+    this->saveJson();
 }
 
 template<typename TruthModelType>
 bool
 CRBTrilinear<TruthModelType>::loadDB()
 {
+    if( this->isDBLoaded() )
+        return true;
 
-    if ( this->rebuildDB() )
-        return false;
-
-    super_crb::loadDB();
-
-    fs::path db = M_crbdb.lookForDB();
+    fs::path db = this->lookForDB();
 
     if ( db.empty() )
         return false;
@@ -1175,7 +1188,6 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    //std::cout << "Loading " << db << "...\n";
     fs::ifstream ifs( db );
 
     if ( ifs )
@@ -1183,14 +1195,13 @@ CRBTrilinear<TruthModelType>::loadDB()
         boost::archive::text_iarchive ia( ifs );
         // write class instance to archive
         ia >> *this;
-        //std::cout << "Loading " << db << " done...\n";
+        this->setIsLoaded( true );
         // archive and stream closed when destructors are called
         return true;
     }
 
     return false;
 }
-
 
 } // Feel
 namespace boost

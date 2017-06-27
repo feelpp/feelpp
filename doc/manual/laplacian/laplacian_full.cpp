@@ -568,23 +568,24 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         std::ostringstream fname_u;
         fname_u << "u-" << Application::processId() << ".dat";
         std::ofstream ofs3( fname_u.str().c_str() );
-        typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-        typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
+        // typename mesh_type::element_iterator it = U.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
+        // typename mesh_type::element_iterator en = U.functionSpace()->mesh()->endElementWithProcessId( Application::processId() );
 
         if ( !U.areGlobalValuesUpdated() )
             U.updateGlobalValues();
 
-        for ( ; it!=en; ++it )
+        for ( auto const& eltWrap : elements(U.functionSpace()->mesh()) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             for ( size_type i = 0; i < space<Cont>::type::basis_type::nLocalDof; ++i )
             {
-                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                ofs3 << std::setw( 5 ) << it->id() << " "
+                size_type dof0 = boost::get<0>( U.functionSpace()->dof()->localToGlobal( elt.id(), i ) );
+                ofs3 << std::setw( 5 ) << elt.id() << " "
                      << std::setw( 5 ) << i << " "
                      << std::setw( 5 ) << dof0 << " "
                      << std::setw( 15 ) << U.globalValue( dof0 ) << " ";
-                value_type a = it->point( 0 ).node()[0];
-                value_type b = it->point( 1 ).node()[0];
+                value_type a = elt.point( 0 ).node()[0];
+                value_type b = elt.point( 1 ).node()[0];
 
                 if ( i == 0 )
                     ofs3 << a;
@@ -605,25 +606,24 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         std::ostringstream fname_v;
         fname_v << "values-" << Application::processId() << ".dat";
         std::ofstream ofs2( fname_v.str().c_str() );
-        it = V.functionSpace()->mesh()->beginElementWithProcessId( Application::processId() );
-        en = V.functionSpace()->mesh()->endElementWithProcessId(  Application::processId() );
 
         if ( !V.areGlobalValuesUpdated() ) V.updateGlobalValues();
 
         if ( !E.areGlobalValuesUpdated() ) E.updateGlobalValues();
 
-        for ( ; it!=en; ++it )
+        for ( auto const& eltWrap : elements(V.functionSpace()->mesh()) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             for ( size_type i = 0; i < space<Continuous>::type::basis_type::nLocalDof; ++i )
             {
-                size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( it->id(), i ) );
-                ofs2 << std::setw( 5 ) << it->id() << " "
+                size_type dof0 = boost::get<0>( V.functionSpace()->dof()->localToGlobal( elt.id(), i ) );
+                ofs2 << std::setw( 5 ) << elt.id() << " "
                      << std::setw( 5 ) << i << " "
                      << std::setw( 5 ) << dof0 << " "
                      << std::setw( 15 ) << V.globalValue( dof0 ) << " "
                      << std::setw( 15 ) << E.globalValue( dof0 ) << " ";
-                value_type a = it->point( 0 ).node()[0];
-                value_type b = it->point( 1 ).node()[0];
+                value_type a = elt.point( 0 ).node()[0];
+                value_type b = elt.point( 1 ).node()[0];
 
                 if ( i == 0 )
                     ofs2 << a;

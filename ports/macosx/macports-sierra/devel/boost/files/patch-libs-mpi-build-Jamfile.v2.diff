@@ -1,0 +1,26 @@
+--- libs/mpi/build/Jamfile.v2.orig
++++ libs/mpi/build/Jamfile.v2
+@@ -49,6 +49,7 @@
+     <link>shared:<define>BOOST_MPI_DYN_LINK=1
+   : # Default build
+     <link>shared
++    <threading>multi
+   : # Usage requirements
+     <library>../../serialization/build//boost_serialization
+     <library>/mpi//mpi [ mpi.extra-requirements ]
+@@ -73,6 +74,7 @@
+ 	<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).python-tag
+       : # Default build
+         <link>shared
++        <threading>multi
+       : # Usage requirements
+         <library>/mpi//mpi [ mpi.extra-requirements ]
+       ;
+@@ -101,6 +103,7 @@
+         <link>shared:<define>BOOST_MPI_PYTHON_DYN_LINK=1        
+         <link>shared:<define>BOOST_PYTHON_DYN_LINK=1    
+         <link>shared <runtime-link>shared
++        <threading>multi
+       ;
+   }
+ }
