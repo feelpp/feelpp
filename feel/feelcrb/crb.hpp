@@ -297,7 +297,7 @@ public:
                              "elements",
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
-        M_model( boost::make_shared<truth_model_type>(stage) ),
+        M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
         M_iter_max( ioption(_name="crb.dimension-max") ),
@@ -11295,6 +11295,14 @@ CRB<TruthModelType>::saveJson()
         // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
         ptreeReducedBasisSpace.add( "dimension", M_N );
+        if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
+        {
+            auto feSpace = M_model->rBFunctionSpace()->functionSpace();
+            boost::property_tree::ptree ptreeFiniteElementSpace;
+            ptreeFiniteElementSpace.add( "dimension", feSpace->nDof() );
+            ptreeFiniteElementSpace.add( "basis-name", feSpace->basisName() );
+            ptreeReducedBasisSpace.add_child( "finite-element-space", ptreeFiniteElementSpace );
+        }
         ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
 
         boost::property_tree::ptree ptreeCrb;//Database;
@@ -11303,6 +11311,7 @@ CRB<TruthModelType>::saveJson()
         // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
         ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptreeCrb.add( "error-type", M_error_type );
         ptree.add_child( "crb", ptreeCrb );
 
         if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
