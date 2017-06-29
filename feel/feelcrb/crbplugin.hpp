@@ -26,9 +26,10 @@
 #define FEELPP_CRBPLUGIN_HPP 1
 
 #include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS
-
+#include <boost/algorithm/string.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcrb/crbplugin_interface.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelcrb/crb_trilinear.hpp>
 
@@ -113,53 +114,87 @@ public:
     using model_t = ModelT;
     using crbmodel_type = CRBModelT<model_t>;
     using crb_type = CRBT<crbmodel_type> ;
+    using crb_ptrtype = boost::shared_ptr<crb_type>;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = boost::shared_ptr<Exporter<mesh_t> >;
-
+    
     CRBPlugin( std::string const& name )
         :
-        M_name( name )
+        M_name( name ),
+        M_crb( boost::make_shared<crb_type>(crb::stage::online) )
         {
-            crb.reset( new crb_type );
         }
 
     std::string const& name() const override
         {
             return M_name;
         }
-    void loadDB( std::string filename ) override
+    void loadDB( std::string const& filename, crb::load l ) override
         {
             if ( !fs::exists( filename ) )
                 throw std::invalid_argument("file does not exist");
-            std::cout << "Loading " << filename << std::endl;
-            boost::shared_ptr<model_t> model( new model_t );
-            model->loadJson( filename, "crbmodel" );
-            std::cout << "loaded model\n";
-            boost::shared_ptr<crbmodel_type> crbmodel( new crbmodel_type( model, false ) );
-            crbmodel->loadJson( filename, "crbmodel" );
-            std::cout << "loaded crbmodel\n";
 
-            crb->setTruthModel( crbmodel );
-            crb->loadJson( filename );
-            std::cout << "Loaded " << filename << std::endl;
+            if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
+                M_crb->setLoadBasisFromDB( true );
+            else
+                M_crb->setLoadBasisFromDB( false );
+            M_crb->loadJson( filename );
+
+            LOG(INFO) << "Loaded DB CRBPlugin " << filename;
+        }
+
+    void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
+        {
+            if ( !fs::exists( root ) )
+                throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
+            fs::path crbdb = fs::path(root) / "crbdb";
+            if ( !fs::exists( crbdb ) )
+                throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
+
+            fs::path dbbasedir = crbdb / fs::path(name()) ;
+            if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
+                throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
+            // either id provides the full directory or part of it
+            // try first full path
+            typedef std::vector<fs::path> vec;
+            vec d;
+
+            std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
+            std::sort(d.begin(), d.end());
+
+            //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
+            for( auto& dbdir : d )
+            {
+                //std::cout << "dbdir = " << dbdir.string() << std::endl;
+                
+                if ( boost::ends_with( dbdir.string(), id ) )
+                {
+                    fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
+                    if (!fs::exists(dbfilename))
+                        continue;
+                    loadDB( dbfilename.string(), l );
+                    return;
+                }
+            }
+            throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
         }
 
     boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            return crb->Dmu();
+            DCHECK( M_crb ) << "DB not loaded";
+            return M_crb->Dmu();
         }
 
     boost::shared_ptr<CRBModelBase> crbmodel() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            return crb->model();
+            DCHECK( M_crb ) << "DB not loaded";
+            return M_crb->model();
         }
     std::vector<boost::shared_ptr<MeshBase>> meshes() const override
         {
-            DCHECK( crb ) << "DB not loaded";
+            DCHECK( M_crb ) << "DB not loaded";
             std::vector<boost::shared_ptr<MeshBase>> m;
-            m.push_back( crb->model()->rBFunctionSpace()->functionSpace()->mesh() );
+            m.push_back( M_crb->model()->rBFunctionSpace()->functionSpace()->mesh() );
             // TODO composite case with several meshes
             return m;
         }
@@ -167,26 +202,26 @@ public:
 
     std::pair<std::vector<boost::shared_ptr<DofTableBase>>,boost::shared_ptr<DataMap>> doftables() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            if ( crb->model() && crb->model()->rBFunctionSpace() && crb->model()->rBFunctionSpace()->functionSpace() )
-                return std::make_pair( Feel::crbplugin_details::doftables( crb->model()->rBFunctionSpace()->functionSpace() ),
-                                       crb->model()->rBFunctionSpace()->functionSpace()->dof() );
+            DCHECK( M_crb ) << "DB not loaded";
+            if ( M_crb->model() && M_crb->model()->rBFunctionSpace() && M_crb->model()->rBFunctionSpace()->functionSpace() )
+                return std::make_pair( Feel::crbplugin_details::doftables( M_crb->model()->rBFunctionSpace()->functionSpace() ),
+                                       M_crb->model()->rBFunctionSpace()->functionSpace()->dof() );
             else
                 return std::make_pair( std::vector<boost::shared_ptr<DofTableBase>>(), boost::shared_ptr<DataMap>() );
         }
 
     boost::shared_ptr<Vector<double>> feElement() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            if ( crb->model() && crb->model()->rBFunctionSpace() && crb->model()->rBFunctionSpace()->functionSpace() )
-                return crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+            DCHECK( M_crb ) << "DB not loaded";
+            if ( M_crb->model() && M_crb->model()->rBFunctionSpace() && M_crb->model()->rBFunctionSpace()->functionSpace() )
+                return M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
             else
                 return boost::shared_ptr<Vector<double>>();
         }
 
     std::vector<boost::shared_ptr<Vector<double>> > feSubElements( boost::shared_ptr<Vector<double>> u ) const override
         {
-            DCHECK( crb ) << "DB not loaded";
+            DCHECK( M_crb ) << "DB not loaded";
             auto uFE = boost::dynamic_pointer_cast< typename crbmodel_type::space_type::element_type >( u );
             CHECK( uFE ) << "dynamic_pointer_cast fails : wrong type of element u";
             return Feel::crbplugin_details::subelements( uFE );
@@ -194,13 +229,13 @@ public:
 
     std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsPrimal() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            auto const& rbPrimal = crb->model()->rBFunctionSpace()->primalRB();
+            DCHECK( M_crb ) << "DB not loaded";
+            auto const& rbPrimal = M_crb->model()->rBFunctionSpace()->primalRB();
             int nBasis = rbPrimal.size();
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
                 *u = rbPrimal[k];
                 res[k] = u;
             }
@@ -208,13 +243,13 @@ public:
         }
     std::vector<boost::shared_ptr<Vector<double>>> reducedBasisFunctionsDual() const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            auto const& rbDual = crb->model()->rBFunctionSpace()->dualRB();
+            DCHECK( M_crb ) << "DB not loaded";
+            auto const& rbDual = M_crb->model()->rBFunctionSpace()->dualRB();
             int nBasis = rbDual.size();
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
+                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
                 *u = rbDual[k];
                 res[k] = u;
             }
@@ -224,32 +259,39 @@ public:
     CRBResults run( ParameterSpaceX::Element const& mu,
                     vectorN_type & time, double eps , int N, bool print_rb_matrix ) const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            return crb->run( mu, time, eps, N, print_rb_matrix );
+            DCHECK( M_crb ) << "DB not loaded";
+            return M_crb->run( mu, time, eps, N, print_rb_matrix );
         }
 
+    std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S,
+                                 double eps , int N, bool print_rb_matrix ) const override
+        {
+            
+            return M_crb->run( S, eps, N, print_rb_matrix );
+        }
+    
     void expansion( vectorN_type const& uRB, Vector<double> & uFE,  int N ) const override
         {
-            DCHECK( crb ) << "DB not loaded";
-            auto uRBforExpansion = crb->model()->rBFunctionSpace()->element();
+            DCHECK( M_crb ) << "DB not loaded";
+            auto uRBforExpansion = M_crb->model()->rBFunctionSpace()->element();
             uRBforExpansion.container() = uRB;
-            crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
+            M_crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
         }
 
 
 
     void initExporter() override
         {
-            fieldExporter = exporter( _mesh=crb->model()->rBFunctionSpace()->mesh() );
+            fieldExporter = exporter( _mesh=M_crb->model()->rBFunctionSpace()->mesh() );
         }
 
     void exportField( std::string const& name, CRBResults const& res ) override
         {
             auto const& solution = res.coefficients();
-            auto uN = crb->model()->rBFunctionSpace()->element();
+            auto uN = M_crb->model()->rBFunctionSpace()->element();
             //auto const& uN = solutions.template get<0>();
             uN.container() = solution;//.get<0>().back();
-            auto sol = crb->model()->rBFunctionSpace()->expansion( uN );
+            auto sol = M_crb->model()->rBFunctionSpace()->expansion( uN );
             fieldExporter->add( name, sol );
         }
 
@@ -265,9 +307,11 @@ protected:
         }
 protected:
     std::string M_name;
-    boost::shared_ptr<crb_type> crb;
+    crb_ptrtype M_crb;
     exporter_ptr_t fieldExporter;
 };
+
+
 
 #define FEELPP_CRB_PLUGIN( classname, strname )                         \
     class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) : public CRBPlugin<classname> \
@@ -276,7 +320,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname>( BOOST_PP_STRINGIZE( strname ) ) \
+        CRBPlugin<classname>( strname )                                 \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -297,7 +341,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( BOOST_PP_STRINGIZE( strname ) ) \
+        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( strname )  \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \

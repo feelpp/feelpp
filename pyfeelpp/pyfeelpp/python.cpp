@@ -32,35 +32,19 @@
 
 namespace py = pybind11;
 
-void export_core( py::module& );
-void export_crb( py::module& );
-PYBIND11_PLUGIN(pyfeelpp)
+PYBIND11_MODULE(_pyfeelpp,m)
 {
-    py::module m("pyfeelpp", R"pbdoc(
+    m.doc()=R"pbdoc(
         PyFeelpp Module plugin
         ----------------------
         .. currentmodule:: pyfeelpp
         .. autosummary::
            :toctree: _generate
-    )pbdoc");
+    )pbdoc";
 
 #ifdef FEELPP_VERSION_STRING
     m.attr("__version__") = py::str(stringize(FEELPP_VERSION_STRING));
 #else
     m.attr("__version__") = py::str("develop");
 #endif
-
-    export_core(m);
-    export_crb(m);
-    
-    return m.ptr();
 }
-#if 0
-void export_core();
-void export_crb();
-BOOST_PYTHON_MODULE( libfeelppy )
-{
-    export_core();
-    export_crb();
-}
-#endif

@@ -6,7 +6,7 @@
 std::string ConvectionCrb::name()
 {
     std::stringstream app_name;
-    app_name<< "convectioncrb_cavity"
+    app_name<< "cavity"
             << CONVECTION_DIM
             << "d";
     return app_name.str();
@@ -200,4 +200,9 @@ ConvectionCrb::output( int output_index,
     }
     A_OUT << "====================================================\n";
     return output;
+}
+
+namespace Feel
+{
+    FEELPP_CRBTRILINEAR_PLUGIN( ConvectionCrb, "cavity2d" )
 }

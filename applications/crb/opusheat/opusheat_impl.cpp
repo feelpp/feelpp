@@ -79,7 +79,9 @@ template<bool IsStationary>
 void
 OpusHeat<IsStationary>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
-    M_measureMarkedSurface["IC2"] = ptree.template get<double>( "surface-measure-IC2" );
+    auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
+    CHECK( ptreeSpecificityOfModel ) << "invalid ptree : section specifity-of-model is missing";
+    M_measureMarkedSurface["IC2"] = ptreeSpecificityOfModel->template get<double>( "surface-measure-IC2" );
     //std::cout << "surface loaded " << M_surface << "\n";
 }
 template<bool IsStationary>
