@@ -1,7 +1,7 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jun 2017
+#       Date: 23 Jun 2017
 #
 #  Copyright (C) 2017 Feel++ Consortium
 #
@@ -22,7 +22,7 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(pyfeelpp)
+project(pyfeelpp.core)
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
@@ -43,13 +43,8 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(pybind11Tools)
 endif()
 
-#add_subdirectory(pyfeelpp)
+pybind11_add_module(_core  python.cpp)
+target_include_directories(_core PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries( _core PRIVATE ${FEELPP_LIBRARIES} )
+configure_file(__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
 
-#
-# setup
-#
-set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
-set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-configure_file(${SETUP_PY_IN} ${SETUP_PY})
-
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")

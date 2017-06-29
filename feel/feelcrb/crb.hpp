@@ -273,15 +273,31 @@ public:
     //@{
 
     //! default constructor
-    CRB( std::string const& name = "defaultname_crb",
-         WorldComm const& worldComm = Environment::worldComm() )
+    CRB( crb::stage stage = crb::stage::online )
         :
-        super( name, "crb", worldComm ),
+        CRB( "noname", boost::make_shared<truth_model_type>(stage), stage )
+        {
+        
+        }
+    
+    CRB( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        CRB( name, boost::make_shared<truth_model_type>(stage), stage )
+    {
+        
+    }
+
+    //! constructor from command line options
+    CRB( std::string const& name,
+         truth_model_ptrtype const & model,
+         crb::stage stage = crb::stage::online )
+        :
+        super( name, "crb", model->worldComm()),
         M_elements_database( name,
                              "elements",
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
-        M_model(),
+        M_model( model ),
         M_output_index( ioption(_name="crb.output-index") ),
         M_tolerance( doption(_name="crb.error-max") ),
         M_iter_max( ioption(_name="crb.dimension-max") ),
@@ -323,98 +339,92 @@ public:
         M_computeApeeForEachTimeStep( boption(_name="crb.compute-apee-for-each-time-step") ),
         M_seekMuInComplement( boption(_name="crb.seek-mu-in-complement") ),
         M_showResidual( boption(_name="crb.show-residual") )
-    {
-    }
-
-    //! constructor from command line options
-    CRB( std::string const& name,
-         truth_model_ptrtype const & model )
-        :
-        CRB( name )
-    {
-        this->setTruthModel( model );
-
-        if ( !M_rebuild && this->loadDB() )
         {
-            if( this->worldComm().isMasterRank() )
-                std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-            LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
-
-            M_elements_database.setMN( M_N );
-            if( M_loadElementsDb )
+            this->setTruthModel( model );
+            if ( stage == crb::stage::offline )
             {
-                if( M_elements_database.loadDB() )
+                if ( !M_rebuild && this->loadDB() )
                 {
                     if( this->worldComm().isMasterRank() )
-                        std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                    auto basis_functions = M_elements_database.wn();
-                    M_model->rBFunctionSpace()->setBasis( basis_functions );
-                }
-                else
-                    M_N = 0;
-            }
-            if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-            {
-                if ( M_scmA->loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
-                    LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
-                }
-                else
-                    M_N = 0;
+                        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
+                    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
 
-                if ( !M_model->isSteady() )
-                {
-                    if ( M_scmM->loadDB() )
+                    M_elements_database.setMN( M_N );
+                    if( M_loadElementsDb )
                     {
-                        if( this->worldComm().isMasterRank() )
-                            std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                        LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                        if( M_elements_database.loadDB() )
+                        {
+                            if( this->worldComm().isMasterRank() )
+                                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+                            auto basis_functions = M_elements_database.wn();
+                            M_model->rBFunctionSpace()->setBasis( basis_functions );
+                        }
+                        else
+                            M_N = 0;
                     }
-                    else
-                        M_N = 0;
+                    if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+                    {
+                        if ( M_scmA->loadDB() )
+                        {
+                            if( this->worldComm().isMasterRank() )
+                                std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
+                            LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
+                        }
+                        else
+                            M_N = 0;
+
+                        if ( !M_model->isSteady() )
+                        {
+                            if ( M_scmM->loadDB() )
+                            {
+                                if( this->worldComm().isMasterRank() )
+                                    std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                                LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                            }
+                            else
+                                M_N = 0;
+                        }
+                    }
                 }
+
+                if ( M_N == 0 )
+                {
+                    if( this->worldComm().isMasterRank() )
+                        std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+                    LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+                }
+
+                // fe vector is requiert in online : must not be TODO
+                if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+                    boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
+
+                // define offline backend and preconditioner
+                M_backend =  backend();
+                M_backend_primal = backend(_name="backend-primal");
+                M_backend_dual = backend(_name="backend-dual");
+
+                if( boption(_name="crb.use-primal-pc") )
+                {
+                    M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                             _backend= M_backend_primal,
+                                                             _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                             _worldcomm=M_backend_primal->comm(),
+                                                             _prefix=M_backend_primal->prefix() ,
+                                                             _rebuild=M_model->useSER());
+                }
+
+                M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                       _backend= M_backend_dual,
+                                                       _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                       _worldcomm=M_backend_dual->comm(),
+                                                       _prefix=M_backend_dual->prefix() ,
+                                                       _rebuild=M_model->useSER());
             }
         }
 
-        if ( M_N == 0 )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-        }
 
-        // fe vector is requiert in online : must not be TODO
-        if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
-            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
-
-        // define offline backend and preconditioner
-        M_backend =  backend();
-        M_backend_primal = backend(_name="backend-primal");
-        M_backend_dual = backend(_name="backend-dual");
-
-        if( boption(_name="crb.use-primal-pc") )
-        {
-            M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                                     _backend= M_backend_primal,
-                                                     _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                                     _worldcomm=M_backend_primal->comm(),
-                                                     _prefix=M_backend_primal->prefix() ,
-                                                     _rebuild=M_model->useSER());
-        }
-
-        M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                               _backend= M_backend_dual,
-                                               _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                               _worldcomm=M_backend_dual->comm(),
-                                               _prefix=M_backend_dual->prefix() ,
-                                               _rebuild=M_model->useSER());
-    }
-
-
-    //! copy constructor
+    //! Copy constructor
     CRB( CRB const & o )
         :
         super( o ),
@@ -599,11 +609,11 @@ public:
         M_model = model;
         this->setDBDirectory( M_model->uuid() );
         M_Dmu = M_model->parameterSpace();
-        M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
-        M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        M_Xi = boost::make_shared<sampling_type>( M_Dmu );
+        M_WNmu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
         //M_WNmu_complement(),
-        M_primal_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
-        M_dual_apee_mu = sampling_ptrtype( new sampling_type( M_Dmu, 0, M_Xi ) );
+        M_primal_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
+        M_dual_apee_mu = boost::make_shared<sampling_type>( M_Dmu, 0, M_Xi );
 
         M_elements_database.setModel( model );
 #if 0
@@ -638,6 +648,22 @@ public:
         M_factor = Factor;
     }
 
+    //!
+    //! set load finite element basis functions from DB  to \p r
+    //!
+    void setLoadBasisFromDB( bool r )
+    {
+        M_loadElementsDb = r;
+    }
+
+    //!
+    //! @return boolean to load element basis functions from DB
+    //!
+    bool loadBasisFromDB() const
+    {
+        return M_loadElementsDb;
+    }
+    
     //! set boolean indicates if we are in offline_step or not
     void setOfflineStep( bool b )
     {
@@ -1151,7 +1177,19 @@ public:
          bool print_rb_matrix=false )
         {
             vectorN_type times;
-            this->run( mu, times, eps, N, print_rb_matrix );
+            return this->run( mu, times, eps, N, print_rb_matrix );
+        }
+    std::vector<CRBResults>
+    run( std::vector<parameter_type> const& S,
+         double eps = 1e-6,
+         int N = -1,
+         bool print_rb_matrix=false )
+        {
+            std::vector<CRBResults> res;
+            res.reserve( S.size() );
+            for( auto const& mu : S )
+                res.push_back( this->run( mu, eps, N, print_rb_matrix ) );
+            return res;
         }
 
     /**
@@ -9789,7 +9827,9 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
-    return CRBResults(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
+    CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
+    r.setParameter( mu );
+    return r;
 }
 
 
@@ -11214,6 +11254,9 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingContext )
 {
+    // first load the model
+    M_model->loadJson( filename, "crbmodel" );
+    
     if ( !fs::exists( filename ) )
     {
         LOG(INFO) << "Could not find " << filename << std::endl;
@@ -11252,6 +11295,14 @@ CRB<TruthModelType>::saveJson()
         // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
         ptreeReducedBasisSpace.add( "dimension", M_N );
+        if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
+        {
+            auto feSpace = M_model->rBFunctionSpace()->functionSpace();
+            boost::property_tree::ptree ptreeFiniteElementSpace;
+            ptreeFiniteElementSpace.add( "dimension", feSpace->nDof() );
+            ptreeFiniteElementSpace.add( "basis-name", feSpace->basisName() );
+            ptreeReducedBasisSpace.add_child( "finite-element-space", ptreeFiniteElementSpace );
+        }
         ptree.add_child( "reduced-basis-space", ptreeReducedBasisSpace );
 
         boost::property_tree::ptree ptreeCrb;//Database;
@@ -11260,6 +11311,7 @@ CRB<TruthModelType>::saveJson()
         // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
         ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptreeCrb.add( "error-type", M_error_type );
         ptree.add_child( "crb", ptreeCrb );
 
         if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
