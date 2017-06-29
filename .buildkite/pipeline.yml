@@ -1,4 +1,7 @@
 steps:
+ - command: tools/scripts/buildkite/singularity-generate.sh feelpp/feelpp-libs feelpp/feelpp-base feelpp/feelpp-toolboxes feelpp/feelpp-crb
+   name: ":singularity: generate images"
+ - wait
  - name: ':ubuntu: 16.10,clang-3.9'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
@@ -51,6 +54,3 @@ steps:
    branches: develop master
    env:
      TARGET: ubuntu:16.10
- - wait
- - command: tools/scripts/buildkite/singularity-generate.sh feelpp/feelpp-libs feelpp/feelpp-base feelpp/feelpp-toolboxes feelpp/feelpp-crb
-   name: ":singularity: generate images :"
