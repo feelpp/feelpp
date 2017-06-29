@@ -2938,11 +2938,12 @@ public:
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
-            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ ) );
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model(), crb::stage::offline/*M_model*/ ) );
         //make sure that the CRB DB is already build
         if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
-                                               M_crbmodel ) );
+                                               M_crbmodel,
+                                               crb::stage::offline ) );
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuild() )
         {
