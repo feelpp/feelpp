@@ -183,14 +183,17 @@ void NLThermoelectric::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    auto sigma = cst_ref(M_mu.parameterNamed("sigma"))/( cst(1.)+cst_ref(M_mu.parameterNamed("alpha"))*(idv(M_T)-cst(293.)));
-    // auto sigma = M_mu.parameterNamed("sigma");
-    auto k = cst_ref(M_mu.parameterNamed("sigma"))/( cst(1.)+cst_ref(M_mu.parameterNamed("alpha"))*(idv(M_T)-cst(293.)))*cst_ref(M_mu.parameterNamed("L"))*idv(M_T);
-    auto jouleLaw = sigma*inner(gradv(M_V));
+    // auto sigma = M_mu.parameterNamed("sigma")/( cst(1.)+M_mu.parameterNamed("alpha")*(idv(M_T)-cst(293.)));
+    // // auto sigma = M_mu.parameterNamed("sigma");
+    // auto k = M_mu.parameterNamed("sigma")*M_mu.parameterNamed("L")*idv(M_T);
+    // auto jouleLaw = sigma*inner(gradv(M_V));
+    auto sigma = cst_ref(M_mu(5))/( cst(1.) + cst_ref(M_mu(2))*(_e1-cst(293.0)) );
+    auto k = sigma*cst_ref(M_mu(0))*_e1;
+    auto jouleLaw = sigma*_e2v*trans(_e2v);
 
     tic();
     auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
-                          _element=*M_T,
+                          _element=pT->template element<1>(),
                           _parameter=M_mu,
                           _expr=sigma,
                           _space=TspaceEim,
@@ -201,7 +204,7 @@ void NLThermoelectric::initModel()
 
     tic();
     auto eim_k = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
-                      _element=*M_T,
+                      _element=pT->template element<1>(),
                       _parameter=M_mu,
                       _expr=k,
                       _space=TspaceEim,
@@ -212,8 +215,8 @@ void NLThermoelectric::initModel()
 
     tic();
     auto eim_joule = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
-                          _element=*M_T,
-                          _element2=*M_V,
+                          _element=pT->template element<1>(),
+                          _element2=pT->template element<0>(),
                           _parameter=M_mu,
                           _expr=jouleLaw,
                           _space=JspaceEim,
@@ -350,12 +353,12 @@ NLThermoelectric::beta_type
 NLThermoelectric::computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
 {
     auto eimSigma = this->scalarContinuousEim()[0];
-    auto betaEimSigma = eimSigma->beta( mu );
+    auto betaEimSigma = eimSigma->beta( mu, urb );
     auto eimK = this->scalarContinuousEim()[1];
-    auto betaEimK = eimK->beta( mu );
+    auto betaEimK = eimK->beta( mu, urb );
     // auto betaEimK = betaEimSigma;
     auto eimJoule = this->scalarDiscontinuousEim()[0];
-    auto betaEimJoule = eimJoule->beta( mu );
+    auto betaEimJoule = eimJoule->beta( mu, urb );
     this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimJoule);
     return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
 }
@@ -422,6 +425,15 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
         M_betaFqm[0][idx++][0] = e.evaluate();
     }
 
+    Feel::cout << "betaEimSigma(m)" << std::endl;
+    for( int m = 0; m < betaEimSigma.size(); ++m )
+        Feel::cout << betaEimSigma[m] << std::endl;
+    Feel::cout << "betaEimK(m)" << std::endl;
+    for( int m = 0; m < betaEimK.size(); ++m )
+        Feel::cout << betaEimK[m] << std::endl;
+    Feel::cout << "betaEimJoule(m)" << std::endl;
+    for( int m = 0; m < betaEimJoule.size(); ++m )
+        Feel::cout << betaEimJoule[m] << std::endl;
     Feel::cout << "betaAqm( q, m)" << std::endl;
     for( int q = 0; q < M_betaAqm.size(); ++q )
         for( int m = 0; m < M_betaAqm[q].size(); ++m )
