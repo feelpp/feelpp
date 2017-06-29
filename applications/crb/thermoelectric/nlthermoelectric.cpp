@@ -47,13 +47,14 @@ int NLThermoelectric::Qa()
 int NLThermoelectric::mQA( int q )
 {
     auto eimSigma = this->scalarContinuousEim()[0];
-    // auto eimK = this->scalarContinuousEim()[1];
+    auto eimK = this->scalarContinuousEim()[1];
     auto bc = M_modelProps->boundaryConditions();
 
     if( q == 0 )
         return eimSigma->mMax();
     else if( q == 1 )
-        return 1;//eimK->mMax();
+        return eimK->mMax();
+        // return 1;
     else if( q < 2 + bc["potential"]["Dirichlet"].size() )
         return eimSigma->mMax();
     else if( q < 2 + bc["potential"]["Dirichlet"].size() + bc["temperature"]["Robin"].size() )
@@ -182,9 +183,10 @@ void NLThermoelectric::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    auto sigma = M_mu.parameterNamed("sigma")/( cst(1.)+M_mu.parameterNamed("alpha")*(idv(M_T)-cst(293.)));
-    // auto k = sigma*M_mu.parameterNamed("L")*idv(M_T);
-    auto gradgrad = sigma*inner(gradv(M_V));
+    auto sigma = cst_ref(M_mu.parameterNamed("sigma"))/( cst(1.)+cst_ref(M_mu.parameterNamed("alpha"))*(idv(M_T)-cst(293.)));
+    // auto sigma = M_mu.parameterNamed("sigma");
+    auto k = cst_ref(M_mu.parameterNamed("sigma"))/( cst(1.)+cst_ref(M_mu.parameterNamed("alpha"))*(idv(M_T)-cst(293.)))*cst_ref(M_mu.parameterNamed("L"))*idv(M_T);
+    auto jouleLaw = sigma*inner(gradv(M_V));
 
     tic();
     auto eim_sigma = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
@@ -197,28 +199,28 @@ void NLThermoelectric::initModel()
     this->addEim( eim_sigma );
     toc("eim_sigma");
 
-    // tic();
-    // auto eim_k = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
-    //                   _element=*M_T,
-    //                   _parameter=M_mu,
-    //                   _expr=k,
-    //                   _space=TspaceEim,
-    //                   _name="eim_k",
-    //                   _sampling=Pset );
-    // this->addEim( eim_k );
-    // toc("eim_k");
+    tic();
+    auto eim_k = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
+                      _element=*M_T,
+                      _parameter=M_mu,
+                      _expr=k,
+                      _space=TspaceEim,
+                      _name="eim_k",
+                      _sampling=Pset );
+    this->addEim( eim_k );
+    toc("eim_k");
 
     tic();
-    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
-                             _element=*M_T,
-                             _element2=*M_V,
-                             _parameter=M_mu,
-                             _expr=gradgrad,
-                             _space=JspaceEim,
-                             _name="eim_gradgrad",
-                             _sampling=Pset );
-    this->addEimDiscontinuous( eim_gradgrad );
-    toc("eim_grad_grad");
+    auto eim_joule = eim( _model=boost::dynamic_pointer_cast<NLThermoelectric>(this->shared_from_this() ),
+                          _element=*M_T,
+                          _element2=*M_V,
+                          _parameter=M_mu,
+                          _expr=jouleLaw,
+                          _space=JspaceEim,
+                          _name="eim_joule",
+                          _sampling=Pset );
+    this->addEimDiscontinuous( eim_joule );
+    toc("eim_joule");
 
     this->resizeQm();
     this->decomposition();
@@ -236,8 +238,8 @@ void NLThermoelectric::decomposition()
     auto gamma = doption("thermoelectric.gamma");
 
     auto eimSigma = this->scalarContinuousEim()[0];
-    // auto eimK = this->scalarContinuousEim()[1];
-    auto eimGradGrad = this->scalarDiscontinuousEim()[0];
+    auto eimK = this->scalarContinuousEim()[1];
+    auto eimJoule = this->scalarDiscontinuousEim()[0];
     auto bc = M_modelProps->boundaryConditions();
 
     /************** Right hand side **************/
@@ -251,15 +253,15 @@ void NLThermoelectric::decomposition()
     }
 
     // thermo
-    // for( int m = 0; m < eimK->mMax(); ++m )
-    // {
+    for( int m = 0; m < eimK->mMax(); ++m )
+    {
         auto a1 = form2(_test=Xh, _trial=Xh);
         a1 = integrate( elements(M_mesh),
-                        inner(gradt(T), grad(phiT)) );
-        M_Aqm[1][0] = a1.matrixPtr();
-        //                 idv(eimK->q(m))*inner(gradt(T), grad(phiT)) );
-        // M_Aqm[1][m] = a1.matrixPtr();
-    // }
+        //                 inner(gradt(T), grad(phiT)) );
+        // M_Aqm[1][0] = a1.matrixPtr();
+                        idv(eimK->q(m))*inner(gradt(T), grad(phiT)) );
+        M_Aqm[1][m] = a1.matrixPtr();
+    }
 
     int idx = 2;
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
@@ -285,11 +287,11 @@ void NLThermoelectric::decomposition()
     }
 
     /************** Left hand side **************/
-    for( int m = 0; m < eimGradGrad->mMax(); ++m )
+    for( int m = 0; m < eimJoule->mMax(); ++m )
     {
         auto f0 = form1(_test=Xh);
         f0 = integrate(elements(M_mesh),
-                       inner(id(phiT), idv(eimGradGrad->q(m))) );
+                       inner(id(phiT), idv(eimJoule->q(m))) );
         M_Fqm[0][0][m] = f0.vectorPtr();
     }
 
@@ -335,12 +337,12 @@ NLThermoelectric::computeBetaQm( element_type const& T, parameter_type const& mu
 {
     auto eimSigma = this->scalarContinuousEim()[0];
     auto betaEimSigma = eimSigma->beta( mu, T );
-    // auto eimK = this->scalarContinuousEim()[1];
-    // auto betaEimK = eimK->beta( mu, T );
-    auto betaEimK = betaEimSigma;
-    auto eimGradGrad = this->scalarDiscontinuousEim()[0];
-    auto betaEimGradGrad = eimGradGrad->beta( mu, T );
-    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimGradGrad);
+    auto eimK = this->scalarContinuousEim()[1];
+    auto betaEimK = eimK->beta( mu, T );
+    // auto betaEimK = betaEimSigma;
+    auto eimJoule = this->scalarDiscontinuousEim()[0];
+    auto betaEimJoule = eimJoule->beta( mu, T );
+    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimJoule);
     return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
 }
 
@@ -349,12 +351,12 @@ NLThermoelectric::computeBetaQm( vectorN_type const& urb, parameter_type const& 
 {
     auto eimSigma = this->scalarContinuousEim()[0];
     auto betaEimSigma = eimSigma->beta( mu );
-    // auto eimK = this->scalarContinuousEim()[1];
-    // auto betaEimK = eimK->beta( mu );
-    auto betaEimK = betaEimSigma;
-    auto eimGradGrad = this->scalarDiscontinuousEim()[0];
-    auto betaEimGradGrad = eimGradGrad->beta( mu );
-    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimGradGrad);
+    auto eimK = this->scalarContinuousEim()[1];
+    auto betaEimK = eimK->beta( mu );
+    // auto betaEimK = betaEimSigma;
+    auto eimJoule = this->scalarDiscontinuousEim()[0];
+    auto betaEimJoule = eimJoule->beta( mu );
+    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimJoule);
     return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
 }
 
@@ -364,23 +366,23 @@ NLThermoelectric::computeBetaQm( parameter_type const& mu )
     auto eimSigma = this->scalarContinuousEim()[0];
     auto betaEimSigma = eimSigma->beta( mu );
     auto eimK = this->scalarContinuousEim()[1];
-    // auto betaEimK = eimK->beta( mu );
-    auto betaEimK = betaEimSigma;
-    auto eimGradGrad = this->scalarDiscontinuousEim()[0];
-    auto betaEimGradGrad = eimGradGrad->beta( mu );
-    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimGradGrad);
+    auto betaEimK = eimK->beta( mu );
+    // auto betaEimK = betaEimSigma;
+    auto eimJoule = this->scalarDiscontinuousEim()[0];
+    auto betaEimJoule = eimJoule->beta( mu );
+    this->fillBetaQm(mu, betaEimSigma, betaEimK,  betaEimJoule);
     return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
 }
 
-void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimSigma, vectorN_type betaEimK, vectorN_type betaEimGradGrad )
+void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimSigma, vectorN_type betaEimK, vectorN_type betaEimJoule )
 {
     auto bc = M_modelProps->boundaryConditions();
 
     for( int m = 0; m < betaEimSigma.size(); ++m )
         M_betaAqm[0][m] = betaEimSigma(m);
-    // for( int m = 0; m < betaEimK.size(); ++m )
-    //     M_betaAqm[1][m] = betaEimK(m);
-    M_betaAqm[1][0] = mu.parameterNamed("k");
+    for( int m = 0; m < betaEimK.size(); ++m )
+        M_betaAqm[1][m] = betaEimK(m);
+    // M_betaAqm[1][0] = mu.parameterNamed("k");
 
     int idx = 2;
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
@@ -392,23 +394,21 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression1());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
         M_betaAqm[idx++][0] = e.evaluate();
     }
 
-    for( int m = 0; m < betaEimGradGrad.size(); ++m )
-        M_betaFqm[0][0][m] = betaEimGradGrad(m);
+    for( int m = 0; m < betaEimJoule.size(); ++m )
+        M_betaFqm[0][0][m] = betaEimJoule(m);
     idx = 1;
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
         for( int m = 0; m < betaEimSigma.size(); ++m )
             M_betaFqm[0][idx][m] = betaEimSigma(m)*e.evaluate();
         idx++;
@@ -416,12 +416,21 @@ void NLThermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEi
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression2());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
         M_betaFqm[0][idx++][0] = e.evaluate();
     }
+
+    Feel::cout << "betaAqm( q, m)" << std::endl;
+    for( int q = 0; q < M_betaAqm.size(); ++q )
+        for( int m = 0; m < M_betaAqm[q].size(); ++m )
+            Feel::cout << q << "\t" << m << "\t" << M_betaAqm[q][m] << std::endl;
+    Feel::cout << "betaFlqm( l, q, m)" << std::endl;
+    for( int l = 0; l < M_betaFqm.size(); ++l )
+        for( int q = 0; q < M_betaFqm[l].size(); ++q )
+            for( int m = 0; m < M_betaFqm[l][q].size(); ++m )
+                Feel::cout << l << "\t" << q << "\t" << m << "\t" << M_betaFqm[l][q][m] << std::endl;
 }
 
 NLThermoelectric::beta_vector_type
@@ -452,7 +461,6 @@ NLThermoelectric::computeInitialGuessAffineDecomposition()
 NLThermoelectric::element_type
 NLThermoelectric::solve( parameter_type const& mu )
 {
-    // Feel::cout << "solve for parameter:" << std::endl << mu << std::endl;
     auto Vh = Xh->template functionSpace<0>();
     auto Th = Xh->template functionSpace<1>();
     auto V = Vh->element();
@@ -464,13 +472,21 @@ NLThermoelectric::solve( parameter_type const& mu )
 
     auto bc = M_modelProps->boundaryConditions();
     auto gamma = doption("thermoelectric.gamma");
+
     auto sigma0 = mu.parameterNamed("sigma");
     auto alpha = mu.parameterNamed("alpha");
-    // auto L = mu.parameterNamed("L");
-    auto k = mu.parameterNamed("k");
+    auto L = mu.parameterNamed("L");
+    // auto k = mu.parameterNamed("k");
     auto current = mu.parameterNamed("current");
     auto h = mu.parameterNamed("h");
     auto Tw = mu.parameterNamed("Tw");
+    Feel::cout << "solve for parameter:" << std::endl
+               << "L      : " << L << std::endl
+               << "Tw     : " << Tw << std::endl
+               << "alpha  : " << alpha << std::endl
+               << "current: " << current << std::endl
+               << "h      : " << h << std::endl
+               << "sigma0 : " << sigma0 << std::endl;
 
     auto maxIt = ioption("thermoelectric.maxit");
     auto tol = doption("thermoelectric.tol");
@@ -479,11 +495,11 @@ NLThermoelectric::solve( parameter_type const& mu )
 
     /***************************** Electro *****************************/
     tic();
-        auto e = exporter(M_mesh);
+    auto e = exporter(M_mesh);
     do
     {
         auto sigma = cst(sigma0)/(1+alpha*(idv(oldT)-cst(293.0)));
-        // auto k = sigma*L*idv(oldT);
+        auto k = sigma*cst(L)*idv(oldT);
 
         auto a = form2(_test=Vh, _trial=Vh);
         // V
@@ -504,10 +520,9 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["potential"]["Dirichlet"] )
         {
             auto e = expr(exAtM.expression());
-            auto symb = e.expression().symbols();
-            if( symb.size() > 0 )
-                for( auto const& param : symb )
-                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+            for( auto const& param : M_modelProps->parameters() )
+                if( e.expression().hasSymbol(param.first) )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
             f += integrate( markedfaces(M_mesh, exAtM.marker() ),
                             sigma*e*(gamma/hFace()*id(phiV) -  grad(phiV)*N()) );
@@ -523,10 +538,10 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["temperature"]["Robin"] )
         {
             auto e = expr(exAtM.expression1());
-            auto symb = e.expression().symbols();
-            if( symb.size() > 0 )
-                for( auto const& param : symb )
-                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+            for( auto const& param : M_modelProps->parameters() )
+                if( e.expression().hasSymbol(param.first) )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+;
             aT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                              e*inner(idt(T), id(phiT)) );
         }
@@ -540,10 +555,10 @@ NLThermoelectric::solve( parameter_type const& mu )
         for( auto const& exAtM : bc["temperature"]["Robin"] )
         {
             auto e = expr(exAtM.expression2());
-            auto symb = e.expression().symbols();
-            if( symb.size() > 0 )
-                for( auto const& param : symb )
-                    e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+            for( auto const& param : M_modelProps->parameters() )
+                if( e.expression().hasSymbol(param.first) )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+;
             fT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                              e*id(phiT) );
         }
@@ -556,14 +571,16 @@ NLThermoelectric::solve( parameter_type const& mu )
         errT = normL2( elements(M_mesh), idv(T) - idv(oldT))/errOldT;
         Feel::cout << "err(V) = " << errV << " err(T) = " << errT << std::endl;
 
-        oldV = V;
-        oldT = T;
-
         auto s = Vh->element(sigma);
+        auto kk = Vh->element(k);
         e->step(i)->add( "V", V);
         e->step(i)->add( "T", T);
         e->step(i)->add("sigma", s);
+        e->step(i)->add("k", kk);
         e->save();
+
+        oldV = V;
+        oldT = T;
     } while( ++i < maxIt && ( errV > tol || errT > tol ) );
 
     auto solution = Xh->element();
