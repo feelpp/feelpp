@@ -111,8 +111,20 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("ThermoDynamics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
+
+
     // functionspace
-    M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    if ( M_thermalProperties->isDefinedOnWholeMesh() )
+    {
+        M_rangeMeshElements = elements(M_mesh);
+        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    }
+    else
+    {
+        M_rangeMeshElements = markedelements(M_mesh, M_thermalProperties->markers());
+        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+    }
 
     M_fieldTemperature.reset( new element_temperature_type(M_Xh,"U"));
 
@@ -131,7 +143,13 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
 {
     if ( !M_XhVelocityConvection )
-        M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+    {
+        if ( M_thermalProperties->isDefinedOnWholeMesh() )
+            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        else
+            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _range=M_rangeMeshElements );
+    }
+
     if ( !M_fieldVelocityConvection )
     {
         M_fieldVelocityConvection.reset( new element_velocityconvection_type(M_XhVelocityConvection,"VelocityConvection"));
@@ -159,7 +177,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool only
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     M_exprVelocityConvection->setParameterValues( paramValues );
-    M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=*M_exprVelocityConvection);
+    M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
 }
 
 
@@ -235,10 +253,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     this->log("ThermoDynamics","init", "start" );
     this->timerTool("Constructor").start();
 
-    M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
-    M_thermalProperties->initFromSpace( M_XhScalarP0 );
-    M_thermalProperties->updateFromModelMaterials( this->modelProperties().materials() );
-
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
@@ -255,7 +269,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
         std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                             this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
-        this->fieldTemperaturePtr()->on(_range=elements(this->mesh()),_expr=myexpr);
+        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
     }
 
     // vector solution
@@ -692,7 +706,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
         auto uconv=thecoeff*idv(this->fieldVelocityConvection());
-        auto rangeStabUsed = elements(mesh);
+        auto rangeStabUsed = M_rangeMeshElements;
 #if 0
         typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
         auto stabGLSParam =  std::dynamic_pointer_cast<stab_gls_parameter_impl_type>( this->stabilizationGLSParameter() );
@@ -715,13 +729,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
             {
                 auto stab_residual_bilinear = thecoeff*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(this->fieldVelocityConvection()) );
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr=tau*stab_residual_bilinear*stab_test,
                                _geomap=this->geomap() );
                 auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
                 auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= val(tau*stab_residual_linear)*stab_test,
                                _geomap=this->geomap() );
             }
@@ -729,13 +743,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
             {
                 auto stab_residual_bilinear = thecoeff*gradt(u)*idv(this->fieldVelocityConvection());
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr=tau*stab_residual_bilinear*stab_test,
                                _geomap=this->geomap() );
             }
             for( auto const& d : this->bodyForces() )
             {
-                auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr=tau*expression(d)*stab_test,
@@ -750,13 +764,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
             {
                 auto stab_residual_bilinear = thecoeff*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(u)*idv(this->fieldVelocityConvection()) ) - kappa*laplaciant(u);
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr=tau*stab_residual_bilinear*stab_test,
                                _geomap=this->geomap() );
                 auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
                 auto stab_residual_linear = thecoeff*idv( rhsTimeStep );
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= val(tau*stab_residual_linear)*stab_test,
                                _geomap=this->geomap() );
             }
@@ -764,13 +778,13 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpd
             {
                 auto stab_residual_bilinear = thecoeff*gradt(u)*idv(this->fieldVelocityConvection()) - kappa*laplaciant(u);
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr=tau*stab_residual_bilinear*stab_test,
                                _geomap=this->geomap() );
             }
             for( auto const& d : this->bodyForces() )
             {
-                auto rangeBodyForceUsed = ( marker(d).empty() )? elements(mesh) : markedelements(mesh,marker(d));
+                auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(mesh,marker(d));
                 myLinearForm +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr=tau*expression(d)*stab_test,
@@ -818,7 +832,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         //double kappa = this->thermalProperties()->cstThermalConductivity();
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= kappa*inner(gradt(u),grad(v)),
                        _geomap=this->geomap() );
     }
@@ -828,7 +842,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
         auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                        _geomap=this->geomap() );
 
@@ -844,12 +858,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             {
 #if 0
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= thecoeff*(idt(u)*divv(this->fieldVelocityConvection()))*id(v),
                                _geomap=this->geomap() );
 #endif
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= 2*mu*defv2*id(v),
                                _geomap=this->geomap() );
             }
@@ -857,7 +871,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             {
                 auto incomp2 = pow( divv( this->fieldVelocityConvection() ),2 );
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= 2*mu*(defv2-(1./3.)*incomp2)*id(v),
                                _geomap=this->geomap() );
             }
@@ -879,7 +893,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= thecoeff*idt(u)*id(v),
                            _geomap=this->geomap() );
         }
@@ -890,7 +904,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
             auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= thecoeff*idv(rhsTimeStep)*id(v),
                            _geomap=this->geomap() );
         }
@@ -977,7 +991,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
         //double kappa = this->thermalProperties()->cstThermalConductivity();
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= kappa*inner(gradt(u),grad(v)),
                        _geomap=this->geomap() );
     }
@@ -987,7 +1001,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
         //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
         auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                        _geomap=this->geomap() );
     }
@@ -1005,7 +1019,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= thecoeff*idt(u)*id(v),
                            _geomap=this->geomap() );
         }
@@ -1049,7 +1063,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         //double kappa = this->thermalProperties()->cstThermalConductivity();
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
         myLinearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= kappa*inner(gradv(u),grad(v)),
                        _geomap=this->geomap() );
     }
@@ -1061,7 +1075,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= thecoeff*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
                            _geomap=this->geomap() );
         }
@@ -1076,7 +1090,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             if ( !this->fieldVelocityConvectionIsIncompressible() )
             {
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= -2*mu*defv2*id(v),
                                _geomap=this->geomap() );
             }
@@ -1084,7 +1098,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             {
                 auto incomp2 = pow( divv( this->fieldVelocityConvection() ),2 );
                 myLinearForm +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= -2*mu*(defv2-(1./3.)*incomp2)*id(v),
                                _geomap=this->geomap() );
             }
@@ -1102,7 +1116,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= thecoeff*idv(u)*id(v),
                            _geomap=this->geomap() );
         }
@@ -1113,7 +1127,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
             auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -thecoeff*idv(rhsTimeStep)*id(v),
                            _geomap=this->geomap() );
         }
@@ -1230,7 +1244,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr= -expression(d)*id(v),
