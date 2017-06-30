@@ -872,6 +872,7 @@ protected:
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
