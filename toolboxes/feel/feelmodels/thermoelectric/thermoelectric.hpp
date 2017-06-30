@@ -149,6 +149,8 @@ public:
     element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
 
+    electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
+
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
     BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
