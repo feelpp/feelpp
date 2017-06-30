@@ -1,6 +1,6 @@
 #!/bin/bash
 
-containers="$1"
+containers="$@"
 
 set -euo pipefail
 
