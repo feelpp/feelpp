@@ -102,7 +102,7 @@ public :
                     continue;
                 auto const& mat = m.second;
                 std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physics();
-                if ( ( matphysics != "fluid" ) && ( matphysics != "fluid-heat_transfert" ) )
+                if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
                     continue;
                 M_markers.insert( matmarker );
             }

@@ -734,14 +734,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
                    _pattern=size_type(Pattern::COUPLED),
                    _rowstart=M_thermodynModel->rowStartInVector() ) +=
-                integrate( _range=M_rangeMeshElements,// TODO intersection with thermodyn range
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
 
             double T0 = M_BoussinesqRefTemperature;
             auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
             linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,// TODO intersection with thermodyn range
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
