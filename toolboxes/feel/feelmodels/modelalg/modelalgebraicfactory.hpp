@@ -69,6 +69,8 @@ namespace FeelModels
 
 
         typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
+        typedef boost::function<void ( vector_ptrtype const& U, sparse_matrix_ptrtype& J )> jacobianAssembly_function_type;
+        typedef boost::function<void ( vector_ptrtype const& U, vector_ptrtype& R )> residualAssembly_function_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
@@ -178,7 +180,8 @@ namespace FeelModels
 
         linearAssembly_function_type addFunctionLinearPostAssembly;
         linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-
+        jacobianAssembly_function_type addFunctionJacobianPreAssembly;
+        residualAssembly_function_type addFunctionResidualPreAssembly;
     private :
 
         void
