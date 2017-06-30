@@ -519,6 +519,9 @@ public :
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
     //___________________________________________________________________________________//
+    // thermo dyn
+    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
+    //___________________________________________________________________________________//
     // fsi parameters
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
@@ -1048,6 +1051,7 @@ protected:
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
     double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics

@@ -533,13 +533,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             form2( _test=XhT,_trial=XhT,_matrix=J,
                    _rowstart=M_thermodynModel->rowStartInMatrix(),
                    _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElements,// TODO intersection with thermodyn range
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradt(t)*idv(u))*id(t),
                        _geomap=this->geomap() );
             form2( _test=XhT,_trial=Xh,_matrix=J,
                    _rowstart=M_thermodynModel->rowStartInMatrix(),
                    _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElements,// TODO intersection with thermodyn range
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
@@ -547,7 +547,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             form2( _test=Xh,_trial=XhT,_matrix=J,
                    _rowstart=this->rowStartInMatrix(),
                    _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElements,// TODO intersection with thermodyn range
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }

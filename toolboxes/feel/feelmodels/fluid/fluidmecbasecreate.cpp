@@ -976,6 +976,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         // disable thermo exporter if we use fluid exporter
         M_thermodynModel->setDoExportResults( false );
         M_thermodynModel->init( !M_useGravityForce/*false*/ );
+
+        M_rangeMeshElementsAeroThermal = intersect( M_rangeMeshElements, M_thermodynModel->rangeMeshElements() );
     }
     //-------------------------------------------------//
     // add ALE markers
