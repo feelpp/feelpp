@@ -66,15 +66,18 @@ private:
     markers_type M_markersDirichlet;
     markers_type M_markersNeumann;
 
+    /*
     double M_assembleTime;
     double M_solveTime;
     double M_totalTime;
+    */
 
 public:
     ConvergenceElasticityTest();
     void assembleExact();
     void run();
-    
+
+    void exportTimersCvg();
 };
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -129,12 +132,14 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
             bc_type = "Ibc";
     }
 
-	
-    auto repo = boost::format( "conv_mixedelasticity/D%1%/P%2%/N%3%/%4%/" )
+	std::string use_sc = boption(prefixvm(M_model->prefix(), "use-sc")) ? "with-sc" : "monolithic";
+
+    auto repo = boost::format( "conv_mixedelasticity/D%1%/P%2%/N%3%/%4%/%5%/" )
         % Dim
         % Order
         % G_Order 
-        % bc_type;
+        % bc_type
+        % use_sc;
 
     Environment::changeRepository( repo );
 	
@@ -157,36 +162,40 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     cvg_u.open( "convergence_u.dat", std::ios::out | std::ios::trunc);
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
     // format: hsize | error_U | error_sigma | time assembling matrix | time solver | total time 
-    boost::format fmter2("%1% %|28t|%2% %|28t|%3% %|28t|%4% %|28t|%5% %|28t|%6%\n");
+    boost::format fmter2("%1% %|28t|%2% %|28t|%3%\n"); 
+    /* %|28t|%4% %|28t|%5% %|28t|%6%\n");*/
     boost::format fmterOut;
 
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
+        /*
         M_assembleTime = 0;
         M_solveTime = 0;
         M_totalTime = 0;    
+        */
 
-        tic();
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
         
         tic();
+        
+        // tic();
         M_model -> init(M_mesh); // inside here assembleSTD
-        M_assembleTime = toc("assembleTime");
+        // M_assembleTime = toc("assembleTime");
 
         auto nDofSigma = M_model->fluxSpace()->nDof();
         auto nDofU = M_model->potentialSpace()->nDof();
 
-        tic();
+        // tic();
 		M_model->solve();	// inside here assembleF
-		M_solveTime = toc("solveTime");
+		// M_solveTime = toc("solveTime");
 
 		// M_model->exportResults(M_mesh);
 
         M_sigma = M_model->fluxField();
         M_u = M_model->potentialField();
 
-        M_totalTime = toc("totalTime");
+        // M_totalTime = toc("totalTime");
 
         // Data
         double mu = 1;
@@ -223,7 +232,8 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         // cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
         cvg_sigma << fmter % h % nDofSigma % errSigma;
         cvg_u << fmter % h % nDofU % errU;
-        cvg_tot << fmter2 % h % errU % errSigma % M_assembleTime % M_solveTime % M_totalTime ;
+        cvg_tot << fmter2 % h % errU % errSigma ; 
+        /* % M_assembleTime % M_solveTime % M_totalTime ;*/
 		
 /*
         sigma_ex.on( elements(M_mesh), sigma_exact);
@@ -268,13 +278,43 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 	    }
     }
 #endif
-	
+
+    this->exportTimersCvg();	
 
     cvg_sigma.close();
     cvg_u.close();
     cvg_tot.close();
 
 }
+
+// Time exporter
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::exportTimersCvg()
+{
+    if( Environment::isMasterRank() )
+    {
+        std::ofstream timers( "timers.dat", std::ios::out | std::ios::trunc);
+        std::string fmtS = "";
+        for( int i = 1; i <= M_model->getTimers().size(); ++i )
+            fmtS += "%" + std::to_string(i) + "% %|" + std::to_string(14*i) + "t|";
+        boost::format fmt(fmtS);
+        for( auto const& pair : M_model->getTimers() )
+            fmt % pair.first;
+        timers << fmt << std::endl;
+        
+        for( int i = 0; i < ioption("cvg.refine-nb"); ++i )
+        {
+            for( auto const& pair : M_model->getTimers() )
+                fmt % pair.second[i];
+            timers << fmt << std::endl;
+        }
+        
+        timers.close();
+    }
+}
+
+
 
 // } // end namespace FeelModels
 } // end namespace Feel

@@ -935,6 +935,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             CK = local_matrix_t::Zero(N4,N);
             FK = local_vector_t::Zero(N);
             F2 = local_vector_t::Zero(N4);
+            BK3 = local_matrix_t::Zero(N, N4);
 
             int n = 0;
             std::for_each( dK.faces1().begin(), dK.faces1().end(), [&]( auto dKi )
