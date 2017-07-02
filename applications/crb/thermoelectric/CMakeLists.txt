@@ -24,7 +24,7 @@
 
 crb_add_library( thermoelectric SRCS thermoelectric.cpp EXEC CRB_LIB_THERMOELECTRIC)
 crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
-install( FILES thermoelectric.hpp nl-thermoelectric.hpp
+install( FILES thermoelectric.hpp nlthermoelectric.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 set(FEELPP_CRB_THERMOELECTRIC_LIBRARIES ${CRB_LIB_THERMOELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LIBRARIES PARENT_SCOPE)
