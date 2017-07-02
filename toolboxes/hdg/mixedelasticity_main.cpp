@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
     {
         ME->solve();
         ME->exportResults( mesh );
+        ME->exportTimers(); 
     }
     else
     {

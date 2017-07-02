@@ -184,10 +184,13 @@ protected:
     // time discretization
     newmark_ptrtype M_nm_mixedelasticity;
 
+    // save time
+    std::map<std::string, std::vector<double> > M_timers;
+
 public:
     
     // constructor
-   MixedElasticity( std::string const& prefix = "mixedelasticity",                   
+    MixedElasticity( std::string const& prefix = "mixedelasticity",                   
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
                     std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
@@ -219,7 +222,8 @@ public:
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
     vector_ptrtype getF() {return M_F; }
- 
+    std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
+
     // Exporter
     virtual void exportResults( mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr  )
     {
@@ -236,7 +240,8 @@ public:
     virtual void initModel();
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
-
+    virtual void exportTimers(); 
+    
     virtual void assemble();
     void assembleSTD();   
     void assembleF();
@@ -409,15 +414,15 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::init( mesh_ptrtype mesh, mesh_ptr
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    toc("mesh");
+    M_timers["mesh"].push_back(toc("initMesh"));
 
     tic();
     this->initModel();
-    toc("model");
+    M_timers["initModel"].push_back(toc("initModel"));
 
     tic();
     this->initSpaces();
-    toc("spaces");
+    M_timers["spaces"].push_back(toc("initSpaces"));
 
 	if (!isStationary())
 	{
@@ -429,12 +434,12 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::init( mesh_ptrtype mesh, mesh_ptr
 
     tic();
     this->initExporter(meshVisu);
-    toc("exporter");
+    M_timers["exporter"].push_back(toc("initExporter"));
 
     	
     tic();
     this->assemble();
-    toc("assemble");
+    M_timers["asbMatrix"].push_back(toc("assembleMatrix"));
 	
 
 }
@@ -742,6 +747,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 
     // auto ps = product(M_Vh,M_Wh,M_Mh);
 
+
     tic();
     auto U = M_ps -> element();
     M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
@@ -751,13 +757,13 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
     // Assembling standard matrix
     tic();
     this->assembleSTD();
-    toc("assemble standard matrix");
+    M_timers["asbStd"].push_back(toc("assembleStandardMatrix"));
 
     // Assembling ibc part
     tic();
     for ( int i = 0; i < M_IBCList.size(); i++ )
         this->assembleMatrixIBC( i );
-    toc("assemble IBC conditions");
+    M_timers["asbIbc"].push_back(toc("assembleIbcMatrix"));
 
 
     M_A_cst->close();
@@ -776,7 +782,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     for ( int i = 0; i < M_IBCList.size(); i++ )
         this->assembleRhsIBC( i );
     M_F->close();
-    toc("assemble F");
+    M_timers["asbRHS"].push_back(toc("assembleRHS"));
 	
     auto U = M_ps -> element();
 	auto bbf = blockform2(*M_ps, M_A_cst);
@@ -790,7 +796,9 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
         solver_string += "monolithic";
     
     tic();
+    tic();
     bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
+    M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
     
     M_up = U(0_c);
@@ -1424,44 +1432,77 @@ template <int Dim, int Order, int G_Order, int E_Order>
 void
 MixedElasticity<Dim,Order, G_Order, E_Order>::geometricTest( ){
 
- 
-auto itField = M_modelProperties -> boundaryConditions().find("GeometricalTest");
-if ( itField != M_modelProperties -> boundaryConditions().end() )
+    auto itField = M_modelProperties -> boundaryConditions().find("GeometricalTest");
+    if ( itField != M_modelProperties -> boundaryConditions().end() )
+    {
+        auto mapField = itField -> second;
+        auto itType = mapField.find( "force_F" );
+        if (itType != mapField.end() )
+        {
+            for (auto const& exAtMarker : itType->second )
+            {
+                auto curvedForce = (integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = idv(M_up)*N() )).evaluate();
+                auto forceF = (expr<Dim,1,expr_order> (exAtMarker.expression() )).evaluate();
+                /* 
+                Feel::cout << "Force F uploaded:\t" << forceF << std::endl;
+                Feel::cout << "Force F computed from M_up:\t" << curvedForce << std::endl; 
+                */
+                auto curveError = (curvedForce - forceF).cwiseAbs();
+    
+                Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;  
+            }
+        }
+        /* 
+        itType = mapField.find( "force_F_2" );
+        if (itType != mapField.end() )
+        {
+            for (auto const& exAtMarker : itType->second )
+            {
+                auto forceF_2 = expr<Dim,1,expr_order> (exAtMarker.expression() );
+                auto forceIntegral = (integrate( _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = forceF_2 * N() )).evaluate();
+                Feel::cout << "Force F computed from input:\t" << forceIntegral << std::endl; 
+    
+            }
+        }
+        */
+    }
+}
+
+
+// Time exporter
+template <int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim,Order, G_Order, E_Order>::exportTimers()
 {
-    auto mapField = itField -> second;
-    auto itType = mapField.find( "force_F" );
-    if (itType != mapField.end() )
+    if( Environment::isMasterRank() )
     {
-        for (auto const& exAtMarker : itType->second )
+        std::ofstream timers( "timers.dat", std::ios::out | std::ios::trunc);
+        std::string fmtS = "";
+        for( int i = 1; i <= M_timers.size(); ++i )
+            fmtS += "%" + std::to_string(i) + "% %|" + std::to_string(14*i) + "t|";
+        boost::format fmt(fmtS);
+        for( auto const& pair : M_timers )
+            fmt % pair.first;
+        timers << fmt << std::endl;
+        if (isStationary())
         {
-            auto curvedForce = (integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = idv(M_up)*N() )).evaluate();
-            auto forceF = (expr<Dim,1,expr_order> (exAtMarker.expression() )).evaluate();
-            /* 
-            Feel::cout << "Force F uploaded:\t" << forceF << std::endl;
-            Feel::cout << "Force F computed from M_up:\t" << curvedForce << std::endl; 
-            */
-            auto curveError = (curvedForce - forceF).cwiseAbs();
-    
-            Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;  
+                for( auto const& pair : M_timers )
+                    fmt % pair.second;
+                timers << fmt << std::endl;
         }
+
+        /* 
+           //( for( int i = 0; this->timeStepBase()->isFinished() ; ++i )
+            {
+                for( auto const& pair : M_timers )
+                    fmt % pair.second[i];
+                timers << fmt << std::endl;
+        }*/
+        
+        timers.close();
     }
-    /* 
-    itType = mapField.find( "force_F_2" );
-    if (itType != mapField.end() )
-    {
-        for (auto const& exAtMarker : itType->second )
-        {
-            auto forceF_2 = expr<Dim,1,expr_order> (exAtMarker.expression() );
-            auto forceIntegral = (integrate( _range=markedfaces(M_mesh,exAtMarker.marker()), _expr = forceF_2 * N() )).evaluate();
-            Feel::cout << "Force F computed from input:\t" << forceIntegral << std::endl; 
-    
-        }
-    }
-    */
 }
 
-
-}
 } // Namespace FeelModels
 
 } // Namespace Feel
