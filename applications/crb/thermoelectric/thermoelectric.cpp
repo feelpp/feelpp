@@ -281,7 +281,7 @@ Thermoelectric::beta_type
 Thermoelectric::computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
 {
     auto eimGradGrad = this->scalarDiscontinuousEim()[0];
-    auto betaEimGradGrad = eimGradGrad->beta( mu );
+    auto betaEimGradGrad = eimGradGrad->beta( mu, urb );
     this->fillBetaQm(mu, betaEimGradGrad);
     return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
 }
@@ -309,10 +309,10 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression1());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
         M_betaAqm[idx++][0] = e.evaluate();
     }
 
@@ -322,19 +322,19 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
         M_betaFqm[0][idx++][0] = mu.parameterNamed("sigma")*e.evaluate();
     }
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression2());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
         M_betaFqm[0][idx++][0] = e.evaluate();
     }
 }
@@ -404,10 +404,9 @@ Thermoelectric::solve( parameter_type const& mu )
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
         f += integrate( markedfaces(M_mesh, exAtM.marker() ),
                         sigma*e*(gamma/hFace()*id(phiV) -  grad(phiV)*N()) );
@@ -423,10 +422,10 @@ Thermoelectric::solve( parameter_type const& mu )
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression1());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
         aT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                          e*inner(idt(T), id(phiT)) );
     }
@@ -440,10 +439,10 @@ Thermoelectric::solve( parameter_type const& mu )
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression2());
-        auto symb = e.expression().symbols();
-        if( symb.size() > 0 )
-            for( auto const& param : symb )
-                e.setParameterValues( { param.get_name(), mu.parameterNamed(param.get_name()) } );
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
         fT += integrate( markedfaces(M_mesh, exAtM.marker() ),
                          e*id(phiT) );
     }

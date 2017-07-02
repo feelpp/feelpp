@@ -1,6 +1,9 @@
 #!/bin/bash
 
 set -euo pipefail
+
+source $(dirname $0)/common.sh
+
 #set -x
 if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
     docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
@@ -47,31 +50,13 @@ while [ -n "$1" ]; do
     esac
 done
 
+BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
+export BRANCHTAG
+version=$(get_version)
+export version
 CONTAINERS=${*:-feelpp-libs}
 echo $CONTAINERS
 
-tag_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    $LIST | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        image=${tokens[0]}
-        printf "%s" "$image" 
-    done
-}
-extratags_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    $LIST | grep "${BRANCH}-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        extratags=${tokens[@]:5}
-        printf "%s" "${extratags}" 
-    done
-}
 
 for container in ${CONTAINERS}; do
     echo "--- Pushing Container feelpp/${container}"
