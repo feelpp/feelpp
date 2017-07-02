@@ -48,7 +48,6 @@ steps:
    agents:
      docker: true
      ubuntu: "16.10"
-   branches: develop master
    env:
      TARGET: ubuntu:16.10
  - wait
