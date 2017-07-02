@@ -16,7 +16,7 @@ export version
 tag=$(tag_from_target $TARGET)
 echo "--- building feelpp-libs:${tag}"
 
-(cd docker/feelpp-libs && bash mkimg.sh -f ${TARGET} --jobs ${JOBS} --branch ${BUILDKITE_BRANCH} --cxx "${CXX}" --cc "${CC}")
+(cd docker/feelpp-libs && bash mkimg.sh -t $tag -f ${TARGET} --jobs ${JOBS} --branch ${BUILDKITE_BRANCH} --cxx "${CXX}" --cc "${CC}")
 
 if [ "${BUILDKITE_BRANCH}" = "develop" ]; then
     echo "--- Tagging feelpp-libs:${tag}"
