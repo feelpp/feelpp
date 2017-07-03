@@ -9,31 +9,36 @@ function get_field(){
     printf "%s" "${ret}"
 }
 function get_version() {
+    if [ -f cmake/modules/feelpp.version.cmake ]; then
+        vfile=cmake/modules/feelpp.version.cmake
+    else
+        vfile=$(dirname $0)/../feel/cmake/modules/feelpp.version.cmake
+    fi
     IFS=''
-    major=$(get_field "cmake/modules/feelpp.version.cmake" "VERSION_MAJOR ")
-    minor=$(get_field "cmake/modules/feelpp.version.cmake" "VERSION_MINOR ")
-    micro=$(get_field "cmake/modules/feelpp.version.cmake" "VERSION_MICRO ")
-    prerelease=$(get_field "cmake/modules/feelpp.version.cmake" "VERSION_PRERELEASE ")
+    major=$(get_field "$vfile" "VERSION_MAJOR ")
+    minor=$(get_field "$vfile" "VERSION_MINOR ")
+    micro=$(get_field "$vfile" "VERSION_MICRO ")
+    prerelease=$(get_field "$vfile" "VERSION_PRERELEASE ")
     printf "v%s" "${major}.${minor}.${micro}${prerelease}"
 }
 
 tag_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    splitfrom=(`echo "$1" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh | grep "${BRANCHTAG}-${version}-${fromos}-${fromtag}"  | while read line ; do
+    tools/scripts/buildkite/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "${image}"
     done
 }
 extratags_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
+    splitfrom=(`echo "$1" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
     
-    tools/scripts/buildkite/list.sh | grep "${BRANCHTAG}-${version}-${fromos}-${fromtag}"  | while read line ; do
+    tools/scripts/buildkite/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
@@ -47,3 +52,5 @@ dockerfile_from() {
     printf 'FROM %s\n%s' "$from" "$(<$dockerfile)"
 }
 
+FEELPP_VERSION=$(get_version)
+#echo "Feel++ version: $FEELPP_VERSION"

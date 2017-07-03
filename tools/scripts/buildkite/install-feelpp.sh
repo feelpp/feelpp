@@ -14,10 +14,7 @@ if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://gi
 #tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
-export BRANCHTAG
-version=$(get_version)
-export version
-tag=$(tag_from_target $TARGET)
+tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 echo "--- Building feelpp-${component}:${tag}"
 
 if [ "${component}" = "base" ] ; then
@@ -37,7 +34,7 @@ docker build \
 
 
 echo "--- Tagging feelpp-${component}:${tag}"
-extratags=`extratags_from_target $TARGET`
+extratags=$(extratags_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 # add extra tags
 for tagalias in ${extratags[@]}; do
     echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"

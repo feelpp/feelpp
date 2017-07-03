@@ -20,6 +20,7 @@ fi
 
 build="$(basename "$0")"
 BRANCH=${BUILDKITE_BRANCH:-develop}
+VERSION=${FEELPP_VERSION}
 if [ -z ${TARGET:-""} ]; then
     TARGET=ubuntu:17.04
 fi
@@ -30,6 +31,7 @@ usage() {
     echo >&2 "usage: $build "
     echo >&2 "              [-t|--target target host os, default: $TARGET]"
     echo >&2 "              [-b|--branch project git branch, default: $BRANCH]"
+    echo >&2 "              [--version project version, default: $VERSION]"
     echo >&2 "              [--latest true|false, default=$latest]"
     echo >&2 "   ie: $build -t ubuntu:16.10 -b develop --latest true feelpp-libs feelpp-base"
     exit 1
@@ -43,6 +45,7 @@ while [ -n "$1" ]; do
     case "$1" in
         -t|--target) TARGET="$2" ; shift 2 ;;
         -b|--branch) BRANCH="$2" ; shift 2 ;;
+        --version) VERSION="$2" ; shift 2 ;;
         --latest) latest="$2" ; shift 2 ;;
         --noop) noop="$2" ; shift 2 ;;
         -h|--help) usage ;;
@@ -51,9 +54,6 @@ while [ -n "$1" ]; do
 done
 
 BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
-export BRANCHTAG
-version=$(get_version)
-export version
 CONTAINERS=${*:-feelpp-libs}
 echo $CONTAINERS
 
@@ -63,7 +63,7 @@ for container in ${CONTAINERS}; do
 
     #tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
     #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
-    tag=$(tag_from_target $TARGET)
+    tag=$(tag_from_target $TARGET $BRANCHTAG $VERSION)
         
     echo "--- Pushing feelpp/${container}:$tag"
 
@@ -89,7 +89,7 @@ for container in ${CONTAINERS}; do
     if [ "${BRANCH}" = "develop" -o  "${BRANCH}" = "master" ]; then
         #extratags=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
         #extratags=$(cut -d- -f 2- <<< $(extratags_from_target $TARGET))
-        extratags=$(extratags_from_target $TARGET)
+        extratags=$(extratags_from_target $TARGET $BRANCHTAG $VERSION)
         for aliastag in ${extratags[@]} ; do
             echo "--- Pushing feelpp/${container}:$aliastag"
             if [ "$noop" = "false" ]; then
@@ -98,7 +98,7 @@ for container in ${CONTAINERS}; do
             else
                 echo "docker tag \"feelpp/${container}:$tag\" \"feelpp/${container}:$aliastag\"";
                 echo "docker push \"feelpp/${container}:$aliastag\"";
-            fi
+x            fi
         done
     fi
 done
