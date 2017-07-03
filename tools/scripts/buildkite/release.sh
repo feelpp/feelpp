@@ -98,7 +98,7 @@ for container in ${CONTAINERS}; do
             else
                 echo "docker tag \"feelpp/${container}:$tag\" \"feelpp/${container}:$aliastag\"";
                 echo "docker push \"feelpp/${container}:$aliastag\"";
-x            fi
+            fi
         done
     fi
 done
