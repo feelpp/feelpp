@@ -30,7 +30,8 @@ DISTROS=(
 FEELPP_BRANCHES=(
     #master
     #develop
-    ${BRANCHTAG}
+    $1
+    #${BRANCHTAG}
 )
 
 # Returns the major version for a given X.X.X docker version
@@ -45,7 +46,7 @@ image_name() {
   printf "%s-%s" "$release" "$distro" | sed -e 's/^stable-//g'
 }
 
-version=$(get_version)
+version=${2:-${FEELPP_VERSION}}
 
 for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
   distro="debian"
@@ -56,7 +57,7 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
     printf "%s-%s %s %s %s %s %s %s-%s" \
       $(image_name "$feelpp_branch_version" "$distro") $os_version \
       "n/a" \
-      $distro $feelpp_version $os_version $feelpp_branch_version \
+      $feelpp_branch_version $feelpp_version $distro $os_version  \
       $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_DEBIAN ]] ; then
@@ -79,7 +80,7 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
     printf "%s-%s %s %s %s %s %s %s-%s" \
       $(image_name "$feelpp_branch_version" "$distro") $os_version \
       $(image_name "$feelpp_branch_version" "$distro") \
-      $distro $feelpp_version $os_version $feelpp_branch_version \
+      $feelpp_branch_version $feelpp_version $distro $os_version  \
       $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_UBUNTU ]] ; then
@@ -89,6 +90,11 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
         printf " %s" $(sed -e 's/develop/latest/g' <<< $feelpp_version)
         printf " %s" $(sed -e 's/master/stable/g' <<< $feelpp_version)
 
+        # tag with version only with master and develop
+        # master should take over develop once a release is done
+        if [ ${feelpp_branch} = "develop" -o ${feelpp_branch} = "master" ]; then
+            printf " %s" "${version}"
+        fi
 
         printf " %s" $(image_name "$feelpp_version" "$distro")
     fi
