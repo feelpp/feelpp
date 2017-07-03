@@ -193,7 +193,7 @@ public:
     beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu );
     beta_type computeBetaQm( parameter_type const& mu );
     beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 );
-    void fillBetaQm( parameter_type const& mu, vectorN_type betaEimSigma, vectorN_type betaEimK, vectorN_type betaEimGradGrad );
+    void fillBetaQm( parameter_type const& mu, vectorN_type betaEimSigma, vectorN_type betaEimK, vectorN_type betaEimJoule );
 
     affine_decomposition_type computeAffineDecomposition();
     std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();

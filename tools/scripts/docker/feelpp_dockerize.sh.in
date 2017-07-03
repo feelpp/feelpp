@@ -11,8 +11,11 @@ FEELPP_BRANCH=develop
 BUILD_JOBS=10
 FROM=feelpp/feelpp-base
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
+FEELPP_VERSION=v@FEELPP_VERSION_STRING@
 CMAKE_FLAGS=""
 MAKE_FLAGS=""
+PROJECT=
+PROJECT_VERSION=${FEELPP_VERSION}
 
 for i in "$@"
 do
@@ -52,7 +55,15 @@ do
         -d=*|--feelpp-dir=*)
             FEELPP_DIR="${i#*=}"
             shift # past argument=value
-            ;;                       
+            ;;
+        --feelpp-version=*)
+            FEELPP_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;
+        --project-version=*)
+            PROJECT_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;                     
         *)
             # unknown option
             ;;
@@ -60,6 +71,7 @@ do
 done
 
 echo "PROJECT=${PROJECT}"
+echo "PROJECT_VERSION=${PROJECT_VERSION}"
 echo "TARGET=${TARGET}"
 echo "BRANCH=${BRANCH}"
 echo "URL=${URL}"
@@ -68,6 +80,7 @@ echo "FEELPP_BRANCH=${FEELPP_BRANCH}"
 echo "BUILD_JOBS=${BUILD_JOBS}"
 echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
 echo "FEELPP_DIR=${FEELPP_DIR}"
+echo "FEELPP_VERSION=${FEELPP_VERSION}"
 
 
 # Combines a dockerfile template with a generated FROM line
@@ -82,7 +95,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
@@ -93,16 +106,16 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
     done
 }
 
-tag=$(tag_from_target $TARGET $BRANCH)
+tag=$(tag_from_target $TARGET $BRANCH $PROJECT_VERSION)
 echo "tag: $tag"
-basetag=$(tag_from_target $TARGET $FEELPP_BRANCH)
+basetag=$(tag_from_target $TARGET $FEELPP_BRANCH $FEELPP_VERSION)
 echo "basetag: $basetag" 
 echo "--- Building $PROJECT:${tag}"
 
