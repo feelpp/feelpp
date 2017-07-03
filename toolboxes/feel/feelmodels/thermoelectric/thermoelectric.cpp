@@ -135,7 +135,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 int
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    return M_thermodynModel->nBlockMatrixGraph() + 1;
+    int nBlock = 1;
+    if ( M_modelName == "ThermoElectric" )
+        nBlock += M_thermodynModel->nBlockMatrixGraph();
+    return nBlock;
 }
 
 
@@ -146,23 +149,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     int nBlock = this->nBlockMatrixGraph();
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
     int indexBlock=0;
-    int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
-    for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
-        for (int tk2=0;tk2<nBlockThermoDyn ;++tk2 )
-            myblockGraph(indexBlock+tk1,indexBlock+tk2) = M_thermodynModel->buildBlockMatrixGraph()(tk1,tk2);
-    indexBlock += nBlockThermoDyn;
+    if ( M_modelName == "ThermoElectric" )
+    {
+        int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
+        for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
+            for (int tk2=0;tk2<nBlockThermoDyn ;++tk2 )
+                myblockGraph(indexBlock+tk1,indexBlock+tk2) = M_thermodynModel->buildBlockMatrixGraph()(tk1,tk2);
+        indexBlock += nBlockThermoDyn;
 
+        BlocksStencilPattern patCoupling1(1,nBlockThermoDyn,size_type(Pattern::ZERO));
+        patCoupling1(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(0,indexBlock) = stencil(_test=M_thermodynModel->spaceTemperature(),
+                                             _trial=this->spaceElectricPotential(),
+                                             _pattern_block=patCoupling1,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+    }
     myblockGraph(indexBlock,indexBlock) = stencil(_test=this->spaceElectricPotential(),
                                                   _trial=this->spaceElectricPotential() )->graph();
-
-    BlocksStencilPattern patCoupling1(1,nBlockThermoDyn,size_type(Pattern::ZERO));
-    patCoupling1(0,0) = size_type(Pattern::COUPLED);
-    myblockGraph(0,indexBlock) = stencil(_test=M_thermodynModel->spaceTemperature(),
-                                           _trial=this->spaceElectricPotential(),
-                                           _pattern_block=patCoupling1,
-                                           _diag_is_nonzero=false,_close=false)->graph();
     ++indexBlock;
-
     myblockGraph.close();
 
     return myblockGraph;
@@ -176,24 +180,42 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
-    std::string theThermoElectricModel = this->modelProperties().model();
-    bool doSolveOnlyElectricPotential = ( theThermoElectricModel == "ThermoElectric-linear" );
-
-    M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
-                                                     this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
-    M_thermodynModel->loadMesh( this->mesh() );
-    // disable thermo exporter if we use fluid exporter
-    M_thermodynModel->setDoExportResults( false );
-    M_thermodynModel->init( doSolveOnlyElectricPotential /*false*/ );
-    M_thermodynModel->setRowStartInMatrix( 0 );
-    M_thermodynModel->setColStartInMatrix( 0 );
-    M_thermodynModel->setRowStartInVector( 0 );
-    if ( doSolveOnlyElectricPotential )
+    //std::string theThermoElectricModel = this->modelProperties().model();
+    M_modelName = this->modelProperties().model();
+    M_solverName = "Linear";
+    if ( M_modelName == "ThermoElectric-linear" )
     {
-        M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                boost::ref( *this ), _1, _2 );
+        M_modelName = "ThermoElectric";
+        M_solverName = "Linear";
     }
+    else if ( M_modelName == "ThermoElectric-nonlinear" )
+    {
+        M_modelName = "ThermoElectric";
+        M_solverName = "Newton";
+    }
+    CHECK( ( M_modelName == "Electric" ) || ( M_modelName == "ThermoElectric" ) ) << "invalid model name : " << M_modelName << "\n";
 
+    bool doSolveOnlyElectricPotential =
+        ( ( M_modelName == "ThermoElectric" ) && ( M_solverName == "Linear" ) ) ||
+        ( M_modelName == "Electric" );
+
+    if ( M_modelName == "ThermoElectric" )
+    {
+        M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
+                                                         this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
+        M_thermodynModel->loadMesh( this->mesh() );
+        // disable thermo exporter if we use fluid exporter
+        M_thermodynModel->setDoExportResults( false );
+        M_thermodynModel->init( doSolveOnlyElectricPotential /*false*/ );
+        M_thermodynModel->setRowStartInMatrix( 0 );
+        M_thermodynModel->setColStartInMatrix( 0 );
+        M_thermodynModel->setRowStartInVector( 0 );
+        if ( M_solverName == "Linear" )
+        {
+            M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                                    boost::ref( *this ), _1, _2 );
+        }
+    }
 
     // physical properties
     M_electricProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
@@ -218,17 +240,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
-    M_startBlockIndexFieldsInMatrix["temperature"] = 0;
-    M_startBlockIndexFieldsInMatrix["potential-electric"] = M_thermodynModel->nBlockMatrixGraph();
+    if ( M_modelName == "ThermoElectric" )
+    {
+        M_startBlockIndexFieldsInMatrix["temperature"] = currentStartIndex;
+        currentStartIndex += M_thermodynModel->nBlockMatrixGraph();
+    }
+    M_startBlockIndexFieldsInMatrix["potential-electric"] = currentStartIndex;
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
     M_blockVectorSolutionMonolithic.resize( nBlock );
-    int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
     int indexBlock=0;
-    for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
-        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_thermodynModel->blockVectorSolution()(tk1);
-    indexBlock+=nBlockThermoDyn;
+    if ( M_modelName == "ThermoElectric" )
+    {
+        int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
+        for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
+            M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_thermodynModel->blockVectorSolution()(tk1);
+        indexBlock+=nBlockThermoDyn;
+    }
     M_blockVectorSolutionMonolithic(indexBlock) = this->fieldElectricPotentialPtr();
 
     // init petsc vector associated to the block
@@ -330,7 +359,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
         {
-            if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
+            if ( M_modelName == "ThermoElectric" )
+                if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
             if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricPotential );
             if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricField );
             if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Pid );
@@ -365,11 +395,12 @@ boost::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    *_ostr << M_thermodynModel->getInfo()->str();
+    if ( M_modelName == "ThermoElectric" )
+        *_ostr << M_thermodynModel->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
-           << "\n||----------Info : Electric--------------------||"
+           << "\n||-----------Info : Electric--------------------||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -396,45 +427,49 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n";
 
-    std::string myexporterType = M_exporter->type();
-    int myexporterFreq = M_exporter->freq();
-    std::string doExport_str;
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) )
-        doExport_str=(doExport_str.empty())?"temperature":doExport_str+" - temperature";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
-        doExport_str=(doExport_str.empty())?"electric-potential":doExport_str+" - electric-potential";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
-        doExport_str=(doExport_str.empty())?"electric-field":doExport_str+" - electric-field";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
-        doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
 
 
-    *_ostr << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n||----------Info : ThermoElectric---------------||"
-           << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n   Prefix : " << this->prefix()
-           << "\n   Root Repository : " << this->rootRepository();
-    *_ostr << "\n   Physical Model"
-           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
-    *_ostr << "\n   Exporter"
-           << "\n     -- type            : " << myexporterType
-           << "\n     -- freq save       : " << myexporterFreq
-           << "\n     -- fields exported : " << doExport_str
-           << "\n   Processors"
-           << "\n     -- number of proc : " << this->worldComm().globalSize()
-           << "\n     -- current rank : " << this->worldComm().globalRank();
+    if ( M_modelName == "ThermoElectric" )
+    {
+        std::string myexporterType = M_exporter->type();
+        int myexporterFreq = M_exporter->freq();
+        std::string doExport_str;
+        if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) )
+            doExport_str=(doExport_str.empty())?"temperature":doExport_str+" - temperature";
+        if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
+            doExport_str=(doExport_str.empty())?"electric-potential":doExport_str+" - electric-potential";
+        if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
+            doExport_str=(doExport_str.empty())?"electric-field":doExport_str+" - electric-field";
+        if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
+            doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
 
-    if ( M_algebraicFactoryMonolithic )
-        *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
-    *_ostr << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n||==============================================||"
-           << "\n";
 
+        *_ostr << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n||----------Info : ThermoElectric---------------||"
+               << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n   Prefix : " << this->prefix()
+               << "\n   Root Repository : " << this->rootRepository();
+        *_ostr << "\n   Physical Model"
+               << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+        *_ostr << "\n   Exporter"
+               << "\n     -- type            : " << myexporterType
+               << "\n     -- freq save       : " << myexporterFreq
+               << "\n     -- fields exported : " << doExport_str
+               << "\n   Processors"
+               << "\n     -- number of proc : " << this->worldComm().globalSize()
+               << "\n     -- current rank : " << this->worldComm().globalRank();
+
+        if ( M_algebraicFactoryMonolithic )
+            *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
+        *_ostr << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n||==============================================||"
+               << "\n";
+    }
     return _ostr;
 }
 
@@ -531,17 +566,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     this->log("ThermoElectric","solve", "start");
     this->timerTool("Solve").start();
 
-    M_thermodynModel->updateParameterValues();
+    if ( M_modelName == "ThermoElectric" )
+        M_thermodynModel->updateParameterValues();
     this->updateParameterValues();
 
-    std::string theThermoElectricModel = this->modelProperties().model();
-    if ( theThermoElectricModel == "ThermoElectric-linear" )
+    //std::string theThermoElectricModel = this->modelProperties().model();
+    //if ( theThermoElectricModel == "ThermoElectric-linear" )
+    if ( M_solverName == "Linear" )
     {
         auto mySolutionVectorLinear = M_backendElectricModel->toBackendVectorPtr( this->fieldElectricPotential() );
         M_algebraicFactoryElectricModel->solve( "LinearSystem", mySolutionVectorLinear );
-        M_thermodynModel->solve();
+        if ( M_modelName == "ThermoElectric" )
+            M_thermodynModel->solve();
     }
-    else
+    else if ( M_solverName == "Newton" )
     {
         M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
         M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vector() );
@@ -577,8 +615,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
-    auto XhT = this->thermodynModel()->spaceTemperature();
-    auto const& t = this->thermodynModel()->fieldTemperature();
     auto const& v = this->fieldElectricPotential();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,

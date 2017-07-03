@@ -199,7 +199,8 @@ private :
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
     // physical parameter
-    //space_scalar_P0_ptrtype M_XhScalarP0;
+    std::string M_modelName;
+    std::string M_solverName;
     electricproperties_ptrtype M_electricProperties;
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
