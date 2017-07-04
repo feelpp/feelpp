@@ -137,6 +137,7 @@ public:
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
     thermodyn_model_ptrtype thermodynModel() { return M_thermodynModel; }

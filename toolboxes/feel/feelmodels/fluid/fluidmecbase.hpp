@@ -394,6 +394,8 @@ public:
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
