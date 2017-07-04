@@ -72,36 +72,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::build()
-{
-    this->log("LevelSet", "build", "start");
-
-    super_type::build();
-    this->createFunctionSpaces();
-    this->createInterfaceQuantities();
-    this->createReinitialization();
-    this->createOthers();
-
-    this->log("LevelSet", "build", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
-{
-    this->log("LevelSet", "build (from mesh)", "start");
-
-    super_type::build( mesh );
-    this->createFunctionSpaces();
-    this->createInterfaceQuantities();
-    this->createReinitialization();
-    this->createOthers();
-
-    this->log("LevelSet", "build (from mesh)", "finish");
-}
-
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -369,10 +339,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable )
 {
     M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    M_spaceMarkers = space_markers_type::New( 
+            _mesh=this->mesh(), _worldscomm=this->worldsComm(),
+            _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
+            );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1173,7 +1146,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
@@ -1220,7 +1193,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
