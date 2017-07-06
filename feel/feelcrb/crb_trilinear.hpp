@@ -454,6 +454,16 @@ CRBTrilinear<TruthModelType>::offline()
         for(int q=0; q<this->M_model->Ql( this->M_output_index ); q++)
             this->M_Lqm_pr[q].resize( 1 );
 
+        // save mesh of rbspace
+        if ( true )
+        {
+            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilename = (this->M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
+            this->M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        this->M_model->copyAdditionalModelFiles( this->dbDirectory() );
+
     }//end of if( rebuild_database )
 #if 1
     else
