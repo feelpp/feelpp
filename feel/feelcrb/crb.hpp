@@ -11290,13 +11290,13 @@ CRB<TruthModelType>::saveJson()
 
         boost::property_tree::ptree ptreeReducedBasisSpace;
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
-        // ptreeReducedBasisSpace.add( "mesh-filename",(M_elements_database.dbLocalPath() / fs::path(meshFilename)).string() );
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
-        // ptreeReducedBasisSpace.add( "database-filename", (M_elements_database.dbLocalPath() / M_elements_database.dbFilename()).string() );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
         ptreeReducedBasisSpace.add( "dimension", M_N );
         if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
         {
+            ptreeReducedBasisSpace.add( "mesh-context",M_model->rBFunctionSpace()->functionSpace()->mesh()->components().context() );
+
             auto feSpace = M_model->rBFunctionSpace()->functionSpace();
             boost::property_tree::ptree ptreeFiniteElementSpace;
             ptreeFiniteElementSpace.add( "dimension", feSpace->nDof() );
