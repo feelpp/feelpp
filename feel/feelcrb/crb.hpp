@@ -1123,14 +1123,14 @@ public:
      * basis space
      * if N>0 take the N^th first elements, else take all elements
      */
-    virtual element_type expansion( parameter_type const& mu , int N=-1, int time_index=-1);
+    virtual element_type runWithExpansion( parameter_type const& mu , int N=-1, int time_index=-1);
 
     /**
      * return the crb expansion at parameter \p \mu, ie \f$\sum_{i=0}^N u^N_i
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    virtual element_type expansion( vectorN_type const& u , int const N, bool dual ) const;
+    virtual element_type expansion( vectorN_type const& u , bool dual, int N = -1) const;
 
     // Summary of number of iterations (at the current step)
     std::pair<int,double> online_iterations(){return online_iterations_summary;}
@@ -9153,7 +9153,7 @@ CRB<TruthModelType>::printOnlineRbPicardIterations(parameter_type const& mu) con
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( parameter_type const& mu , int N , int time_index )
+CRB<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int time_index )
 {
     int Nwn;
 
@@ -9188,7 +9188,7 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N , int time_inde
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, bool dual ) const
+CRB<TruthModelType>::expansion( vectorN_type const& u, bool dual, int N ) const
 {
     auto WN = dual ? M_model->rBFunctionSpace()->dualRB() : M_model->rBFunctionSpace()->primalRB();
     int Nwn;

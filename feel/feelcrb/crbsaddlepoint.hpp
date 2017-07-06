@@ -177,8 +177,8 @@ public:
     //@}
 
 
-    element_type expansion( parameter_type const& mu , int N=-1, int time_index=-1);
-    element_type expansion( vectorN_type const& u , int const N, bool dual ) const;
+    element_type runWithExpansion( parameter_type const& mu , int N=-1, int time_index=-1);
+    element_type expansion( vectorN_type const& u,  bool dual, int N = -1 ) const;
     element_type expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const;
 
     element_type solve( parameter_type const& mu )
@@ -1605,7 +1605,7 @@ CRBSaddlePoint<TruthModelType>::maxErrorBounds( size_type N ) const
 
 template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::expansion( parameter_type const& mu , int N , int time_index )
+CRBSaddlePoint<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int time_index )
 {
     int Nwn;
 
@@ -1628,7 +1628,7 @@ CRBSaddlePoint<TruthModelType>::expansion( parameter_type const& mu , int N , in
 
 template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u , int const N, bool dual ) const
+CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u, bool dual, int N ) const
 {
     return expansionSaddlePoint( u, N, dual );
 }
