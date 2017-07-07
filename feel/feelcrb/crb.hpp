@@ -792,65 +792,6 @@ public:
     /** @name  Methods
      */
     //@{
-    //! initialize CRB class
-    virtual void init()
-    {
-        if ( !M_rebuild && this->loadDB() )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-            LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
-
-            M_elements_database.setMN( M_N );
-            if( M_loadElementsDb )
-            {
-                if( M_elements_database.loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                    //auto basis_functions = M_elements_database.wn();
-                    //M_model->rBFunctionSpace()->setBasis( basis_functions );
-                }
-                else
-                    M_N = 0;
-            }
-            if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-            {
-                if ( M_scmA->loadDB() )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
-                    LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
-                }
-                else
-                    M_N = 0;
-
-                if ( !M_model->isSteady() )
-                {
-                    if ( M_scmM->loadDB() )
-                    {
-                        if( this->worldComm().isMasterRank() )
-                            std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                        LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                    }
-                    else
-                        M_N = 0;
-                }
-            }
-        }
-
-        if ( M_N == 0 )
-        {
-            if( this->worldComm().isMasterRank() )
-                std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-            LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-        }
-
-
-
-    }
-
     /**
      * orthonormalize the basis
      * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0

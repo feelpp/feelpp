@@ -121,20 +121,21 @@ public:
 
     //! Default Constructor
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
+                    crb::stage stage = crb::stage::online,
                     WorldComm const& worldComm = Environment::worldComm() ) :
-        super( name, worldComm ),
-        M_N0(0),
-        M_N1(0)
+        CRBSaddlePoint( name, boost::make_shared<model_type>(stage), stage )
         {}
 
     //! constructor from command line options
-    CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model ) :
-        super( name, model ),
+    CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model,
+                    crb::stage stage = crb::stage::online ) :
+        super( name, model, stage ),
         M_N0(0),
         M_N1(0)
         {
         }
 
+#if 0
     void init()
     {
         using Feel::cout;
@@ -168,6 +169,7 @@ public:
         }
 
     }
+#endif
 
     //@{ /// Database
     //! save the CRB SP database

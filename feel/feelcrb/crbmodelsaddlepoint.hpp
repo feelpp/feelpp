@@ -64,15 +64,15 @@ public :
     template<int T>
     using subelement_type = typename subspace_type<T>::element_type;
 
-    CRBModelSaddlePoint( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true ) :
-        super ( mode, level, doInit ),
+    CRBModelSaddlePoint( crb::stage stage, int level = 0 ) :
+        super ( stage, level ),
         M_block_initialized( false )
     {
         this->initModelSaddlePoint();
     }
 
-    CRBModelSaddlePoint( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true ) :
-        super ( model, mode, doInit ),
+    CRBModelSaddlePoint( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
+        super ( model, stage, level ),
         M_block_initialized( false )
     {
         this->initModelSaddlePoint();
