@@ -146,10 +146,16 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 
+        std::set<size_type> dofUsedWithPartialMeshSupport;
         if ( it == en )
         {
             if ( applyVectorSync )
-                sync( interp, "=" );
+            {
+                if ( hasMeshSupportPartialDomain )
+                    sync( interp, "=", dofUsedWithPartialMeshSupport );
+                else
+                    sync( interp, "=" );
+            }
             return;
         }
 
@@ -210,11 +216,20 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                             globaldof < interp.lastLocalIndex() )
                     {
                         interp( globaldof ) = fvalues[l]( comp1,comp2 );
+                        dofUsedWithPartialMeshSupport.insert( globaldof );
                         //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }
                 }
             }
+        }
+
+        if ( applyVectorSync )
+        {
+            if ( hasMeshSupportPartialDomain )
+                sync( interp, "=", dofUsedWithPartialMeshSupport );
+            else
+                sync( interp, "=" );
         }
 
         DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
@@ -361,10 +376,12 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
         }
 
 #endif
-    }
 
     if ( applyVectorSync )
         sync( interp, "=" );
+
+    }
+
 
     //std::cout << "interp=" << interp << "\n";
 } // interpolate
