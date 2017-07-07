@@ -234,11 +234,8 @@ public:
      */
     crb_ptrtype newCRB( int level=0 )
         {
-            model = boost::make_shared<crbmodel_type>( level);
-            //return boost::make_shared<crb_type>( this->about().appName(), model );
-            auto new_crb = boost::make_shared<crb_type>( this->about().appName(), model );
-            new_crb->init();
-            return new_crb;
+            model = boost::make_shared<crbmodel_type>(crb::stage::offline,level);
+            return boost::make_shared<crb_type>( model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }

@@ -53,7 +53,7 @@ Heat3d::initBetaQ()
 Heat3d::super_type::betaq_type
 Heat3d::computeBetaQ( parameter_type const& mu )
 {
-    //std::cout << "computeBetaQ start \n";
+    //std::cout << "computeBetaQ start \n" << mu << std::endl;
     if ( this->M_betaAq.empty() )
         this->initBetaQ();
 

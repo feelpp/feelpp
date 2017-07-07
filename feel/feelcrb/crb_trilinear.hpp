@@ -172,16 +172,32 @@ public:
      */
     //@{
 
+    CRBTrilinear( crb::stage stage = crb::stage::online )
+        :
+        super_crb( stage )
+        {}
+    CRBTrilinear( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
+        {
+        
+        }
+    CRBTrilinear( std::string const& name,
+                  truth_model_ptrtype const & model,
+                  crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, model, stage )
+        {}
     //! default constructor
-    CRBTrilinear( std::string const& name = "defaultname_crb",
-                  WorldComm const& worldComm = Environment::worldComm() )
+    FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
+                                    WorldComm const& worldComm = Environment::worldComm() )
         :
         super_crb( name, worldComm )
-    {}
+        {}
 
     //! constructor from command line options
-    CRBTrilinear( std::string  name,
-         truth_model_ptrtype const & model )
+    FEELPP_DEPRECATED CRBTrilinear( std::string  name,
+                                    truth_model_ptrtype const & model )
         :
         super_crb( name, model )
     {
@@ -437,6 +453,16 @@ CRBTrilinear<TruthModelType>::offline()
         this->M_Lqm_pr.resize( this->M_model->Ql( this->M_output_index ) );
         for(int q=0; q<this->M_model->Ql( this->M_output_index ); q++)
             this->M_Lqm_pr[q].resize( 1 );
+
+        // save mesh of rbspace
+        if ( true )
+        {
+            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilename = (this->M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
+            this->M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        this->M_model->copyAdditionalModelFiles( this->dbDirectory() );
 
     }//end of if( rebuild_database )
 #if 1

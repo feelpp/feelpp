@@ -1290,7 +1290,7 @@ public:
                      std::string const& name,
                      uuids::uuid const& uid )
         :
-        super_type( modelname, name, uid ),
+        super_type( name, "eim", uid ),
         M_fspace(),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1299,6 +1299,7 @@ public:
         M_computeExpansionOfExpression( boption(_name="eim.compute-expansion-of-expression") ),
         M_normUsedForResidual( ResidualNormType::Linfty)
         {
+            this->setDBDirectory( modelname,uid );
             std::string norm_used = soption(_name="eim.norm-used-for-residual");
             if( norm_used == "Linfty" )
                 M_normUsedForResidual = ResidualNormType::Linfty;
@@ -1838,8 +1839,9 @@ public:
             // update ouput path of database
             if ( dbfilename.empty() )
             {
-                this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
-                this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
+                //this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
+                //this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
+                this->addDBSubDirectory( "eim" );
                 if ( this->worldComm().isMasterRank() )
                 {
                     if ( !fs::exists( this->dbLocalPath() ) )
@@ -2937,11 +2939,12 @@ public:
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
-            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ ) );
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model(), crb::stage::offline/*M_model*/ ) );
         //make sure that the CRB DB is already build
         if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
-                                               M_crbmodel ) );
+                                               M_crbmodel,
+                                               crb::stage::offline ) );
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuild() )
         {

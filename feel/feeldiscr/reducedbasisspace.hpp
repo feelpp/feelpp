@@ -410,9 +410,14 @@ public :
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
             if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
                 meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
+            size_type meshUpdateContext = size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+            auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
+            if ( meshCtxInPtree )
+                meshUpdateContext = *meshCtxInPtree;
             auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
+                                 _update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
-                                 _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
+                                 //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
             toc("ReducedBasisSpace::setup : load mesh",FLAGS_v>0);
             tic();

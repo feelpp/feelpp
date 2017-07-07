@@ -28,6 +28,8 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_io.hpp>
 #include <Eigen/Core>
+#include <feel/feelcrb/parameterspace.hpp>
+
 
 
 namespace Feel {
@@ -70,6 +72,15 @@ public:
     CRBResults( CRBResults && ) = default;
     CRBResults& operator=( CRBResults const& ) = default;
     CRBResults& operator=( CRBResults && ) = default;
+    using parameter_type = ParameterSpaceX::Element;
+    void setParameter( parameter_type const& mu )
+        {
+            M_mu = mu;
+        }
+    parameter_type const& parameter() const { return M_mu; }
+    //!
+    //! @return the output
+    //!
     double output() const { return boost::get<0>( *this ).back(); }
     double errorbound() const  { return boost::get<0>( boost::get<6>( *this ) ).back(); }
     vectorN_type const& coefficients() const { return boost::get<0>(boost::get<2>( *this )).back(); }
@@ -82,7 +93,8 @@ public:
         :
         super( std::move(s) )
         {}
-
+private:
+    parameter_type M_mu;
 };
 
 

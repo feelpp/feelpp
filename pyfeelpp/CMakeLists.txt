@@ -33,8 +33,6 @@ endif()
 
 enable_testing()
 
-find_program(PYTHON "python")
-
 if ( NOT TARGET check )
   add_custom_target(check)
 endif()
@@ -44,13 +42,14 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   list(APPEND CMAKE_MODULE_PATH "/usr/local/share/cmake/pybind11")
   include(pybind11Tools)
 endif()
-pybind11_add_module(pyfeelpp  python.cpp feelcore/python.cpp feelcrb/python.cpp)
-target_include_directories(pyfeelpp PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries( pyfeelpp PRIVATE ${FEELPP_LIBRARIES} )
 
+#add_subdirectory(pyfeelpp)
+
+#
+# setup
+#
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
-install(CODE "execute_process(COMMAND export CXX=${CMAKE_CXX_COMPILER} CC=${CMAKE_C_COMPILER} COMMAND ${PYTHON} ${SETUP_PY} install)")
-
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install)")

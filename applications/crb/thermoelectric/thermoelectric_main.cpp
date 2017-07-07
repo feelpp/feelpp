@@ -53,7 +53,7 @@ int main( int argc, char** argv)
     // init
     rb_model_ptrtype model = boost::make_shared<rb_model_type>();
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric_crb", crbModel);
+    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric", crbModel);
 
     // offline
     crb->offline();
@@ -101,29 +101,29 @@ int main( int argc, char** argv)
     e->add( "V", V );
     e->add( "T", T );
 
-    // export EIM basis
-    auto eimG = model->scalarDiscontinuousEim()[0];
-    int M = eimG->mMax();
-    auto betaEim = eimG->beta(mu);
-    auto jEim = eimG->functionSpace()->element();
-    for( int m = 0; m < M; ++m )
-    {
-        e->add( (boost::format("q_%1%" ) % m).str(), eimG->q(m) );
-        jEim += vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
-                             _expr=betaEim(m)*idv(eimG->q(m)) );
-    }
-    e->add( "j2Eim", jEim );
-
-    auto j = vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
-                          _expr=mu.parameterNamed("sigma")*inner(gradv(V)) );
-    e->add( "j2", j );
-
     // export FE
     auto VTFE = model->solve(mu);
     auto VFE = VTFE.template element<0>();
     auto TFE = VTFE.template element<1>();
     e->add( "VFE", VFE );
     e->add( "TFE", TFE );
+
+    // export EIM basis
+    // auto eimG = model->scalarDiscontinuousEim()[0];
+    // int M = eimG->mMax();
+    // auto betaEim = eimG->beta( mu, VTFE);
+    // auto jEim = eimG->functionSpace()->element();
+    // for( int m = 0; m < M; ++m )
+    // {
+    //     e->add( (boost::format("q_%1%" ) % m).str(), eimG->q(m) );
+    //     jEim += vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
+    //                          _expr=betaEim(m)*idv(eimG->q(m)) );
+    // }
+    // e->add( "j2Eim", jEim );
+
+    // auto j = vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
+    //                       _expr=-mu.parameterNamed("sigma")*inner(gradv(V)) );
+    // e->add( "j2", j );
 
     e->save();
 
