@@ -480,6 +480,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
         auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
+        bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
+
+
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
@@ -502,8 +505,19 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             // corresponding face
             if ( theface.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
-                continue;
+                bool ignoreFace = true;
+                if ( hasMeshSupportPartial )
+                {
+                    bool hasElt0 = __dof->meshSupport()->hasElement( theface.element(0).id() );
+                    bool hasElt1 = __dof->meshSupport()->hasElement( theface.element(1).id() );
+                    if ( ( hasElt0 && !hasElt1 ) ||  ( !hasElt0 && hasElt1 ) )
+                        ignoreFace = false;
+                }
+                if ( ignoreFace )
+                {
+                    LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
+                    continue;
+                }
             }
 
             DVLOG(2) << "FACE_ID = " << theface.id()
