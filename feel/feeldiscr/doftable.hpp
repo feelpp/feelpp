@@ -802,8 +802,11 @@ public:
 
     std::pair<face_local_dof_const_iterator,face_local_dof_const_iterator> faceLocalDof( size_type ElId ) const
         {
-            auto be = M_face_l2g.find( ElId )->second.begin();
-            auto en = M_face_l2g.find( ElId )->second.end();
+            auto it = M_face_l2g.find( ElId );
+            if (  it == M_face_l2g.end() )
+                return std::make_pair( face_local_dof_const_iterator(), face_local_dof_const_iterator() );
+            auto be = it->second.begin();
+            auto en = it->second.end();
             return std::make_pair( be, en );
         }
 
