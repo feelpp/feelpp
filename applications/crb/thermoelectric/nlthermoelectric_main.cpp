@@ -54,7 +54,7 @@ int main( int argc, char** argv)
     // init
     rb_model_ptrtype model = boost::make_shared<rb_model_type>();
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric_crb", crbModel);
+    crb_ptrtype crb = boost::make_shared<crb_type>("nlthermoelectric", crbModel);
 
     // offline
     crb->offline();
@@ -95,31 +95,15 @@ int main( int argc, char** argv)
     export_vector_wn_type exportWn = boost::make_tuple(WN_vec, name_vec);
     crb->exportBasisFunctions(exportWn);
 
+    auto e = Exporter<rb_model_type::mesh_type>::New( "thermoelectric" );
+    e->setMesh( model->mesh() );
+
     // export
     auto u = crb->expansion( uN, uN.size(), WN );
     auto V = u.template element<0>();
     auto T = u.template element<1>();
-    auto e = Exporter<rb_model_type::mesh_type>::New( "thermoelectric" );
-    e->setMesh( model->mesh() );
     e->add( "V", V );
     e->add( "T", T );
-
-    // export EIM basis
-    auto eimG = model->scalarDiscontinuousEim()[0];
-    int M = eimG->mMax();
-    auto betaEim = eimG->beta(mu);
-    auto jEim = eimG->functionSpace()->element();
-    for( int m = 0; m < M; ++m )
-    {
-        e->add( (boost::format("q_%1%" ) % m).str(), eimG->q(m) );
-        jEim += vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
-                             _expr=betaEim(m)*idv(eimG->q(m)) );
-    }
-    e->add( "j2Eim", jEim );
-
-    auto j = vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
-                          _expr=mu.parameterNamed("sigma")*inner(gradv(V)) );
-    e->add( "j2", j );
 
     // export FE
     auto VTFE = model->solve(mu);
@@ -127,7 +111,52 @@ int main( int argc, char** argv)
     auto TFE = VTFE.template element<1>();
     e->add( "VFE", VFE );
     e->add( "TFE", TFE );
+#if 0
+    // export EIM basis
+    auto eimSigma = model->scalarContinuousEim()[0];
+    auto spaceSigma = eimSigma->functionSpace();
+    auto qSigma = eimSigma->q();
+    auto betaSigma = eimSigma->beta(mu, VTFE);
+    auto sigmaEim = spaceSigma->element();
+    for( int m = 0; m < qSigma.size(); ++m )
+    {
+        e->add( (boost::format("qSigma_%1%" ) % m).str(), qSigma[m] );
+        sigmaEim += vf::project( _range=elements(spaceSigma->mesh()),
+                                 _space=spaceSigma,
+                                 _expr=betaSigma[m]*idv(qSigma[m]) );
+    }
+    e->add( "sigma", sigmaEim );
 
+    // auto eimJoule = model->scalarDiscontinuousEim()[0];
+    // auto spaceJoule = eimJoule->functionSpace();
+    // auto qJoule = eimJoule->q();
+    // auto betaJoule = eimJoule->beta(mu, VTFE);
+    // auto joule = spaceJoule->element();
+    // for( int m = 0; m < qJoule.size(); ++m )
+    // {
+    //     e->add( (boost::format("qJoule_%1%" ) % m).str(), qJoule[m] );
+    //     joule += vf::project( elements(spaceJoule->mesh()), spaceJoule, betaJoule[m]*idv(qJoule[m]));
+    // }
+    // e->add( "joule", joule );
+
+    auto eimJoule = model->scalarDiscontinuousEim()[0];
+    auto spaceJoule = eimJoule->functionSpace();
+    auto qJoule = eimJoule->q();
+    auto betaJoule = eimJoule->beta(mu, VTFE);
+    auto joule = spaceJoule->element();
+    for( int m = 0; m < qJoule.size(); ++m )
+    {
+        e->add( (boost::format("qJoule_%1%" ) % m).str(), qJoule[m] );
+        joule += vf::project( _range=elements(spaceJoule->mesh()),
+                              _space=spaceJoule,
+                              _expr=betaJoule[m]*idv(qJoule[m]) );
+    }
+    e->add( "joule", joule );
+
+    // auto j = vf::project( _range=elements(model->mesh()), _space=eimG->functionSpace(),
+    //                       _expr=mu.parameterNamed("sigma")*inner(gradv(V)) );
+    // e->add( "j2", j );
+#endif
     e->save();
 
     return 0;

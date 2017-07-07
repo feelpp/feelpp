@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+source $(dirname $0)/common.sh
+
 ## Prints supported image combinations in the following format
 ## {image_name} {base_image} {distro} {feelpp_version} {docker_version} {extra tags...}
 
@@ -25,9 +27,11 @@ DISTROS=(
   ubuntu
 )
 
-FEELPP_VERSIONS=(
-    master
-    develop
+FEELPP_BRANCHES=(
+    #master
+    #develop
+    $1
+    #${BRANCHTAG}
 )
 
 # Returns the major version for a given X.X.X docker version
@@ -42,15 +46,19 @@ image_name() {
   printf "%s-%s" "$release" "$distro" | sed -e 's/^stable-//g'
 }
 
-for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
+version=${2:-${FEELPP_VERSION}}
+
+for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
   distro="debian"
   docker="n/a"
+  feelpp_branch_version="${feelpp_branch}-${version}"
+  feelpp_version="${feelpp_branch_version}"
   for os_version in ${DEBIAN_VERSIONS[*]} ; do
-    printf "%s-%s %s %s %s %s %s-%s" \
-      $(image_name "$feelpp_version" "$distro") $os_version \
+    printf "%s-%s %s %s %s %s %s %s-%s" \
+      $(image_name "$feelpp_branch_version" "$distro") $os_version \
       "n/a" \
-      $distro $feelpp_version $os_version \
-      $(image_name "$feelpp_version" "$distro") $(docker_major_version $os_version)
+      $feelpp_branch_version $feelpp_version $distro $os_version  \
+      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_DEBIAN ]] ; then
       printf " %s" $(image_name "$feelpp_version" "$distro")
@@ -62,16 +70,18 @@ for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
   done
 done
 
-for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
+for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
   distro="ubuntu"
   docker="n/a"
+  feelpp_branch_version="${feelpp_branch}-${version}"
+  feelpp_version="${feelpp_branch}"
 #  printf "%s %s %s %s %s\n" $(image_name "$feelpp_version" "$distro") "n/a" "$distro" "$feelpp_version" "$docker"
   for os_version in ${UBUNTU_VERSIONS[*]} ; do
-    printf "%s-%s %s %s %s %s %s-%s" \
-      $(image_name "$feelpp_version" "$distro") $os_version \
-      $(image_name "$feelpp_version" "$distro") \
-      $distro $feelpp_version $os_version \
-      $(image_name "$feelpp_version" "$distro") $(docker_major_version $os_version)
+    printf "%s-%s %s %s %s %s %s %s-%s" \
+      $(image_name "$feelpp_branch_version" "$distro") $os_version \
+      $(image_name "$feelpp_branch_version" "$distro") \
+      $feelpp_branch_version $feelpp_version $distro $os_version  \
+      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_UBUNTU ]] ; then
         # We also want to give the ubuntu distro the official
@@ -80,6 +90,11 @@ for feelpp_version in ${FEELPP_VERSIONS[*]} ; do
         printf " %s" $(sed -e 's/develop/latest/g' <<< $feelpp_version)
         printf " %s" $(sed -e 's/master/stable/g' <<< $feelpp_version)
 
+        # tag with version only with master and develop
+        # master should take over develop once a release is done
+        if [ ${feelpp_branch} = "develop" -o ${feelpp_branch} = "master" ]; then
+            printf " %s" "${version}"
+        fi
 
         printf " %s" $(image_name "$feelpp_version" "$distro")
     fi

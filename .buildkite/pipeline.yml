@@ -24,16 +24,6 @@ steps:
      CC: clang-3.9
      TARGET: ubuntu:16.10
  - wait
- - name: ':ubuntu: 16.10,clang-3.9  feelpp-pyfeelpp :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh pyfeelpp
-   agents:
-     docker: true
-     ubuntu: "16.10"
-   env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
- - wait
  - name: ':ubuntu: 16.10,clang-3.9 feelpp-crb :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
@@ -53,11 +43,18 @@ steps:
      CC: clang-3.9
      TARGET: ubuntu:16.10
  - wait
- - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-pyfeelpp feelpp-toolboxes feelpp-crb
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
      ubuntu: "16.10"
-   branches: develop master
+   env:
+     TARGET: ubuntu:16.10
+ - wait
+ - command: tools/scripts/buildkite/singularity-generate.sh feelpp/feelpp-libs feelpp/feelpp-base feelpp/feelpp-toolboxes feelpp/feelpp-crb
+   name: ":singularity: generate images"
+   agents:
+     docker: true
+     ubuntu: "16.10"
    env:
      TARGET: ubuntu:16.10
