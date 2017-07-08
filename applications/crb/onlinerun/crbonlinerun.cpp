@@ -55,27 +55,28 @@ runCrbOnline()
     namespace dll=boost::dll;
     std::string dirname = Environment::expand( soption(_name="plugin.dir") );
     std::string pluginname = Environment::expand( soption(_name="plugin.name") );
-    std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
-    std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
 
-    boost::function<crbpluginapi_create_t> creator;
-#if defined( __APPLE__ )
-    std::string libext = ".dylib";
-#else
-    std::string libext = ".so";
-#endif
-    fs::path pname = fs::path(dirname) / ("libfeelpp_crb_" + pluginname + libext);
-
-    creator = boost::dll::import_alias<crbpluginapi_create_t>(pname,
-                                                              "create_crbplugin",
-                                                              dll::load_mode::append_decorations );
-    auto plugin = creator();
-    std::cout << "Loaded the plugin " << plugin->name() << std::endl
-              << " . from " << pname.string() << std::endl
-              << " . using db " << jsonfilename << std::endl;
+    auto plugin = factoryCRBPlugin( pluginname, "", dirname );
+    std::cout << "Loaded the plugin " << plugin->name() << std::endl;
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
 
-    plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+    std::string jsonfilename;
+    if ( ioption("plugin.last" ) )
+    {
+        plugin->loadDBLast( static_cast<crb::last>(ioption("plugin.last")), (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+    }
+    else
+    {
+        std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
+        std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
+            
+        std::cout << " . using db " << jsonfilename << std::endl;
+
+        plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+    }
+
+
+    
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;//Feel::doption(Feel::_name="crb.online-tolerance");
@@ -157,6 +158,7 @@ int main(int argc, char**argv )
         ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
         ( "plugin.name", po::value<std::string>(), "CRB online code name" )
         ( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
+        ( "plugin.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
         ( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
