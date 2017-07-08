@@ -46,7 +46,7 @@ struct CRBPluginManager : public  Feel::Singleton<CRBPluginManagerImpl> {};
 }
 
 boost::shared_ptr<CRBPluginAPI>
-factoryCRBPlugin( std::string const& dirname, std::string const& pluginname, std::string const& pluginlibname )
+factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibname, std::string const& dirname )
 {
     auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
     if ( p != Feel::detail::CRBPluginManager::instance().end() )
@@ -76,23 +76,4 @@ factoryCRBPlugin( std::string const& dirname, std::string const& pluginname, std
         return plugin;
     }
 }
-#if 0
-boost::function<crbpluginapi_create_t>
-makeCRBPlugin( std::string const& dirname, std::string const& pluginname )
-{
-    fs::path lib_path( dirname ); 
-    std::cout << "Loading the plugin" << std::endl;
-
-
-    boost::function<crbpluginapi_create_t> creator;
-    fs::path pname = lib_path / ("libfeelpp_crb_" + pluginname + ".so");
-    std::cout << "pname=" << pname.string() << std::endl;
-    creator = boost::dll::import_alias<crbpluginapi_create_t>(pname,
-                                                              "create_crbplugin",
-                                                              dll::load_mode::append_decorations );
-
-    return creator;
-
-}
-#endif
 }

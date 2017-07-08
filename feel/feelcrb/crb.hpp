@@ -42,6 +42,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 
 
@@ -343,8 +344,22 @@ public:
             this->setTruthModel( model );
             if ( stage == crb::stage::offline )
             {
-                if ( !M_rebuild && this->loadDB() )
+                if ( !M_rebuild )
                 {
+                    int loadmode = ioption( _name="crb.db.load" );
+                    switch ( loadmode )
+                    {
+                    case 0 :
+                        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
+                        break;
+                    case 1:
+                    case 2:
+                        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
+                        break;
+                    case 3:
+                        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
+                        break;
+                    }
                     if( this->worldComm().isMasterRank() )
                         std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
                     LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
@@ -1236,6 +1251,21 @@ public:
         return M_model->rBFunctionSpace()->dualRB();
     }
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l );
+    
+    //!
+    //! 
+    //!
+    void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+    
+    //!
+    //! 
+    //!
+    void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
+    
     /**
      * \brief load Crb from json
      * \param filename : input json filename
@@ -11249,6 +11279,107 @@ CRB<TruthModelType>::showMuSelection()
     bool show = boption(_name="crb.show-mu-selection");
     return show;
 }
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l ) 
+{
+    if ( !fs::exists( filename ) )
+        throw std::invalid_argument("file does not exist");
+    
+    if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
+        this->setLoadBasisFromDB( true );
+    else
+        this->setLoadBasisFromDB( false );
+    this->loadJson( filename );
+    
+    LOG(INFO) << "Loaded DB CRB " << filename;
+}
+
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadDBFromId( std::string const& id, crb::load l, std::string const& root ) 
+{
+    if ( !fs::exists( root ) )
+        throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
+    fs::path crbdb = fs::path(root) / "crbdb";
+    if ( !fs::exists( crbdb ) )
+        throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
+    
+    fs::path dbbasedir = crbdb / fs::path(name()) ;
+    if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
+        throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
+    // either id provides the full directory or part of it
+    // try first full path
+    typedef std::vector<fs::path> vec;
+    vec d;
+    
+    std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
+    std::sort(d.begin(), d.end());
+    
+    //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
+    for( auto& dbdir : d )
+    {
+        //std::cout << "dbdir = " << dbdir.string() << std::endl;
+        
+        if ( boost::ends_with( dbdir.string(), id ) )
+        {
+            fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
+            if (!fs::exists(dbfilename))
+                continue;
+            loadDB( dbfilename.string(), l );
+            return;
+        }
+    }
+    throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+{
+    if ( !fs::exists( root ) )
+        throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
+    fs::path crbdb = fs::path(root) / "crbdb";
+    if ( !fs::exists( crbdb ) )
+        throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
+
+    fs::path dbbasedir = crbdb / fs::path(name()) ;
+    if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
+        throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
+    // either id provides the full directory or part of it
+    // try first full path
+    typedef std::vector<fs::path> vec;
+    vec d;
+    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    result_set_t result_set;
+
+    for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
+    {
+        fs::path dbfilename = dir.path() / fs::path(name() + ".crb.json");
+        if (fs::exists( dbfilename ) )
+        {
+            if ( last == crb::last::created )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dir.path()), dbfilename));
+            }
+            else if ( last == crb::last::modified )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dbfilename), dbfilename));
+            }
+        }
+    }
+    if ( result_set.size() )
+    {
+        fs::path dbfname =  result_set.rbegin()->second;
+        std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db: " << dbfname.string() << std::endl;
+        loadDB( dbfname.string(), l );
+        return;
+    }
+    throw std::invalid_argument(std::string("Last database for ") + name() + " not found");
+}
+
 
 template<typename TruthModelType>
 void
