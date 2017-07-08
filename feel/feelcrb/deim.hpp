@@ -184,7 +184,7 @@ public :
             M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = ioption( prefixvm( M_prefix, "deim.dimension-max" ) );
+            int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
             std::string file_name = ( boost::format("deim_trainset_%1%") % sampling_size ).str();
             std::string sampling_mode = soption( prefixvm( M_prefix, "deim.default-sampling-mode" ) );
             std::ifstream file ( file_name );
