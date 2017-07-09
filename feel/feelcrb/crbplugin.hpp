@@ -106,22 +106,23 @@ subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< Elemen
 //!
 //! Generic Plugin for CRB applications
 //!
-template<typename ModelT, template <class T> class CRBModelT = CRBModel, template <class T> class CRBT = CRB>
+template<typename ModelT, template <class T> class CRBModelT = CRBModel, template <class T> class AlgoT = CRB, template <class T> class AlgoBaseT = CRB>
 class CRBPlugin : public CRBPluginAPI
 {
 public:
 
     using model_t = ModelT;
     using crbmodel_type = CRBModelT<model_t>;
-    using crb_type = CRBT<crbmodel_type> ;
+    using crb_type = AlgoBaseT<crbmodel_type> ;
     using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using method_t = AlgoT<crbmodel_type>;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = boost::shared_ptr<Exporter<mesh_t> >;
     
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
-        M_crb( boost::make_shared<crb_type>(name,crb::stage::online) )
+        M_crb( boost::make_shared<method_t>(name,crb::stage::online) )
         {
         }
 
