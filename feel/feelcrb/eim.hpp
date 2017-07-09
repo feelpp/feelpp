@@ -2754,7 +2754,8 @@ public:
         if( size!= 0 )
         {
             // Compute RB expansion from uN
-            model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
+            model_solution_type sol = M_crb->expansion( uN[size-1], M_crb->dimension(), false );
+            //model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
 
             this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
             this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
@@ -2977,7 +2978,7 @@ public:
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
             int size=uN.size();
-            auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+            auto u_crb = M_crb->expansion( uN[size-1] , N , false );
 
             boost::mpi::timer teim;
             this->beta( mu , u_crb );
