@@ -556,6 +556,13 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
     eM->save();
 }
 
+template<typename te_rb_model_type>
+typename BiotSavartCRB<te_rb_model_type>::value_type
+BiotSavartCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
+{
+    
+}
+
 using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;
 
 template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
