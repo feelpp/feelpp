@@ -69,18 +69,18 @@
 namespace Feel
 {
 
-/**
- * \class CRBTrilinear
- * \brief Certifed Reduced Basis for Trilinear forms class
- *
- * Implements the certified reduced basis method for treat trilinear forms
- *
- *
- * @author Elisa Schenone, Stephane Veys
- * @see
- */
-//class CRBTrilinear : public CRBDB,
-//                     public CRB<TruthModelType>
+//!
+//! @class
+//! @brief Certifed Reduced Basis for Trilinear forms class
+//!
+//! Implements the certified reduced basis method for treat trilinear forms
+//!
+//! @author Elisa Schenone
+//! @author Stephane Veys
+//! @author Jean-Baptiste Wahl
+//! @author Christophe Prud'homme
+//! @author Vincent Chabannes
+//!
 template<typename TruthModelType>
 class CRBTrilinear : public CRB<TruthModelType>
 {
@@ -262,14 +262,14 @@ public:
                                                             std::vector<vectorN_type> & uNold,
                                                             std::vector<vectorN_type> & uNduold,
                                                             bool print_rb_matrix=false, int K=0,
-                                                            bool computeOutput = true ) const;
+                                                            bool computeOutput = true ) const override;
 
     /**
      * Offline computation
      *
      * \return the convergence history (max error)
      */
-    convergence_type offline();
+    convergence_type offline() override;
 
     /**
      * \param mu : parameters
@@ -281,29 +281,34 @@ public:
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
+    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const override;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
+    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const override;
 
 
     void displayVector(const map_dense_vector_type& V ) const ;
     void displayVector(const vectorN_type& V ) const ;
     void displayMatrix(const matrixN_type& M ) const ;
-#if 1
+
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
-#endif
+    bool loadDB() override;
+
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override { super_crb::loadDB( filename, l ); }
+    
     //@}
 
 

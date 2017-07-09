@@ -346,6 +346,11 @@ public:
             {
                 if ( !M_rebuild )
                 {
+                    this->setupOfflineFromDB();
+                }
+                else
+                {
+#if 0
                     int loadmode = ioption( _name="crb.db.load" );
                     switch ( loadmode )
                     {
@@ -357,50 +362,10 @@ public:
                         this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
                         break;
                     case 3:
-                        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
+                        this->setId( dbFromId(soption(_name="crb.db.id")) );
                         break;
                     }
-                    if( this->worldComm().isMasterRank() )
-                        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-                    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
-
-                    M_elements_database.setMN( M_N );
-                    if( M_loadElementsDb )
-                    {
-                        if( M_elements_database.loadDB() )
-                        {
-                            if( this->worldComm().isMasterRank() )
-                                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-                            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
-                            auto basis_functions = M_elements_database.wn();
-                            M_model->rBFunctionSpace()->setBasis( basis_functions );
-                        }
-                        else
-                            M_N = 0;
-                    }
-                    if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
-                    {
-                        if ( M_scmA->loadDB() )
-                        {
-                            if( this->worldComm().isMasterRank() )
-                                std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
-                            LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
-                        }
-                        else
-                            M_N = 0;
-
-                        if ( !M_model->isSteady() )
-                        {
-                            if ( M_scmM->loadDB() )
-                            {
-                                if( this->worldComm().isMasterRank() )
-                                    std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                                LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
-                            }
-                            else
-                                M_N = 0;
-                        }
-                    }
+#endif
                 }
 
                 if ( M_N == 0 )
@@ -1095,7 +1060,7 @@ public:
      *
      * \return the convergence history (max error)
      */
-    convergence_type offline();
+    virtual convergence_type offline();
 
     /**
      * \brief update size of Affine Decomposition (needed by co-build since size of eim decomposition can change)
@@ -1254,17 +1219,17 @@ public:
     //!
     //! 
     //!
-    void loadDB( std::string const& filename, crb::load l );
+    virtual void loadDB( std::string const& filename, crb::load l );
     
     //!
     //! 
     //!
-    void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+    virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
     
     //!
     //! 
     //!
-    void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
+    virtual void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
     
     /**
      * \brief load Crb from json
@@ -1283,12 +1248,12 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
+    bool loadDB() override;
 
     /**
      *  do the projection on the POD space of u (for transient problems)
@@ -1645,6 +1610,11 @@ protected:
 
     mutable std::pair<int,double> offline_iterations_summary;
     mutable std::pair<int,double> online_iterations_summary;
+private:
+    //!
+    //! setup CRB from DB
+    //!
+    void setupOfflineFromDB();
 };
 
 
@@ -11442,6 +11412,7 @@ CRB<TruthModelType>::saveJson()
         // ptreeCrb.add( "database-filename",(this->dbLocalPath() / this->dbFilename()).string() );
         ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
+        ptreeCrb.add( "output-index", M_output_index );
         ptreeCrb.add( "error-type", M_error_type );
         ptree.add_child( "crb", ptreeCrb );
 
@@ -11470,6 +11441,9 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
 {
     auto const& ptreeCrb = ptree.get_child( "crb" );
     M_N = ptreeCrb.template get<int>( "dimension" );
+    M_output_index = ptreeCrb.template get<int>( "output-index" );
+    int et = ptreeCrb.template get<int>( "error-type" );
+    M_error_type = static_cast<CRBErrorType>( et );
     this->setName( ptreeCrb.template get<std::string>( "name" ) );
     M_solve_dual_problem = ptreeCrb.template get<bool>( "has-solve-dual-problem" );
     std::string dbname = ptreeCrb.template get<std::string>( "database-filename" );
@@ -11560,6 +11534,68 @@ CRB<TruthModelType>::loadDB()
     }
 
     return false;
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::setupOfflineFromDB()
+{
+    int loadmode = ioption( _name="crb.db.load" );
+    switch ( loadmode )
+    {
+    case 0 :
+        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
+        break;
+    case 1:
+    case 2:
+        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
+        break;
+    case 3:
+        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
+        break;
+    }
+    if( this->worldComm().isMasterRank() )
+        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
+    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
+
+    M_elements_database.setMN( M_N );
+    if( M_loadElementsDb )
+    {
+        if( M_elements_database.loadDB() )
+        {
+            if( this->worldComm().isMasterRank() )
+                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+            auto basis_functions = M_elements_database.wn();
+            M_model->rBFunctionSpace()->setBasis( basis_functions );
+        }
+        else
+            M_N = 0;
+    }
+    if ( M_error_type == CRBErrorType::CRB_RESIDUAL_SCM )
+    {
+        if ( M_scmA->loadDB() )
+        {
+            if( this->worldComm().isMasterRank() )
+                std::cout << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded\n";
+            LOG( INFO ) << "Database for SCM_A " << M_scmA->lookForDB() << " available and loaded";
+        }
+        else
+            M_N = 0;
+
+        if ( !M_model->isSteady() )
+        {
+            if ( M_scmM->loadDB() )
+            {
+                if( this->worldComm().isMasterRank() )
+                    std::cout << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+                LOG( INFO ) << "Database for SCM_M " << M_scmM->lookForDB() << " available and loaded";
+            }
+            else
+                M_N = 0;
+        }
+    }
+
 }
 
 } // Feel
