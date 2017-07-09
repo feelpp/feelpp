@@ -434,11 +434,14 @@ public:
      */
     //@{
 
+
+    virtual bool useMonolithicRbSpace() { return true; }
+
     //!
     //! world communicator
     //!
     WorldComm const& worldComm() const { return M_model->worldComm(); }
-    
+
     /**
      * \return  the \p variables_map
      */
@@ -3612,7 +3615,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
             }
         }
         else
@@ -3637,7 +3640,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 }
                 else
                 {
-                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                    backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
                 }
                 Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
 
