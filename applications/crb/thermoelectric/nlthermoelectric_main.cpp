@@ -99,16 +99,16 @@ int main( int argc, char** argv)
     e->setMesh( model->mesh() );
 
     // export
-    auto u = crb->expansion( uN, uN.size(), WN );
-    auto V = u.template element<0>();
-    auto T = u.template element<1>();
+    auto u = Feel::expansion( WN, uN, uN.size() );
+    auto V = u.element<0>();
+    auto T = u.element<1>();
     e->add( "V", V );
     e->add( "T", T );
 
     // export FE
     auto VTFE = model->solve(mu);
-    auto VFE = VTFE.template element<0>();
-    auto TFE = VTFE.template element<1>();
+    auto VFE = VTFE.element<0>();
+    auto TFE = VTFE.element<1>();
     e->add( "VFE", VFE );
     e->add( "TFE", TFE );
 #if 0
