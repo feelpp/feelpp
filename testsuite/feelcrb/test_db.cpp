@@ -38,8 +38,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelcrb/opusapp.hpp>
-#include <applications/crb/heat1d/heat1d.hpp>
 
 namespace Feel
 {
@@ -205,17 +205,14 @@ int main(int argc, char **argv)
     gArgv[5] = NULL;
 
     Feel::Environment env( _argc=gArgc, _argv=gArgv,
-                           _desc=opusapp_options("heat1d")
+                           _desc=opusapp_options("feelpp_test_db")
                            .add(crbOptions())
                            .add(crbSEROptions())
-                           //.add(makeHeat1DOptions())
                            .add(eimOptions())
                            .add(podOptions())
                            .add(backend_options("backend-primal"))
                            .add(backend_options("backend-dual"))
                            .add(backend_options("backend-l2"))
-                           //.add(bdf_options("Heat1D")),
-                           //_about=makeHeat1DAbout( "heat1d" )
                            );
 
     std::vector<int> wnSize;
