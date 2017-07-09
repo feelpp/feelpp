@@ -38,6 +38,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 
 namespace Feel
 {
@@ -254,6 +255,21 @@ public:
      * load the CRB database
      */
     virtual bool loadDB();
+
+    //!
+    //! 
+    //!
+    virtual void loadDB( std::string const& filename, crb::load l ) = 0;
+    
+    //!
+    //! 
+    //!
+    virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+    
+    //!
+    //! 
+    //!
+    virtual void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
 
     //@}
 

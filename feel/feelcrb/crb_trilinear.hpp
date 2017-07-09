@@ -995,7 +995,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the jacobian matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = Feel::expansion( this->M_model->rBFunctionSpace()->primalRB(), map_X , N );
         auto J = this->M_model->jacobian( expansionX );
         matrixN_type model_reduced_jacobian( N , N );
         for(int i=0; i<N; i++)
@@ -1049,7 +1049,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = Feel::expansion( this->M_model->rBFunctionSpace()->primalRB(), map_X , N );
         auto R = this->M_model->residual( expansionX );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( this->M_model->functionSpace() ) );

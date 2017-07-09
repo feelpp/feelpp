@@ -156,4 +156,85 @@ CRBDB::loadDB()
     return false;
 }
 
+void
+CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root ) 
+{
+    if ( !fs::exists( root ) )
+        throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
+    fs::path crbdb = fs::path(root) / "crbdb";
+    if ( !fs::exists( crbdb ) )
+        throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
+    
+    fs::path dbbasedir = crbdb / fs::path(name()) ;
+    if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
+        throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
+    // either id provides the full directory or part of it
+    // try first full path
+    typedef std::vector<fs::path> vec;
+    vec d;
+    
+    std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
+    std::sort(d.begin(), d.end());
+    
+    //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
+    for( auto& dbdir : d )
+    {
+        //std::cout << "dbdir = " << dbdir.string() << std::endl;
+        
+        if ( boost::ends_with( dbdir.string(), id ) )
+        {
+            fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
+            if (!fs::exists(dbfilename))
+                continue;
+            loadDB( dbfilename.string(), l );
+            return;
+        }
+    }
+    throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
+}
+
+void
+CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+{
+    if ( !fs::exists( root ) )
+        throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
+    fs::path crbdb = fs::path(root) / "crbdb";
+    if ( !fs::exists( crbdb ) )
+        throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
+
+    fs::path dbbasedir = crbdb / fs::path(name()) ;
+    if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
+        throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
+    // either id provides the full directory or part of it
+    // try first full path
+    typedef std::vector<fs::path> vec;
+    vec d;
+    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    result_set_t result_set;
+
+    for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
+    {
+        fs::path dbfilename = dir.path() / fs::path(name() + ".crb.json");
+        if (fs::exists( dbfilename ) )
+        {
+            if ( last == crb::last::created )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dir.path()), dbfilename));
+            }
+            else if ( last == crb::last::modified )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dbfilename), dbfilename));
+            }
+        }
+    }
+    if ( result_set.size() )
+    {
+        fs::path dbfname =  result_set.rbegin()->second;
+        std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db: " << dbfname.string() << std::endl;
+        loadDB( dbfname.string(), l );
+        return;
+    }
+    throw std::invalid_argument(std::string("Last database for ") + name() + " not found");
+}
+
 }

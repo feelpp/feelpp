@@ -408,7 +408,7 @@ void BiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
     auto solutions = o.template get<2>();
     M_uN = solutions.template get<0>()[0];
     auto WN = M_crb->wn();
-    M_VT = M_crb->expansion( M_uN, M_uN.size(), WN );
+    M_VT = Feel::expansion( WN, M_uN, M_uN.size() );
     M_betaMu = M_teCrbModel->eimSigmaBeta(mu);
 
     this->computeB(M_uN, M_betaMu);
@@ -523,7 +523,7 @@ template<typename te_rb_model_type>
 void BiotSavartCRB<te_rb_model_type>::exportResults()
 {
     auto WN = M_crb->wn();
-    element_type VT = M_crb->expansion( M_uN, M_uN.size(), WN );
+    element_type VT = Feel::expansion( WN, M_uN, M_uN.size() );
     auto V = VT.template element<0>();
     auto T = VT.template element<1>();
 

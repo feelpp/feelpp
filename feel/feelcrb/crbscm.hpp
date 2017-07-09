@@ -450,13 +450,18 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+    
     /**
      * \brief update scm description in property_tree
      * \param ptree to update
