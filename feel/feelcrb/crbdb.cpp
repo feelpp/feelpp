@@ -77,6 +77,14 @@ CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
 CRBDB::~CRBDB()
 {}
 
+uuids::uuid
+CRBDB::id( fs::path p ) const
+{
+    if ( !fs::exists( p ) )
+        throw std::invalid_argument( "Invalid filename " + p.string() );
+    auto up = p.parent_path().filename();
+    return boost::lexical_cast<uuids::uuid>( up.string() );
+}
 fs::path
 CRBDB::dbSystemPath() const
 {
@@ -156,8 +164,16 @@ CRBDB::loadDB()
     return false;
 }
 
-void
-CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root ) 
+fs::path
+CRBDB::db( std::string const& f )  const
+{
+    auto p = fs::path( f );
+    if ( !fs::exists( p ) && ( p.extension().string() == ".json" ) )
+        throw std::invalid_argument("Database file " + f + " not found" );
+    return p;
+}
+fs::path
+CRBDB::dbFromId( std::string const& id, std::string const& root )  const
 {
     if ( !fs::exists( root ) )
         throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
@@ -186,15 +202,20 @@ CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root
             fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
             if (!fs::exists(dbfilename))
                 continue;
-            loadDB( dbfilename.string(), l );
-            return;
+            return dbfilename;
         }
     }
     throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
 }
 
 void
-CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root )
+{
+    loadDB( dbFromId( id, root ).string(), l );
+}
+
+fs::path
+CRBDB::dbLast( crb::last last, std::string const& root ) const
 {
     if ( !fs::exists( root ) )
         throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
@@ -231,10 +252,14 @@ CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root )
     {
         fs::path dbfname =  result_set.rbegin()->second;
         std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db: " << dbfname.string() << std::endl;
-        loadDB( dbfname.string(), l );
-        return;
+        return dbfname;
     }
     throw std::invalid_argument(std::string("Last database for ") + name() + " not found");
 }
 
+void
+CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+{
+    this->loadDB( dbLast( last, root ).string(), l );
+}
 }
