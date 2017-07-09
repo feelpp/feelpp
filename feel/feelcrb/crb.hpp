@@ -350,22 +350,27 @@ public:
                 }
                 else
                 {
-#if 0
-                    int loadmode = ioption( _name="crb.db.load" );
-                    switch ( loadmode )
+                    int updatemode = ioption( _name="crb.db.update" );
+                    switch ( updatemode )
                     {
                     case 0 :
-                        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
+                        this->setId( this->id( db(soption(_name="crb.db.filename")) ) );
                         break;
                     case 1:
                     case 2:
-                        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
+                        this->setId( this->id( dbLast(static_cast<crb::last>(updatemode)) ) );
                         break;
                     case 3:
-                        this->setId( dbFromId(soption(_name="crb.db.id")) );
+                        this->setId( this->id( dbFromId(soption(_name="crb.db.id")) ) );
+                        break;
+                    default:
+                        // don't do anything and let the system pick up a new unique id
                         break;
                     }
-#endif
+                    M_scmM->setId( this->id() );
+                    M_scmA->setId( this->id() );
+                    M_elements_database.setId( this->id() );
+                    std::cout << "Use DB id " << this->id() << std::endl;
                 }
 
                 if ( M_N == 0 )
@@ -11328,16 +11333,15 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l ) 
 {
-    if ( !fs::exists( filename ) )
-        throw std::invalid_argument("file does not exist");
+    auto fname = this->db( filename );
     
     if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
         this->setLoadBasisFromDB( true );
     else
         this->setLoadBasisFromDB( false );
-    this->loadJson( filename );
+    this->loadJson( fname.string() );
     
-    LOG(INFO) << "Loaded DB CRB " << filename;
+    LOG(INFO) << "Loaded DB CRB " << fname;
 }
 
 

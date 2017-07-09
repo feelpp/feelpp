@@ -565,6 +565,7 @@ crbOptions( std::string const& prefix )
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
         ( "crb.db.load"   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
+        ( "crb.db.update"   , Feel::po::value<int>()->default_value( 2 ), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id" )
         ( "crb.db.id"   , Feel::po::value<std::string>(), "DB unique id" )
         ( "crb.db.filename"   , Feel::po::value<std::string>(), "DB filename" )
         ( "crb.output-index"   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
