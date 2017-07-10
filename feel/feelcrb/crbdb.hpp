@@ -130,6 +130,11 @@ public:
     //! @return the uuid from a path to the json file
     //!
     uuids::uuid id( fs::path p ) const;
+
+    //!
+    //! @return the string representation of the uuid
+    //!
+    std::string idStr() const { return boost::lexical_cast<std::string>( M_uuid ); }
     
     //!
     //! set UUID 
