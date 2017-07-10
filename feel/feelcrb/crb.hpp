@@ -11391,10 +11391,12 @@ CRB<TruthModelType>::saveJson()
 
         boost::property_tree::ptree ptree;
 
+        ptree.add( "uuid", this->idStr() );
+        
         boost::property_tree::ptree ptreeCrbModel;
         M_model->updatePropertyTree( ptreeCrbModel );
         ptree.add_child( "crbmodel", ptreeCrbModel );
-
+        
         boost::property_tree::ptree ptreeReducedBasisSpace;
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
@@ -11443,6 +11445,9 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir )
 {
+    auto i = ptree.template get<std::string>( "uuid" );
+    if ( boost::lexical_cast<uuids::uuid>( i ) != this->id() )
+        throw std::logic_error("Inconsistent DB uuids json:" + i + std::string(" vs directory:") +   boost::lexical_cast<std::string>(this->id()));
     auto const& ptreeCrb = ptree.get_child( "crb" );
     M_N = ptreeCrb.template get<int>( "dimension" );
     M_output_index = ptreeCrb.template get<int>( "output-index" );
