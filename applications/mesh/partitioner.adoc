@@ -34,6 +34,7 @@ The generated mesh can then be loaded very efficiently in parallel.
 
 | dim | dimension of the mesh | 3                                                                                              
 | shape| shape of the mesh elements | Simplex
+| order | mesh geometric order | 1
 | part | number of desired partitions |
 | ifile | name or path to the mesh |
 | ofile | output filename prefix (without extension) |
