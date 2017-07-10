@@ -37,3 +37,6 @@
 [submodule "contrib/pybind11"]
 	path = contrib/pybind11
 	url = https://github.com/feelpp/pybind11.git
+[submodule "contrib/mongodb"]
+	path = contrib/mongocxx
+	url = https://github.com/feelpp/mongo-cxx-driver.git

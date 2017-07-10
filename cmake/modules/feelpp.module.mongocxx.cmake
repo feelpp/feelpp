@@ -1,0 +1,74 @@
+###  CMakeLists.txt; coding: utf-8 --- 
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 10 Jul 2017
+#
+#  Copyright (C) 2017 Feel++ Consortium
+#
+# Distributed under the GPL(GNU Public License):
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+
+
+#
+# MONGOCXX
+#
+OPTION( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
+
+if ( FEELPP_ENABLE_MONGOCXX )
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/mongocxx )
+    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+      execute_process(
+        COMMAND git submodule update --init --recursive contrib/mongocxx
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE git.mongocxx.log
+        ERROR_FILE git.mongocxx.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "[feelpp] Git submodule contrib/mongocxx updated.")
+      else()
+        MESSAGE(WARNING "Git submodule contrib/mongocxx failed to be updated. Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/ )
+        message( WARNING "Please make sure that git submodule contrib/mongocxx is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/mongocxx`")
+      endif()
+    endif()
+
+  endif()
+  
+  if( EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake )
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake")
+    find_package(LibBSON 1.5 REQUIRED)
+    find_package(LibMongoC 1.5 REQUIRED)
+    if ( LIBBSON_FOUND AND LIBMONGOC_FOUND )
+      message(STATUS "[feelpp] found LibBSON and LibMongoC")
+      add_subdirectory(contrib/mongocxx)
+      set(MONGOCXX_LIBRARIES "mongocxx_static ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES}")
+      set(MONGOCXX_INCLUDE_DIRS "${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src     ${CMAKE_CURRENT_BINARY_DIR}/src")
+      SET(FEELPP_HAS_MONGOCXX 1)
+      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
+      #set(FEELPP_LIBRARIES "${MONGOCXX_LIBRARIES} ${FEELPP_LIBRARIES}")
+      list(APPEND FEELPP_LIBRARIES mongocxx_static ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES})
+      ADD_DEFINITIONS( -DFEELPP_HAS_MONGOCXX )
+    endif()
+  else()
+      MESSAGE(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
+  endif()
+
+endif()
