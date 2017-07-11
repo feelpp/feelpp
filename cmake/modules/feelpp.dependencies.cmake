@@ -905,7 +905,7 @@ endif()
 # include pybind11 after python cmake macros to avoid detecting different python versions
 include(feelpp.module.pybind11)
 
-include(feelpp.module.mongodb)
+include(feelpp.module.mongocxx)
 #
 # Petsc
 #
