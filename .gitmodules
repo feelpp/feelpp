@@ -1,33 +1,15 @@
-[submodule "data/bigdata"]
-	path = data/bigdata
-	url = https://github.com/feelpp/bigdata.git
-    fetchRecurseSubmodules = on-demand
 [submodule "contrib/nlopt"]
 	path = contrib/nlopt
 	url = https://github.com/feelpp/nlopt.git
-[submodule "contrib/nt2"]
-	path = contrib/nt2
-	url = https://github.com/feelpp/nt2.git
-	fetchRecurseSubmodules = on-demand
-[submodule "contrib/cereal"]
-	path = contrib/cereal
-	url = https://github.com/USCiLab/cereal
-	fetchRecurseSubmodules = on-demand
 [submodule "contrib/hpddm"]
 	path = contrib/hpddm
 	url = https://github.com/feelpp/hpddm.git
-[submodule "contrin/paralution"]
-	path = contrin/paralution
-	url = https://github.com/feelpp/paralution.git
 [submodule "contrib/jsonlab"]
 	path = contrib/jsonlab
 	url = https://github.com/fangq/jsonlab.git
 [submodule "contrib/ipopt"]
 	path = contrib/ipopt
 	url = https://github.com/feelpp/Ipopt.git
-[submodule "python/pybind11"]
-	path = python/pybind11
-	url = https://github.com/feelpp/pybind11.git
 [submodule "contrib/pybind11"]
 	path = contrib/pybind11
 	url = https://github.com/feelpp/pybind11.git
