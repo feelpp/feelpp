@@ -2275,6 +2275,17 @@ Environment::saveTimersMD( std::ostream &os )
     S_timers.saveMD( os );
 }
 
+//! Get the boost signal associated to observers.
+Environment::simdata_sig_type& Environment::simDataSignals()
+{
+    return S_simdata_sig;
+}
+
+//! Retrieve connected signal in the given order.
+void Environment::simDataWatch()
+{
+    S_simdata_sig();
+}
 
 int Environment::S_argc = 0;
 char** Environment::S_argv = 0;
@@ -2311,5 +2322,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
 TimerTable Environment::S_timers;
+
+Environment::simdata_sig_type Environment::S_simdata_sig;
 
 }

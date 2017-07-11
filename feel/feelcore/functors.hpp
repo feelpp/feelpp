@@ -44,6 +44,27 @@ static inline void AvgMinMax(const T* const in, T* const inout, const int* const
         inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
     }
 }
+
+//! Functor that process observer data from environment signal to generate
+//! a metadata.
+template<typename Container>
+struct SimDataProcess
+{
+    using result_type = Container;
+    result_type p;
+
+    template<typename InputIterator>
+        result_type operator()(InputIterator first, InputIterator last) const
+        {
+            while(first != last)
+            {
+                //std::cout << *first << std::endl;
+                ++first;
+            }
+            return p;
+        }
+};
+
 } // Functor
 } // Feel
 

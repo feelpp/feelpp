@@ -61,6 +61,7 @@
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
+#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -174,13 +175,12 @@ AboutData makeAboutDefault( std::string name );
 class Environment : boost::noncopyable
 {
 public:
-    
-    //! 
+    //!
     //! @name Constants
-    //! 
+    //!
     //! @{
 
-    
+
     //! @}
 
     /** @name Typedefs
@@ -188,6 +188,9 @@ public:
     //@{
     typedef WorldComm worldcomm_type;
     typedef boost::shared_ptr<WorldComm> worldcomm_ptrtype;
+
+    using simdata_sig_type = boost::signals2::signal< pt::ptree (),
+                                                      Functor::SimDataProcess<pt::ptree> >;
 
     //@}
 
@@ -699,8 +702,8 @@ public:
 
     //! @return the summry tree of the application
     static pt::ptree& summary() { return S_summary; }
-    
-    //! 
+
+    //!
     //! generate a summary of the execution of the application
     //! @param fname name of the filename to generate
     //! @param stage a string describing the stage at which the summary is generated/updated
@@ -712,25 +715,32 @@ public:
     //! \endcode
     //!
     static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
-    
-    template<typename Observer>
+
+    template<typename Obs>
     static void
-    addDeleteObserver( Observer const& obs )
+    addDeleteObserver( Obs const& obs )
     {
         S_deleteObservers.connect( obs );
     }
-    template<typename Observer>
+    template<typename Obs>
     static void
-    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+    addDeleteObserver( boost::shared_ptr<Obs> const& obs )
     {
-        S_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
+        S_deleteObservers.connect( boost::bind( &Obs::operator(), obs ) );
     }
+
+    //! Get simulation data signals.
+    //! \return boost signal2 with simulation data property tree.
+    static simdata_sig_type& simDataSignals();
+
+    //! Observe data for all connected signals.
+    static void simDataWatch();
 
     static void clearSomeMemory();
 
-    //! 
+    //!
     //!  \return the scratch directory
-    //! 
+    //!
     FEELPP_DEPRECATED static const fs::path& scratchDirectory()
     {
         return S_scratchdir;
@@ -818,7 +828,6 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
-    
     static uuids::random_generator S_generator;
 
     /**
@@ -832,6 +841,9 @@ private:
     static std::vector<std::string> olAutoloadFiles;
 
     static boost::signals2::signal<void()> S_deleteObservers;
+
+    //! Simulation data signal. The functor SimDataProcess is executed for all signals.
+    static simdata_sig_type S_simdata_sig;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
     static boost::shared_ptr<WorldComm> S_worldcommSeq;
