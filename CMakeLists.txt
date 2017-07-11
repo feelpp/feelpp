@@ -318,6 +318,7 @@ include( feelpp.macros )
 add_custom_target(contrib)
 
 include( feelpp.dependencies )
+add_subdirectory(cmake)
 add_subdirectory(contrib)
 
 
