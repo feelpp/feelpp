@@ -63,6 +63,12 @@ protected:
      * Partition the \p MeshBase into \p n subdomains.
      */
     void partitionImpl ( mesh_ptrtype mesh, rank_type n, std::vector<range_element_type> const& partitionByRange ) override;
+
+private :
+
+    template<typename IteratorType>
+    void partitionImpl( mesh_ptrtype mesh, rank_type np, IteratorType const& rangeMeshElt, bool usePartitionByRange );
+
 };
 
 
