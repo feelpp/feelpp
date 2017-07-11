@@ -19,18 +19,12 @@
 [submodule "contrin/paralution"]
 	path = contrin/paralution
 	url = https://github.com/feelpp/paralution.git
-[submodule "contrib/paralution"]
-	path = contrib/paralution
-	url = https://github.com/feelpp/paralution.git
 [submodule "contrib/jsonlab"]
 	path = contrib/jsonlab
 	url = https://github.com/fangq/jsonlab.git
 [submodule "contrib/ipopt"]
 	path = contrib/ipopt
 	url = https://github.com/feelpp/Ipopt.git
-[submodule "contrib/minieigen"]
-	path = contrib/minieigen
-	url = https://github.com/feelpp/minieigen.git
 [submodule "python/pybind11"]
 	path = python/pybind11
 	url = https://github.com/feelpp/pybind11.git
