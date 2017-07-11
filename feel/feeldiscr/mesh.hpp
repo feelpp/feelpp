@@ -50,7 +50,9 @@
 
 #include <feel/feelcore/context.hpp>
 
+#include <feel/feelcore/observer.hpp>
 #include <feel/feelcore/functors.hpp>
+
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -157,7 +159,8 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
+        public Observer
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -166,7 +169,10 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape,T> >,
                                                                         mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
+    //using super_observer = typename Observer;
+
 public:
+    //namespace pt = boost::property_tree;
 
 
     /** @name Constants
@@ -275,7 +281,6 @@ public:
     };
     typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
     typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
-
 
     //@}
 
@@ -1003,6 +1008,7 @@ public:
      */
     void recv( int p, int tag );
 
+    FEELPP_DEPRECATED
     void saveMD(std::ostream &out)
     {
       out << "| Shape              |" << Shape << "|\n";
@@ -1051,6 +1057,8 @@ public:
      * sending/receiving the mesh
      */
     void decode();
+
+    virtual pt::ptree& watch() const;
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      save,
@@ -1691,10 +1699,10 @@ public:
      */
     boost::signals2::signal<void ( MESH_CHANGES )> meshChanged;
 
-    template<typename Observer>
-    void addObserver( Observer& obs )
+    template<typename meshObserver>
+    void addObserver( meshObserver& obs )
     {
-				LOG(INFO) << "Observer attached ! \n";
+        LOG(INFO) << "Observer attached ! \n";
         meshChanged.connect( obs );
     }
 #endif // __INTEL_COMPILER
@@ -2528,7 +2536,24 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 }
 #endif // FEELPP_HAS_VTK
 
-
+//! Mesh observer watch mesh properties.
+template<typename Shape, typename T, int Tag>
+pt::ptree&
+Mesh<Shape, T, Tag>::watch() const
+{
+    pt::ptree p;
+    p.put("mesh.shape", Shape::name() );
+    p.put("mesh.dim", dimension() );
+    p.put("mesh.order", nOrder );
+    p.put("mesh.h_min", hMin() );
+    p.put("mesh.h_max", hMax() );
+    p.put("mesh.h_average", hAverage() );
+    p.put("mesh.n_points", numGlobalPoints() );
+    p.put("mesh.n_edges", numGlobalEdges() );
+    p.put("mesh.n_faces", numGlobalFaces() );
+    p.put("mesh.n_vertices", numGlobalVertices() );
+    return p;
+}
 
 namespace detail
 {
