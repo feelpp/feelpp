@@ -114,11 +114,11 @@
     SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
     SET(FEELPP_HAS_NLOPT 1)
 
-    add_subdirectory(nlopt)
+    #add_subdirectory(nlopt)
     list(APPEND FEELPP_LIBRARIES feelpp_nlopt)
-    add_dependencies(contrib feelpp_nlopt)
+    #add_dependencies(contrib feelpp_nlopt)
     if (TARGET _nlopt )
-      add_dependencies(contrib _nlopt)
+      #add_dependencies(contrib _nlopt)
     endif()
 
   else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
