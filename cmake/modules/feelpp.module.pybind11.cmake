@@ -52,7 +52,7 @@ if ( FEELPP_ENABLE_PYBIND11 )
   endif()
 
 
-  add_subdirectory(contrib/pybind11)
+  add_subdirectory(pybind11)
   include_directories(${PYBIND11_INCLUDE_DIR})
   SET(FEELPP_HAS_PYBIND11 1)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" )

@@ -37,7 +37,7 @@ if ( FEELPP_ENABLE_METIS )
     #
     INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/contrib/metis/include)
 
-    add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/metis)
+    add_subdirectory(metis)
     add_dependencies(contrib feelpp_metis)
     list(APPEND FEELPP_LIBRARIES feelpp_metis)
 

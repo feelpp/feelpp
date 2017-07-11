@@ -316,7 +316,10 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 add_custom_target(contrib)
+
 include( feelpp.dependencies )
+add_subdirectory(contrib)
+
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -352,7 +355,6 @@ ENDIF()
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
-
 
 
 ################################################################################
