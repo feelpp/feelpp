@@ -142,8 +142,7 @@ endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/machines)
+add_subdirectory(cmake)
 
 include(feelpp.dirs)
 # set the Feel++ version
@@ -318,7 +317,6 @@ include( feelpp.macros )
 add_custom_target(contrib)
 
 include( feelpp.dependencies )
-add_subdirectory(cmake)
 add_subdirectory(contrib)
 
 
