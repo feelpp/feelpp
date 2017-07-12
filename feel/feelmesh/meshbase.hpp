@@ -702,7 +702,7 @@ protected:
     /**
      * check elements orientation and fix it if needed
      */
-    virtual void checkAndFixPermutation() = 0;
+    //virtual void checkAndFixPermutation() = 0;
 
 
 private:

@@ -190,12 +190,10 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
-                this->elements().modify( iv,
-                                         []( element_type& e )
-                                         {
-                                             for ( int i = 0; i < e.numPoints; ++i )
-                                                 e.point( i ).addElement( e.id(), i );
-                                         });
+                auto & eltModified = iv->second;
+                size_type eltId = eltModified.id();
+                for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
+                    eltModified.point( i ).addElement( eltId, i );
             }
             toc("Mesh::updateForUse update add element info",FLAGS_v>0); 
             VLOG(1) << "[Mesh::updateForUse] update add element info"; 
@@ -207,27 +205,26 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
+                auto & eltModified = iv->second;
                 // first look if the element has a point with a marker
                 // if not we skip this element
-                if ( iv->hasPointWithMarker() && !iv->isGhostCell())
+                if ( eltModified.hasPointWithMarker() && !eltModified.isGhostCell())
                 {
-                    this->elements().modify( iv,
-                                             []( element_type& e )
-                                             {
-                                                 for ( int i = 0; i < e.numPoints; ++i )
-                                                 {
-                                                     if ( e.point( i ).hasMarker() )
-                                                     {
-                                                         e.point( i ).addElement( e.id(), i );
+                    size_type eltId = eltModified.id();
+                    for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
+                    {
+                        if ( eltModified.point( i ).hasMarker() )
+                        {
+                            eltModified.point( i ).addElement( eltId, i );
 #if 0
-                                                         LOG(INFO) << "added to point " << e.point(i).id() << " marker " << e.point(i).marker()
-                                                                   << " element " << e.id() << " pt id in element " << i
-                                                                   << " pt(std::set) " << boost::prior( e.point(i).elements().end())->first
-                                                                   << ", " << boost::prior( e.point(i).elements().end())->second;
+                            LOG(INFO) << "added to point " << eltModified.point(i).id() << " marker " << eltModified.point(i).marker()
+                                      << " element " << e.id() << " pt id in element " << i
+                                      << " pt(std::set) " << boost::prior( eltModified.point(i).elements().end())->first
+                                      << ", " << boost::prior( eltModified.point(i).elements().end())->second;
 #endif
-                                                     }
-                                                 }
-                                             });
+                        }
+                    }
+
                 }
             }
             //auto& mpts = this->pointsByMarker();
@@ -262,7 +259,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 for ( ; iv != en; ++iv )
                 {
                     for ( int p = 0; p < element_type::numVertices; ++p )
-                        vertexIds.insert( iv->point( p ).id() );
+                        vertexIds.insert( iv->second.point( p ).id() );
                 }
                 this->setNumVertices( vertexIds.size() );
                 vertexIds.clear();
@@ -373,31 +370,33 @@ Mesh<Shape, T, Tag>::updateMeasures()
 
     if ( iv != en )
     {
-        auto ctx = M_gm->template context<vm::JACOBIAN>( *iv, pc );
-        auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf,0 );
-        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( *iv, pc1 );
-        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( *iv,pcf1,0 );
+        auto const& eltInit = iv->second;
+        auto ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
+        auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf,0 );
+        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
+        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
         for ( ; iv != en; ++iv )
         {
+            auto & elt = iv->second;
             if ( updateMeasureWithPc )
             {
-                if ( meshIsStraightened && !iv->isOnBoundary() )
+                if ( meshIsStraightened && !elt.isOnBoundary() )
                 {
-                    ctx1->update( *iv );
-                    iv->updateWithCtx1( thequad1, ctx1, ctxf1 );
+                    ctx1->update( elt );
+                    elt.updateWithCtx1( thequad1, ctx1, ctxf1 );
                 }
                 else
                 {
-                    ctx->update( *iv );
-                    iv->updateWithCtx( thequad, ctx, ctxf );
+                    ctx->update( elt );
+                    elt.updateWithCtx( thequad, ctx, ctxf );
                 }
             }
 
             // only compute meas for active element (no ghost)
-            if ( !iv->isGhostCell() )
-                M_local_meas += iv->measure();
+            if ( !elt.isGhostCell() )
+                M_local_meas += elt.measure();
 #if 0
-            auto _faces = iv->faces();
+            auto _faces = elt.faces();
 
             if ( nDim == 1 )
                 M_local_measbdy = 0;
@@ -409,8 +408,8 @@ Mesh<Shape, T, Tag>::updateMeasures()
             if ( nDim == 1 || nDim != nRealDim )
                 M_local_measbdy = 0;
             else
-                for ( int f = 0; f < iv->numTopologicalFaces; ++f )
-                    M_local_measbdy += iv->faceMeasure( f );
+                for ( int f = 0; f < elt.numTopologicalFaces; ++f )
+                    M_local_measbdy += elt.faceMeasure( f );
 #endif
         } // for element loop
     } // if ()
@@ -432,14 +431,15 @@ Mesh<Shape, T, Tag>::updateMeasures()
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
         {
+            auto & eltModified = iv->second;
             value_type meas = 0;
-            for( auto const& _elt: iv->pointElementNeighborIds() )
+            for( auto const& _elt: eltModified.pointElementNeighborIds() )
             {
                 // warning : only compute meas for active element (no ghost)
                 if ( this->hasElement( _elt ) )
                     meas += this->element( _elt ).measure();
             }
-            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
+            eltModified.setMeasurePointElementNeighbors( meas );
         }
     }
     VLOG(1) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n";
@@ -450,8 +450,9 @@ Mesh<Shape, T, Tag>::updateMeasures()
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
-        for ( const element_type& elt : allelements( this->shared_from_this() ) )
+        for ( auto const& eltWrap : elements( this->shared_from_this() ) )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             M_h_avg += elt.h();
             M_h_min = std::min(M_h_min, elt.h());
             M_h_max = std::max(M_h_max, elt.h());
@@ -629,7 +630,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
 {
     auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -642,7 +643,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
     auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -656,7 +657,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
     auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        this->elements().modify( iv,[&geondEltCommon]( element_type& e ) { e.setCommonData( geondEltCommon ); } );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
@@ -1105,8 +1106,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     auto enn = this->endElement();
     for ( ; itt!=enn;++itt )
     {
-        rank_type pid = itt->processId();
-        elementsByProcOrdering[ pid ].push_back( boost::cref(*itt) );
+        auto const& elt = itt->second;
+        rank_type pid = elt.processId();
+        elementsByProcOrdering[ pid ].push_back( boost::cref(elt) );
     }
     for ( auto const& elementsByProcPair : elementsByProcOrdering )
         for ( auto elementsByProc : elementsByProcPair.second )
@@ -1385,12 +1387,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             else
             {
                 // be careful: this step is crucial to set proper neighbor connectivity
-                element_iterator elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ );
-                this->elements().modify( elt1, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                auto & elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ )->second;
+                Feel::detail::UpdateFace<face_type> myUpdateFace( boost::cref( *f_it ) );
+                myUpdateFace( elt1 );
                 if ( f_it->isConnectedTo1() )
                 {
-                    element_iterator elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ );
-                    this->elements().modify( elt2, Feel::detail::UpdateFace<face_type>( boost::cref( *f_it ) ) );
+                    auto & elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ )->second;
+                    myUpdateFace( elt2 );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
                     this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
@@ -1415,12 +1418,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
             else
             {
-                element_iterator elt1 = this->elementIterator( f_it->ad_first() );
-                this->elements().modify( elt1, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_first(), *f_it ); } );
+                auto & elt1 = this->elementIterator( f_it->ad_first() )->second;
+                elt1.setFace( f_it->pos_first(), *f_it );
                 if ( f_it->isConnectedTo1() )
                 {
-                    element_iterator elt2 = this->elementIterator( f_it->ad_second() );
-                    this->elements().modify( elt2, [&f_it]( element_type& elt ) { elt.setFace( f_it->pos_second(), *f_it ); } );
+                    auto & elt2 = this->elementIterator( f_it->ad_second() )->second;
+                    elt2.setFace( f_it->pos_second(), *f_it );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
                     this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
@@ -1431,13 +1434,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
         for ( auto const& eltDatasPair : e2e )
         {
-            element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
+            auto & elt1 = this->elementIterator( eltDatasPair.first )->second;
             for (auto const& eltDatas  : eltDatasPair.second )
             {
                 uint16_type j = std::get<2>( eltDatas );
                 size_type eltId2 = std::get<0>( eltDatas );
-                rank_type eltPid2 = std::get<1>( eltDatas );
-                this->elements().modify( eltIt1, [&j,&eltId2,&eltPid2]( element_type& elt ) { elt.setNeighbor(j,eltId2 ); });
+                //rank_type eltPid2 = std::get<1>( eltDatas );
+                elt1.setNeighbor( j,eltId2 );
             }
         }
     }
@@ -1563,7 +1566,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
     for ( ; iv != en; ++iv )
     {
-        element_type const& elt = *iv;
+        element_type const& elt = iv->second;
         const size_type eltId = elt.id();
         const rank_type eltPid = elt.processId();
 
@@ -1611,12 +1614,12 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
     for ( auto const& eltDatasPair : e2e )
     {
-        element_iterator eltIt1 = this->elementIterator( eltDatasPair.first );
+        auto eltModified = this->elementIterator( eltDatasPair.first )->second;
         for (auto const& eltDatas  : eltDatasPair.second )
         {
             uint16_type j = std::get<1>( eltDatas );
             size_type eltId2 = std::get<0>( eltDatas );
-            this->elements().modify( eltIt1, [&j,&eltId2]( element_type& elt ) { elt.setNeighbor( j,eltId2 ); });
+            eltModified.setNeighbor( j,eltId2 );
         }
     }
 }
@@ -1625,7 +1628,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_iterator __fit, mpl::true_ )
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterator __fit, mpl::true_ )
 {
     CHECK( nOrder == 3 || nOrder == 4 ) << "this fix with nOrder " << nOrder << " not implement, only order 3 and 4\n";
     if ( nOrder == 3 )
@@ -1636,13 +1639,13 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_itera
         // easy case : only one point in face
         uint16_type idx = element_type::fToP( __fit->pos_second(), startPt );
         auto const& ptOnFace = __fit->point( startPt );
-        size_type ptIdToCheck = iv->point( idx ).id();
+        size_type ptIdToCheck = elt.point( idx ).id();
         if ( ptIdToCheck != ptOnFace.id() )
         {
             // erase duplicate point
             this->points().erase( this->pointIterator( ptIdToCheck ) );
             // fix point coordinate
-            this->elements().modify( iv, Feel::detail::UpdateEltPoint<point_type>( idx, ptOnFace ) );
+            elt.setPoint( idx, ptOnFace );
         }
     }
     else if ( nOrder == 4 )
@@ -1655,9 +1658,9 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_itera
         std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
         for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
         {
-            auto const& ptOnFaceElt = iv->point( element_type::fToP( __fit->pos_second(), k ) );
+            auto const& ptOnFaceElt = elt.point( element_type::fToP( __fit->pos_second(), k ) );
 
-            double dist=0, distMin= 1000*iv->hFace( __fit->pos_second() );// INT_MAX;
+            double dist=0, distMin= 1000*elt.hFace( __fit->pos_second() );// INT_MAX;
             uint16_type idxFaceNear = invalid_uint16_type_value;
 
             for ( uint16_type idxV = startPt ; idxV < face_type::numPoints ; ++idxV )
@@ -1679,7 +1682,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_itera
         {
             // point index in element
             uint16_type idx = element_type::fToP( __fit->pos_second(), startPt + i );
-            size_type ptIdToCheck = iv->point( idx ).id();
+            size_type ptIdToCheck = elt.point( idx ).id();
             auto const& ptOnFace = __fit->point( idxDistribution[i] );
 
             if ( ptIdToCheck != ptOnFace.id() )
@@ -1687,7 +1690,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_itera
                 // erase duplicate point
                 this->points().erase( this->pointIterator( ptIdToCheck ) );
                 // fix point coordinate
-                this->elements().modify( iv, Feel::detail::UpdateEltPoint<point_type>( idx, ptOnFace ) );
+                elt.setPoint( idx, ptOnFace );
             }
         }
     }
@@ -1695,7 +1698,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv,face_itera
 }
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ )
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::false_ )
 {}
 
 
@@ -1727,26 +1730,26 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& f, mpl::bool_<false> 
 
 template<typename Shape, typename T, int Tag>
 bool
-Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> )
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> )
 {
     return false;
 }
 template<typename Shape, typename T, int Tag>
 bool
-Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& iv, mpl::bool_<true> )
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> )
 {
     // in 3D check if the edges of the element touch the boundary
     bool isOnBoundary = false;
-    for ( size_type j = 0; j < iv->nEdges(); j++ )
+    for ( size_type j = 0; j < elt.nEdges(); j++ )
     {
-        auto edgePtr = iv->edgePtr( j );
+        auto edgePtr = elt.edgePtr( j );
         if ( edgePtr )
             isOnBoundary |= edgePtr->isOnBoundary();
     }
     if ( isOnBoundary )
     {
         // the element touches the boundary with just an edge
-        this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 1 ); } );
+        elt.setOnBoundary( isOnBoundary, 1 );
         return isOnBoundary;
     }
     return isOnBoundary;
@@ -1784,23 +1787,23 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
           iv != en; ++iv )
     {
         bool isOnBoundary = false;
-
+        auto & elt = iv->second;
         // first check if a face is on the boundary
-        for ( size_type j = 0; j < iv->nTopologicalFaces(); j++ )
+        for ( size_type j = 0; j < elt.nTopologicalFaces(); j++ )
         {
-            auto facePtr = iv->facePtr( j );
+            auto facePtr = elt.facePtr( j );
             if ( facePtr )
                 isOnBoundary |= facePtr->isOnBoundary();
         }
 
         if ( isOnBoundary )
         {
-            VLOG(3) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
-            this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, face_type::nDim ); } );
+            VLOG(3) << "checking " << elt.nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
+            elt.setOnBoundary( isOnBoundary, face_type::nDim );;
             // go to the next element, no need to look further
             continue;
         }
-        bool e_modified = modifyElementOnBoundaryFromEdge( iv, mpl::bool_<(nDim>=3)>() );
+        bool e_modified = modifyElementOnBoundaryFromEdge( elt, mpl::bool_<(nDim>=3)>() );
         // go to next element if element is on boundary
         if ( e_modified )
         {
@@ -1808,15 +1811,15 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
         }
 
         // finally check if a point of the element touches the boundary
-        for ( size_type j = 0; j < iv->nPoints(); j++ )
+        for ( size_type j = 0; j < elt.nPoints(); j++ )
         {
-            isOnBoundary |= iv->point( j ).isOnBoundary();
+            isOnBoundary |= elt.point( j ).isOnBoundary();
         }
 
         if ( isOnBoundary )
         {
-            VLOG(3) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
-            this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 0 ); } );
+            VLOG(3) << "checking " << elt.nPoints() << " points, isOnBoundary: " << isOnBoundary;
+            elt.setOnBoundary( isOnBoundary, 0 );
         }
     } // loop over the elements
     LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
@@ -1877,6 +1880,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
     std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
 
+    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
+    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
     auto rangeGhostElement = this->ghostElements();
     auto iv = std::get<0>( rangeGhostElement );
     auto const en = std::get<1>( rangeGhostElement );
@@ -1886,9 +1891,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
         const int IdProcessOfGhost = __element.processId();
         const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
 
-        this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectPointToElement() );
+        auto & eltModified = this->elementIterator( __element )->second;
+        elementGhostConnectPointToElement( eltModified );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator( __element ) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            elementGhostConnectEdgeToElement( eltModified );
 
         // send
         this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
@@ -2241,6 +2247,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 
     const rank_type nProc = this->worldComm().localSize();
 
+    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
+    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
     std::map< rank_type, int > nDataInVecToSend;
@@ -2252,9 +2260,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         auto const& ghostelt = boost::unwrap_ref( *iv );
         const rank_type IdProcessOfGhost = ghostelt.processId();
         // update info for parallelism
-        this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectPointToElement() );
+        auto & eltModified = this->elementIterator( ghostelt )->second;
+        elementGhostConnectPointToElement( eltModified );
         if ( nDim==3 )
-            this->elements().modify( this->elementIterator( ghostelt ) , typename super_elements::ElementGhostConnectEdgeToElement() );
+            elementGhostConnectEdgeToElement( eltModified );
 
         // be sure that the counter start to 0
         if ( nDataInVecToSend.find(IdProcessOfGhost) == nDataInVecToSend.end() )
@@ -2374,8 +2383,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             if ( !this->hasElement( idEltOnProcess ) )
                 continue;
 
-            auto const& theelt = this->element( idEltOnProcess );
-            this->elements().modify( this->elementIterator( idEltOnProcess ), Feel::detail::updateIdInOthersPartitions( idProc, idEltOtherProcess ) );
+            //auto const& theelt = this->element( idEltOnProcess );
+            auto & theelt = this->elementIterator( idEltOnProcess )->second;
+            theelt.setIdInOtherPartitions( idProc, idEltOtherProcess );
 
             //---------------------------//
             // get faces id and bary
@@ -2776,11 +2786,12 @@ Mesh<Shape, T, Tag>::checkLocalPermutation( mpl::bool_<true> ) const
     }
 }
 
+#if 0
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::checkAndFixPermutation(  )
 {
-    element_type __element = *this->beginElement();
+    element_type __element = *this->beginElement()->second;
 
     if ( ! ( __element.isATriangleShape() ||
              __element.isATetrahedraShape() ) )
@@ -2798,7 +2809,7 @@ Mesh<Shape, T, Tag>::checkAndFixPermutation(  )
     for ( element_iterator elt = this->beginElement();
             elt != this->endElement(); ++elt )
     {
-        element_type __element = *elt;
+        element_type __element = elt->second;
         bool is_anticlockwise = __element.isAnticlockwiseOriented();
         // --verbose
 #if 0
@@ -2836,6 +2847,7 @@ Mesh<Shape, T, Tag>::checkAndFixPermutation(  )
 
     }
 }
+#endif
 
 template<typename Shape, typename T, int Tag>
 void

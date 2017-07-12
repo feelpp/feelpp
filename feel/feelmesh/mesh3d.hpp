@@ -524,9 +524,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
                                   permutation, mpl::bool_<( SHAPE == SHAPE_TETRA )>() );
 
         if ( permutation.value() != face_permutation_type::IDENTITY )
-            this->elements().modify( this->elementIterator( elt_it->ad_second() ),
-                                     Feel::detail::UpdateFacePermutation<face_permutation_type>( elt_it->pos_second(),
-                                                                                                 permutation ) );
+            this->elementIterator( elt_it->ad_second() )->second.setFacePermutation( elt_it->pos_second(), permutation );
     }
 
 #if !defined( NDEBUG )
@@ -536,10 +534,11 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
         {
+            auto const& elt = iv->second;
             for ( size_type j = 0; j < numLocalFaces(); j++ )
             {
-                FEELPP_ASSERT( iv->facePtr( j ) )
-                ( j )( iv->id() ).warn( "invalid element face check" );
+                FEELPP_ASSERT( elt.facePtr( j ) )
+                ( j )( elt.id() ).warn( "invalid element face check" );
             }
         }
     }
@@ -667,12 +666,13 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     for ( element_iterator elt_it = this->beginElement();
           elt_it != this->endElement(); ++elt_it )
     {
-        vid = elt_it->id();
+        auto & elt = elt_it->second;
+        vid = elt.id();
 
         for ( uint16_type j = 0; j < element_type::numEdges; ++j )
         {
-            auto const& pt0 = elt_it->point( element_type::eToP( j, 0 ) );
-            auto const& pt1 = elt_it->point( element_type::eToP( j, 1 ) );
+            auto const& pt0 = elt.point( element_type::eToP( j, 0 ) );
+            auto const& pt1 = elt.point( element_type::eToP( j, 1 ) );
             i1 = pt0.id();
             i2 = pt1.id();
             std::set<size_type> s( {i1, i2} );
@@ -704,7 +704,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 edg.setPoint( 0, pt0 );
                 edg.setPoint( 1, pt1 );
                 for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
-                    edg.setPoint( k, elt_it->point( element_type::eToP( j, k ) ) );
+                    edg.setPoint( k, elt.point( element_type::eToP( j, k ) ) );
 
                 // add edge in mesh container
                 eit = this->edges().insert( this->edges().end(), edg );
@@ -722,15 +722,13 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             }
 
             // set the process id from element (only active element)
-            if ( !elt_it->isGhostCell() && eit->processId() != elt_it->processId() )
-                this->edges().modify( eit, Feel::detail::UpdateProcessId( elt_it->processId() ) );
+            if ( !elt.isGhostCell() && eit->processId() != elt.processId() )
+                this->edges().modify( eit, Feel::detail::UpdateProcessId( elt.processId() ) );
 
             // update edge pointer in element
-            this->elements().modify( elt_it, Feel::detail::UpdateEdge<edge_type>( j, boost::cref( *eit ) ) );
+            elt.setEdge( j, boost::cref( *eit ) );
 #if !defined( NDEBUG )
-            this->elements().modify( elt_it,
-                                     [j]( element_type const& e ) { FEELPP_ASSERT( e.edgePtr( j ) )
-                                                                    ( e.id() )( j ).error( "invalid edge in element" ); } );
+            CHECK( elt.edgePtr( j ) ) << "invalid edge in element";
 #endif
 
             // update edge orientation in element
@@ -747,8 +745,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 if ( _default.first != _current.first )
                 {
                     edge_permutation_type permutation( edge_permutation_type::REVERSE_PERMUTATION );
-                    this->elements().modify( elt_it,
-                                             Feel::detail::UpdateEdgePermutation<edge_permutation_type>( j, permutation ) );
+                    elt.setEdgePermutation( j,permutation );
                 }
             }
             else
@@ -761,11 +758,11 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         // update edge pointer in faces
         for ( uint16_type j = 0; j < element_type::numFaces; ++j )
         {
-            if ( !elt_it->facePtr(j) ) continue;
-            auto fit = this->faces().iterator_to( elt_it->face(j));
+            if ( !elt.facePtr(j) ) continue;
+            auto fit = this->faces().iterator_to( elt.face(j));
             for ( uint16_type e = 0; e < face_type::numEdges; ++e )
             {
-                auto const& elt_edge = elt_it->edge( elt_it->f2e( j, e ) );
+                auto const& elt_edge = elt.edge( elt.f2e( j, e ) );
                 this->faces().modify( fit,
                                       [e,&elt_edge]( face_type& f ) { f.setEdge(e,elt_edge); } );
             }

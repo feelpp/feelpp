@@ -35,8 +35,6 @@
 
 namespace Feel
 {
-namespace multi_index = boost::multi_index;
-
 /// \cond detail
 /*!
   \class Points
@@ -140,7 +138,7 @@ public:
     }
     bool isBoundaryPoint( point_type const & e ) const
     {
-        return this->isBoundaryPoint( e.id() );
+        return e.isOnBoundary();
     }
     bool isBoundaryPoint( size_type const & id ) const
     {
