@@ -161,6 +161,12 @@ if ( FEELPP_ENABLE_NLOPT )
   include(feelpp.module.nlopt)
 endif()
 
+#
+# ipopt
+#
+include(feelpp.module.ipopt)
+
+
 #include(feelpp.module.cereal)
 #include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)

@@ -317,7 +317,6 @@ include( feelpp.macros )
 add_custom_target(contrib)
 
 include( feelpp.dependencies )
-include( contrib.dependencies )
 add_subdirectory(contrib)
 
 

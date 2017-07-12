@@ -1271,10 +1271,9 @@ if( FEELPP_ENABLE_GMSH )
 endif()
 
 #
-# ipopt
+# conntrib configuration
 #
-include(feelpp.module.ipopt)
-
+include( contrib.dependencies )
 
 #
 # Acusim
