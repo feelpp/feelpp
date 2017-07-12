@@ -73,7 +73,9 @@ runCrbOnline()
     std::cout << "Loaded the plugin " << plugin->name() << std::endl
               << " . from " << pname.string() << std::endl
               << " . using db " << jsonfilename << std::endl;
-    plugin->loadDB( jsonfilename );
+    bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
+
+    plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;//Feel::doption(Feel::_name="crb.online-tolerance");
@@ -113,7 +115,6 @@ runCrbOnline()
         mysampling->sample( nSample, sampler );
     }
 
-    bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
     if ( loadFiniteElementDatabase )
         plugin->initExporter();
 

@@ -68,7 +68,7 @@ public :
      * Compare the component \p i of \p mu1 and \p mu2
      * \return true if mu1[i]<mu2[i]
      */
-    bool operator() ( parameter_type mu1, parameter_type mu2 )
+    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
     {
         return compare( mu1, mu2, 0 );
     }
@@ -77,7 +77,7 @@ private :
      * Compare \p mu1 and \p mu2
      * \return true if mu1 < mu2
      */
-    bool compare( parameter_type mu1, parameter_type mu2, int i )
+    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
     {
         if ( i==mu1.size() )
             return false;
@@ -153,9 +153,11 @@ public :
      * deim.default-sampling-size and (string)
      * deim.default-sampling-mode
      */
-    DEIMBase( parameterspace_ptrtype Dmu, sampling_ptrtype sampling, std::string prefix="",
+    DEIMBase( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling, std::string prefix="",
               WorldComm const& worldComm = Environment::worldComm() ) :
         super( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
+               "deim",
+               uid,
                worldComm ),
         M_parameter_space( Dmu ),
         M_trainset( sampling ),
@@ -182,7 +184,7 @@ public :
             M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
         {
-            int sampling_size = ioption( prefixvm( M_prefix, "deim.dimension-max" ) );
+            int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
             std::string file_name = ( boost::format("deim_trainset_%1%") % sampling_size ).str();
             std::string sampling_mode = soption( prefixvm( M_prefix, "deim.default-sampling-mode" ) );
             std::ifstream file ( file_name );
@@ -674,8 +676,8 @@ public :
         super_type()
     {}
 
-    DEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( Dmu, sampling, prefix )
+    DEIM( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( Dmu, uid, sampling, prefix )
     {}
 
     ~DEIM()
@@ -701,8 +703,8 @@ public :
         super_type()
     {}
 
-    MDEIM( parameterspace_ptrtype Dmu, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( Dmu, sampling, prefix )
+    MDEIM( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( Dmu, uid, sampling, prefix )
     {}
 
     ~MDEIM()

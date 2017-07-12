@@ -693,9 +693,7 @@ public :
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
 
-        auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
-        if ( ptreeSpecificityOfModel )
-            this->setupSpecificityModel( *ptreeSpecificityOfModel, dbDir );
+        this->setupSpecificityModel( ptree, dbDir );
 
         XN->setModel( this->shared_from_this() );
 

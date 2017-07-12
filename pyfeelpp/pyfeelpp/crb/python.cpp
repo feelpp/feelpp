@@ -31,6 +31,7 @@
 
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/crbdata.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbplugin_interface.hpp>
@@ -105,6 +106,10 @@ struct std_item
         {
             return x.size();
         }
+    static std::vector<V> const& getVector(T const& v )
+        {
+            return v;
+        }
     
 };
 template<class T>
@@ -142,9 +147,13 @@ public:
             PYBIND11_OVERLOAD_PURE(std::string const&, CRBPluginAPI, name, );
         }
     
-    void loadDB( std::string db ) override
+    void loadDB( std::string const& db, crb::load l ) override
         {
-            PYBIND11_OVERLOAD_PURE( void, CRBPluginAPI, loadDB, db );
+            PYBIND11_OVERLOAD_PURE( void, CRBPluginAPI, loadDB, db, l );
+        }
+    void loadDBFromId( std::string const& i, crb::load l, std::string const& root  ) override
+        {
+            PYBIND11_OVERLOAD_PURE( void, CRBPluginAPI, loadDBFromId, i, l, root );
         }
     boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
@@ -153,8 +162,12 @@ public:
     CRBResults run( ParameterSpaceX::Element const& mu, 
                     double eps , int N, bool print_rb_matrix ) const override
         {
-            std::cout << "coucou\n";
             PYBIND11_OVERLOAD(CRBResults, CRBPluginAPI, run, mu, eps, N, print_rb_matrix ); 
+        }
+    std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S, 
+                                 double eps , int N, bool print_rb_matrix ) const override
+        {
+            PYBIND11_OVERLOAD(std::vector<CRBResults>, CRBPluginAPI, run, S, eps, N, print_rb_matrix ); 
         }
     void initExporter() override
         {
@@ -178,25 +191,59 @@ PYBIND11_MODULE( _crb, m )
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins" );
 
+    py::enum_<crb::load>(m,"CRBLoad")
+        .value("rb", crb::load::rb)
+        .value("fe", crb::load::fe)
+        .value("all", crb::load::all);
+    
     py::class_<CRBResults>(m,"CRBResults")
+        .def("setParameter", &CRBResults::setParameter)
+        .def("parameter", &CRBResults::parameter)
         .def("output", &CRBResults::output)
         .def("errorBound", &CRBResults::errorbound)
         ;
+
+    py::class_<std::vector<CRBResults>>(m,"VectorCRBResults")
+        .def(py::init<>())
+        .def("clear", &std::vector<CRBResults>::clear)
+        .def("pop_back", &std::vector<CRBResults>::pop_back)
+        .def("__len__", [](const std::vector<CRBResults> &v) { return v.size(); })
+        .def("__iter__", [](std::vector<CRBResults> &v) {
+                return py::make_iterator(v.begin(), v.end());
+            }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
+        
     using ElementP = ParameterSpaceX::Element;
-    py::class_<ElementP>(m,"ParameterSpaceElement");
-    //.def("__repr__",&str_item<ParameterSpaceX::Element>::to_string)
-    //.def("__str__", &str_item<ParameterSpaceX::Element>::to_string);
+    py::class_<ElementP>(m,"ParameterSpaceElement")
+    //.def("__repr__",[](const ParameterSpaceX::Element &a) {
+    //return "<ParameterSpaceX named '" + a + "'>";
+    //});
+    .def("__str__", [](const ParameterSpaceX::Element &a) {
+            std::ostringstream os;
+            os << "[";
+            os.precision(2);
+            os.setf(std::ios::scientific);
+            for ( int i = 0; i < a.size(); ++i )
+            {
+                os << a[i];
+                if ( i != a.size()-1)
+                    os << ",";
+            }
+            os << "]";
+            return os.str();
+        });
 
 
     //!
     //! Sampling wrapping
     //!
+    py::class_<std::vector<ParameterSpaceX::Element>>(m,"VectorParameterSpaceElement");
     
-    py::class_<ParameterSpaceX::Sampling,boost::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
+    py::class_<ParameterSpaceX::Sampling, boost::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<boost::shared_ptr<ParameterSpaceX>,int,boost::shared_ptr<ParameterSpaceX::Sampling>>())
         .def("sampling",&ParameterSpaceX::Sampling::sampling)
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
+        .def("getVector", &std_item<ParameterSpaceX::Sampling>::getVector)
         .def("__len__", &std_item<ParameterSpaceX::Sampling>::size)
         ;
 
@@ -210,30 +257,31 @@ PYBIND11_MODULE( _crb, m )
         //.def("New", &ParameterSpaceX::New, ParameterSpaceX_New_overloads(args("dim", "WorldComm"), "New")).staticmethod("New")
         .def_static("create",&ParameterSpaceX::create )
         ;
-#if 1
-#if 0
 
-    // taken from boost.python libs/python/test/shared_ptr.cpp:
-    // This is the ugliness required to register a to-python converter
-    // for shared_ptr<A>.
-    objects::class_value_wrapper<
-        boost::shared_ptr<CRBPluginAPI>
-        , objects::make_ptr_instance<CRBPluginAPI,
-                                     objects::pointer_holder<boost::shared_ptr<CRBPluginAPI>,CRBPluginAPI> >
-        >();
-#endif
-    
     py::class_<CRBPluginAPI,CRBPluginAPIWrap,boost::shared_ptr<CRBPluginAPI>>(m,"CRBPlugin")
         //.def(py::init<>())
         .def("name",&CRBPluginAPI::name,py::return_value_policy::reference)
         //.def("setName",pure_virtual(&CRBPluginAPI::setName))
-        .def("loadDB",&CRBPluginAPI::loadDB)
+        .def("loadDB",&CRBPluginAPI::loadDB,"load a database from filename",py::arg("filename"),py::arg("load")=crb::load::rb )
+        .def("loadDBFromId",&CRBPluginAPI::loadDBFromId, "load a database from its id", py::arg(
+                 "id"), py::arg("load")=crb::load::rb, py::arg("root")=Environment::rootRepository())
+        // finite element data
+        .def("meshes",&CRBPluginAPI::meshes)
+        .def("doftables",&CRBPluginAPI::doftables)
+        .def("feElement",&CRBPluginAPI::feElement)
+        .def("feSubElements",&CRBPluginAPI::feSubElements)
+        .def("primalBasis",&CRBPluginAPI::reducedBasisFunctionsPrimal)
+        .def("dualBasis",&CRBPluginAPI::reducedBasisFunctionsDual)
+        // exporter
         .def("initExporter",&CRBPluginAPI::initExporter)
         .def("saveExporter",&CRBPluginAPI::saveExporter)
         .def("exportField",&CRBPluginAPI::exportField)
-
-        .def("run",py::overload_cast<ParameterSpaceX::Element const&,double,int,bool>(&CRBPluginAPI::run, py::const_));
+        
+        .def("parameterSpace",&CRBPluginAPI::parameterSpace)
+        .def("run",py::overload_cast<ParameterSpaceX::Element const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
+             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
+        .def("run",py::overload_cast<std::vector<ParameterSpaceX::Element> const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
+             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false);
         //.def("run",&CRBPluginAPI::run)
-    
-#endif
+
 }

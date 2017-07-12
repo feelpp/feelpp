@@ -29,9 +29,13 @@ namespace Feel {
 
 extern template void partition<Simplex<1>>( std::vector<int> const& nParts);
 extern template void partition<Simplex<2>>( std::vector<int> const& nParts);
+extern template void partition<Simplex<2,2>>( std::vector<int> const& nParts);
 extern template void partition<Simplex<3>>( std::vector<int> const& nParts);
+extern template void partition<Simplex<3,2>>( std::vector<int> const& nParts);
 extern template void partition<Hypercube<2>>( std::vector<int> const& nParts);
+extern template void partition<Hypercube<2,2>>( std::vector<int> const& nParts);
 extern template void partition<Hypercube<3>>( std::vector<int> const& nParts);
+extern template void partition<Hypercube<3,3>>( std::vector<int> const& nParts);
 
 }
 
@@ -43,6 +47,9 @@ int main( int argc, char** argv )
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
         ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh dimension" )
+        ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
+        ( "by-markers", "partitioning by markers" )
+        ( "by-markers-desc", po::value<std::vector<std::string> >()->multitoken(), "partitioning by markers. Example : --by-markers-desc=marker1:marker2,marker3" )
         ( "part", po::value<std::vector<int> >()->multitoken(), "number of partition" )
         ( "ifile", po::value<std::string>(), "input mesh filename" )
         ( "odir", po::value<std::string>(), "output directory [optional]" )
@@ -58,6 +65,7 @@ int main( int argc, char** argv )
 
     int dim = ioption(_name="dim");
     std::string shape = soption(_name="shape");
+    int order = ioption(_name="order");
 
     std::vector<int> nParts;
     if ( Environment::vm().count("part"))
@@ -95,16 +103,36 @@ int main( int argc, char** argv )
         {
             switch ( dim )
             {
-            case 2 : partition<Simplex<2>>( nParts ); break;
-            case 3 : partition<Simplex<3>>( nParts ); break;
+            case 2 :
+                if ( order == 1 )
+                    partition<Simplex<2>>( nParts );
+                else if ( order==2 )
+                    partition<Simplex<2,2>>( nParts );
+                break;
+            case 3 :
+                if ( order == 1 )
+                    partition<Simplex<3>>( nParts );
+                else if ( order==2 )
+                    partition<Simplex<3,2>>( nParts );
+                break;
             }
         }
         else if ( shape == "hypercube" )
         {
             switch ( dim )
             {
-            case 2 : partition<Hypercube<2>>( nParts ); break;
-            case 3 : partition<Hypercube<3>>( nParts ); break;
+            case 2 :
+                if ( order == 1 )
+                    partition<Hypercube<2>>( nParts );
+                else if ( order==2 )
+                    partition<Hypercube<2,2>>( nParts );
+                break;
+            case 3 :
+                if ( order == 1 )
+                    partition<Hypercube<3>>( nParts );
+                else if ( order==2 )
+                    partition<Hypercube<3,2>>( nParts );
+                break;
             }
         }
     }
