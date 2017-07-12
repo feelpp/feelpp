@@ -162,7 +162,7 @@ if ( FEELPP_ENABLE_NLOPT )
 endif()
 
 #
-# ipopt
+# ipopt support
 #
 # include(feelpp.module.ipopt)
 
