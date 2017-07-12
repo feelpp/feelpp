@@ -1135,9 +1135,10 @@ void PartitionIO<MeshType>::readGhostElements( std::map<rank_type,std::vector<si
         //size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
 
         auto it = M_meshPartIn->elementIterator( id );
-        M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
+        auto & eltModified = it->second;
+        eltModified.setProcessId( pid );
+        eltModified.addNeighborPartitionId( partId );
         //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
-        M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
     }
 }
 
@@ -1315,6 +1316,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
+        auto & eltModified = M_meshPartIn->elementIterator( elt.id() )->second;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
             auto const& thepoint = elt.point( vLocId );
@@ -1323,7 +1325,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
             {
                 auto const& neighIds = pointsToNeihborPart.find( vId )->second;
                 for ( auto const& neighId : neighIds )
-                    M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( elt.id() )/*elt_it*/, Feel::detail::UpdateNeighborPartition( neighId ) );
+                    eltModified.addNeighborPartitionId( neighId );
             }
         }
     }
@@ -1449,7 +1451,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
 
-            M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( itFindElt->second ), Feel::detail::UpdateNeighborPartition( pid ) );//NEW
+            auto & eltModified = M_meshPartIn->elementIterator( itFindElt->second )->second;
+            eltModified.addNeighborPartitionId( pid );
 
             dataToReSend[pid][k] = itFindElt->second;
         }
@@ -1486,8 +1489,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto eltToUpdate = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] );
-            M_meshPartIn->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( pid, itFinalDataToRecv->second[k] ) );
+            auto & eltModified = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] )->second;
+            eltModified.setIdInOtherPartitions( pid, itFinalDataToRecv->second[k] );
         }
     }
 

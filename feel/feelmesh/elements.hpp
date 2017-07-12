@@ -31,21 +31,14 @@
 #ifndef FEELPP_ELEMENTS_HPP
 #define FEELPP_ELEMENTS_HPP 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/random_access_index.hpp>
+#include <unordered_map>
 
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
-namespace multi_index = boost::multi_index;
+
 /// \cond detail
 
 namespace detail
@@ -98,77 +91,8 @@ public:
                               mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
                               mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone/*ElementType*/, T> > >::type>::type>::type::type element_type;
 
-    /**
-     * multi-indexed element container
-     */
-    typedef multi_index::multi_index_container<
-        element_type,
-        multi_index::indexed_by<
-            //multi_index::random_access<>,
-            multi_index::ordered_unique<multi_index::identity<element_type> >
-#if 0
-            // sort by less<int> on id() + pid()
-            multi_index::ordered_unique<
-                multi_index::composite_key<element_type,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      rank_type,
-                                                                      &element_type::processId>,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      size_type,
-                                                                      &element_type::id> > >,
 
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker1 const&,
-                                                                                                  &element_type::marker>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker2>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker2 const&,
-                                                                                                  &element_type::marker2>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker3>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker3 const&,
-                                                                                                  &element_type::marker3>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-
-            // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  bool,
-                                                                                                  &element_type::isOnBoundary>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  uint16_type,
-                                                                                                  &element_type::boundaryEntityDimension> > >,
-
-            // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_ghostcell>,
-                                            multi_index::const_mem_fun<element_type,
-                                                                       bool,
-                                                                       &element_type::isGhostCell> >
-#endif
-
-
-            > > elements_type;
-
+    typedef std::unordered_map<size_type,element_type> elements_type;
 
     typedef typename elements_type::iterator element_iterator;
     typedef typename elements_type::const_iterator element_const_iterator;
@@ -369,63 +293,69 @@ public:
 
     bool isBoundaryElement( element_type const & e ) const
     {
-        return elementIterator(e.id())->isOnBoundary();
+        return e.isOnBoundary();
     }
     bool isBoundaryElement( size_type const & id ) const
     {
-        return elementIterator(id)->isOnBoundary();
+        auto itFindElt = M_elements.find( id );
+        if ( itFindElt == M_elements.end() )
+            return false;
+        return itFindElt->second.isOnBoundary();
     }
 
-    element_iterator elementIterator( size_type i ) const
+    element_const_iterator elementIterator( size_type i ) const
     {
-        //return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
-        return M_elements.find( element_type( i ) );
+        return M_elements.find( i );
+    };
+    element_iterator elementIterator( size_type i )
+    {
+        return M_elements.find( i );
     };
 
     FEELPP_DEPRECATED
-    element_iterator elementIterator( size_type i, rank_type p ) const
+    element_const_iterator elementIterator( size_type i, rank_type p ) const
     {
-        //return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
-        return M_elements.find( element_type( i ) );
+        return M_elements.find( i );
     };
 
-    element_iterator elementIterator( element_type const& elt ) const
+    element_const_iterator elementIterator( element_type const& elt ) const
     {
-        return elementIterator( elt.id() );//, elt.processId() );
-        //return elementIterator( elt.id(), elt.processId() );
+        return elementIterator( elt.id() );
+    };
+    element_iterator elementIterator( element_type const& elt )
+    {
+        return elementIterator( elt.id() );
     };
 
     element_type const& element( size_type i ) const
     {
-        //return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
-        return *M_elements.find( element_type( i ) );
+        auto itFindElt = M_elements.find( i );
+        CHECK( itFindElt != M_elements.end() ) << " element " << i << "does not found";
+        return itFindElt->second;
     };
 
     FEELPP_DEPRECATED
     element_type const& element( size_type i, rank_type p ) const
     {
-        //return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
-        return *M_elements.find( element_type( i ) );
+        return this->element( i );
     };
 
     /**
      * \return \c true if element with id \p i is found, \c false otherwise
      */
-    bool hasElement( size_type i, rank_type p = invalid_rank_type_value ) const
+    bool hasElement( size_type i ) const
     {
-        //const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-#if 0
-        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
-               M_elements.template get<0>().end();
-#endif
-#if 1
-        return M_elements.find( element_type( i ) ) != M_elements.end();
-        if ( M_elements.find( element_type( i ) ) != M_elements.end() )
+        return M_elements.find( i ) != M_elements.end();
+    }
+
+    bool hasElement( size_type i, rank_type p ) const
+    {
+        auto itFindElt = M_elements.find( i );
+        if ( itFindElt == M_elements.end() )
             return false;
-        if ( p!=invalid_rank_type_value && this->element( i ).processId() != p )
+        if ( itFindElt->processId() != p )
             return false;
         return true;
-#endif
     }
 
     element_iterator beginElement()
@@ -501,7 +431,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = *it;
+                auto const& elt = it->second;
                 if ( elt.processId() != part )
                     continue;
                 if ( !elt.hasMarker( markerType ) )
@@ -525,7 +455,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = *it;
+                auto const& elt = it->second;
                 if ( elt.processId() != part )
                     continue;
                 if ( !elt.hasMarker( markerType ) )
@@ -592,7 +522,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = it->second;
             if ( elt.processId() != part )
                 continue;
             myelements->push_back(boost::cref(elt));
@@ -612,7 +542,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = *it;
+                auto const& elt = it->second;
                 if ( elt.processId() == part )
                     return it;
             }
@@ -632,7 +562,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = it->second;
             if ( elt.processId() != part )
                 continue;
             if ( !elt.isOnBoundary() )
@@ -670,7 +600,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = it->second;
             if ( elt.processId() != part )
                 continue;
             if ( !elt.isInternal() )
@@ -693,7 +623,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = it->second;
             if ( !elt.isGhostCell() )
                 continue;
             myelements->push_back(boost::cref(elt));
@@ -726,7 +656,8 @@ public:
             M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
-        return *M_elements.insert( M_elements.end(), f );
+        return M_elements.emplace( std::make_pair( f.id(), f ) ).first->second;
+
         //M_elements.push_back( f );
         //return M_elements.back();
     }
@@ -739,7 +670,8 @@ public:
         {
             if ( f.hasMarker() )
                 M_parts[f.marker().value()]++;
-            return *M_elements.insert( f );
+            //return *M_elements.insert( f );
+            return M_elements.emplace( std::make_pair( f.id(), f ) ).first->second;
         }
     //!
     //! add a new element in the mesh
@@ -753,7 +685,7 @@ public:
                 M_parts[f.marker().value()]++;
             if ( setid )
                 f.setId( M_elements.size() );
-            return *M_elements.insert( pos, f );
+            return M_elements.insert( pos, std::make_pair( f.id(), f ) )->second;
             //M_elements.push_back( f );
             //return M_elements.back();
 
@@ -768,7 +700,7 @@ public:
         {
             if ( f.hasMarker() )
                 M_parts[f.marker().value()]++;
-            return *M_elements.insert( pos, f );
+            return M_elements.insert( pos, std::make_pair( f.id(), f ) )->second;
             //M_elements.push_back( f );
             //return M_elements.back();
 
@@ -779,7 +711,7 @@ public:
     {
         return M_elements.emplace_hint( position, args... );
     }
-    
+
     template<typename ElementVecType>
     void updateMarker( uint16_type markerType, ElementVecType const& evec )
     {
@@ -787,12 +719,12 @@ public:
         auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
-
         for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id() ), [&markerType,&evec]( element_type& e )
-                               {
-                                   e.setMarker( markerType, evec.localToGlobal( e.id(), 0, 0 ) );
-                               } );
+        {
+            size_type eltId = boost::unwrap_ref(*it).id();
+            auto & eltModified = this->elementIterator( eltId )->second;
+            eltModified.setMarker( markerType, evec.localToGlobal( eltId, 0, 0 ) );
+        }
     }
 
     template<typename ElementVecType>
@@ -811,10 +743,7 @@ public:
     void updateMarkerWithRangeElements( uint16_type markerType, IteratorRange const& range, flag_type flag )
     {
         for ( auto const& elt : range )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref( elt ) ), [&markerType,&flag]( element_type& e )
-        {
-            e.setMarker( markerType,flag );
-        } );
+            this->elementIterator( boost::unwrap_ref( elt ) )->second.setMarker( markerType,flag );
     }
 
     template<typename IteratorRange>
@@ -845,22 +774,23 @@ public:
         auto it = beginElement(), en = endElement();
         for ( ; it != en; ++it )
         {
-            M_elements.modify( it,
-                               [&markersType]( element_type& e )
-                               {
-                                   std::map<uint16_type,flag_type> newEltMarkers;
-                                   for (uint16_type f=0;f<e.numTopologicalFaces; ++f)
-                                   {
-                                       auto const& theface = e.face(f);
-                                       for ( uint16_type const& markerType : markersType )
-                                       {
-                                           if ( theface.hasMarker( markerType ) )
-                                               newEltMarkers[ markerType ] = theface.marker( markerType ).value();
-                                       }
-                                   }
-                                   for ( auto const& newMark : newEltMarkers )
-                                       e.setMarker( newMark.first, newMark.second );
-                               } );
+            auto const& elt = boost::unwrap_ref( *it );
+
+            auto & eltModified = this->elementIterator( elt )->second;
+
+            std::map<uint16_type,flag_type> newEltMarkers;
+            for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
+            {
+                auto const& theface = elt.face(f);
+                for ( uint16_type const& markerType : markersType )
+                {
+                    if ( theface.hasMarker( markerType ) )
+                        newEltMarkers[ markerType ] = theface.marker( markerType ).value();
+                }
+            }
+            for ( auto const& newMark : newEltMarkers )
+                eltModified.setMarker( newMark.first, newMark.second );
+
         }
     }
     void updateMarkersFromFaces()

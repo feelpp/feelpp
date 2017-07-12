@@ -1909,8 +1909,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh,
             // receive idFeel
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
-            auto elttt = mesh->elementIterator( mapMsg[proc][cpt] );
-            mesh->elements().modify( elttt, Feel::detail::updateIdInOthersPartitions( proc, idFeel ) );
+            auto & eltModified = mesh->elementIterator( mapMsg[proc][cpt] )->second;
+            eltModified.setIdInOtherPartitions( proc, idFeel );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
                       << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
@@ -2065,8 +2065,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto eltToUpdate = mesh->elementIterator( memoryMsgToSend[idProc][k] );
-            mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
+            auto & eltModified = mesh->elementIterator( memoryMsgToSend[idProc][k] )->second;
+            eltModified.setIdInOtherPartitions( idProc, itFinalDataToRecv->second[k] );
         }
     }
     //-----------------------------------------------------------//

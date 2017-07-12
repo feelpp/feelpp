@@ -991,7 +991,7 @@ public:
     /**
      * check elements permutation and fix it if needed
      */
-    void checkAndFixPermutation();
+    //void checkAndFixPermutation();
 
     /**
      * send the mesh data structure to processor \p p with  \p tag
@@ -1763,12 +1763,12 @@ private:
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> );
 
     /**
      * update entities on boundary (point, edge, face and element)
@@ -1778,8 +1778,8 @@ private:
     /**
      * fix duplication of point in connection1 with 3d mesh at order 3 and 4
      */
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::true_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::false_ );
 
 private:
 
