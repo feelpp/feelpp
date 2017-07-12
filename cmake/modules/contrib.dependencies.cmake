@@ -164,7 +164,7 @@ endif()
 #
 # ipopt
 #
-include(feelpp.module.ipopt)
+# include(feelpp.module.ipopt)
 
 
 #include(feelpp.module.cereal)
