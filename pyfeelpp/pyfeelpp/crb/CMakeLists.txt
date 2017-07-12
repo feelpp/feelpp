@@ -48,3 +48,4 @@ target_include_directories(_crb PRIVATE ${PYTHON_INCLUDE_DIRS})
 target_link_libraries( _crb PRIVATE ${FEELPP_LIBRARIES} )
 
 configure_file(__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+configure_file(online.py ${CMAKE_CURRENT_BINARY_DIR}/online.py)

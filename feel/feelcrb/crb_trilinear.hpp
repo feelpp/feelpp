@@ -172,16 +172,32 @@ public:
      */
     //@{
 
+    CRBTrilinear( crb::stage stage = crb::stage::online )
+        :
+        super_crb( stage )
+        {}
+    CRBTrilinear( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
+        {
+        
+        }
+    CRBTrilinear( std::string const& name,
+                  truth_model_ptrtype const & model,
+                  crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, model, stage )
+        {}
     //! default constructor
-    CRBTrilinear( std::string const& name = "defaultname_crb",
-                  WorldComm const& worldComm = Environment::worldComm() )
+    FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
+                                    WorldComm const& worldComm = Environment::worldComm() )
         :
         super_crb( name, worldComm )
-    {}
+        {}
 
     //! constructor from command line options
-    CRBTrilinear( std::string  name,
-         truth_model_ptrtype const & model )
+    FEELPP_DEPRECATED CRBTrilinear( std::string  name,
+                                    truth_model_ptrtype const & model )
         :
         super_crb( name, model )
     {

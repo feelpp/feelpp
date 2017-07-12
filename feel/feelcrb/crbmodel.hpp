@@ -215,12 +215,13 @@ public:
     /** @name Constructors, destructor
      */
     //@{
-    CRBModel( bool doInit = true )
-        :
-        CRBModel( 0, doInit )
-        {}
 
-    CRBModel( int level, bool doInit = true )
+    CRBModel( crb::stage stage, int level = 0 )
+        :
+        CRBModel( boost::make_shared<model_type>(), stage, level )
+    {
+    }
+    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
         :
         M_level( level ),
         M_Aqm(),
@@ -228,40 +229,51 @@ public:
         M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
-        M_model( new model_type ),
+        M_model( model ),
         M_is_initialized( false ),
-        M_backend( backend() ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
+        M_backend( (stage==crb::stage::offline)?backend():nullptr ),
+        M_backend_primal( (stage==crb::stage::offline)?backend( _name="backend-primal"):nullptr ),
+        M_backend_dual( (stage==crb::stage::offline)?backend( _name="backend-dual"):nullptr ),
+        M_backend_l2( (stage==crb::stage::offline)?backend( _name="backend-l2"):nullptr ),
         M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
+
+        {
+            M_model = model;
+            if ( stage == crb::stage::offline )
+                this->init();
+        }
+
+    
+    FEELPP_DEPRECATED CRBModel( bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, 0 )
+        {}
+
+    FEELPP_DEPRECATED CRBModel( int level, bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
     {
-        if ( doInit )
-            this->init();
     }
 
     FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
         :
-        CRBModel( level, doInit )
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
         {}
         
-    CRBModel( model_ptrtype const& model , bool doInit = true )
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , bool doInit = true )
         :
-        CRBModel( 0, false )
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
         {
-            M_model = model;
-            if ( doInit )
-                this->init();
         }
 
     FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , CRBModelMode mode, bool doInit = true )
         :
-        CRBModel( model, doInit )
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
         {}
     
     /**
@@ -421,6 +433,14 @@ public:
     /** @name Accessors
      */
     //@{
+
+
+    virtual bool useMonolithicRbSpace() { return true; }
+
+    //!
+    //! world communicator
+    //!
+    WorldComm const& worldComm() const { return M_model->worldComm(); }
 
     /**
      * \return  the \p variables_map
@@ -1102,6 +1122,9 @@ public:
      */
     void loadJson( std::string const& filename, std::string const& childname = "" )
         {
+            // first the underlying model
+            M_model->loadJson( filename, "crbmodel" );
+            
             if ( !fs::exists( filename ) )
             {
                 LOG(INFO) << "Could not find " << filename << std::endl;
@@ -3592,7 +3615,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
             }
         }
         else
@@ -3617,7 +3640,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 }
                 else
                 {
-                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                    backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
                 }
                 Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
 

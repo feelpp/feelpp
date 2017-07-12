@@ -52,7 +52,7 @@ public:
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
     using point_type = typename mesh_type::point_type;
-
+    using range_element_type = elements_reference_wrapper_t<mesh_type>;
     /**
      * Constructor.
      */
@@ -78,8 +78,8 @@ public:
      * of each element.  \p marker1 is reserved for things like
      * material properties, etc.
      */
-    void partition ( mesh_ptrtype mesh, rank_type n);
-    
+    void partition ( mesh_ptrtype mesh, rank_type n, std::vector<range_element_type> const& partitionByRange = std::vector<range_element_type>() );
+
     /**
      * Partition the \p Mesh into \p Environment::numberOfProcessors() parts.
      * The partitioner currently does not modify the subdomain_id
@@ -136,7 +136,8 @@ protected:
      * in derived classes.  It is called via the public partition()
      * method above by the user.
      */
-    virtual void partitionImpl(mesh_ptrtype mesh, rank_type n  ) = 0;
+    virtual void partitionImpl(mesh_ptrtype mesh, rank_type n,
+                               std::vector<range_element_type> const& partitionByRange = std::vector<range_element_type>() ) = 0;
 
     /**
      * This is the actual re-partitioning method which can be overloaded

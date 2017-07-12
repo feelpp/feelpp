@@ -159,7 +159,18 @@ public:
      */
     //@{
 
-    CRBModelTrilinear( int level=0, bool doInit=true )
+    CRBModelTrilinear( crb::stage stage, int level = 0 )
+        :
+        super( boost::make_shared<model_type>(), stage, level )
+        {
+        }
+
+    CRBModelTrilinear( model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        super( model, stage, level )
+        {}
+    
+    FEELPP_DEPRECATED CRBModelTrilinear( int level=0, bool doInit=true )
         :
         super(level,doInit)
     {
@@ -170,7 +181,7 @@ public:
     /**
      * \param model the model to be used
      */
-    CRBModelTrilinear( model_ptrtype const& model, bool doInit=true )
+    FEELPP_DEPRECATED CRBModelTrilinear( model_ptrtype const& model, bool doInit=true )
         :
         super( model, doInit )
     {
