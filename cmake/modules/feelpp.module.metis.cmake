@@ -39,7 +39,7 @@ if ( FEELPP_ENABLE_METIS )
 
     #add_subdirectory(metis)
     #add_dependencies(contrib feelpp_metis)
-    list(APPEND FEELPP_LIBRARIES feelpp_metis)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_metis)
 
     SET(FEELPP_HAS_METIS 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis/Contrib" )
