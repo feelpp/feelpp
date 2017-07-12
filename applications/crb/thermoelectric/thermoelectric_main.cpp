@@ -93,9 +93,9 @@ int main( int argc, char** argv)
     crb->exportBasisFunctions(exportWn);
 
     // export
-    auto u = Feel::expansion( WN, uN, uN.size() );
-    auto V = u.element<0>();
-    auto T = u.element<1>();
+    auto u = crb->expansion( uN, uN.size() );
+    auto V = u.template element<0>();
+    auto T = u.template element<1>();
     auto e = Exporter<rb_model_type::mesh_type>::New( "thermoelectric" );
     e->setMesh( model->mesh() );
     e->add( "V", V );

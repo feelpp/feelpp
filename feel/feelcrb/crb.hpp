@@ -278,14 +278,14 @@ public:
         :
         CRB( "noname", boost::make_shared<truth_model_type>(stage), stage )
         {
-        
+
         }
-    
+
     CRB( std::string const& name, crb::stage stage = crb::stage::online )
         :
         CRB( name, boost::make_shared<truth_model_type>(stage), stage )
     {
-        
+
     }
 
     //! constructor from command line options
@@ -656,10 +656,10 @@ public:
     //! @return boolean to load element basis functions from DB
     //!
     bool loadBasisFromDB() const
-        {
-            return M_loadElementsDb;
-        }
-    
+    {
+        return M_loadElementsDb;
+    }
+
     //! set boolean indicates if we are in offline_step or not
     void setOfflineStep( bool b )
         {
@@ -1144,7 +1144,7 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    virtual element_type expansion( vectorN_type const& u , bool dual, int N = -1) const;
+    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const;
 
     // Summary of number of iterations (at the current step)
     std::pair<int,double> online_iterations(){return online_iterations_summary;}
@@ -2141,7 +2141,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::vector_ptrtype
 CRB<TruthModelType>::computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const
 {
-    auto all_beta = M_model->computePicardBetaQm( this->expansion( uN[0] , M_N , false  ), mu );
+    auto all_beta = M_model->computePicardBetaQm( this->expansion( uN[0] ), mu );
     auto beta_A = all_beta.template get<1>();
     auto beta_F = all_beta.template get<2>();
 
@@ -4032,7 +4032,7 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
                 boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
             else
                 boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                    M_model->computeBetaQm( this->expansion( uN[0], N ,false ), mu );
+                    M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
         }
 #endif
 
@@ -4162,7 +4162,7 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
     export_ptrtype exporter;
     exporter = export_ptrtype( Exporter<mesh_type>::New( "FE_initial_guess" ) );
 
-    auto FE_initial_guess_after = this->expansion( initial_guess , N , false );
+    auto FE_initial_guess_after = this->expansion( initial_guess , N );
     //auto min = FE_initial_guess_after.min();
     auto max = FE_initial_guess_after.max();
 
@@ -4190,8 +4190,8 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
 
     if( M_loadElementsDb )
     {
-        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , false ), mu , 0 );
-        up = M_model->updateJacobian( this->expansion( map_X , N , false  ), const_cast<Jqm_type&>(this->M_Jqm) );
+        boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N  ), mu , 0 );
+        up = M_model->updateJacobian( this->expansion( map_X , N  ), const_cast<Jqm_type&>(this->M_Jqm) );
     }
     else
         boost::tie( boost::tuples::ignore,betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( mu , 0 );
@@ -4236,8 +4236,8 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 
     if( M_loadElementsDb )
     {
-        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N , false  ), mu , 0 );
-        up = M_model->updateResidual( this->expansion( map_X , N , false  ), const_cast<Rqm_type&>(this->M_Rqm) );
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( map_X , N ), mu , 0 );
+        up = M_model->updateResidual( this->expansion( map_X , N  ), const_cast<Rqm_type&>(this->M_Rqm) );
     }
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
@@ -4304,8 +4304,8 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     std::vector<beta_vector_type> betaRqm;
     if( M_loadElementsDb )
     {
-        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( uN , N , false  ), mu , 0 );
-        up = M_model->updateResidual( this->expansion( uN , N , false  ), const_cast<Rqm_type&>(this->M_Rqm) );
+        boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( this->expansion( uN , N  ), mu , 0 );
+        up = M_model->updateResidual( this->expansion( uN , N ), const_cast<Rqm_type&>(this->M_Rqm) );
     }
     else
         boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( mu , 0 );
@@ -4448,7 +4448,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
                     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                        M_model->computeBetaQm( this->expansion( uN[0], N ,false)/*dualRB*/, mu );
+                        M_model->computeBetaQm( this->expansion( uN[0], N )/*dualRB*/, mu );
                 // assemble rb matrix
                 Adu.setZero( N,N );
                 for ( size_type q = 0; q < Qa; ++q )
@@ -4725,7 +4725,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
                     boost::tie( betaMqm, betaAqm, betaFqm ) =
-                        M_model->computeBetaQm( this->expansion( uN[0], N , false ), mu );
+                        M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
                 // assemble rb matrix
                 A.setZero( N,N );
                 for ( size_type q = 0; q < Qa; ++q )
@@ -4919,7 +4919,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         if( time_iter==1 )
                         {
                             bool only_terms_time_dependent=false;
-                            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N , false ),
+                            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index], N ),
                                                                                               mu , time, only_terms_time_dependent );
 
                             A.setZero( N,N );
@@ -4942,7 +4942,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         {
                             bool only_terms_time_dependent=true;
                             boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm ) =
-                                M_model->computeBetaQm( this->expansion( uN[time_index] , N , false ),
+                                M_model->computeBetaQm( this->expansion( uN[time_index] , N  ),
                                                         mu ,time , only_terms_time_dependent );
                         }
                     }
@@ -5228,7 +5228,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     if( is_linear )
         boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
     else
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , false ), mu ,time );
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
 
     cl::Event event;
 
@@ -9227,7 +9227,7 @@ CRB<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int ti
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( vectorN_type const& u, bool dual, int N ) const
+CRB<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
 {
     auto WN = dual ? M_model->rBFunctionSpace()->dualRB() : M_model->rBFunctionSpace()->primalRB();
     int Nwn;
@@ -9910,7 +9910,7 @@ CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , v
         //we will call computeBetaQm( uN, mu, tim )
         //and the test if( load_elements_db ) will disappear
         if( M_loadElementsDb )
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , false ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N ), mu ,time );
         else
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
     }
@@ -10033,7 +10033,7 @@ CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vec
         //we will call computeBetaQm( uN, mu, tim )
         //and the test if( load_elements_db ) will disappear
         if( M_loadElementsDb )
-            boost::tie( betaMqm, betaAqm, betaFqm ) =  M_model->computeBetaQm( this->expansion( uNdu , N , false ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm ) =  M_model->computeBetaQm( this->expansion( uNdu , N ), mu ,time );
         else
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
     }
@@ -11362,7 +11362,7 @@ CRB<TruthModelType>::loadJson( std::string const& filename, size_type loadingCon
 {
     // first load the model
     M_model->loadJson( filename, "crbmodel" );
-    
+
     if ( !fs::exists( filename ) )
     {
         LOG(INFO) << "Could not find " << filename << std::endl;
