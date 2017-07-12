@@ -438,6 +438,16 @@ CRBTrilinear<TruthModelType>::offline()
         for(int q=0; q<this->M_model->Ql( this->M_output_index ); q++)
             this->M_Lqm_pr[q].resize( 1 );
 
+        // save mesh of rbspace
+        if ( true )
+        {
+            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilename = (this->M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
+            this->M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        this->M_model->copyAdditionalModelFiles( this->dbDirectory() );
+
     }//end of if( rebuild_database )
 #if 1
     else
@@ -528,45 +538,6 @@ CRBTrilinear<TruthModelType>::offline()
             throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
-
-        /*        if( ! file )
-        {
-            this->M_WNmu->clear();
-            std::vector< parameter_type > V;
-            parameter_type __mu;
-            __mu = this->M_Dmu->element();
-            __mu(0)= 1      ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 111112 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 222223 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 333334 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 444445 , __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 555556 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 666667 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 777778 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 888889 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 1e+06  ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 8123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 9123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-         __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=9.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=812     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.111e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.124e2 ; __mu(1)= 1  ; V.push_back( __mu );
-            this->M_WNmu->setElements( V );
-            this->M_iter_max = this->M_WNmu->size();
-            this->M_WNmu->writeOnFile(file_name);
-         }*/
         use_predefined_WNmu=true;
     } //build sampling
 
@@ -740,6 +711,8 @@ CRBTrilinear<TruthModelType>::offline()
         this->saveDB();
         this->M_elements_database.setWn( boost::make_tuple( this->M_model->rBFunctionSpace()->primalRB() , this->M_model->rBFunctionSpace()->dualRB() ) );
         this->M_elements_database.saveDB();
+
+
         toc("Saving the Database");
     }
 
@@ -1172,7 +1145,7 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    fs::ifstream ifs( db );
+    fs::ifstream ifs(db );
 
     if ( ifs )
     {
