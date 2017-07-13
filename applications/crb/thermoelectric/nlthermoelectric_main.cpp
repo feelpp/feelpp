@@ -107,8 +107,8 @@ int main( int argc, char** argv)
 
     // export FE
     auto VTFE = model->solve(mu);
-    auto VFE = VTFE.template element<0>();
-    auto TFE = VTFE.template element<1>();
+    auto VFE = VTFE.element<0>();
+    auto TFE = VTFE.element<1>();
     e->add( "VFE", VFE );
     e->add( "TFE", TFE );
 #if 0

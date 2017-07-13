@@ -28,6 +28,29 @@
 namespace Feel {
 
 void
+Heat1D::initBetaQ()
+{
+    this->M_betaAq.resize( 3 );
+    this->M_betaFq.resize( 2 );
+    this->M_betaFq[0].resize( 2 );
+    this->M_betaFq[1].resize( 1 );
+}
+
+Heat1D::super_type::betaq_type
+Heat1D::computeBetaQ( parameter_type const& mu )
+{
+    //std::cout << "computeBetaQ start \n" << mu << std::endl;
+    if ( this->M_betaAq.empty() )
+        this->initBetaQ();
+
+    this->M_betaAq = {1, mu(0), mu(1) };
+    this->M_betaFq[0] = { mu( 2 ), mu(3) };
+    this->M_betaFq[1] = { 1. };
+    //std::cout << "computeBetaQ finish \n";
+    return boost::make_tuple( this->M_betaAq, this->M_betaFq );
+}
+
+void
 Heat1D::initModel()
 {
 
