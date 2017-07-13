@@ -26,7 +26,7 @@
 
 crb_add_library( biotsavart SRCS biotsavart.hpp biotsavart.cpp LINK_LIBRARIES ${FEELPP_CRB_THERMOELECTRIC_LIBRARIES} EXEC CRB_LIB_BIOTSAVART )
 target_include_directories(${CRB_LIB_BIOTSAVART} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
-install( FILES biotsavart.hpp thermoelectric.hpp nl-thermoelectric.hpp
+install( FILES biotsavart.hpp 
          DESTINATION include/feelpp/crb/biotsavart COMPONENT Devel)
 set(FEELPP_CRB_BIOTSAVART_LIBRARIES ${CRB_LIB_BIOTSAVART} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_LIBRARIES PARENT_SCOPE)

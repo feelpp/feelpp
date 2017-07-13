@@ -139,13 +139,18 @@ public :
     /**
      * save the database
      */
-    void saveDB();
+    void saveDB() override;
 
-    /**
-     * load the database
-     */
-    bool loadDB();
+    //!
+    //! 
+    //!
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+    
 #ifdef FEELPP_HAS_HDF5
     /**
      * save the database in hdf5 format
