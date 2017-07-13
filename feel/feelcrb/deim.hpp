@@ -306,6 +306,11 @@ public :
     {
         return M_bases;
     }
+    tensor_ptrtype q( int m ) const
+    {
+        return M_bases[m];
+    }
+
 
     //! \return the current size of the affine decompostion
     int size() const
@@ -374,7 +379,8 @@ protected :
         if ( !M->closed() )
             M->close();
         if ( Environment::worldComm().globalRank()==proc_number )
-            value = M->operator() (i,j);
+            value = M->operator() ( i - M->mapRow().firstDofGlobalCluster(),
+                                    j - M->mapCol().firstDofGlobalCluster());
 
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
         return value;
