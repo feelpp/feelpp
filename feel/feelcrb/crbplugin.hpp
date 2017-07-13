@@ -106,22 +106,23 @@ subelements( boost::shared_ptr<ElementType> uFE, typename std::enable_if< Elemen
 //!
 //! Generic Plugin for CRB applications
 //!
-template<typename ModelT, template <class T> class CRBModelT = CRBModel, template <class T> class CRBT = CRB>
+template<typename ModelT, template <class T> class CRBModelT = CRBModel, template <class T> class AlgoT = CRB, template <class T> class AlgoBaseT = CRB>
 class CRBPlugin : public CRBPluginAPI
 {
 public:
 
     using model_t = ModelT;
     using crbmodel_type = CRBModelT<model_t>;
-    using crb_type = CRBT<crbmodel_type> ;
+    using crb_type = AlgoBaseT<crbmodel_type> ;
     using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using method_t = AlgoT<crbmodel_type>;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = boost::shared_ptr<Exporter<mesh_t> >;
     
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
-        M_crb( boost::make_shared<crb_type>(crb::stage::online) )
+        M_crb( boost::make_shared<method_t>(name,crb::stage::online) )
         {
         }
 
@@ -131,54 +132,20 @@ public:
         }
     void loadDB( std::string const& filename, crb::load l ) override
         {
-            if ( !fs::exists( filename ) )
-                throw std::invalid_argument("file does not exist");
-
-            if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
-                M_crb->setLoadBasisFromDB( true );
-            else
-                M_crb->setLoadBasisFromDB( false );
-            M_crb->loadJson( filename );
-
-            LOG(INFO) << "Loaded DB CRBPlugin " << filename;
+            M_crb->loadDB( filename, l );
         }
 
     void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
         {
-            if ( !fs::exists( root ) )
-                throw std::invalid_argument(std::string("root repository ") + root + " does not exist");
-            fs::path crbdb = fs::path(root) / "crbdb";
-            if ( !fs::exists( crbdb ) )
-                throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
-
-            fs::path dbbasedir = crbdb / fs::path(name()) ;
-            if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
-                throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
-            // either id provides the full directory or part of it
-            // try first full path
-            typedef std::vector<fs::path> vec;
-            vec d;
-
-            std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
-            std::sort(d.begin(), d.end());
-
-            //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
-            for( auto& dbdir : d )
-            {
-                //std::cout << "dbdir = " << dbdir.string() << std::endl;
-                
-                if ( boost::ends_with( dbdir.string(), id ) )
-                {
-                    fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
-                    if (!fs::exists(dbfilename))
-                        continue;
-                    loadDB( dbfilename.string(), l );
-                    return;
-                }
-            }
-            throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
+            M_crb->loadDBFromId( id, l, root );
+        }
+    
+    void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
+        {
+            M_crb->loadDBLast( last, l, root );
         }
 
+    
     boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
             DCHECK( M_crb ) << "DB not loaded";

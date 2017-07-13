@@ -142,8 +142,7 @@ endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/machines)
+add_subdirectory(cmake)
 
 include(feelpp.dirs)
 # set the Feel++ version
@@ -316,7 +315,10 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 add_custom_target(contrib)
+
 include( feelpp.dependencies )
+add_subdirectory(contrib)
+
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -352,7 +354,6 @@ ENDIF()
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
-
 
 
 ################################################################################
