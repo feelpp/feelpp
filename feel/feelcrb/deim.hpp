@@ -163,12 +163,13 @@ public :
      * deim.default-sampling-size and (string)
      * deim.default-sampling-mode
      */
-    DEIMBase( model_ptrtype model, sampling_ptrtype sampling,
+    DEIMBase( model_ptrtype model, sampling_ptrtype sampling, std::string prefix="",
               WorldComm const& worldComm = Environment::worldComm() ) :
         super ( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
                 "deim",
                 model->uuid(),
                 worldComm ),
+        M_model( model ),
         M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
@@ -560,17 +561,6 @@ protected :
         return mu_str.str();
     }
 
-    parameterspace_ptrtype M_parameter_space;
-    sampling_ptrtype M_trainset;
-    int M_M;
-    double M_tol;
-    matrixN_type M_B;
-    std::vector< tensor_ptrtype > M_bases;
-    std::vector<indice_type> M_index;
-    solutionsmap_type M_solutions;
-    std::string M_prefix;
-    bool M_rebuild;
-
     friend class boost::serialization::access;
 
     // When the class Archive corresponds to an output archive, the
@@ -583,6 +573,20 @@ protected :
     void load( Archive & ar, const unsigned int version ) ;
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+protected :
+    model_ptrtype M_model;
+    parameterspace_ptrtype M_parameter_space;
+    sampling_ptrtype M_trainset;
+    int M_M;
+    double M_tol;
+    matrixN_type M_B;
+    std::vector< tensor_ptrtype > M_bases;
+    std::vector<indice_type> M_index;
+    solutionsmap_type M_solutions;
+    std::string M_prefix;
+    bool M_rebuild;
+
 };
 
 template <typename ModelType, typename TensorType,
