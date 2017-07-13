@@ -411,8 +411,7 @@ void BiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
 
     auto solutions = o.template get<2>();
     M_uN = solutions.template get<0>()[0];
-    auto WN = M_crb->wn();
-    M_VT = M_crb->expansion( M_uN, M_uN.size(), WN );
+    M_VT = M_crb->expansion( M_uN, M_uN.size() );
     M_betaMu = M_teCrbModel->eimSigmaBeta(mu);
 
     this->computeB(M_uN, M_betaMu);
@@ -542,7 +541,7 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
     if(boption("biotsavart.compute-offline") && boption("biotsavart.compute-online") )
     {
         auto WN = M_crb->wn();
-        element_type VT = M_crb->expansion( M_uN, M_uN.size(), WN );
+        element_type VT = M_crb->expansion( M_uN, M_uN.size() );
         auto V = VT.template element<0>();
         auto T = VT.template element<1>();
 
@@ -572,6 +571,13 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
 
     eC->save();
     eM->save();
+}
+
+template<typename te_rb_model_type>
+typename BiotSavartCRB<te_rb_model_type>::value_type
+BiotSavartCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
+{
+    
 }
 
 using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;

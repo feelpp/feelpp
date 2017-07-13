@@ -189,7 +189,8 @@ namespace py = pybind11;
 PYBIND11_MODULE( _crb, m )
 {
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
-    m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins" );
+    m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
+          py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir() );
 
     py::enum_<crb::load>(m,"CRBLoad")
         .value("rb", crb::load::rb)

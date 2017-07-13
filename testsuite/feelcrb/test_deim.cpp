@@ -78,6 +78,8 @@ public :
         f3 = integrate( markedfaces(mesh,"Gamma1"), id(u) );
     }
 
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+
     void run()
     {
         auto mu_min = Dmu->element();
@@ -93,7 +95,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        deim_ptrtype M_deim ( new deim_type( Dmu, Pset ) );
+        deim_ptrtype M_deim ( new deim_type( Dmu, this->uuid(), Pset ) );
         M_deim->assemble = boost::bind( &DeimTest::assemble, boost::ref(*this), _1  );
 
         M_deim->run();

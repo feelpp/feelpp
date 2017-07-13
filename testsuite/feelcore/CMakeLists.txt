@@ -53,3 +53,5 @@ endif()
 if ( FEELPP_HAS_HARTS OR FEELPP_HAS_OPENMP )
   feelpp_add_test(multithread)
 endif()
+
+feelpp_add_test(serialization)
