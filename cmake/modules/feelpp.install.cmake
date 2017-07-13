@@ -132,6 +132,10 @@ if ( FEELPP_HAS_PYBIND11 ) #AND FEELPP_ENABLE_PYTHON AND FEELPP_ENABLE_PYTHON_WR
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/pybind11/cmake_install.cmake")
 endif()
 
+if ( FEELPP_HAS_MONGOCXX ) 
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/mongocxx/src/cmake_install.cmake")
+endif()
+
 if ( TARGET feelpp_mesh_partitioner )
   set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake")
 endif()

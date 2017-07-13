@@ -25,6 +25,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
+
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
@@ -620,6 +628,13 @@ public:
             return res;
         }
 
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+
 protected:
 
     /**
@@ -742,7 +757,34 @@ void
 sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
-
 } // Feel
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
+
+namespace boost {
+    namespace serialization {
+
+    template<typename T, class Archive>
+    void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map = v.map();
+        ar & BOOST_SERIALIZATION_NVP(map);
+    }
+    template<typename T, class Archive>
+    void load(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map;
+        ar & BOOST_SERIALIZATION_NVP(map);
+        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
+        v.init(mapPtr);
+    }
+    template<typename T, class Archive>
+    void serialize(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        split_free( ar, v, version );
+    }
+    } // namespace serialization
+} // namespace boost
+
 
 #endif  // #ifdef __numeric_vector_h__

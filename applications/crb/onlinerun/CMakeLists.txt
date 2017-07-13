@@ -22,4 +22,5 @@
 #
 #
 
-feelpp_add_application( onlinerun SRCS crbonlinerun.cpp  INSTALL  MAN onlinerun)
+feelpp_add_application( onlinerun SRCS crbonlinerun.cpp  INSTALL  MAN onlinerun EXEC ONLINERUN )
+include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})

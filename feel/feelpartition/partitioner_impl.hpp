@@ -46,7 +46,7 @@ Partitioner<MeshType>::partition (mesh_ptrtype mesh)
 
 template<typename MeshType>
 void 
-Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n )
+Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n, std::vector<range_element_type> const& partitionByRange )
 {
     LOG(INFO) << "Partitioner::partition starts";
     // we cannot partition into more pieces than we have
@@ -64,7 +64,7 @@ Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n )
     }
 
     // Call the partitioning function
-    this->partitionImpl(mesh,n_parts);
+    this->partitionImpl(mesh,n_parts,partitionByRange);
 
     // Set the node's processor ids
     Partitioner::setNodeProcessorIds(mesh);
