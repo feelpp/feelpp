@@ -45,6 +45,8 @@
 #include <feel/feelalg/topetsc.hpp>
 #include <Eigen/Core>
 #include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbmodel.hpp>
 
 
 
@@ -100,14 +102,22 @@ private :
  * exists for the tensor \f$ T(\mu)\f$, the approximation returned by
  * DEIM will be exact, provided that \f$ M\f$ is large enough.
  */
-template <typename ModelType, typename TensorType>
+template <typename ModelType, typename TensorType,
+          template <class T> class CRBType, template <class T> class CRBModelType>
 class DEIMBase : public CRBDB
 {
 public :
     typedef  CRBDB super;
+
     typedef ModelType model_type;
-    typedef typename model_type::value_type value_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename model_type::value_type value_type;
+
+    typedef CRBModelType<model_type> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef CRBType<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
 
     typedef typename ModelType::parameterspace_type parameterspace_type;
     typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
@@ -153,13 +163,13 @@ public :
      * deim.default-sampling-size and (string)
      * deim.default-sampling-mode
      */
-    DEIMBase( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling, std::string prefix="",
+    DEIMBase( model_ptrtype model, sampling_ptrtype sampling,
               WorldComm const& worldComm = Environment::worldComm() ) :
-        super( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
-               "deim",
-               uid,
-               worldComm ),
-        M_parameter_space( Dmu ),
+        super ( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
+                "deim",
+                model->uuid(),
+                worldComm ),
+        M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
         M_tol(1e-8),
@@ -181,7 +191,7 @@ public :
 
 
         if ( !M_trainset )
-            M_trainset = Dmu->sampling();
+            M_trainset = M_parameter_space->sampling();
         if ( M_trainset->empty() )
         {
             int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
@@ -575,10 +585,11 @@ protected :
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-template <typename ModelType, typename TensorType>
+template <typename ModelType, typename TensorType,
+          template <class T> class CRBType, template <class T> class CRBModelType>
 template<class Archive>
 void
-DEIMBase<ModelType,TensorType>::load( Archive & ar, const unsigned int version )
+DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::load( Archive & ar, const unsigned int version )
 {
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
@@ -594,10 +605,11 @@ DEIMBase<ModelType,TensorType>::load( Archive & ar, const unsigned int version )
         DCHECK( M_bases[i] )<<"Null ptr at i="<<i<<std::endl;
 }
 
-template <typename ModelType, typename TensorType>
+template <typename ModelType, typename TensorType,
+          template <class T> class CRBType, template <class T> class CRBModelType>
 template<class Archive>
 void
-DEIMBase<ModelType,TensorType>::save( Archive & ar, const unsigned int version ) const
+DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::save( Archive & ar, const unsigned int version ) const
 {
 #if 0
     ar & boost::serialization::base_object<super>( *this );
@@ -611,9 +623,10 @@ DEIMBase<ModelType,TensorType>::save( Archive & ar, const unsigned int version )
 }
 
 
-template <typename ModelType, typename TensorType>
+template <typename ModelType, typename TensorType,
+          template <class T> class CRBType, template <class T> class CRBModelType>
 void
-DEIMBase<ModelType,TensorType>::saveDB()
+DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::saveDB()
 {
 #if 0
     Feel::cout<< "DEIM : saving DB\n";
@@ -630,9 +643,10 @@ DEIMBase<ModelType,TensorType>::saveDB()
 }
 
 
-template <typename ModelType, typename TensorType>
+template <typename ModelType, typename TensorType,
+          template <class T> class CRBType, template <class T> class CRBModelType>
 bool
-DEIMBase<ModelType,TensorType>::loadDB()
+DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::loadDB()
 {
     return false;
     if( this->isDBLoaded() )
@@ -663,21 +677,26 @@ DEIMBase<ModelType,TensorType>::loadDB()
 
 
 
-template <typename ModelType>
+template <typename ModelType,
+          template <class T> class CRBType=CRB,
+          template <class T> class CRBModelType=CRBModel>
 class DEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type>
+        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,
+                        CRBType, CRBModelType>
 {
 public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type> super_type;
+    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,CRBType,CRBModelType> super_type;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::model_ptrtype model_ptrtype;
+
     DEIM() :
         super_type()
     {}
 
-    DEIM( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( Dmu, uid, sampling, prefix )
+    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix )
     {}
 
     ~DEIM()
@@ -688,23 +707,28 @@ private :
 };
 
 
-template <typename ModelType>
+template <typename ModelType,
+          template <class T> class CRBType=CRB,
+          template <class T> class CRBModelType=CRBModel>
 class MDEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type>
+        public DEIMBase<ModelType,
+                        typename Backend<typename ModelType::value_type>::sparse_matrix_type,
+                        CRBType, CRBModelType>
 {
 public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
+    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type,CRBType,CRBModelType> super_type;
 
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::model_ptrtype model_ptrtype;
 
     MDEIM() :
         super_type()
     {}
 
-    MDEIM( parameterspace_ptrtype Dmu, uuids::uuid const& uid, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( Dmu, uid, sampling, prefix )
+    MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix )
     {}
 
     ~MDEIM()
@@ -719,6 +743,7 @@ po::options_description deimOptions( std::string const& prefix ="");
 
 } //namespace Feel
 
+#if 0
 namespace boost
 {
 namespace serialization
@@ -733,5 +758,6 @@ struct version< Feel::DEIMBase<M,T> >
 template<typename M, typename T> const unsigned int version<Feel::DEIMBase<M,T> >::value;
 }
 }
+#endif
 
 #endif
