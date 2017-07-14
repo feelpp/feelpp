@@ -37,6 +37,7 @@
 #include <boost/foreach.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
@@ -449,13 +450,18 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+    
     /**
      * \brief update scm description in property_tree
      * \param ptree to update

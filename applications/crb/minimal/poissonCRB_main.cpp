@@ -87,7 +87,7 @@ int main( int argc, char** argv)
     crb->exportBasisFunctions(exportWn);
 
     // export
-    auto u = crb->expansion( uN, uN.size(), WN );
+    auto u = crb->expansion( uN, uN.size() );
     auto e = Exporter<rb_model_type::mesh_type>::New( "poisson" );
     e->setMesh( model->mesh() );
     e->add( "u", u );
