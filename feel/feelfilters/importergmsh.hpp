@@ -1433,7 +1433,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     
 
     DVLOG(4) << "added point on boundary ("
-                  << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << fit->marker()
+                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id() << " and marker " << fit->second.marker()
                   << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
 }
 template<typename MeshType>
@@ -1568,7 +1568,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     
 
     DVLOG(2) << "added edge on boundary ("
-                  << fit->isOnBoundary() << ") with id :" << fit->id()
+                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
                   << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 }

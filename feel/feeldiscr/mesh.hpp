@@ -430,7 +430,7 @@ public:
         size_type nedall = this->numEdges();
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.hasMarker(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( auto const& theface ) { return theface.second.hasMarker(); } );
         size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
         size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
@@ -523,7 +523,7 @@ public:
         size_type nedall = 0;
         size_type npall = this->numPoints();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.hasMarker(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( auto const& theface ) { return theface.second.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
         size_type nedmarkedall = 0;
@@ -1217,15 +1217,16 @@ public:
         {
             for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
             {
-                if ( fit->isOnBoundary() && !fit->isConnectedTo0() )
+                auto & faceModified = fit->second;
+                if ( faceModified.isOnBoundary() && !faceModified.isConnectedTo0() )
                 {
                     std::cout << "erase boundary face...\n";
                     this->eraseFace( fit );
                 }
-                if ( !fit->isOnBoundary() && fit->isConnectedTo0() && !fit->isConnectedTo1() )
+                if ( !faceModified.isOnBoundary() && faceModified.isConnectedTo0() && !faceModified.isConnectedTo1() )
                 {
                     std::cout << "found boundary face...\n";
-                    this->faces().modify( fit, []( face_type& f ){ f.setOnBoundary( true ); } );
+                    faceModified.setOnBoundary( true );
                 }
             }
             this->setUpdatedForUse( false );
@@ -1753,12 +1754,12 @@ private:
     /**
      * modify edges on boundary in 3D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type const& face, mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type const& face, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
@@ -1778,8 +1779,8 @@ private:
     /**
      * fix duplication of point in connection1 with 3d mesh at order 3 and 4
      */
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::true_ );
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::true_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::false_ );
 
 private:
 

@@ -500,20 +500,21 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
     for ( face_iterator elt_it = this->beginFace();
           elt_it != this->endFace(); ++elt_it )
     {
+        auto const& face = elt_it->second;
         face_permutation_type permutation( face_permutation_type::IDENTITY );
 
         // if on boundary don't do anything
-        if ( elt_it->isOnBoundary() || ( elt_it->pos_second() == invalid_uint16_type_value ) )
+        if ( face.isOnBoundary() || ( face.pos_second() == invalid_uint16_type_value ) )
             continue;
 
         for ( uint16_type i = 0; i < face_type::numVertices; ++i )
         {
-            _left[i] = elt_it->element0().point( elt_it->element0().fToP( elt_it->pos_first(), i ) ).id();
+            _left[i] = face.element0().point( face.element0().fToP( face.pos_first(), i ) ).id();
 
-            uint16_type right_p = elt_it->element1().fToP( elt_it->pos_second(), i );
-            FEELPP_ASSERT( right_p >= 0 && right_p < elt_it->element1().numLocalPoints )
-            ( right_p )( elt_it->element1().numLocalPoints )( elt_it->pos_second() )( i ).error( "invalid point index" );
-            _right[i] = elt_it->element1().point( right_p ).id();
+            uint16_type right_p = face.element1().fToP( face.pos_second(), i );
+            FEELPP_ASSERT( right_p >= 0 && right_p < face.element1().numLocalPoints )
+                ( right_p )( face.element1().numLocalPoints )( face.pos_second() )( i ).error( "invalid point index" );
+            _right[i] = face.element1().point( right_p ).id();
 
             _diff[i] = _left[i] - _right[i];
         }
@@ -524,7 +525,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
                                   permutation, mpl::bool_<( SHAPE == SHAPE_TETRA )>() );
 
         if ( permutation.value() != face_permutation_type::IDENTITY )
-            this->elementIterator( elt_it->ad_second() )->second.setFacePermutation( elt_it->pos_second(), permutation );
+            this->elementIterator( face.ad_second() )->second.setFacePermutation( face.pos_second(), permutation );
     }
 
 #if !defined( NDEBUG )
@@ -778,15 +779,15 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     face_iterator face_en = this->endFace();
     for ( ; face_it != face_en; ++face_it )
     {
-        if ( !face_it->isConnectedTo0() )
+        auto & faceModified = face_it->second;
+        if ( !faceModified.isConnectedTo0() )
             continue;
-        auto const& elt0 = face_it->element0();
-        uint16_type j = face_it->pos_first();
+        auto const& elt0 = faceModified.element0();
+        uint16_type j = faceModified.pos_first();
         for ( uint16_type e = 0; e < face_type::numEdges; ++e )
         {
             auto const& elt_edge = elt0.edge( elt0.f2e( j, e ) );
-            this->faces().modify( face_it,
-                                  [e, &elt_edge]( face_type& f ) { f.setEdge( e, elt_edge ); } );
+            faceModified.setEdge( e, elt_edge );
         }
     }
     DVLOG( 2 ) << "[Mesh3D::updateEdges] updating faces/edges : " << ti.elapsed() << "\n";

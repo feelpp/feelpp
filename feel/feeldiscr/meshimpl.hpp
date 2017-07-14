@@ -546,22 +546,22 @@ void
 Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<2> )
 {
     // propagate top-down marker from face if edge has not been marked
-    std::for_each( this->beginFace(), this->endFace(),
-                   [this]( face_type const& f )
-                   {
-                       if ( !f.hasMarker() )
-                           return;
+    for ( auto itf = this->beginFace(), enf= this->endFace(); itf !=enf; ++itf )
+    {
+        auto const& f = itf->second;
+        if ( !f.hasMarker() )
+            return;
 
-                       // update points
-                       for( int i = 0; i < face_type::numPoints; ++i )
-                       {
-                           if ( !f.point( i ).hasMarker() )
-                           {
-                               // inherit marker from face
-                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
-                           }
-                       }
-                   } );
+        // update points
+        for( int i = 0; i < face_type::numPoints; ++i )
+        {
+            if ( !f.point( i ).hasMarker() )
+            {
+                // inherit marker from face
+                this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
+            }
+        }
+    }
 }
 
 template<typename Shape, typename T, int Tag>
@@ -585,36 +585,36 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
                        } } );
 
     // then propagate top-down marker from face if edge has not been marked
-    std::for_each( this->beginFace(), this->endFace(),
-                   [this]( face_type const& f )
-                   {
-                       if ( !f.hasMarker() )
-                           return;
+    for ( auto itf = this->beginFace(), enf= this->endFace(); itf !=enf; ++itf )
+    {
+        auto const& f = itf->second;
+        if ( !f.hasMarker() )
+            return;
 
-                       // update points
-                       for( int i = 0; i < face_type::numPoints; ++i )
-                       {
-                           if ( !f.point( i ).hasMarker() )
-                           {
-                               // inherit marker from edge
-                               this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
-                           }
-                       }
-                       // update edges
-                       for( int i = 0; i < face_type::numEdges; ++i )
-                       {
-                           if ( !f.edge( i ).hasMarker() )
-                           {
-                               // inherit marker from edge
-                               this->edges().modify( this->edges().iterator_to( f.edge(i) ),
-                                                      [&f] ( edge_type& e )
-                                                      {
-                                                          e.setMarker( f.marker().value() );
-                                                      } );
+        // update points
+        for( int i = 0; i < face_type::numPoints; ++i )
+        {
+            if ( !f.point( i ).hasMarker() )
+            {
+                // inherit marker from edge
+                this->pointIterator( f.point( i ).id() )->second.setMarker( f.marker().value() );
+            }
+        }
+        // update edges
+        for( int i = 0; i < face_type::numEdges; ++i )
+        {
+            if ( !f.edge( i ).hasMarker() )
+            {
+                // inherit marker from edge
+                this->edges().modify( this->edges().iterator_to( f.edge(i) ),
+                                      [&f] ( edge_type& e )
+                                      {
+                                          e.setMarker( f.marker().value() );
+                                      } );
 
-                           }
-                       }
-                   } );
+            }
+        }
+    }
 }
 
 template<typename Shape, typename T, int Tag>
@@ -632,7 +632,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-        this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
+        itf->second.setMesh( this );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -645,7 +645,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+        itf->second.setCommonData( geondFaceCommon );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -659,7 +659,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
         iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
-        this->faces().modify( itf,[&geondFaceCommon]( face_type& f ) { f.setCommonData( geondFaceCommon ); } );
+        itf->second.setCommonData( geondFaceCommon );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
         this->edges().modify( ite,[&geondEdgeCommon]( edge_type& e ) { e.setCommonData( geondEdgeCommon ); } );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -1028,17 +1028,18 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         LOG(INFO) << "We have " << std::distance( __it, __en ) << " faces in the database";
         for ( ; __it!=__en; )
         {
+            auto const& face = __it->second;
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                lids[f]= __it->point( f ).id();
+                lids[f] = face.point( f ).id();
             }
             std::sort( lids.begin(), lids.end() );
             
             bool faceinserted = false;
             boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
 
-            DVLOG_IF(2,faceinserted) << "added face with id " << __it->id () << "\n";
-            DVLOG_IF(2,!faceinserted) << "not added face with id " << __it->id ()
+            DVLOG_IF(2,faceinserted) << "added face with id " <<  face.id () << "\n";
+            DVLOG_IF(2,!faceinserted) << "not added face with id " << face.id ()
                                       << " was already face with id = " << _faceit->second << "\n";
 
             if ( faceinserted == false )
@@ -1053,7 +1054,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             else
             {
                 // ensure that item handler ids are in sync with faces ids
-                _facesOrderedWithId.push_back( new face_type(*__it) );
+                _facesOrderedWithId.push_back( new face_type(face) );
 
                 face_type* facePtr = _facesOrderedWithId.back();//new face_type(*__it);
 
@@ -1359,7 +1360,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         if ( facePtr )
         {
             //this->faces().insert( this->faces().end(),std::move(*facePtr) );
-            this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            //this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            this->addFace( std::move(*facePtr) );
             facePtr =  nullptr; 
         }
     }
@@ -1376,10 +1378,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         face_iterator f_en = this->endFace();
         for ( ; f_it!=f_en;  )
         {
+            auto const& face = f_it->second;
             // cleanup the face data structure :
-            if ( !f_it->isConnectedTo0() )
+            if ( !face.isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id();
+                DLOG(INFO) << "removing face id : " << face.id();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
                 //++f_it;
@@ -1387,16 +1390,16 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             else
             {
                 // be careful: this step is crucial to set proper neighbor connectivity
-                auto & elt1 = this->elementIterator( f_it->ad_first()/*, f_it->proc_first()*/ )->second;
-                Feel::detail::UpdateFace<face_type> myUpdateFace( boost::cref( *f_it ) );
+                auto & elt1 = this->elementIterator( face.ad_first()/*, f_it->proc_first()*/ )->second;
+                Feel::detail::UpdateFace<face_type> myUpdateFace( face );
                 myUpdateFace( elt1 );
-                if ( f_it->isConnectedTo1() )
+                if ( face.isConnectedTo1() )
                 {
-                    auto & elt2 = this->elementIterator( f_it->ad_second()/*, f_it->proc_second()*/ )->second;
+                    auto & elt2 = this->elementIterator( face.ad_second()/*, f_it->proc_second()*/ )->second;
                     myUpdateFace( elt2 );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                    this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
+                    this->fixPointDuplicationInHOMesh( elt2, face, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
                 }
 
                 ++f_it;
@@ -1409,24 +1412,25 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         face_iterator f_en = this->endFace();
         for ( ; f_it!=f_en;  )
         {
+            auto const& face = f_it->second;
             // cleanup the face data structure :
-            if ( !f_it->isConnectedTo0() )
+            if ( !face.isConnectedTo0() )
             {
-                DLOG(INFO) << "removing face id : " << f_it->id();
+                DLOG(INFO) << "removing face id : " << face.id();
                 // remove all faces that are not connected to any elements
                 f_it = this->faces().erase( f_it );
             }
             else
             {
-                auto & elt1 = this->elementIterator( f_it->ad_first() )->second;
-                elt1.setFace( f_it->pos_first(), *f_it );
-                if ( f_it->isConnectedTo1() )
+                auto & elt1 = this->elementIterator( face.ad_first() )->second;
+                elt1.setFace( face.pos_first(), face );
+                if ( face.isConnectedTo1() )
                 {
-                    auto & elt2 = this->elementIterator( f_it->ad_second() )->second;
-                    elt2.setFace( f_it->pos_second(), *f_it );
+                    auto & elt2 = this->elementIterator( face.ad_second() )->second;
+                    elt2.setFace( face.pos_second(), face );
 
                     // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                    this->fixPointDuplicationInHOMesh( elt2,f_it, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
+                    this->fixPointDuplicationInHOMesh( elt2, face, mpl::bool_< nDim == 3 && nOrder >= 3 >() );
                 }
                 ++f_it;
             }
@@ -1628,7 +1632,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterator __fit, mpl::true_ )
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::true_ )
 {
     CHECK( nOrder == 3 || nOrder == 4 ) << "this fix with nOrder " << nOrder << " not implement, only order 3 and 4\n";
     if ( nOrder == 3 )
@@ -1637,8 +1641,8 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterat
         CHECK( startPt == 9 && face_type::numPoints==10 ) << "invalid case\n";
 
         // easy case : only one point in face
-        uint16_type idx = element_type::fToP( __fit->pos_second(), startPt );
-        auto const& ptOnFace = __fit->point( startPt );
+        uint16_type idx = element_type::fToP( face.pos_second(), startPt );
+        auto const& ptOnFace = face.point( startPt );
         size_type ptIdToCheck = elt.point( idx ).id();
         if ( ptIdToCheck != ptOnFace.id() )
         {
@@ -1658,14 +1662,14 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterat
         std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
         for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
         {
-            auto const& ptOnFaceElt = elt.point( element_type::fToP( __fit->pos_second(), k ) );
+            auto const& ptOnFaceElt = elt.point( element_type::fToP( face.pos_second(), k ) );
 
-            double dist=0, distMin= 1000*elt.hFace( __fit->pos_second() );// INT_MAX;
+            double dist=0, distMin= 1000*elt.hFace( face.pos_second() );// INT_MAX;
             uint16_type idxFaceNear = invalid_uint16_type_value;
 
             for ( uint16_type idxV = startPt ; idxV < face_type::numPoints ; ++idxV )
             {
-                auto const& ptOnFace = __fit->point( idxV );
+                auto const& ptOnFace = face.point( idxV );
                 dist=0;
                 for ( uint16_type d=0 ; d< nRealDim ; ++d )
                     dist += std::pow( ptOnFace(d)- ptOnFaceElt(d),2);
@@ -1681,9 +1685,9 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterat
         for ( uint16_type i = 0;i<3;++i)
         {
             // point index in element
-            uint16_type idx = element_type::fToP( __fit->pos_second(), startPt + i );
+            uint16_type idx = element_type::fToP( face.pos_second(), startPt + i );
             size_type ptIdToCheck = elt.point( idx ).id();
-            auto const& ptOnFace = __fit->point( idxDistribution[i] );
+            auto const& ptOnFace = face.point( idxDistribution[i] );
 
             if ( ptIdToCheck != ptOnFace.id() )
             {
@@ -1698,21 +1702,21 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt,face_iterat
 }
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_iterator __fit, mpl::false_ )
+Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::false_ )
 {}
 
 
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& face , mpl::bool_<true> )
 {
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
     {
-        if ( it->edge( f ).isOnBoundary() == false )
+        if ( face.edge( f ).isOnBoundary() == false )
         {
-            auto eit = this->edgeIterator( it->edge(f).id() );
+            auto eit = this->edgeIterator( face.edge(f).id() );
             this->edges().modify( eit,
                                   []( edge_type& e )
                                   {e.setOnBoundary(true, 1 );} );
@@ -1724,7 +1728,7 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true>
 }
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& f, mpl::bool_<false> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& f, mpl::bool_<false> )
 {
 }
 
@@ -1765,15 +1769,16 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     LOG(INFO) << "Initially we have " << nelements(boundarypoints(this)) <<  " boundary points";
     for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
     {
-        if ( it->isOnBoundary() == true )
+        auto const& face = it->second;
+        if ( face.isOnBoundary() == true )
         {
-            modifyEdgesOnBoundary( it, mpl::bool_<(nDim >= 3)>() );
+            modifyEdgesOnBoundary( face, mpl::bool_<(nDim >= 3)>() );
             // loop over face points
             for ( int f = 0; f < face_type::numPoints; ++f )
             {
-                if ( it->point( f ).isOnBoundary() == false )
+                if ( face.point( f ).isOnBoundary() == false )
                 {
-                    auto pit = this->pointIterator( it->point(f).id() );
+                    auto pit = this->pointIterator( face.point(f).id() );
                     pit->second.setOnBoundary(true, 0 );
                 }
 
@@ -1853,14 +1858,14 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                            if ( face.isOnBoundary() )
                            {
                                DVLOG(3) << "removing face "  << face.id() << "\n";
-                               auto it2 = this->faceIterator( face ); //this->faces().template project<0>( it );
-                               this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
+
+                               auto & faceModified = this->faceIterator( face )->second;
+                               faceModified.setOnBoundary( false );
 
 
                                //face_type f = *it2;
                                //f.setOnBoundary( false );
                                //this->faces().replace( it2, f );
-                               CHECK( it2->isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
                                CHECK( face.isOnBoundary() ==false ) << " face should not be on the boundary anymore\n";
                            }
 
@@ -2087,7 +2092,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 //update the face
-                this->faces().modify( face_it, Feel::detail::updateIdInOthersPartitions( proc, idFaceRecv ) );
+                face_it->second.setIdInOtherPartitions( proc, idFaceRecv );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -2541,16 +2546,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
+                auto & faceModified = face_it->second;
                 // update id face in other partition
-                this->faces().modify( face_it, [&idProc,&idFaceRecv]( face_type& f )
-                                      {
-                                          f.addNeighborPartitionId( idProc );
-                                          f.setIdInOtherPartitions( idProc, idFaceRecv );
-                                      } );
+                faceModified.addNeighborPartitionId( idProc );
+                faceModified.setIdInOtherPartitions( idProc, idFaceRecv );
 
                 // maybe the face is not really on boundary
-                if ( face_it->isOnBoundary() && !faceOnBoundaryRecv )
-                    this->faces().modify( face_it, []( face_type& f ){ f.setOnBoundary( false ); } );
+                if ( faceModified.isOnBoundary() && !faceOnBoundaryRecv )
+                    faceModified.setOnBoundary( false );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
