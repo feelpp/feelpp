@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" OFF )
+OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ON )
 
 if ( FEELPP_ENABLE_IPOPT )
 
@@ -65,7 +65,7 @@ if ( FEELPP_ENABLE_IPOPT )
       # Compile/copy header in cmake binary dirs.
       include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
 
-      add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ipopt)
+      #add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ipopt)
       list(APPEND FEELPP_LIBRARIES feelpp_ipopt)
       add_dependencies(contrib feelpp_ipopt)
 

@@ -69,18 +69,18 @@
 namespace Feel
 {
 
-/**
- * \class CRBTrilinear
- * \brief Certifed Reduced Basis for Trilinear forms class
- *
- * Implements the certified reduced basis method for treat trilinear forms
- *
- *
- * @author Elisa Schenone, Stephane Veys
- * @see
- */
-//class CRBTrilinear : public CRBDB,
-//                     public CRB<TruthModelType>
+//!
+//! @class
+//! @brief Certifed Reduced Basis for Trilinear forms class
+//!
+//! Implements the certified reduced basis method for treat trilinear forms
+//!
+//! @author Elisa Schenone
+//! @author Stephane Veys
+//! @author Jean-Baptiste Wahl
+//! @author Christophe Prud'homme
+//! @author Vincent Chabannes
+//!
 template<typename TruthModelType>
 class CRBTrilinear : public CRB<TruthModelType>
 {
@@ -180,7 +180,7 @@ public:
         :
         super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
         {
-        
+
         }
     CRBTrilinear( std::string const& name,
                   truth_model_ptrtype const & model,
@@ -262,14 +262,14 @@ public:
                                                             std::vector<vectorN_type> & uNold,
                                                             std::vector<vectorN_type> & uNduold,
                                                             bool print_rb_matrix=false, int K=0,
-                                                            bool computeOutput = true ) const;
+                                                            bool computeOutput = true ) const override;
 
     /**
      * Offline computation
      *
      * \return the convergence history (max error)
      */
-    convergence_type offline();
+    convergence_type offline() override;
 
     /**
      * \param mu : parameters
@@ -281,29 +281,34 @@ public:
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
+    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const override;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
+    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const override;
 
 
     void displayVector(const map_dense_vector_type& V ) const ;
     void displayVector(const vectorN_type& V ) const ;
     void displayMatrix(const matrixN_type& M ) const ;
-#if 1
+
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
-#endif
+    bool loadDB() override;
+
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override { super_crb::loadDB( filename, l ); }
+    
     //@}
 
 
@@ -554,45 +559,6 @@ CRBTrilinear<TruthModelType>::offline()
             throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
-
-        /*        if( ! file )
-        {
-            this->M_WNmu->clear();
-            std::vector< parameter_type > V;
-            parameter_type __mu;
-            __mu = this->M_Dmu->element();
-            __mu(0)= 1      ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 111112 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 222223 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 333334 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 444445 , __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 555556 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 666667 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 777778 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 888889 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 1e+06  ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 8123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 9123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-         __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=9.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=812     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.111e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.124e2 ; __mu(1)= 1  ; V.push_back( __mu );
-            this->M_WNmu->setElements( V );
-            this->M_iter_max = this->M_WNmu->size();
-            this->M_WNmu->writeOnFile(file_name);
-         }*/
         use_predefined_WNmu=true;
     } //build sampling
 
@@ -766,6 +732,8 @@ CRBTrilinear<TruthModelType>::offline()
         this->saveDB();
         this->M_elements_database.setWn( boost::make_tuple( this->M_model->rBFunctionSpace()->primalRB() , this->M_model->rBFunctionSpace()->dualRB() ) );
         this->M_elements_database.saveDB();
+
+
         toc("Saving the Database");
     }
 
@@ -990,7 +958,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the jacobian matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = this->expansion( map_X , N  );
         auto J = this->M_model->jacobian( expansionX );
         matrixN_type model_reduced_jacobian( N , N );
         for(int i=0; i<N; i++)
@@ -1044,7 +1012,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = this->expansion( map_X , N  );
         auto R = this->M_model->residual( expansionX );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( this->M_model->functionSpace() ) );
@@ -1198,7 +1166,7 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    fs::ifstream ifs( db );
+    fs::ifstream ifs(db );
 
     if ( ifs )
     {
