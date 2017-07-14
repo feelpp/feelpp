@@ -202,8 +202,9 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto face_en = M_mesh->endFace();
     for( ; face_it != face_en; ++face_it )
     {
-        if ( !face_it->hasMarker() ) continue;
-        M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+        auto const& face = face_it->second;
+        if ( !face.hasMarker() ) continue;
+        M_containerMarkedFaces[partId].push_back(boost::cref(face));
     }
     auto edge_it = M_mesh->beginEdge();
     auto edge_en = M_mesh->endEdge();
@@ -230,8 +231,9 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto face_en = M_mesh->endFace();
     for( ; face_it != face_en; ++face_it )
     {
-        if ( !face_it->hasMarker() ) continue;
-        M_containerMarkedFaces[partId].push_back(boost::cref(*face_it));
+        auto const& face = face_it->second;
+        if ( !face.hasMarker() ) continue;
+        M_containerMarkedFaces[partId].push_back(boost::cref(face));
     }
     auto point_it = M_mesh->beginPoint();
     auto point_en = M_mesh->endPoint();
