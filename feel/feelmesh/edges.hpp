@@ -29,17 +29,12 @@
 #ifndef __edges_H
 #define __edges_H 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
+#include <unordered_map>
 
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
 {
-namespace multi_index = boost::multi_index;
 
 /// \cond \detail
 /*!
@@ -63,40 +58,7 @@ public:
                               mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;
 
-
-    typedef multi_index::multi_index_container<
-        edge_type,
-        multi_index::indexed_by<
-            // sort by employee::operator<
-            multi_index::ordered_unique<multi_index::identity<edge_type> >
-#if 0
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                            multi_index::composite_key<
-                                            edge_type,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       Marker1 const&,
-                                                                       &edge_type::marker>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId>
-                                            > >,
-
-            // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId> >,
-
-            // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       bool,
-                                                                       &edge_type::isOnBoundary> >
-#endif
-            >
-        > edges_type;
-
+    typedef std::unordered_map<size_type,edge_type> edges_type;
 
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
@@ -174,11 +136,11 @@ public:
 
     bool isBoundaryEdge( edge_type const & e ) const
     {
-        return M_edges.find( e )->isOnBoundary();
+        return e.isOnBoundary();
     }
     bool isBoundaryEdge( size_type const & id ) const
     {
-        return M_edges.find( edge_type( id ) )->isOnBoundary();
+        return M_edges.find( id )->second.isOnBoundary();
     }
 
     /**
@@ -186,18 +148,23 @@ public:
      */
     bool hasEdge( size_type i ) const
     {
-        return M_edges.template get<0>().find( edge_type( i ) ) !=
-               M_edges.template get<0>().end();
+        return M_edges.find( i ) != M_edges.end();
     }
 
     edge_type const& edge( size_type i ) const
     {
-        return *M_edges.find( edge_type( i ) );
+        auto itFindEdge = M_edges.find( i );
+        CHECK( itFindEdge != M_edges.end() ) << " edge " << i << "does not found";
+        return itFindEdge->second;
     }
 
-    edge_iterator edgeIterator( size_type i ) const
+    edge_const_iterator edgeIterator( size_type i ) const
     {
-        return  M_edges.find( edge_type( i ) );
+        return  M_edges.find( i );
+    }
+    edge_iterator edgeIterator( size_type i )
+    {
+        return  M_edges.find( i );
     }
 
     edge_iterator beginEdge()
@@ -230,7 +197,7 @@ public:
             auto en = this->endEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = it->second;
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.hasMarker( markerType ) )
@@ -254,7 +221,7 @@ public:
             auto en = this->endEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = it->second;
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.hasMarker( markerType ) )
@@ -304,7 +271,7 @@ public:
             auto en = this->endEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = it->second;
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.isOnBoundary() )
@@ -327,7 +294,7 @@ public:
             auto en = this->endEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = it->second;
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.isInternal() )
@@ -350,7 +317,7 @@ public:
             auto en = this->endEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = it->second;
                 if ( edge.processId() != part )
                     continue;
                 myedges->push_back( boost::cref( edge ) );
@@ -379,7 +346,7 @@ public:
     edge_type const& addEdge( edge_type& f )
     {
         f.setId( M_edges.size() );
-        return *M_edges.insert( f ).first;
+        return M_edges.emplace( std::make_pair( f.id(),f ) ).first->second;
     }
 
     void setWorldCommEdges( WorldComm const& _worldComm )

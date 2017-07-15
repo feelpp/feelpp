@@ -573,8 +573,9 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         edge_iterator een = this->endEdge();
         for ( ; eit != een; )
         {
-            i1 = eit->point( 0 ).id();
-            i2 = eit->point( 1 ).id();
+            auto & edgeModified = eit->second;
+            i1 = edgeModified.point( 0 ).id();
+            i2 = edgeModified.point( 1 ).id();
             std::set<size_type> s( {i1, i2} );
 
             boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
@@ -582,7 +583,8 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             if ( edgeinserted )
             {
                 size_type newEdgeId = _edgeit->second;
-                this->edges().modify( eit, [&newEdgeId]( edge_type& e ) { e.setId( newEdgeId ); } );
+                edgeModified.setId( newEdgeId );
+
                 ++next_edge;
                 ++eit;
             }
@@ -627,7 +629,6 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 
                 boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
 
-                edge_iterator eit;
                 if ( edgeinserted )
                 {
                     // set edge id
@@ -637,20 +638,23 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
                         edg.setPoint( k, bface.point( face_type::eToP( j, k ) ) );
 
+                    // set the process id from element (only active element)
+                    if ( !bface.isGhostCell() && edg.processId() != bface.processId() )
+                        edg.setProcessId( bface.processId() );
                     // TODO: should assocate a marker to the edge here ?
                     //edg.addElement( bface.ad_first() );
-                    //this->addEdge( edg );
-                    eit = this->edges().insert( this->edges().end(), edg );
+                    this->addEdge( edg );
+                    //eit = this->edges().insert( this->edges().end(), edg );
                 }
                 else
                 {
-                    eit = this->edgeIterator( _edgeit->second );
-                    if ( !eit->isOnBoundary() )
-                        this->edges().modify( eit, []( edge_type& e ) { e.setOnBoundary( true, 0 ); } );
+                    auto & edgeModified = this->edgeIterator( _edgeit->second )->second;
+                    if ( !edgeModified.isOnBoundary() )
+                        edgeModified.setOnBoundary( true, 0 );
+                    // set the process id from element (only active element)
+                    if ( !bface.isGhostCell() && edgeModified.processId() != bface.processId() )
+                        edgeModified.setProcessId( bface.processId() );
                 }
-                // set the process id from element (only active element)
-                if ( !bface.isGhostCell() && eit->processId() != bface.processId() )
-                    this->edges().modify( eit, Feel::detail::UpdateProcessId(bface.processId()) );
             }
         }
     }
@@ -683,7 +687,6 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             //M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
             size_type edgeId = _edgeit->second;
 
-            edge_iterator eit;
             if ( edgeinserted )
             {
 #if !defined( NDEBUG )
@@ -707,30 +710,34 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
                     edg.setPoint( k, elt.point( element_type::eToP( j, k ) ) );
 
+                // set the process id from element (only active element)
+                if ( !elt.isGhostCell() && edg.processId() != elt.processId() )
+                    edg.setProcessId( elt.processId() );
+
                 // add edge in mesh container
-                eit = this->edges().insert( this->edges().end(), edg );
+                //eit = this->edges().insert( this->edges().end(), edg );
+                auto const& newEdge = this->addEdge( edg );
+                // update edge pointer in element
+                elt.setEdge( j, boost::cref( newEdge ) );
+
                 // update next edge id
                 ++next_edge;
             }
             else
             {
-                eit =  this->edgeIterator( edgeId );
-                if ( updateComponentAddElements || eit->hasMarker() )
+                auto & edgeModified =  this->edgeIterator( edgeId )->second;
+                // update edge pointer in element
+                elt.setEdge( j, boost::cref( edgeModified ) );
+                // set the process id from element (only active element)
+                if ( !elt.isGhostCell() && edgeModified.processId() != elt.processId() )
+                    edgeModified.setProcessId( elt.processId() );
+                if ( updateComponentAddElements || edgeModified.hasMarker() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
-                    this->edges().modify( eit, [vid, j]( edge_type& e ) { e.addElement( vid, j ); } );
+                    edgeModified.addElement( vid, j );
                 }
             }
 
-            // set the process id from element (only active element)
-            if ( !elt.isGhostCell() && eit->processId() != elt.processId() )
-                this->edges().modify( eit, Feel::detail::UpdateProcessId( elt.processId() ) );
-
-            // update edge pointer in element
-            elt.setEdge( j, boost::cref( *eit ) );
-#if !defined( NDEBUG )
-            CHECK( elt.edgePtr( j ) ) << "invalid edge in element";
-#endif
 
             // update edge orientation in element
             edge_pair_type _current = std::make_pair( i1, i2 );
