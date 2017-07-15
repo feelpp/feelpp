@@ -1637,7 +1637,10 @@ Environment::randomUUID( bool parallel )
     if ( parallel )
     {
         // overwrite uuid with the uuid from master rank process
-        //mpi::broadcast( Environment::worldComm().globalComm(), uuid, 0 );
+        std::string suuid = uuids::to_string(uuid);
+        mpi::broadcast( Environment::worldComm().globalComm(), suuid, 0 );
+        uuid = boost::lexical_cast<uuids::uuid>( suuid );
+        
     }
     return uuid;
 }
