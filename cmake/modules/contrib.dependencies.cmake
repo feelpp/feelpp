@@ -37,7 +37,7 @@ if ( FEELPP_HAS_GINAC )
 
   add_definitions(-DIN_GINAC -DHAVE_LIBDL)
 
-  link_directories( ${CMAKE_BINARY_DIR}/ginac/ginac)
+  #link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
   include_directories( BEFORE ${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/ginac/ ${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
   set(DL_LIBS ${CMAKE_DL_LIBS})
