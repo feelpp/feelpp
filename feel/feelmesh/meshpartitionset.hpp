@@ -210,15 +210,17 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto edge_en = M_mesh->endEdge();
     for( ; edge_it != edge_en; ++edge_it )
     {
-        if ( !edge_it->hasMarker() ) continue;
-        M_containerMarkedEdges[partId].push_back(boost::cref(*edge_it));
+        auto const& edge = edge_it->second;
+        if ( !edge.hasMarker() ) continue;
+        M_containerMarkedEdges[partId].push_back(boost::cref(edge));
     }
     auto point_it = M_mesh->beginPoint();
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
     {
-        if ( !point_it->second.hasMarker() ) continue;
-        M_containerMarkedPoints[partId].push_back(boost::cref(point_it->second));
+        auto const& point = point_it->second;
+        if ( !point.hasMarker() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(point));
     }
 }
 template<typename MeshType>
@@ -239,8 +241,9 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     auto point_en = M_mesh->endPoint();
     for( ; point_it != point_en; ++point_it )
     {
-        if ( !point_it->second.hasMarker() ) continue;
-        M_containerMarkedPoints[partId].push_back(boost::cref(point_it->second));
+        auto const& point = point_it->second;
+        if ( !point.hasMarker() ) continue;
+        M_containerMarkedPoints[partId].push_back(boost::cref(point));
     }
 }
 template<typename MeshType>

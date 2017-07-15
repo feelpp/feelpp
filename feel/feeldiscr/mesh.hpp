@@ -431,7 +431,7 @@ public:
         size_type npall = this->numPoints();
 
         size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( auto const& theface ) { return theface.second.hasMarker(); } );
-        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
+        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( auto const& theedge ) { return theedge.second.hasMarker(); } );
         size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 

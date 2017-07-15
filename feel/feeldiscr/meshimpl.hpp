@@ -569,20 +569,21 @@ void
 Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
 {
     // first propagate top-down  marker from edges if points have not been marked
-    std::for_each( this->beginEdge(), this->endEdge(),
-                   [this]( edge_type const& e )
-                   {
-                       if ( !e.hasMarker() )
-                           return;
+    for ( auto ite = this->beginEdge(), ene= this->endEdge(); ite !=ene; ++ite )
+    {
+        auto const& e = ite->second;
+        if ( !e.hasMarker() )
+            return;
 
-                       for( int i = 0; i < edge_type::numPoints; ++i )
-                       {
-                           if ( !e.point( i ).hasMarker() )
-                           {
-                               // inherit marker from edge
-                               this->pointIterator( e.point( i ).id() )->second.setMarker( e.marker().value() );
-                           }
-                       } } );
+        for( int i = 0; i < edge_type::numPoints; ++i )
+        {
+            if ( !e.point( i ).hasMarker() )
+            {
+                // inherit marker from edge
+                this->pointIterator( e.point( i ).id() )->second.setMarker( e.marker().value() );
+            }
+        }
+    }
 
     // then propagate top-down marker from face if edge has not been marked
     for ( auto itf = this->beginFace(), enf= this->endFace(); itf !=enf; ++itf )
@@ -606,12 +607,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
             if ( !f.edge( i ).hasMarker() )
             {
                 // inherit marker from edge
-                this->edges().modify( this->edges().iterator_to( f.edge(i) ),
-                                      [&f] ( edge_type& e )
-                                      {
-                                          e.setMarker( f.marker().value() );
-                                      } );
-
+                this->edgeIterator( f.edge(i).id() )->second.setMarker( f.marker().value() );
             }
         }
     }
@@ -661,7 +657,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         itf->second.setCommonData( geondFaceCommon );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
-        this->edges().modify( ite,[&geondEdgeCommon]( edge_type& e ) { e.setCommonData( geondEdgeCommon ); } );
+        ite->second.setCommonData( geondEdgeCommon );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
@@ -1716,10 +1712,8 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& face , mpl::bool_<t
     {
         if ( face.edge( f ).isOnBoundary() == false )
         {
-            auto eit = this->edgeIterator( face.edge(f).id() );
-            this->edges().modify( eit,
-                                  []( edge_type& e )
-                                  {e.setOnBoundary(true, 1 );} );
+            auto & edgeModified = this->edgeIterator( face.edge(f).id() )->second;
+            edgeModified.setOnBoundary( true, 1 );
         }
 
     }
@@ -2221,17 +2215,14 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
         CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
 
         // get the good edge
-        auto edge_it = mesh.edgeIterator( theelt.edge( jBis ).id() );
+        auto & edgeModified = mesh.edgeIterator( theelt.edge( jBis ).id() )->second;
         // update id edge in other partition
-        mesh.edges().modify( edge_it, [&idProc,&idEdgeRecv]( edge_type& e )
-                             {
-                                 e.addNeighborPartitionId( idProc );
-                                 e.setIdInOtherPartitions( idProc, idEdgeRecv );
-                             } );
+        edgeModified.addNeighborPartitionId( idProc );
+        edgeModified.setIdInOtherPartitions( idProc, idEdgeRecv );
 
         // maybe the edge is not really on boundary
-        if ( edge_it->isOnBoundary() && !edgeOnBoundaryRecv )
-            mesh.edges().modify( edge_it, []( edge_type& e ){ e.setOnBoundary( false ); } );
+        if ( edgeModified.isOnBoundary() && !edgeOnBoundaryRecv )
+            edgeModified.setOnBoundary( false );
 
     } // for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
 
