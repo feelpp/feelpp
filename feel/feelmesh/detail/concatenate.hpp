@@ -38,21 +38,37 @@ namespace detail
  */
 template<typename ContainerType, typename IteratorType>
 void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it )
 {
     using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
+    auto append = [&elts,&idsIn]( face_t const& e )
+        {
+            size_type eid = e.id();
+            if ( idsIn.find( eid ) == idsIn.end() )
+            {
+                elts->push_back( boost::cref(e) );
+                idsIn.insert( eid );
+            }
+        };
     std::for_each( begin( it ), end( it ), append );
 }
 
 template<typename ContainerType, typename IteratorType, typename ...Args>
 void
-concatenate_entities( boost::shared_ptr<ContainerType>& elts, IteratorType it, Args... args )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts]( face_t const& e ) { elts->push_back( boost::cref(e) ); };
+    auto append = [&elts,&idsIn]( face_t const& e )
+        {
+            size_type eid = e.id();
+            if ( idsIn.find( eid ) == idsIn.end() )
+            {
+                elts->push_back( boost::cref(e) );
+                idsIn.insert( eid );
+            }
+        };
     std::for_each( begin( it ), end( it ), append );
-    concatenate_entities( elts, args... );
+    concatenate_entities( elts, idsIn, args... );
 }
 
 
@@ -62,11 +78,11 @@ concatenate_impl( IteratorType it, Args... args )
 {
     using face_t = filter_entity_t<IteratorType>;
     typedef std::vector<boost::reference_wrapper<face_t const> > cont_range_type;
-    boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
-
-    auto append = [&myelts]( face_t const& e ) { myelts->push_back( boost::cref(e) ); };
+    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    std::unordered_set<size_type> idsIn;
+    auto append = [&myelts,&idsIn]( face_t const& e ) { myelts->push_back( boost::cref(e) ); idsIn.insert( e.id() ); };
     std::for_each( begin( it ), end( it ), append );
-    concatenate_entities( myelts, args... );
+    concatenate_entities( myelts, idsIn, args... );
     return boost::make_tuple( filter_enum_t<IteratorType>(),
                               myelts->begin(),
                               myelts->end(),

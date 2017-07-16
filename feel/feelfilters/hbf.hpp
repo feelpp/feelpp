@@ -161,6 +161,9 @@ private:
 class Hbf2FeelppStruc
 {
 public:
+
+    //typedef meta::Pch<Mesh<Hypercube<2>>,1>::ptrtype q1_space_ptrtype;
+    //typedef meta::Pch<Mesh<Hypercube<2>>,1>::type space_type;
     typedef meta::Pch<MeshStructured,1>::ptrtype q1_space_ptrtype;
     typedef meta::Pch<MeshStructured,1>::type space_type;
     typedef space_type::element_type q1_element_type;

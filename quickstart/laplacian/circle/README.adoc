@@ -1,0 +1,31 @@
+= Circle
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>
+v1.0, 2017/02/20 
+
+NOTE: This test case is shared by the Laplacian and Advection-Diffusion-Reaction applications.
+The latter being configured to solve for a Laplacian problem.
+
+== Inputs
+
+[source,cfg]
+----
+include::circle.cfg[]
+----
+
+== Outputs
+
+Standard Output::
+The stem:[L^2] norm of the error stem:[\|u-u_h\|].
+
+Paraview::
+** stem:[u_h]
+** stem:[u]
+** mesh partitioning `pid` in Paraview
+
+== Execution
+
+----
+mpirun -np 4 feelpp_qs_laplacian_2d --config-file circle.cfg
+----
+
+

@@ -1,0 +1,36 @@
+= Copyright (C) 2011-2017 Feel++ Consortium 
+:feelpp: Feel++
+:cpp: C++
+
+{feelpp} stands for Finite Element Embedded Library and language in {cpp}.
+
+== {feelpp} Library and Toolboxes
+
+The {feelpp} library is in `feel/` +
+The Toolboxes are in `toolbox/`
+
+The {feelpp} libraries are copyrighted by the {feelpp} Consortium.
+They are distributed under the terms of the Lesser GNU Public License(LGPLv3)
+See the <<License.adoc#LGPLv3,License>>.
+
+== {feelpp} applications, examples, testsuite and benchmarks
+
+The directories are :
+
+* `benchmarks/`
+* `testsuite/`
+* `doc/`
+* `applications/`
+
+The {feelpp} applications, examples, testsuite and benchmarks are copyrighted by the {feelpp} Consortium.
+They are distributed under the terms of the GNU Public License(GPLv3).
+See the <<License.adoc#GPLv3,License>>.
+
+
+== contrib
+
+=== contrib/eigen
+
+Eigen is used for some linear algebra operations.
+
+see <<contrib/eigen/COPYING.README>>

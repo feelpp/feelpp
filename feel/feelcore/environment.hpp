@@ -36,15 +36,24 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
-
 #include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#include <pybind11/pybind11.h>
+
+#if defined(FEELPP_HAS_BOOST_PYTHON)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
 //#include <mpi4py/mpi4py.h>
-#endif
+#endif // FEELPP_HAS_BOOST_PYTHON
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
+
+
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+#include <boost/uuid/uuid_serialize.hpp>         // streaming operators etc.
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
@@ -66,6 +75,7 @@ namespace Feel
 {
 namespace tc = termcolor;
 namespace pt =  boost::property_tree;
+namespace uuids =  boost::uuids;
 
 class TimerTable;
 
@@ -215,8 +225,10 @@ public:
                  AboutData const& about,
                  std::string directory,
                  bool add_subdir_np = true );
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-    Environment( boost::python::list arg );
+
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+    Environment( pybind11::list arg, po::options_description const& desc );
+    Environment( pybind11::list arg );
 #endif
 
 
@@ -597,6 +609,14 @@ public:
     //! the exports repository is a subdirectory of the \c appRepository
     //! containing the results exported during the application execution
     static std::string exportsRepository();
+
+    //!
+    //! Generate a random UUID
+    //!
+    //! the UUID is very very very very likely to be unique as it is encoded into 128 bits
+    //! @param parallel if true generate the same uuid for all MPI process, if false it will be different
+    //!
+    static uuids::uuid randomUUID( bool parallel=true );
     
     //! @}
     
@@ -797,6 +817,9 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_app;
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
+
+    
+    static uuids::random_generator S_generator;
 
     /**
      * Stores the absolute path and executable name

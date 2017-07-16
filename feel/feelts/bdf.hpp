@@ -645,6 +645,7 @@ double
 Bdf<SpaceType>::restart()
 {
     this->init();
+    this->computePolyAndPolyDeriv();
 
     double ti = super::restart();
     M_last_iteration_since_order_change = 1;

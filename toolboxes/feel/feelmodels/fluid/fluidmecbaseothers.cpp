@@ -50,6 +50,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     else ResartMode = "No";
 
     std::string stabAll_str;
+    if (M_stabilizationGLS) stabAll_str=(stabAll_str.empty())? this->stabilizationGLSType():stabAll_str+" - "+this->stabilizationGLSType();
     if (this->doStabConvectionEnergy()) stabAll_str=(stabAll_str.empty())?"convection energy":stabAll_str+" - convection energy";
     if (this->doCIPStabConvection()) stabAll_str=(stabAll_str.empty())?"CIP Convection":stabAll_str+" - CIP Convection";
     if (this->doCIPStabDivergence()) stabAll_str=(stabAll_str.empty())?"CIP Divergence":stabAll_str+" - CIP Divergence";
@@ -60,7 +61,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq = 1;
-    if (M_isHOVisu)
+    if ( M_exporter_ho )
     {
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         if ( hovisuSpaceUsed == "velocity" || hovisuSpaceUsed == "pressure" )
@@ -75,6 +76,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     else
     {
         hovisuMode = "OFF";
+    }
+    if ( M_exporter )
+    {
         myexporterType = M_exporter->type();
         myexporterFreq = M_exporter->freq();
     }
@@ -314,19 +318,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 {
-    if (!M_isHOVisu)
-    {
-        CHECK( M_exporter )  << "export not init\n";
-        M_exporter->setDoExport(b);
-    }
-    else
-    {
-#if 1 //defined(FEELPP_HAS_VTK)
-        //CHECK( M_exporter_ho )  << "hoexport not init\n";
-        if ( M_exporter_ho )
-            M_exporter_ho->setDoExport(b);
-#endif
-    }
+    if ( M_exporter )
+        M_exporter->setDoExport( b );
+    if ( M_exporter_ho )
+        M_exporter_ho->setDoExport( b );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -365,11 +360,32 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 #endif
     }
 
-    if (!M_isHOVisu)
+    if ( nOrderGeo == 1 )
     {
         this->exportResultsImpl( time );
+
+        if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC &&
+             this->hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC ) )
+        {
+            std::string geoExportType="static";//change_coords_only, change, static
+            if ( !M_exporterLagrangeMultiplierPressureBC )
+                M_exporterLagrangeMultiplierPressureBC = exporter( _mesh=M_spaceLagrangeMultiplierPressureBC->mesh(),
+                                                                   _name="ExportLagrangeMultiplierPressureBC",
+                                                                   _geo=geoExportType,
+                                                                   _worldcomm=M_spaceLagrangeMultiplierPressureBC->worldComm(),
+                                                                   _path=this->exporterPath() );
+            M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda1"),
+                                                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda1")),
+                                                                       *M_fieldLagrangeMultiplierPressureBC1 );
+            if ( nDim == 3 )
+                M_exporterLagrangeMultiplierPressureBC->step( time )->add( prefixvm(this->prefix(),"pressurebc-lambda2"),
+                                                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressurebc-lambda2")),
+                                                                           *M_fieldLagrangeMultiplierPressureBC2 );
+            M_exporterLagrangeMultiplierPressureBC->save();
+        }
     }
-    else
+
+    if ( M_isHOVisu )
     {
         this->exportResultsImplHO( time );
     }
@@ -403,6 +419,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
     //if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
     //{
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
 
@@ -496,6 +513,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
             M_exporter->step( time )->add( prefixvm(this->prefix(),"displacementOnInterface"),
                                            prefixvm(this->prefix(),prefixvm(this->subPrefix(),"displacementOnInterface")),
                                            this->meshDisplacementOnInterface() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity")),
+                                           this->meshVelocity() );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"mesh-velocity-interface"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"mesh-velocity-interface")),
+                                           this->meshVelocity2() );
             hasFieldToExport = true;
         }
 #endif
@@ -544,6 +567,7 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
 #if 1//defined(FEELPP_HAS_VTK)
+    if ( !M_exporter_ho ) return;
     if ( !M_exporter_ho->doExport() ) return;
 
     // because write geofile at each step ( TODO fix !!! )
@@ -1421,29 +1445,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     //-------------------------------------------------------------------//
     // up mesh velocity on interface from mesh velocity
-#if 1
-    // no mpi comm
-    /**M_meshVelocityInterface = vf::project( _space=M_meshVelocityInterface->functionSpace(),
-     _range=markedfaces(this->mesh(),this->markersNameMovingBoundary().front()),
-     _expr=vf::idv(M_meshALE->velocity()),
-     _geomap=this->geomap() );*/
-    M_meshVelocityInterface->on(//_range=boundaryelements(this->mesh()),
-        _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-        //_range=boundaryfaces(this->mesh()),
-        //_range=elements(this->mesh()),
-        _expr=vf::idv(M_meshALE->velocity()),
-        _geomap=this->geomap() );
-#else
-    // with mpi comm
-    auto vectVelInterface = backend()->newVector( M_meshVelocityInterface->functionSpace() );
-    modifVec(markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-             *M_meshVelocityInterface,
-             vectVelInterface,
-             vf::idv(M_meshALE->velocity()) );
-
-    vectVelInterface->close();
-    *M_meshVelocityInterface = *vectVelInterface;
-#endif
+    M_meshVelocityInterface->on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                                 _expr=vf::idv(M_meshALE->velocity()),
+                                 _geomap=this->geomap() );
+    sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 
     //-------------------------------------------------------------------//
     // semi implicit optimisation
@@ -1794,9 +1799,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
     size_type pat_uu = size_type(Pattern::COUPLED);
     size_type pat_pp = size_type(Pattern::ZERO);
 
-    bool doStabPSPG = boption(_prefix=this->prefix(),_name="stabilisation-pspg");
-    bool doStabGLS = boption(_prefix=this->prefix(),_name="stabilisation-gls");
-    if ( doStabPSPG || doStabGLS ||
+    bool doStabPSPG = M_stabilizationGLS &&
+        ( this->stabilizationGLSType()== "pspg" ||
+          this->stabilizationGLSType()== "supg-pspg" ||
+          this->stabilizationGLSType() == "gls" );
+    if ( doStabPSPG ||
          (this->definePressureCst() && this->definePressureCstMethod() == "penalisation") ||
          (this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "nitsche" ) )
          )
@@ -2222,11 +2229,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
+        //        auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+        //    auto const& face = boost::unwrap_ref( *__face_it );
+        auto  const& face = boost::unwrap_ref( faceMarked );
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
                 //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             {
@@ -2239,7 +2247,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
                     dofdone[gdofVelFluid] = true;
                 }
             }
-        }
+            //}
     }
 #endif
     M_couplingFSI_RNG_matrix->close();
@@ -2267,11 +2275,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
+        // auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+            // auto const& face = *__face_it;
+            auto const& face = boost::unwrap_ref( faceMarked );
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
             {
                 for (uint16_type c1=0;c1<nDim;c1++)
@@ -2283,7 +2292,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
                     F->add( gdofVelFluid, -thevalue );
                     //dofdone[gdofVelFluid] = true;
                 }
-            }
+            // }
         }
     }
 #else
@@ -2291,12 +2300,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
     std::vector<bool> dofdone(this->functionSpaceVelocity()->nLocalDofWithGhost(),false);
     for ( auto const& faceMarked : markedfaces(this->mesh(),this->markersNameMovingBoundary() ) )
     {
-        auto __face_it = faceMarked.template get<1>();
-        auto __face_en = faceMarked.template get<2>();
-        for( ; __face_it != __face_en; ++__face_it )
-        {
-            auto const& face = *__face_it;
-            //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
+        // auto __face_it = faceMarked.template get<1>();
+        // auto __face_en = faceMarked.template get<2>();
+        // for( ; __face_it != __face_en; ++__face_it )
+        // {
+            auto const& face = boost::unwrap_ref( faceMarked );
+            // auto const& face = boost::unwrap_ref( *__face_it );
+           //for ( uint16_type l = 0; l < this->functionSpaceVelocity()->dof()->nLocalDofOnFace(true); ++l )
             for ( uint16_type l = 0; l < mesh_type::face_type::numVertices; ++l ) // only P1
             {
                 for (uint16_type c1=0;c1<nDim;c1++)
@@ -2313,7 +2323,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
                     dofdone[gdofVelFluid] = true;
                 }
             }
-        }
+        // }
     }
 #endif
 
@@ -2321,7 +2331,181 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 
 //---------------------------------------------------------------------------------------------------------//
 
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    auto XhVelocity = this->functionSpaceVelocity();
+    auto XhCompVelocity = XhVelocity->compSpace();
+    static const uint16_type nDofComponentsVelocity = XhVelocity->dof()->nDofComponents();
+    auto mesh = this->mesh();
 
+    std::set<std::string> velocityMarkers;
+    std::map<ComponentType,std::set<std::string> > compVelocityMarkers;
+
+    auto & dofsWithValueImposedVelocity = M_dofsWithValueImposed["velocity"];
+    dofsWithValueImposedVelocity.clear();
+
+    //-------------------------------------//
+    // strong Dirichlet bc on velocity from fsi coupling
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
+        velocityMarkers.insert( this->markersNameMovingBoundary().begin(), this->markersNameMovingBoundary().end() );
+#endif
+    // strong Dirichlet bc on velocity from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        velocityMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    // strong Dirichlet bc on velocity component from expression
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
+        }
+    }
+    // strong Dirichlet bc on velocity from inlet bc
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        velocityMarkers.insert( marker );
+    }
+
+    //-------------------------------------//
+    // distribute mesh markers by entity
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersVelocityByEntities;
+    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompVelocityByEntities;
+    meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkers );
+    for ( auto const& compMarkerPair : compVelocityMarkers )
+    {
+        meshMarkersCompVelocityByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
+    }
+    //-------------------------------------//
+    // on topological faces
+    auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesVelocity ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhVelocity->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        {
+            dofsWithValueImposedVelocity.insert( it->index() );
+        }
+    }
+    // on marked edges (only 3d)
+    auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
+    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesVelocity ) )
+    {
+        auto const& edge = unwrap_ref( edgeWrap );
+        auto itEltInfo = edge.elements().begin();
+        if ( itEltInfo == edge.elements().end() )
+            continue;
+        size_type eid = itEltInfo->first;
+        uint16_type edgeid_in_element = itEltInfo->second;
+        for( auto const& ldof : XhVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+        {
+            dofsWithValueImposedVelocity.insert( ldof.index() );
+        }
+    }
+    // on marked points
+    auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
+    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsVelocity ) )
+    {
+        auto const& point = unwrap_ref( pointWrap );
+        auto itPointInfo = point.elements().begin();
+        if ( itPointInfo == point.elements().end() )
+            continue;
+        size_type eid = itPointInfo->first;
+        uint16_type ptid_in_element = itPointInfo->second;
+        for( uint16_type c = 0; c < nDofComponentsVelocity; ++c )
+        {
+            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+            dofsWithValueImposedVelocity.insert( index );
+        }
+    }
+    //-------------------------------------//
+    // on velocity components
+    for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
+    {
+        ComponentType comp = meshMarkersPair.first;
+        int compDofShift = ((int)comp);
+        // topological faces
+        auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
+        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompVelocity ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = XhCompVelocity->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                size_type compdof = it->index();
+                size_type thedof = compDofShift +  nDofComponentsVelocity*compdof;
+                dofsWithValueImposedVelocity.insert( thedof );
+            }
+        }
+        // edges (only 3d)
+        auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
+        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompVelocity ) )
+        {
+            auto const& edge = unwrap_ref( edgeWrap );
+            auto itEltInfo = edge.elements().begin();
+            if ( itEltInfo == edge.elements().end() )
+                continue;
+            size_type eid = itEltInfo->first;
+            uint16_type edgeid_in_element = itEltInfo->second;
+            for( auto const& ldof : XhCompVelocity->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type compdof = ldof.index();
+                size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
+                dofsWithValueImposedVelocity.insert( ldof.index() );
+            }
+        }
+        // points
+        auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
+        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompVelocity ) )
+        {
+            auto const& point = unwrap_ref( pointWrap );
+            auto itPointInfo = point.elements().begin();
+            if ( itPointInfo == point.elements().end() )
+                continue;
+            size_type eid = itPointInfo->first;
+            uint16_type ptid_in_element = itPointInfo->second;
+            size_type index = XhVelocity->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
+            dofsWithValueImposedVelocity.insert( index );
+        }
+    }
+
+    if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
+    {
+        auto & dofsWithValueImposedPressureBC = M_dofsWithValueImposed["pressurebc-lm"];
+        dofsWithValueImposedPressureBC.clear();
+        for ( auto const& faceWrap : boundaryfaces(M_meshLagrangeMultiplierPressureBC) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_spaceLagrangeMultiplierPressureBC->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                dofsWithValueImposedPressureBC.insert( it->index() );
+        }
+    }
+
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if ( this->isMoveDomain() )
+    {
+        for ( auto const& faceWrap : markedfaces(mesh,this->markersNameMovingBoundary() ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = M_XhMeshVelocityInterface->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                M_dofsVelocityInterfaceOnMovingBoundary.insert( it->index() );
+            }
+        }
+    }
+#endif
+}
 
 
 } // namespace FeelModels

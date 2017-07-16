@@ -1576,3 +1576,5 @@ ex expand_dummy_sum(const ex & e, bool subs_idx)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
