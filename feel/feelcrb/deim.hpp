@@ -322,6 +322,7 @@ public :
     void saveDB();
     //! load the database
     bool loadDB();
+    void loadDB( std::string const& filename, crb::load l ) override {}
 
 
 protected :
