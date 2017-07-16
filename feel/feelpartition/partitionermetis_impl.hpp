@@ -37,7 +37,7 @@ namespace Feel {
 
 template<typename MeshType>
 void
-PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
+PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std::vector<range_element_type> const& partitionByRange )
 {
     LOG(INFO) << "PartitionerMetis::partitionImpl starts...";
     tic();
@@ -48,7 +48,30 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         this->singlePartition (mesh);
         return;
     }
-    const dof_id_type n_elems = mesh->numElements();
+
+    bool usePartitionByRange = !partitionByRange.empty();
+
+    if ( partitionByRange.empty() )
+    {
+        this->partitionImpl( mesh, np, allelements(mesh), usePartitionByRange );
+    }
+    else
+    {
+        for ( auto const& rangeMeshElt : partitionByRange )
+            this->partitionImpl( mesh, np, rangeMeshElt, usePartitionByRange );
+    }
+
+    auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
+    LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
+
+}
+
+template<typename MeshType>
+template<typename IteratorType>
+void
+PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, IteratorType const& rangeMeshElt, bool usePartitionByRange )
+{
+    const dof_id_type n_elems = nelements( rangeMeshElt );
     if ( n_elems == 0 )
         return;
 
@@ -64,7 +87,7 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
     // number of edges cut by the resulting partition
     Metis::idx_t edgecut = 0;
 
-    std::map<dof_id_type, std::pair<dof_id_type,rank_type> > global_index_map;
+    std::unordered_map<dof_id_type, std::pair<dof_id_type,rank_type> > global_index_map;
 
     {
         std::vector<dof_id_type> global_index( n_elems, 0 );
@@ -72,8 +95,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
 
         size_type cnt = 0;
 
-        for( auto const& elt : allelements(mesh) )
+        for( auto const& eltWrap : rangeMeshElt )
         {
+            auto const& elt = unwrap_ref( eltWrap );
             global_index_map.insert(std::make_pair(elt.id(), std::make_pair(global_index[cnt++],elt.processId() ) ));
         }
     }
@@ -94,9 +118,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
             // face neighbors
-            for( auto const& elt : allelements(mesh) )
+            for( auto const& eltWrap : rangeMeshElt )
             {
-
+                auto const& elt = unwrap_ref( eltWrap );
                 // (1) first pass - get the row sizes for each element by counting the number
                 // of face neighbors.  Also populate the vwght array if necessary
                 const dof_id_type gid = global_index_map[elt.id()].first;
@@ -117,9 +141,11 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 for ( uint16_type ms=0; ms < elt.nNeighbors(); ms++ )
                 {
                     element_type const* neighbor = NULL;
-                    size_type neighbor_id = elt.neighbor( ms ).first;
+                    size_type neighbor_id = elt.neighbor( ms );
                     if ( neighbor_id != invalid_size_type_value )
                     {
+                        if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
+                            continue;
                         num_neighbors++;
                     }
                 }
@@ -136,8 +162,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
             csr_graph.prepareForUse();
 
             // (2) second pass - fill the compressed adjacency array
-            for( auto const& elt : allelements(mesh) )
+            for( auto const& eltWrap : rangeMeshElt )
             {
+                auto const& elt = unwrap_ref( eltWrap );
                 dof_id_type gid = global_index_map[elt.id()].first;
 
                 unsigned int connection=0;
@@ -147,9 +174,11 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
                 for ( uint16_type ms=0; ms < elt.nNeighbors(); ms++ )
                 {
                     element_type const* neighbor = NULL;
-                    size_type neighbor_id = elt.neighbor( ms ).first;
+                    size_type neighbor_id = elt.neighbor( ms );
                     if ( neighbor_id != invalid_size_type_value )
                     {
+                        if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
+                            continue;
                         csr_graph(gid, connection++) = global_index_map[neighbor_id].first;
 
                     }
@@ -170,14 +199,14 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         // Use recursive if the number of partitions is less than or equal to 8
         if (np <= 8)
             Metis::Feel_METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
-                                            NULL, &nparts, NULL, NULL, NULL,
-                                            &edgecut, &part[0]);
+                                                 NULL, &nparts, NULL, NULL, NULL,
+                                                 &edgecut, &part[0]);
 
         // Otherwise  use kway
         else
             Metis::Feel_METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
-                                       NULL, &nparts, NULL, NULL, NULL,
-                                       &edgecut, &part[0]);
+                                            NULL, &nparts, NULL, NULL, NULL,
+                                            &edgecut, &part[0]);
 
     } // end processor 0 part
 
@@ -192,12 +221,9 @@ PartitionerMetis<MeshType>::partitionImpl ( mesh_ptrtype mesh, rank_type np )
         dof_id_type gid = pairElt.second.first;
         rank_type initialPid = pairElt.second.second;
         rank_type newPid = static_cast<rank_type>(part[gid]);
-        auto eltToUpdate = mesh->elementIterator( eltId,initialPid );
+        auto eltToUpdate = mesh->elementIterator( eltId );
         mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
     }
-
-    auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
-    LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
 }
 
 

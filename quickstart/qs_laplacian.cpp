@@ -1,26 +1,26 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-
-   This file is part of the Feel++ library
-
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date     : Tue Feb 25 11:58:30 2014
-
-   Copyright (C) 2014 Feel++ Consortium
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 10 Apr 2017
+//! @copyright 2017 Feel++ Consortium
+//!
 // tag::global[]
 #include <feel/feel.hpp>
 
@@ -31,7 +31,6 @@ int main(int argc, char**argv )
     using Feel::cout;
 	po::options_description laplacianoptions( "Laplacian options" );
 	laplacianoptions.add_options()
-        ( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
         ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
 		;
 
@@ -50,7 +49,7 @@ int main(int argc, char**argv )
     tic();
     auto Vh = Pch<2>( mesh );
     auto u = Vh->element("u");
-    auto mu = doption(_name="mu");
+    auto mu = expr(soption(_name="functions.mu")); // diffusion term
     auto f = expr( soption(_name="functions.f"), "f" );
     auto r_1 = expr( soption(_name="functions.a"), "a" ); // Robin left hand side expression
     auto r_2 = expr( soption(_name="functions.b"), "b" ); // Robin right hand side expression

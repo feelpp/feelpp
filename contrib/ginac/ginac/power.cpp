@@ -1333,3 +1333,4 @@ ex power::expand_mul(const mul & m, const numeric & n, unsigned options, bool fr
 GINAC_BIND_UNARCHIVER(power);
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

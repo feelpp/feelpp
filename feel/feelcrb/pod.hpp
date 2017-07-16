@@ -262,7 +262,7 @@ private :
     bool M_use_solutions;
 };//class POD
 
-po::options_description podOptions( std::string const& prefix = "" );
+
 
 template<typename TruthModelType>
 void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )

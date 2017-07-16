@@ -23,3 +23,4 @@
 #
 
 add_subdirectory(buildkite)
+add_subdirectory(docker)

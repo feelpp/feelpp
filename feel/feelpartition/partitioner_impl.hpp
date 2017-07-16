@@ -46,7 +46,7 @@ Partitioner<MeshType>::partition (mesh_ptrtype mesh)
 
 template<typename MeshType>
 void 
-Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n )
+Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n, std::vector<range_element_type> const& partitionByRange )
 {
     LOG(INFO) << "Partitioner::partition starts";
     // we cannot partition into more pieces than we have
@@ -64,7 +64,7 @@ Partitioner<MeshType>::partition ( mesh_ptrtype mesh, rank_type n )
     }
 
     // Call the partitioning function
-    this->partitionImpl(mesh,n_parts);
+    this->partitionImpl(mesh,n_parts,partitionByRange);
 
     // Set the node's processor ids
     Partitioner::setNodeProcessorIds(mesh);
@@ -112,16 +112,14 @@ template<typename MeshType>
 void 
 Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
 {
-    for( auto elt : elements(mesh) )
-        mesh->elements().modify( mesh->elementIterator(elt.id()), 
+    for( auto const& elt : elements(mesh) )
+        mesh->elements().modify( mesh->elementIterator( boost::unwrap_ref( elt ).id()),
                                  []( element_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : faces(mesh) )
-        mesh->faces().modify( mesh->faceIterator(elt.id()), 
+    for( auto const& elt : faces(mesh) )
+        mesh->faces().modify( mesh->faceIterator( boost::unwrap_ref( elt ).id()),
                               []( face_type & e) { e.setProcessId( 0 ); });
-    for( auto elt : points(mesh) )
-        mesh->points().modify( mesh->pointIterator(elt.id()), 
-                               []( point_type & e) { e.setProcessId( 0 ); });
-
+    for ( auto itp = mesh->beginPoint(), enp = mesh->endPoint(); itp != enp; ++itp )
+        itp->second.setProcessId( 0 );
 }
 
 

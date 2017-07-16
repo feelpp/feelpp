@@ -38,8 +38,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelcrb/opusapp.hpp>
-#include <applications/crb/heat1d/heat1d.hpp>
 
 namespace Feel
 {
@@ -71,6 +71,103 @@ makeAbout()
     return about;
 
 }
+
+
+
+class TestDbHeat1d : public ModelCrbBase<ParameterSpaceX, decltype(Pch<5>(Mesh<Simplex<1>>::New()))>
+{
+public:
+
+    typedef ModelCrbBase<ParameterSpaceX, decltype(Pch<5>(Mesh<Simplex<1>>::New()))> super_type;
+
+    TestDbHeat1d() : super_type( "TestDbHeat1d" )
+        {
+            this->setId( boost::uuids::nil_uuid() );
+        }
+
+    //! initialisation of the model
+    void initModel()
+        {
+            this->setFunctionSpaces( Pch<5>( loadMesh( _mesh=new Mesh<Simplex<1>> ) ) );
+
+            Dmu->setDimension( 4 );
+            //static const int N = 2;
+            auto mu_min = Dmu->element();
+            mu_min << 0.2, 0.2, 0.01, 0.1;
+            Dmu->setMin( mu_min );
+            auto mu_max = Dmu->element();
+            mu_max << 50, 50, 5, 5;
+            Dmu->setMax( mu_max );
+
+            auto u = Xh->element();
+            auto v = Xh->element();
+            auto mesh = Xh->mesh();
+            //lhs
+            auto a0 = form2( _trial=Xh, _test=Xh);
+            a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+                integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+            this->addLhs( { a0 , "1" } );
+
+            auto a1 = form2( _trial=Xh, _test=Xh);
+            a1 = integrate( markedelements( mesh,"k1_1" ),  gradt( u )*trans( grad( v ) )  );
+            this->addLhs( { a1 , "mu0" } );
+
+            auto a2 = form2( _trial=Xh, _test=Xh);
+            a2 = integrate( markedelements( mesh,"k2_1" ),  gradt( u )*trans( grad( v ) )  );
+            this->addLhs( { a2 , "mu1" } );
+
+            //rhs
+            auto f0 = form1( _test=Xh );
+            f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
+            this->addRhs( { f0, "mu2" } );
+            auto f1 = form1( _test=Xh );
+            f1 =  integrate( elements( mesh ), id( v ) );
+            this->addRhs( { f1, "mu3" } );
+
+            //output
+            auto out = form1( _test=Xh );
+            out = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) +
+                integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+            this->addOutput( { out, "1" } );
+
+            auto energy = form2( _trial=Xh, _test=Xh);
+            energy = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) +
+                integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) ) +
+                integrate( markedelements( mesh,"k1_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  +
+                integrate( markedelements( mesh,"k2_1" ),  0.2 * gradt( u )*trans( grad( v ) ) )  ;
+            this->addEnergyMatrix( energy );
+        }
+
+    beta_vector_light_type beta;
+    /**
+     * Given the output index \p output_index and the parameter \p mu, return
+     * the value of the corresponding FEM output
+     */
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false)
+        {
+            auto mesh = Xh->mesh();
+            double output=0;
+            // right hand side (compliant)
+            if ( output_index == 0 )
+            {
+                output  = integrate( markedfaces( mesh,"left" ), mu(2)*idv( u ) ).evaluate()( 0,0 );
+                output += integrate( elements( mesh ), mu(3)*idv( u ) ).evaluate()( 0,0 );
+            }
+            // output
+            else if ( output_index == 1 )
+            {
+                output = integrate( elements( mesh ),
+                                    chi( ( Px() >= -0.1 ) && ( Px() <= 0.1 ) )*idv( u ) ).evaluate()( 0,0 )/0.2;
+            }
+            else
+                throw std::logic_error( "[Heat1d::output] error with output_index : only 0 or 1 " );
+            return output;
+        }
+};
+
+
+
+
 };
 
 using namespace Feel;
@@ -108,17 +205,15 @@ int main(int argc, char **argv)
     gArgv[5] = NULL;
 
     Feel::Environment env( _argc=gArgc, _argv=gArgv,
-                           _desc=opusapp_options("heat1d")
+                           _desc=opusapp_options("feelpp_test_db")
                            .add(crbOptions())
                            .add(crbSEROptions())
-                           .add(makeHeat1DOptions())
                            .add(eimOptions())
                            .add(podOptions())
                            .add(backend_options("backend-primal"))
                            .add(backend_options("backend-dual"))
                            .add(backend_options("backend-l2"))
-                           .add(bdf_options("Heat1D")),
-                           _about=makeHeat1DAbout( "heat1d" ) );
+                           );
 
     std::vector<int> wnSize;
     std::vector<int> wnduSize;
@@ -132,7 +227,7 @@ int main(int argc, char **argv)
 
     // Execute the Heat1d app with both boost and hdf5 databases
     Environment::setOptionValue("crb.db.format", std::string("boost"));
-    Feel::OpusApp<Feel::Heat1D > * app = new Feel::OpusApp<Feel::Heat1D >();
+    Feel::OpusApp<Feel::TestDbHeat1d > * app = new Feel::OpusApp<Feel::TestDbHeat1d>();
     app->run();
 
     auto crb = app->getCRB();
@@ -150,7 +245,7 @@ int main(int argc, char **argv)
     delete app;
 
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
-    app = new Feel::OpusApp<Feel::Heat1D >();
+    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
     app->run();
 
     crb = app->getCRB();
@@ -172,7 +267,7 @@ int main(int argc, char **argv)
     Environment::setOptionValue("crb.rebuild-database", false);
 
     Environment::setOptionValue("crb.db.format", std::string("boost"));
-    app = new Feel::OpusApp<Feel::Heat1D >();
+    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
     app->run();
 
     crb = app->getCRB();
@@ -190,7 +285,7 @@ int main(int argc, char **argv)
     delete app;
 
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
-    app = new Feel::OpusApp<Feel::Heat1D >();
+    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
     app->run();
 
     crb = app->getCRB();

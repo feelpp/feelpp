@@ -624,3 +624,4 @@ ex hold_ncmul(const exvector & v)
 GINAC_BIND_UNARCHIVER(ncmul);
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

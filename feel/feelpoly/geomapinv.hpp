@@ -123,7 +123,7 @@ public:
         typename CONT::const_iterator it = c.begin(), ite = c.end();
 
         for ( ; it != ite; ++it )
-            M_tree.addPointWithId( it->node(), it->id(), 0 );
+            M_tree.addPointWithId( it->second.node(), it->second.id(), 0 );
     }
 
     /**

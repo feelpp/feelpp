@@ -205,3 +205,4 @@ static int get_tok_prec(const int c)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

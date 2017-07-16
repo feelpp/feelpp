@@ -21,6 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
+if (FEELPP_HAS_NLOPT )
+  set(SRC nlopt.cpp)
+  feel_append_src(feelopt "${SRC}")
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 
@@ -37,5 +43,5 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 
 add_executable(test_ad EXCLUDE_FROM_ALL test_ad.cpp )
-target_link_libraries(test_ad feelpp ${FEELPP_LIBRARIES})
+target_link_libraries(test_ad feelpp ${FEELPP_LIBRARIES} )
 

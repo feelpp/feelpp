@@ -21,9 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ON )
 
-if ( FEELPP_ENABLE_NLOPT )
 
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
 
@@ -111,14 +109,20 @@ if ( FEELPP_ENABLE_NLOPT )
     # else()
     #   message(STATUS "NLOpt: nlopt.hpp is generated")
     # endif()
-    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api)
-    #add_subdirectory(contrib/nlopt)
+    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
     include_directories(${NLOPT_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES feelpp_nlopt ${FEELPP_LIBRARIES} )
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt" )
+    SET( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NLOpt/Contrib" )
     SET(FEELPP_HAS_NLOPT 1)
 
-  else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+    #add_subdirectory(nlopt)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_nlopt)
+    #add_dependencies(contrib feelpp_nlopt)
+    if (TARGET _nlopt )
+      #add_dependencies(contrib _nlopt)
+    endif()
+
+  else( NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
+        # Contrib installation.
 
     FIND_PATH(NLOPT_INCLUDE_DIR nlopt.hpp
       $ENV{FEELPP_DIR}/include/feel/nlopt
@@ -153,4 +157,4 @@ if ( FEELPP_ENABLE_NLOPT )
 
   endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt  )
 
-endif()
+

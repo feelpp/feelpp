@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 3.1.3)
 if ( ${CMAKE_VERSION} VERSION_GREATER 2.8.12 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
@@ -31,10 +31,10 @@ if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
 	cmake_policy(SET CMP0038 NEW)
 	message(STATUS "[feelpp] use NEW policy CMP0042" )
 	cmake_policy(SET CMP0042 NEW)
-    if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
-      message(STATUS "[feelpp] use OLD policy CMP0064" )
-      cmake_policy(SET CMP0064 OLD)
-    endif()
+    # if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 3 )
+    #   message(STATUS "[feelpp] use OLD policy CMP0064" )
+    #   cmake_policy(SET CMP0064 OLD)
+    # endif()
 	#message(STATUS "[feelpp] use NEW policy CMP0046" )
 	#cmake_policy(SET CMP0046 NEW)
 endif()
@@ -107,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
@@ -141,9 +142,9 @@ endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/machines)
+add_subdirectory(cmake)
 
+include(feelpp.dirs)
 # set the Feel++ version
 include(feelpp.version)
 
@@ -313,9 +314,11 @@ MESSAGE(STATUS "[feelpp] SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 include( feelpp.macros )
 
 # Find feel++ dependencies 
-include( feelpp.dependencies )
 add_custom_target(contrib)
+
+include( feelpp.dependencies )
 add_subdirectory(contrib)
+
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -351,7 +354,6 @@ ENDIF()
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
-
 
 
 ################################################################################
@@ -397,9 +399,6 @@ add_custom_target(install-testcase
   )
 
 add_custom_target(check-full COMMAND "ctest")
-IF(FEELPP_ENABLE_TESTS )
-  add_dependencies(check-full testsuite)
-endif()
 if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
@@ -409,6 +408,7 @@ endif()
 #add_dependencies(check examples)
 IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
+  add_dependencies(check-full testsuite)
 endif()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
@@ -429,6 +429,11 @@ include(feelpp.module.quickstart)
 if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
+endif()
+
+include(feelpp.module.pyfeelpp)
+if ( FEELPP_HAS_PYFEELPP )
+  add_subdirectory(pyfeelpp)
 endif()
 
 include(feelpp.module.toolboxes)
@@ -467,7 +472,7 @@ include(feelpp.directive)
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
 # The add_subdirectory is way too soon to get those values
-set(config_file "cmake/modules/Feel++Config.cmake")
-configure_file( ${config_file}.in ${config_file} @ONLY)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/${config_file} DESTINATION share/feel/cmake/modules COMPONENT Devel)
-
+# The install command of this file is located in cmake/module/CMakeLists (because of feelpp-install-lib target)
+set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
+configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/cmake/modules/feelpp.install.config.cmake @ONLY)

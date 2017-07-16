@@ -52,5 +52,26 @@ foreach( _DIM 2 3)
   endforeach()
 endforeach()
 
+# Taylor Hood P2P1G2
+foreach( _DIM 2 3)
+  if ( FEELPP_INSTANTIATION_ORDER_MAX GREATER 1 AND FEELPP_MESH_MAX_ORDER GREATER 1 )
+    genLibFluidMechanics(
+      DIM ${_DIM}
+      GEO_ORDER 2
+      U_ORDER 2
+      P_ORDER 1
+      P_CONTINUITY Continuous
+      ADD_CMAKE_INSTALL
+      )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
+  endif()
+endforeach()
+
 add_library(feelpp_model_fluidmechanics SHARED libfluidmechanics.cpp)
 target_link_libraries(feelpp_model_fluidmechanics ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
+set_property(TARGET feelpp_model_fluidmechanics PROPERTY MACOSX_RPATH ON)
+
+install(TARGETS feelpp_model_fluidmechanics DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fluid COMPONENT Devel)

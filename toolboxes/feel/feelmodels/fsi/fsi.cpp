@@ -200,19 +200,20 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-      submeshStruct->faces().modify( submeshStruct->faceIterator( itp->id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
 
     typedef SubMeshData smd_type;
     typedef boost::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
-    for ( auto const& e : elements(submeshStruct) )
-      {
+    for ( auto const& ew : elements(submeshStruct) )
+    {
+        auto const& e = unwrap_ref(ew);
         auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
         size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
-        auto const& theface2 = FM->mesh()->element(idElt2,e.processId()).face(theface.pos_first());
+        auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
         smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
-      }
+    }
     submeshStruct->setSubMeshData( smd );
 
     return submeshStruct;
@@ -225,7 +226,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-      submeshStruct->faces().modify( submeshStruct->faceIterator( itp->id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
 
     return submeshStruct;
 }
@@ -386,13 +387,13 @@ FSI<FluidType,SolidType>::init()
         //----------------------------------------------------------------------------------//
         // get dofs on markedfaces fsi
         std::set<size_type> dofMarkerFsi;
-        for ( auto const& faceMarked : markedfaces(M_solidModel->mesh(),M_solidModel->markerNameFSI() ) )
+        for ( auto const& faceWrap : markedfaces(M_solidModel->mesh(),M_solidModel->markerNameFSI() ) )
         {
-            auto __face_it = faceMarked.template get<1>();
-            auto __face_en = faceMarked.template get<2>();
-            for( ; __face_it != __face_en; ++__face_it )
-            {
-                auto const& face = *__face_it;
+            //auto __face_it = faceMarked.template get<1>();
+            //auto __face_en = faceMarked.template get<2>();
+            //for( ; __face_it != __face_en; ++__face_it )
+            //{
+                auto const& face = boost::unwrap_ref( faceWrap );//*__face_it );
                 for ( uint16_type l = 0; l < M_solidModel->functionSpaceDisplacement()->dof()->nLocalDofOnFace(true); ++l )
                 {
                     for (uint16_type c1=0;c1<solid_type::nDim;c1++)
@@ -401,7 +402,7 @@ FSI<FluidType,SolidType>::init()
                         dofMarkerFsi.insert( gdof );
                     }
                 }
-            }
+                //}
         }
 #if 0 // bug
         std::set<size_type> dofMarkerFsiTest;

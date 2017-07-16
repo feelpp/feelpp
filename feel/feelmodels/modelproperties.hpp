@@ -53,7 +53,7 @@ public:
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
-    std::string shortName() const {  return M_shortname; }
+    std::string const& shortName() const {  return M_shortname; }
     void setShortName( std::string const& t) { M_shortname = t; }
 
     std::string const& description() const {  return M_description; }
