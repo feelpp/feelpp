@@ -605,11 +605,26 @@ public :
         return V;
     }
 
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu, element_type const& u )
+    {
+        vector_ptrtype V;
+        return V;
+    }
+
+
     virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu )
     {
         sparse_matrix_ptrtype M;
         return M;
     }
+
+    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, element_type const& u )
+    {
+        sparse_matrix_ptrtype M;
+        return M;
+    }
+
+
 
     /**
      * \brief update model description in property_tree

@@ -57,10 +57,12 @@ public :
     typedef MDEIM<self_type> mdeim_type;
     typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
 
+    typedef typename Pch_type<mesh_type,1>::element_type element_type;
+
     MDeimTest() :
         Dmu( parameterspace_type::New(2) )
     {
-        auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
+        mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         auto Xh = Pch<2>( mesh );
         auto Yh = Pch<3>( mesh );
         auto u = Xh->element();
@@ -102,7 +104,6 @@ public :
         Pset->equidistributeProduct( Ne , true , "mdeim_test_sampling" );
 
         mdeim_ptrtype M_deim = mdeim_ptrtype( new mdeim_type( this->shared_from_this(), Pset ) );
-        M_deim->assemble = boost::bind( &MDeimTest::assemble, boost::ref(*this), _1  );
 
         M_deim->run();
         int m = M_deim->size();
@@ -110,7 +111,6 @@ public :
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
         BOOST_CHECK( m==4 );
-
 
         Ne[0] = 100;
         Ne[1] = 100;
@@ -121,7 +121,7 @@ public :
         {
             auto coeff = M_deim->beta(mu);
 
-            assemble(mu);
+            assembleForMDEIM(mu);
 
             for ( int i=0; i<m; i++ )
                 M->addMatrix( -coeff(i), base[i] );
@@ -132,7 +132,7 @@ public :
 
     }
 
-    sparse_matrix_ptrtype assemble( parameter_type mu)
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type mu)
     {
         M->zero();
         M->addMatrix( mu[0], M1 );
@@ -142,7 +142,25 @@ public :
         return M;
     }
 
+    // These 3 functions are only needed for compilation
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type mu, element_type const& u)
+    {
+        sparse_matrix_ptrtype M;
+        return M;
+    }
+    boost::shared_ptr<Pch_type<mesh_type,1>> functionSpace()
+    {
+        auto Xh = Pch<1>( mesh );
+        return Xh;
+    }
+    element_type solve( parameter_type const& mu )
+    {
+        return functionSpace()->element();
+    }
+
+
 private :
+    mesh_ptrtype mesh;
     sparse_matrix_ptrtype M, M1, M2, M3, M4;
     parameterspace_ptrtype Dmu;
 

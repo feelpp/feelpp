@@ -111,6 +111,7 @@ public :
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
+    typedef typename model_type::element_type element_type;
 
     //! Default Constructor
     DEIMBase()
@@ -136,7 +137,8 @@ public :
         M_M(0),
         M_tol(1e-8),
         M_prefix( prefix ),
-        M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
+        M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
+        M_nl_assembly(false)
     {
         using Feel::cout;
 
@@ -171,6 +173,8 @@ public :
             }
             cout << "DEIM sampling created with " << sampling_size << " points.\n";
         }
+
+
     }
 
     //! Destructor
@@ -183,7 +187,8 @@ public :
      * \p mu the considered parameter
      * \return the tensor \f$ T(\mu) \f$ as vector_ptrtype
      */
-    assemble_function_type assemble;
+    virtual tensor_ptrtype assemble( parameter_type const& mu )=0;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, element_type const& u )=0;
 
     /**
      * Run the greedy algotithm and build the affine decomposition.
@@ -550,8 +555,7 @@ protected :
     std::vector<indice_type> M_index;
 
     std::string M_prefix;
-    bool M_rebuild;
-
+    bool M_rebuild, M_nl_assembly;
 };
 
 template <typename ModelType, typename TensorType,
@@ -659,6 +663,8 @@ public :
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
     typedef typename super_type::model_ptrtype model_ptrtype;
+    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::element_type element_type;
 
     DEIM() :
         super_type()
@@ -666,11 +672,34 @@ public :
 
     DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
         super_type( model, sampling, prefix )
-    {}
+    {
+        auto mu = this->M_parameter_space->element();
+        auto T = this->assemble(mu);
+        if (!T)
+        {
+            auto u = this->M_model->functionSpace()->element();
+            auto Tnl = this->assemble(mu,u);
+            CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
+            this->M_nl_assembly=true;
+        }
+    }
 
     ~DEIM()
     {}
 
+    vector_ptrtype assemble( parameter_type const& mu )
+    {
+        if ( this->M_nl_assembly )
+        {
+            auto u = this->M_model->solve(mu);
+            return this->M_model->assembleForDEIM(mu);
+        }
+        return this->M_model->assembleForDEIM(mu);
+    }
+    vector_ptrtype assemble( parameter_type const& mu, element_type const& u )
+    {
+        return this->M_model->assembleForDEIM(mu,u);
+    }
 
 private :
 };
@@ -691,6 +720,9 @@ public :
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
     typedef typename super_type::model_ptrtype model_ptrtype;
+    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::element_type element_type;
+
 
     MDEIM() :
         super_type()
@@ -698,10 +730,35 @@ public :
 
     MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
         super_type( model, sampling, prefix )
-    {}
+    {
+        auto mu = this->M_parameter_space->element();
+        auto T = this->assemble(mu);
+        if (!T)
+        {
+            auto u = this->M_model->functionSpace()->element();
+            auto Tnl = this->assemble(mu,u);
+            CHECK( Tnl ) << "You want to use MDEIM but you did not implement assmbleForMDEIM functions\n";
+            this->M_nl_assembly=true;
+        }
+    }
 
     ~MDEIM()
     {}
+
+    vector_ptrtype assemble( parameter_type const& mu )
+    {
+        if ( this->M_nl_assembly )
+        {
+            auto u = this->M_model->solve(mu);
+            return this->M_model->assembleForMDEIM(mu);
+        }
+        return this->M_model->assembleForMDEIM(mu);
+    }
+    vector_ptrtype assemble( parameter_type const& mu, element_type const& u )
+    {
+        return this->M_model->assembleForMDEIM(mu,u);
+    }
+
 
 private :
 
