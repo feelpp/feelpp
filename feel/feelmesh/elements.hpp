@@ -353,7 +353,7 @@ public:
         auto itFindElt = M_elements.find( i );
         if ( itFindElt == M_elements.end() )
             return false;
-        if ( itFindElt->processId() != p )
+        if ( itFindElt->second.processId() != p )
             return false;
         return true;
     }
