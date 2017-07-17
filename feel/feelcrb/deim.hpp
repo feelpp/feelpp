@@ -54,44 +54,6 @@ namespace Feel
 {
 
 /**
- * Comparison structure for 2 parameters mu1 and mu2
- * The comparison is made component by component :
- * - we start with i=0
- * - if mu1[i]<mu2[i] then mu1<mu2
- * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
- */
-template <typename ParameterType>
-struct paramCompare
-{
-public :
-    typedef ParameterType parameter_type;
-
-    /**
-     * Compare the component \p i of \p mu1 and \p mu2
-     * \return true if mu1[i]<mu2[i]
-     */
-    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
-    {
-        return compare( mu1, mu2, 0 );
-    }
-private :
-    /**
-     * Compare \p mu1 and \p mu2
-     * \return true if mu1 < mu2
-     */
-    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
-    {
-        if ( i==mu1.size() )
-            return false;
-        else if ( mu1[i]==mu2[i] )
-            return compare( mu1, mu2, i+1 );
-        else
-            return mu1[i]<mu2[i];
-    }
-};
-
-
-/**
  * \brief Base class for DEIM algorithm
  *
  * Considering a parametrized Tensor \f$ T(\mu)\f$, which can be
@@ -149,7 +111,6 @@ public :
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
-    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
 
     //! Default Constructor
     DEIMBase()
@@ -279,7 +240,6 @@ public :
 
         }
 
-        M_solutions.clear();
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
         toc("DEIM : Total Time");
@@ -319,9 +279,9 @@ public :
     }
 
     //! save the database
-    void saveDB();
+    void saveDB() override;
     //! load the database
-    bool loadDB();
+    bool loadDB() override;
     void loadDB( std::string const& filename, crb::load l ) override {}
 
 
@@ -510,13 +470,8 @@ protected :
     {
         LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
         tensor_ptrtype T;
-        if ( !M_solutions[mu] )
-        {
-            T = this->assemble( mu );
-            M_solutions[mu] = copyTensor(T);
-        }
-        else
-            T = M_solutions[mu];
+
+        T = this->assemble( mu );
 
         double norm = T->linftyNorm();
 
@@ -593,7 +548,7 @@ protected :
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
-    solutionsmap_type M_solutions;
+
     std::string M_prefix;
     bool M_rebuild;
 
