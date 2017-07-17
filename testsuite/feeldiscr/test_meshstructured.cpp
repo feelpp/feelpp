@@ -44,7 +44,10 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/hbf.hpp>
+#if defined(FEELPP_HAS_FFTW)
 #include <fftw3.h>
+#endif
 #include <feel/feeldiscr/meshstructured.hpp>
 
 namespace Feel
@@ -89,89 +92,90 @@ class Test_MeshStructured
     
     
     void run (double pixelsize) 
-    {
-     tic();
-    auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                    Environment::worldComm(),"", false, false, false);
+        {
+            tic();
+            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                            Environment::worldComm(),"", false, false);
 
-     mesh->components().reset();
-     mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
-     mesh->updateForUse();
-     toc("mesh");
+            mesh->components().reset();
+            mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->updateForUse();
+            toc("mesh");
     
-     auto Vh = Pch<1> ( mesh ) ;
-     auto u = Vh->element () ;
-     auto v = Vh->element () ;
+            auto Vh = Pch<1> ( mesh ) ;
+            auto u = Vh->element () ;
+            auto v = Vh->element () ;
      
-    auto imaP = vf::project(Vh,elements(mesh),Px()); 
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=id(v)*idv(imaP));
+            auto imaP = vf::project(Vh,elements(mesh),Px()); 
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh),
+                          _expr=id(v)*idv(imaP));
                      
-    auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements(mesh),
-                   _expr=idt(u)*id(v));
+            auto a = form2( _trial=Vh, _test=Vh);
+            a = integrate( _range=elements(mesh),
+                           _expr=idt(u)*id(v));
                       
-    a.solve(_rhs=l,_solution=u) ;
+            a.solve(_rhs=l,_solution=u) ;
 
-    auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->addRegions(); 
-    e->save();
+            auto e = exporter( _mesh=mesh );
+            e->add( "u", u );
+            e->addRegions(); 
+            e->save();
 
-    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP));
-    std::cout << " Norm2 " << n << std::endl;
+            auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP));
+            std::cout << " Norm2 " << n << std::endl;
 
-    }
+        }
 
     void runImage  (double pixelsize) 
-    {
+        {
 
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
-                                                    Environment::worldComm(),"", false, false, false);
-     mesh->components().reset();
-     mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
-     mesh->updateForUse();
+            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                            Environment::worldComm(),"", false, false);
+            mesh->components().reset();
+            mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->updateForUse();
     
-     auto Vh = Pch<1> ( mesh ) ;
-     auto u = Vh->element () ;
-     auto v = Vh->element () ;
+            auto Vh = Pch<1> ( mesh ) ;
+            auto u = Vh->element () ;
+            auto v = Vh->element () ;
      
-    auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
-    auto imaP2 = vf::project(Vh,elements(mesh),cst(0.)); 
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  //_expr=grad(v)*vec(idv(ima),idv(ima)));
-                  _expr=grad(v)*vec(idv(imaP),idv(imaP2)));
+            auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
+            auto imaP2 = vf::project(Vh,elements(mesh),cst(0.)); 
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh),
+                          //_expr=grad(v)*vec(idv(ima),idv(ima)));
+                          _expr=grad(v)*vec(idv(imaP),idv(imaP2)));
     
-    auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements(mesh),
-                   //_expr=gradt(u)*trans(grad(v)));
-                   _expr=gradt(u)*trans(grad(v)));
+            auto a = form2( _trial=Vh, _test=Vh);
+            a = integrate( _range=elements(mesh),
+                           //_expr=gradt(u)*trans(grad(v)));
+                           _expr=gradt(u)*trans(grad(v)));
     
-    a.solve(_rhs=l,_solution=u) ;
+            a.solve(_rhs=l,_solution=u) ;
     
-    auto value  = vf::project(Vh,elements(mesh),Py()); 
-    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(value)); 
-    std::cout << " Norm2 " << n << std::endl;
+            auto value  = vf::project(Vh,elements(mesh),Py()); 
+            auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(value)); 
+            std::cout << " Norm2 " << n << std::endl;
 
-    }
+        }
   
     void runImageHbf  (std::string hbf1, std::string hbf2, std::string solution, double pixelsize) 
         {
-            x = readHBF( hbf1 );
-            y = readHBF( hbf2 );
-            z = readHBF( solution );
+#if 0
+            auto x = readHBF( hbf1 );
+            auto y = readHBF( hbf2 );
+            auto z = readHBF( solution );
 
-            mesh = boost::make_shared<MeshStructured>( x.rows(),
-                                                       x.cols(),
-                                                       pixelsize,
-                                                       cx,cy,
-                                                       /*NULL,*/
-                                                       Environment::worldComm(),
-                                                       "",
-                                                       false,
-                                                       false);
+            auto mesh = boost::make_shared<MeshStructured>( x.rows(),
+                                                            x.cols(),
+                                                            pixelsize,
+                                                            cx,cy,
+                                                            /*NULL,*/
+                                                            Environment::worldComm(),
+                                                            "",
+                                                            false,
+                                                            false);
             mesh->components().reset();
             mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
             mesh->updateForUse();
@@ -199,7 +203,7 @@ class Test_MeshStructured
             a.solve(_rhs=l,_solution=u) ;
     
             std::cout << "L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-idv(s) ) << "\n"; 
-    
+#endif   
 
         }
 
@@ -264,7 +268,7 @@ BOOST_AUTO_TEST_CASE( test_run2 )
 {
     Test_MeshStructured tms2(12,24);
     tms2.runParallel(ps);
-
+}
 
 BOOST_AUTO_TEST_CASE( test_run3 )
 {
