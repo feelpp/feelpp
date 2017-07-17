@@ -84,6 +84,8 @@ public :
 
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
 
+    parameterspace_ptrtype parameterSpace() { return Dmu;}
+
     void run()
     {
         auto mu_min = Dmu->element();
@@ -99,7 +101,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "mdeim_test_sampling" );
 
-        mdeim_ptrtype M_deim ( new mdeim_type( Dmu, this->uuid(), Pset ) );
+        mdeim_ptrtype M_deim = mdeim_ptrtype( new mdeim_type( this->shared_from_this(), Pset ) );
         M_deim->assemble = boost::bind( &MDeimTest::assemble, boost::ref(*this), _1  );
 
         M_deim->run();
