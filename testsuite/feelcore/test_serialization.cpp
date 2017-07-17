@@ -9,7 +9,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>

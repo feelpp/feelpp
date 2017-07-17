@@ -34,7 +34,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE project discr testsuite
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
