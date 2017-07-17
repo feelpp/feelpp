@@ -1445,18 +1445,19 @@ worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range
 }
 
 //!
-//! build a list of elements based on a list of element ids \p l from a mesh \p imesh
+//! build a list of elements based on iterators  [begin,end) from a mesh \p imesh
 //!
-template<typename MeshType, typename T>
+template<typename MeshType, typename IteratorType>
 ext_elements_t<MeshType>
-idelements( MeshType const& imesh, std::vector<T> const& l )
+idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
 {
     //auto myelts = make_elements_wrapper<MeshType>();
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
 
-    for( auto elt : l )
+    for( auto it = begin; it != end; ++ it )
     {
+        auto elt = *it;
         if ( mesh.hasElement( elt ) )
         {
             myelts->push_back( boost::cref( mesh.element( elt ) ) );
@@ -1466,6 +1467,15 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
                               myelts->begin(),
                               myelts->end(),
                               myelts );
+}
+//!
+//! build a list of elements based on a list of element ids \p l from a mesh \p imesh
+//!
+template<typename MeshType, typename T>
+ext_elements_t<MeshType>
+idelements( MeshType const& imesh, std::vector<T> const& l )
+{
+    return idelements( imesh, l.begin(), l.end() );
 }
 
 
