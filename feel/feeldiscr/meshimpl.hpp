@@ -154,6 +154,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( this->worldComm().localSize()>1 )
         {
+            tic();
             auto rangeGhostElement = this->ghostElements();
             auto itghost = std::get<0>( rangeGhostElement );
             auto const enghost = std::get<1>( rangeGhostElement );
@@ -172,6 +173,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             auto enf = std::get<1>( rangeInterProcessFaces );
             for ( ; itf!=enf ; ++itf )
                 this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
+            toc("Mesh::updateForUse update ghost data",FLAGS_v>0);
         }
 
         if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
@@ -1346,19 +1348,33 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
     DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
+#if 0
+    tic();
     _faces.clear();
     pointstoface_container_type().swap( _faces );
-
+    toc("Mesh.updateEntitiesCoDimensionOne.clear tmp data",FLAGS_v>0);
+#endif
     tic();
+    size_type nFaces = this->faces().size();
+    for ( face_type* facePtr : _facesOrderedWithId )
+        if ( facePtr )
+            ++nFaces;
     // update multi-index faces container
+    this->faces().reserve( nFaces );
     for ( face_type* facePtr : _facesOrderedWithId )
     {
         if ( facePtr )
         {
             //this->faces().insert( this->faces().end(),std::move(*facePtr) );
             //this->faces().insert( this->faces().end(),std::move(*facePtr) );
+            //this->addFace( *facePtr );
             this->addFace( std::move(*facePtr) );
-            facePtr =  nullptr; 
+            /*this->faces().emplace(std::piecewise_construct,
+                                  std::forward_as_tuple(facePtr->id()),
+             std::forward_as_tuple(*facePtr));*/
+            //this->addFace( this->faces().end(), std::move(*facePtr) );
+            //facePtr = nullptr;
+            delete facePtr;
         }
     }
     toc("Mesh.updateEntitiesCoDimensionOne.insert_faces_in_multiindex", FLAGS_v>0);
@@ -1537,8 +1553,9 @@ void
 Mesh<Shape, T, Tag>::updateAdjacencyElements()
 {
     VLOG(2) << "Compute adjacency graph\n";
-    typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::detail::HashFaceConnection > pointstoface_container_type;
-    typedef std::vector< std::tuple<size_type,uint16_type> >  facetoelement_container_type;
+    //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    //typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<size_type,uint16_type>, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type>, Feel::detail::HashFaceConnection > pointstoface_container_type;
 
     std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
     for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
@@ -1547,11 +1564,8 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
             myfToP[j*face_type::numVertices+f] = ( nDim==1 )?j:/*iv->*/element_type::fToP( j, f );
     }
 
-    facetoelement_container_type f2e;
-    size_type next_face = 0;
-    bool faceinserted = false;
 
-    std::unordered_map<size_type, std::vector<std::tuple<size_type,uint16_type> > > e2e;
+    bool faceinserted = false;
 
     Eigen::Matrix<uint16_type,element_type::numVertices,1> pointIdInElt;
     std::vector<size_type> lids(face_type::numVertices);
@@ -1560,15 +1574,15 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
+    size_type nElt = std::distance(iv,en);
 
-    pointstoface_container_type _faces( std::distance(iv,en)*_numLocalFaces );
+    pointstoface_container_type _faces( nElt*_numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
     for ( ; iv != en; ++iv )
     {
-        element_type const& elt = iv->second;
+        element_type & elt = iv->second;
         const size_type eltId = elt.id();
-        const rank_type eltPid = elt.processId();
 
         for ( uint16_type f = 0; f < element_type::numVertices; ++f )
             pointIdInElt[f] = elt.point( f ).id();
@@ -1584,44 +1598,24 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 #else
             boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                   std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(next_face) );
+                                                                  std::forward_as_tuple(std::make_tuple(&elt,j) )
+                                                                  );
+                                                                  //std::forward_as_tuple(next_face) );
 #endif
             if ( faceinserted )
             {
-                DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
-                f2e.push_back( std::make_tuple( eltId,j ) );
-                ++next_face;
+                //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
             }
             else // already stored
             {
-                auto const& faceIdRegistered = _faceit->second;
-                DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << " process id:" << eltPid << "\n";
-
-                auto const& f2eVal = f2e[faceIdRegistered];
-                e2e[std::get<0>(f2eVal)].push_back( std::make_tuple( eltId, std::get<1>(f2eVal) ) );
-                e2e[eltId].push_back( std::make_tuple( std::get<0>(f2eVal), j ) );
-                // erase face desc in map (maybe improve other acces)
-                // if ( nDim == nRealDim )
-                //    _faces.erase( _faceit );
+                //DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << "\n";
+                auto const& f2eVal = _faceit->second;
+                element_type * elt2 = std::get<0>(f2eVal);
+                elt2->setNeighbor( std::get<1>(f2eVal), eltId );
+                elt.setNeighbor( j,elt2->id() );
             }
         } // local face
     } // element loop
-
-    f2e.clear();
-    facetoelement_container_type().swap( f2e );
-    _faces.clear();
-    pointstoface_container_type().swap( _faces );
-
-    for ( auto const& eltDatasPair : e2e )
-    {
-        auto eltModified = this->elementIterator( eltDatasPair.first )->second;
-        for (auto const& eltDatas  : eltDatasPair.second )
-        {
-            uint16_type j = std::get<1>( eltDatas );
-            size_type eltId2 = std::get<0>( eltDatas );
-            eltModified.setNeighbor( j,eltId2 );
-        }
-    }
 }
 
 #endif
