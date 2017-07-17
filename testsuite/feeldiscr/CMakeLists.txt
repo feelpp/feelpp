@@ -80,5 +80,6 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
+feelpp_add_test( idelements)
 #! not functional yet
 # feelpp_add_test( element0D )

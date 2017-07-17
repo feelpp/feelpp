@@ -26,35 +26,34 @@
 
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feelmath/randint.hpp>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( idelements )
+BOOST_AUTO_TEST_SUITE( testsuite_idelements )
 
 BOOST_AUTO_TEST_CASE( listelements )
 {
     auto mesh=unitCircle();
-    auto l = pickRandomIds( mesh.beginElement()->id(), boost::prior(mesh.endElement())->id(), 2 );
-    auto le = idelements( mesh, l );
-    
-    for( auto const& e : le )
-    {
-        //CHECK( 
-    }
+    auto l = randint( 3, mesh->beginElement()->id(), boost::prior(mesh->endElement())->id() );
+    LOG(INFO) << "l=" << l;
+    auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
+    BOOST_CHECK_EQUAL( newmesh->numElements(), l.size()*Environment::numberOfProcessors() );
 }
 
 BOOST_AUTO_TEST_CASE( space_fromlistelements )
 {
     auto mesh=unitCircle();
     
-    auto l = pickRandomIds( mesh.beginElement()->id(), boost::prior(mesh.endElement())->id(), 2 );
+    auto l = randint( 3, mesh->beginElement()->id(), boost::prior(mesh->endElement())->id() );
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
     auto Xh=Pdh<0>(newmesh);
-    auto v = Xh->element(_expr=cst(1.));
+    auto v = Xh->element(cst(1.));
     auto s = v.sum();
-    BOOST_CHECK_EQUAL( s, l.size() );
+    BOOST_CHECK_EQUAL( s, l.size()*Environment::numberOfProcessors() );
     
 }
     
