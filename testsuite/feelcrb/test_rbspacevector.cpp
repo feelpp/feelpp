@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_rbspace
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <fstream>
 

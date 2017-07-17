@@ -22,7 +22,7 @@
  */
 
 #define BOOST_TEST_MODULE parameterspace testsuite
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
 
