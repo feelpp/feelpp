@@ -47,15 +47,14 @@ BOOST_AUTO_TEST_CASE( listelements )
 BOOST_AUTO_TEST_CASE( space_fromlistelements )
 {
     auto mesh=unitCircle();
-    
+
     auto l = randint( 3, mesh->beginElement()->id(), boost::prior(mesh->endElement())->id() );
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
     auto Xh=Pdh<0>(newmesh);
     auto v = Xh->element(cst(1.));
     auto s = v.sum();
     BOOST_CHECK_EQUAL( s, l.size()*Environment::numberOfProcessors() );
-    
-}
-    
-BOOST_AUTO_TEST_SUITE_END()
 
+}
+
+BOOST_AUTO_TEST_SUITE_END()
