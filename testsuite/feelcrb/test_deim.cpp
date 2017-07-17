@@ -57,10 +57,13 @@ public :
     typedef DEIM<self_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
+    typedef typename Pch_type<mesh_type,1>::element_type element_type;
+
+
     DeimTest() :
         Dmu( parameterspace_type::New(2) )
     {
-        auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
+        mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         auto Xh = Pch<1>( mesh );
         auto u = Xh->element();
         V = backend()->newVector( Xh );
@@ -98,7 +101,6 @@ public :
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
         deim_ptrtype M_deim = deim_ptrtype( new deim_type( this->shared_from_this(), Pset ) );
-        M_deim->assemble = boost::bind( &DeimTest::assemble, boost::ref(*this), _1  );
 
         M_deim->run();
         int m = M_deim->size();
@@ -117,7 +119,7 @@ public :
         {
             auto coeff = M_deim->beta(mu);
 
-            assemble(mu);
+            assembleForDEIM(mu);
 
             for ( int i=0; i<m; i++ )
                 V->add( -coeff(i), base[i] );
@@ -128,7 +130,7 @@ public :
 
     }
 
-    vector_ptrtype assemble( parameter_type mu)
+    vector_ptrtype assembleForDEIM( parameter_type const& mu)
     {
         V->zero();
         V->add( mu[0], V1 );
@@ -137,7 +139,26 @@ public :
         return V;
     }
 
+    // These 3 functions are only needed for compilation
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, element_type const& u )
+    {
+        vector_ptrtype V;
+        return V;
+    }
+    boost::shared_ptr<Pch_type<mesh_type,1>> functionSpace()
+    {
+        auto Xh = Pch<1>( mesh );
+        return Xh;
+    }
+    element_type solve( parameter_type const& mu )
+    {
+        return functionSpace()->element();
+    }
+
+
+
 private :
+    mesh_ptrtype mesh;
     vector_ptrtype V, V1, V2, V3;
     parameterspace_ptrtype Dmu;
 
