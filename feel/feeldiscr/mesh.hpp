@@ -1728,6 +1728,10 @@ protected:
     void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
     /**
+     * Update connectivity of entities of codimension 1. Done only for marked entities and ghost faces
+     */
+    void updateEntitiesCoDimensionOneMinimal();
+    /**
      * Update in ghost cells of entities of codimension 1
      */
     void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
