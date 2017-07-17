@@ -498,7 +498,7 @@ public:
     //! 
     std::pair<face_iterator,bool> addFace( face_type& f )
     {
-        std::pair<face_iterator,bool> ret =  M_faces.insert( std::make_pair( f.id(),f ) );
+        std::pair<face_iterator,bool> ret =  M_faces.emplace/*insert*/( std::make_pair( f.id(),f ) );
         DLOG_IF(WARNING, ret.second == false )
             << "addFace failed, face not added to container : "
             << ret.first->second.id() << " face id:"
@@ -513,7 +513,7 @@ public:
     //! 
     std::pair<face_iterator,bool> addFace( face_type&& f )
         {
-            std::pair<face_iterator,bool> ret =  M_faces.insert( std::make_pair( f.id(),f ) );
+            std::pair<face_iterator,bool> ret =  M_faces.emplace/*insert*/( std::make_pair( f.id(),f ) );
             DLOG_IF(WARNING, ret.second == false )
                 << "addFace failed, face not added to container : "
                 << ret.first->second.id() << " face id:"
