@@ -1447,18 +1447,19 @@ worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range
 //!
 //! build a list of elements based on a list of element ids \p l from a mesh \p imesh
 //!
-template<typename MeshType>
+template<typename MeshType, typename T>
 ext_elements_t<MeshType>
-idelements( MeshType const& imesh, std::vector<uint8_type> const& l )
+idelements( MeshType const& imesh, std::vector<T> const& l )
 {
-    auto myelts = make_elements_wrapper<MeshType>();
+    //auto myelts = make_elements_wrapper<MeshType>();
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
 
     for( auto elt : l )
     {
-        if ( mesh->hasElement( elt ) )
+        if ( mesh.hasElement( elt ) )
         {
-            myelts->push_back( boost::cref( mesh->element( elt ) ) );
+            myelts->push_back( boost::cref( mesh.element( elt ) ) );
         }
     }
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
