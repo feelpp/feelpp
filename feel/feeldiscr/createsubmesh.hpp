@@ -1048,8 +1048,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 idEltInNewMesh = itFindId->second;
                 // update NeighborPartition for this active elt
                 CHECK( newMesh->hasElement( idEltInNewMesh) ) << "mesh has not elt whit id " << idEltInNewMesh << "\n";
-                auto eltToUpdate = newMesh->elementIterator( idEltInNewMesh );
-                newMesh->elements().modify( eltToUpdate, Feel::detail::UpdateNeighborPartition( rankRecv ) );
+                auto & eltToUpdate = newMesh->elementIterator( idEltInNewMesh )->second;
+                eltToUpdate.addNeighborPartitionId( rankRecv );
             }
             dataToReSend.push_back( idEltInNewMesh );
         }
@@ -1121,12 +1121,12 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 auto itFindGhostOld = ghostOldEltDone.find( oldElem.id() );
                 if ( itFindGhostOld != ghostOldEltDone.end() )
                 {
-                    auto eltIt = newMesh->elementIterator( itFindGhostOld->second.first );
-                    newMesh->elements().modify( eltIt, Feel::detail::updateIdInOthersPartitions( rankRecv, idEltActiveInOtherProc ) );
-                    if ( rankRecv < eltIt->processId() )
+                    auto & eltModified = newMesh->elementIterator( itFindGhostOld->second.first )->second;
+                    eltModified.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
+                    if ( rankRecv < eltModified.processId() )
                     {
-                        newMesh->elements().modify( eltIt, Feel::detail::UpdateProcessId( rankRecv ) );
-                        ghostOldEltDone[oldElem.id()]= std::make_pair( eltIt->id(),rankRecv);
+                        eltModified.setProcessId( rankRecv );
+                        ghostOldEltDone[oldElem.id()]= std::make_pair( eltModified.id(),rankRecv);
                     }
                     continue;
                 }

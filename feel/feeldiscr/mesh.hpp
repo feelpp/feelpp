@@ -2112,7 +2112,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     auto const en = this->endElement();
     for ( ; it != en; ++it )
     {
-        element_type const& old_elem = *it;
+        element_type const& old_elem = it->second;
 
         // create a new element
         typename P1_mesh_type::element_type new_elem;
@@ -2208,24 +2208,24 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
 
 #endif
-        if ( it->isGhostCell() )
+        if ( old_elem.isGhostCell() )
         {
-            DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
-            for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
+            DVLOG(2) << "element " << old_elem.id() << " is a ghost cell\n";
+            for (auto it_pid=old_elem.idInOthersPartitions().begin(),en_pid=old_elem.idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
             {
-                DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<old_elem.pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
                 const int procToSend=it_pid->first;
-                DCHECK( procToSend!=it->pidInPartition() ) << "invalid\n";
+                DCHECK( procToSend!=old_elem.pidInPartition() ) << "invalid\n";
                 memoryGhostId[procToSend].insert(boost::make_tuple(new_elem.id(),it_pid->second));
             }
         }
-        else if (it->numberOfNeighborPartitions() /*it->numberOfPartitions()*/ >0 )
+        else if (old_elem.numberOfNeighborPartitions() /*old_elem.numberOfPartitions()*/ >0 )
         {
 #if 0
-            setOfRecvProc.insert( it->neighborPartitionIds().begin(), it->neighborPartitionIds().end() );
+            setOfRecvProc.insert( old_elem.neighborPartitionIds().begin(), old_elem.neighborPartitionIds().end() );
 #else
-            auto itneighbor = it->neighborPartitionIds().begin();
-            auto const enneighbor = it->neighborPartitionIds().end();
+            auto itneighbor = old_elem.neighborPartitionIds().begin();
+            auto const enneighbor = old_elem.neighborPartitionIds().end();
             for ( ; itneighbor!=enneighbor ; ++itneighbor )
                 nbMsgToRecv[*itneighbor]++;
 #endif
@@ -2237,7 +2237,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     auto face_en = this->endFace();
     for ( ; face_it!=face_en ; ++face_it )
     {
-        auto const& old_face = *face_it;
+        auto const& old_face = face_it->second;
         if ( !old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
@@ -2390,8 +2390,8 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 size_type idEltAsked;
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
-                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+                auto & eltModified = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ )->second;
+                eltModified.setIdInOtherPartitions( procToRecv, idEltAsked );
             }
         }
 
