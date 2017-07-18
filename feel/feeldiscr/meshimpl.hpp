@@ -954,21 +954,6 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
 {}
 
 
-namespace detail
-{
-struct HashFaceConnection
-{
-    size_t operator()(const std::set<size_type>& v) const
-        {
-            return boost::hash_range( v.begin(),v.end() );
-        }
-    size_t operator()(const std::vector<size_type>& v) const
-        {
-            return boost::hash_range( v.begin(),v.end() );
-        }
-};
-}
-
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
@@ -988,7 +973,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     boost::tie( iv, en ) = this->elementsRange();
 
     size_type nElt = std::distance(iv,en);
-    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type,face_type*>, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type,face_type*>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
     pointstoface_container_type _faces( nElt*_numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
@@ -1322,7 +1307,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
     boost::tie( iv, en ) = this->elementsRange();
     size_type nElt = std::distance(iv,en);
 
-    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type,face_type*>, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type,face_type*>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
     pointstoface_container_type _faces( nElt*_numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
@@ -1630,9 +1615,9 @@ void
 Mesh<Shape, T, Tag>::updateAdjacencyElements()
 {
     VLOG(2) << "Compute adjacency graph\n";
-    //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::detail::HashFaceConnection > pointstoface_container_type;
-    //typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<size_type,uint16_type>, Feel::detail::HashFaceConnection > pointstoface_container_type;
-    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type>, Feel::detail::HashFaceConnection > pointstoface_container_type;
+    //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
+    //typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<size_type,uint16_type>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
+    typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
 
     std::vector<uint16_type> myfToP( face_type::numVertices*this->numLocalFaces() );
     for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )

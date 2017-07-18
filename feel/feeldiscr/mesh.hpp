@@ -445,7 +445,7 @@ public:
         {
             std::vector<boost::tuple<boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,
                                      boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
-            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ne,nedmarkedall),
+            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ned,nedmarkedall),
                                                          boost::make_tuple(np,npall,npmarkedall),nv);
             mpi::all_gather( this->worldComm(),
                              dataSendToAllGather,
