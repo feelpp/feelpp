@@ -57,14 +57,22 @@ public :
     typedef DEIM<self_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
-    typedef typename Pch_type<mesh_type,1>::element_type element_type;
+    typedef Pch_type<mesh_type,1> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
 
 
-    DeimTest() :
+    DeimTest( std::string name="" ) :
         Dmu( parameterspace_type::New(2) )
     {
         mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         auto Xh = Pch<1>( mesh );
+        this->setFunctionSpaces(Xh);
+    }
+
+    void setFunctionSpaces( space_ptrtype Xh )
+    {
+        mesh = Xh->mesh();
         auto u = Xh->element();
         V = backend()->newVector( Xh );
         V1 = backend()->newVector( Xh );
@@ -145,10 +153,9 @@ public :
         vector_ptrtype V;
         return V;
     }
-    boost::shared_ptr<Pch_type<mesh_type,1>> functionSpace()
+    space_ptrtype functionSpace()
     {
-        auto Xh = Pch<1>( mesh );
-        return Xh;
+        return space_type::New( _mesh=mesh );
     }
     element_type solve( parameter_type const& mu )
     {

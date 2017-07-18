@@ -111,7 +111,10 @@ public :
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
+    typedef typename model_type::space_type space_type;
+    typedef typename model_type::space_ptrtype space_ptrtype;
     typedef typename model_type::element_type element_type;
+    typedef typename model_type::mesh_ptrtype mesh_ptrtype;
 
     //! Default Constructor
     DEIMBase()
@@ -132,6 +135,7 @@ public :
                 model->uuid(),
                 worldComm ),
         M_model( model ),
+        mesh( model->functionSpace()->mesh() ),
         M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
@@ -151,7 +155,6 @@ public :
         }
         else
             cout << "DEIM : option deim.rebuild-db=true : start greedy algorithm from beginning\n";
-
 
 
         if ( !M_trainset )
@@ -174,6 +177,9 @@ public :
             cout << "DEIM sampling created with " << sampling_size << " points.\n";
         }
 
+        M_online_model = model_ptrtype( new model_type("deim-online") );
+        space_ptrtype Rh = space_type::New( mesh );
+        M_online_model->setFunctionSpaces( Rh );
 
     }
 
@@ -187,8 +193,8 @@ public :
      * \p mu the considered parameter
      * \return the tensor \f$ T(\mu) \f$ as vector_ptrtype
      */
-    virtual tensor_ptrtype assemble( parameter_type const& mu )=0;
-    virtual tensor_ptrtype assemble( parameter_type const& mu, element_type const& u )=0;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
 
     /**
      * Run the greedy algotithm and build the affine decomposition.
@@ -256,13 +262,9 @@ public :
         return computeCoefficient( mu );
     }
 
-    /**
-     * \return the \f$ \beta^m(\mu)\f$ evaluated from an already
-     * assembled tensor (for non-linear problem)
-     */
-    vectorN_type beta( tensor_ptrtype T )
+    vectorN_type beta( parameter_type const& mu, element_type const& u )
     {
-        return computeCoefficient( T );
+        return computeCoefficient( mu, u );
     }
 
 
@@ -414,9 +416,15 @@ protected :
     //! \return the beta coefficient for parameter \p mu
     vectorN_type computeCoefficient( parameter_type const& mu )
     {
-        tensor_ptrtype T = assemble( mu );
+        tensor_ptrtype T = assemble( mu, true );
         return computeCoefficient( T );
     }
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u )
+    {
+        tensor_ptrtype T = assemble( mu, u, true );
+        return computeCoefficient( T );
+    }
+
 
     //! Compute the beta coefficients for a assembled tensor \p T
     vectorN_type computeCoefficient( tensor_ptrtype T )
@@ -545,7 +553,8 @@ protected :
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 protected :
-    model_ptrtype M_model;
+    model_ptrtype M_model, M_online_model;
+    mesh_ptrtype mesh;
     parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
     int M_M;
@@ -687,17 +696,25 @@ public :
     ~DEIM()
     {}
 
-    vector_ptrtype assemble( parameter_type const& mu )
+    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
     {
         if ( this->M_nl_assembly )
         {
+            CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = this->M_model->solve(mu);
-            return this->M_model->assembleForDEIM(mu);
+            return this->M_model->assembleForDEIM(mu,u);
         }
+        if (online)
+            //return this->M_online_model->assembleForDEIM(mu);
+            return this->M_model->assembleForDEIM(mu);
         return this->M_model->assembleForDEIM(mu);
     }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u )
+    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
+        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
+        if ( online )
+            //return this->M_online_model->assembleForDEIM(mu,u);
+            return this->M_model->assembleForDEIM(mu,u);
         return this->M_model->assembleForDEIM(mu,u);
     }
 
@@ -745,17 +762,25 @@ public :
     ~MDEIM()
     {}
 
-    vector_ptrtype assemble( parameter_type const& mu )
+    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
     {
         if ( this->M_nl_assembly )
         {
+            CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = this->M_model->solve(mu);
-            return this->M_model->assembleForMDEIM(mu);
+            return this->M_model->assembleForMDEIM(mu,u);
         }
+        if (online)
+            //return this->M_online_model->assembleForMDEIM(mu);
+            return this->M_model->assembleForMDEIM(mu);
         return this->M_model->assembleForMDEIM(mu);
     }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u )
+    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
+        CHECK(this->M_nl_assembly) << "You called nl coefficient for MDEIM but you implemented assembleForMDEIM(mu)\n";
+        if ( online )
+            //return this->M_online_model->assembleForMDEIM(mu,u);
+            return this->M_model->assembleForMDEIM(mu,u);
         return this->M_model->assembleForMDEIM(mu,u);
     }
 
