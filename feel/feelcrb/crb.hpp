@@ -11446,8 +11446,7 @@ void
 CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type loadingContext, std::string const& dbDir )
 {
     auto i = ptree.template get<std::string>( "uuid" );
-    if ( boost::lexical_cast<uuids::uuid>( i ) != this->id() )
-        throw std::logic_error("Inconsistent DB uuids json:" + i + std::string(" vs directory:") +   boost::lexical_cast<std::string>(this->id()));
+    this->setId( boost::lexical_cast<uuids::uuid>( i ) );
     auto const& ptreeCrb = ptree.get_child( "crb" );
     M_N = ptreeCrb.template get<int>( "dimension" );
     M_output_index = ptreeCrb.template get<int>( "output-index" );
