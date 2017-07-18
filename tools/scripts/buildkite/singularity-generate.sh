@@ -17,6 +17,7 @@ cd ./docker/singularity
 for cont in ${containers}
 do
     echo "--- generate singularity image for ${cont} docker container using tag: ${FEELPP_DOCKER_TAG}"
+    docker pull ${cont}:${FEELPP_DOCKER_TAG}
     ./generate_bootstrap.sh "${cont}:${FEELPP_DOCKER_TAG}"
     ./generate_image.sh "${cont}:${FEELPP_DOCKER_TAG}"
 done

@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.3)
 
 project(quickstart)
 set(PROJECT_SHORTNAME "qs")
@@ -64,7 +64,7 @@ add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 #
 # Stokes
 #
-feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST)
+feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST )
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_STOKES_2D} )
 add_dependencies(check ${QS_STOKES_2D} )

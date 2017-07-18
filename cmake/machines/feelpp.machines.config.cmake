@@ -89,6 +89,15 @@ if( FEELPP_NAME_LOGIN )
   endif()
 endif()
 
+STRING(REGEX MATCH "hpc-login*" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( FEELPP_NAME_LOGIN )
+  message(STATUS "Using hpc-login config")
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.hpc-login.cmake )
+      message( STATUS "[Feel++] Configuration found for : hpc-login (Mesostra)" )
+      include( feelpp.machines.hpc-login )
+  endif()
+endif()
+
 
 if( FEELPP_ENABLE_HOMEBREW AND EXISTS /usr/local/bin/brew )
   if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.homebrew.cmake )

@@ -29,7 +29,7 @@
 
 #include <vector>
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>

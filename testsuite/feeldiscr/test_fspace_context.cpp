@@ -27,7 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_fspace_context
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <fstream>
 
