@@ -343,11 +343,17 @@ public:
      * @param f a new edge
      * @return the new edge from the list
      */
-    edge_type const& addEdge( edge_type& f )
+    std::pair<edge_iterator,bool>  addEdge( edge_type& f )
     {
         //f.setId( M_edges.size() );
-        return M_edges.emplace( std::make_pair( f.id(),f ) ).first->second;
+        return M_edges.emplace( std::make_pair( f.id(),f ) );
     }
+
+    std::pair<edge_iterator,bool>  addEdge( edge_type&& f )
+        {
+            //f.setId( M_edges.size() );
+            return M_edges.emplace( std::make_pair( f.id(),f ) );
+        }
 
     void setWorldCommEdges( WorldComm const& _worldComm )
     {
