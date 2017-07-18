@@ -345,7 +345,7 @@ public:
      */
     edge_type const& addEdge( edge_type& f )
     {
-        f.setId( M_edges.size() );
+        //f.setId( M_edges.size() );
         return M_edges.emplace( std::make_pair( f.id(),f ) ).first->second;
     }
 
