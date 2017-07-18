@@ -175,6 +175,19 @@ using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
                                                   typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
                                                   std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
                                                   >;
+
+template<typename MeshType>
+using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template<typename MeshType>
+using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
+
+template<typename MeshType>
+decltype(auto)
+make_elements_wrapper()
+{
+    using elt_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+    return boost::make_shared<elt_wrapper_t>();
+}
 #if 0
 /**
  * namespace for meta mesh computation data structure
@@ -1412,11 +1425,48 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
 
 }
 
+//!
+//! @return the worldcomm associated to the mesh stored in the range
+//!
 template<size_t S, class ITERATOR, class CONTAINER>
 WorldComm const&
 worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
 {
     return boost::unwrap_ref( *range.template get<1>() ).mesh()->worldComm();
+}
+
+//!
+//! build a list of elements based on iterators  [begin,end) from a mesh \p imesh
+//!
+template<typename MeshType, typename IteratorType>
+ext_elements_t<MeshType>
+idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
+{
+    //auto myelts = make_elements_wrapper<MeshType>();
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
+
+    for( auto it = begin; it != end; ++ it )
+    {
+        auto elt = *it;
+        if ( mesh.hasElement( elt ) )
+        {
+            myelts->push_back( boost::cref( mesh.element( elt ) ) );
+        }
+    }
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+//!
+//! build a list of elements based on a list of element ids \p l from a mesh \p imesh
+//!
+template<typename MeshType, typename T>
+ext_elements_t<MeshType>
+idelements( MeshType const& imesh, std::vector<T> const& l )
+{
+    return idelements( imesh, l.begin(), l.end() );
 }
 
 

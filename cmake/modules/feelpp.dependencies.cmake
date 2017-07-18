@@ -1405,3 +1405,17 @@ file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.include.c
 # write file which contains compile definitions
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
   CONTENT "set(FEELPP_COMPILE_DEFINITIONS \"$<TARGET_PROPERTY:feelpp,COMPILE_DEFINITIONS>\")" )
+
+set(FEELPP_BOOST_TEXT "")
+foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+  string(TOUPPER ${_c} _BOOST_LIB)
+  set(FEELPP_BOOST_TEXT 
+    "${FEELPP_BOOST_TEXT}
+    set(Boost_${_BOOST_LIB}_FOUND \"${Boost_${_BOOST_LIB}_FOUND}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY \"${Boost_${_BOOST_LIB}_LIBRARY}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY_RELEASE \"${Boost_${_BOOST_LIB}_LIBRARY_RELEASE}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY_DEBUG \"${Boost_${_BOOST_LIB}_LIBRARY_DEBUG}\")
+")
+endforeach()
+
+FILE(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.boost.config.cmake CONTENT ${FEELPP_BOOST_TEXT})

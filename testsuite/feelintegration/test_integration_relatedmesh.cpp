@@ -25,7 +25,7 @@
 
 #define BOOST_TEST_MODULE integration_relatedmesh testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/options.hpp>
 
