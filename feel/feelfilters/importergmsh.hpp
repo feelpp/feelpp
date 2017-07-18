@@ -1612,7 +1612,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     //M_n_b_vertices[ __e.indices[0] ] = 1;
     //M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    auto eit = mesh->addEdge( e );
+    auto res = mesh->addEdge( e );
+    auto const& eit = res.first->second;
     __idGmshToFeel=eit.id();
 
     if ( npoints_per_edge == 2 )
