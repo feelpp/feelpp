@@ -1556,111 +1556,124 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
         }
     }
 
-    // iterator over all element
+
+    // get an ordering by process (need in // for have a deterministic choice of face connection (0 and 1) and therfore to define the permutations )
+    std::map<rank_type,std::vector<element_type*>, std::less<rank_type> > elementsByProcOrdering;
     for ( ; iv != en; ++iv )
     {
-        element_type & elt = iv->second;
-        const size_type eltId = elt.id();
-        const rank_type eltPid = elt.processId();
-
-        for ( uint16_type f = 0; f < element_type::numVertices; ++f )
-            pointIdInElt[f] = elt.point( f ).id();
-
-        for ( uint16_type j = 0; j < _numLocalFaces; j++ )
+        auto & elt = iv->second;
+        rank_type pid = elt.processId();
+        elementsByProcOrdering[ pid ].push_back( &elt );
+    }
+    // iterator over all element
+    for ( auto const& elementsByProcPair : elementsByProcOrdering )
+    {
+        for ( element_type* eltPtr : elementsByProcPair.second )
         {
-            for ( uint16_type f = 0; f < face_type::numVertices; ++f )
-                lids[f] = pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
-            std::sort(lids.begin(), lids.end());
+            element_type & elt = *eltPtr;
 
-            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(std::make_tuple(&elt,j,nullptr) )
-                                                                  );
-            if ( faceinserted )
+            const size_type eltId = elt.id();
+            const rank_type eltPid = elt.processId();
+
+            for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+                pointIdInElt[f] = elt.point( f ).id();
+
+            for ( uint16_type j = 0; j < _numLocalFaces; j++ )
             {
-                //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
-            }
-            else // already stored
-            {
-                //DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << "\n";
-                auto & f2eVal = _faceit->second;
-                element_type * elt0 = std::get<0>(f2eVal);
-                face_type * facePtr = std::get<2>( f2eVal );
-                if ( !elt0 )
+                for ( uint16_type f = 0; f < face_type::numVertices; ++f )
+                    lids[f] = pointIdInElt[ myfToP[j*face_type::numVertices+f] ];
+                std::sort(lids.begin(), lids.end());
+
+                boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
+                                                                      std::forward_as_tuple(lids),
+                                                                      std::forward_as_tuple(std::make_tuple(eltPtr,j,nullptr) )
+                                                                      );
+                if ( faceinserted )
                 {
-                    // found an face already stored by the mesh importer
-                    CHECK( facePtr != nullptr ) << "invalid face";
-                    facePtr->setConnection0( boost::make_tuple( &elt, j ) );
-                    facePtr->setProcessId( eltPid );
-                    facePtr->setOnBoundary( true, face_type::nDim );
-                    std::get<0>( _faceit->second ) = &elt;
-                    std::get<1>( _faceit->second ) = j;
-                    elt.setFace( j, *facePtr );
+                    //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
                 }
-                else
+                else // already stored
                 {
-                    // found an internal faces
-                    elt0->setNeighbor( std::get<1>(f2eVal), eltId );
-                    elt.setNeighbor( j,elt0->id() );
-
-                    if ( facePtr ) // face already built
+                    //DVLOG(2) << "Connection1 face id: " << faceIdRegistered << " to element id: " << eltId << " local face id: " << j << "\n";
+                    auto & f2eVal = _faceit->second;
+                    element_type * elt0 = std::get<0>(f2eVal);
+                    face_type * facePtr = std::get<2>( f2eVal );
+                    if ( !elt0 )
                     {
-                        facePtr->setConnection1( boost::make_tuple( &elt, j ) );
+                        // found an face already stored by the mesh importer
+                        CHECK( facePtr != nullptr ) << "invalid face";
+                        facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
+                        facePtr->setProcessId( eltPid );
+                        facePtr->setOnBoundary( true, face_type::nDim );
+                        std::get<0>( _faceit->second ) = &elt;
+                        std::get<1>( _faceit->second ) = j;
                         elt.setFace( j, *facePtr );
-                        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
-                            facePtr->addElement( eltId );
                     }
-                    else //maybe a new face to build
+                    else
                     {
-                        // add internal faces in ghost element and connected to interprocess faces
-                        if ( numPartition > 1 )
+                        // found an internal faces
+                        elt0->setNeighbor( std::get<1>(f2eVal), eltId );
+                        elt.setNeighbor( j,elt0->id() );
+
+                        if ( facePtr ) // face already built
                         {
-                            bool isFaceOnGhostElt = ( elt0->processId() != currentPid ) || ( eltPid != currentPid );
-                            bool isFaceConnectedToInterProcess = isFaceOnGhostElt;
-                            if ( !isFaceConnectedToInterProcess )
+                            facePtr->setConnection1( boost::make_tuple( eltPtr, j ) );
+                            elt.setFace( j, *facePtr );
+                            if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                                facePtr->addElement( eltId );
+                        }
+                        else //maybe a new face to build
+                        {
+                            // add internal faces in ghost element and connected to interprocess faces
+                            if ( numPartition > 1 )
                             {
-                                for ( uint16_type vLocId = 0 ; vLocId < face_type::numVertices; ++vLocId )
+                                bool isFaceOnGhostElt = ( elt0->processId() != currentPid ) || ( eltPid != currentPid );
+                                bool isFaceConnectedToInterProcess = isFaceOnGhostElt;
+                                if ( !isFaceConnectedToInterProcess )
                                 {
-                                    if ( ptsTouchInterProcess.find( lids[vLocId] ) != ptsTouchInterProcess.end() )
+                                    for ( uint16_type vLocId = 0 ; vLocId < face_type::numVertices; ++vLocId )
                                     {
-                                        isFaceConnectedToInterProcess = true;
-                                        break;
+                                        if ( ptsTouchInterProcess.find( lids[vLocId] ) != ptsTouchInterProcess.end() )
+                                        {
+                                            isFaceConnectedToInterProcess = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                            if ( isFaceConnectedToInterProcess )
-                            {
-                                face_type newFace;
-                                newFace.setId( next_face++ );
-                                newFace.setProcessIdInPartition( currentPid );
-                                // force processId equal to M_comm.rank() if face on interprocessfaces
-                                if ( ( elt0->processId() == currentPid ) || ( elt.processId() == currentPid ) )
-                                    newFace.setProcessId( currentPid );
-                                newFace.setOnBoundary( false );
-                                uint16_type posElt0 = std::get<1>(f2eVal);
-                                newFace.setConnection0( boost::make_tuple( elt0, posElt0 ) );
-                                newFace.setConnection1( boost::make_tuple( &elt, j ) );
-                                for ( size_type k = 0; k < face_type::numPoints; ++k )
-                                    newFace.setPoint( k, elt0->point( /*ele.*/element_type::fToP( posElt0, k ) ) );
-
-                                if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                                if ( isFaceConnectedToInterProcess )
                                 {
-                                    newFace.addElement( elt0->id() );
-                                    newFace.addElement( eltId );
-                                }
+                                    face_type newFace;
+                                    newFace.setId( next_face++ );
+                                    newFace.setProcessIdInPartition( currentPid );
+                                    // force processId equal to M_comm.rank() if face on interprocessfaces
+                                    if ( ( elt0->processId() == currentPid ) || ( elt.processId() == currentPid ) )
+                                        newFace.setProcessId( currentPid );
+                                    newFace.setOnBoundary( false );
+                                    uint16_type posElt0 = std::get<1>(f2eVal);
+                                    newFace.setConnection0( boost::make_tuple( elt0, posElt0 ) );
+                                    newFace.setConnection1( boost::make_tuple( eltPtr, j ) );
+                                    for ( size_type k = 0; k < face_type::numPoints; ++k )
+                                        newFace.setPoint( k, elt0->point( /*ele.*/element_type::fToP( posElt0, k ) ) );
 
-                                auto res = this->addFace( newFace );
-                                auto & faceInserted = res.first->second;
-                                elt0->setFace( posElt0, faceInserted );
-                                elt.setFace( j, faceInserted );
-                                std::get<2>( _faceit->second ) = &faceInserted;
-                            }
-                        } // numPartition > 1
+                                    if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
+                                    {
+                                        newFace.addElement( elt0->id() );
+                                        newFace.addElement( eltId );
+                                    }
+
+                                    auto res = this->addFace( newFace );
+                                    auto & faceInserted = res.first->second;
+                                    elt0->setFace( posElt0, faceInserted );
+                                    elt.setFace( j, faceInserted );
+                                    std::get<2>( _faceit->second ) = &faceInserted;
+                                }
+                            } // numPartition > 1
+                        }
                     }
                 }
-            }
-        } // local face
-    } // element loop
+            } // local face
+        } // element loop
+    }
 
     // add boundary faces if not present
     boost::tie( iv, en ) = this->elementsRange();
