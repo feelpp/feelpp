@@ -553,7 +553,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     boost::timer ti;
     boost::unordered_map<std::set<size_type>, size_type> _edges;
     typename boost::unordered_map<std::set<size_type>, size_type>::iterator _edgeit;
-    int next_edge = 0;
+    size_type next_edge = 0;
     //M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
     bool edgeinserted = false;
 
@@ -578,14 +578,15 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             i2 = edgeModified.point( 1 ).id();
             std::set<size_type> s( {i1, i2} );
 
-            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, next_edge ) );
+            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( s, edgeModified.id()/*next_edge*/ ) );
 
             if ( edgeinserted )
             {
                 size_type newEdgeId = _edgeit->second;
-                edgeModified.setId( newEdgeId );
+                //edgeModified.setId( newEdgeId );
 
-                ++next_edge;
+                next_edge = std::max( next_edge, edgeModified.id()+1 );
+                //++next_edge;
                 ++eit;
             }
             else
