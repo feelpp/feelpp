@@ -57,26 +57,33 @@ public :
     typedef MDEIM<self_type> mdeim_type;
     typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
 
-    typedef typename Pch_type<mesh_type,1>::element_type element_type;
+    typedef Pch_type<mesh_type,2> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
 
-    MDeimTest() :
+    MDeimTest( std::string name="") :
         Dmu( parameterspace_type::New(2) )
     {
         mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         auto Xh = Pch<2>( mesh );
-        auto Yh = Pch<3>( mesh );
-        auto u = Xh->element();
-        auto v = Yh->element();
-        M = backend()->newMatrix( _test=Xh, _trial=Yh );
-        M1 = backend()->newMatrix( _test=Xh, _trial=Yh );
-        M2 = backend()->newMatrix( _test=Xh, _trial=Yh );
-        M3 = backend()->newMatrix( _test=Xh, _trial=Yh );
-        M4 = backend()->newMatrix( _test=Xh, _trial=Yh );
+        setFunctionSpaces(Xh);
+    }
 
-        auto f1 = form2( _test=Xh, _trial=Yh, _matrix=M1 );
-        auto f2 = form2( _test=Xh, _trial=Yh, _matrix=M2 );
-        auto f3 = form2( _test=Xh, _trial=Yh, _matrix=M3 );
-        auto f4 = form2( _test=Xh, _trial=Yh, _matrix=M4 );
+    void setFunctionSpaces( space_ptrtype Xh )
+    {
+        mesh = Xh->mesh();
+        auto u = Xh->element();
+        auto v = Xh->element();
+        M = backend()->newMatrix( _test=Xh, _trial=Xh );
+        M1 = backend()->newMatrix( _test=Xh, _trial=Xh );
+        M2 = backend()->newMatrix( _test=Xh, _trial=Xh );
+        M3 = backend()->newMatrix( _test=Xh, _trial=Xh );
+        M4 = backend()->newMatrix( _test=Xh, _trial=Xh );
+
+        auto f1 = form2( _test=Xh, _trial=Xh, _matrix=M1 );
+        auto f2 = form2( _test=Xh, _trial=Xh, _matrix=M2 );
+        auto f3 = form2( _test=Xh, _trial=Xh, _matrix=M3 );
+        auto f4 = form2( _test=Xh, _trial=Xh, _matrix=M4 );
 
         f1 = integrate( markedelements(mesh,"Omega1"), id(u)*idt(v) );
         f2 = integrate( markedelements(mesh,"Omega2"), grad(u)*trans(gradt(v)) );
@@ -148,10 +155,9 @@ public :
         sparse_matrix_ptrtype M;
         return M;
     }
-    boost::shared_ptr<Pch_type<mesh_type,1>> functionSpace()
+    space_ptrtype functionSpace()
     {
-        auto Xh = Pch<1>( mesh );
-        return Xh;
+        return space_type::New( _mesh=mesh );
     }
     element_type solve( parameter_type const& mu )
     {
