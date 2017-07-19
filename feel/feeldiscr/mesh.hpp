@@ -404,6 +404,33 @@ public:
             M_numGlobalElements = I[3];
 
         }
+
+
+    struct UpdateNumGlobalEntitiesForAllReduce : public std::binary_function< boost::tuple<std::vector<size_type>,std::vector<size_type> >,
+                                                                              boost::tuple<std::vector<size_type>,std::vector<size_type> >,
+                                                                              boost::tuple<std::vector<size_type>,std::vector<size_type> > >
+    {
+        typedef boost::tuple<std::vector<size_type>,std::vector<size_type> > cont_type;
+        cont_type operator()( cont_type const& x, cont_type const& y ) const
+            {
+                auto const& numEltVector_x = boost::get<0>( x );
+                auto const& numEltVector_y = boost::get<0>( y );
+                auto const& maxVector_x = boost::get<1>( x );
+                auto const& maxVector_y = boost::get<1>( y );
+                CHECK( numEltVector_x.size() == numEltVector_y.size() ) << "invalid size";
+                CHECK( maxVector_x.size() == maxVector_y.size() ) << "invalid size";
+
+                std::vector<size_type> numEltVector_res;
+                for ( int k=0 ; k<numEltVector_x.size() ; ++k )
+                    numEltVector_res.push_back( numEltVector_x[k] + numEltVector_y[k] );
+                std::vector<size_type> maxVector_res;
+                for ( int k=0 ; k<maxVector_x.size() ; ++k )
+                    maxVector_res.push_back( std::max( maxVector_x[k], maxVector_y[k] ) );
+
+                return boost::make_tuple( numEltVector_res, maxVector_res );
+            }
+    };
+
     /**
      * @brief compute the global number of elements,faces,points and vertices
      * @details it requires communications in parallel to
@@ -429,6 +456,7 @@ public:
         size_type nfall = this->numFaces();
         size_type nedall = this->numEdges();
         size_type npall = this->numPoints();
+        size_type nvall = this->numVertices();
 
         size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( auto const& theface ) { return theface.second.hasMarker(); } );
         size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( auto const& theedge ) { return theedge.second.hasMarker(); } );
@@ -460,22 +488,76 @@ public:
                 M_statVertices[p] = boost::get<4>( dataOnProc );
             }
 
-#if BOOST_VERSION >= 105500
-            std::vector<int> maxs { (int)this->numElements(),
-                    (int)this->numFaces(),
-                    (int)this->numEdges(),
-                    (int)this->numPoints(),
-                    (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
-#else
-            std::vector<int> maxs( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
-#endif
-            M_maxNumElements = maxs[0];
-            M_maxNumFaces = maxs[1];
-            M_maxNumEdges = maxs[2];
-            M_maxNumPoints = maxs[3];
-            M_maxNumVertices = maxs[4];
+
+            size_type numFaceGlobalCounter = nf, numEdgeGlobalCounter = ned, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
+
+            for ( auto it=std::get<0>( rangeFaces ), en=std::get<1>( rangeFaces ); it !=en ; ++it )
+            {
+                auto const& face = unwrap_ref( *it );
+                if ( !face.isInterProcessDomain() )
+                    continue;
+                if ( face.partition1() < face.partition2() )
+                    continue;
+                --numFaceGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangeEdges ), en=std::get<1>( rangeEdges ); it !=en;++it )
+            {
+                auto const& edge = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : edge.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numEdgeGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangePoints ), en=std::get<1>( rangePoints ); it !=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : point.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numPointGlobalCounter;
+            }
+
+            std::vector<size_type> numEntitiesGlobalCounter = { numFaceGlobalCounter, numEdgeGlobalCounter, numPointGlobalCounter };
+            if ( nOrder > 1 )
+                numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
+            std::vector<size_type> maxNumEntities = { neall,nfall,nedall,npall };
+            if ( nOrder > 1 )
+                maxNumEntities.push_back( nvall );
+
+            auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
+            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
+            auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
+
+            auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+                { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+            M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+            M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
+            M_numGlobalEdges = numEntitiesGlobalCounterGlobal[1];
+            M_numGlobalPoints = numEntitiesGlobalCounterGlobal[2];
+            M_numGlobalVertices = ( nOrder > 1 )? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
+
+            M_maxNumElements = maxNumEntitiesGlobal[0];
+            M_maxNumFaces = maxNumEntitiesGlobal[1];
+            M_maxNumEdges = maxNumEntitiesGlobal[2];
+            M_maxNumPoints = maxNumEntitiesGlobal[3];
+            M_maxNumVertices = ( nOrder > 1 )? maxNumEntitiesGlobal[4] : M_maxNumPoints;
         }
         else
         {
@@ -490,17 +572,14 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = nv;
+
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = nv;
         }
 
-        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
-        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
-        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
-        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
     template<typename MT>
@@ -522,6 +601,7 @@ public:
         size_type nfall = this->numFaces();
         size_type nedall = 0;
         size_type npall = this->numPoints();
+        size_type nvall = this->numVertices();
 
         size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( auto const& theface ) { return theface.second.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
@@ -554,23 +634,59 @@ public:
                 M_statVertices[p] = boost::get<3>( dataOnProc );
             }
 
-#if BOOST_VERSION >= 105500
-            std::vector<int> maxs { (int)this->numElements(),
-                    (int)this->numFaces(),
-                    (int)this->numEdges(),
-                    (int)this->numPoints(),
-                    (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
-#else
-            std::vector<int> maxs( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
-#endif
+            size_type numFaceGlobalCounter = nf, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
-            M_maxNumElements = maxs[0];
-            M_maxNumFaces = maxs[1];
-            M_maxNumEdges = maxs[2];
-            M_maxNumPoints = maxs[3];
-            M_maxNumVertices = maxs[4];
+            for ( auto it=std::get<0>( rangeFaces ), en=std::get<1>( rangeFaces ); it !=en ; ++it )
+            {
+                auto const& face = unwrap_ref( *it );
+                if ( !face.isInterProcessDomain() )
+                    continue;
+                if ( face.partition1() < face.partition2() )
+                    continue;
+                --numFaceGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangePoints ), en=std::get<1>( rangePoints ); it !=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : point.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numPointGlobalCounter;
+            }
+
+            std::vector<size_type> numEntitiesGlobalCounter = { numFaceGlobalCounter, numPointGlobalCounter };
+            if ( nOrder > 1 )
+                numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
+            std::vector<size_type> maxNumEntities = { neall,nfall,npall };
+            if ( nOrder > 1 )
+                maxNumEntities.push_back( nvall );
+
+            auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
+            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
+            auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
+
+            auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+                { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+            M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+            M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
+            M_numGlobalEdges = 0;
+            M_numGlobalPoints = numEntitiesGlobalCounterGlobal[1];
+            M_numGlobalVertices = ( nOrder > 1 )? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
+
+            M_maxNumElements = maxNumEntitiesGlobal[0];
+            M_maxNumFaces = maxNumEntitiesGlobal[1];
+            M_maxNumEdges = 0;
+            M_maxNumPoints = maxNumEntitiesGlobal[2];
+            M_maxNumVertices = ( nOrder > 1 )? maxNumEntitiesGlobal[3] : M_maxNumPoints;
         }
         else
         {
@@ -585,16 +701,13 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = nv;
+
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = nv;
         }
-        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
-        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
-        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
-        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
 
