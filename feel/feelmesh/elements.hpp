@@ -534,7 +534,7 @@ public:
      * \return the first iterator over the elements
      * on processor \p p if exist else return endElement iterator
      */
-    element_iterator
+    element_const_iterator
     firstElementIteratorWithProcessId( rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;

@@ -275,7 +275,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
     if ( it != en )
     {
         auto gm = imesh.gm();
-        auto const& initElt = *it;
+        auto const& initElt = it->second;
         typename mesh_type::reference_convex_type refConvex;
         auto geopc = gm->preCompute( refConvex.points() );
         const size_type context = ExprType::context|vm::POINT;
@@ -283,7 +283,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
         auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = it->second;
             if ( elt.processId() != pid )
                 continue;
             ctx->update( elt );
