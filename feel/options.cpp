@@ -456,7 +456,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ;
 
-        return deimoptions;
+    return deimoptions.add(backend_options("deim-online"));
 }
 
 Feel::po::options_description
