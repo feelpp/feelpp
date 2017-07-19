@@ -47,8 +47,8 @@
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-
-
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel
 {
@@ -107,6 +107,8 @@ public :
     static const bool is_matrix = std::is_same<tensor_type,sparse_matrix_type>::value;
     typedef typename mpl::if_< mpl::bool_<is_matrix>,
                                std::pair<int,int>, int >::type indice_type;
+    typedef typename mpl::if_< mpl::bool_<is_matrix>,
+                               std::pair<std::set<int>,std::set<int>>, std::set<int> >::type ptsset_type;
 
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
@@ -114,6 +116,7 @@ public :
     typedef typename model_type::space_type space_type;
     typedef typename model_type::space_ptrtype space_ptrtype;
     typedef typename model_type::element_type element_type;
+    typedef typename model_type::mesh_type mesh_type;
     typedef typename model_type::mesh_ptrtype mesh_ptrtype;
 
     //! Default Constructor
@@ -177,10 +180,7 @@ public :
             cout << "DEIM sampling created with " << sampling_size << " points.\n";
         }
 
-        M_online_model = model_ptrtype( new model_type("deim-online") );
-        space_ptrtype Rh = space_type::New( mesh );
-        M_online_model->setFunctionSpaces( Rh );
-
+        M_online_model = model_ptrtype( new model_type("deim-online", true) );
     }
 
     //! Destructor
@@ -297,6 +297,7 @@ protected :
     void addNewVector( parameter_type const& mu )
     {
         LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
+        M_mus.push_back(mu);
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -318,13 +319,17 @@ protected :
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
+        updateSubMesh();
         //this->saveDB();
         LOG(INFO) << "DEIM : addNewVector() end";
     }
 
     //! \return the value of the component \p index of the vector \p V
-    double evaluate( vector_ptrtype V, int const& index )
+    double evaluate( vector_ptrtype V, int const& index, bool seq=false )
     {
+        if ( seq )
+            return V->operator()( index );
+
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
 
@@ -336,10 +341,13 @@ protected :
     }
 
     //! \return the value of the entry \p idx of the matrix \p M
-    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const&  idx )
+    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const& idx, bool seq=false )
     {
         int i = idx.first;
         int j =idx.second;
+
+        if ( seq )
+            return M->operator() ( i,j );
 
         double value=0;
         int proc_number = M->mapRow().procOnGlobalCluster(i);
@@ -427,14 +435,14 @@ protected :
 
 
     //! Compute the beta coefficients for a assembled tensor \p T
-    vectorN_type computeCoefficient( tensor_ptrtype T )
+    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true )
     {
         vectorN_type rhs (M_M);
         vectorN_type coeff (M_M);
         if ( M_M>0 )
         {
             for ( int i=0; i<M_M; i++ )
-                rhs(i) = evaluate( T, M_index[i] );
+                rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
             coeff = M_B.lu().solve( rhs );
         }
         return coeff;
@@ -487,8 +495,7 @@ protected :
         T = this->assemble( mu );
 
         double norm = T->linftyNorm();
-
-        vectorN_type coeff = computeCoefficient( T );
+        vectorN_type coeff = computeCoefficient(T, false);
 
         auto newT = copyTensor( T );
 
@@ -539,6 +546,11 @@ protected :
         return mu_str.str();
     }
 
+
+    virtual void updateSubMesh()
+    {}
+
+
     friend class boost::serialization::access;
 
     // When the class Archive corresponds to an output archive, the
@@ -561,7 +573,10 @@ protected :
     double M_tol;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
-    std::vector<indice_type> M_index;
+    std::vector<indice_type> M_index, M_indexR, M_ldofs;
+    std::vector<ptsset_type> M_ptsset;
+    std::vector<parameter_type> M_mus;
+    std::set<int> M_elts_ids;
 
     std::string M_prefix;
     bool M_rebuild, M_nl_assembly;
@@ -674,6 +689,8 @@ public :
     typedef typename super_type::model_ptrtype model_ptrtype;
     typedef typename super_type::tensor_ptrtype vector_ptrtype;
     typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
 
     DEIM() :
         super_type()
@@ -705,20 +722,95 @@ public :
             return this->M_model->assembleForDEIM(mu,u);
         }
         if (online)
-            //return this->M_online_model->assembleForDEIM(mu);
-            return this->M_model->assembleForDEIM(mu);
-        return this->M_model->assembleForDEIM(mu);
+            return this->M_online_model->assembleForDEIM(mu);
+          return this->M_model->assembleForDEIM(mu);
     }
     vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
         CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
         if ( online )
-            //return this->M_online_model->assembleForDEIM(mu,u);
-            return this->M_model->assembleForDEIM(mu,u);
+            return this->M_online_model->assembleForDEIM(mu,u);
         return this->M_model->assembleForDEIM(mu,u);
     }
 
 private :
+    void updateSubMesh()
+    {
+        // Last added index
+        int index = this->M_index.back();
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
+        int proc_n = Xh->dof()->procOnGlobalCluster(index);
+
+        // recover the elements which share this index
+        std::set<int> pts_ids;
+        int ldof=-1;
+
+        if ( Environment::worldComm().globalRank()==proc_n )
+        {
+            for ( auto const& dof : Xh->dof()->globalDof(index-Xh->dof()->firstDofGlobalCluster()) )
+            {
+                this->M_elts_ids.insert( dof.second.elementId() );
+                if (ldof==-1)
+                {
+                    ldof = dof.second.localDof();
+                    auto elt = mesh->element( dof.second.elementId() );
+                    for ( int p=0; p<elt.nPoints(); p++ )
+                        pts_ids.insert( elt.point(p).id()+1 );
+                }
+            }
+        }
+        else
+        {
+            auto e = Xh->dof()->searchGlobalProcessDof( index );
+            if ( e.template get<0>() )
+            {
+                auto process_dof = e.template get<1>();
+                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                    this->M_elts_ids.insert( dof.second.elementId() );
+            }
+        }
+
+        // store the information in all proc !
+        boost::mpi::broadcast( Environment::worldComm(), pts_ids, proc_n );
+        boost::mpi::broadcast( Environment::worldComm(), ldof, proc_n );
+        this->M_ldofs.push_back( ldof );
+        this->M_ptsset.push_back( pts_ids );
+
+        // create new submesh with the new elements and reread it in sequential
+        auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+        saveGMSHMesh( _mesh=submesh, _filename="deim-submesh.msh" );
+        auto seqmesh = loadMesh( _mesh=new mesh_type,
+                                 _filename="deim-submesh.msh", _worldcomm= Environment::worldCommSeq() );
+        auto Rh = space_type::New( seqmesh,
+                                   _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+
+        // create map between points id and elements id
+        std::map<std::set<int>,int> elts_map;
+        for ( auto const& eltWrap : elements(seqmesh) )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            std::set<int> pts_id;
+            for ( int p=0; p<elt.nPoints(); p++ )
+                pts_id.insert( elt.point(p).id() );
+            elts_map[pts_id] = elt.id();
+        }
+
+        // on each proc : store the new indexR corresponding to the reduced space
+        this->M_indexR.clear();
+        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        {
+            auto map_it = elts_map.find( this->M_ptsset[i] );
+            CHECK( map_it!=elts_map.end() ) <<"DEIM : elt id not found in map, on proc : "
+                                            <<Environment::worldComm().globalRank() << std::endl;
+            int elt_idR = map_it->second;
+            this->M_indexR.push_back( Rh->dof()->localToGlobalId( elt_idR, this->M_ldofs[i] ) );
+        }
+
+        this->M_online_model->setFunctionSpaces( Rh );
+    }
+
+
 };
 
 
@@ -739,6 +831,8 @@ public :
     typedef typename super_type::model_ptrtype model_ptrtype;
     typedef typename super_type::tensor_ptrtype vector_ptrtype;
     typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
 
 
     MDEIM() :
@@ -771,21 +865,153 @@ public :
             return this->M_model->assembleForMDEIM(mu,u);
         }
         if (online)
-            //return this->M_online_model->assembleForMDEIM(mu);
-            return this->M_model->assembleForMDEIM(mu);
-        return this->M_model->assembleForMDEIM(mu);
+            return this->M_online_model->assembleForMDEIM(mu);
+         return this->M_model->assembleForMDEIM(mu);
     }
     vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
         CHECK(this->M_nl_assembly) << "You called nl coefficient for MDEIM but you implemented assembleForMDEIM(mu)\n";
         if ( online )
-            //return this->M_online_model->assembleForMDEIM(mu,u);
-            return this->M_model->assembleForMDEIM(mu,u);
+            return this->M_online_model->assembleForMDEIM(mu,u);
         return this->M_model->assembleForMDEIM(mu,u);
     }
 
 
 private :
+    void updateSubMesh()
+    {
+        auto index = this->M_index.back();
+        int i1 = index.first;
+        int i2 = index.second;
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
+        bool is_same = (i1==i2);
+
+        int proc_n1 = Xh->dof()->procOnGlobalCluster(i1);
+        int proc_n2 = Xh->dof()->procOnGlobalCluster(i2);
+
+        std::set<int> pts_ids1, pts_ids2;
+        int ldof1=-1;
+        int ldof2=-1;
+
+
+        if ( Environment::worldComm().globalRank()==proc_n1 )
+        {
+            for ( auto const& dof : Xh->dof()->globalDof(i1-Xh->dof()->firstDofGlobalCluster()) )
+            {
+                this->M_elts_ids.insert( dof.second.elementId() );
+                if ( ldof1==-1 )
+                {
+                    ldof1 = dof.second.localDof();
+                    auto elt = mesh->element(dof.second.elementId() );
+                    for ( int p=0; p<elt.nPoints(); p++ )
+                        pts_ids1.insert( elt.point(p).id()+1 );
+                }
+            }
+        }
+        else
+        {
+            auto e = Xh->dof()->searchGlobalProcessDof( i1 );
+            if ( e.template get<0>() )
+            {
+                auto process_dof = e.template get<1>();
+                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                    this->M_elts_ids.insert( dof.second.elementId() );
+            }
+        }
+
+        boost::mpi::broadcast( Environment::worldComm(), pts_ids1, proc_n1 );
+        boost::mpi::broadcast( Environment::worldComm(), ldof1, proc_n1 );
+
+        if ( is_same )
+        {
+            pts_ids2 = pts_ids1;
+            ldof2 = ldof1;
+        }
+        else
+        {
+            if ( Environment::worldComm().globalRank()==proc_n2 )
+            {
+                for ( auto const& dof : Xh->dof()->globalDof(i2-Xh->dof()->firstDofGlobalCluster()) )
+                {
+                    this->M_elts_ids.insert( dof.second.elementId() );
+                    if ( ldof2==-1 )
+                    {
+                        ldof2 = dof.second.localDof();
+                        auto elt = mesh->element(dof.second.elementId() );
+                        for ( int p=0; p<elt.nPoints(); p++ )
+                            pts_ids2.insert( elt.point(p).id()+1 );
+                    }
+                }
+            }
+            else
+            {
+                auto e = Xh->dof()->searchGlobalProcessDof( i2 );
+                if ( e.template get<0>() )
+                {
+                    auto process_dof = e.template get<1>();
+                    for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                        this->M_elts_ids.insert( dof.second.elementId() );
+                }
+            }
+            boost::mpi::broadcast( Environment::worldComm(), pts_ids2, proc_n2 );
+            boost::mpi::broadcast( Environment::worldComm(), ldof2, proc_n2 );
+        }
+
+        this->M_ldofs.push_back( std::make_pair(ldof1,ldof2) );
+        this->M_ptsset.push_back( std::make_pair(pts_ids1,pts_ids2) );
+
+        // create new submesh with the new elements and reread it in sequential
+        auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+        saveGMSHMesh( _mesh=submesh, _filename="mdeim-submesh.msh" );
+        auto seqmesh = loadMesh( _mesh=new mesh_type,
+                                 _filename="mdeim-submesh.msh", _worldcomm= Environment::worldCommSeq() );
+        auto Rh = space_type::New( seqmesh,
+                                   _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+
+        // create map between points id and elements id
+        std::map<std::set<int>,int> elts_map;
+        for ( auto const& eltWrap : elements(seqmesh) )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            std::set<int> pts_id;
+            for ( int p=0; p<elt.nPoints(); p++ )
+                pts_id.insert( elt.point(p).id() );
+            elts_map[pts_id] = elt.id();
+        }
+
+
+        // on each proc : store the new indexR corresponding to the reduced space
+        this->M_indexR.clear();
+        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        {
+            auto ptsset1 = this->M_ptsset[i].first;
+            auto ptsset2 = this->M_ptsset[i].second;
+
+            auto map_it = elts_map.find( ptsset1 );
+            CHECK( map_it!=elts_map.end() ) << "MDEIM : elt id not found in map, on proc : "
+                                            << Environment::worldComm().globalRank() << std::endl;
+
+            int elt_idR1 = map_it->second;
+            int elt_idR2 = elt_idR1;
+            if ( ptsset1!=ptsset2 )
+            {
+                map_it = elts_map.find( ptsset2 );
+                CHECK( map_it!=elts_map.end() ) << "MDEIM : elt id not found in map, on proc : "
+                                                << Environment::worldComm().globalRank() << std::endl;
+                elt_idR2 = map_it->second;
+            }
+
+            auto indexR1 = Rh->dof()->localToGlobalId( elt_idR1, this->M_ldofs[i].first );
+            auto indexR2 = Rh->dof()->localToGlobalId( elt_idR2, this->M_ldofs[i].second );
+
+            this->M_indexR.push_back( std::make_pair(indexR1, indexR2) );
+        }
+
+        this->M_online_model->setFunctionSpaces( Rh );
+
+    }
+
 
 };
 

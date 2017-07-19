@@ -271,18 +271,22 @@ public :
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name, bool online=false,  WorldComm const& worldComm = Environment::worldComm() )
         :
-        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
+        ModelCrbBase( name, Environment::randomUUID( true ), online, worldComm )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, bool online=false, WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_uuid( uid ),
         M_name( algorithm::to_lower_copy(name) ),
         M_is_initialized( false )
-    {}
+    {
+        std::string kind= online ? "eigen_dense":"petsc";
+        auto worldcomm = online ? Environment::worldCommSeq():Environment::worldComm();
+        M_backend = backend( _name=name, _kind=kind, _wordlcomm=wordlcomm );
+    }
 
     virtual ~ModelCrbBase() {}
 
@@ -1831,7 +1835,7 @@ public:
     rbfunctionspace_ptrtype XN;
 
 protected :
-
+    backend_ptrtype M_backend;
 
     uuids::uuid M_uuid;
 

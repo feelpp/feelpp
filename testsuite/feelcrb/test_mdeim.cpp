@@ -61,34 +61,23 @@ public :
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    MDeimTest( std::string name="") :
+    MDeimTest( std::string name="", bool online=false ) :
         Dmu( parameterspace_type::New(2) )
     {
-        mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
-        auto Xh = Pch<2>( mesh );
+        auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
+        Xh = Pch<2>( mesh );
+
+        std::string kind= online ? "eigen_dense":"petsc";
+        auto worldcomm = online ? Environment::worldCommSeq():Environment::worldComm();
+        M_backend = backend( _name=name, _kind=kind, _worldcomm=worldcomm );
+
         setFunctionSpaces(Xh);
     }
 
-    void setFunctionSpaces( space_ptrtype Xh )
+    void setFunctionSpaces( space_ptrtype Rh )
     {
-        mesh = Xh->mesh();
-        auto u = Xh->element();
-        auto v = Xh->element();
-        M = backend()->newMatrix( _test=Xh, _trial=Xh );
-        M1 = backend()->newMatrix( _test=Xh, _trial=Xh );
-        M2 = backend()->newMatrix( _test=Xh, _trial=Xh );
-        M3 = backend()->newMatrix( _test=Xh, _trial=Xh );
-        M4 = backend()->newMatrix( _test=Xh, _trial=Xh );
-
-        auto f1 = form2( _test=Xh, _trial=Xh, _matrix=M1 );
-        auto f2 = form2( _test=Xh, _trial=Xh, _matrix=M2 );
-        auto f3 = form2( _test=Xh, _trial=Xh, _matrix=M3 );
-        auto f4 = form2( _test=Xh, _trial=Xh, _matrix=M4 );
-
-        f1 = integrate( markedelements(mesh,"Omega1"), id(u)*idt(v) );
-        f2 = integrate( markedelements(mesh,"Omega2"), grad(u)*trans(gradt(v)) );
-        f3 = integrate( markedfaces(mesh,"Gamma2"), grad(u)*N()*idt(v) );
-        f4 = integrate( markedfaces(mesh,"Gamma1"), id(u)*idt(v) );
+        Xh = Rh;
+         M = M_backend->newMatrix(Xh,Xh);
     }
 
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
@@ -119,16 +108,14 @@ public :
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
         BOOST_CHECK( m==4 );
 
-        Ne[0] = 100;
-        Ne[1] = 100;
-        Pset->equidistributeProduct( Ne , true , "mdeim_test_sampling" );
+        Pset->randomize( 100 , true , "mdeim_test_sampling" );
 
         auto base = M_deim->q();
         for ( auto const& mu : *Pset )
         {
             auto coeff = M_deim->beta(mu);
 
-            assembleForMDEIM(mu);
+            auto M = assembleForMDEIM(mu);
 
             for ( int i=0; i<m; i++ )
                 M->addMatrix( -coeff(i), base[i] );
@@ -141,34 +128,39 @@ public :
 
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type mu)
     {
-        M->zero();
-        M->addMatrix( mu[0], M1 );
-        M->addMatrix( mu[1], M2 );
-        M->addMatrix( mu[1]*mu[0] + mu[0]*mu[0], M3 );
-        M->addMatrix( mu[1]*mu[1] + 37*mu[0], M4 );
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+        auto v = Xh->element();
+
+        auto f = form2( _test=Xh, _trial=Xh, _backend=M_backend, _matrix=M );
+        f = integrate( markedelements(mesh,"Omega1"), mu[0]*id(u)*idt(v) );
+        f += integrate( markedelements(mesh,"Omega2"), mu[1]*grad(u)*trans(gradt(v)) );
+        f += integrate( markedfaces(mesh,"Gamma2"), (mu[1]*mu[0] + mu[0]*mu[0])*grad(u)*N()*idt(v) );
+        f += integrate( markedfaces(mesh,"Gamma1"), (mu[1]*mu[1])*id(u)*idt(v) );
+
         return M;
     }
 
     // These 3 functions are only needed for compilation
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type mu, element_type const& u)
     {
-        sparse_matrix_ptrtype M;
         return M;
     }
     space_ptrtype functionSpace()
     {
-        return space_type::New( _mesh=mesh );
+        return Xh;
     }
     element_type solve( parameter_type const& mu )
     {
-        return functionSpace()->element();
+        return Xh->element();
     }
 
 
 private :
-    mesh_ptrtype mesh;
-    sparse_matrix_ptrtype M, M1, M2, M3, M4;
+    space_ptrtype Xh;
+    backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
+    sparse_matrix_ptrtype M;
 
 };
 
