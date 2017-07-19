@@ -664,8 +664,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
             M_gmodel->readGEO( __geoname );
 
         M_gmodel->mesh( dim );
+#if GMSH_VERSION_LESS_THAN(3,0,0)
         CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
                                                  << " should be == " << dim;
+#else
+#endif
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
         {
@@ -674,8 +677,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
         PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
         LOG(INFO) << "Mesh partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
+#if GMSH_VERSION_LESS_THAN(3,0,0)
         CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
                                                  << " should be == " << dim;
+#else
+#endif
         if ( M_in_memory == false )
         {
             CTX::instance()->mesh.binary = M_format;
