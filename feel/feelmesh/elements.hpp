@@ -774,7 +774,7 @@ public:
         auto it = beginElement(), en = endElement();
         for ( ; it != en; ++it )
         {
-            auto const& elt = boost::unwrap_ref( *it );
+            auto const& elt = it->second;
 
             auto & eltModified = this->elementIterator( elt )->second;
 

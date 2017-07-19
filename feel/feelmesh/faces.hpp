@@ -645,7 +645,7 @@ public:
         size_type id = 0;
         for ( ; it != en; ++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = unwrap_ref( *it );
             id = elt.id();
             size_type fid = evec.mesh()->subMeshToMesh( id );
             auto & faceModified = this->faceIterator( fid )->second;
