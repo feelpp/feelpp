@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_SUITE( testsuite_idelements )
 BOOST_AUTO_TEST_CASE( listelements )
 {
     auto mesh=unitCircle();
-    auto l = randint( 3, mesh->beginElement()->id(), boost::prior(mesh->endElement())->id() );
+    auto l = randint( 3, mesh->beginElement()->second.id(), std::prev(mesh->endElement())->second.id() );
     LOG(INFO) << "l=" << l;
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
     BOOST_CHECK_EQUAL( newmesh->numElements(), l.size()*Environment::numberOfProcessors() );
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( space_fromlistelements )
 {
     auto mesh=unitCircle();
     
-    auto l = randint( 3, mesh->beginElement()->id(), boost::prior(mesh->endElement())->id() );
+    auto l = randint( 3, mesh->beginElement()->second.id(), std::prev(mesh->endElement())->second.id() );
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
     auto Xh=Pdh<0>(newmesh);
     auto v = Xh->element(cst(1.));

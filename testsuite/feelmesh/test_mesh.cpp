@@ -187,12 +187,13 @@ struct test_mesh_filters
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for ( ; it != en; ++it )
             {
+                auto const& elt = it->second;
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
 
-                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
+                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 );
             }
         }
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );
