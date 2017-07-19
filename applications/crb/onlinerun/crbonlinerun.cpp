@@ -94,7 +94,8 @@ void runCrbOnlineQuery()
 
     for (auto&& doc : cursor) {
         //std::cout << bsoncxx::to_json(doc) << std::endl;
-        //std::cout << "uuid: " << doc["uuid"].get_utf8().value.to_string() << std::endl;
+        LOG(INFO) << "crbmodel.name: " << doc["crbmodel"]["name"].get_utf8().value.to_string() << std::endl;
+        LOG(INFO) << "uuid: " << doc["uuid"].get_utf8().value.to_string() << std::endl;
         runCrbOnline( loadPlugin( doc["crbmodel"]["name"].get_utf8().value.to_string(),doc["uuid"].get_utf8().value.to_string() ) );
     }
 #else
