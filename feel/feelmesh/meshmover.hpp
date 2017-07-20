@@ -216,7 +216,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     for ( ; it_elt != en_elt; ++it_elt )
     {
         element_type const& curElt = *it_elt;
-        auto & eltModified = imesh->elementIterator( curElt )->second;
+        auto & eltModified = *imesh->elementIterator( curElt );
         __c->update( *it_elt );
         __ctx->update( __c );
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );

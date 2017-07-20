@@ -1049,6 +1049,7 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
 
     M_HDF5IO.closeTable ("elements");
 
+    M_meshPartIn->reserveNumberOfElement( M_numLocalElements[partId] );
 
     size_type nActiveElement = M_numLocalElements[partId]-M_numLocalGhostElements[partId];
     mapGhostHdf5IdToFeelId[partId].resize( M_numLocalGhostElements[partId] );
@@ -1070,11 +1071,11 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
             DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
             e.setPoint( k, M_meshPartIn->point( ptId ) );
         }
-        auto const& eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
+        auto eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
 
         if ( j >= nActiveElement )
         {
-            mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.id();
+            mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.first->id();
         }
 
     }
@@ -1135,7 +1136,7 @@ void PartitionIO<MeshType>::readGhostElements( std::map<rank_type,std::vector<si
         //size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
 
         auto it = M_meshPartIn->elementIterator( id );
-        auto & eltModified = it->second;
+        auto & eltModified = *it;
         eltModified.setProcessId( pid );
         eltModified.addNeighborPartitionId( partId );
         //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
@@ -1316,7 +1317,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
-        auto & eltModified = M_meshPartIn->elementIterator( elt.id() )->second;
+        auto & eltModified = *M_meshPartIn->elementIterator( elt.id() );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
             auto const& thepoint = elt.point( vLocId );
@@ -1451,7 +1452,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
 
-            auto & eltModified = M_meshPartIn->elementIterator( itFindElt->second )->second;
+            auto & eltModified = *M_meshPartIn->elementIterator( itFindElt->second );
             eltModified.addNeighborPartitionId( pid );
 
             dataToReSend[pid][k] = itFindElt->second;
@@ -1489,7 +1490,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto & eltModified = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] )->second;
+            auto & eltModified = *M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] );
             eltModified.setIdInOtherPartitions( pid, itFinalDataToRecv->second[k] );
         }
     }
