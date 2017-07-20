@@ -113,7 +113,7 @@ void
 Partitioner<MeshType>::singlePartition ( mesh_ptrtype mesh )
 {
     for( auto const& elt : elements(mesh) )
-        mesh->elementIterator( boost::unwrap_ref( elt ).id() )->second.setProcessId( 0 );
+        mesh->elementIterator( boost::unwrap_ref( elt ).id() )->setProcessId( 0 );
     for( auto const& elt : faces(mesh) )
         mesh->faceIterator( boost::unwrap_ref( elt ).id() )->second.setProcessId( 0 );
     for ( auto itp = mesh->beginPoint(), enp = mesh->endPoint(); itp != enp; ++itp )
