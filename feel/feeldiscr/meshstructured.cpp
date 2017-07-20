@@ -241,7 +241,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
                 e.addNeighborPartitionId( neighborProcessId );
 
             auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.first->id()));
             }
             inPoly=false;
         }
@@ -310,7 +310,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize, holo3_image<fl
 
             auto const& eltInserted = this->addElement( e, true ); // e.id() is defined by Feel++
 
-            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.id()));
+            idStructuredMeshToFeelMesh.insert( std::make_pair(eid,eltInserted.first->id()));
             mapGhostElt.insert( std::make_pair( eid,boost::make_tuple( idStructuredMeshToFeelMesh[eid], partIdGhost ) ) );
             }
             inPoly=false;
@@ -1047,7 +1047,7 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
         for ( int k=0; k<nDataRecv; ++k )
         {
            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto & eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ )->second;
+            auto & eltToUpdate = *this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ );
 #if 0
             std::cout << "k = " << k << std::endl;
             std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;

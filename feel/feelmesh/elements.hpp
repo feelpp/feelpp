@@ -92,7 +92,8 @@ public:
                               mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone/*ElementType*/, T> > >::type>::type>::type::type element_type;
 
 
-    typedef std::unordered_map<size_type,element_type> elements_type;
+    //typedef std::unordered_map<size_type,element_type> elements_type;
+    typedef std::vector<element_type> elements_type;
 
     typedef typename elements_type::iterator element_iterator;
     typedef typename elements_type::const_iterator element_const_iterator;
@@ -166,7 +167,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numPoints; ++i )
+            for ( uint16_type i = 0; i < e.numPoints; ++i )
                 e.point( i ).addElement( e.id() );
         }
     };
@@ -180,7 +181,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numPoints; ++i )
+            for ( uint16_type i = 0; i < e.numPoints; ++i )
             {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
                 // only if point is on interprocess
@@ -199,7 +200,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numEdges; ++i )
+            for ( uint16_type i = 0; i < e.numEdges; ++i )
                 Feel::detail::updateElementGhostConnectEdgeToElement(e,i,mpl::int_<element_type::nDim>());
         }
     };
@@ -234,6 +235,7 @@ public:
         {
             VLOG(1) << "deleting elements...\n";
             M_elements.clear();
+            M_elementIdToContainerId.clear();
         }
     //@}
 
@@ -297,25 +299,33 @@ public:
     }
     bool isBoundaryElement( size_type const & id ) const
     {
-        auto itFindElt = M_elements.find( id );
+        auto itFindElt = this->elementIterator( id );
         if ( itFindElt == M_elements.end() )
             return false;
-        return itFindElt->second.isOnBoundary();
+        return itFindElt->isOnBoundary();
     }
 
     element_const_iterator elementIterator( size_type i ) const
     {
-        return M_elements.find( i );
+        auto findId = M_elementIdToContainerId.find( i );
+        if ( findId != M_elementIdToContainerId.end() )
+             return std::next( M_elements.begin(), findId->second );
+        else
+            return M_elements.end();
     };
     element_iterator elementIterator( size_type i )
     {
-        return M_elements.find( i );
+        auto findId = M_elementIdToContainerId.find( i );
+        if ( findId != M_elementIdToContainerId.end() )
+            return std::next( M_elements.begin(), findId->second );
+        else
+            return M_elements.end();
     };
 
     FEELPP_DEPRECATED
     element_const_iterator elementIterator( size_type i, rank_type p ) const
     {
-        return M_elements.find( i );
+        return elementIterator( i );
     };
 
     element_const_iterator elementIterator( element_type const& elt ) const
@@ -329,9 +339,9 @@ public:
 
     element_type const& element( size_type i ) const
     {
-        auto itFindElt = M_elements.find( i );
+        auto itFindElt = this->elementIterator( i );
         CHECK( itFindElt != M_elements.end() ) << " element " << i << "does not found";
-        return itFindElt->second;
+        return *itFindElt;
     };
 
     FEELPP_DEPRECATED
@@ -345,15 +355,15 @@ public:
      */
     bool hasElement( size_type i ) const
     {
-        return M_elements.find( i ) != M_elements.end();
+        return M_elementIdToContainerId.find( i ) != M_elementIdToContainerId.end();
     }
 
     bool hasElement( size_type i, rank_type p ) const
     {
-        auto itFindElt = M_elements.find( i );
+        auto itFindElt = this->elementIterator( i );
         if ( itFindElt == M_elements.end() )
             return false;
-        if ( itFindElt->second.processId() != p )
+        if ( itFindElt->processId() != p )
             return false;
         return true;
     }
@@ -431,7 +441,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = it->second;
+                auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
                 if ( !elt.hasMarker( markerType ) )
@@ -455,7 +465,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = it->second;
+                auto const& elt = *it;
                 if ( elt.processId() != part )
                     continue;
                 if ( !elt.hasMarker( markerType ) )
@@ -522,7 +532,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = *it;
             if ( elt.processId() != part )
                 continue;
             myelements->push_back(boost::cref(elt));
@@ -542,7 +552,7 @@ public:
             auto en = this->endElement();
             for ( ; it!=en;++it )
             {
-                auto const& elt = it->second;
+                auto const& elt = *it;
                 if ( elt.processId() == part )
                     return it;
             }
@@ -562,7 +572,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = *it;
             if ( elt.processId() != part )
                 continue;
             if ( !elt.isOnBoundary() )
@@ -600,7 +610,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = *it;
             if ( elt.processId() != part )
                 continue;
             if ( !elt.isInternal() )
@@ -623,7 +633,7 @@ public:
         auto en = this->endElement();
         for ( ; it!=en;++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = *it;
             if ( !elt.isGhostCell() )
                 continue;
             myelements->push_back(boost::cref(elt));
@@ -646,71 +656,62 @@ public:
     //@{
 
     //!
+    //! reserve size of container
+    //! @param nElt : the size reserved
+    //!
+    void reserveNumberOfElement( size_type nElt )
+        {
+            M_elementIdToContainerId.reserve( nElt );
+            M_elements.reserve( nElt );
+        }
+
+    //!
     //! add a new element in the mesh
     //! @param f a new point
     //! @return the new point from the list
     //!
-    element_type const& addElement( element_type& f, bool setid = true )
+    std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
     {
         if ( f.hasMarker() )
             M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
-        return M_elements.emplace( std::make_pair( f.id(), f ) ).first->second;
 
-        //M_elements.push_back( f );
-        //return M_elements.back();
+        auto res = M_elementIdToContainerId.emplace( std::make_pair( f.id(),M_elements.size() ) );
+        if ( res.second )
+        {
+            auto it = M_elements.emplace( M_elements.end(), f );
+            return std::make_pair( it, true );
+        }
+        else
+        {
+            auto it = std::next( M_elements.begin(), res.first->second );
+            return std::make_pair( it, false );
+        }
     }
+
     //!
     //! move an element into the mesh
     //! @param f a new point
     //! @return the new point from the list
     //!
-    element_type const& addElement( element_type&& f )
+    std::pair<element_iterator,bool> addElement( element_type&& f )
         {
             if ( f.hasMarker() )
                 M_parts[f.marker().value()]++;
-            //return *M_elements.insert( f );
-            return M_elements.emplace( std::make_pair( f.id(), f ) ).first->second;
-        }
-    //!
-    //! add a new element in the mesh
-    //! @param f a new point
-    //! @param pos provide an hint for the position to insert
-    //! @return the new point from the list
-    //!
-    element_type const& addElement( element_iterator pos, element_type& f, bool setid = true )
-        {
-            if ( f.hasMarker() )
-                M_parts[f.marker().value()]++;
-            if ( setid )
-                f.setId( M_elements.size() );
-            return M_elements.insert( pos, std::make_pair( f.id(), f ) )->second;
-            //M_elements.push_back( f );
-            //return M_elements.back();
 
+            auto res = M_elementIdToContainerId.emplace( std::make_pair( f.id(), M_elements.size() ) );
+            if ( res.second )
+            {
+                auto it = M_elements.emplace( M_elements.end(), f );
+                return std::make_pair( it, true );
+            }
+            else
+            {
+                auto it = std::next( M_elements.begin(), res.first->second );
+                return std::make_pair( it, false );
+            }
         }
-    //!
-    //! move a new element into the mesh
-    //! @param f a new point
-    //! @param pos provide an hint for the position to insert
-    //! @return the new point from the list
-    //!
-    element_type const& addElement( element_iterator pos, element_type&& f )
-        {
-            if ( f.hasMarker() )
-                M_parts[f.marker().value()]++;
-            return M_elements.insert( pos, std::make_pair( f.id(), f ) )->second;
-            //M_elements.push_back( f );
-            //return M_elements.back();
-
-        }
-
-    template<typename... Args>
-    element_iterator emplaceHintElement( element_iterator position, Args&&... args)
-    {
-        return M_elements.emplace_hint( position, args... );
-    }
 
     template<typename ElementVecType>
     void updateMarker( uint16_type markerType, ElementVecType const& evec )
@@ -722,7 +723,7 @@ public:
         for ( ; it != en; ++it )
         {
             size_type eltId = boost::unwrap_ref(*it).id();
-            auto & eltModified = this->elementIterator( eltId )->second;
+            auto & eltModified = *this->elementIterator( eltId );
             eltModified.setMarker( markerType, evec.localToGlobal( eltId, 0, 0 ) );
         }
     }
@@ -743,7 +744,7 @@ public:
     void updateMarkerWithRangeElements( uint16_type markerType, IteratorRange const& range, flag_type flag )
     {
         for ( auto const& elt : range )
-            this->elementIterator( boost::unwrap_ref( elt ) )->second.setMarker( markerType,flag );
+            this->elementIterator( boost::unwrap_ref( elt ) )->setMarker( markerType,flag );
     }
 
     template<typename IteratorRange>
@@ -774,9 +775,9 @@ public:
         auto it = beginElement(), en = endElement();
         for ( ; it != en; ++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = *it;
 
-            auto & eltModified = this->elementIterator( elt )->second;
+            auto & eltModified = *this->elementIterator( elt );
 
             std::map<uint16_type,flag_type> newEltMarkers;
             for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
@@ -820,6 +821,7 @@ private:
 private:
     WorldComm M_worldCommElements;
     elements_type M_elements;
+    std::unordered_map<size_type,size_type> M_elementIdToContainerId;
     parts_map_type M_parts;
 };
 /// \endcond

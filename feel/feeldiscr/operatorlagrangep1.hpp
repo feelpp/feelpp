@@ -563,7 +563,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
         // iterate on each new element (from ref elt)
         for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
         {
-            auto const& eltRef = itl->second;
+            auto const& eltRef = *itl;
             DVLOG(2) << "************************************\n";
             DVLOG(2) << "local elt = " << elid << "\n";
             DVLOG(2) << "local element " << eltRef.id() << " oriented ok ? : " << eltRef.isAnticlockwiseOriented() << "\n";
@@ -669,7 +669,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
             // set id of element and increment the element counter
             elt.setId ( nNewElem++ );
             // add element in mesh
-            auto const& theNewElt = M_mesh->addElement ( elt );
+            auto eltInserted = M_mesh->addElement ( elt );
+            auto const& theNewElt = *eltInserted.first;
 
             // save data if elt is connected to another partition
             if (doParallelBuild && curelt.numberOfNeighborPartitions() > 0)
@@ -799,7 +800,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 //recv
                 size_type idEltRecv;
                 M_mesh->worldComm().localComm().recv( proc, cpt, idEltRecv );
-                auto const& theeltIt = this->domainSpace()->mesh()->elementIterator(idEltRecv)->second;
+                auto const& theeltIt = *this->domainSpace()->mesh()->elementIterator(idEltRecv);
 #if !defined(NDEBUG)
                 CHECK( M_gmc ) << "gmc does not init";
                 M_gmc->update( theeltIt );
@@ -827,7 +828,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                 std::vector< boost::tuple< std::vector<uint16_type>, size_type > > resultToSendBis(std::distance(itl,enl));
                 for ( size_type elidp2m = 0 ; itl != enl; ++itl, ++elidp2m )
                 {
-                    auto const& eltRef = itl->second;
+                    auto const& eltRef = *itl;
                     std::vector<uint16_type> vecLocalIdPtToSend( image_mesh_type::element_type::numVertices );
                     // accumulate the points
                     for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
