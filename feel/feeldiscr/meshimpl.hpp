@@ -229,6 +229,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
                 }
             }
+#if 0
             //auto& mpts = this->pointsByMarker();
             //auto& mpts = this->pointsRange();
             for( auto p_it = this->beginPoint(), p_en=this->endPoint(); p_it != p_en; ++p_it )
@@ -242,6 +243,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                     }
                 }
             }
+#endif
             toc("register elements associated to marked points" , FLAGS_v > 0 );
             VLOG(1) << "[Mesh::updateForUse] update add element info for marked points";
         }
@@ -1166,6 +1168,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                         facePtr->setConnection0( boost::make_tuple( eltPtr, j ) );
                         facePtr->setProcessId( eltPid );
                         facePtr->setOnBoundary( true, face_type::nDim );
+                        if ( updateComponentAddElements )
+                            facePtr->addElement( eltId );
                         std::get<0>( _faceit->second ) = &elt;
                         std::get<1>( _faceit->second ) = j;
                         elt.setFace( j, *facePtr );
