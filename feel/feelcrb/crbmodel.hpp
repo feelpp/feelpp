@@ -248,7 +248,7 @@ public:
                 this->init();
         }
 
-    
+
     FEELPP_DEPRECATED CRBModel( bool doInit = true )
         :
         CRBModel( doInit?crb::stage::offline:crb::stage::online, 0 )
@@ -264,7 +264,7 @@ public:
         :
         CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
         {}
-        
+
     FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , bool doInit = true )
         :
         CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
@@ -275,7 +275,7 @@ public:
         :
         CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
         {}
-    
+
     /**
      * copy constructor
      */
@@ -304,7 +304,7 @@ public:
     //! destructor
     virtual ~CRBModel()
     {}
-    
+
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
     {
@@ -354,8 +354,7 @@ public:
         bool stock = boption(_name="crb.stock-matrices");
 
         // Access to eim eventually built in initModel
-        if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
-            M_has_eim = true;
+        M_has_eim = this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 || M_model->hasDeim();
 
         if( stock )
             this->computeAffineDecomposition();
@@ -464,13 +463,13 @@ public:
     //! get the id of the model
     //!
     uuids::uuid uuid() const { return M_model->uuid(); }
-    
+
     //!
     //! in case of hierarchy of models, return level index.
     //! default value is 0
     //!
     int level() const { return M_level; }
-    
+
     /**
      * create a new matrix
      * \return the newly created matrix
@@ -1124,7 +1123,7 @@ public:
         {
             // first the underlying model
             M_model->loadJson( filename, "crbmodel" );
-            
+
             if ( !fs::exists( filename ) )
             {
                 LOG(INFO) << "Could not find " << filename << std::endl;
@@ -2805,7 +2804,7 @@ public:
 protected:
 
     int M_level = 0;
-    
+
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
@@ -2834,8 +2833,8 @@ protected:
 
 
 private:
-    
-    
+
+
     bool M_is_initialized = false;
 
     //! mode for CRBModel

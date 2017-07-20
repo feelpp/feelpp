@@ -64,26 +64,17 @@ namespace Feel
  * exists for the tensor \f$ T(\mu)\f$, the approximation returned by
  * DEIM will be exact, provided that \f$ M\f$ is large enough.
  */
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 class DEIMBase : public CRBDB
 {
 public :
     typedef  CRBDB super;
 
-    typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
-    typedef typename model_type::value_type value_type;
+    typedef typename TensorType::value_type value_type;
 
-    typedef CRBModelType<model_type> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRBType<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
-
-
-    typedef typename ModelType::parameterspace_type parameterspace_type;
-    typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename ModelType::parameter_type parameter_type;
+    typedef ParameterSpaceType parameterspace_type;
+    typedef typename boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
@@ -113,33 +104,30 @@ public :
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
-    typedef typename model_type::space_type space_type;
-    typedef typename model_type::space_ptrtype space_ptrtype;
-    typedef typename model_type::element_type element_type;
-    typedef typename model_type::mesh_type mesh_type;
-    typedef typename model_type::mesh_ptrtype mesh_ptrtype;
+    typedef SpaceType space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! Default Constructor
     DEIMBase()
     {}
 
     /**
-     * \brief Constructor of DEIM class \p Dmu a pointer to the
-     * considered parameter space \p sampling the sampling on which
-     * the greedy algorithm will iterate. Can be null and so a default
-     * sampling will be build, considering the options : (int)
-     * deim.default-sampling-size and (string)
-     * deim.default-sampling-mode
+     * \brief Constructor of DEIM class
      */
-    DEIMBase( model_ptrtype model, sampling_ptrtype sampling, std::string prefix="",
-              WorldComm const& worldComm = Environment::worldComm() ) :
+    DEIMBase(  space_ptrtype Xh,
+               parameterspace_ptrtype Dmu,
+               sampling_ptrtype sampling,
+               uuids::uuid const& i,
+               std::string prefix="",
+               WorldComm const& worldComm = Environment::worldComm() ) :
         super ( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
                 "deim",
-                model->uuid(),
+                i,
                 worldComm ),
-        M_model( model ),
-        mesh( model->functionSpace()->mesh() ),
-        M_parameter_space( model->parameterSpace() ),
+        mesh( Xh->mesh() ),
         M_trainset( sampling ),
         M_M(0),
         M_tol(1e-8),
@@ -161,7 +149,7 @@ public :
 
 
         if ( !M_trainset )
-            M_trainset = M_parameter_space->sampling();
+            M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
         {
             int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
@@ -180,7 +168,6 @@ public :
             cout << "DEIM sampling created with " << sampling_size << " points.\n";
         }
 
-        M_online_model = model_ptrtype( new model_type("deim-online", true) );
     }
 
     //! Destructor
@@ -297,7 +284,6 @@ protected :
     void addNewVector( parameter_type const& mu )
     {
         LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
-        M_mus.push_back(mu);
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -547,8 +533,7 @@ protected :
     }
 
 
-    virtual void updateSubMesh()
-    {}
+    virtual void updateSubMesh()=0;
 
 
     friend class boost::serialization::access;
@@ -565,9 +550,7 @@ protected :
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 protected :
-    model_ptrtype M_model, M_online_model;
     mesh_ptrtype mesh;
-    parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
     int M_M;
     double M_tol;
@@ -575,118 +558,26 @@ protected :
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
     std::vector<ptsset_type> M_ptsset;
-    std::vector<parameter_type> M_mus;
     std::set<int> M_elts_ids;
 
     std::string M_prefix;
     bool M_rebuild, M_nl_assembly;
 };
 
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
-template<class Archive>
-void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::load( Archive & ar, const unsigned int version )
-{
-    ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
-    ar & BOOST_SERIALIZATION_NVP( M_M );
-    ar & BOOST_SERIALIZATION_NVP( M_B );
-    ar & BOOST_SERIALIZATION_NVP( M_index );
 
-    for( int m=0; m<M_M; m++ )
-        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
-
-    DCHECK( M_bases.size()==M_M )<<"Wrong size : M_bases.size()="<< M_bases.size() <<", M_M=" <<M_M<<std::endl;
-    for ( int i=0; i<M_M; i++)
-        DCHECK( M_bases[i] )<<"Null ptr at i="<<i<<std::endl;
-}
-
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
-template<class Archive>
-void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::save( Archive & ar, const unsigned int version ) const
-{
-#if 0
-    ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
-    ar & BOOST_SERIALIZATION_NVP( M_M );
-    ar & BOOST_SERIALIZATION_NVP( M_B );
-    ar & BOOST_SERIALIZATION_NVP( M_index );
-    for( int m=0; m<M_M; m++ )
-        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
-#endif
-}
-
-
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
-void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::saveDB()
-{
-#if 0
-    Feel::cout<< "DEIM : saving DB\n";
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-    if ( ofs )
-    {
-        //boost::archive::text_oarchive oa( ofs );
-        boost::archive::binary_oarchive oa( ofs );
-        // write class instance to archive
-        oa << *this;
-        // archive and stream closed when destructors are called
-    }
-#endif
-}
-
-
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
-bool
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::loadDB()
-{
-    return false;
-    if( this->isDBLoaded() )
-    {
-        return true;
-    }
-
-
-    fs::path db = this->lookForDB();
-    if ( db.empty()  )
-    {
-        return false;
-    }
-
-    fs::ifstream ifs( db );
-    if ( ifs )
-    {
-        //boost::archive::text_iarchive ia( ifs );
-        boost::archive::binary_iarchive ia( ifs );
-        //write class instance to archive
-        ia >> *this;
-        this->setIsLoaded( true );
-        return true;
-    }
-
-    return false;
-}
-
-
-
-template <typename ModelType,
-          template <class T> class CRBType=CRB,
-          template <class T> class CRBModelType=CRBModel>
+template <typename ModelType>
 class DEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,
-                        CRBType, CRBModelType>
+        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
+                        typename Backend<typename ModelType::value_type>::vector_type>
 {
 public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,CRBType,CRBModelType> super_type;
+    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::vector_type> super_type;
+
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::model_ptrtype model_ptrtype;
     typedef typename super_type::tensor_ptrtype vector_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
@@ -697,17 +588,27 @@ public :
     {}
 
     DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
+        super_type( model->functionSpace(),
+                    model->parameterSpace(),
+                    sampling,
+                    model->uuid(),
+                    prefix ),
+        M_model( model )
     {
-        auto mu = this->M_parameter_space->element();
+        this->M_online_model = model_ptrtype( new model_type() );
+        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+
+        auto mu = this->M_trainset->max().template get<0>();
         auto T = this->assemble(mu);
         if (!T)
         {
-            auto u = this->M_model->functionSpace()->element();
+            this->M_nl_assembly=true;
+            auto u = M_model->functionSpace()->element();
             auto Tnl = this->assemble(mu,u);
             CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
-            this->M_nl_assembly=true;
         }
+
+
     }
 
     ~DEIM()
@@ -718,19 +619,19 @@ public :
         if ( this->M_nl_assembly )
         {
             CHECK(!online) << "Call of online nl assembly with no solution u\n";
-            auto u = this->M_model->solve(mu);
-            return this->M_model->assembleForDEIM(mu,u);
+            auto u = M_model->solve(mu);
+            return M_model->assembleForDEIMnl(mu,u);
         }
         if (online)
-            return this->M_online_model->assembleForDEIM(mu);
-          return this->M_model->assembleForDEIM(mu);
+            return M_online_model->assembleForDEIM(mu);
+        return M_model->assembleForDEIM(mu);
     }
     vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
         CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
         if ( online )
-            return this->M_online_model->assembleForDEIM(mu,u);
-        return this->M_model->assembleForDEIM(mu,u);
+            return M_online_model->assembleForDEIMnl(mu,u);
+        return M_model->assembleForDEIMnl(mu,u);
     }
 
 private :
@@ -810,25 +711,25 @@ private :
         this->M_online_model->setFunctionSpaces( Rh );
     }
 
+private :
+    model_ptrtype M_model, M_online_model;
 
 };
 
 
-template <typename ModelType,
-          template <class T> class CRBType=CRB,
-          template <class T> class CRBModelType=CRBModel>
+template <typename ModelType>
 class MDEIM :
-        public DEIMBase<ModelType,
-                        typename Backend<typename ModelType::value_type>::sparse_matrix_type,
-                        CRBType, CRBModelType>
+        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
+                        typename Backend<typename ModelType::value_type>::sparse_matrix_type>
 {
 public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type,CRBType,CRBModelType> super_type;
+    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
 
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::model_ptrtype model_ptrtype;
     typedef typename super_type::tensor_ptrtype vector_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
@@ -840,17 +741,27 @@ public :
     {}
 
     MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
+        super_type( model->functionSpace(),
+                    model->parameterSpace(),
+                    sampling,
+                    model->uuid(),
+                    prefix ),
+        M_model( model )
     {
-        auto mu = this->M_parameter_space->element();
+        this->M_online_model = model_ptrtype( new model_type() );
+        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+
+        auto mu = this->M_trainset->max().template get<0>();
         auto T = this->assemble(mu);
         if (!T)
         {
+            this->M_nl_assembly=true;
             auto u = this->M_model->functionSpace()->element();
             auto Tnl = this->assemble(mu,u);
             CHECK( Tnl ) << "You want to use MDEIM but you did not implement assmbleForMDEIM functions\n";
-            this->M_nl_assembly=true;
         }
+
+
     }
 
     ~MDEIM()
@@ -861,19 +772,19 @@ public :
         if ( this->M_nl_assembly )
         {
             CHECK(!online) << "Call of online nl assembly with no solution u\n";
-            auto u = this->M_model->solve(mu);
-            return this->M_model->assembleForMDEIM(mu,u);
+            auto u = M_model->solve(mu);
+            return M_model->assembleForMDEIMnl(mu,u);
         }
         if (online)
             return this->M_online_model->assembleForMDEIM(mu);
-         return this->M_model->assembleForMDEIM(mu);
+         return M_model->assembleForMDEIM(mu);
     }
     vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
     {
         CHECK(this->M_nl_assembly) << "You called nl coefficient for MDEIM but you implemented assembleForMDEIM(mu)\n";
         if ( online )
-            return this->M_online_model->assembleForMDEIM(mu,u);
-        return this->M_model->assembleForMDEIM(mu,u);
+            return this->M_online_model->assembleForMDEIMnl(mu,u);
+        return M_model->assembleForMDEIMnl(mu,u);
     }
 
 
@@ -1012,9 +923,158 @@ private :
 
     }
 
+private :
+    model_ptrtype M_model, M_online_model;
+
 
 };
 
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
+template<class Archive>
+void
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::load( Archive & ar, const unsigned int version )
+{
+#if 0
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_M );
+    ar & BOOST_SERIALIZATION_NVP( M_B );
+    ar & BOOST_SERIALIZATION_NVP( M_index );
+
+    for( int m=0; m<M_M; m++ )
+        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
+
+    DCHECK( M_bases.size()==M_M )<<"Wrong size : M_bases.size()="<< M_bases.size() <<", M_M=" <<M_M<<std::endl;
+    for ( int i=0; i<M_M; i++)
+        DCHECK( M_bases[i] )<<"Null ptr at i="<<i<<std::endl;
+#endif
+}
+
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
+template<class Archive>
+void
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::save( Archive & ar, const unsigned int version ) const
+{
+#if 0
+    ar & boost::serialization::base_object<super>( *this );
+    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
+    ar & BOOST_SERIALIZATION_NVP( M_M );
+    ar & BOOST_SERIALIZATION_NVP( M_B );
+    ar & BOOST_SERIALIZATION_NVP( M_index );
+    for( int m=0; m<M_M; m++ )
+        ar & BOOST_SERIALIZATION_NVP( M_bases[m] );
+#endif
+}
+
+
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
+void
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::saveDB()
+{
+#if 0
+    Feel::cout<< "DEIM : saving DB\n";
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    if ( ofs )
+    {
+        //boost::archive::text_oarchive oa( ofs );
+        boost::archive::binary_oarchive oa( ofs );
+        // write class instance to archive
+        oa << *this;
+        // archive and stream closed when destructors are called
+    }
+#endif
+}
+
+
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
+bool
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
+{
+#if 0
+    return false;
+    if( this->isDBLoaded() )
+    {
+        return true;
+    }
+
+
+    fs::path db = this->lookForDB();
+    if ( db.empty()  )
+    {
+        return false;
+    }
+
+    fs::ifstream ifs( db );
+    if ( ifs )
+    {
+        //boost::archive::text_iarchive ia( ifs );
+        boost::archive::binary_iarchive ia( ifs );
+        //write class instance to archive
+        ia >> *this;
+        this->setIsLoaded( true );
+        return true;
+    }
+#endif
+    return false;
+}
+
+namespace detail
+{
+template <typename Args>
+struct compute_deim_return
+{
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
+    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
+
+    typedef DEIM<model_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+template <typename Args>
+struct compute_mdeim_return
+{
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
+    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
+
+    typedef MDEIM<model_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
+};
+
+}
+
+BOOST_PARAMETER_FUNCTION(
+                         ( typename Feel::detail::compute_deim_return<Args>::ptrtype ), // 1. return type
+                         deim,                        // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         ( required
+                           ( in_out(model),          * )
+                           ) // required
+                         ( optional
+                           ( sampling, *, nullptr )
+                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ) // optionnal
+                         )
+{
+    typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
+    return boost::make_shared<deim_type>( model, sampling, prefix );
+}
+
+
+BOOST_PARAMETER_FUNCTION(
+                         ( typename Feel::detail::compute_deim_return<Args>::ptrtype ), // 1. return type
+                         mdeim,                        // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         ( required
+                           ( in_out(model),          * )
+                           ) // required
+                         ( optional
+                           ( sampling, *, nullptr )
+                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ) // optionnal
+                         )
+{
+    typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
+    return boost::make_shared<mdeim_type>( model, sampling, prefix );
+}
 
 po::options_description deimOptions( std::string const& prefix ="");
 

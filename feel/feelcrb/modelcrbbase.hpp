@@ -31,6 +31,7 @@
 
 //#include <feel/feel.hpp>
 #include <feel/feelcrb/eim.hpp>
+#include <feel/feelcrb/deim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
@@ -171,8 +172,13 @@ public :
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
-    //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+    typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
+    typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
+    typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
+    typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
+
+    //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef std::vector< double > beta_vector_light_type;
 
@@ -271,22 +277,19 @@ public :
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name, bool online=false,  WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name,  WorldComm const& worldComm = Environment::worldComm() )
         :
-        ModelCrbBase( name, Environment::randomUUID( true ), online, worldComm )
+        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, bool online=false, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, WorldComm const& worldComm = Environment::worldComm() )
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
+        M_backend( backend() ),
         M_uuid( uid ),
         M_name( algorithm::to_lower_copy(name) ),
         M_is_initialized( false )
-    {
-        std::string kind= online ? "eigen_dense":"petsc";
-        auto worldcomm = online ? Environment::worldCommSeq():Environment::worldComm();
-        M_backend = backend( _name=name, _kind=kind, _wordlcomm=wordlcomm );
-    }
+    {}
 
     virtual ~ModelCrbBase() {}
 
@@ -299,6 +302,16 @@ public :
      * set the model name
      */
     void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+
+
+    /**
+     * Define the model as an online (sequential) model
+     * used for the computation of coefficient during the online phase
+     */
+    void setModelOnlineDeim( std::string name )
+    {
+        M_backend = backend( _name=name, _kind="eigen_dense", _worldcomm=Environment::worldCommSeq() );
+    }
 
     //!
     //! unique id for CRB Model
@@ -603,29 +616,31 @@ public :
         return M_funs_d;
     }
 
-    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    bool hasDeim()
     {
-        vector_ptrtype V;
-        return V;
+        return M_deim || M_mdeim;
     }
 
-    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu, element_type const& u )
+
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
     {
-        vector_ptrtype V;
-        return V;
+        return nullptr;
+    }
+
+    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    {
+        return nullptr;
     }
 
 
     virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu )
     {
-        sparse_matrix_ptrtype M;
-        return M;
+        return nullptr;
     }
 
-    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, element_type const& u )
+    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u )
     {
-        sparse_matrix_ptrtype M;
-        return M;
+        return nullptr;
     }
 
 
@@ -1843,6 +1858,9 @@ protected :
 
     funs_type M_funs;
     funsd_type M_funs_d;
+
+    deim_ptrtype M_deim;
+    mdeim_ptrtype M_mdeim;
     bool M_is_initialized;
 
     sparse_matrix_ptrtype M;
