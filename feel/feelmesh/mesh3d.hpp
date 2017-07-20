@@ -628,16 +628,10 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edg.setProcessIdInPartition( currentPid );
                     edg.setId( next_edge++ );
                     edg.setOnBoundary( true, 0 );
-                    // set the process id from element (only active element)
-                    if ( !bface.isGhostCell() && edg.processId() != bface.processId() )
-                        edg.setProcessId( bface.processId() );
-                    else
-                        edg.setProcessId( invalid_rank_type_value );
+                    edg.setProcessId( invalid_rank_type_value );
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
                         edg.setPoint( k, bface.point( face_type::eToP( j, k ) ) );
 
-                    // TODO: should assocate a marker to the edge here ?
-                    //edg.addElement( bface.ad_first() );
                     auto res = this->addEdge( edg );
                     auto & edgeInserted = res.first->second;
                     _edgeit->second = &edgeInserted;
@@ -647,9 +641,6 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     auto edgePtr = _edgeit->second;
                     if ( !edgePtr->isOnBoundary() )
                         edgePtr->setOnBoundary( true, 0 );
-                    // set the process id from element (only active element)
-                    if ( !bface.isGhostCell() && edgePtr->processId() != bface.processId() )
-                        edgePtr->setProcessId( bface.processId() );
                 }
             }
         }
@@ -665,6 +656,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto & elt = elt_it->second;
+        rank_type eltPid = elt.processId();
         vid = elt.id();
 
         for ( uint16_type j = 0; j < element_type::numEdges; ++j )
@@ -681,6 +673,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             {
 
                 edg.setProcessIdInPartition( currentPid );
+                edg.setProcessId( (elt.isGhostCell())? invalid_rank_type_value : eltPid );
                 edg.setId( next_edge++ );
                 edg.setOnBoundary( false );
                 // update connected element in edge
@@ -698,11 +691,6 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )
                     edg.setPoint( k, elt.point( element_type::eToP( j, k ) ) );
 
-                // set the process id from element (only active element)
-                if ( !elt.isGhostCell() && edg.processId() != elt.processId() )
-                    edg.setProcessId( elt.processId() );
-                else
-                    edg.setProcessId( invalid_rank_type_value );
 
                 // add edge in mesh container
                 auto res = this->addEdge( edg );
@@ -717,8 +705,8 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 // update edge pointer in element
                 elt.setEdge( j, boost::cref( *edgePtr ) );
                 // set the process id from element (only active element)
-                if ( !elt.isGhostCell() && edgePtr->processId() != elt.processId() )
-                    edgePtr->setProcessId( elt.processId() );
+                if ( !elt.isGhostCell() && edgePtr->processId() != eltPid )
+                    edgePtr->setProcessId( eltPid );
                 if ( updateComponentAddElements || edgePtr->hasMarker() )
                 {
                     //DLOG_IF(INFO, eit->marker().isOn()) << "found edge " << eit->id() << " with marker:" << eit->marker() << ", adding element id : " << vid <<  "  local edge id " << j;
