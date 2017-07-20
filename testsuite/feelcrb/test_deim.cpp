@@ -54,27 +54,25 @@ public :
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
-    typedef DEIM<self_type> deim_type;
-    typedef boost::shared_ptr<deim_type> deim_ptrtype;
-
     typedef Pch_type<mesh_type,1> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
 
-    DeimTest( std::string name="", bool online=false ) :
+    DeimTest() :
+        M_backend( backend() ),
         Dmu( parameterspace_type::New(2) )
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         Xh = Pch<1>( mesh );
 
-        std::string kind= online ? "eigen_dense":"petsc";
-        auto worldcomm = online ? Environment::worldCommSeq():Environment::worldComm();
-        M_backend = backend( _name=name, _kind=kind, _worldcomm=worldcomm );
-
         setFunctionSpaces(Xh);
     }
 
+    void setModelOnlineDeim( std::string name )
+    {
+        M_backend = backend( _name=name, _kind="eigen_dense", _worldcomm=Environment::worldCommSeq() );
+    }
 
     void setFunctionSpaces( space_ptrtype Rh )
     {
@@ -101,7 +99,8 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        deim_ptrtype M_deim = deim_ptrtype( new deim_type( this->shared_from_this(), Pset ) );
+        auto M_deim = deim( _model=this->shared_from_this(),
+                            _sampling=Pset );
 
         M_deim->run();
         int m = M_deim->size();
@@ -142,7 +141,7 @@ public :
     }
 
     // These 3 functions are only needed for compilation
-    vector_ptrtype assembleForDEIM( parameter_type const& mu, element_type const& u )
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
     {
         return V;
     }
