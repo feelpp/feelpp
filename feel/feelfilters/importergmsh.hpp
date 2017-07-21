@@ -1518,7 +1518,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
              << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 
     __idGmshToFeel=e.id();
-    mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    mesh->addElement( mesh->endElement(), std::move(e) );
     
 
 }
@@ -1694,7 +1694,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    mesh->addElement( mesh->endElement(), std::move(e) );
 }
 template<typename MeshType>
 void
@@ -1827,7 +1827,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         M_n_vertices[ __e.indices[7] ] = 1;
     }
     
-    mesh->addElement( /*mesh->endElement(), */std::move(e) );
+    mesh->addElement( mesh->endElement(), std::move(e) );
 }
 
 template<typename MeshType>
@@ -1910,7 +1910,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh,
             // receive idFeel
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
-            auto & eltModified = *mesh->elementIterator( mapMsg[proc][cpt] );
+            auto & eltModified = mesh->elementIterator( mapMsg[proc][cpt] )->second;
             eltModified.setIdInOtherPartitions( proc, idFeel );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
@@ -2066,7 +2066,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto & eltModified = *mesh->elementIterator( memoryMsgToSend[idProc][k] );
+            auto & eltModified = mesh->elementIterator( memoryMsgToSend[idProc][k] )->second;
             eltModified.setIdInOtherPartitions( idProc, itFinalDataToRecv->second[k] );
         }
     }

@@ -192,7 +192,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
-                auto & eltModified = *iv;
+                auto & eltModified = iv->second;
                 size_type eltId = eltModified.id();
                 for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
                     eltModified.point( i ).addElement( eltId, i );
@@ -207,7 +207,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
-                auto & eltModified = *iv;
+                auto & eltModified = iv->second;
                 // first look if the element has a point with a marker
                 // if not we skip this element
                 if ( eltModified.hasPointWithMarker() && !eltModified.isGhostCell())
@@ -263,7 +263,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 for ( ; iv != en; ++iv )
                 {
                     for ( int p = 0; p < element_type::numVertices; ++p )
-                        vertexIds.insert( iv->point( p ).id() );
+                        vertexIds.insert( iv->second.point( p ).id() );
                 }
                 this->setNumVertices( vertexIds.size() );
                 vertexIds.clear();
@@ -374,14 +374,14 @@ Mesh<Shape, T, Tag>::updateMeasures()
 
     if ( iv != en )
     {
-        auto const& eltInit = *iv;
+        auto const& eltInit = iv->second;
         auto ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf,0 );
         auto ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
         auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
         for ( ; iv != en; ++iv )
         {
-            auto & elt = *iv;
+            auto & elt = iv->second;
             if ( updateMeasureWithPc )
             {
                 if ( meshIsStraightened && !elt.isOnBoundary() )
@@ -435,7 +435,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
         {
-            auto & eltModified = *iv;
+            auto & eltModified = iv->second;
             value_type meas = 0;
             for( auto const& _elt: eltModified.pointElementNeighborIds() )
             {
@@ -630,7 +630,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<1> )
 {
     auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->setCommonData( geondEltCommon );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         itf->second.setMesh( this );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -643,7 +643,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<2> )
     auto geondEltCommon = boost::make_shared<GeoNDCommon<typename element_type::super>>( this,this->gm(), this->gm1() );
     auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->setCommonData( geondEltCommon );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         itf->second.setCommonData( geondFaceCommon );
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
@@ -657,7 +657,7 @@ Mesh<Shape, T, Tag>::updateCommonDataInEntities( mpl::int_<3> )
     auto geondFaceCommon = boost::make_shared<GeoNDCommon<typename face_type::super>>( this/*,this->gm(), this->gm1()*/ );
     auto geondEdgeCommon = boost::make_shared<GeoNDCommon<typename edge_type::super>>( this/*,this->gm(), this->gm1()*/ );
     for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
-        iv->setCommonData( geondEltCommon );
+        iv->second.setCommonData( geondEltCommon );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
         itf->second.setCommonData( geondFaceCommon );
     for ( auto ite = this->beginEdge(), ene = this->endEdge(); ite != ene; ++ite )
@@ -1042,7 +1042,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     std::map<rank_type,std::vector<element_type*>, std::less<rank_type> > elementsByProcOrdering;
     for ( ; iv != en; ++iv )
     {
-        auto & elt = *iv;
+        auto & elt = iv->second;
         rank_type pid = elt.processId();
         elementsByProcOrdering[ pid ].push_back( &elt );
     }
@@ -1361,7 +1361,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
     std::map<rank_type,std::vector<element_type*>, std::less<rank_type> > elementsByProcOrdering;
     for ( ; iv != en; ++iv )
     {
-        auto & elt = *iv;
+        auto & elt = iv->second;
         rank_type pid = elt.processId();
         elementsByProcOrdering[ pid ].push_back( &elt );
     }
@@ -1488,7 +1488,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
     boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
-        element_type & elt = *iv;
+        element_type & elt = iv->second;
         const size_type eltId = elt.id();
         const rank_type eltPid = elt.processId();
         for ( uint16_type j = 0; j < _numLocalFaces; j++ )
@@ -1647,7 +1647,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 
     for ( ; iv != en; ++iv )
     {
-        element_type & elt = *iv;
+        element_type & elt = iv->second;
         const size_type eltId = elt.id();
 
         for ( uint16_type f = 0; f < element_type::numVertices; ++f )
@@ -1846,7 +1846,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
           iv != en; ++iv )
     {
         bool isOnBoundary = false;
-        auto & elt = *iv;
+        auto & elt = iv->second;
         // first check if a face is on the boundary
         for ( size_type j = 0; j < elt.nTopologicalFaces(); j++ )
         {
@@ -1950,7 +1950,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
         const int IdProcessOfGhost = __element.processId();
         const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
 
-        auto & eltModified = *this->elementIterator( __element );
+        auto & eltModified = this->elementIterator( __element )->second;
         elementGhostConnectPointToElement( eltModified );
         if ( nDim==3 )
             elementGhostConnectEdgeToElement( eltModified );
@@ -2316,7 +2316,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         auto const& ghostelt = boost::unwrap_ref( *iv );
         const rank_type IdProcessOfGhost = ghostelt.processId();
         // update info for parallelism
-        auto & eltModified = *this->elementIterator( ghostelt );
+        auto & eltModified = this->elementIterator( ghostelt )->second;
         elementGhostConnectPointToElement( eltModified );
         if ( nDim==3 )
             elementGhostConnectEdgeToElement( eltModified );
@@ -2440,7 +2440,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 continue;
 
             //auto const& theelt = this->element( idEltOnProcess );
-            auto & theelt = *this->elementIterator( idEltOnProcess );
+            auto & theelt = this->elementIterator( idEltOnProcess )->second;
             theelt.setIdInOtherPartitions( idProc, idEltOtherProcess );
 
             //---------------------------//

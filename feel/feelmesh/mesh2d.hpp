@@ -325,7 +325,7 @@ class Mesh2D
         for ( typename super_elements::element_iterator elt_it = this->beginElement();
               elt_it != this->endElement(); ++elt_it )
         {
-            auto & elt = *elt_it;
+            auto & elt = elt_it->second;
             for ( uint16_type j = 0; j < element_type::numEdges; j++ )
             {
                 if ( !elt.hasFace( j ) )
