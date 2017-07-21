@@ -53,10 +53,9 @@ allelements( MeshType const& mesh )
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelements( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto it = Feel::unwrap_ptr( mesh ).beginElement();
     auto en = Feel::unwrap_ptr( mesh ).endElement();
-    myelements->reserve( std::distance( it, en ) );
     for ( ; it!=en;++it )
     {
-        auto const& elt = *it;
+        auto const& elt = it->second;
         myelements->push_back(boost::cref(elt));
     }
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),

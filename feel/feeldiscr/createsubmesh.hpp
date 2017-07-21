@@ -396,8 +396,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // for (unsigned int n=0 ... )
 
             // Add an equivalent element type to the new_mesh
-            auto eInserted = newMesh->addElement( newElem,true );
-            auto const& e = *eInserted.first;
+            auto const& e = newMesh->addElement( newElem,true );
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
 
@@ -645,8 +644,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             } // end for n
 
             // Add an equivalent element type to the new_mesh
-            auto eInserted = newMesh->addElement( newElem, true );
-            auto const& e = *eInserted.first;
+            auto const& e = newMesh->addElement( newElem, true );
             // update mesh relation
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
@@ -849,8 +847,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
 #endif
             // Add an equivalent element type to the new_mesh
-            auto eInserted = newMesh->addElement( newElem, true );
-            auto const& e = *eInserted.first;
+            auto const& e = newMesh->addElement( newElem, true );
             // update mesh relation
             new_element_id[oldElem.id()]= e.id();
             M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
@@ -1051,7 +1048,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 idEltInNewMesh = itFindId->second;
                 // update NeighborPartition for this active elt
                 CHECK( newMesh->hasElement( idEltInNewMesh) ) << "mesh has not elt whit id " << idEltInNewMesh << "\n";
-                auto & eltToUpdate = *newMesh->elementIterator( idEltInNewMesh );
+                auto & eltToUpdate = newMesh->elementIterator( idEltInNewMesh )->second;
                 eltToUpdate.addNeighborPartitionId( rankRecv );
             }
             dataToReSend.push_back( idEltInNewMesh );
@@ -1124,7 +1121,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 auto itFindGhostOld = ghostOldEltDone.find( oldElem.id() );
                 if ( itFindGhostOld != ghostOldEltDone.end() )
                 {
-                    auto & eltModified = *newMesh->elementIterator( itFindGhostOld->second.first );
+                    auto & eltModified = newMesh->elementIterator( itFindGhostOld->second.first )->second;
                     eltModified.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
                     if ( rankRecv < eltModified.processId() )
                     {
@@ -1193,8 +1190,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
 
                 // Add an equivalent element type to the new_mesh
-                auto eInserted = newMesh->addElement( newElem, true );
-                auto const& e = *eInserted.first;
+                auto const& e = newMesh->addElement( newElem, true );
 
                 const size_type newEltId = e.id();
                 ghostOldEltDone[oldElem.id()]= std::make_pair(newEltId,e.processId());

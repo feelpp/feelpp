@@ -525,7 +525,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionOnePermutation()
                                   permutation, mpl::bool_<( SHAPE == SHAPE_TETRA )>() );
 
         if ( permutation.value() != face_permutation_type::IDENTITY )
-            this->elementIterator( face.ad_second() )->setFacePermutation( face.pos_second(), permutation );
+            this->elementIterator( face.ad_second() )->second.setFacePermutation( face.pos_second(), permutation );
     }
 
 #if !defined( NDEBUG )
@@ -655,7 +655,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     element_iterator elt_en = this->endElement();
     for ( ; elt_it != elt_en ; ++elt_it )
     {
-        auto & elt = *elt_it;
+        auto & elt = elt_it->second;
         rank_type eltPid = elt.processId();
         vid = elt.id();
 
