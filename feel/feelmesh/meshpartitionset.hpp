@@ -317,7 +317,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
     auto allelt_en = M_mesh->endElement();
     for ( ; allelt_it != allelt_en ; ++allelt_it )
     {
-        auto const& elt = *allelt_it;
+        auto const& elt = allelt_it->second;
         rank_type eltPid = elt.processId();
         std::set<rank_type> neighborPids;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
