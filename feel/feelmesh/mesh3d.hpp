@@ -554,7 +554,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
     rank_type currentPid = this->worldComm().localRank();
 
     //typedef std::unordered_map<std::set<size_type>, edge_type*, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
-    typedef std::unordered_map<std::vector<size_type>, edge_type*, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
+    typedef std::unordered_map<std::vector<size_type>, std::tuple<edge_type*,size_type>, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
     pointstoedge_container_type _edges;
     typename pointstoedge_container_type::iterator _edgeit;
 
@@ -590,7 +590,9 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 lids[0]=i2;
             }
 
-            boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::make_pair( lids, &edge ) );
+            boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(&edge,invalid_size_type_value) );
 
             if ( edgeinserted )
             {
@@ -639,8 +641,9 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     lids[0]=i2;
                 }
 
-
-                boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( lids, nullptr ) );
+                boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
+                                                                      std::forward_as_tuple(lids),
+                                                                      std::forward_as_tuple(nullptr,invalid_size_type_value) );
 
                 if ( edgeinserted )
                 {
@@ -653,11 +656,11 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
 
                     auto res = this->addEdge( edg );
                     auto & edgeInserted = res.first->second;
-                    _edgeit->second = &edgeInserted;
+                    std::get<0>( _edgeit->second ) = &edgeInserted;
                 }
                 else
                 {
-                    auto edgePtr = _edgeit->second;
+                    auto edgePtr = std::get<0>( _edgeit->second );
                     if ( !edgePtr->isOnBoundary() )
                         edgePtr->setOnBoundary( true, 0 );
                 }
@@ -709,7 +712,10 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 lids[1] = i1;
                 lids[0] = i2;
             }
-            boost::tie( _edgeit, edgeinserted ) = _edges.insert( std::make_pair( lids, nullptr ) );
+
+            boost::tie( _edgeit, edgeinserted ) = _edges.emplace( std::piecewise_construct,
+                                                                  std::forward_as_tuple(lids),
+                                                                  std::forward_as_tuple(nullptr,i1) );
 
             if ( edgeinserted )
             {
@@ -741,11 +747,11 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 auto & edgeInserted = res.first->second;
                 // update edge pointer in element
                 elt.setEdge( j, boost::cref( edgeInserted ) );
-                _edgeit->second = &edgeInserted;
+                std::get<0>( _edgeit->second ) = &edgeInserted;
             }
             else
             {
-                auto edgePtr = _edgeit->second;
+                auto edgePtr = std::get<0>( _edgeit->second );
                 // update edge pointer in element
                 elt.setEdge( j, boost::cref( *edgePtr ) );
                 // set the process id from element (only active element)
@@ -757,8 +763,13 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edgePtr->addElement( vid, j );
                 }
                 // update edge orientation in element
-                if ( i1 != edgePtr->point( 0 ).id() )
+                size_type & ptForPermutation = std::get<1>( _edgeit->second );
+                if ( ptForPermutation == invalid_size_type_value )
+                    ptForPermutation = i1;
+                else if ( ptForPermutation != i1 )
                     elt.setEdgePermutation( j, reversePermutation );
+                // if ( i1 != edgePtr->point( 0 ).id() )
+                //     elt.setEdgePermutation( j, reversePermutation );
             }
 
         } // for ( uint16_type j = 0; j < element_type::numEdges; ++j )
