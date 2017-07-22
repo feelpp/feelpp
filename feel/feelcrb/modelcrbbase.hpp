@@ -310,7 +310,7 @@ public :
      */
     void setModelOnlineDeim( std::string name )
     {
-        M_backend = backend( _name=name, _kind="eigen_dense", _worldcomm=Environment::worldCommSeq() );
+        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
     }
 
     //!

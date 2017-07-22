@@ -121,6 +121,7 @@ public :
     {
         vector_ptrtype V = this->M_backend->newVector(Xh);
         auto temp = Xh->element(V,0);
+        mesh = Xh->mesh();
         temp.on( elements(mesh), cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
         return V;
     }
@@ -253,7 +254,7 @@ void GreplDEIM<Order,Dim>::initModel()
 
     this->M_deim = deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                          _sampling=Pset );
-
+    this->M_deim->run();
     int M = this->M_deim->size();
 
     this->M_betaJqm.resize( 3 );
