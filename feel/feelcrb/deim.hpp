@@ -277,7 +277,6 @@ public :
     void saveDB() override;
     //! load the database
     bool loadDB() override;
-    void loadDB( std::string const& filename, crb::load l ) override {}
 
     //!
     //! loadDB from \p filename with load strately \p l
