@@ -165,8 +165,9 @@ public :
                 M_trainset->clear();
                 M_trainset->readFromFile(file_name);
             }
-            cout << "DEIM sampling created with " << sampling_size << " points.\n";
+            cout << "DEIM sampling created\n";
         }
+        cout << "DEIM sampling size = "<< M_trainset->size()<<std::endl;
 
     }
 
