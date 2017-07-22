@@ -41,6 +41,11 @@ add_custom_target( testsuite )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(contrib)
 
+option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)
+if (FEELPP_DISABLE_COMPILE_FAILURE )
+  add_definitions(-DFEELPP_DISABLE_COMPILE_FAILURE=1)
+endif()
+
 
 foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit)
   add_custom_target( test${testdir} )
