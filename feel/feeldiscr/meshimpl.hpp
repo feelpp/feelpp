@@ -999,7 +999,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
             boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                   std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(std::make_tuple(nullptr,invalid_uint16_type_value,&face) )
+                                                                  std::forward_as_tuple(nullptr,invalid_uint16_type_value,&face )
                                                                   );
 
             DVLOG_IF(2,faceinserted) << "added face with id " <<  face.id () << "\n";
@@ -1082,7 +1082,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 //boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
                 boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                       std::forward_as_tuple(lids),
-                                                                      std::forward_as_tuple(std::make_tuple(eltPtr,j,nullptr) ) );
+                                                                      std::forward_as_tuple(eltPtr,j,nullptr) );
 
                 if ( faceinserted )
                 {
@@ -1337,7 +1337,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
 
             boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                   std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(std::make_tuple(nullptr,invalid_uint16_type_value,&face) )
+                                                                  std::forward_as_tuple(nullptr,invalid_uint16_type_value,&face )
                                                                   );
 
             DVLOG_IF(2,faceinserted) << "added face with id " <<  face.id () << "\n";
@@ -1388,7 +1388,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
 
                 boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                       std::forward_as_tuple(lids),
-                                                                      std::forward_as_tuple(std::make_tuple(eltPtr,j,nullptr) )
+                                                                      std::forward_as_tuple(eltPtr,j,nullptr)
                                                                       );
                 if ( faceinserted )
                 {
@@ -1666,7 +1666,7 @@ Mesh<Shape, T, Tag>::updateAdjacencyElements()
 #else
             boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
                                                                   std::forward_as_tuple(lids),
-                                                                  std::forward_as_tuple(std::make_tuple(&elt,j) )
+                                                                  std::forward_as_tuple(&elt,j)
                                                                   );
                                                                   //std::forward_as_tuple(next_face) );
 #endif
