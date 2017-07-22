@@ -1415,7 +1415,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     pf.setId( mesh->numFaces() );
     pf.setMarker( __e.physical );
     pf.setMarker2( __e.elementary );
-    pf.setProcessId( __e.partition );
+    //pf.setProcessId( __e.partition );
     pf.setNeighborPartitionIds( __e.ghosts );
 
     pf.setPoint( 0, mesh->point( __e.indices[0] ) );
@@ -1446,7 +1446,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
     pt.setMarker( __e.physical );
     pt.setMarker2( __e.elementary );
-    pt.setProcessId( __e.partition );
+    //pt.setProcessId( __e.partition );
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
@@ -1462,7 +1462,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
     pt.setMarker( __e.physical );
     pt.setMarker2( __e.elementary );
-    pt.setProcessId( __e.partition );
+    //pt.setProcessId( __e.partition );
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
