@@ -38,24 +38,46 @@ BOOST_AUTO_TEST_SUITE( testsuite_idelements )
 BOOST_AUTO_TEST_CASE( listelements )
 {
     auto mesh=unitCircle();
-    auto l = randint( 3, mesh->beginElement()->second.id(), std::prev(mesh->endElement())->second.id() );
+    auto rangeElt = elements(mesh);
+    size_type nEltForTest = std::min( size_type(3), nelements( rangeElt ) );
+    std::vector<size_type> l;
+    if ( nEltForTest > 0 )
+    {
+        // take random element in the range of active element
+        l = randint( nEltForTest, size_type(0), nEltForTest-1 );
+        auto itbegin = begin( rangeElt );
+        for ( size_type & k : l )
+            k = unwrap_ref( *std::next( itbegin, k ) ).id();
+    }
     LOG(INFO) << "l=" << l;
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
-    BOOST_CHECK_EQUAL( newmesh->numElements(), l.size()*Environment::numberOfProcessors() );
+    size_type nGlobalEltForTest = nEltForTest;
+    mpi::all_reduce(Environment::worldComm(), mpi::inplace(nGlobalEltForTest), std::plus<size_type>());
+    BOOST_CHECK_EQUAL( newmesh->numGlobalElements(), nGlobalEltForTest );
 }
 
 BOOST_AUTO_TEST_CASE( space_fromlistelements )
 {
     auto mesh=unitCircle();
-    
-    auto l = randint( 3, mesh->beginElement()->second.id(), std::prev(mesh->endElement())->second.id() );
+    auto rangeElt = elements(mesh);
+    size_type nEltForTest = std::min( size_type(3), nelements( rangeElt ) );
+    std::vector<size_type> l;
+    if ( nEltForTest > 0 )
+    {
+        // take random element in the range of active element
+        l = randint( nEltForTest, size_type(0), nEltForTest-1 );
+        auto itbegin = begin( rangeElt );
+        for ( size_type & k : l )
+            k = unwrap_ref( *std::next( itbegin, k ) ).id();
+    }
     auto newmesh = createSubmesh( mesh, idelements( mesh, l ) );
     auto Xh=Pdh<0>(newmesh);
     auto v = Xh->element(cst(1.));
     auto s = v.sum();
-    BOOST_CHECK_EQUAL( s, l.size()*Environment::numberOfProcessors() );
-    
+    size_type nGlobalEltForTest = nEltForTest;
+    mpi::all_reduce(Environment::worldComm(), mpi::inplace(nGlobalEltForTest), std::plus<size_type>());
+    BOOST_CHECK_EQUAL( s, nGlobalEltForTest );
 }
-    
+
 BOOST_AUTO_TEST_SUITE_END()
 
