@@ -599,7 +599,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
             }
             else
             {
-                eit = this->edges().erase( eit );
+                eit = this->eraseEdge( eit );
             }
 #if 0
             FEELPP_ASSERT( edgeinserted )( i1 )( i2 )(j)( this->edge( j ).id() )( _edgeit->second )( this->edge( j ).hasMarker() )
@@ -793,7 +793,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         if ( e_it->numberOfElements() == 0 )
         {
             // remove all edges that are not connected to any elements
-            this->edges().erase( e_it );
+            this->eraseEdge( e_it );
         }
 
     }

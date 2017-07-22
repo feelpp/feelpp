@@ -755,7 +755,6 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_faces;
             if ( Archive::is_loading::value )
             {
                 M_faces.clear();
