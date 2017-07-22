@@ -81,6 +81,10 @@ public:
     typedef typename faces_reference_wrapper_type::iterator face_reference_wrapper_iterator;
     typedef typename faces_reference_wrapper_type::const_iterator face_reference_wrapper_const_iterator;
 
+    typedef std::vector<boost::reference_wrapper<face_type> > ordered_faces_reference_wrapper_type;
+    typedef typename ordered_faces_reference_wrapper_type::iterator ordered_face_reference_wrapper_iterator;
+    typedef typename ordered_faces_reference_wrapper_type::const_iterator ordered_face_reference_wrapper_const_iterator;
+
     //@}
 
     /**
@@ -133,7 +137,9 @@ public:
         :
         M_worldCommFaces( f.M_worldCommFaces ),
         M_faces( f.M_faces )
-    {}
+    {
+        this->buildOrderedFaces();
+    }
 
     virtual ~Faces()
     {
@@ -143,6 +149,7 @@ public:
         {
             VLOG(1) << "deleting faces...\n";
             M_faces.clear();
+            M_orderedFaces.clear();
         }
     //@}
 
@@ -156,6 +163,7 @@ public:
         {
             M_worldCommFaces = e.M_worldCommFaces;
             M_faces = e.M_faces;
+            this->buildOrderedFaces();
         }
 
         return *this;
@@ -253,6 +261,24 @@ public:
         return M_faces.end();
     }
 
+    ordered_face_reference_wrapper_iterator beginOrderedFace()
+        {
+            return M_orderedFaces.begin();
+        }
+    ordered_face_reference_wrapper_const_iterator beginOrderedFace() const
+        {
+            return M_orderedFaces.begin();
+        }
+    ordered_face_reference_wrapper_iterator endOrderedFace()
+        {
+            return M_orderedFaces.end();
+        }
+    ordered_face_reference_wrapper_const_iterator endOrderedFace() const
+        {
+            return M_orderedFaces.end();
+        }
+
+
     /**
      * \return the range of iterator \c (begin,end) over the faces
      * with \c Id \p m
@@ -275,11 +301,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 if ( !face.hasMarker( markerType ) )
@@ -299,11 +325,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 if ( !face.hasMarker( markerType ) )
@@ -369,11 +395,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 if ( !face.isOnBoundary() )
@@ -392,11 +418,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 if ( !face.isInternal() )
@@ -417,11 +443,11 @@ public:
             bool allNeighbor = ( neighbor_pid == invalid_rank_type_value );
             const rank_type part = this->worldCommFaces().localRank();
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( !face.isInterProcessDomain() )
                     continue;
                 if ( face.partition1() != part )
@@ -442,11 +468,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 if ( !face.isIntraProcessDomain( part ) )
@@ -465,11 +491,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
-            auto it = this->beginFace();
-            auto en = this->endFace();
+            auto it = this->beginOrderedFace();
+            auto en = this->endOrderedFace();
             for ( ; it!=en;++it )
             {
-                auto const& face = it->second;
+                auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
                 myfaces->push_back( boost::cref( face ) );
@@ -503,14 +529,28 @@ public:
             << "addFace failed, face not added to container : "
             << ret.first->second.id() << " face id:"
             << f.id();
-        
+
+        if ( ret.second )
+        {
+            auto & newFace = ret.first->second;
+            size_type newId = newFace.id();
+            if ( M_orderedFaces.empty() || unwrap_ref( M_orderedFaces.back() ).id() < newId )
+                M_orderedFaces.push_back( boost::ref( newFace ) );
+            else
+            {
+                auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
+                                               [&newId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() > newId; } );
+                M_orderedFaces.insert( itOrdered, boost::ref( newFace ) );
+            }
+        }
+
         return ret;
     }
     //!
     //! @brief move a new face into the mesh
     //! @param f a new point
     //! @return the new point from the list
-    //! 
+    //!
     std::pair<face_iterator,bool> addFace( face_type&& f )
         {
             std::pair<face_iterator,bool> ret =  M_faces.emplace/*insert*/( std::make_pair( f.id(),f ) );
@@ -518,42 +558,24 @@ public:
                 << "addFace failed, face not added to container : "
                 << ret.first->second.id() << " face id:"
                 << f.id();
-        
+
+            if ( ret.second )
+            {
+                auto & newFace = ret.first->second;
+                size_type newId = newFace.id();
+                if ( M_orderedFaces.empty() || unwrap_ref( M_orderedFaces.back() ).id() < newId )
+                    M_orderedFaces.push_back( boost::ref( newFace ) );
+                else
+                {
+                    auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
+                                                   [&newId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() > newId; } );
+                    M_orderedFaces.insert( itOrdered, boost::ref( newFace ) );
+                }
+            }
+
             return ret;
         }
-    //!
-    //! @brief copy a new face into the mesh
-    //! @param f a new point
-    //! @param pos position hint where to move
-    //! @return the new point from the list
-    //!
-    face_iterator addFace( face_iterator pos, face_type& f )
-        {
-            return M_faces.insert( pos, std::make_pair( f.id(),f ) );
-        }
-    //!
-    //! @brief move a new face into the mesh
-    //! @param f a new point
-    //! @param pos position hint where to move
-    //! @return the new point from the list
-    //!
-    face_iterator addFace( face_iterator pos, face_type&& f )
-        {
-            return M_faces.insert( pos, std::make_pair( f.id(),f ) );
-        }
-
-    //!
-    //! @brief move a new face into the mesh
-    //! @param f a new point
-    //! @param pos position hint where to move
-    //! @return the new point from the list
-    //!
-    template<typename... Args>
-    face_iterator emplaceFace( face_iterator pos, Args&&... f )
-        {
-            return M_faces.emplace_hint( pos, f... );
-        }
-
+#if 0
     //!
     //! @brief move a new face into the mesh
     //! @param f a new point
@@ -565,7 +587,7 @@ public:
         {
             return M_faces.emplace( f... );
         }
-
+#endif
     /**
      * erase face at position \p position
      *
@@ -575,9 +597,14 @@ public:
      * following the one that was deleted, or \c end() if no such face
      * exists.
      */
-    face_iterator eraseFace( face_iterator position )
+    face_iterator eraseFace( face_iterator it )
     {
-        return M_faces.erase( position );
+        size_type erasedId = it->first;
+        auto itret = M_faces.erase( it );
+        auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
+                                       [&erasedId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() == erasedId; } );
+        M_orderedFaces.erase( itOrdered );
+        return itret;
     }
 
     /**
@@ -709,16 +736,53 @@ public:
 
 private:
 
+    void buildOrderedFaces()
+        {
+            M_orderedFaces.clear();
+            auto it = beginFace(), en = endFace();
+            size_type nFace = std::distance( it, en );
+            M_orderedFaces.reserve( nFace );
+            for ( ; it != en ; ++it )
+                M_orderedFaces.push_back( boost::ref( it->second ) );
+            std::sort( M_orderedFaces.begin(), M_orderedFaces.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+        }
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
             ar & M_faces;
+            if ( Archive::is_loading::value )
+            {
+                M_faces.clear();
+                M_orderedFaces.clear();
+                size_type nFaces = 0;
+                ar & BOOST_SERIALIZATION_NVP( nFaces );
+                face_type newFace;
+                for ( size_type k=0 ; k<nFaces ; ++k )
+                {
+                    ar & boost::serialization::make_nvp( "face", newFace );
+                    this->addFace( std::move( newFace ) );
+                }
+            }
+            else
+            {
+                auto it = beginOrderedFace(), en = endOrderedFace();
+                size_type nFaces = std::distance( it, en );
+                ar & BOOST_SERIALIZATION_NVP( nFaces );
+                for ( ; it != en ; ++it )
+                    ar & boost::serialization::make_nvp( "face", unwrap_ref( *it ) );
+            }
         }
 
 private:
     WorldComm M_worldCommFaces;
     faces_type M_faces;
+    ordered_faces_reference_wrapper_type M_orderedFaces;
 };
 /// \endcond
 } // Feel

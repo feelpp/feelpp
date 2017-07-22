@@ -244,7 +244,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 }
             }
 #endif
-            toc("register elements associated to marked points" , FLAGS_v > 0 );
+            toc("Mesh::updateForUse register elements associated to marked points" , FLAGS_v > 0 );
             VLOG(1) << "[Mesh::updateForUse] update add element info for marked points";
         }
 
@@ -971,8 +971,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     size_type next_face = 0;
     bool faceinserted = false;
     const uint16_type _numLocalFaces = this->numLocalFaces();
-    element_iterator iv,  en;
-    boost::tie( iv, en ) = this->elementsRange();
+    // element_iterator iv,  en;
+    // boost::tie( iv, en ) = this->elementsRange();
+    auto iv = this->beginOrderedElement();
+    auto en = this->endOrderedElement();
 
     size_type nElt = std::distance(iv,en);
     typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<element_type*,uint16_type,face_type*>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
@@ -1017,7 +1019,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             }
         }
     }
-    toc("Mesh.updateEntitiesCoDimensionOne.add_faces", FLAGS_v>0);
+    toc("Mesh.updateEntitiesCoDimensionOne.add_faces", FLAGS_v>1);
 
     bool inserted = false;
     face_iterator __fit;
@@ -1042,7 +1044,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     std::map<rank_type,std::vector<element_type*>, std::less<rank_type> > elementsByProcOrdering;
     for ( ; iv != en; ++iv )
     {
-        auto & elt = iv->second;
+        auto & elt = unwrap_ref( *iv );
         rank_type pid = elt.processId();
         elementsByProcOrdering[ pid ].push_back( &elt );
     }
@@ -1236,7 +1238,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             } // face loop
         } // element loop
     }
-    toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>0);
+    toc("Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements",FLAGS_v>1);
     DVLOG(2) << "[Mesh::updateFaces] finish elements loop";
 
     tic();
@@ -1251,13 +1253,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         {
             DLOG(INFO) << "removing face id : " << face.id();
             // remove all faces that are not connected to any elements
-            f_it = this->faces().erase( f_it );
+            f_it = this->eraseFace( f_it );
             //++f_it;
         }
         else
             ++f_it;
     }
-    toc("Mesh.updateEntitiesCoDimensionOne.clean_faces",FLAGS_v>0);
+    toc("Mesh.updateEntitiesCoDimensionOne.clean_faces",FLAGS_v>1);
 
     LOG(INFO) << "We have now " << std::distance(this->beginFace(),this->endFace()) << " faces in the mesh";
 }
@@ -1524,7 +1526,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneMinimal()
         {
             DLOG(INFO) << "removing face id : " << face.id();
             // remove all faces that are not connected to any elements
-            f_it = this->faces().erase( f_it );
+            f_it = this->eraseFace( f_it );
             //++f_it;
         }
         else
@@ -3111,7 +3113,7 @@ Mesh<Shape, T, Tag>::decode()
         {
             pf.setPoint( ordering.fromGmshId( jj ), this->point( face_it->second[shift+jj]-1 ) );
         }
-        this->addFace( this->endFace(), std::move(pf) );
+        this->addFace( std::move(pf) );
     }
 
     for( auto elt_it = M_enc_elts.begin(), elt_en = M_enc_elts.end();

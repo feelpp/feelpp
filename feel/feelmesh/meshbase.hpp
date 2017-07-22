@@ -28,6 +28,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
 #include <unordered_map>
 

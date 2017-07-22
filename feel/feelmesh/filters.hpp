@@ -270,12 +270,12 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& imesh = Feel::unwrap_ptr( mesh );
     typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
-    auto it = imesh.beginElement();
-    auto en = imesh.endElement();
+    auto it = imesh.beginOrderedElement();
+    auto en = imesh.endOrderedElement();
     if ( it != en )
     {
         auto gm = imesh.gm();
-        auto const& initElt = it->second;
+        auto const& initElt = unwrap_ref( *it );
         typename mesh_type::reference_convex_type refConvex;
         auto geopc = gm->preCompute( refConvex.points() );
         const size_type context = ExprType::context|vm::POINT;
@@ -283,7 +283,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
         auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
         for ( ; it!=en;++it )
         {
-            auto const& elt = it->second;
+            auto const& elt = unwrap_ref( *it );
             if ( elt.processId() != pid )
                 continue;
             ctx->update( elt );

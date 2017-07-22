@@ -1049,6 +1049,7 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
 
     M_HDF5IO.closeTable ("elements");
 
+    M_meshPartIn->reserveNumberOfElement( M_numLocalElements[partId] );
 
     size_type nActiveElement = M_numLocalElements[partId]-M_numLocalGhostElements[partId];
     mapGhostHdf5IdToFeelId[partId].resize( M_numLocalGhostElements[partId] );
