@@ -279,6 +279,10 @@ public :
     bool loadDB() override;
     void loadDB( std::string const& filename, crb::load l ) override {}
 
+    //!
+    //! loadDB from \p filename with load strately \p l
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
 
 protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
