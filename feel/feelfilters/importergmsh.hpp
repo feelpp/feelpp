@@ -1429,7 +1429,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     //M_n_b_vertices[ __e.indices[0] ] = 1;
 
     __idGmshToFeel=pf.id();
-    auto fit = mesh->addFace( mesh->endFace(), std::move(pf) );
+    auto fit = mesh->addFace( std::move(pf) ).first;
     
 
     DVLOG(4) << "added point on boundary ("
@@ -1518,7 +1518,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
              << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 
     __idGmshToFeel=e.id();
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
     
 
 }
@@ -1564,7 +1564,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     //M_n_b_vertices[ __e.indices[1] ] = 1;
 
     __idGmshToFeel=e.id();
-    auto fit = mesh->addFace( mesh->endFace(), std::move(e) );
+    auto fit = mesh->addFace( std::move(e) ).first;
     
 
     DVLOG(2) << "added edge on boundary ("
@@ -1694,7 +1694,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
 }
 template<typename MeshType>
 void
@@ -1742,7 +1742,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    auto fit = mesh->addFace( mesh->endFace(), std::move(e) );
+    auto fit = mesh->addFace( std::move(e) );
 
 
 }
@@ -1827,7 +1827,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         M_n_vertices[ __e.indices[7] ] = 1;
     }
     
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
 }
 
 template<typename MeshType>
