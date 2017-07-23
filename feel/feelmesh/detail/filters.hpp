@@ -322,11 +322,11 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 allpoints( MeshType const& mesh )
 {
     typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype mypoints( new typename MeshTraits<MeshType>::points_reference_wrapper_type );
-    auto it = Feel::unwrap_ptr( mesh ).beginPoint();
-    auto en = Feel::unwrap_ptr( mesh ).endPoint();
+    auto it = Feel::unwrap_ptr( mesh ).beginOrderedPoint();
+    auto en = Feel::unwrap_ptr( mesh ).endOrderedPoint();
     for ( ; it!=en;++it )
     {
-        auto const& pt = it->second;
+        auto const& pt = unwrap_ref( *it );
         mypoints->push_back(boost::cref(pt));
     }
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
