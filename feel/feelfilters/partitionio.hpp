@@ -989,6 +989,8 @@ void PartitionIO<MeshType>::readPoints()
     M_HDF5IO.closeTable("point_ids");
     M_HDF5IO.closeTable("point_coords");
 
+    M_meshPartIn->reserveNumberOfPoint( M_numLocalPoints[partId] );
+
     node_type coords( d );
     size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
     for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
