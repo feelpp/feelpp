@@ -54,6 +54,7 @@ steps:
  - wait
  - trigger: "feelpp-singularity"
    label: ":singularity: generate images"
+   branches: "master develop feature/*"
    async: true
    build:
      branch: "$BUILDKITE_BRANCH"
