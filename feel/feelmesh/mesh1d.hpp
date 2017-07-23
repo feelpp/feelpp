@@ -277,9 +277,9 @@ public:
  */
     virtual void clear()
         {
-            this->elements().clear();
-            this->points().clear();
-            this->faces().clear();
+            super_elements::clear();
+            super_points::clear();
+            super_faces::clear();
             FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
         }
 
