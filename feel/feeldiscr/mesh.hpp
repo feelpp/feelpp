@@ -1871,12 +1871,12 @@ private:
     /**
      * modify edges on boundary in 3D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type const& face, mpl::bool_<true> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type const& face, mpl::bool_<false> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D

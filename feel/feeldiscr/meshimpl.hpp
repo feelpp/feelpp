@@ -1767,15 +1767,15 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type 
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& face , mpl::bool_<true> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & face , mpl::bool_<true> )
 {
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
     {
-        if ( face.edge( f ).isOnBoundary() == false )
+        auto & edge = face.edge( f );
+        if ( !edge.isOnBoundary() )
         {
-            auto & edgeModified = this->edgeIterator( face.edge(f).id() )->second;
-            edgeModified.setOnBoundary( true, 1 );
+            edge.setOnBoundary( true, 1 );
         }
 
     }
@@ -1784,7 +1784,7 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& face , mpl::bool_<t
 }
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type const& f, mpl::bool_<false> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & f, mpl::bool_<false> )
 {
 }
 
@@ -1822,26 +1822,26 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     // first go through all the faces and set the points of the boundary
     // faces to be on the boundary
     LOG(INFO) << "update boundary points...";
-    LOG(INFO) << "Initially we have " << nelements(boundarypoints(this)) <<  " boundary points";
+    DVLOG(2) << "Initially we have " << nelements(boundarypoints(this)) <<  " boundary points";
     for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
     {
-        auto const& face = it->second;
-        if ( face.isOnBoundary() == true )
+        auto & face = it->second;
+        if ( face.isOnBoundary() )
         {
             modifyEdgesOnBoundary( face, mpl::bool_<(nDim >= 3)>() );
             // loop over face points
             for ( int f = 0; f < face_type::numPoints; ++f )
             {
-                if ( face.point( f ).isOnBoundary() == false )
+                auto & point = face.point( f );
+                if ( !point.isOnBoundary() )
                 {
-                    auto pit = this->pointIterator( face.point(f).id() );
-                    pit->second.setOnBoundary(true, 0 );
+                    point.setOnBoundary(true, 0 );
                 }
 
             }
         }
     }
-    LOG(INFO) << "We have now " << nelements(boundarypoints(this)) <<  " boundary points";
+    DVLOG(2) << "We have now " << nelements(boundarypoints(this)) <<  " boundary points";
     LOG(INFO) << "update boundary elements...";
     // loop through faces to set the elements having a face on the boundary
     for ( auto iv = this->beginElement(), en = this->endElement();
@@ -1883,8 +1883,9 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
             elt.setOnBoundary( isOnBoundary, 0 );
         }
     } // loop over the elements
-    LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
-              << " elements sharing a point, a edge or a face with the boundary in the database";
+#if !defined( NDEBUG )
+    DVLOG(2) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
+             << " elements sharing a point, a edge or a face with the boundary in the database";
     // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
     auto rangebe = this->boundaryElements( 0, 2, 0 );
     auto itbe = std::get<0>( rangebe );
@@ -1896,7 +1897,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
                 << " entity on boundary max dim  " << e.boundaryEntityDimension()
                 << " process id : " << e.processId();
     }
-
+#endif
 }
 template<typename Shape, typename T, int Tag>
 void
