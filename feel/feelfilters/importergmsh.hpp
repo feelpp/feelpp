@@ -1266,7 +1266,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
                     mesh->setParametric( true );
                 }
             }
-            mesh->addPoint( pt );
+            mesh->addPoint( pt, false );
         } // loop over local points
 
 
@@ -1336,6 +1336,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
+    mesh->buildOrderedPoints();
     toc( "ImporterGmsh::readFromFile store elements in Mesh", FLAGS_v > 0 );
     // treat periodic entities if any
     for ( auto const& eit : periodic_entities )
