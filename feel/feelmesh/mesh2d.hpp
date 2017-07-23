@@ -285,9 +285,9 @@ class Mesh2D
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
-        this->elements().clear();
-        this->points().clear();
-        this->faces().clear();
+        super_elements::clear();
+        super_points::clear();
+        super_faces::clear();
         CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
     }
 

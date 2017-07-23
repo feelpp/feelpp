@@ -398,10 +398,10 @@ Mesh3D<GEOSHAPE,T>::~Mesh3D()
 template <typename GEOSHAPE, typename T>
 void Mesh3D<GEOSHAPE,T>::clear()
 {
-    this->elements().clear();
-    this->points().clear();
-    this->faces().clear();
-    this->edges().clear();
+    super_elements::clear();
+    super_points::clear();
+    super_faces::clear();
+    super_edges::clear();
 
     M_e2e.resize( boost::extents[0][0] );
     FEELPP_ASSERT( isEmpty() )
