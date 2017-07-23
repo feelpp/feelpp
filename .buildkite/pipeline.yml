@@ -56,6 +56,6 @@ steps:
    label: ":singularity: generate images"
    async: true
    build:
-     branch: "${BUILDKITE_BRANCH}"
+     branch: "$BUILDKITE_BRANCH"
      env:
        TARGET: ubuntu:16.10
