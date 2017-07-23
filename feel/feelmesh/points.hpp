@@ -64,6 +64,10 @@ public:
     typedef typename points_reference_wrapper_type::iterator point_reference_wrapper_iterator;
     typedef typename points_reference_wrapper_type::const_iterator point_reference_wrapper_const_iterator;
 
+    typedef std::vector<boost::reference_wrapper<point_type> > ordered_points_reference_wrapper_type;
+    typedef typename ordered_points_reference_wrapper_type::iterator ordered_point_reference_wrapper_iterator;
+    typedef typename ordered_points_reference_wrapper_type::const_iterator ordered_point_reference_wrapper_const_iterator;
+
     //@}
 
     /** @name Constructors, destructor
@@ -80,7 +84,9 @@ public:
         :
         M_worldCommPoints( f.M_worldCommPoints ),
         M_points( f.M_points )
-    {}
+    {
+        this->buildOrderedPoints();
+    }
 
     virtual ~Points()
         {
@@ -90,6 +96,7 @@ public:
     {
         VLOG(1) << "deleting points...\n";
         M_points.clear();
+        M_orderedPoints.clear();
     }
 
     //@}
@@ -104,6 +111,7 @@ public:
         {
             M_worldCommPoints = e.M_worldCommPoints;
             M_points = e.M_points;
+            this->buildOrderedPoints();
         }
 
         return *this;
@@ -187,6 +195,23 @@ public:
         return M_points.end();
     }
 
+    ordered_point_reference_wrapper_iterator beginOrderedPoint()
+        {
+            return M_orderedPoints.begin();
+        }
+    ordered_point_reference_wrapper_const_iterator beginOrderedPoint() const
+        {
+            return M_orderedPoints.begin();
+        }
+    ordered_point_reference_wrapper_iterator endOrderedPoint()
+        {
+            return M_orderedPoints.end();
+        }
+    ordered_point_reference_wrapper_const_iterator endOrderedPoint() const
+        {
+            return M_orderedPoints.end();
+        }
+
     /**
      * \return the range of iterator \c (begin,end) over the points
      * with marker \p m on processor \p p
@@ -228,11 +253,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
-            auto it = this->beginPoint();
-            auto en = this->endPoint();
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = it->second;
+                auto const& point = unwrap_ref( *it );
                 if ( point.processId() != part )
                     continue;
                 if ( !point.hasMarker( markerType ) )
@@ -252,11 +277,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
-            auto it = this->beginPoint();
-            auto en = this->endPoint();
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = it->second;
+                auto const& point = unwrap_ref( *it );
                 if ( point.processId() != part )
                     continue;
                 if ( !point.hasMarker( markerType ) )
@@ -303,11 +328,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
-            auto it = this->beginPoint();
-            auto en = this->endPoint();
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = it->second;
+                auto const& point = unwrap_ref( *it );
                 if ( point.processId() != part )
                     continue;
                 if ( !point.isInternal() )
@@ -327,11 +352,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
-            auto it = this->beginPoint();
-            auto en = this->endPoint();
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = it->second;
+                auto const& point = unwrap_ref( *it );
                 if ( point.processId() != part )
                     continue;
                 if ( !point.isOnBoundary() )
@@ -348,11 +373,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommPoints().localRank() : p;
             points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
-            auto it = this->beginPoint();
-            auto en = this->endPoint();
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
             for ( ; it!=en;++it )
             {
-                auto const& point = it->second;
+                auto const& point = unwrap_ref( *it );
                 if ( point.processId() == part )
                     mypoints->push_back(boost::cref(point));
             }
@@ -373,16 +398,60 @@ public:
      */
     //@{
 
+    //!
+    //! reserve size of container
+    //! @param nPoint : the size reserved
+    //!
+    void reserveNumberOfPoint( size_type nPoint )
+        {
+            M_points.reserve( nPoint );
+            M_orderedPoints.reserve( nPoint );
+        }
+
     /**
      * add a new point in the mesh
      * @param f a new point
      * @return the new point from the list
      */
-    point_type const& addPoint( point_type const& f )
+    point_type const& addPoint( point_type const& f, bool buildOrderedPoints = true )
     {
         //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
-        return M_points.emplace( std::make_pair( f.id(), f ) ).first->second;
+        auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
+
+        auto & newPt = ret.first->second;
+        if ( ret.second && buildOrderedPoints )
+        {
+            size_type newId = newPt.id();
+            if ( M_orderedPoints.empty() || unwrap_ref( M_orderedPoints.back() ).id() < newId )
+                M_orderedPoints.push_back( boost::ref( newPt ) );
+            else
+            {
+                auto itOrdered = std::find_if( M_orderedPoints.begin(), M_orderedPoints.end(),
+                                               [&newId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() > newId; } );
+                M_orderedPoints.insert( itOrdered, boost::ref( newPt ) );
+            }
+        }
+        return newPt;
     }
+
+    /**
+     * erase point at position \p position
+     *
+     * @param position \p position is a valid dereferenceable iterator of the index.
+     *
+     * @return An iterator pointing to the point immediately
+     * following the one that was deleted, or \c end() if no such point
+     * exists.
+     */
+    point_iterator erasePoint( point_iterator it )
+        {
+            size_type erasedId = it->first;
+            auto itret = M_points.erase( it );
+            auto itOrdered = std::find_if( M_orderedPoints.begin(), M_orderedPoints.end(),
+                                           [&erasedId]( auto & pointWrap ) { return unwrap_ref( pointWrap ).id() == erasedId; } );
+            M_orderedPoints.erase( itOrdered );
+            return itret;
+        }
 
     WorldComm const& worldCommPoints() const
     {
@@ -396,19 +465,60 @@ public:
 
     //@}
 
+    void updateOrderedPoints()
+        {
+            std::sort( M_orderedPoints.begin(), M_orderedPoints.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+        }
+
+    void buildOrderedPoints()
+        {
+            M_orderedPoints.clear();
+            auto it = beginPoint(), en = endPoint();
+            size_type nPoint = std::distance( it, en );
+            M_orderedPoints.reserve( nPoint );
+            for ( ; it != en ; ++it )
+                M_orderedPoints.push_back( boost::ref( it->second ) );
+            this->updateOrderedPoints();
+        }
+
 private:
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_points;
+            if ( Archive::is_loading::value )
+            {
+                M_points.clear();
+                M_orderedPoints.clear();
+                size_type nPoints = 0;
+                ar & BOOST_SERIALIZATION_NVP( nPoints );
+                point_type newPoint;
+                for ( size_type k=0 ; k<nPoints ; ++k )
+                {
+                    ar & boost::serialization::make_nvp( "point", newPoint );
+                    this->addPoint( std::move( newPoint ) );
+                }
+            }
+            else
+            {
+                auto it = beginOrderedPoint(), en = endOrderedPoint();
+                size_type nPoints = std::distance( it, en );
+                ar & BOOST_SERIALIZATION_NVP( nPoints );
+                for ( ; it != en ; ++it )
+                    ar & boost::serialization::make_nvp( "point", unwrap_ref( *it ) );
+            }
         }
 
 private:
     WorldComm M_worldCommPoints;
 
     points_type M_points;
+    ordered_points_reference_wrapper_type M_orderedPoints;
 };
 /// \endcond
 } // Feel
