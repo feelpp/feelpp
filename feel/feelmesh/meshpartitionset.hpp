@@ -369,6 +369,12 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
         {
             M_containerPoints[partId].push_back( boost::cref(M_mesh->pointIterator( ptId )->second ) );
         }
+        std::sort( M_containerPoints[partId].begin(), M_containerPoints[partId].end(),
+                   []( auto const& a, auto const& b) -> bool
+                   {
+                       return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                   });
+
     }
 
 #if 0
