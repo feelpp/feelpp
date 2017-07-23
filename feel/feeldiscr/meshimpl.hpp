@@ -1705,7 +1705,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type 
         if ( ptIdToCheck != ptOnFace.id() )
         {
             // erase duplicate point
-            this->points().erase( this->pointIterator( ptIdToCheck ) );
+            this->erasePoint( this->pointIterator( ptIdToCheck ) );
             // fix point coordinate
             elt.setPoint( idx, ptOnFace );
         }
@@ -1750,7 +1750,7 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type 
             if ( ptIdToCheck != ptOnFace.id() )
             {
                 // erase duplicate point
-                this->points().erase( this->pointIterator( ptIdToCheck ) );
+                this->erasePoint( this->pointIterator( ptIdToCheck ) );
                 // fix point coordinate
                 elt.setPoint( idx, ptOnFace );
             }
