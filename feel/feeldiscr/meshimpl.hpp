@@ -2234,11 +2234,11 @@ updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultgh
 
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::false_ /**/ )
 {}
 template<typename MeshType>
 void
-updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type const& theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
+updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType::element_type & theelt, resultghost_edge_type const& idEdgesWithBaryRecv, mpl::true_ /**/ )
 {
     typedef typename MeshType::element_type ElementType;
     typedef typename MeshType::edge_type edge_type;
@@ -2278,7 +2278,8 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
         CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
 
         // get the good edge
-        auto & edgeModified = mesh.edgeIterator( theelt.edge( jBis ).id() )->second;
+        //auto & edgeModified = mesh.edgeIterator( theelt.edge( jBis ).id() )->second;
+        auto & edgeModified = theelt.edge( jBis );
         // update id edge in other partition
         edgeModified.addNeighborPartitionId( idProc );
         edgeModified.setIdInOtherPartitions( idProc, idEdgeRecv );
@@ -2310,27 +2311,46 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
     //------------------------------------------------------------------------------------------------//
     // compute size of container to send and update Point and Edge info for parallelism
-    std::map< rank_type, int > nDataInVecToSend;
-    auto rangeGhostElement = this->ghostElements();
-    auto iv = std::get<0>( rangeGhostElement );
-    auto const en = std::get<1>( rangeGhostElement );
+    //std::map< rank_type, int > nDataInVecToSend;
+    //auto rangeGhostElement = this->ghostElements();
+
+    std::map< rank_type, std::map<int,element_type*/*size_type*/> > memoryMsgToSend;
+    std::map< rank_type, std::vector<std::pair<size_type,size_type> > > dataToSend;
+    
+    auto iv = this->beginOrderedElement();// std::get<0>( rangeGhostElement );
+    auto const en = this->endOrderedElement();//std::get<1>( rangeGhostElement );
     for ( ; iv != en; ++iv )
     {
-        auto const& ghostelt = boost::unwrap_ref( *iv );
-        const rank_type IdProcessOfGhost = ghostelt.processId();
+        auto & ghostelt = boost::unwrap_ref( *iv );
+        if ( !ghostelt.isGhostCell() )
+            continue;
+        const rank_type ghosteltPid = ghostelt.processId();
         // update info for parallelism
-        auto & eltModified = this->elementIterator( ghostelt )->second;
-        elementGhostConnectPointToElement( eltModified );
+        //auto & eltModified = this->elementIterator( ghostelt )->second;
+        elementGhostConnectPointToElement( ghostelt );
         if ( nDim==3 )
-            elementGhostConnectEdgeToElement( eltModified );
+            elementGhostConnectEdgeToElement( ghostelt );
 
         // be sure that the counter start to 0
-        if ( nDataInVecToSend.find(IdProcessOfGhost) == nDataInVecToSend.end() )
-            nDataInVecToSend[IdProcessOfGhost]=0;
+        //if ( nDataInVecToSend.find(ghosteltPid) == nDataInVecToSend.end() )
+        //nDataInVecToSend[ghosteltPid]=0;
+
+        //const rank_type idProc = __element.processId();
+        const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
+
+        //memoryMsgToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]] = &ghostelt;
+        memoryMsgToSend[ghosteltPid][ dataToSend[ghosteltPid].size() ] = &ghostelt;
+        // update container
+        //dataToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
+        dataToSend[ghosteltPid].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
+
         // update counter
-        nDataInVecToSend[IdProcessOfGhost]++;
+        //nDataInVecToSend[ghosteltPid]++;
+
+
     }
     //------------------------------------------------------------------------------------------------//
+#if 0
     // init and resize the container to send
     std::map< rank_type, std::vector<std::pair<size_type,size_type> > > dataToSend;
     auto itNDataInVecToSend = nDataInVecToSend.begin();
@@ -2342,8 +2362,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         dataToSend[idProc].resize( nData );
     }
     //------------------------------------------------------------------------------------------------//
+
     // prepare container to send
-    std::map< rank_type, std::map<int,size_type> > memoryMsgToSend;
+    std::map< rank_type, std::map<int,element_type*/*size_type*/> > memoryMsgToSend;
     std::map< rank_type, int > nDataInVecToSendBis;
     iv = std::get<2>( rangeGhostElement )->begin();
     for ( ; iv != en; ++iv )
@@ -2361,6 +2382,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         // update counter
         nDataInVecToSendBis[idProc]++;
     }
+#endif
     //------------------------------------------------------------------------------------------------//
 #if 0
     // compute nbMsgToRecv
@@ -2550,7 +2572,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
             auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
-            auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
+            //auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
+            auto & theelt = *memoryMsgToSend[idProc][k];
 
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )
@@ -2599,8 +2622,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
-                auto face_it = this->faceIterator( theelt.face( jBis ).id() );
-                auto & faceModified = face_it->second;
+                //auto face_it = this->faceIterator( theelt.face( jBis ).id() );
+                auto & faceModified = theelt.face( jBis );//face_it->second;
                 // update id face in other partition
                 faceModified.addNeighborPartitionId( idProc );
                 faceModified.setIdInOtherPartitions( idProc, idFaceRecv );
@@ -2638,10 +2661,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 
                 CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
                 // get the good face
-                auto point_it = this->pointIterator( theelt.point( jBis ).id() );
+                //auto point_it = this->pointIterator( theelt.point( jBis ).id() );
+                auto & pointModified = theelt.point( jBis );
                 //update the face
-                point_it->second.addNeighborPartitionId( idProc );
-                point_it->second.setIdInOtherPartitions( idProc, idPointRecv );
+                pointModified.addNeighborPartitionId( idProc );
+                pointModified.setIdInOtherPartitions( idProc, idPointRecv );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
         } // for ( int k=0; k<nDataRecv; ++k )
     } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
