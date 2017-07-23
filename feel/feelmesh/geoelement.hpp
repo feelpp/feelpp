@@ -949,6 +949,10 @@ public:
     {
         return *M_vertices[i];
     }
+    point_type & face( uint16_type i )
+    {
+        return *M_vertices[i];
+    }
     point_type const* facePtr( uint16_type i ) const
     {
         FEELPP_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
