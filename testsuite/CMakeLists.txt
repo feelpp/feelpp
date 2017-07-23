@@ -45,7 +45,7 @@ option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite"
 if (FEELPP_DISABLE_COMPILE_FAILURE )
   add_definitions(-DFEELPP_DISABLE_COMPILE_FAILURE=1)
 endif()
-message(STATUS "[feelpp] disable compile failure: ${FEELPP_DISABLE_COMPILE_FAILURE}")
+message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COMPILE_FAILURE}")
 
 
 
