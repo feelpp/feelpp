@@ -233,16 +233,13 @@ public:
         this->buildOrderedElements();
     }
 
-    virtual ~Elements()
-    {
-        this->clear();
-    }
+    virtual ~Elements() {}
 
     void clear()
         {
-            VLOG(1) << "deleting elements...\n";
-            M_elements.clear();
+            DVLOG(1) << "deleting elements...\n";
             M_orderedElements.clear();
+            M_elements.clear();
             M_needToOrderElements = false;
             M_parts.clear();
         }
