@@ -94,7 +94,7 @@ public:
 
     void clear()
     {
-        VLOG(1) << "deleting points...\n";
+        DVLOG(1) << "deleting points...\n";
         M_orderedPoints.clear();
         M_points.clear();
         M_needToOrderPoints = false;

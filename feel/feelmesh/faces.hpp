@@ -147,7 +147,7 @@ public:
 
     void clear()
         {
-            VLOG(1) << "deleting faces...\n";
+            DVLOG(1) << "deleting faces...\n";
             M_orderedFaces.clear();
             M_faces.clear();
             M_needToOrderFaces = false;
