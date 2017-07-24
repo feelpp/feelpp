@@ -81,13 +81,15 @@ public:
     Edges( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommEdges( worldComm ),
-        M_edges()
+        M_edges(),
+        M_needToOrderEdges( false )
     {}
 
     Edges( Edges const & f )
         :
         M_worldCommEdges( f.M_worldCommEdges ),
-        M_edges( f.M_edges )
+        M_edges( f.M_edges ),
+        M_needToOrderEdges( false )
     {
         this->buildOrderedEdges();
     }
@@ -101,6 +103,7 @@ public:
             VLOG(1) << "deleting edges...\n";
             M_edges.clear();
             M_orderedEdges.clear();
+            M_needToOrderEdges = false;
         }
 
     //@}
@@ -383,15 +386,9 @@ public:
         if ( ret.second )
         {
             auto & newEdge = ret.first->second;
-            size_type newId = newEdge.id();
-            if ( M_orderedEdges.empty() || unwrap_ref( M_orderedEdges.back() ).id() < newId )
-                M_orderedEdges.push_back( boost::ref( newEdge ) );
-            else
-            {
-                auto itOrdered = std::find_if( M_orderedEdges.begin(), M_orderedEdges.end(),
-                                               [&newId]( auto & edgeWrap ) { return unwrap_ref( edgeWrap ).id() > newId; } );
-                M_orderedEdges.insert( itOrdered, boost::ref( newEdge ) );
-            }
+            if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
+                M_needToOrderEdges = true;
+            M_orderedEdges.push_back( boost::ref( newEdge ) );
         }
 
         return ret;
@@ -405,15 +402,9 @@ public:
             if ( ret.second )
             {
                 auto & newEdge = ret.first->second;
-                size_type newId = newEdge.id();
-                if ( M_orderedEdges.empty() || unwrap_ref( M_orderedEdges.back() ).id() < newId )
-                    M_orderedEdges.push_back( boost::ref( newEdge ) );
-                else
-                {
-                    auto itOrdered = std::find_if( M_orderedEdges.begin(), M_orderedEdges.end(),
-                                                   [&newId]( auto & edgeWrap ) { return unwrap_ref( edgeWrap ).id() > newId; } );
-                    M_orderedEdges.insert( itOrdered, boost::ref( newEdge ) );
-                }
+                if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
+                    M_needToOrderEdges = true;
+                M_orderedEdges.push_back( boost::ref( newEdge ) );
             }
 
             return ret;
@@ -444,6 +435,17 @@ public:
         M_worldCommEdges = _worldComm;
     }
 
+    void updateOrderedEdges()
+        {
+            if ( !M_needToOrderEdges )
+                return;
+            std::sort( M_orderedEdges.begin(), M_orderedEdges.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+            M_needToOrderEdges = false;
+        }
     //@}
 
 private:
@@ -456,11 +458,8 @@ private:
             M_orderedEdges.reserve( nEdge );
             for ( ; it != en ; ++it )
                 M_orderedEdges.push_back( boost::ref( it->second ) );
-            std::sort( M_orderedEdges.begin(), M_orderedEdges.end(),
-                       []( auto const& a, auto const& b) -> bool
-                       {
-                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
-                       });
+            M_needToOrderEdges = true;
+            this->updateOrderedEdges();
         }
 
     friend class boost::serialization::access;
@@ -471,6 +470,7 @@ private:
             {
                 M_edges.clear();
                 M_orderedEdges.clear();
+                M_needToOrderEdges = false;
                 size_type nEdges = 0;
                 ar & BOOST_SERIALIZATION_NVP( nEdges );
                 edge_type newEdge;
@@ -494,6 +494,7 @@ private:
     WorldComm M_worldCommEdges;
     edges_type M_edges;
     ordered_edges_reference_wrapper_type M_orderedEdges;
+    bool M_needToOrderEdges;
 };
 /// \endcond
 } // Feel

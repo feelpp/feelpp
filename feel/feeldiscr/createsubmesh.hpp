@@ -442,7 +442,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     VLOG(2) << "submesh created\n";
     // newMesh->setNumVertices( newMesh->numPoints() );
-
+    if (!renumberPoint )
+        newMesh->updateOrderedPoints();
     VLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     newMesh->components().reset();
@@ -662,6 +663,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     // newMesh->setNumVertices( newMesh->numPoints() );
     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] update face/edge info if necessary\n";
+    if (!renumberPoint )
+        newMesh->updateOrderedPoints();
     // Prepare the new_mesh for use
     newMesh->components().reset();
     newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
@@ -861,6 +864,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
     // newMesh->setNumVertices( newMesh->numPoints() );
     DVLOG(2) << "[CreateSubmesh] update face/edge info if necessary\n";
+    if ( !renumberPoint )
+        newMesh->updateOrderedPoints();
     // Prepare the new_mesh for use
     newMesh->components().reset();
     newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
