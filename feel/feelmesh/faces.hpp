@@ -143,15 +143,13 @@ public:
         this->buildOrderedFaces();
     }
 
-    virtual ~Faces()
-    {
-        this->clear();
-    }
+    virtual ~Faces() {}
+
     void clear()
         {
             VLOG(1) << "deleting faces...\n";
-            M_faces.clear();
             M_orderedFaces.clear();
+            M_faces.clear();
             M_needToOrderFaces = false;
         }
     //@}

@@ -90,15 +90,13 @@ public:
         this->buildOrderedPoints();
     }
 
-    virtual ~Points()
-        {
-            this->clear();
-        }
+    virtual ~Points() {}
+
     void clear()
     {
         VLOG(1) << "deleting points...\n";
-        M_points.clear();
         M_orderedPoints.clear();
+        M_points.clear();
         M_needToOrderPoints = false;
     }
 
