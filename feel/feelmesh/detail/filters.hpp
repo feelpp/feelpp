@@ -45,13 +45,22 @@ struct submeshrangetype
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename MeshTraits<MeshType>::element_const_iterator,
-             typename MeshTraits<MeshType>::element_const_iterator>
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
 allelements( MeshType const& mesh )
 {
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelements( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto it = Feel::unwrap_ptr( mesh ).beginOrderedElement();
+    auto en = Feel::unwrap_ptr( mesh ).endOrderedElement();
+    for ( ; it!=en;++it )
+    {
+        auto const& elt = unwrap_ref( *it );
+        myelements->push_back(boost::cref(elt));
+    }
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              Feel::unwrap_ptr( mesh ).beginElement(),
-                              Feel::unwrap_ptr( mesh ).endElement() );
+                              myelements->begin(), myelements->end(),
+                              myelements );
 }
 
 template<typename MeshType>
@@ -307,13 +316,22 @@ internaledges( MeshType const& mesh )
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename MeshTraits<MeshType>::point_const_iterator,
-             typename MeshTraits<MeshType>::point_const_iterator>
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
 allpoints( MeshType const& mesh )
 {
+    typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype mypoints( new typename MeshTraits<MeshType>::points_reference_wrapper_type );
+    auto it = Feel::unwrap_ptr( mesh ).beginOrderedPoint();
+    auto en = Feel::unwrap_ptr( mesh ).endOrderedPoint();
+    for ( ; it!=en;++it )
+    {
+        auto const& pt = unwrap_ref( *it );
+        mypoints->push_back(boost::cref(pt));
+    }
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              Feel::unwrap_ptr( mesh ).beginPoint(),
-                              Feel::unwrap_ptr( mesh ).endPoint() );
+                              mypoints->begin(), mypoints->end(),
+                              mypoints );
 }
 
 template<typename MeshType>
