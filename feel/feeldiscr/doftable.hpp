@@ -1769,7 +1769,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     {
         for ( auto const& elt : allelements( M ) )
         {
-            size_type eltId = elt.id();
+            size_type eltId = unwrap_ref( elt ).id();
             M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
             if ( is_hdiv_conforming || is_hcurl_conforming )
                 M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
@@ -2622,7 +2622,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             const face_type* faceit = faceData.second.first;
             uint8_type connectionId = faceData.second.second;
             M_face_l2g[ faceId ].resize( nDofF*ncdof );
-            dfb.add( faceit, connectionId );
+            dfb.add( *faceit, connectionId );
         }
     }
     else
