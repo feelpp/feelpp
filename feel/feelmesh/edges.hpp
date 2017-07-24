@@ -94,15 +94,13 @@ public:
         this->buildOrderedEdges();
     }
 
-    virtual ~Edges()
-        {
-            this->clear();
-        }
+    virtual ~Edges() {}
+
     void clear()
         {
-            VLOG(1) << "deleting edges...\n";
-            M_edges.clear();
+            DVLOG(1) << "deleting edges...\n";
             M_orderedEdges.clear();
+            M_edges.clear();
             M_needToOrderEdges = false;
         }
 

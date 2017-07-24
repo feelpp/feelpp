@@ -284,11 +284,8 @@ public:
      */
     Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
-    ~Mesh()
-        {
-            VLOG(1) << "Mesh Destructor";
-            this->clear();
-        }
+    ~Mesh() {}
+
     void clear()
         {
             VLOG(1) << "Mesh clear()";
