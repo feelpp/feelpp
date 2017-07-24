@@ -355,6 +355,19 @@ public:
     }
 
     /**
+     *
+     * \return true if a neighbor has been registered
+     */
+    size_type hasNeighbor( uint16_type n ) const
+        {
+            if ( M_neighbors.empty() )
+                return false;
+            if ( n >= M_neighbors.size() )
+                return false;
+            return M_neighbors[n] != invalid_size_type_value;
+        }
+
+    /**
      * set the \p n -th neighbor with \p neigh
      */
     void setNeighbor( uint16_type n, size_type neigh_id )

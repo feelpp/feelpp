@@ -58,15 +58,13 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
 
 
 template<typename MeshType>
-using allelements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                 typename MeshTraits<MeshType>::element_const_iterator,
-                                 typename MeshTraits<MeshType>::element_const_iterator>;
-
-template<typename MeshType>
 using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                                   typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using elements_pid_t = elements_reference_wrapper_t<MeshType>;
@@ -90,17 +88,14 @@ template<typename MeshType>
 using marked3elements_t = elements_reference_wrapper_t<MeshType>;
 
 
-
-template<typename MeshType>
-using allfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                 typename MeshTraits<MeshType>::face_const_iterator,
-                                 typename MeshTraits<MeshType>::face_const_iterator>;
-
 template<typename MeshType>
 using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allfaces_t =  faces_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using idfaces_t =  faces_reference_wrapper_t<MeshType>;
@@ -127,14 +122,13 @@ using marked3faces_t = faces_reference_wrapper_t<MeshType>;
 
 
 template<typename MeshType>
-using alledges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                                 typename MeshTraits<MeshType>::edge_const_iterator,
-                                 typename MeshTraits<MeshType>::edge_const_iterator>;
-template<typename MeshType>
 using edges_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_EDGES>,
                                                   typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using alledges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using pid_edges_t = edges_reference_wrapper_t<MeshType>;
@@ -150,15 +144,12 @@ template<typename MeshType>
 using internaledges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
-using allpoints_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
-                               typename MeshTraits<MeshType>::point_const_iterator,
-                               typename MeshTraits<MeshType>::point_const_iterator>;
-
-template<typename MeshType>
 using points_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_POINTS>,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
+template<typename MeshType>
+using allpoints_t = points_reference_wrapper_t<MeshType>;
 template<typename MeshType>
 using points_pid_t = points_reference_wrapper_t<MeshType>;
 template<typename MeshType>
@@ -279,12 +270,12 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& imesh = Feel::unwrap_ptr( mesh );
     typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
-    auto it = imesh.beginElement();
-    auto en = imesh.endElement();
+    auto it = imesh.beginOrderedElement();
+    auto en = imesh.endOrderedElement();
     if ( it != en )
     {
         auto gm = imesh.gm();
-        auto const& initElt = *it;
+        auto const& initElt = unwrap_ref( *it );
         typename mesh_type::reference_convex_type refConvex;
         auto geopc = gm->preCompute( refConvex.points() );
         const size_type context = ExprType::context|vm::POINT;
@@ -292,7 +283,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
         auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
         for ( ; it!=en;++it )
         {
-            auto const& elt = *it;
+            auto const& elt = unwrap_ref( *it );
             if ( elt.processId() != pid )
                 continue;
             ctx->update( elt );
