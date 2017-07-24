@@ -98,7 +98,7 @@ public:
 
     void clear()
         {
-            VLOG(1) << "deleting edges...\n";
+            DVLOG(1) << "deleting edges...\n";
             M_orderedEdges.clear();
             M_edges.clear();
             M_needToOrderEdges = false;

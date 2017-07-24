@@ -237,7 +237,7 @@ public:
 
     void clear()
         {
-            VLOG(1) << "deleting elements...\n";
+            DVLOG(1) << "deleting elements...\n";
             M_orderedElements.clear();
             M_elements.clear();
             M_needToOrderElements = false;
