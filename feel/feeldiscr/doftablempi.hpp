@@ -1800,9 +1800,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             auto const& theface = ghostElt.face(f);
             if ( theface.isGhostCell() && faceGhostDone.find( theface.id() ) == faceGhostDone.end() )
             {
-                auto faceIt = mesh.faceIterator( theface.id() );
-                M_face_l2g[ faceIt->id()].resize( nLocalDofOnFace() );
-                dfb.add( faceIt );
+                M_face_l2g[ theface.id()].resize( nLocalDofOnFace() );
+                dfb.add( theface );
                 faceGhostDone.insert( theface.id() );
             }
         }

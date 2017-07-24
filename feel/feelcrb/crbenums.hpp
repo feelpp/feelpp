@@ -51,6 +51,14 @@ enum class load
     //! load all
     all = 2
 };
+
+enum class last
+{
+    //! last created
+    created = 1,
+    //! last modified
+    modified = 2
+};
 } // crb
 
 /**

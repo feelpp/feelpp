@@ -23,7 +23,7 @@
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #endif
 
 

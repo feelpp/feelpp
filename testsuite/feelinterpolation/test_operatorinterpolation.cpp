@@ -1,6 +1,6 @@
 
 #define BOOST_TEST_MODULE test_operatorinterpolation
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>

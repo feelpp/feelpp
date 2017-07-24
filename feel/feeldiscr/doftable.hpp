@@ -1479,7 +1479,7 @@ private:
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
         {
-            element_type _elt = *mesh.beginElement();
+            element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
             for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; i++ )
@@ -2660,7 +2660,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 #endif
             int ncdof = is_product ? nComponents : 1 ;
             M_face_l2g[ face.id()].resize( nDofF*ncdof );
-            dfb.add( __face_it );
+            dfb.add( face );
         }
     }
 

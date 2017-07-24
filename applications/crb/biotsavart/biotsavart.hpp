@@ -70,6 +70,10 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
           "parameter to evaluate" )
         ( "biotsavart.compute-fe", po::value<bool>()->default_value(false),
           "compute the finite element version of Biot Savart" )
+        ( "biotsavart.compute-offline", po::value<bool>()->default_value(true),
+          "compute the offline part of Biot Savart" )
+        ( "biotsavart.compute-online", po::value<bool>()->default_value(true),
+          "compute the online part of Biot Savart" )
         ( "biotsavart.rebuild-database", po::value<bool>()->default_value(false),
           "rebuild the integrals or not" )
         ( "biotsavart.path-to-database", po::value<std::string>()->default_value("BiotSavart"),
@@ -151,8 +155,11 @@ public:
 
     void initModel();
     // setupSpecificityModel
-    value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+
+    //!
+    //! 
+    //!
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     parameter_type paramFromOption();
     void runBS();

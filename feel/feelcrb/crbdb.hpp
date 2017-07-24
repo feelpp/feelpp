@@ -38,6 +38,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 
 namespace Feel
 {
@@ -125,6 +126,16 @@ public:
         return M_uuid;
     }
 
+    //!
+    //! @return the uuid from a path to the json file
+    //!
+    uuids::uuid id( fs::path p ) const;
+
+    //!
+    //! @return the string representation of the uuid
+    //!
+    std::string idStr() const { return boost::lexical_cast<std::string>( M_uuid ); }
+    
     //!
     //! set UUID 
     //!
@@ -255,6 +266,42 @@ public:
      */
     virtual bool loadDB();
 
+    //!
+    //! 
+    //!
+    virtual void loadDB( std::string const& filename, crb::load l ) = 0;
+
+    //!
+    //! @return path to file \p f and check json extension
+    //!
+    fs::path db( std::string const& ) const;
+        
+    //!
+    //! 
+    //!
+    virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+
+    //!
+    //! @return fs::path from DB \p id
+    //! check existence of json metadata file
+    //! @param id db id
+    //! @param root root repository for CRB DB
+    //!
+    fs::path dbFromId( std::string const& id, std::string const& root = Environment::rootRepository() ) const;
+    
+    //!
+    //! 
+    //!
+    virtual void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
+
+    //!
+    //! @return fs::path from DB \p last
+    //! check existence of json metadata file
+    //! @param last what last file type 
+    //! @param root root repository for CRB DB
+    //!
+    fs::path dbLast( crb::last last = crb::last::modified, std::string const& root = Environment::rootRepository() ) const;
+    
     //@}
 
 protected:
