@@ -130,13 +130,15 @@ public:
     Faces( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommFaces( worldComm ),
-        M_faces()
+        M_faces(),
+        M_needToOrderFaces( false )
     {}
 
     Faces( Faces const & f )
         :
         M_worldCommFaces( f.M_worldCommFaces ),
-        M_faces( f.M_faces )
+        M_faces( f.M_faces ),
+        M_needToOrderFaces( false )
     {
         this->buildOrderedFaces();
     }
@@ -150,6 +152,7 @@ public:
             VLOG(1) << "deleting faces...\n";
             M_faces.clear();
             M_orderedFaces.clear();
+            M_needToOrderFaces = false;
         }
     //@}
 
@@ -533,15 +536,9 @@ public:
         if ( ret.second )
         {
             auto & newFace = ret.first->second;
-            size_type newId = newFace.id();
-            if ( M_orderedFaces.empty() || unwrap_ref( M_orderedFaces.back() ).id() < newId )
-                M_orderedFaces.push_back( boost::ref( newFace ) );
-            else
-            {
-                auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
-                                               [&newId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() > newId; } );
-                M_orderedFaces.insert( itOrdered, boost::ref( newFace ) );
-            }
+            if ( !M_needToOrderFaces && !M_orderedFaces.empty() && unwrap_ref( M_orderedFaces.back() ).id() > newFace.id() )
+                M_needToOrderFaces = true;
+            M_orderedFaces.push_back( boost::ref( newFace ) );
         }
 
         return ret;
@@ -562,15 +559,9 @@ public:
             if ( ret.second )
             {
                 auto & newFace = ret.first->second;
-                size_type newId = newFace.id();
-                if ( M_orderedFaces.empty() || unwrap_ref( M_orderedFaces.back() ).id() < newId )
-                    M_orderedFaces.push_back( boost::ref( newFace ) );
-                else
-                {
-                    auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
-                                                   [&newId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() > newId; } );
-                    M_orderedFaces.insert( itOrdered, boost::ref( newFace ) );
-                }
+                if ( !M_needToOrderFaces && !M_orderedFaces.empty() && unwrap_ref( M_orderedFaces.back() ).id() > newFace.id() )
+                    M_needToOrderFaces = true;
+                M_orderedFaces.push_back( boost::ref( newFace ) );
             }
 
             return ret;
@@ -732,6 +723,18 @@ public:
         M_worldCommFaces = _worldComm;
     }
 
+    void updateOrderedFace()
+        {
+            if ( !M_needToOrderFaces )
+                return;
+            std::sort( M_orderedFaces.begin(), M_orderedFaces.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+            M_needToOrderFaces = false;
+        }
+
     //@}
 
 private:
@@ -744,11 +747,8 @@ private:
             M_orderedFaces.reserve( nFace );
             for ( ; it != en ; ++it )
                 M_orderedFaces.push_back( boost::ref( it->second ) );
-            std::sort( M_orderedFaces.begin(), M_orderedFaces.end(),
-                       []( auto const& a, auto const& b) -> bool
-                       {
-                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
-                       });
+            M_needToOrderFaces = true;
+            this->updateOrderedFaces();
         }
 
     friend class boost::serialization::access;
@@ -759,6 +759,7 @@ private:
             {
                 M_faces.clear();
                 M_orderedFaces.clear();
+                M_needToOrderFaces = false;
                 size_type nFaces = 0;
                 ar & BOOST_SERIALIZATION_NVP( nFaces );
                 face_type newFace;
@@ -782,6 +783,7 @@ private:
     WorldComm M_worldCommFaces;
     faces_type M_faces;
     ordered_faces_reference_wrapper_type M_orderedFaces;
+    bool M_needToOrderFaces;
 };
 /// \endcond
 } // Feel

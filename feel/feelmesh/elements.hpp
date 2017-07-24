@@ -220,13 +220,15 @@ public:
     Elements( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommElements(worldComm),
-        M_elements()
+        M_elements(),
+        M_needToOrderElements( false )
     {}
 
     Elements( Elements const & f )
         :
         M_worldCommElements( f.worldCommElements() ),
-        M_elements( f.M_elements )
+        M_elements( f.M_elements ),
+        M_needToOrderElements( false )
     {
         this->buildOrderedElements();
     }
@@ -241,6 +243,7 @@ public:
             VLOG(1) << "deleting elements...\n";
             M_elements.clear();
             M_orderedElements.clear();
+            M_needToOrderElements = false;
             M_parts.clear();
         }
     //@}
@@ -694,20 +697,14 @@ public:
             f.setId( M_elements.size() );
         auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
-        auto & newElt = ret.first->second;
+        auto & newElement = ret.first->second;
         if ( ret.second )
         {
-            size_type newId = newElt.id();
-            if ( M_orderedElements.empty() || unwrap_ref( M_orderedElements.back() ).id() < newId )
-                M_orderedElements.push_back( boost::ref( newElt ) );
-            else
-            {
-                auto itOrdered = std::find_if( M_orderedElements.begin(), M_orderedElements.end(),
-                                               [&newId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() > newId; } );
-                M_orderedElements.insert( itOrdered, boost::ref( newElt ) );
-            }
+            if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
+                M_needToOrderElements = true;
+            M_orderedElements.push_back( boost::ref( newElement ) );
         }
-        return newElt;
+        return newElement;
     }
     //!
     //! move an element into the mesh
@@ -721,20 +718,14 @@ public:
             //return *M_elements.insert( f );
             auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
-            auto & newElt = ret.first->second;
+            auto & newElement = ret.first->second;
             if ( ret.second )
             {
-                size_type newId = newElt.id();
-                if ( M_orderedElements.empty() || unwrap_ref( M_orderedElements.back() ).id() < newId )
-                    M_orderedElements.push_back( boost::ref( newElt ) );
-                else
-                {
-                    auto itOrdered = std::find_if( M_orderedElements.begin(), M_orderedElements.end(),
-                                                   [&newId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() > newId; } );
-                    M_orderedElements.insert( itOrdered, boost::ref( newElt ) );
-                }
+                if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
+                    M_needToOrderElements = true;
+                M_orderedElements.push_back( boost::ref( newElement ) );
             }
-            return newElt;
+            return newElement;
         }
 
 
@@ -748,7 +739,7 @@ public:
             return itret;
         }
 
-    
+
     template<typename ElementVecType>
     void updateMarker( uint16_type markerType, ElementVecType const& evec )
     {
@@ -841,6 +832,18 @@ public:
         M_worldCommElements = _worldComm;
     }
 
+    void updateOrderedElement()
+        {
+            if ( !M_needToOrderElements )
+                return;
+            std::sort( M_orderedElements.begin(), M_orderedElements.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+            M_needToOrderElements = false;
+        }
+
     //@}
 
 private:
@@ -853,11 +856,8 @@ private:
             M_orderedElements.reserve( nElement );
             for ( ; it != en ; ++it )
                 M_orderedElements.push_back( boost::ref( it->second ) );
-            std::sort( M_orderedElements.begin(), M_orderedElements.end(),
-                       []( auto const& a, auto const& b) -> bool
-                       {
-                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
-                       });
+            M_needToOrderElements = true;
+            this->updateOrderedElements();
         }
 
     friend class boost::serialization::access;
@@ -869,6 +869,7 @@ private:
             {
                 M_elements.clear();
                 M_orderedElements.clear();
+                M_needToOrderElements =  false;
                 size_type nElements = 0;
                 ar & BOOST_SERIALIZATION_NVP( nElements );
                 element_type newElt;
@@ -893,6 +894,7 @@ private:
     WorldComm M_worldCommElements;
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
+    bool M_needToOrderElements;
     parts_map_type M_parts;
 };
 /// \endcond

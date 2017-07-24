@@ -77,13 +77,15 @@ public:
     Points( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommPoints( worldComm ),
-        M_points()
+        M_points(),
+        M_needToOrderPoints( false )
     {}
 
     Points( Points const & f )
         :
         M_worldCommPoints( f.M_worldCommPoints ),
-        M_points( f.M_points )
+        M_points( f.M_points ),
+        M_needToOrderPoints( false )
     {
         this->buildOrderedPoints();
     }
@@ -97,6 +99,7 @@ public:
         VLOG(1) << "deleting points...\n";
         M_points.clear();
         M_orderedPoints.clear();
+        M_needToOrderPoints = false;
     }
 
     //@}
@@ -413,26 +416,40 @@ public:
      * @param f a new point
      * @return the new point from the list
      */
-    point_type const& addPoint( point_type const& f, bool buildOrderedPoints = true )
+    point_type const& addPoint( point_type const& f )
     {
         //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
         auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
 
-        auto & newPt = ret.first->second;
-        if ( ret.second && buildOrderedPoints )
+        auto & newPoint = ret.first->second;
+        if ( ret.second )
         {
-            size_type newId = newPt.id();
-            if ( M_orderedPoints.empty() || unwrap_ref( M_orderedPoints.back() ).id() < newId )
-                M_orderedPoints.push_back( boost::ref( newPt ) );
-            else
-            {
-                auto itOrdered = std::find_if( M_orderedPoints.begin(), M_orderedPoints.end(),
-                                               [&newId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() > newId; } );
-                M_orderedPoints.insert( itOrdered, boost::ref( newPt ) );
-            }
+            if ( !M_needToOrderPoints && !M_orderedPoints.empty() && unwrap_ref( M_orderedPoints.back() ).id() > newPoint.id() )
+                M_needToOrderPoints = true;
+            M_orderedPoints.push_back( boost::ref( newPoint ) );
         }
-        return newPt;
+        return newPoint;
     }
+
+    /**
+     * add a new point in the mesh
+     * @param f a new point
+     * @return the new point from the list
+     */
+    point_type const& addPoint( point_type && f )
+        {
+            //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
+            auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
+
+            auto & newPoint = ret.first->second;
+            if ( ret.second )
+            {
+                if ( !M_needToOrderPoints && !M_orderedPoints.empty() && unwrap_ref( M_orderedPoints.back() ).id() > newPoint.id() )
+                    M_needToOrderPoints = true;
+                M_orderedPoints.push_back( boost::ref( newPoint ) );
+            }
+            return newPoint;
+        }
 
     /**
      * erase point at position \p position
@@ -467,12 +484,17 @@ public:
 
     void updateOrderedPoints()
         {
+            if ( !M_needToOrderPoints )
+                return;
             std::sort( M_orderedPoints.begin(), M_orderedPoints.end(),
                        []( auto const& a, auto const& b) -> bool
                        {
                            return unwrap_ref( a ).id() < unwrap_ref( b ).id();
                        });
+            M_needToOrderPoints = false;
         }
+
+private:
 
     void buildOrderedPoints()
         {
@@ -482,10 +504,9 @@ public:
             M_orderedPoints.reserve( nPoint );
             for ( ; it != en ; ++it )
                 M_orderedPoints.push_back( boost::ref( it->second ) );
+            M_needToOrderPoints = true;
             this->updateOrderedPoints();
         }
-
-private:
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -495,6 +516,7 @@ private:
             {
                 M_points.clear();
                 M_orderedPoints.clear();
+                M_needToOrderPoints = false;
                 size_type nPoints = 0;
                 ar & BOOST_SERIALIZATION_NVP( nPoints );
                 point_type newPoint;
@@ -519,6 +541,7 @@ private:
 
     points_type M_points;
     ordered_points_reference_wrapper_type M_orderedPoints;
+    bool M_needToOrderPoints;
 };
 /// \endcond
 } // Feel
