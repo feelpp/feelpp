@@ -1,6 +1,6 @@
 
 #define BOOST_TEST_MODULE kdtree tests
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 
 #include <feel/feelmesh/kdtree.hpp>

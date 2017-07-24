@@ -27,6 +27,7 @@
 
 #include <string>
 #include <feel/feelconfig.h>
+#include <feel/feelcore/info.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdata.hpp>
@@ -60,7 +61,17 @@ public:
     //! we already know the \p name() of the model, we only need the \p id and the \p root repository
     //!
     virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) = 0;
-        
+
+    //!
+    //! load last created or modified database
+    //! @param last defines whether to load last created or modified DB
+    //! @param load defines the type of data data loaded from the DB
+    //! @param root root repository of the DB
+    //!
+    virtual void loadDBLast ( crb::last last = crb::last::modified,
+                              crb::load load = crb::load::rb,
+                              std::string const& root = Environment::rootRepository() ) = 0;
+    
     //!
     //! @return the parameter space
     //!
@@ -167,13 +178,17 @@ po::options_description crbPluginOptions( std::string const& prefix = "" );
 
 using crbpluginapi_create_t = boost::shared_ptr<CRBPluginAPI> ();
 using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
-boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& dirname, std::string const& n, std::string const& pluginlibname = "" );
-//!
-//!
-//!
-boost::function<crbpluginapi_create_t> makeCRBPluginCreator( std::string const& dirname, std::string const& pluginname );
 
-
+//!
+//! create the plugin \p name from plugin library \p pluginlibname located in \p dirname
+//! @param n name of the plugin
+//! @param pluginlibname name of the plugin library
+//! @param dirname location of the plugin library
+//!
+boost::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& n,
+                                                  std::string const& pluginlibname = "",
+                                                  std::string const& dirname = Info::libdir()
+                                                  );
 
 }
 

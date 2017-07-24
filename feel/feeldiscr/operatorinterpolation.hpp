@@ -712,7 +712,7 @@ struct PrecomputeDomainBasisFunction
         if ( itElt == M_XhDomain->mesh()->endElement() )
             return;
 
-        this->init( *itElt, mpl::bool_<DomainSpaceType::nDim == ImageSpaceType::nDim>() );
+        this->init( itElt->second, mpl::bool_<DomainSpaceType::nDim == ImageSpaceType::nDim>() );
     }
 
 
@@ -2010,8 +2010,8 @@ OperatorInterpolation<DomainSpaceType,
 
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
-    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
+    auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
+    size_type eltIdLocalised = eltRandom.id();
 
     for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
         {
@@ -2260,8 +2260,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     // random (just to start)
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
-    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
+    auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
+    size_type eltIdLocalised = eltRandom.id();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 
@@ -2723,8 +2723,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     // random (just to start)
     //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     // size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
-    size_type eltIdLocalised = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->id();
-    auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
+    auto const& eltRandom = this->domainSpace()->mesh()->firstElementIteratorWithProcessId()->second;
+    size_type eltIdLocalised = eltRandom.id();
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 

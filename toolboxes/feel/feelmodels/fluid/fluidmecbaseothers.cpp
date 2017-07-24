@@ -61,7 +61,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq = 1;
-    if (M_isHOVisu)
+    if ( M_exporter_ho )
     {
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         if ( hovisuSpaceUsed == "velocity" || hovisuSpaceUsed == "pressure" )
@@ -76,6 +76,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     else
     {
         hovisuMode = "OFF";
+    }
+    if ( M_exporter )
+    {
         myexporterType = M_exporter->type();
         myexporterFreq = M_exporter->freq();
     }
@@ -315,19 +318,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 {
-    if (!M_isHOVisu)
-    {
-        CHECK( M_exporter )  << "export not init\n";
-        M_exporter->setDoExport(b);
-    }
-    else
-    {
-#if 1 //defined(FEELPP_HAS_VTK)
-        //CHECK( M_exporter_ho )  << "hoexport not init\n";
-        if ( M_exporter_ho )
-            M_exporter_ho->setDoExport(b);
-#endif
-    }
+    if ( M_exporter )
+        M_exporter->setDoExport( b );
+    if ( M_exporter_ho )
+        M_exporter_ho->setDoExport( b );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -366,7 +360,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 #endif
     }
 
-    if (!M_isHOVisu)
+    if ( nOrderGeo == 1 )
     {
         this->exportResultsImpl( time );
 
@@ -390,7 +384,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
             M_exporterLagrangeMultiplierPressureBC->save();
         }
     }
-    else
+
+    if ( M_isHOVisu )
     {
         this->exportResultsImplHO( time );
     }
@@ -424,6 +419,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
     //if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
     //{
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
 
@@ -571,6 +567,7 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
 #if 1//defined(FEELPP_HAS_VTK)
+    if ( !M_exporter_ho ) return;
     if ( !M_exporter_ho->doExport() ) return;
 
     // because write geofile at each step ( TODO fix !!! )
