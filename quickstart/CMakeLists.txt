@@ -47,7 +47,7 @@ endif()
 # Laplacian
 #
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/circle/circle-dirichlet.cfg")
-feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL )# TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/feelpp3d/feelpp3d.cfg")
+feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL NO_TEST )# TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/feelpp3d/feelpp3d.cfg")
 feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D}  )
 add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} )
