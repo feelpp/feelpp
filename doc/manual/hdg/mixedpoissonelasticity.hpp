@@ -72,9 +72,11 @@ class MixedPoissonElasticity
     typedef Exporter<mesh_type,1> exporter_type;
     typedef boost::shared_ptr <exporter_type> exporter_ptrtype;
     
+
  
  private:
-	mesh_ptrtype M_mesh;
+
+    mesh_ptrtype M_mesh;
 	
 	mp_ptrtype M_PoissonModel;
 	me_ptrtype M_ElasticityModel;
@@ -82,18 +84,23 @@ class MixedPoissonElasticity
 	exporter_ptrtype M_exporter;
 
  public:
-	MixedPoissonElasticity(mesh_ptrtype _mesh, mesh_ptrtype meshVisu = nullptr) : M_mesh(_mesh) {
-		M_PoissonModel = mp_type::New("mixedpoisson");
-		M_PoissonModel->init( _mesh , meshVisu );
+	MixedPoissonElasticity(mesh_ptrtype _meshPoisson, mesh_ptrtype _meshElasticity, mesh_ptrtype meshCommon, mesh_ptrtype meshVisu = nullptr)
+    {
+	    M_mesh = meshCommon;
+
+    	
+        M_PoissonModel = mp_type::New("mixedpoisson");
+		M_PoissonModel->init( _meshPoisson , meshVisu );
+    
 
 		M_ElasticityModel = me_type::New("mixedelasticity");
-		M_ElasticityModel->init( _mesh , meshVisu );
+		M_ElasticityModel->init( _meshElasticity , meshVisu );
 		
-		this->initExporter( meshVisu );
+		
+        this->initExporter( meshVisu );
 	}
 
-	mesh_ptrtype mesh() { return M_mesh; }
-	mesh_ptrtype mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return M_mesh; }    
 	
 	void assembleF_Poisson();  				// this is the assembleF of MixedPoisson
 	
@@ -102,7 +109,7 @@ class MixedPoissonElasticity
 	void solvePoisson() { this->assembleF_Poisson(); M_PoissonModel->solve(); }
 	void solveElasticity() { this->assembleF_Elasticity(); M_ElasticityModel->solve(); }
  	
-	void run( mesh_ptrtype mesh = nullptr, op_interp_ptrtypeEL Idh_el = nullptr, opv_interp_ptrtypeEL Idhv_el = nullptr,
+	void run( op_interp_ptrtypeEL Idh_el = nullptr, opv_interp_ptrtypeEL Idhv_el = nullptr,
 			op_interp_ptrtypePOI Idh_poi = nullptr, opv_interp_ptrtypePOI Idhv_poi = nullptr );
 
 	// Exporter methods	
@@ -133,7 +140,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Poisson()
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
 
 	// - <d/dt div(u),w> 
-	blf(1_c) += integrate( _range=elements(M_mesh), 
+	blf(1_c) += integrate( _range=elements( M_mesh ), 
 	 					   _expr= -( div(M_ElasticityModel-> potentialField())-div(M_ElasticityModel->timeStepNM()->previousUnknown()) ) * id(w) / dt );
 
 }
@@ -149,22 +156,22 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 	auto v = M_ElasticityModel->fluxSpace()->element( "v" );
     auto m = M_ElasticityModel->traceSpace()->element( "m" );
 
-	// Get data from Poisson model
 	auto pressure = M_PoissonModel->potentialField();
 
-	// Feel::cout << "Pressure: " << pressure << std::endl;
 	// - < pI , v>
-	blf( 0_c ) += integrate( _range=elements(M_mesh), 
+	blf( 0_c ) += integrate( _range=elements( M_mesh ), 
 	 						 _expr= - inner( idv(pressure)*eye<Dim,Dim>(),  id(v)) );
 
     // Adding extra-term for special Neumann 
     // - <pI n, m>
     std::string marker = "";
+    
     for( auto const& pairMat : M_ElasticityModel->modelProperties()->materials() )
     {
         auto material = pairMat.second;
         marker = material.getString("special_neumann");
     }
+
     if (!marker.empty())
         blf( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
                                  _expr= - inner( idv(pressure)*eye<Dim,Dim>() * N(), id(m)) );
@@ -173,8 +180,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 
 template <int Dim, int Order,int G_Order, int E_Order>
 void 
-MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run( mesh_ptrtype mesh, 
-	op_interp_ptrtypeEL Idh_el, opv_interp_ptrtypeEL Idhv_el,
+MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_el, opv_interp_ptrtypeEL Idhv_el,
 	op_interp_ptrtypePOI Idh_poi, opv_interp_ptrtypePOI Idhv_poi  )
 {
 	if (M_PoissonModel->isStationary() || M_ElasticityModel->isStationary() )
@@ -182,6 +188,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run( mesh_ptrtype mesh,
 		Feel::cout << std::endl << "ERROR: this model has to be unsteady." << std::endl << std::endl;
 		return;
 	}
+
 
 	auto t_init = M_PoissonModel->timeStepBDF()->timeInitial();
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
@@ -198,13 +205,13 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run( mesh_ptrtype mesh,
 		// Elasticity problem
 		this->assembleF_Elasticity();
 		M_ElasticityModel->solve();	
-		M_ElasticityModel->exportResults( mesh, Idh_el, Idhv_el );
+		M_ElasticityModel->exportResults( M_ElasticityModel->mesh(), Idh_el, Idhv_el );
 
 		// Poisson problem
 		M_PoissonModel->assembleNonCstPart();
 		this->assembleF_Poisson();
 		M_PoissonModel->solve();	
-		M_PoissonModel->exportResults( mesh, Idh_poi, Idhv_poi );
+		M_PoissonModel->exportResults( M_PoissonModel->mesh(), Idh_poi, Idhv_poi );
 
 		// Exporter
 		// this->exportResults( mesh, Idh_el, Idhv_el, Idh_poi, Idhv_poi );
@@ -241,11 +248,6 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::exportResults ( double time, 
 	{
 		LOG(INFO) << "exporting on visualisation mesh at time " << time;
 		M_exporter->step( time )->setMesh( mesh );
-	}
-	else if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
-	{
-		LOG(INFO) << "exporting on computational mesh at time " << time;
-		M_exporter->step( time )->setMesh( M_mesh );
 	}
 
 	// Export computed solutions for elasticity
@@ -284,11 +286,11 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::exportResults ( double time, 
 								if ( !M_ElasticityModel->isStationary() )
 								    u_exact.setParameterValues( { {"t", time } } );
 
-								auto export_uEX = project( _space=M_ElasticityModel->potentialSpace(), _range=elements( M_mesh ), _expr=u_exact);
+								auto export_uEX = project( _space=M_ElasticityModel->potentialSpace(), _range=elements( M_ElasticityModel->mesh() ), _expr=u_exact);
 								M_exporter->step(time)->add(prefixvm(prefix, "u_exact"), Idh_el?(*Idh_el)( export_uEX): export_uEX );		
 
-								auto l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_ElasticityModel->potentialField()) );
-								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+								auto l2err_u = normL2( _range=elements(M_ElasticityModel->mesh()), _expr=u_exact - idv(M_ElasticityModel->potentialField()) );
+								auto l2norm_uex = normL2( _range=elements(M_ElasticityModel->mesh()), _expr=u_exact );
 								if (l2norm_uex < 1)
 									l2norm_uex = 1.0;	
 								cout << "----- Computed Errors -----" << std::endl;
@@ -340,11 +342,11 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::exportResults ( double time, 
                                     p_exact.setParameterValues( { {"t", time } } );
                                 M_exporter->step( time )->add(prefixvm(prefix, "p_exact"),
                                                               project( _space=M_PoissonModel->potentialSpace(),
-                                                                       _range=elements(M_mesh),
+                                                                       _range=elements(M_PoissonModel->mesh()),
                                                                        _expr=p_exact) );
 
-                                auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_PoissonModel->potentialField()) );
-                                auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+                                auto l2err_p = normL2( _range=elements(M_PoissonModel->mesh()), _expr=p_exact - idv(M_PoissonModel->potentialField()) );
+                                auto l2norm_pex = normL2( _range=elements(M_PoissonModel->mesh()), _expr=p_exact );
                                 if (l2norm_pex < 1)
                                     l2norm_pex = 1.0;
 								Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
