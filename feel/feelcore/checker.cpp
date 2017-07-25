@@ -145,6 +145,9 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 
 } // rate
 
+Checker
+checker( std::string const& p ) { return Checker{}; }
+
 Checker::Checker()
     :
     M_check( boption("checker.check") ),
