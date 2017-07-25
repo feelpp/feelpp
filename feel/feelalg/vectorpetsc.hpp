@@ -36,9 +36,11 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetsc<double>)
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetscMPI<double>)
+
 #if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
-
 
 extern "C"
 {
@@ -631,6 +633,11 @@ public:
      * Real part.
      */
     real_type max() const;
+    real_type maxWithIndex( int* index=nullptr ) const;
+
+
+    //! Replaces every element in a vector with its absolute value
+    void abs();
 
     /**
      * @return the \f$l_1\f$-norm of the vector, i.e.
@@ -719,6 +726,7 @@ public:
                      std::vector<size_type> const& rows,
                      bool init=true );
 
+#if 0
     /**
      * Serialization for PETSc VECSEQ
      */
@@ -741,8 +749,112 @@ public:
 
         VecRestoreArray(this->vec(), &array);
     }
+#endif
     //@}
 
+    void save( std::string filename="default_archive_name", std::string format="binary" )
+    {
+        if ( !this->closed() )
+            this->close();
+
+        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+        std::ofstream ofs( filename );
+        if (ofs)
+        {
+            if ( format=="binary" )
+            {
+                boost::archive::binary_oarchive oa(ofs);
+                oa << *this;
+            }
+            else if ( format=="xml")
+            {
+                boost::archive::xml_oarchive oa(ofs);
+                oa << boost::serialization::make_nvp("vectorpetsc", *this );
+            }
+            else if ( format=="text")
+            {
+                boost::archive::text_oarchive oa(ofs);
+                oa << *this;
+            }
+            else
+                Feel::cout << "VectorPetsc save() function : error with unknown format "
+                           << format <<std::endl;
+        }
+        else
+        {
+            Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
+                       << filename <<std::endl;
+        }
+    }
+
+    void load( std::string filename="default_archive_name", std::string format="binary" )
+    {
+        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+        std::ifstream ifs( filename );
+        if ( ifs )
+        {
+            if ( format=="binary" )
+            {
+                boost::archive::binary_iarchive ia(ifs);
+                ia >> *this;
+            }
+            else if ( format=="xml")
+            {
+                boost::archive::xml_iarchive ia(ifs);
+                ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+            }
+            else if ( format=="text")
+            {
+                boost::archive::text_iarchive ia(ifs);
+                ia >> *this;
+            }
+            else
+                Feel::cout << "VectorPetsc save() function : error with unknown format "
+                           << format <<std::endl;
+        }
+        else
+        {
+            Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
+                       << filename <<std::endl;
+        }
+    }
+
+
+private:
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+        double * array;
+        VecGetArray(M_vec, &array);
+
+        int n = this->localSize();
+
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        VecRestoreArray(M_vec, &array );
+    }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+        int n = this->mapPtr()->nLocalDof();
+        std::vector<int> ind(n);
+        std::iota( ind.begin(), ind.end(), 0);
+
+        double* array = new double[n];
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        this->setVector(ind.data(), n, array);
+        this->close();
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 protected:
 
@@ -800,6 +912,8 @@ class VectorPetscMPI : public VectorPetsc<T>
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 public:
+    friend class boost::serialization::access;
+
     typedef typename super::value_type value_type;
 
     VectorPetscMPI()
@@ -925,6 +1039,14 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version )
+    {
+        if ( Archive::is_saving::value && !this->closed() )
+            this->close();
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+    }
 
 private :
 
@@ -1084,5 +1206,7 @@ vector_uptrtype vec( Vec v, datamap_ptrtype d );
 
 
 } // Feel
+
+
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */

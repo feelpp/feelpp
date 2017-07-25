@@ -55,6 +55,13 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <Eigen/Core>
 
@@ -263,7 +270,7 @@ public:
     //! @return the number of allocated non-zero entries
     //!
     virtual std::size_t nnz() const = 0;
-    
+
     /**
      * set matrix properties, @see MatrixProperties
      */
@@ -915,14 +922,13 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    sc_ptrtype sc() { return M_sc; }
-    sc_ptrtype const& sc() const { return M_sc; }
-    sparse_matrix_ptrtype block( int row, int col )
-        {
-            //sc->setMatrix( this->shared_from_this() );
-            M_sc->block( row, col );
-            return this->shared_from_this();
-        }
+
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -1137,5 +1143,51 @@ bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
 }
 
 } // Feel
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::MatrixSparse)
+
+namespace boost {
+namespace serialization {
+
+template<typename T, class Archive>
+void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(m.mapRow());
+    ar & BOOST_SERIALIZATION_NVP(m.mapCol());
+    ar & BOOST_SERIALIZATION_NVP(*(m.graph()));
+;
+}
+
+template<typename T, class Archive>
+void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    Feel::DataMap map_row;
+    Feel::DataMap map_col;
+    Feel::GraphCSR graph;
+
+    ar & BOOST_SERIALIZATION_NVP(map_row);
+    ar & BOOST_SERIALIZATION_NVP(map_col);
+    ar & BOOST_SERIALIZATION_NVP(graph);
+
+    auto map_row_ptr = boost::make_shared<Feel::DataMap>( map_row );
+    auto map_col_ptr = boost::make_shared<Feel::DataMap>( map_col );
+    m.setMapRow( map_row_ptr );
+    m.setMapCol( map_col_ptr );
+    auto graph_ptr = boost::make_shared<Feel::GraphCSR>( graph );
+
+    m.init( map_row.nDof(), map_col.nDof(),
+            map_row.nLocalDofWithoutGhost(), map_col.nLocalDofWithoutGhost(),
+            graph_ptr );
+}
+
+template<typename T, class Archive>
+void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    split_free( ar, m, version );
+}
+
+} // namespace serialization
+} // namespace boost
+
 
 #endif // #ifndef __sparse_matrix_h__

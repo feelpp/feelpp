@@ -13,6 +13,7 @@ int main(int argc, char**argv )
         ( "acusim.work-dir", po::value<std::string>()->default_value( "ACUSIM.DIR" ), " acusim work repository" )
         ( "odir", po::value<std::string>(), "output feelpp database repository" )
         ( "fields", po::value<std::vector<std::string> >()->multitoken(), "fields name to convert" )
+        ( "build-only-scalar-space", po::value<bool>()->default_value(true), "build-only-scalar-space" )
 		;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -61,6 +62,7 @@ int main(int argc, char**argv )
     myconverter.setAcusimRepository( idir );
     myconverter.setAcusimWorkRepository( acusimWorkDir );
     myconverter.setOutputRepository( odir );
+    myconverter.setBuildOnlyScalarSpace( boption(_name="build-only-scalar-space" ) );
     for (std::string const& fieldName : fieldsToConvert )
         myconverter.addField( fieldName );
 

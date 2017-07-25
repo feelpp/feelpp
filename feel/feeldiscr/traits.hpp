@@ -46,6 +46,30 @@ symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
  * \addtogroup Traits
  * @{
  */
+/**
+ * if \p T has base class \p MeshBase (hense if it is a function space)
+ * then provides the member constant value equal to true, false otherwise
+ */
+template<typename MeshType>
+using is_mesh = typename std::is_base_of<MeshBase,MeshType>::type;
+
+/**
+ * provides the mesh  type
+ * if \p MeshType is a shared_ptr of a Mesh then provides the mesh type
+ * \note it checks that the \p Mesh is indeed a mesh type and return void if it is not the case.
+ */
+template<typename MeshType>
+using mesh_t = typename mpl::if_<is_mesh<decay_type<MeshType> >,
+                                 mpl::identity<decay_type<MeshType>>,
+                                 mpl::identity<void> >::type::type;
+
+
+/**
+ * helper variable template for is_mesh
+ */
+template<typename MeshType>
+constexpr bool is_mesh_v = is_mesh<MeshType>::value;
+
 
 /**
  * if \p T has base class \p ScalarBase then @return the member constant value equal

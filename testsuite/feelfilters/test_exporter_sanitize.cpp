@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #define BOOST_TEST_MODULE test_exporter_sanitize
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 
 #include <feel/feelfilters/loadmesh.hpp>

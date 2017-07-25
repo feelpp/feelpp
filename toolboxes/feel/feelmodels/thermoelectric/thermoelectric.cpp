@@ -249,6 +249,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->updateTime( M_bdfTemperature->time() );
     }
 #endif
+    this->updateBoundaryConditionsForUse();
 
     // post-process
     this->initPostProcess();
@@ -279,6 +280,37 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
     this->log("ThermoElectric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    auto mesh = this->mesh();
+    auto XhElectricPotential = this->spaceElectricPotential();
+
+    auto & dofsWithValueImposedElectricPotential = M_dofsWithValueImposed["electric-potential"];
+    dofsWithValueImposedElectricPotential.clear();
+    std::set<std::string> electricPotentialMarkers;
+
+    // strong Dirichlet bc on temperature from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        electricPotentialMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
+
+    // on topological faces
+    auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesElectricPotential ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhElectricPotential->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            dofsWithValueImposedElectricPotential.insert( it->index() );
+    }
+}
+
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -500,16 +532,12 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     {
         auto mySolutionVectorLinear = M_backendElectricModel->toBackendVectorPtr( this->fieldElectricPotential() );
         M_algebraicFactoryElectricModel->solve( "LinearSystem", mySolutionVectorLinear );
-
-        // M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-        //                                                                                         boost::ref( *this ), _1, _2 );
         M_thermodynModel->solve();
     }
     else
     {
-        // if ( M_thermodynModel->algebraicFactory() )
-        //     M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = NULL;
-        M_algebraicFactoryMonolithic->solve( "Newton", this->blockVectorSolutionMonolithic().vector() );
+        M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
+        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vector() );
         M_blockVectorSolutionMonolithic.localize();
     }
 
@@ -618,6 +646,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U 
         v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
              _expr=expression(d) );
     }
+    // synchronize electric potential dof on interprocess
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
+    if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
+        sync( v, "=", itFindDofsWithValueImposed->second );
 
     this->log("ThermoElectric","updateNewtonInitialGuess","finish" );
 }
@@ -814,11 +846,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrt
     auto mesh = XhV->mesh();
     size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
     auto v = this->spaceElectricPotential()->element( R,this->rowStartInVector()+startBlockIndexElectricPotential );
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        v.on(_range=markedfaces(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
-             _expr=cst(0.) );
-    }
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
+    auto const& dofsWithValueImposedElectricPotential = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedElectricPotential )
+        v.set( thedof,0. );
+    sync( v, "=", dofsWithValueImposedElectricPotential );
 
     this->log("ThermoElectric","updateBCDirichletStrongResidual","finish" );
 }

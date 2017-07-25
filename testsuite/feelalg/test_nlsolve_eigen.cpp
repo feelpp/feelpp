@@ -29,7 +29,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>

@@ -48,6 +48,7 @@ feelpp_add_test( project NO_MPI_TEST)
 feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
+feelpp_add_test( makemesh )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( element_component )
@@ -84,3 +85,8 @@ feelpp_add_test( listofrange )
 feelpp_add_test( productspaces )
 feelpp_add_test( space_cst )
 feelpp_add_test( element0D )
+
+feelpp_add_test( idelements)
+#! not functional yet
+# feelpp_add_test( element0D )
+

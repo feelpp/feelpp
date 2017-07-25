@@ -128,13 +128,21 @@ public :
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
 
-    void setCstDynamicViscosity( double d, std::string const& marker = "" )
+    void setCstDynamicViscosity( double d, std::string const& marker = "", bool update = true )
     {
         std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
         M_cstDynamicViscosity[markerUsed]=d;
-        this->updateDynamicViscosity( cst(d), marker );
+        if ( update )
+            this->updateDynamicViscosity( cst(d), marker );
     }
 
+    template < typename ExprT >
+    void setDynamicViscosity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+    {
+        this->updateDynamicViscosity( vfexpr,marker );
+        if ( M_fieldDynamicViscosity )
+            this->setCstDynamicViscosity( M_fieldDynamicViscosity->min(), marker, false );
+    }
     template < typename ExprT >
     void updateDynamicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
     {
@@ -191,7 +199,10 @@ public :
             auto const& mat = m.second;
             auto const& matmarker = m.first;
             M_markers.insert( matmarker );
-            this->setCstDynamicViscosity( mat.mu(), matmarker );
+            if ( mat.hasPropertyExprScalar("mu") )
+                this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
+            else
+                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
         }
     }
 

@@ -676,3 +676,4 @@ ex lorentz_eps(const ex & i1, const ex & i2, const ex & i3, const ex & i4, bool 
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

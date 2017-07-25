@@ -27,7 +27,9 @@ namespace Feel {
 
 template void partition<Simplex<1>>( std::vector<int> const& nParts);
 template void partition<Simplex<2>>( std::vector<int> const& nParts);
+template void partition<Simplex<2,2>>( std::vector<int> const& nParts);
 template void partition<Simplex<3>>( std::vector<int> const& nParts);
+template void partition<Simplex<3,2>>( std::vector<int> const& nParts);
 
 
 }

@@ -63,7 +63,7 @@ namespace FeelModels
 {
 enum class FluidMechanicsPostProcessFieldExported
 {
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh
+    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
 };
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
@@ -216,8 +216,7 @@ public:
     typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
     //___________________________________________________________________________________//
     // stabilization
-    static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
-    typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+    typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
     typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -237,10 +236,8 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // typedef boost::tuple<boost::mpl::size_t<MESH_FACES>,
-    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator,
-    //                      typename MeshTraits<mesh_type>::marker_face_const_iterator> range_marked_face_type;
-    typedef faces_reference_wrapper_t<mesh_type> range_marked_face_type;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
@@ -249,7 +246,7 @@ public:
     typedef typename space_fluidinlet_type::element_type element_fluidinlet_type;
     typedef boost::shared_ptr<element_fluidinlet_type> element_fluidinlet_ptrtype;
     typedef OperatorInterpolation<space_fluidinlet_type, component_space_fluid_velocity_type,//typename space_fluid_velocity_type::component_functionspace_type,
-                                  range_marked_face_type> op_interpolation_fluidinlet_type;
+                                  range_faces_type> op_interpolation_fluidinlet_type;
     typedef boost::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
@@ -557,7 +554,10 @@ public :
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
-    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
+    range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
+    range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -618,6 +618,15 @@ public :
     map_matrix_field<nDim,nDim,2> const& bcNeumannTensor2() const { return M_bcNeumannTensor2; }
     map_vector_field<nDim,1,2> const& bodyForces() const { return M_volumicForcesProperties; }
 
+    bool hasDirichletBC() const
+        {
+            return ( !M_bcDirichlet.empty() ||
+                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
+                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
+        }
+
+    
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
@@ -816,34 +825,30 @@ public :
     //___________________________________________________________________________________//
 
     // non linear (newton)
-    void updateNewtonInitialGuess(vector_ptrtype& U) const;
+    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
-    void updateJacobianModel( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                              bool BuildCstPart ) const;
-    void updateResidualModel( element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                              bool BuildCstPart, bool UseJacobianLinearTerms ) const;
+    void updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
 
-    virtual void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const = 0;
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
-    virtual void updateBCStrongDirichletResidual(vector_ptrtype& R) const = 0;
     virtual void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCPressureResidual( vector_ptrtype& R ) const = 0;
 
-    void updateResidualStabilisation( element_fluid_external_storage_type const& U, vector_ptrtype& R,
-                                      bool BuildCstPart, bool UseJacobianLinearTerms) const;
-    void updateJacobianStabilisation( element_fluid_external_storage_type const& U, sparse_matrix_ptrtype& J , vector_ptrtype& R,
-                                      bool BuildCstPart ) const;
-
+    void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
+    void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
     virtual void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const = 0;
@@ -856,12 +861,14 @@ public :
 
     //___________________________________________________________________________________//
 
+private :
+    void updateBoundaryConditionsForUse();
 
 protected:
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
-    backend_ptrtype M_backend;
+    
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -902,10 +909,8 @@ protected:
     element_stress_ptrtype M_normalStressFromStruct;
     space_alemapdisc_ptrtype M_XhMeshALEmapDisc;
     element_alemapdisc_ptrtype M_saveALEPartNormalStress;
+    std::set<size_type> M_dofsVelocityInterfaceOnMovingBoundary;
 #endif
-    //----------------------------------------------------
-    // tool solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_algebraicFactory;
     //----------------------------------------------------
     // physical properties/parameters and space
     densityviscosity_model_ptrtype M_densityViscosityModel;
@@ -945,7 +950,10 @@ protected:
     // stabilization
     bool M_stabilizationGLS;
     std::string M_stabilizationGLSType;
-    stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
+    range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
+    range_elements_type M_stabilizationGLSEltRangePressure;
 
     bool M_applyCIPStabOnlyOnBoundaryFaces;
     // stabilisation available
@@ -993,6 +1001,7 @@ protected:
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterFluidOutlet;
+    export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
 #if 1 //defined(FEELPP_HAS_VTK)
     export_ho_ptrtype M_exporter_ho;
@@ -1021,10 +1030,13 @@ protected:
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
     //----------------------------------------------------
-    // start dof index fields in matrix (lm,windkessel,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
-    // block vector solution
+    //----------------------------------------------------
+    // algebraic data/tools
+    backend_ptrtype M_backend;
+    model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
