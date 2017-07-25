@@ -136,5 +136,11 @@ po::options_description stabilization_options( std::string const& prefix="" );
  * command line for data interpolator
  */
 po::options_description fit_options( std::string const& prefix="" );
+
+//!
+//! checker class options
+//! \p prefix to create new checkers when there is a need for several checkers in an application
+//!
+po::options_description checker_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP

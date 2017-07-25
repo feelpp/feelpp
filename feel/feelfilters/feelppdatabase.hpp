@@ -129,6 +129,8 @@ public :
 
     std::string const& vectorFileFormat() const { return M_vectorFileFormat; }
 
+    void setMeshFilename( std::string const& f ) { M_meshFilename = f; }
+
     void setFilename( std::string const& s )
         {
             fs::path pathJson = fs::system_complete( s );

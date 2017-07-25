@@ -66,6 +66,7 @@ public :
     ConverterAcusimDatabase()
         :
         M_acusimWorkRepository( "ACUSIM.DIR" ),
+        M_buildOnlyScalarSpace( true ),
         M_nNodes( 0 ),
         M_nodeIds( nullptr ),
         M_nOutSteps( 0 ),
@@ -86,6 +87,10 @@ public :
     void setAcusimWorkRepository(std::string const& dir )
         {
             M_acusimWorkRepository = dir;
+        }
+    void setBuildOnlyScalarSpace( bool b )
+        {
+            M_buildOnlyScalarSpace = b;
         }
 
     void setOutputRepository( std::string const& odir )
@@ -137,14 +142,24 @@ private :
     void
     applyFieldConversion( int fieldIndex, int timeStepIndex, double * outFieldValues, ElementType & u );
 
-    template<typename SpaceType>
-    void runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex );
+    template<typename ElementType>
+    void
+    applyFieldConversion( int fieldIndex, int timeStepIndex, double * outFieldValues, ElementType & u, int nComp1, int nComp2, int comp1, int comp2 );
 
+    template<typename SpaceType>
+    void
+    runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex );
+
+    template<typename SpaceType>
+    void
+    runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 );
 private :
 
     fs::path M_acusimRepository;
     std::string M_acusimProblemName;
     std::string M_acusimWorkRepository;
+
+    bool M_buildOnlyScalarSpace;
 
     FeelppDatabase<mesh_type> M_feelppDatabase;
 
@@ -170,6 +185,7 @@ template <typename MeshType>
 void
 ConverterAcusimDatabase<MeshType>::run()
 {
+
     this->init();
 
     bool doMeshConversion = true;
@@ -178,13 +194,21 @@ ConverterAcusimDatabase<MeshType>::run()
         auto meshSeq = this->loadMesh();
         M_feelppDatabase.saveMeshParititioned( meshSeq, this->worldComm().size() );
         if ( meshSeq )
+        {
             meshSeq->clear();
+            meshSeq.reset();
+        }
     }
+
+    Environment::worldComm().barrier();
+    auto mem3  = Environment::logMemoryUsage("memory usage after update for use");
+    std::cout << "[run] resident memory --3-- : " << mem3.memory_usage/1.e9  << "GBytes\n";
+    Environment::worldComm().barrier();
 
     this->loadTimeSetInfo();
     this->loadFieldInfo();
 
-    bool hasScalarSpace = false, hasVectorialSpace = false;
+    bool hasScalarSpace = false, hasVectorialSpace = false, hasTensor2Space = false;
     for ( auto const& fieldInfo : M_fieldNameToFieldInfo )
     {
         if ( M_convertedFieldNames.find( fieldInfo.first ) == M_convertedFieldNames.end() )
@@ -193,28 +217,56 @@ ConverterAcusimDatabase<MeshType>::run()
             hasScalarSpace = true;
         else if ( std::get<1>( fieldInfo.second ) == mesh_type::nRealDim )
             hasVectorialSpace = true;
+        else if ( std::get<1>( fieldInfo.second ) == (mesh_type::nRealDim*mesh_type::nRealDim) )
+            hasTensor2Space = true;
+
     }
     if ( this->worldComm().isMasterRank() )
         std::cout << "hasScalarSpace : " << hasScalarSpace << "\n"
                   << "hasVectorialSpace : " << hasVectorialSpace << "\n";
 
-    auto mesh = M_feelppDatabase.loadMesh( MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES );
-
-    if ( hasVectorialSpace )
+    if ( FLAGS_v >= 1 )
     {
-        M_spaceP1Vectorial = space_vectorial_P1_type::New( mesh );
-        this->generateDofMappingP1( M_spaceP1Vectorial );
-        if ( hasScalarSpace )
-        {
-            M_spaceP1Scalar = M_spaceP1Vectorial->compSpace();
-            this->generateDofMappingP1( M_spaceP1Scalar );
-        }
+        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
+        std::cout << "[run] resident memory before loadMesh // : " << mem.memory_usage/1.e9  << "GBytes\n";
+        //Environment::worldComm().barrier();
     }
-    else if ( hasScalarSpace )
+
+    auto mesh = M_feelppDatabase.loadMesh( /*MESH_UPDATE_FACES_MINIMAL|*/MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED );
+
+    if ( FLAGS_v >= 1 )
+    {
+        auto mem  = Environment::logMemoryUsage("memory usage after update for use");
+        std::cout << "[run] resident memory after loadMesh // : " << mem.memory_usage/1.e9  << "GBytes\n";
+        //Environment::worldComm().barrier();
+    }
+
+    if ( M_buildOnlyScalarSpace )
     {
         M_spaceP1Scalar = space_scalar_P1_type::New( mesh );
         this->generateDofMappingP1( M_spaceP1Scalar );
     }
+    else
+    {
+        if ( hasVectorialSpace )
+        {
+            M_spaceP1Vectorial = space_vectorial_P1_type::New( mesh );
+            this->generateDofMappingP1( M_spaceP1Vectorial );
+            if ( hasScalarSpace )
+            {
+                M_spaceP1Scalar = M_spaceP1Vectorial->compSpace();
+                this->generateDofMappingP1( M_spaceP1Scalar );
+            }
+        }
+        else if ( hasScalarSpace )
+        {
+            M_spaceP1Scalar = space_scalar_P1_type::New( mesh );
+            this->generateDofMappingP1( M_spaceP1Scalar );
+        }
+    }
+
+
+
 
     for ( std::string const& fieldName : M_convertedFieldNames )
     {
@@ -229,10 +281,24 @@ ConverterAcusimDatabase<MeshType>::run()
         if ( this->worldComm().isMasterRank() )
             std::cout << "outVarDim " << outVarDim << "\n";
 
-        if ( outVarDim == 1 )
-            this->runSaveFieldInTimeSet( M_spaceP1Scalar,fieldName, fieldIndex );
-        else if ( outVarDim == mesh_type::nRealDim )
-            this->runSaveFieldInTimeSet( M_spaceP1Vectorial,fieldName, fieldIndex );
+        if ( M_buildOnlyScalarSpace )
+        {
+            if ( outVarDim == 1 )
+                this->runSaveFieldInTimeSet( M_spaceP1Scalar,fieldName, fieldIndex, 1, 1 );
+            else if ( outVarDim == mesh_type::nRealDim )
+                this->runSaveFieldInTimeSet( M_spaceP1Scalar,fieldName, fieldIndex, mesh_type::nRealDim, 1 );
+            else if ( outVarDim == (mesh_type::nRealDim*mesh_type::nRealDim) )
+                this->runSaveFieldInTimeSet( M_spaceP1Scalar,fieldName, fieldIndex, mesh_type::nRealDim, mesh_type::nRealDim );
+        }
+        else
+        {
+            if ( outVarDim == 1 )
+                this->runSaveFieldInTimeSet( M_spaceP1Scalar,fieldName, fieldIndex );
+            else if ( outVarDim == mesh_type::nRealDim )
+                this->runSaveFieldInTimeSet( M_spaceP1Vectorial,fieldName, fieldIndex );
+            else if ( outVarDim == (mesh_type::nRealDim*mesh_type::nRealDim) )
+                CHECK( false )  << "not implemented";
+        }
     }
 
     this->close();
@@ -257,6 +323,43 @@ ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( boost::shared_ptr<Spac
         this->applyFieldConversion( fieldIndex, k, outFieldValues, u );
 
         M_feelppDatabase.save( time,fieldName, u );
+    }
+
+    delete [] outFieldValues;
+}
+
+template <typename MeshType>
+template<typename SpaceType>
+void
+ConverterAcusimDatabase<MeshType>::runSaveFieldInTimeSet( boost::shared_ptr<SpaceType> const& space, std::string const& fieldName, int fieldIndex, int nComp1, int nComp2 )
+{
+    std::vector<std::string> compIdToCompName = { "X","Y","Z" };
+    int nComp = nComp1*nComp2;
+    double * outFieldValues = new double[M_nNodes*nComp];
+    auto u = space->element();
+
+    for ( int k=0;k<M_nOutSteps;++k )
+    {
+        double time = M_outTimes[k];
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "export timestep " << time << " ("<<k<<"/"<<M_nOutSteps<<")\n";
+
+        bool success = adbGetReals2( M_adbHd,(char*)"outExtValues", outFieldValues, fieldIndex, k/*timeStepIndex*/, nComp ,M_nNodes);
+
+        for ( int c1=0;c1<nComp1;++c1 )
+        {
+            for ( int c2=0;c2<nComp2;++c2 )
+            {
+                this->applyFieldConversion( fieldIndex, k, outFieldValues, u, nComp1, nComp2, c1, c2 );
+
+                std::string fieldNameInDb = fieldName;
+                if ( nComp1 > 1 )
+                    fieldNameInDb += "_" + compIdToCompName[ c1 ];
+                if ( nComp2 > 1)
+                    fieldNameInDb += "_"+ compIdToCompName[ c2 ];
+                M_feelppDatabase.save( time,fieldNameInDb, u );
+            }
+        }
     }
 
     delete [] outFieldValues;
@@ -427,7 +530,7 @@ ConverterAcusimDatabase<MeshType>::loadMesh()
 	}
 
 
-    size_type updateCtx = size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES);
+    size_type updateCtx = size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED);
     mesh->components().reset();
     mesh->components().set( updateCtx );
     mesh->updateForUse();
@@ -525,6 +628,7 @@ ConverterAcusimDatabase<MeshType>::generateDofMappingP1( boost::shared_ptr<Space
     }
 }
 
+
 template <typename MeshType>
 template<typename ElementType>
 void
@@ -538,6 +642,25 @@ ConverterAcusimDatabase<MeshType>::applyFieldConversion( int fieldIndex, int tim
     bool success = adbGetReals2( M_adbHd,(char*)"outExtValues", outFieldValues, fieldIndex,timeStepIndex, outVarDim ,M_nNodes);
     for ( size_type k=0;k<space->nLocalDofWithGhost() ;++k )
         u.set( k, outFieldValues[ feelDofIdToAcusimDofId[k] ] );
+}
+
+
+template <typename MeshType>
+template<typename ElementType>
+void
+ConverterAcusimDatabase<MeshType>::applyFieldConversion( int fieldIndex, int timeStepIndex, double * outFieldValues, ElementType & u, int nComp1, int nComp2, int comp1, int comp2 )
+{
+    int nComp = nComp1*nComp2;
+    auto space = u.functionSpace();
+    int nCompInSpace = space->nComponents;
+    auto itFindDofMapping = M_feelDofIdToAcusimDofId.find( nCompInSpace );
+    CHECK( itFindDofMapping != M_feelDofIdToAcusimDofId.end() ) << "mapping dof not found with nComp " << nCompInSpace;
+    auto const& feelDofIdToAcusimDofId = itFindDofMapping->second;
+
+    //bool success = adbGetReals2( M_adbHd,(char*)"outExtValues", outFieldValues, fieldIndex,timeStepIndex, nComp ,M_nNodes);
+    for ( size_type k=0;k<space->nLocalDofWithGhost() ;++k )
+        u.set( k, outFieldValues[ feelDofIdToAcusimDofId[k]*nComp+comp1*nComp2+comp2  ] );
+    //u.set( k, outFieldValues[ feelDofIdToAcusimDofId[k]*nComp+comp1  ] );
 }
 
 

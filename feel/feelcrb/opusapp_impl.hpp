@@ -695,9 +695,9 @@ OpusApp<ModelType,RM,Model>::run()
 
                     // Re-use uN given by lb in crb->run
 
-                    u_crb = crb->expansion( uN[size-1], false, N );
+                    u_crb = crb->expansion( uN[size-1], N );
                     if( solve_dual_problem )
-                        u_crb_dual = crb->expansion( uNdu[0], true, N );
+                        u_crb_dual = crb->expansion( uNdu[0], N, true );
 
 
                     std::ostringstream u_crb_str;
@@ -1046,7 +1046,7 @@ OpusApp<ModelType,RM,Model>::run()
                             auto u_crb = solutions.template get<0>();
                             auto u_crb_du = solutions.template get<1>();
                             int size = u_crb.size();
-                            auto uN = crb->expansion( u_crb[size-1], false, N  );
+                            auto uN = crb->expansion( u_crb[size-1], N  );
 
                             element_type uNdu;
 
@@ -1054,7 +1054,7 @@ OpusApp<ModelType,RM,Model>::run()
                             auto u_dual_error = model->functionSpace()->element();
                             if( solve_dual_problem )
                             {
-                                uNdu = crb->expansion( u_crb_du[0], true, N );
+                                uNdu = crb->expansion( u_crb_du[0], N, true );
                                 u_dual_error = u_dual_fem - uNdu;
                             }
 
@@ -1425,8 +1425,8 @@ OpusApp<ModelType,RM,Model>::run()
                                     //size is the number of time step
                                     for(int t=0; t<size; t++)
                                     {
-                                        uNelement.push_back( crb->expansion( u_crb[t], N,false ) );
-                                        uNelement_old.push_back( crb->expansion( u_crb_old[t], N, false ) );
+                                        uNelement.push_back( crb->expansion( u_crb[t], N ) );
+                                        uNelement_old.push_back( crb->expansion( u_crb_old[t], N ) );
                                         uNelement_du.push_back( crb->expansion( u_crb_du[t], N, true ) );
                                         uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, true ) );
                                     }//loop over time step

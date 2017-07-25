@@ -60,6 +60,7 @@
 #include <feel/feelmesh/meshutil.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelalg/boundingbox.hpp>
@@ -289,11 +290,8 @@ public:
      */
     Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
-    ~Mesh()
-        {
-            VLOG(1) << "Mesh Destructor";
-            this->clear();
-        }
+    ~Mesh() {}
+
     void clear()
         {
             VLOG(1) << "Mesh clear()";
@@ -409,6 +407,33 @@ public:
             M_numGlobalElements = I[3];
 
         }
+
+
+    struct UpdateNumGlobalEntitiesForAllReduce : public std::binary_function< boost::tuple<std::vector<size_type>,std::vector<size_type> >,
+                                                                              boost::tuple<std::vector<size_type>,std::vector<size_type> >,
+                                                                              boost::tuple<std::vector<size_type>,std::vector<size_type> > >
+    {
+        typedef boost::tuple<std::vector<size_type>,std::vector<size_type> > cont_type;
+        cont_type operator()( cont_type const& x, cont_type const& y ) const
+            {
+                auto const& numEltVector_x = boost::get<0>( x );
+                auto const& numEltVector_y = boost::get<0>( y );
+                auto const& maxVector_x = boost::get<1>( x );
+                auto const& maxVector_y = boost::get<1>( y );
+                CHECK( numEltVector_x.size() == numEltVector_y.size() ) << "invalid size";
+                CHECK( maxVector_x.size() == maxVector_y.size() ) << "invalid size";
+
+                std::vector<size_type> numEltVector_res;
+                for ( int k=0 ; k<numEltVector_x.size() ; ++k )
+                    numEltVector_res.push_back( numEltVector_x[k] + numEltVector_y[k] );
+                std::vector<size_type> maxVector_res;
+                for ( int k=0 ; k<maxVector_x.size() ; ++k )
+                    maxVector_res.push_back( std::max( maxVector_x[k], maxVector_y[k] ) );
+
+                return boost::make_tuple( numEltVector_res, maxVector_res );
+            }
+    };
+
     /**
      * @brief compute the global number of elements,faces,points and vertices
      * @details it requires communications in parallel to
@@ -434,9 +459,10 @@ public:
         size_type nfall = this->numFaces();
         size_type nedall = this->numEdges();
         size_type npall = this->numPoints();
+        size_type nvall = this->numVertices();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( face_type const& theface ) { return theface.hasMarker(); } );
-        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( edge_type const& theedge ) { return theedge.hasMarker(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(), []( auto const& theface ) { return theface.second.hasMarker(); } );
+        size_type nedmarkedall = std::count_if( this->beginEdge(),this->endEdge(), []( auto const& theedge ) { return theedge.second.hasMarker(); } );
         size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
 
@@ -450,7 +476,7 @@ public:
         {
             std::vector<boost::tuple<boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,boost::tuple<size_type,size_type>,
                                      boost::tuple<size_type,size_type,size_type>,size_type> > dataRecvFromAllGather;
-            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ne,nedmarkedall),
+            auto dataSendToAllGather = boost::make_tuple(boost::make_tuple(ne,neall),boost::make_tuple(nf,nfmarkedall),boost::make_tuple(ned,nedmarkedall),
                                                          boost::make_tuple(np,npall,npmarkedall),nv);
             mpi::all_gather( this->worldComm(),
                              dataSendToAllGather,
@@ -465,22 +491,76 @@ public:
                 M_statVertices[p] = boost::get<4>( dataOnProc );
             }
 
-#if BOOST_VERSION >= 105500
-            std::vector<int> maxs { (int)this->numElements(),
-                    (int)this->numFaces(),
-                    (int)this->numEdges(),
-                    (int)this->numPoints(),
-                    (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
-#else
-            std::vector<int> maxs( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
-#endif
-            M_maxNumElements = maxs[0];
-            M_maxNumFaces = maxs[1];
-            M_maxNumEdges = maxs[2];
-            M_maxNumPoints = maxs[3];
-            M_maxNumVertices = maxs[4];
+
+            size_type numFaceGlobalCounter = nf, numEdgeGlobalCounter = ned, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
+
+            for ( auto it=std::get<0>( rangeFaces ), en=std::get<1>( rangeFaces ); it !=en ; ++it )
+            {
+                auto const& face = unwrap_ref( *it );
+                if ( !face.isInterProcessDomain() )
+                    continue;
+                if ( face.partition1() < face.partition2() )
+                    continue;
+                --numFaceGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangeEdges ), en=std::get<1>( rangeEdges ); it !=en;++it )
+            {
+                auto const& edge = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : edge.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numEdgeGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangePoints ), en=std::get<1>( rangePoints ); it !=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : point.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numPointGlobalCounter;
+            }
+
+            std::vector<size_type> numEntitiesGlobalCounter = { numFaceGlobalCounter, numEdgeGlobalCounter, numPointGlobalCounter };
+            if ( nOrder > 1 )
+                numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
+            std::vector<size_type> maxNumEntities = { neall,nfall,nedall,npall };
+            if ( nOrder > 1 )
+                maxNumEntities.push_back( nvall );
+
+            auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
+            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
+            auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
+
+            auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+                { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+            M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+            M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
+            M_numGlobalEdges = numEntitiesGlobalCounterGlobal[1];
+            M_numGlobalPoints = numEntitiesGlobalCounterGlobal[2];
+            M_numGlobalVertices = ( nOrder > 1 )? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
+
+            M_maxNumElements = maxNumEntitiesGlobal[0];
+            M_maxNumFaces = maxNumEntitiesGlobal[1];
+            M_maxNumEdges = maxNumEntitiesGlobal[2];
+            M_maxNumPoints = maxNumEntitiesGlobal[3];
+            M_maxNumVertices = ( nOrder > 1 )? maxNumEntitiesGlobal[4] : M_maxNumPoints;
         }
         else
         {
@@ -495,17 +575,14 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = nv;
+
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = nv;
         }
 
-        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
-        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
-        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
-        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
     template<typename MT>
@@ -527,8 +604,9 @@ public:
         size_type nfall = this->numFaces();
         size_type nedall = 0;
         size_type npall = this->numPoints();
+        size_type nvall = this->numVertices();
 
-        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( face_type const& theface ) { return theface.hasMarker(); } );
+        size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( auto const& theface ) { return theface.second.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
         size_type nedmarkedall = 0;
@@ -559,23 +637,59 @@ public:
                 M_statVertices[p] = boost::get<3>( dataOnProc );
             }
 
-#if BOOST_VERSION >= 105500
-            std::vector<int> maxs { (int)this->numElements(),
-                    (int)this->numFaces(),
-                    (int)this->numEdges(),
-                    (int)this->numPoints(),
-                    (int)this->numVertices() };
-            mpi::all_reduce( this->worldComm(), mpi::inplace(maxs.data()), 5, mpi::maximum<int>() );
-#else
-            std::vector<int> maxs( 5, 0 );
-            mpi::all_reduce( this->worldComm(), locals.data(), 5, maxs.data(), mpi::maximum<int>() );
-#endif
+            size_type numFaceGlobalCounter = nf, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
-            M_maxNumElements = maxs[0];
-            M_maxNumFaces = maxs[1];
-            M_maxNumEdges = maxs[2];
-            M_maxNumPoints = maxs[3];
-            M_maxNumVertices = maxs[4];
+            for ( auto it=std::get<0>( rangeFaces ), en=std::get<1>( rangeFaces ); it !=en ; ++it )
+            {
+                auto const& face = unwrap_ref( *it );
+                if ( !face.isInterProcessDomain() )
+                    continue;
+                if ( face.partition1() < face.partition2() )
+                    continue;
+                --numFaceGlobalCounter;
+            }
+            for ( auto it=std::get<0>( rangePoints ), en=std::get<1>( rangePoints ); it !=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                bool countThisEntity = true;
+                for ( auto const& ghostData : point.elementsGhost() )
+                {
+                    if ( ghostData.first < currentRank )
+                    {
+                        countThisEntity = false;
+                        break;
+                    }
+                }
+                if ( countThisEntity )
+                    continue;
+                --numPointGlobalCounter;
+            }
+
+            std::vector<size_type> numEntitiesGlobalCounter = { numFaceGlobalCounter, numPointGlobalCounter };
+            if ( nOrder > 1 )
+                numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
+            std::vector<size_type> maxNumEntities = { neall,nfall,npall };
+            if ( nOrder > 1 )
+                maxNumEntities.push_back( nvall );
+
+            auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
+            mpi::all_reduce( this->worldComm(), mpi::inplace(dataAllReduce), UpdateNumGlobalEntitiesForAllReduce() );
+            auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
+            auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
+
+            auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
+                { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
+            M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
+            M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
+            M_numGlobalEdges = 0;
+            M_numGlobalPoints = numEntitiesGlobalCounterGlobal[1];
+            M_numGlobalVertices = ( nOrder > 1 )? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
+
+            M_maxNumElements = maxNumEntitiesGlobal[0];
+            M_maxNumFaces = maxNumEntitiesGlobal[1];
+            M_maxNumEdges = 0;
+            M_maxNumPoints = maxNumEntitiesGlobal[2];
+            M_maxNumVertices = ( nOrder > 1 )? maxNumEntitiesGlobal[3] : M_maxNumPoints;
         }
         else
         {
@@ -590,16 +704,13 @@ public:
             M_maxNumEdges = ned;
             M_maxNumPoints = np;
             M_maxNumVertices = nv;
+
+            M_numGlobalElements = ne;
+            M_numGlobalFaces = nf;
+            M_numGlobalEdges = ned;
+            M_numGlobalPoints = np;
+            M_numGlobalVertices = nv;
         }
-        auto opBinaryPlusTuple2 = [] (std::tuple<size_type,size_type> const& cur, std::tuple<size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res) ); };
-        auto opBinaryPlusTuple3 = [] (std::tuple<size_type,size_type,size_type> const& cur, std::tuple<size_type,size_type,size_type> const& res)
-            { return std::make_tuple(std::get<0>(cur)+std::get<0>(res),std::get<1>(cur)+std::get<1>(res),std::get<2>(cur)+std::get<2>(res) ); };
-        M_numGlobalElements = std::get<0>( std::accumulate( M_statElements.begin(), M_statElements.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalFaces = std::get<0>( std::accumulate( M_statFaces.begin(), M_statFaces.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalEdges = std::get<0>( std::accumulate( M_statEdges.begin(), M_statEdges.end(), std::make_tuple(0,0), opBinaryPlusTuple2 ) );
-        M_numGlobalPoints = std::get<0>( std::accumulate( M_statPoints.begin(), M_statPoints.end(), std::make_tuple(0,0,0), opBinaryPlusTuple3 ) );
-        M_numGlobalVertices = std::accumulate( M_statVertices.begin(), M_statVertices.end(), 0, std::plus<size_type>() );
     }
 
 
@@ -996,7 +1107,7 @@ public:
     /**
      * check elements permutation and fix it if needed
      */
-    void checkAndFixPermutation();
+    //void checkAndFixPermutation();
 
     /**
      * send the mesh data structure to processor \p p with  \p tag
@@ -1225,15 +1336,16 @@ public:
         {
             for( auto fit = this->beginFace(), fen = this->endFace(); fit != fen; ++fit )
             {
-                if ( fit->isOnBoundary() && !fit->isConnectedTo0() )
+                auto & faceModified = fit->second;
+                if ( faceModified.isOnBoundary() && !faceModified.isConnectedTo0() )
                 {
                     std::cout << "erase boundary face...\n";
                     this->eraseFace( fit );
                 }
-                if ( !fit->isOnBoundary() && fit->isConnectedTo0() && !fit->isConnectedTo1() )
+                if ( !faceModified.isOnBoundary() && faceModified.isConnectedTo0() && !faceModified.isConnectedTo1() )
                 {
                     std::cout << "found boundary face...\n";
-                    this->faces().modify( fit, []( face_type& f ){ f.setOnBoundary( true ); } );
+                    faceModified.setOnBoundary( true );
                 }
             }
             this->setUpdatedForUse( false );
@@ -1735,6 +1847,10 @@ protected:
     void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
     /**
+     * Update connectivity of entities of codimension 1. Done only for marked entities and ghost faces
+     */
+    void updateEntitiesCoDimensionOneMinimal();
+    /**
      * Update in ghost cells of entities of codimension 1
      */
     void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
@@ -1761,22 +1877,22 @@ private:
     /**
      * modify edges on boundary in 3D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> );
 
     /**
      * update entities on boundary (point, edge, face and element)
@@ -1786,8 +1902,8 @@ private:
     /**
      * fix duplication of point in connection1 with 3d mesh at order 3 and 4
      */
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::true_ );
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_iterator iv, face_iterator __fit, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::true_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::false_ );
 
 private:
 
@@ -2115,7 +2231,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     auto const en = this->endElement();
     for ( ; it != en; ++it )
     {
-        element_type const& old_elem = *it;
+        element_type const& old_elem = it->second;
 
         // create a new element
         typename P1_mesh_type::element_type new_elem;
@@ -2211,24 +2327,24 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
 
 #endif
-        if ( it->isGhostCell() )
+        if ( old_elem.isGhostCell() )
         {
-            DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
-            for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
+            DVLOG(2) << "element " << old_elem.id() << " is a ghost cell\n";
+            for (auto it_pid=old_elem.idInOthersPartitions().begin(),en_pid=old_elem.idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
             {
-                DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<old_elem.pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
                 const int procToSend=it_pid->first;
-                DCHECK( procToSend!=it->pidInPartition() ) << "invalid\n";
+                DCHECK( procToSend!=old_elem.pidInPartition() ) << "invalid\n";
                 memoryGhostId[procToSend].insert(boost::make_tuple(new_elem.id(),it_pid->second));
             }
         }
-        else if (it->numberOfNeighborPartitions() /*it->numberOfPartitions()*/ >0 )
+        else if (old_elem.numberOfNeighborPartitions() /*old_elem.numberOfPartitions()*/ >0 )
         {
 #if 0
-            setOfRecvProc.insert( it->neighborPartitionIds().begin(), it->neighborPartitionIds().end() );
+            setOfRecvProc.insert( old_elem.neighborPartitionIds().begin(), old_elem.neighborPartitionIds().end() );
 #else
-            auto itneighbor = it->neighborPartitionIds().begin();
-            auto const enneighbor = it->neighborPartitionIds().end();
+            auto itneighbor = old_elem.neighborPartitionIds().begin();
+            auto const enneighbor = old_elem.neighborPartitionIds().end();
             for ( ; itneighbor!=enneighbor ; ++itneighbor )
                 nbMsgToRecv[*itneighbor]++;
 #endif
@@ -2240,7 +2356,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     auto face_en = this->endFace();
     for ( ; face_it!=face_en ; ++face_it )
     {
-        auto const& old_face = *face_it;
+        auto const& old_face = face_it->second;
         if ( !old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
@@ -2393,8 +2509,8 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 size_type idEltAsked;
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
-                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+                auto & eltModified = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ )->second;
+                eltModified.setIdInOtherPartitions( procToRecv, idEltAsked );
             }
         }
 
@@ -2818,9 +2934,24 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 }
 
 
+//!
+//! @return the topogical dimension of the mesh \p m
+//!
 template<typename MeshType>
-using mesh_t = decay_type<MeshType>;
-
+constexpr int topodim( boost::shared_ptr<MeshType> m,
+                       std::enable_if_t<is_mesh_v<MeshType>>* = nullptr )
+{
+    return MeshType::nDim;
+}
+//!
+//! @return the real dimension in which the mesh is defined
+//!
+template<typename MeshType>
+constexpr int realdim( boost::shared_ptr<MeshType> m,
+                       std::enable_if<is_mesh_v<MeshType>>* = nullptr )
+{
+    return MeshType::nRealDim;
+}
 
 } // Feel
 

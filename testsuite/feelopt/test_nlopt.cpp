@@ -29,7 +29,7 @@
  */
 
 #define BOOST_TEST_MODULE nlopt
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelopt/nlopt.hpp>
 
