@@ -58,6 +58,7 @@
 #include <feel/feelmesh/meshutil.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelalg/boundingbox.hpp>
@@ -2793,9 +2794,24 @@ int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 }
 
 
+//!
+//! @return the topogical dimension of the mesh \p m
+//!
 template<typename MeshType>
-using mesh_t = decay_type<MeshType>;
-
+constexpr int topodim( boost::shared_ptr<MeshType> m,
+                       std::enable_if_t<is_mesh_v<MeshType>>* = nullptr )
+{
+    return MeshType::nDim;
+}
+//!
+//! @return the real dimension in which the mesh is defined
+//!
+template<typename MeshType>
+constexpr int realdim( boost::shared_ptr<MeshType> m,
+                       std::enable_if<is_mesh_v<MeshType>>* = nullptr )
+{
+    return MeshType::nRealDim;
+}
 
 } // Feel
 
