@@ -450,9 +450,9 @@ public:
         return m;
     }
 
-    /**
-     * instantiate a new block matrix sparse
-     */
+    //!
+    //! create a new block Matrix from a set of blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
@@ -474,6 +474,9 @@ public:
         return mb->getSparseMatrix();
     }
 
+    //!
+    //! create a new block Matrix from a set of graph blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )

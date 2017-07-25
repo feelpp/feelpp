@@ -67,7 +67,6 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/graphcsr.hpp>
 #include <feel/feelalg/vector.hpp>
-#include <feel/feelalg/staticcondensation.hpp>
 
 namespace Feel
 {
@@ -107,8 +106,6 @@ public:
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
-    using sc_type = StaticCondensation<value_type>;
-    using sc_ptrtype = boost::shared_ptr<sc_type>;
 
     enum Mode { STANDARD=0, STATIC_CONDENSATION = 1 };
 
@@ -488,23 +485,15 @@ public:
                              const std::vector<size_type> &rows,
                              const std::vector<size_type> &cols ) = 0;
 
-    /**
-     * Add the full matrix to the
-     * Sparse matrix.  This is useful
-     * for adding an element matrix
-     * at assembly time
-     */
+    //!
+    //! Add the full matrix to the
+    //! Sparse matrix.  This is useful
+    //! for adding an element matrix
+    //! at assembly time
+    //!
     virtual void addMatrix ( int* rows, int nrows,
                              int* cols, int ncols,
                              value_type* data, size_type K, size_type K2 ) = 0;
-
-    virtual void addLocalMatrix ( int* rows, int nrows,
-                                  int* cols, int ncols,
-                                  value_type* data, size_type K, size_type K2 )
-    {
-        M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
-    }
-
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -915,14 +904,6 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    sc_ptrtype sc() { return M_sc; }
-    sc_ptrtype const& sc() const { return M_sc; }
-    sparse_matrix_ptrtype block( int row, int col )
-        {
-            //sc->setMatrix( this->shared_from_this() );
-            M_sc->block( row, col );
-            return this->shared_from_this();
-        }
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -966,7 +947,6 @@ protected:
     //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
-    sc_ptrtype M_sc;
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -982,8 +962,8 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     M_is_initialized( false ),
     M_is_closed( false ),
-    M_mprop( NON_HERMITIAN ),
-    M_sc( new sc_type )
+    M_mprop( NON_HERMITIAN )
+
 {}
 
 template <typename T>
@@ -994,8 +974,7 @@ MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype co
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
-    M_mapCol( dmCol ),
-    M_sc( new sc_type )
+    M_mapCol( dmCol )
 {}
 
 template <typename T>
