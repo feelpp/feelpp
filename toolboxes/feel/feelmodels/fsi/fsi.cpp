@@ -200,7 +200,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     typedef SubMeshData smd_type;
     typedef boost::shared_ptr<smd_type> smd_ptrtype;
@@ -226,7 +226,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     return submeshStruct;
 }
