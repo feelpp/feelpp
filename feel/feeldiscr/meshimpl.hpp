@@ -2695,15 +2695,15 @@ Mesh<Shape, T, Tag>::check() const
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
-        element_type const& __element = *iv;
+        element_type const& elt = iv->second;
 
         if ( this->components().test( MESH_UPDATE_FACES ) )
         {
              for ( size_type j = 0; j < this->numLocalFaces(); j++ )
              {
-                 FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
+                 FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
                  VLOG(2) << "------------------------------------------------------------\n";
-                 VLOG(2) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
+                 VLOG(2) << "Element : " << elt.id() << " face lid: " << j << " face gid:  " << elt.face( j ).id() << "\n";
              }
         }
 
@@ -2711,16 +2711,16 @@ Mesh<Shape, T, Tag>::check() const
              this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) )
         {
             size_type counter = 0;
-            for ( uint16_type ms=0; ms < __element.nNeighbors(); ms++ )
+            for ( uint16_type ms=0; ms < elt.nNeighbors(); ms++ )
             {
-                if ( __element.neighbor( ms ) != invalid_size_type_value )
+                if ( elt.neighbor( ms ) != invalid_size_type_value )
                     ++counter;
 
             }
-            VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-            if ( __element.nNeighbors() > 0 )
+            VLOG(2) << "[Mesh::check] element " << elt.id() << " number of neighbors: " << counter << "\n";
+            if ( elt.nNeighbors() > 0 )
             {
-                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
             }
         }
 
@@ -2728,9 +2728,9 @@ Mesh<Shape, T, Tag>::check() const
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
         {
-            FEELPP_ASSERT( iv->edgePtr( j ) )( j )( iv->id() ).error( "invalid element edge check" );
+            FEELPP_ASSERT( elt.edgePtr( j ) )( j )( elt.id() ).error( "invalid element edge check" );
             VLOG(2) << "------------------------------------------------------------\n";
-            VLOG(2) << "Element : " << iv->id() << " edge lid: " << j << " edge gid:  " << iv->edge( j ).id() << "\n";
+            VLOG(2) << "Element : " << elt.id() << " edge lid: " << j << " edge gid:  " << elt.edge( j ).id() << "\n";
 
         }
 
@@ -2839,15 +2839,15 @@ Mesh<Shape, T, Tag>::checkLocalPermutation( mpl::bool_<true> ) const
     bool mesh_well_oriented = true;
     std::vector<size_type> list_of_bad_elts;
 
-    for ( element_const_iterator elt = this->beginElement();
-            elt != this->endElement(); ++elt )
+    for ( element_const_iterator iv = this->beginElement();
+            iv != this->endElement(); ++iv )
     {
-        element_type const& __element = *elt;
+        element_type const& elt = iv->second;
 
-        if ( !__element.isAnticlockwiseOriented() )
+        if ( !elt.isAnticlockwiseOriented() )
         {
             mesh_well_oriented = false;
-            list_of_bad_elts.push_back( elt->id() );
+            list_of_bad_elts.push_back( elt.id() );
         }
     }
 
