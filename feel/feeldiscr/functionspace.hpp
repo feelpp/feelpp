@@ -4328,9 +4328,7 @@ public:
     }
     std::vector<int> basisOrder( mpl::bool_<false> ) const
     {
-        std::vector<int> o( 1 );
-        o[0]=basis_type::nOrder;
-        return o;
+        return { basis_type::nOrder };
     }
 
     /**

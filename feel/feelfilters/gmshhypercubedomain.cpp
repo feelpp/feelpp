@@ -268,10 +268,12 @@ GmshHypercubeDomain::getDescription3D() const
          << "Line Loop(5) = {2,3,4,1};\n"
          << "Plane Surface(6) = {5};\n"
          << "\n"
+#if GMSH_VERSION_LESS_THAN(3,0,0)        
          << "Extrude Surface {6, {0,0,zmax-zmin} } {\n"
+#else
+         << "Extrude {0,0,zmax-zmin } { Surface {6};"
+#endif
          << "  Layers { {(zmax-zmin)/h}, {1.0} };\n";
-
-
 
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";

@@ -1438,7 +1438,7 @@ private:
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
         {
-            element_type _elt = *mesh.beginElement();
+            element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
             for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; i++ )
@@ -1757,11 +1757,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     for ( ; fit != fen; ++fit )
     {
         const int ncdof = is_product?nComponents:1;
-
+        auto const& elt = fit->second;
         for ( uint16_type c = 0; c < ncdof; ++c )
-            if ( !this->isElementDone( fit->id(), c ) )
+            if ( !this->isElementDone( elt.id(), c ) )
             {
-                em.push_back( boost::make_tuple( fit->id(), c, (fit->hasMarker())? fit->marker().value() : 0 ) );
+                em.push_back( boost::make_tuple( elt.id(), c, (elt.hasMarker())? elt.marker().value() : 0 ) );
             }
     } 
     if ( !em.empty() )
@@ -2543,7 +2543,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 #endif
         int ncdof = is_product ? nComponents : 1 ;
         M_face_l2g[ face.id()].resize( nDofF*ncdof );
-        dfb.add( __face_it );
+        dfb.add( face );
     }
 
 #if 0 //!defined(NDEBUG)

@@ -93,7 +93,7 @@ int main( int argc, char** argv)
     crb->exportBasisFunctions(exportWn);
 
     // export
-    auto u = crb->expansion( uN, uN.size(), WN );
+    auto u = crb->expansion( uN, uN.size() );
     auto V = u.template element<0>();
     auto T = u.template element<1>();
     auto e = Exporter<rb_model_type::mesh_type>::New( "thermoelectric" );
@@ -103,8 +103,8 @@ int main( int argc, char** argv)
 
     // export FE
     auto VTFE = model->solve(mu);
-    auto VFE = VTFE.template element<0>();
-    auto TFE = VTFE.template element<1>();
+    auto VFE = VTFE.element<0>();
+    auto TFE = VTFE.element<1>();
     e->add( "VFE", VFE );
     e->add( "TFE", TFE );
 

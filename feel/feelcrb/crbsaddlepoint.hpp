@@ -180,7 +180,7 @@ public:
 
 
     element_type runWithExpansion( parameter_type const& mu , int N=-1, int time_index=-1);
-    element_type expansion( vectorN_type const& u,  bool dual, int N = -1 ) const;
+    element_type expansion( vectorN_type const& u, int N = -1,  bool dual=false ) const;
     element_type expansionSaddlePoint( vectorN_type const& U_coeff, int const N, bool dual ) const;
 
     element_type solve( parameter_type const& mu )
@@ -874,7 +874,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         {
             previous_uN = uN[0];
             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                this->M_model->computeBetaQm( this->expansion( uN[0], N , false ), mu );
+                this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
             A.setZero( N0+N1,N0+N1);
             for ( size_type q=0; q<Qa; q++ )
             {
@@ -1630,7 +1630,7 @@ CRBSaddlePoint<TruthModelType>::runWithExpansion( parameter_type const& mu , int
 
 template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::element_type
-CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u, bool dual, int N ) const
+CRBSaddlePoint<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
 {
     return expansionSaddlePoint( u, N, dual );
 }
