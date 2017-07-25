@@ -42,6 +42,7 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
 #include <feel/feelmesh/detail/filters.hpp>
+#include <feel/feelvf/expr.hpp>
 
 namespace Feel
 {
@@ -57,15 +58,13 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
 
 
 template<typename MeshType>
-using allelements_t =  boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                 typename MeshTraits<MeshType>::element_const_iterator,
-                                 typename MeshTraits<MeshType>::element_const_iterator>;
-
-template<typename MeshType>
 using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                                                   typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allelements_t = elements_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using elements_pid_t = elements_reference_wrapper_t<MeshType>;
@@ -89,17 +88,14 @@ template<typename MeshType>
 using marked3elements_t = elements_reference_wrapper_t<MeshType>;
 
 
-
-template<typename MeshType>
-using allfaces_t =  boost::tuple<mpl::size_t<MESH_FACES>,
-                                 typename MeshTraits<MeshType>::face_const_iterator,
-                                 typename MeshTraits<MeshType>::face_const_iterator>;
-
 template<typename MeshType>
 using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allfaces_t =  faces_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using idfaces_t =  faces_reference_wrapper_t<MeshType>;
@@ -126,14 +122,13 @@ using marked3faces_t = faces_reference_wrapper_t<MeshType>;
 
 
 template<typename MeshType>
-using alledges_t =  boost::tuple<mpl::size_t<MESH_EDGES>,
-                                 typename MeshTraits<MeshType>::edge_const_iterator,
-                                 typename MeshTraits<MeshType>::edge_const_iterator>;
-template<typename MeshType>
 using edges_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_EDGES>,
                                                   typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
                                                   typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using alledges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
 using pid_edges_t = edges_reference_wrapper_t<MeshType>;
@@ -149,15 +144,12 @@ template<typename MeshType>
 using internaledges_t = edges_reference_wrapper_t<MeshType>;
 
 template<typename MeshType>
-using allpoints_t =  boost::tuple<mpl::size_t<MESH_POINTS>,
-                               typename MeshTraits<MeshType>::point_const_iterator,
-                               typename MeshTraits<MeshType>::point_const_iterator>;
-
-template<typename MeshType>
 using points_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_POINTS>,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
                                     typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
+template<typename MeshType>
+using allpoints_t = points_reference_wrapper_t<MeshType>;
 template<typename MeshType>
 using points_pid_t = points_reference_wrapper_t<MeshType>;
 template<typename MeshType>
@@ -172,9 +164,9 @@ using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::
 
 
 template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,IteratorType>::type;
+using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
 template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,IteratorType>::type;
+using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
 template<typename IteratorType>
 using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
 template<typename IteratorType>
@@ -183,6 +175,19 @@ using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
                                                   typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
                                                   std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
                                                   >;
+
+template<typename MeshType>
+using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template<typename MeshType>
+using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
+
+template<typename MeshType>
+decltype(auto)
+make_elements_wrapper()
+{
+    using elt_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+    return boost::make_shared<elt_wrapper_t>();
+}
 #if 0
 /**
  * namespace for meta mesh computation data structure
@@ -249,6 +254,57 @@ elements_pid_t<MeshType>
 elements( MeshType const& mesh )
 {
     return Feel::detail::elements( mesh, rank( mesh ) );
+}
+
+/**
+ *
+ * \ingroup MeshIterators
+ * \return a pair of iterators to iterate over elements with pid \p flag and
+ *  verified expr > 0 for all nodes of the element
+ */
+template<typename MeshType,typename ExprType>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
+{
+    rank_type pid = rank( mesh );
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& imesh = Feel::unwrap_ptr( mesh );
+    typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
+    auto it = imesh.beginOrderedElement();
+    auto en = imesh.endOrderedElement();
+    if ( it != en )
+    {
+        auto gm = imesh.gm();
+        auto const& initElt = unwrap_ref( *it );
+        typename mesh_type::reference_convex_type refConvex;
+        auto geopc = gm->preCompute( refConvex.points() );
+        const size_type context = ExprType::context|vm::POINT;
+        auto ctx = gm->template context<context>( initElt, geopc );
+        auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = unwrap_ref( *it );
+            if ( elt.processId() != pid )
+                continue;
+            ctx->update( elt );
+            expr_evaluator.update( vf::mapgmc( ctx ) );
+            bool addElt = true;
+            for ( uint16_type q=0;q<ctx->nPoints();++q )
+            {
+                double val = expr_evaluator.evalq( 0,0,q );
+                if ( val < 1e-9 )
+                {
+                    addElt = false;
+                    break;
+                }
+            }
+            if ( addElt )
+                myelts->push_back(boost::cref(elt));
+        }
+    }
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(), myelts->end(),
+                              myelts );
 }
 
 /**
@@ -1411,11 +1467,48 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
 
 }
 
+//!
+//! @return the worldcomm associated to the mesh stored in the range
+//!
 template<size_t S, class ITERATOR, class CONTAINER>
 WorldComm const&
 worldComm( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR,CONTAINER> const& range )
 {
     return boost::unwrap_ref( *range.template get<1>() ).mesh()->worldComm();
+}
+
+//!
+//! build a list of elements based on iterators  [begin,end) from a mesh \p imesh
+//!
+template<typename MeshType, typename IteratorType>
+ext_elements_t<MeshType>
+idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
+{
+    //auto myelts = make_elements_wrapper<MeshType>();
+    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
+
+    for( auto it = begin; it != end; ++ it )
+    {
+        auto elt = *it;
+        if ( mesh.hasElement( elt ) )
+        {
+            myelts->push_back( boost::cref( mesh.element( elt ) ) );
+        }
+    }
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+//!
+//! build a list of elements based on a list of element ids \p l from a mesh \p imesh
+//!
+template<typename MeshType, typename T>
+ext_elements_t<MeshType>
+idelements( MeshType const& imesh, std::vector<T> const& l )
+{
+    return idelements( imesh, l.begin(), l.end() );
 }
 
 

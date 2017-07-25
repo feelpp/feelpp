@@ -32,6 +32,28 @@
 namespace Feel {
 
 /**
+ Given a set of coefficient \p c and a set of finite element function \p b, build
+ \f[
+ w = \sum_{i=1}^{M} c_i b_i
+ \f]
+ The last argument \p M allows to build only a subset of the expansion
+ */
+template<typename ElementType, typename CoeffType>
+void
+expansion( std::vector<ElementType> const& b, CoeffType const& c, Vector<typename ElementType::value_type> & res, int M = -1 )
+{
+    res.zero();
+    if ( ( M == -1 ) || M > c.size() ) M = c.size() ;
+    CHECK( (c.size() <= M) )
+        << "Invalid coefficient or basis function elements "
+        << "M=" << M << " coeff: " << b.size() << " elements: " << c.size();
+    for( int i = 0; i < M; ++i )
+    {
+        res.add( c[i], b[i] );
+    }
+}
+
+/**
    Given a set of coefficient \p c and a set of finite element function \p b, build
    \f[
    w = \sum_{i=1}^{M} c_i b_i
@@ -43,16 +65,7 @@ ElementType
 expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
 {
     auto res = b[0].functionSpace()->element();
-    res.zero();
-    if ( ( M == -1 ) || M > c.size() ) M = c.size() ;
-    CHECK( (c.size() <= M) )
-        << "Invalid coefficient or basis function elements "
-        << "M=" << M << " coeff: " << b.size() << " elements: " << c.size();
-    for( int i = 0; i < M; ++i )
-    {
-        res.add( c[i], b[i] );
-    }
-
+    Feel::expansion( b,c,res,M );
     return res;
 }
 

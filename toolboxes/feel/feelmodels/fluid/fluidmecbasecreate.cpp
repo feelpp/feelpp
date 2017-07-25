@@ -10,6 +10,7 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -128,16 +129,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-#if 1 //defined(FEELPP_HAS_VTK)
-    M_isHOVisu =nOrderGeo > 1;
+    M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
-#else
-    M_isHOVisu=false;
-    if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
-        FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "WARNING : hovisu disable because VTK not find",
-                        this->worldComm(),this->verboseAllProc());
-#endif
 
     // overwrite export field options in json if given in cfg
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
@@ -181,6 +175,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
             this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+            this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
         }
 
     //--------------------------------------------------------------//
@@ -523,21 +518,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
     this->log("FluidMechanics","createPostProcessExporters", "start" );
 
+    bool doExport = boption(_name="exporter.export");
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";//change_coords_only, change, static
 
-#if 0
-    if ( !fs::exists(this->exporterPath()) )
-    {
-        // master rank create directories
-        if ( this->worldComm().isMasterRank() )
-            fs::create_directories( this->exporterPath() );
-        // wait for all process
-        this->worldComm().globalComm().barrier();
-    }
-#endif
-
-    if (!M_isHOVisu)
+    if ( nOrderGeo == 1 && doExport )
     {
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
@@ -552,7 +537,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                                  prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_gmshHo")), M_Xh->worldComm() );
 #endif
     }
-    else
+
+    if ( M_isHOVisu && doExport )
     {
 #if 1 //defined(FEELPP_HAS_VTK)
         //M_exporter_ho = export_ho_type::New( this->application()->vm(), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_HO"))/*.c_str()*/, M_Xh->worldComm() );
@@ -700,6 +686,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
     //----------------------------------------------------------------------------//
     // update rho, mu, nu,...
     M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_densityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     //----------------------------------------------------------------------------//
@@ -978,8 +966,28 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // init stabilization
     if ( M_stabilizationGLS )
     {
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
-        M_stabilizationGLSParameter->init();
+        //static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
+        typedef StabilizationGLSParameter<mesh_type, nOrderVelocity> stab_gls_parameter_velocity_impl_type;
+        typedef StabilizationGLSParameter<mesh_type, nOrderPressure> stab_gls_parameter_pressure_impl_type;
+        M_stabilizationGLSParameterConvectionDiffusion.reset( new stab_gls_parameter_velocity_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameterConvectionDiffusion->init();
+        if ( nOrderVelocity == nOrderPressure )
+             M_stabilizationGLSParameterPressure = M_stabilizationGLSParameterConvectionDiffusion;
+        else
+        {
+            M_stabilizationGLSParameterPressure.reset( new stab_gls_parameter_pressure_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+            M_stabilizationGLSParameterPressure->init();
+        }
+        if ( Environment::vm().count( prefixvm(this->prefix(),"stabilization-gls.convection-diffusion.location.expressions" ) ) )
+        {
+            std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh(),expr(locationExpression));
+        }
+        else
+        {
+            M_stabilizationGLSEltRangeConvectionDiffusion = elements(this->mesh());
+        }
+        M_stabilizationGLSEltRangePressure = elements(this->mesh());
     }
     //-------------------------------------------------//
     this->initFluidOutlet();
@@ -1074,6 +1082,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         }
 #endif
     }
+    //-------------------------------------------------//
+    this->updateBoundaryConditionsForUse();
+    //-------------------------------------------------//
     M_isUpdatedForUse = true;
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
@@ -1412,26 +1423,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // restart exporters if restart is activated
-    if (this->doRestart() && this->restartPath().empty() )
+    if ( this->doRestart() && this->restartPath().empty() )
     {
-        if (!M_isHOVisu)
-        {
-            // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
-            if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
-            {
-                if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-            }
-            else
-            {
-                //if ( M_exporter_gmsh->doExport() ) M_exporter_gmsh->restart(this->timeInitial());
-            }
-        }
-        else
-        {
-#if 1 // defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho && M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
-#endif
-        }
+        // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
+        if ( M_exporter && M_exporter->doExport() )
+            M_exporter->restart( this->timeInitial() );
+        if ( M_exporter_ho && M_exporter_ho->doExport() )
+            M_exporter_ho->restart( this->timeInitial() );
     }
 
     // add user functions

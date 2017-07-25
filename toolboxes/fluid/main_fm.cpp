@@ -5,13 +5,13 @@
 namespace Feel
 {
 
-template <uint16_type OrderVelocity,uint16_type OrderPressure>
+template <uint16_type OrderVelocity,uint16_type OrderPressure, uint16_type OrderGeo = 1>
 void
 runApplicationFluid()
 {
     using namespace Feel;
 
-    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,1>,
+    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,OrderGeo>,
                                         Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
     auto FM = model_type::New("fluid");
@@ -26,6 +26,9 @@ runApplicationFluid()
     }
     else
     {
+        if ( !FM->doRestart() )
+            FM->exportResults(FM->timeInitial());
+
         for ( ; !FM->timeStepBase()->isFinished(); FM->updateTimeStep() )
         {
             if (FM->worldComm().isMasterRank())
@@ -61,11 +64,15 @@ main( int argc, char** argv )
                                 _email="feelpp-devel@feelpp.org"));
 
     std::string feapprox = soption(_name="fe-approximation");
-    if ( feapprox == "P2P1" )
+    if ( feapprox == "P2P1" || feapprox == "P2P1G1" )
         runApplicationFluid<2,1>();
-#if 0//FEELPP_DIM == 2
-    else if ( feapprox == "P1P1" )
+#if 0// FEELPP_DIM == 2
+    else if ( feapprox == "P1P1" || feapprox == "P1P1G1" )
         runApplicationFluid<1,1>();
+#endif
+#if 1
+    else if ( feapprox == "P2P1G2" )
+        runApplicationFluid<2,1,2>();
 #endif
     else CHECK( false ) << "invalid feapprox " << feapprox;
 

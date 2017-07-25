@@ -26,11 +26,175 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 
-
-
 #include <feel/feelmodels/modelmaterials.hpp>
 
 namespace Feel {
+
+ModelMaterial::ModelMaterial( WorldComm const& worldComm )
+    :
+    M_worldComm( &worldComm )
+{}
+ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
+    :
+    M_worldComm( &worldComm ),
+    M_name( name ),
+    M_p( p ),
+    M_directoryLibExpr( directoryLibExpr )
+{
+    std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
+                                            "k11","k12","k13","k22","k23","k33",
+                                            "E","nu","sigma","C","Cs","Cl","L",
+                                            "Ks","Kl","Tsol","Tliq" };
+    for ( std::string const& prop : matProperties )
+        this->setProperty( prop,M_p );
+}
+
+bool
+ModelMaterial::hasPropertyConstant( std::string const& prop ) const
+{
+    auto itFindProp = M_materialProperties.find( prop );
+    if ( itFindProp == M_materialProperties.end() )
+        return false;
+    auto const& matProp = itFindProp->second;
+    if ( !std::get<0>( matProp ) )
+        return false;
+    return true;
+}
+bool
+ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
+{
+    auto itFindProp = M_materialProperties.find( prop );
+    if ( itFindProp == M_materialProperties.end() )
+        return false;
+    auto const& matProp = itFindProp->second;
+    if ( !std::get<1>( matProp ) )
+        return false;
+    return true;
+}
+bool
+ModelMaterial::hasPropertyExprVectorial2( std::string const& prop ) const
+{
+    auto itFindProp = M_materialProperties.find( prop );
+    if ( itFindProp == M_materialProperties.end() )
+        return false;
+    auto const& matProp = itFindProp->second;
+    if ( !std::get<2>( matProp ) )
+        return false;
+    return true;
+}
+bool
+ModelMaterial::hasPropertyExprVectorial3( std::string const& prop ) const
+{
+    auto itFindProp = M_materialProperties.find( prop );
+    if ( itFindProp == M_materialProperties.end() )
+        return false;
+    auto const& matProp = itFindProp->second;
+    if ( !std::get<3>( matProp ) )
+        return false;
+    return true;
+}
+double
+ModelMaterial::propertyConstant( std::string const& prop ) const
+{
+    if ( this->hasPropertyConstant( prop ) )
+        return *std::get<0>( M_materialProperties.find( prop )->second );
+    else
+        return 0;
+}
+ModelMaterial::expr_scalar_type const&
+ModelMaterial::propertyExprScalar( std::string const& prop ) const
+{
+    CHECK( this->hasPropertyExprScalar( prop ) ) << "no scalar expr";
+    return *std::get<1>( M_materialProperties.find( prop )->second );
+}
+ModelMaterial::expr_vectorial2_type const&
+ModelMaterial::propertyExprVectorial2( std::string const& prop ) const
+{
+    CHECK( this->hasPropertyExprVectorial2( prop ) ) << "no vectorial2 expr";
+    return *std::get<2>( M_materialProperties.find( prop )->second );
+}
+ModelMaterial::expr_vectorial3_type const&
+ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
+{
+    CHECK( this->hasPropertyExprVectorial3( prop ) ) << "no vectorial3 expr";
+    return *std::get<3>( M_materialProperties.find( prop )->second );
+}
+
+void
+ModelMaterial::setProperty( std::string const& property, double val )
+{
+    M_materialProperties[property] = mat_property_expr_type();
+    std::get<0>( M_materialProperties[property] ) = val;
+}
+
+void
+ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
+{
+    if( boost::optional<double> itvald = p.get_optional<double>( property ) )
+    {
+        double val = *itvald;
+        VLOG(1) << "set property " << property << " is constant : " << val;
+        M_materialProperties[property] = mat_property_expr_type();
+        std::get<0>( M_materialProperties[property] ) = val;
+    }
+    else if( boost::optional<std::string> itvals = p.get_optional<std::string>( property ) )
+    {
+        std::string feelExprString = *itvals;
+        auto parseExpr = GiNaC::parse( feelExprString );
+        auto const& exprSymbols = parseExpr.second;
+        auto ginacEvalm = parseExpr.first.evalm();
+
+        bool isLst = GiNaC::is_a<GiNaC::lst>( ginacEvalm );
+        int nComp = 1;
+        if ( isLst )
+            nComp = ginacEvalm.nops();
+
+        if ( nComp == 1 && ( exprSymbols.empty() || ( exprSymbols.size() == 1 && exprSymbols[0].get_name() == "0" ) ) )
+        {
+            std::string stringCstExpr = ( isLst )? str( ginacEvalm.op(0) ) :str( ginacEvalm );
+            double val = 0;
+            try
+            {
+                val = std::stod( stringCstExpr );
+            }
+            catch (std::invalid_argument& err)
+            {
+                CHECK( false ) << "cast fail from expr to double\n";
+            }
+            VLOG(1) << "set property " << property <<" is const from expr=" << val;
+            M_materialProperties[property] = mat_property_expr_type();
+            std::get<0>(M_materialProperties[property]) = val;
+        }
+        else
+        {
+            VLOG(1) << "set property " << property << " build symbolic expr with nComp=" << nComp;
+            M_materialProperties[property] = mat_property_expr_type();
+            if ( nComp == 1 )
+                std::get<1>( M_materialProperties[property] ) = boost::optional<expr_scalar_type>( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+            else if ( nComp == 2 )
+                std::get<2>( M_materialProperties[property] ) = boost::optional<expr_vectorial2_type>( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+            else if ( nComp == 3 )
+                std::get<3>( M_materialProperties[property] ) = boost::optional<expr_vectorial3_type>( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+
+        }
+    }
+}
+
+void
+ModelMaterial::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & matPropPair : M_materialProperties )
+    {
+        std::string const& matPropName = matPropPair.first;
+        if ( this->hasPropertyExprScalar( matPropName ) )
+            std::get<1>( matPropPair.second )->setParameterValues( mp );
+        if ( this->hasPropertyExprVectorial2( matPropName ) )
+            std::get<2>( matPropPair.second )->setParameterValues( mp );
+        if ( this->hasPropertyExprVectorial3( matPropName ) )
+            std::get<3>( matPropPair.second )->setParameterValues( mp );
+    }
+}
+
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
 {
@@ -61,10 +225,19 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
     return os;
 }
 
-ModelMaterials::ModelMaterials( pt::ptree const& p )  : M_p( p )
+ModelMaterials::ModelMaterials( WorldComm const& worldComm )
+    :
+    M_worldComm( &worldComm )
+{}
+
+ModelMaterials::ModelMaterials( pt::ptree const& p, WorldComm const& worldComm )
+    :
+    M_worldComm( &worldComm ),
+    M_p( p )
 {
     setup();
 }
+
 ModelMaterial
 ModelMaterials::loadMaterial( std::string const& s )
 {
@@ -78,11 +251,9 @@ ModelMaterials::setup()
     for( auto const& v : M_p )
     {
         LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
-        
         if ( auto fname = v.second.get_optional<std::string>("filename") )
         {
             LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
-            
             this->insert( std::make_pair( v.first, this->loadMaterial( Environment::expand( fname.get() ) ) ) );
         }
         else
@@ -96,35 +267,18 @@ ModelMaterials::getMaterial( pt::ptree const& v )
 {
     std::string t = v.get<std::string>( "name" );
     LOG(INFO) << "loading material name: " << t << std::endl;
-    ModelMaterial m(t, v);
-    m.setRho( v.get( "rho", 1.f ) );
-    m.setMu( v.get( "mu", 1.f ) );
-    m.setCp( v.get( "Cp", 1.f ) );
-    m.setCv( v.get( "Cv", 1.f ) );
-    m.setTref( v.get( "Tref", 0.f ) );
-    m.setBeta( v.get( "beta", 0.f ) );
-    m.setK11( v.get( "k11", 1.f ) );
-    m.setK12( v.get( "k12", 0.f ) );
-    m.setK13( v.get( "k13", 0.f ) );
-    m.setK22( v.get( "k22", 1.f ) );
-    m.setK23( v.get( "k23", 0.f ) );
-    m.setK33( v.get( "k33", 1.f ) );
-    m.setE( v.get( "E", 1.f ) );
-    m.setNu( v.get( "nu", 1.f ) );
-    m.setSigma( v.get( "sigma", 1.f ) );
-    m.setC( v.get( "C", 1.f ) );
-    
-    m.setCs(    v.get("Cs",0.f) );
-    m.setCl(    v.get("Cl",0.f) );
-    m.setL(     v.get("L",0.f) );
-    m.setKs( v.get("Ks",0.f) );
-    m.setKl( v.get("Kl",0.f) );
-    m.setTsol(   v.get("Tsol",0.f) );
-    m.setTliq(   v.get("Tliq",0.f) );
-
+    ModelMaterial m( t, v, *M_worldComm, M_directoryLibExpr );
     LOG(INFO) << "adding material " << m;
     return m;
 }
+
+void
+ModelMaterials::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for( auto & mat : *this )
+        mat.second.setParameterValues( mp );
+}
+
 void
 ModelMaterials::saveMD(std::ostream &os)
 {

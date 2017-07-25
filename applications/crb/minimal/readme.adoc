@@ -1,0 +1,21 @@
+= Minimal example of a crb application
+
+It is based on the heat conduction example from https://hal-univ-diderot.archives-ouvertes.fr/hal-01223456/document[Certified Reduced Basis Methods for Parametrized Partial Differential Equations].
+
+The only change is the way the Dirichlet condition is imposed on the top boundary. In the book, they impose it strongly, whereas in this application, we use a penalization method.
+
+== Applications
+
+There is two applications: `feelpp_crb_poissonFE` and `feelpp_crb_poissonCRB`. The former is the finite element version of the same problem, whereas the latter is the reduced basis version.
+
+In the finite element version, the parameters are given as options: +
+`./feelpp_crb_poissonFE --parameters.kappa 6.2 -- parameters.f 0.2` +
+A config file is given in the testcase `poisson`: `poissonFE.cfg`.
+
+In the crb version, the parameters are given via the options `poisson.kappa` and `poisson.flux`: +
+`./feelpp_crb_poissonCRB --config-file poisson/heatCRB.cfg --poisson.kappa 6.2 --poisson.flux 0.2` +
+A config file is given in the testcase `poisson`: `heatCRB.cfg`
+
+== Models
+
+The commit https://github.com/feelpp/feelpp/commit/0b5b8c2d5945551cf5eaadb5971febcd0ba5e837[0b5b8c2] implements the part 2 of the example.

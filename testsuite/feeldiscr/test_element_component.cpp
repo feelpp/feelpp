@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE test_element_component
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feel.hpp>
 #include <feel/feelfilters/geotool.hpp>

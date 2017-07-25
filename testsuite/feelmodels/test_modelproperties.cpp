@@ -42,7 +42,7 @@ int main( int argc, char** argv )
     auto mats = model_props.materials();
     for ( auto matPair : mats )
     {
-        cout << "properties for " << matPair.first << std::endl;
+        Feel::cout << "properties for " << matPair.first << std::endl;
         auto mat = matPair.second;
         auto name = mat.getString("name");
         auto rhoInt = mat.getInt("rho");
@@ -64,17 +64,17 @@ int main( int argc, char** argv )
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
 
-        cout << "\t" << name << std::endl;
-        cout << "\t" << rhoInt << std::endl;
-        cout << "\t" << etaDouble << std::endl;
-        cout << "\t" << rho << std::endl;
-        cout << "\t" << nu << std::endl;
-        cout << "\t" << curlnu << std::endl;
-        cout << "\t" << muPair << std::endl;
-        cout << "\t" << muMap << std::endl;
-        cout << "\t" << chi << std::endl;
-        cout << "\t" << xhiPair << std::endl;
-        cout << "\t" << xhiMap << std::endl;
+        Feel::cout << "\t" << name << std::endl;
+        Feel::cout << "\t" << rhoInt << std::endl;
+        Feel::cout << "\t" << etaDouble << std::endl;
+        Feel::cout << "\t" << rho << std::endl;
+        Feel::cout << "\t" << nu << std::endl;
+        Feel::cout << "\t" << curlnu << std::endl;
+        Feel::cout << "\t" << muPair << std::endl;
+        Feel::cout << "\t" << muMap << std::endl;
+        Feel::cout << "\t" << chi << std::endl;
+        Feel::cout << "\t" << xhiPair << std::endl;
+        Feel::cout << "\t" << xhiMap << std::endl;
     }
 
     auto param = model_props.parameters();

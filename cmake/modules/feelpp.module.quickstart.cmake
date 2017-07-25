@@ -29,7 +29,7 @@
 if ( FEELPP_ENABLE_QUICKSTART )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/quickstart/CMakeLists.txt )
     SET(FEELPP_HAS_QUICKSTART 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Quickstart" )
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} Quickstart" )
     ADD_DEFINITIONS( -DFEELPP_HAS_QUICKSTART )
   else()
     MESSAGE(WARNING "[feelpp] Quickstart was not found on your system. Either install it or set FEELPP_ENABLE_QUICKSTART to OFF.")
