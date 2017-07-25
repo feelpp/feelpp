@@ -1659,8 +1659,8 @@ public:
         FEELPP_NO_EXPORT void initBoundaryFaces();
 
         //! ---------------------------------------------------------------
-         //! search near elt in kd tree and get a sorted list
-         //!
+        //! search near elt in kd tree and get a sorted list
+        //!
         FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
                                               std::list< std::pair<size_type, uint> > & listTri );
 

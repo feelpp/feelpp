@@ -891,8 +891,6 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ncols, ( int* ) cols,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
-    if ( K != invalid_size_type_value && K2 != invalid_size_type_value )
-        this->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -2692,7 +2690,6 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               ( PetscScalar* ) data,
                               ADD_VALUES );
 
-    this->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
     CHKERRABORT( this->comm(),ierr );
 }
 

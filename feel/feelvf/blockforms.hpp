@@ -26,6 +26,7 @@
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelalg/vectorblock.hpp>
+#include <feel/feelalg/matrixcondensed.hpp>
 #include <feel/feeldiscr/product.hpp>
 
 
@@ -34,23 +35,26 @@ namespace Feel {
 /**
  * Handles bilinear form over a product of spaces
  */
-template<typename PS>
+template<typename PS, bool Condense=true>
 class BlockBilinearForm
 {
 public :
-    using product_space_t = PS;
     using value_type = double;
+    static const bool do_condense = Condense;
+    using condensed_matrix_type = MatrixCondensed<value_type,do_condense>;
+    using condensed_matrix_ptrtype = boost::shared_ptr<condensed_matrix_type>;
+    using product_space_t = PS;
     BlockBilinearForm(product_space_t&& ps )
         :
         M_ps(ps),
-        M_matrix(backend()->newBlockMatrix(_block=csrGraphBlocks(M_ps)))
+        M_matrix( new condensed_matrix_type( csrGraphBlocks(M_ps), backend() ) )
         {}
     BlockBilinearForm(product_space_t&& ps, size_type pattern )
         :
         M_ps(ps),
-        M_matrix(backend()->newBlockMatrix(_block=csrGraphBlocks(M_ps, pattern)))
+        M_matrix( new condensed_matrix_type( csrGraphBlocks(M_ps, pattern), backend() ) )
         {}
-    BlockBilinearForm(product_space_t&& ps, sparse_matrix_ptrtype m)
+    BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype m)
         :
         M_ps(ps),
         M_matrix(m)
@@ -145,7 +149,7 @@ public :
                                 auto test_space = e[0_c];
                                 auto trial_space = e[1_c];
                                 DVLOG( 1 ) << "syncLocalMatrix("<< r << ","<< c <<")dim "<< test_space->mesh()->dimension()<<" , " << trial_space->mesh()->dimension() <<"\n";
-                                M_matrix->block(r,c)->sc()->syncLocalMatrix( test_space,trial_space );
+                                M_matrix->sc(r,c)->syncLocalMatrix( test_space,trial_space );
                                 ++n;
                             });
         }
@@ -300,14 +304,14 @@ public :
             auto& e2 = solution(1_c);
             auto& e1 = solution(0_c);
 
-            auto sc = this->matrixPtr()->sc();
+            auto sc = M_matrix->sc();
 #if 0
             this->matrixPtr()->printMatlab("A.m");
             rhs.vectorPtr()->printMatlab("F.m");
 #endif
 
             auto Th = product2( M_ps[3_c], M_ps[2_c] );
-            auto S = blockform2(Th, Pattern::HDG);
+            auto S = blockform2<decltype(Th),false>(Th, Pattern::HDG);
             auto V = blockform1(Th);
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto U = Th.element();
@@ -348,20 +352,20 @@ public :
             return r;
         }
     product_space_t M_ps;
-    sparse_matrix_ptrtype M_matrix;
+    condensed_matrix_ptrtype M_matrix;
 };
 
-template<typename PS>
-BlockBilinearForm<PS>
+template<typename PS,bool Condense=true>
+BlockBilinearForm<PS,Condense>
 blockform2( PS&& ps, size_type pattern = Pattern::COUPLED )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>(ps), pattern );
+    return BlockBilinearForm<PS,Condense>( std::forward<PS>(ps), pattern );
 }
-template<typename PS>
-BlockBilinearForm<PS>
-blockform2( PS&& ps, sparse_matrix_ptrtype m )
+template<typename PS,typename Condense=true>
+BlockBilinearForm<PS,Condense>
+blockform2( PS&& ps, condensed_matrix_ptr_t<double,Condense> m )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>(ps), m );
+    return BlockBilinearForm<PS,Condense>( std::forward<PS>(ps), m );
 }
 /**
  * Handles linear form over a product of spaces
