@@ -121,8 +121,9 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         M_hSize.on(_range=elements(mesh), _expr=pow(meas(),1./mesh_t::nDim) );
 #endif
     this->M_hSizeValues.clear();
-    for ( auto const elt : allelements(mesh) )
+    for ( auto const& eltWrap : allelements(mesh) )
     {
+        auto const& elt = unwrap_ref( eltWrap );
         size_type id = elt.id();
         if ( this->M_hSizeMethod == "hmin" )
             this->M_hSizeValues[id] = elt.hMin();
@@ -141,8 +142,8 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
 
         if ( nOrder == 1 )
         {
-            for ( auto const elt : allelements(mesh) )
-                this->M_mKValues[elt.id()] = 1./3;
+            for ( auto const& elt : allelements(mesh) )
+                this->M_mKValues[unwrap_ref(elt).id()] = 1./3;
         }
         else
         {
