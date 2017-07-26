@@ -893,6 +893,21 @@ fit_options( std::string const& prefix )
 }
 
 po::options_description
+checker_options( std::string const& prefix )
+{
+    po::options_description _options( "Checker " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"checker.check" ).c_str(), Feel::po::value<bool>()->default_value(false), "run the check" )
+        ( prefixvm( prefix,"checker.solution" ).c_str(), Feel::po::value<std::string>()->default_value("0"), "solution against which to check" )
+        ( prefixvm( prefix,"checker.tolerance.exact" ).c_str(), Feel::po::value<double>()->default_value(1e-15), "tolerance for numerical exact solution check" )
+        ( prefixvm( prefix,"checker.tolerance.order" ).c_str(), Feel::po::value<double>()->default_value(1e-1), "tolerance for order check" )
+        ( prefixvm( prefix,"checker.name" ).c_str(), Feel::po::value<std::string>()->default_value("checker"), "name of the test" )
+        ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("checker.json"), "name of the test" )
+        ;
+    return _options;
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -974,6 +989,7 @@ feel_options( std::string const& prefix  )
 
         .add (msi_options(prefix))
         .add (fit_options(prefix))
+        .add (checker_options(prefix))
         ;
 
     return opt;

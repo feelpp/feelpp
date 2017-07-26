@@ -74,7 +74,7 @@ namespace Feel
 namespace detail
 {
 #pragma GCC visibility push(hidden)
-class GMSHPoint
+class FEELPP_NO_EXPORT  GMSHPoint
 {
 public:
     Eigen::Vector3d x;
@@ -121,7 +121,7 @@ public:
     GMSHPoint& operator=( GMSHPoint const& ) = default;
     GMSHPoint& operator=( GMSHPoint && ) = default;
 };
-struct GMSHElement
+struct FEELPP_NO_EXPORT GMSHElement
 {
     GMSHElement()
         :
@@ -283,13 +283,13 @@ struct GMSHElement
 //!
 //! @return true if element should be store on process, false otherwise
 //!
-bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
+FEELPP_EXPORT bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
 
 //!
 //! @return true if \p physical is found in container, false otherwise
 //!
 template<typename Iterator>
-bool isFound( Iterator beg, Iterator end, int physical )
+FEELPP_EXPORT bool isFound( Iterator beg, Iterator end, int physical )
 {
     return std::find( beg, end, physical ) != end;
 }
@@ -314,7 +314,7 @@ bool isFound( Iterator beg, Iterator end, int physical )
  */
 
 template<typename MeshType>
-class ImporterGmsh
+class FEELPP_EXPORT ImporterGmsh
     :
 
 public Importer<MeshType>

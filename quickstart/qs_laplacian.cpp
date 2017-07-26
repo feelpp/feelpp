@@ -54,7 +54,8 @@ int main(int argc, char**argv )
     auto r_1 = expr( soption(_name="functions.a"), "a" ); // Robin left hand side expression
     auto r_2 = expr( soption(_name="functions.b"), "b" ); // Robin right hand side expression
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
-    auto g = expr( soption(_name="functions.g"), "g" );
+    auto solution = expr( checker().solution(), "solution" );
+    auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
     auto v = Vh->element( g, "g" );
     toc("Vh");
     // end::mesh_space[]
@@ -87,17 +88,38 @@ int main(int argc, char**argv )
     toc("a.solve");
 
     // end::forms[]
-    cout << "||u-u_h||_L2=" << normL2(_range=elements(mesh), _expr=idv(u)-g) << std::endl;
 
     // tag::export[]
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
-    e->add( "u", u );
-    e->add( "g", v );
+    e->add( "uh", u );
+    if ( checker().check() )
+    {
+        v.on(_range=elements(mesh), _expr=solution );
+        e->add( "solution", v );
+    }
     e->save();
     toc("Exporter");
-    return 0;
     // end::export[]
+
+    // tag::check[]
+    // compute l2 and h1 norm of u-u_h where u=solution
+    auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+        {
+            tic();
+            double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
+            toc("L2 error norm");
+            tic();
+            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
+            toc("H1 error norm");
+            return { { "L2", l2 }, {  "H1", h1 } };
+        };
+    int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    // end::check[]
+
+    // exit status = 0 means no error
+    return !status;
+
 }
 // end::global[]
