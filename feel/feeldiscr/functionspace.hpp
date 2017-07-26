@@ -1382,6 +1382,66 @@ struct createMeshSupport
     mesh_support_ptrtype M_meshSupport0;
 };
 
+template<typename SpaceType>
+struct FunctionSpaceMeshSupport
+{
+    typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
+
+    struct UpdateMeshSupport
+    {
+        UpdateMeshSupport( FunctionSpaceMeshSupport<SpaceType> & fsms )
+            :
+            M_fsms( fsms )
+            {}
+
+        template<typename T>
+        void operator()( T const& t) const
+            {
+                this->updateImpl<T,SpaceType::is_composite>( t );
+            }
+
+        template<typename T,bool _IsComposite >
+        void updateImpl( T const& t, typename std::enable_if< !_IsComposite >::type* = nullptr ) const
+            {
+                auto doftable = M_fsms.M_space.dof();
+                if ( !doftable )
+                    return;
+                if ( doftable->hasMeshSupport() )
+                {
+                    auto & meshSupport = boost::fusion::at_c<T::value>( M_fsms.M_meshSupportVector );
+                    meshSupport = doftable->meshSupport();
+                }
+            }
+        template<typename T,bool _IsComposite >
+        void updateImpl( T const& t, typename std::enable_if< _IsComposite >::type* = nullptr ) const
+            {
+                auto subspace = M_fsms.M_space.template functionSpace<T::value>();
+                if ( !subspace )
+                    return;
+                auto doftable = subspace->dof();
+                if ( !doftable )
+                    return;
+                if ( doftable->hasMeshSupport() )
+                {
+                    auto & meshSupport = boost::fusion::at_c<T::value>( M_fsms.M_meshSupportVector );
+                    meshSupport = doftable->meshSupport();
+                }
+            }
+        FunctionSpaceMeshSupport<SpaceType> & M_fsms;
+    };
+
+    FunctionSpaceMeshSupport( SpaceType const& space )
+        :
+        M_space( space )
+        {
+            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
+            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
+        }
+
+    SpaceType const& M_space;
+    mesh_support_vector_type M_meshSupportVector;
+};
+
 } // detail
 
 enum class ComponentType
@@ -5457,15 +5517,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::buildComponentSpace() const
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
-        auto meshSupport  = (M_dof && M_dof->hasMeshSupport())?
-            Feel::detail::createMeshSupport<component_functionspace_type>( M_mesh, M_dof->meshSupport() ).M_meshSupportVector :
-            Feel::detail::createMeshSupport<component_functionspace_type>( M_mesh, typename component_functionspace_type::mesh_support_vector_type() ).M_meshSupportVector ;
-        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
-                                                                                          meshSupport,
-                                                                                          MESH_COMPONENTS_DEFAULTS,
-                                                                                          M_periodicity,
-                                                                                          std::vector<WorldComm>( 1,this->worldsComm()[0] ),
-                                                                                          std::vector<bool>( 1,this->extendedDofTable() ) ) );
+        auto meshSupport = Feel::detail::FunctionSpaceMeshSupport<functionspace_type>( *this ).M_meshSupportVector;
+        M_comp_space = component_functionspace_type::New(_mesh=M_mesh,
+                                                         _worldscomm=this->worldsComm(),
+                                                         _periodicity=M_periodicity,
+                                                         _extended_doftable=this->extendedDofTableComposite(),
+                                                         _range=meshSupport );
 
         VLOG(2) << " - component space :: nb dim : " << M_comp_space->qDim() << "\n";
         VLOG(2) << " - component space :: nb dof : " << M_comp_space->nDof() << "\n";
