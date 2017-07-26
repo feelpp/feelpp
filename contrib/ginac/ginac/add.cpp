@@ -579,3 +579,4 @@ ex add::expand(unsigned options) const
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

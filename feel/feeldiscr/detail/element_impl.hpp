@@ -370,7 +370,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initSubElementView( mpl::tru
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> const& __e )
 {
     if (  this != &__e )
@@ -395,7 +395,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContOtherType>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,ContOtherType> const& v )
 {
     if ( !M_functionspace )
@@ -412,7 +412,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,ContOth
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename VectorExpr>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
+typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const& __v )
 {
     super::operator=( __v );
@@ -2336,8 +2336,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( it == en )
         return;
 
-    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),*it,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),*it,__geopc1 ) );
+    auto const& initElt = boost::unwrap_ref( *it );
+    gm_context_ptrtype __c( new gm_context_type( this->functionSpace()->gm(),initElt,__geopc ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( this->mesh()->gm1(),initElt,__geopc1 ) );
 
     typedef typename t_expr_type::shape shape;
     static const bool is_rank_ok = ( shape::M == nComponents1 &&
@@ -2367,7 +2368,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( *it );
+            __c->update( curElt );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
             __fe->interpolate( tensor_expr, IhLoc );
@@ -2376,7 +2377,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( *it );
+            __c1->update( curElt );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
             __fe->interpolate( tensor_expr1, IhLoc );
@@ -2388,7 +2389,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
-                __c->update( *it );
+                __c->update( curElt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
                 __fe->interpolate( tensor_expr, IhLoc );
@@ -2396,7 +2397,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
             else
             {
-                __c1->update( *it );
+                __c1->update( curElt );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
                 __fe->interpolate( tensor_expr1, IhLoc );
@@ -2552,19 +2553,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; __face_it != __face_en; ++__face_it )
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
-        DLOG_IF( WARNING, curFace.isOnBoundary() && !curFace.isConnectedTo1() )
-            << "Inconsistent data face : " 
-            << " marker : " <<  curFace.marker()
-            << " isOnBoundary : " << curFace.isOnBoundary()
-            << " ad_first : " << curFace.ad_first()
-            << " pos_first : " <<  curFace.pos_first()
-            << " ad_second : " << curFace.ad_second()
-            << " pos_second : " <<  curFace.pos_second()
-            << " id : " << curFace.id();
+
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
                       << " element id= " << curFace.ad_first()
                       << " pos in elt= " << curFace.pos_first()
-                      << " marker: " << curFace.marker() << "\n";
+                      << " hasMarker: " << curFace.hasMarker() << "\n";
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
         uint16_type __face_id = curFace.pos_first();
@@ -2635,13 +2628,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // get [first,last) entity iterators over the range
     auto entity_it = r.first;
     auto entity_en = r.second;
-    DVLOG(3) << "entity " << entity_it->id() << " with marker "
-             << entity_it->marker() << " nb: " << std::distance(entity_it,entity_en);
     if ( entity_it == entity_en )
         return;
 
     auto gm = mesh->gm();
-    auto const& firstEntity = *entity_it;
+    auto const& firstEntity = boost::unwrap_ref( *entity_it );
+    DVLOG(3) << "entity " << firstEntity.id() << " with hasMarker "
+             << firstEntity.hasMarker() << " nb: " << std::distance(entity_it,entity_en);
     size_type eid = firstEntity.elements().begin()->first;
     size_type ptid_in_element = firstEntity.elements().begin()->second;
     auto const& elt = mesh->element( eid );
@@ -2656,8 +2649,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         auto const& curEntity = boost::unwrap_ref(*entity_it);
         auto entity_elt_info = curEntity.elements().begin();
         ptid_in_element = entity_elt_info->second;
-        DVLOG(3) << "entity " << entity_it->id() << " element " << entity_elt_info->first << " id in element "
-                 << ptid_in_element<< " with marker " << entity_it->marker();
+        DVLOG(3) << "entity " << curEntity.id() << " element " << entity_elt_info->first << " id in element "
+                 << ptid_in_element<< " with hasMarker " << curEntity.hasMarker();
         auto const& elt = mesh->element( entity_elt_info->first );
         geopc = gm->preCompute( __fe->edgePoints(ptid_in_element) );
         ctx->update( elt, geopc );
@@ -2697,13 +2690,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     // get [first,last) point iterators over the range
     auto pt_it = r.first;
     auto pt_en = r.second;
-    DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker() << " nb: " << std::distance(pt_it,pt_en);
-    google::FlushLogFiles(google::GLOG_INFO);
     if ( pt_it == pt_en )
         return;
 
     auto gm = mesh->gm();
-    auto const& firstPt = *pt_it;
+    auto const& firstPt = boost::unwrap_ref( *pt_it );
+    DVLOG(3) << "point " << firstPt.id() << " with hasMarker " << firstPt.hasMarker() << " nb: " << std::distance(pt_it,pt_en);
+    google::FlushLogFiles(google::GLOG_INFO);
+
     size_type eid = firstPt.elements().begin()->first;
     size_type ptid_in_element = firstPt.elements().begin()->second;
     auto const& elt = mesh->element( eid );
@@ -2718,8 +2712,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto IhLoc = __fe->vertexLocalInterpolant();
     for ( ; pt_it != pt_en; ++pt_it )
     {
-        DVLOG(3) << "point " << pt_it->id() << " with marker " << pt_it->marker();
         auto const& curPt = boost::unwrap_ref(*pt_it);
+        DVLOG(3) << "point " << curPt.id() << " with hasMarker " << curPt.hasMarker();
         auto pt_elt_info = curPt.elements().begin();
         ptid_in_element = pt_elt_info->second;
         auto const& elt = mesh->element( pt_elt_info->first );

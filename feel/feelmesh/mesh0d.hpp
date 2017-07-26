@@ -72,13 +72,13 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Shape>
+template<typename Shape, typename T = double>
 class Mesh0D
     :
 public VisitableBase<>,
 public MeshBase,
-public Elements<Shape>,
-public Points<Shape::nRealDim>
+public Elements<Shape,T>,
+public Points<Shape::nRealDim,T>
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 0 && Shape::nRealDim >= 1 );
@@ -98,7 +98,7 @@ public:
     typedef VisitableBase<> super_visitable;
     typedef MeshBase super;
 
-    typedef Elements<Shape> super_elements;
+    typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
@@ -108,11 +108,11 @@ public:
     typedef super_elements super_faces;
     typedef elements_type faces_type;
 
-    typedef Points<nRealDim> super_points;
+    typedef Points<nRealDim,T> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Mesh0D<Shape> self_type;
+    typedef Mesh0D<Shape,T> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     using face_type = point_type;
@@ -235,8 +235,8 @@ public:
      */
     virtual void clear()
     {
-        this->elements().clear();
-        this->points().clear();
+        super_elements::clear();
+        super_points::clear();
         FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
     }
 

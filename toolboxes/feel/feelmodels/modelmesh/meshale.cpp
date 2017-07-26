@@ -212,6 +212,17 @@ MeshALE<Convex>::init()
 
     }
 
+
+    for ( auto const& faceWrap : markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving") ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            M_dofsOnMovingBoundary_HO.insert( it->index() );
+    }
+
+    M_aleFactory->init();
+
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
 }
 
@@ -501,6 +512,7 @@ template< class Convex >
 void
 MeshALE<Convex>::exportResults(double time)
 {
+    std::string exportRepository = (fs::path(this->rootRepository()) / prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports"))).string();
     if (!M_exporter_ref)
     {
         //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
@@ -509,7 +521,8 @@ MeshALE<Convex>::exportResults(double time)
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ref"),
                                    _geo=geoExportType,
-                                   _worldcomm=this->worldComm() );
+                                   _worldcomm=this->worldComm(),
+                                   _path=exportRepository );
     }
 
     M_exporter_ref->step( time )->add( prefixvm(this->prefix(),"ref_displacement"), *M_displacement_ref );
@@ -527,7 +540,8 @@ MeshALE<Convex>::exportResults(double time)
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ho"),
                                    _geo=geoExportType,
-                                   _worldcomm=this->worldComm() );
+                                   _worldcomm=this->worldComm(),
+                                   _path=exportRepository );
         }
 
         //M_exporter->step( time )->setMesh( M_movingMesh );
@@ -542,11 +556,8 @@ MeshALE<Convex>::exportResults(double time)
 
 template< class Convex >
 void
-MeshALE<Convex>::updateImpl( Vector<double> const& dispInput )
+MeshALE<Convex>::updateImpl()
 {
-    //M_displacementOnMovingBoundary_HO_ref->zero();
-    *M_displacementOnMovingBoundary_HO_ref = dispInput;
-
     //---------------------------------------------------------------------------------------------//
     // transform disp from ref_ho -> ref_p1
     for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)

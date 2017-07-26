@@ -63,6 +63,7 @@ int main( int argc, char** argv )
     // defines the translation
     node_type transl( dim );
     transl[0]=1.;
+    transl[1]=0.;
 
     // defines the periodicity
     periodicity_type theperiodicity(4,2, transl);

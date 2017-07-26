@@ -1,7 +1,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE test_darcy_on
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>

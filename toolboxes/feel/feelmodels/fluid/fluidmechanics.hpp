@@ -76,9 +76,7 @@ public:
     //___________________________________________________________________________________//
     // assembly using bc
     void updateSourceTermResidual( vector_ptrtype& R ) const;
-    void updateInitialNewtonSolutionBCDirichlet(vector_ptrtype& U) const;
     void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
-    void updateBCStrongDirichletResidual(vector_ptrtype& R) const;
     void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const;
     void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const;
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
@@ -96,22 +94,6 @@ public:
 
     //___________________________________________________________________________________//
 
-    bool hasDirichletBC() const
-    {
-        return ( !M_bcDirichlet.empty() ||
-                 !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                 !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                 !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-    }
-
-private :
-    map_vector_field<super_type::nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
-    map_vector_field<super_type::nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<super_type::nDim,super_type::nDim,2> M_bcNeumannTensor2;
-
-    map_vector_field<super_type::nDim,1,2> M_volumicForcesProperties;
 
 }; // FluidMechanics
 

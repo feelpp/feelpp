@@ -8271,6 +8271,7 @@ const bool im318simplex = IMFactory<double>::instance().registerProduct( "im(3,1
 const bool im319simplex = IMFactory<double>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,double>() );
 const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,double>() );
 
+
 } // Feel
 
 
@@ -8804,6 +8805,7 @@ const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,2
 1.028694520010726  -0.958250489434828  0.000092375321588
 -1.070444030575898    1.028694520010726  0.000092375321588
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=18
+
 
 73
 -0.333333333333333  -0.333333333333333  0.065812662777838

@@ -29,7 +29,7 @@
 if ( FEELPP_ENABLE_TOOLBOXES )
   if ( EXISTS ${CMAKE_SOURCE_DIR}/toolboxes/CMakeLists.txt )
     SET(FEELPP_HAS_TOOLBOXES 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Toolboxes" )
+    SET(FEELPP_ENABLED_MODULES "${FEELPP_ENABLED_MODULES} Toolboxes" )
     ADD_DEFINITIONS( -DFEELPP_HAS_TOOLBOXES )
   else()
     MESSAGE(WARNING "[feelpp] Toolboxes was not found on your system. Either install it or set FEELPP_ENABLE_TOOLBOXES to OFF.")

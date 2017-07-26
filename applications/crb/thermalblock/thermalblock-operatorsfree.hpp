@@ -89,7 +89,7 @@ public :
     static const uint16_type nx = 3;
     static const uint16_type ny = 3;
     static const uint16_type ParameterSpaceDimension = nx*ny-1;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+    typedef ParameterSpaceX parameterspace_type;
 };
 
 class FunctionSpaceDefinition
@@ -122,7 +122,7 @@ public :
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-class ThermalBlockFree : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
+class ThermalBlockFree : public ModelCrbBase< ParameterSpaceX , FunctionSpaceDefinition >
 {
 
     static const uint16_type nx = 3;
@@ -130,7 +130,7 @@ class ThermalBlockFree : public ModelCrbBase< ParameterDefinition , FunctionSpac
 
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpaceX, FunctionSpaceDefinition> super_type;
 
     static const uint16_type ParameterSpaceDimension = 8;
 
@@ -155,6 +155,8 @@ public:
     typedef typename super_type::functional_type functional_type;
     typedef typename super_type::functional_ptrtype functional_ptrtype;
 
+    ThermalBlockFree() : super_type( "thermalblockfree" ) {}
+    
     //! initialisation of the model and definition of parameters values
     void initModel();
 
@@ -444,7 +446,7 @@ ThermalBlockFree::initModel()
         int ql=Ql(i);
         M_betaFq[i].resize( ql );
     }
-
+    Dmu->setDimension( 8 );
     auto mu_min = Dmu->element();
     auto mu_max = Dmu->element();
 

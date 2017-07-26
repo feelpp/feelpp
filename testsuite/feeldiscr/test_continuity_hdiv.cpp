@@ -30,7 +30,7 @@
 #include <boost/timer.hpp>
 
 #define BOOST_TEST_MODULE continuity testsuite
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
