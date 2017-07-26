@@ -59,6 +59,7 @@ else()
   set_property(TARGET ${target} PROPERTY MACOSX_RPATH ON)
 endif()
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
+#set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 set_property(TARGET feelpp PROPERTY LABELS feel++)
 
 

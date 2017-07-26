@@ -83,7 +83,7 @@ class TimerTable;
 //! @class MemoryUsage
 //! @ingroup Core
 //! @brief class to query for memory usage
-struct MemoryUsage
+struct FEELPP_EXPORT MemoryUsage
 {
     MemoryUsage()
         :
@@ -127,7 +127,7 @@ struct MemoryUsage
 //! application
 //! @param name name or short name of the application
 //! 
-AboutData makeAboutDefault( std::string name );
+FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 
 //! 
 //! @class Environment "Environment"
@@ -171,7 +171,7 @@ AboutData makeAboutDefault( std::string name );
 //! @author Christophe Prud'homme
 //! @see Application
 //! 
-class Environment : boost::noncopyable
+class FEELPP_EXPORT Environment : boost::noncopyable
 {
 public:
     
@@ -844,7 +844,7 @@ private:
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( po::variable_value ), option, tag,
+    ( FEELPP_EXPORT po::variable_value ), option, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
@@ -858,7 +858,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( double ),
+    ( FEELPP_EXPORT double ),
     doption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -884,7 +884,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( bool ),
+    ( FEELPP_EXPORT bool ),
     boption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -910,7 +910,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( int ),
+    ( FEELPP_EXPORT int ),
     ioption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -937,7 +937,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::string ),
+    ( FEELPP_EXPORT std::string ),
     soption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -963,7 +963,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::vector<std::string> ),
+    ( FEELPP_EXPORT std::vector<std::string> ),
     vsoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -989,7 +989,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::vector<double> ),
+    ( FEELPP_EXPORT std::vector<double> ),
     vdoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -1018,7 +1018,7 @@ BOOST_PARAMETER_FUNCTION(
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
-struct option
+struct FEELPP_EXPORT option
 {
     typedef typename boost::remove_pointer<
     typename boost::remove_const<
@@ -1033,7 +1033,7 @@ struct option
 //! @endcond
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::option<Args>::type ),
+    ( FEELPP_EXPORT typename Feel::detail::option<Args>::type ),
     optionT, tag,
     ( required
       ( name,( std::string ) )
