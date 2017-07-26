@@ -33,7 +33,7 @@ namespace Feel {
 //! compute the exp  component wise of the vector \p v 
 //!
 template<typename T>
-std::vector<T>
+FEELPP_EXPORT std::vector<T>
 exp( std::vector<T> const& v )
 {
     std::vector<T> result( v.size() );
@@ -47,7 +47,7 @@ exp( std::vector<T> const& v )
 //! compute the log (base e) component wise of the vector \p v 
 //!
 template<typename T>
-std::vector<T>
+FEELPP_EXPORT std::vector<T>
 log( std::vector<T> const& v )
 {
     std::vector<T> result;
@@ -64,7 +64,7 @@ log( std::vector<T> const& v )
 //! compute the log (base 10) component wise of the vector \p v 
 //!
 template<typename T>
-std::vector<T>
+FEELPP_EXPORT std::vector<T>
 log10( std::vector<T> const& v )
 {
     std::vector<T> result( v.size() );

@@ -146,7 +146,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate )
 //!
 //! check create function
 //!
-Checker checker( std::string const& p  = "" );
+FEELPP_EXPORT Checker checker( std::string const& p  = "" );
 
 } // Feel
 
