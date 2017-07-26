@@ -3275,29 +3275,52 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             }
             else if ( faceCur.isConnectedTo1() )
             {
-                if ( faceCur.element0().isGhostCell() )
+                if ( !hasMeshSupportPartialTest )
                 {
-                    __face_id_in_elt_0 = faceCur.pos_second();
-                    procIdElt0 = faceCur.proc_second();
-                    idEltTest = faceCur.element( 1 ).id();
-                    swapElt0Elt1WithSameMesh = true;
-                    if ( hasMeshSupportPartialTest )
-                        if ( !__form.testSpace()->dof()->meshSupport()->hasElement( idEltTest ) )
-                            continue;
-                }
-                else if ( hasMeshSupportPartialTest )
-                {
-                    if ( !__form.testSpace()->dof()->meshSupport()->hasElement( idEltTest ) )
+                    if ( faceCur.element0().isGhostCell() )
                     {
                         __face_id_in_elt_0 = faceCur.pos_second();
                         procIdElt0 = faceCur.proc_second();
                         idEltTest = faceCur.element( 1 ).id();
+                        swapElt0Elt1WithSameMesh = true;
+                    }
+                }
+                else
+                {
+                    bool partialSupportHasConnection0 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltTest );
+                    size_type idEltOtherConnection = faceCur.element( 1 ).id();
+                    bool partialSupportHasConnection1 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltOtherConnection );
+
+                    if ( ( partialSupportHasConnection0 && !partialSupportHasConnection1 ) ||
+                         ( !partialSupportHasConnection0 && partialSupportHasConnection1 ) )
                         tryTwoConnections = false;
+
+                    if ( tryTwoConnections )
+                    {
+                        if ( faceCur.element0().isGhostCell() )
+                        {
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = faceCur.element( 1 ).id();
+                            swapElt0Elt1WithSameMesh = true;
+                        }
                     }
                     else
                     {
-                        if ( !__form.testSpace()->dof()->meshSupport()->hasElement( faceCur.element( 1 ).id() ) )
-                            tryTwoConnections = false;
+                        if ( partialSupportHasConnection0 )
+                        {
+                            if ( faceCur.element0().isGhostCell() )
+                                continue;
+                        }
+                        else
+                        {
+                            if ( faceCur.element1().isGhostCell() )
+                                continue;
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = idEltOtherConnection;//faceCur.element( 1 ).id();
+                            //swapElt0Elt1WithSameMesh = true;
+                        }
                     }
                 }
             }
@@ -3311,15 +3334,22 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             //if ( faceCur.isConnectedTo1() )
             if ( tryTwoConnections && this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
             {
-
                 if ( faceCur.isGhostFace() )
                 {
-                    LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
-                    continue;
+                    if ( hasMeshSupportPartialTest )
+                    {
+                        if ( __form.testSpace()->dof()->meshSupport()->isGhostFace( faceCur ) )
+                            continue;
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
+                        continue;
+                    }
                 }
-                // if is a interprocess faces, only integrate in one process
-                if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                    continue;
+                // // if is a interprocess faces, only integrate in one process
+                // if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
+                //     continue;
 
 
                 // get some info about test mesh element1 connected to the current face
