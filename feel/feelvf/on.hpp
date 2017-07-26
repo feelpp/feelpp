@@ -505,15 +505,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             // corresponding face
             if ( theface.isGhostFace() )
             {
-                bool ignoreFace = true;
                 if ( hasMeshSupportPartial )
                 {
-                    bool hasElt0 = __dof->meshSupport()->hasElement( theface.element(0).id() );
-                    bool hasElt1 = __dof->meshSupport()->hasElement( theface.element(1).id() );
-                    if ( ( hasElt0 && !hasElt1 ) ||  ( !hasElt0 && hasElt1 ) )
-                        ignoreFace = false;
+                    if ( __dof->meshSupport()->isGhostFace( theface ) )
+                        continue;
                 }
-                if ( ignoreFace )
+                else
                 {
                     LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
                     continue;

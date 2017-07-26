@@ -141,6 +141,21 @@ public :
                 return M_rangeMeshElementsGhostIdsPartialSupport.find( eltId ) != M_rangeMeshElementsGhostIdsPartialSupport.end();
         }
 
+    bool isGhostFace( face_type const& face ) const
+        {
+            if ( !face.isGhostFace() )
+                return false;
+
+            if ( M_isFullSupport )
+                return true;
+            else
+            {
+                bool hasElt0 = this->hasElement( face.element(0).id() );
+                bool hasElt1 = this->hasElement( face.element(1).id() );
+                return ( hasElt0 && hasElt1 );
+            }
+        }
+
     std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const { return M_rangeMeshElementsIdsPartialSupport; }
     std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const { return M_rangeMeshElementsGhostIdsPartialSupport; }
 
