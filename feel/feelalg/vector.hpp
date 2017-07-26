@@ -637,6 +637,14 @@ public:
             return res;
         }
 
+    sc_ptrtype sc() { return M_sc; }
+    sc_ptrtype const& sc() const { return M_sc; }
+    vector_ptrtype block( int row )
+        {
+            M_sc->block( row );
+            return this->shared_from_this();
+        }
+
     virtual void save( std::string filename="default_archive_name", std::string format="binary" )
     {}
 
