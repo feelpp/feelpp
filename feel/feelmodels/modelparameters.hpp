@@ -34,7 +34,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelParameter
+struct FEELPP_EXPORT ModelParameter
 {
     ModelParameter() = default;
     ModelParameter( ModelParameter const& ) = default;
@@ -87,6 +87,10 @@ private:
     boost::optional<scalar_field_expression<2>> M_expr;
 
 };
+
+//!
+//! class for Model Parameters
+//!
 class ModelParameters: public std::map<std::string,ModelParameter>
 {
 public:

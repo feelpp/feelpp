@@ -55,7 +55,7 @@ namespace po = boost::program_options;
  * this class provides an interface to the PETSC linear algebra library
  */
 template<typename T>
-class BackendPetsc : public Backend<T>
+class FEELPP_EXPORT BackendPetsc : public Backend<T>
 {
     typedef Backend<T> super;
 public:

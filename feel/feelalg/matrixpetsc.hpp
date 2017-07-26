@@ -88,7 +88,7 @@ template<typename T> class VectorPetscMPI;
  * @see
  */
 template<typename T>
-class MatrixPetsc : public MatrixSparse<T>
+class FEELPP_EXPORT MatrixPetsc : public MatrixSparse<T>
 {
     friend class boost::serialization::access;
     typedef MatrixSparse<T> super;

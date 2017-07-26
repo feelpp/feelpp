@@ -66,7 +66,7 @@ template<typename T> class MatrixPetsc;
  * @see
  */
 template<typename T>
-class VectorPetsc : public Vector<T>
+class FEELPP_EXPORT VectorPetsc : public Vector<T>
 {
     typedef Vector<T> super;
 

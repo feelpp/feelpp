@@ -1177,7 +1177,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newFace.setId( mesh.numFaces() );
         newFace.setProcessIdInPartition( rank );
         newFace.setMarker( marker );
-        newFace.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
             newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addFace( newFace );
@@ -1207,7 +1206,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newFace.setId( mesh.numFaces() );
         newFace.setProcessIdInPartition( rank );
         newFace.setMarker( marker );
-        newFace.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
             newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addFace( newFace );
@@ -1219,7 +1217,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newEdge.setId( mesh.numEdges() );
         newEdge.setProcessIdInPartition( rank );
         newEdge.setMarker( marker );
-        newEdge.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::edge_type::numPoints ; ++vLocId )
             newEdge.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addEdge( newEdge );
