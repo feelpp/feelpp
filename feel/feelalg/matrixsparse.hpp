@@ -96,7 +96,7 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
+class FEELPP_EXPORT MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
 
@@ -1159,7 +1159,7 @@ namespace boost {
 namespace serialization {
 
 template<typename T, class Archive>
-void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     ar & BOOST_SERIALIZATION_NVP(m.mapRow());
     ar & BOOST_SERIALIZATION_NVP(m.mapCol());
@@ -1168,7 +1168,7 @@ void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int vers
 }
 
 template<typename T, class Archive>
-void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     Feel::DataMap map_row;
     Feel::DataMap map_col;
@@ -1190,7 +1190,7 @@ void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 }
 
 template<typename T, class Archive>
-void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     split_free( ar, m, version );
 }

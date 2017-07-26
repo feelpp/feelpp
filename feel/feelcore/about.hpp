@@ -61,7 +61,7 @@ class AboutDataPrivate;
  *   about.addCredit("Joe User", "A lot of bug reports"),
  *                   "joe.user@host.org", 0);
  */
-class AboutPerson
+class FEELPP_EXPORT AboutPerson
 {
 public:
     /**
@@ -170,7 +170,7 @@ private:
  * classes.
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-class AboutData
+class FEELPP_EXPORT AboutData
 {
 public:
     /**
@@ -501,10 +501,10 @@ private:
  *
  * @return the ostream
  */
-std::ostream& operator<<( std::ostream& os, AboutData const& about );
+FEELPP_EXPORT std::ostream& operator<<( std::ostream& os, AboutData const& about );
 
 BOOST_PARAMETER_FUNCTION(
-    (AboutData), about, tag,
+    (FEELPP_EXPORT AboutData), about, tag,
     ( required (name, *  ) )
     ( optional
       ( author,  *, "Feel++ Consortium"  )
