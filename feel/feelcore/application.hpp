@@ -68,7 +68,7 @@ namespace mpi = boost::mpi;
  *
  * @author Christophe Prud'homme
  */
-class Application
+class FEELPP_EXPORT Application
 {
 public:
 

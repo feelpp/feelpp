@@ -1406,7 +1406,10 @@ file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.include.c
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
   CONTENT "set(FEELPP_COMPILE_DEFINITIONS \"$<TARGET_PROPERTY:feelpp,COMPILE_DEFINITIONS>\")" )
 
-set(FEELPP_BOOST_TEXT "")
+set(FEELPP_BOOST_TEXT "
+set (Boost_MAJOR_VERSION \"${Boost_MAJOR_VERSION}\")
+set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
+")
 foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
   string(TOUPPER ${_c} _BOOST_LIB)
   set(FEELPP_BOOST_TEXT 

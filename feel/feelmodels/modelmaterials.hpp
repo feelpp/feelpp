@@ -35,7 +35,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelMaterial
+struct FEELPP_EXPORT ModelMaterial
 {
     static const uint16_type expr_order = 2;
     typedef scalar_field_expression<expr_order> expr_scalar_type;
@@ -339,7 +339,7 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
  * key: mesh marker
  * name -> name of the materials - can be different
  */
-class ModelMaterials: public std::map<std::string,ModelMaterial>
+class FEELPP_EXPORT ModelMaterials: public std::map<std::string,ModelMaterial>
 {
 public:
     using value_type = std::map<std::string,ModelMaterial>::value_type;
@@ -374,13 +374,13 @@ private:
 
 };
 
-inline ModelMaterial
+FEELPP_EXPORT inline ModelMaterial
 material( ModelMaterials::value_type const& m )
 {
     return m.second;
 }
 
-inline std::string
+FEELPP_EXPORT inline std::string
 marker( ModelMaterials::value_type const& m )
 {
     return m.first;

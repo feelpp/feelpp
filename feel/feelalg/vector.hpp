@@ -55,7 +55,7 @@ template <typename T> class MatrixShell;
  * @author Christophe Prud'homme 2005
  */
 template <typename T>
-class Vector
+class FEELPP_EXPORT Vector
 {
 public:
 
@@ -687,7 +687,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
  * \return the inner product of \p v1 and \p v2
  */
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 inner_product( boost::shared_ptr<Vector<T> > const& v1,
                boost::shared_ptr<Vector<T> > const& v2 )
 {
@@ -695,14 +695,14 @@ inner_product( boost::shared_ptr<Vector<T> > const& v1,
 }
 
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 dot( boost::shared_ptr<Vector<T> > const& v1,
      boost::shared_ptr<Vector<T> > const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 dot( Vector<T> const& v1,
      Vector<T> const& v2 )
 {
@@ -723,7 +723,7 @@ struct is_vector_ptr<boost::shared_ptr<VectorType> >
 {};
 
 template <typename T>
-struct syncOperator
+struct FEELPP_EXPORT syncOperator
 {
     typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
     syncOperator() {}
@@ -745,15 +745,15 @@ private :
 } // namespace detail
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, std::string const& opSyncStr = "=" );
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
@@ -763,15 +763,15 @@ BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
 
 namespace boost {
     namespace serialization {
-
+    
     template<typename T, class Archive>
-    void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
+    FEELPP_EXPORT void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
     {
         Feel::DataMap map = v.map();
         ar & BOOST_SERIALIZATION_NVP(map);
     }
     template<typename T, class Archive>
-    void load(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    FEELPP_EXPORT void load(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
     {
         Feel::DataMap map;
         ar & BOOST_SERIALIZATION_NVP(map);
@@ -779,7 +779,7 @@ namespace boost {
         v.init(mapPtr);
     }
     template<typename T, class Archive>
-    void serialize(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    FEELPP_EXPORT void serialize(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
     {
         split_free( ar, v, version );
     }
