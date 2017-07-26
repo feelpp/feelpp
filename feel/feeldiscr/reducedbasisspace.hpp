@@ -410,9 +410,14 @@ public :
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
             if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
                 meshFilename = (fs::path(dbDir)/fs::path(meshFilename).filename()).string();
+            size_type meshUpdateContext = size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+            auto meshCtxInPtree = ptree.template get_optional<size_type>("mesh-context");
+            if ( meshCtxInPtree )
+                meshUpdateContext = *meshCtxInPtree;
             auto mesh = loadMesh(_mesh=new mesh_type(worldcomm),_filename=meshFilename,
+                                 _update=meshUpdateContext );
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
-                                 _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
+                                 //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
             toc("ReducedBasisSpace::setup : load mesh",FLAGS_v>0);
             tic();
@@ -445,6 +450,12 @@ public :
         {
             this->addPrimalBasisElement( *e );
         }
+    void addPrimalBasisElement( vector_ptrtype const & vec )
+        {
+            space_element_type e = M_feSpace->element();
+            e = *vec;
+            this->addPrimalBasisElement( e );
+        }
 
     space_element_type& primalBasisElement( int index )
         {
@@ -462,6 +473,13 @@ public :
         {
             this->addDualBasisElement( *e );
         }
+    void addDualBasisElement( vector_ptrtype const & vec )
+        {
+            space_element_type e = M_feSpace->element();
+            e = *vec;
+            this->addDualBasisElement( e );
+        }
+
 
     space_element_type& dualBasisElement( int index )
         {
@@ -884,12 +902,15 @@ public :
                     // std::cout << "has rbspace\n";
                     if ( M_meshForRbContext )
                     {
-                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) )
+                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id() ) )
                         {
-                            meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                            auto geondEltCommon = boost::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
+                                                                                                                            M_meshForRbContext->gm(),
+                                                                                                                            M_meshForRbContext->gm1() );
+                            meshEltCtx.setCommonData( geondEltCommon );
                             M_meshForRbContext->addElement( meshEltCtx, false );
                         }
-                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id() );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
@@ -897,8 +918,8 @@ public :
                     else if ( M_rbspace->mesh() )
                     {
                         // std::cout << "has mesh in rbspace\n";
-                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id(), meshEltCtx.processId() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
-                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id(), meshEltCtx.processId() );
+                        CHECK ( M_rbspace->mesh()->hasElement( meshEltCtx.id() ) ) << "fails because mesh doesnt have the element reloaded for gmc";
+                        auto const& meshEltCtxRegister = M_rbspace->mesh()->element( meshEltCtx.id() );
                         typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_rbspace->mesh()->gm(),meshEltCtxRegister ) );
                         ar & boost::serialization::make_nvp( "gmContext", *gmContext );
                         this->setGmContext( gmContext );
@@ -1104,7 +1125,10 @@ public :
                 if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     geoelement_type meshEltCtx = modelMeshEltCtx;;
-                    meshEltCtx.setMeshAndGm( M_meshForRbContext.get(), M_meshForRbContext->gm(), M_meshForRbContext->gm1() );
+                    auto geondEltCommon = boost::make_shared<GeoNDCommon<typename mesh_type::element_type::super>>( M_meshForRbContext.get(),
+                                                                                                                    M_meshForRbContext->gm(),
+                                                                                                                    M_meshForRbContext->gm1() );
+                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshForRbContext->addElement( meshEltCtx, false );
                 }
             }
@@ -1764,16 +1788,20 @@ public :
             return u;
         }
 
-    space_element_type expansion( element_type const& unknown, int  N=-1)
+    space_element_type expansion( element_type const& uRB, int  N=-1) const
         {
-            int number_of_coeff;
             int basis_size = M_primal_rb_basis.size();
-            if ( N == -1 )
-                number_of_coeff = basis_size;
-            else
-                number_of_coeff = N;
-            FEELPP_ASSERT( number_of_coeff <= basis_size )( number_of_coeff )( basis_size ).error("invalid size");
-            return Feel::expansion( M_primal_rb_basis, unknown , number_of_coeff );
+            int number_of_coeff = ( N == -1 )? basis_size : N;
+            CHECK( number_of_coeff <= basis_size ) << "invalid size : " << number_of_coeff << " must be less or equal than " << basis_size;
+            return Feel::expansion( M_primal_rb_basis, uRB , number_of_coeff );
+        }
+
+    void expansion( element_type const& uRB, Vector<value_type> & uFE, int  N=-1) const
+        {
+            int basis_size = M_primal_rb_basis.size();
+            int number_of_coeff = ( N == -1 )? basis_size : N;
+            CHECK( number_of_coeff <= basis_size ) << "invalid size : " << number_of_coeff << " must be less or equal than " << basis_size;
+            Feel::expansion( M_primal_rb_basis, uRB , uFE, number_of_coeff );
         }
 
 

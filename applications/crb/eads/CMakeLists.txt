@@ -47,8 +47,8 @@ add_library(feel++_crb_models SHARED
   eadsmfemapp.cpp
   eadsscmapp.cpp
 )
-target_link_libraries(feel++_crb_models feelpp ${FEELPP_LIBRARIES} ${MPI_LIBRARIES} )
-set_target_properties( feel++_crb_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
+target_link_libraries(feel++_crb_models ${FEELPP_LIBRARIES} )
+#set_target_properties( feel++_crb_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
 install(TARGETS feel++_crb_models DESTINATION lib COMPONENT Bin)
 set_property(TARGET feel++_crb_models PROPERTY LABELS crb)
 add_dependencies(crb feel++_crb_models)

@@ -34,7 +34,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelFunction
+struct FEELPP_EXPORT ModelFunction
 {
     static const uint16_type expr_order = 2;
     typedef scalar_field_expression<expr_order> expr_scalar_type;
@@ -70,7 +70,7 @@ private:
     boost::optional<expr_vectorial3_type> M_exprVectorial3;
 
 };
-class ModelFunctions: public std::map<std::string,ModelFunction>
+class FEELPP_EXPORT ModelFunctions: public std::map<std::string,ModelFunction>
 {
 public:
     ModelFunctions( WorldComm const& world = Environment::worldComm() );

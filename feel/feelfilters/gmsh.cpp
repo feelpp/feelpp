@@ -1,33 +1,27 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4 tw=0
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-02-10
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2008-2014 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file gmsh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-02-10
- */
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Jul 2017
+//! @copyright 2008 Universite Joseph Fourier
+//! @copyright 2008-2017 Feel++ Consortium
+//!
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
@@ -66,6 +60,7 @@
 #include <GmshConfig.h>
 #include <Gmsh.h>
 #include <GModel.h>
+//#include <Geo.h>
 #include <OpenFile.h>
 #include <GmshDefines.h>
 #include <Context.h>
@@ -92,11 +87,6 @@ namespace Feel
 {
 namespace fs = boost::filesystem;
 
-#if defined(HAVE_METIS)
-const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
-#else
-const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
-#endif
 
 
 int
@@ -121,8 +111,12 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
         }
     }
     fclose(gmsh_yyin);
-
+#if GMSH_VERSION_LESS_THAN( 3,0,0 ) 
     int imported = model->importGEOInternals();
+#else // Gmsh 3
+    LOG(ERROR) << "Invalid call: Feel++ does not support in memory Gmsh 3 mesh generation.";
+    int imported = 0;
+#endif // GMSH_VERSION_LESS_THAN
 #else
     LOG(ERROR) << "Invalid call: Gmsh is not available on this system.";
     int imported = 0;
@@ -670,8 +664,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
             M_gmodel->readGEO( __geoname );
 
         M_gmodel->mesh( dim );
+#if GMSH_VERSION_LESS_THAN(3,0,0)
         CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
                                                  << " should be == " << dim;
+#else
+#endif
         LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
         for( int l = 0; l < M_refine_levels; ++l )
         {
@@ -680,8 +677,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
         PartitionMesh( M_gmodel, CTX::instance()->partitionOptions );
         LOG(INFO) << "Mesh partitions : " << M_gmodel->getMeshPartitions().size() << "\n";
 
+#if GMSH_VERSION_LESS_THAN(3,0,0)
         CHECK(M_gmodel->getMeshStatus() == dim)  << "Invalid Gmsh Mesh. Something went wrong with Gmsh.  Gmsh status : " << M_gmodel->getMeshStatus()
                                                  << " should be == " << dim;
+#else
+#endif
         if ( M_in_memory == false )
         {
             CTX::instance()->mesh.binary = M_format;

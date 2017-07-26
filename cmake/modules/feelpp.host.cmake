@@ -36,4 +36,8 @@ if(APPLE)
       message(STATUS "MACOSX RPATH disabled (CMAKE Version 3)")
     endif()
   endif()
+else()
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
+

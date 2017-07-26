@@ -18,6 +18,9 @@
 /* Define if F77 and FC dummy `main' functions are identical. */
 #cmakedefine FC_DUMMY_MAIN_EQ_F77
 
+/* Define to 1 if you have ACUSIM available. */
+#cmakedefine FEELPP_HAS_ACUSIM
+
 /* Define to 1 if you have ANN available. */
 #cmakedefine FEELPP_HAS_ANN
 
@@ -63,6 +66,9 @@
 /* Define to 1 if you have the gperftools library available. */
 #cmakedefine FEELPP_HAS_GPERFTOOLS
 
+/* Define to 1 if you have METIS available. */
+#cmakedefine FEELPP_HAS_METIS
+
 /* Define to 1 if you have HDF5 available. */
 #cmakedefine FEELPP_HAS_HDF5
 
@@ -83,6 +89,9 @@
 
 /* Define to 1 if you have mkl support. */
 #cmakedefine FEELPP_HAS_MKL
+
+/* Define to 1 if you have mongocxx support. */
+#cmakedefine FEELPP_HAS_MONGOCXX
 
 /* Define to 1 if you have mumps support. */
 #cmakedefine FEELPP_HAS_MUMPS

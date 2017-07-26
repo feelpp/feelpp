@@ -119,11 +119,10 @@ namespace Feel
         //! the exporter factory (shared_ptr<> type)
         typedef boost::shared_ptr<export_type> export_ptrtype;
 
-        typedef bases<Lagrange<Order, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type> space_type;
-        //! the approximation function space type (shared_ptr<> type)
+        // typedef bases<Lagrange<Order, Scalar> > basis_type;
+        // typedef FunctionSpace<mesh_type, basis_type> space_type;
+        typedef Pch_type<mesh_type, Order> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
-        //! an element type of the approximation function space
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space
@@ -355,18 +354,17 @@ namespace Feel
         std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElementWithProcessId();
-        auto eltEnd = mesh->endElementWithProcessId();
-        for ( ; eltIt != eltEnd; eltIt++)
+        for ( auto const& eltWrap : elements(mesh) )
             {
-                std::vector<point_type> eltPoints( eltIt->nPoints() );
+                auto const& elt = unwrap_ref( eltWrap );
+                std::vector<point_type> eltPoints( elt.nPoints() );
                 if (Dim == 2)
                     newPosFile << "ST(";
                 if (Dim == 3)
                     newPosFile << "SS(";
-                for (int i=0; i < eltIt->nPoints(); i++)
+                for (int i=0; i < elt.nPoints(); i++)
                     {
-                        eltPoints[i] = eltIt->point(i);
+                        eltPoints[i] = elt.point(i);
                         for (int j=0; j< Dim; j++)
                             {
                                 newPosFile << eltPoints[i](j);
@@ -378,7 +376,7 @@ namespace Feel
 
                         if (Dim == 2)
                             newPosFile << "0"; //2D case => z coordinate = 0
-                        if (i!= eltIt->nPoints() - 1)
+                        if (i!= elt.nPoints() - 1)
                             newPosFile << ", ";
                     }
 
@@ -386,7 +384,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
                         newPosFile << bbNewMap[ dofIndex ];
                         if ( k!= eltPoints.size() - 1)
                             newPosFile << ", ";
@@ -422,11 +420,10 @@ namespace Feel
         std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElementWithProcessId();
-        auto eltEnd = mesh->endElementWithProcessId();
-        for ( ; eltIt != eltEnd; eltIt++)
+        for ( auto const& eltWrap : elements(mesh) )
             {
-                std::vector<point_type> eltPoints( eltIt->nPoints() );
+                auto const& elt = unwrap_ref( eltWrap );
+                std::vector<point_type> eltPoints( elt.nPoints() );
                 newPosFile << "T";
                 if (Dim == 2)
                     newPosFile << "T";
@@ -434,9 +431,9 @@ namespace Feel
                     newPosFile << "S";
 
                 newPosFile << "(";
-                for (int i=0; i < eltIt->nPoints(); i++)
+                for (int i=0; i < elt.nPoints(); i++)
                     {
-                        eltPoints[i] = eltIt->point(i);
+                        eltPoints[i] = elt.point(i);
                         for (int j=0; j< Dim; j++)
                             {
                                 newPosFile << eltPoints[i](j);
@@ -445,7 +442,7 @@ namespace Feel
                             }
                         if (Dim == 2)
                             newPosFile << "0"; //2D case => z coordinate = 0
-                        if (i!= eltIt->nPoints() - 1)
+                        if (i!= elt.nPoints() - 1)
                             newPosFile << ", ";
                     }
 
@@ -453,7 +450,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
 
                         int num = 0;
                         newPosFile << (bbNewMap[num++])[ dofIndex ];

@@ -98,6 +98,11 @@ public:
         return M_expr;
     }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
+    }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
@@ -290,6 +295,11 @@ public:
     expression_type const& expression() const
     {
         return M_expr;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr.setParameterValues( mp );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>

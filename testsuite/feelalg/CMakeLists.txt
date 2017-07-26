@@ -19,7 +19,7 @@ feelpp_add_test( prepost_solve CFG test_prepost_solve.cfg )
 feelpp_add_test( add_matrix )
 
 if ( FEELPP_HAVE_SLEPC )
-  feelpp_add_test( eigenmode CLI "--gmsh.hsize 0.2 -eps_target 20 -st_pc_factor_mat_solver_package mumps" )
+  feelpp_add_test( eigenmode CFG test_eigenmode.cfg )
 endif()
 
 feelpp_add_test( ptap )

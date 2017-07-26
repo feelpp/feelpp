@@ -112,6 +112,13 @@ public:
      */
     static char const* prefix();
 
+    //!
+    //! \brief libdir directory
+    //!
+    //! The directory for installing libraries and plugins
+    //!
+    static char const* libdir();
+
     /**
      * \brief datadir directory
      *

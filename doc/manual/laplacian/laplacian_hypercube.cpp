@@ -34,7 +34,7 @@ int main(int argc, char**argv )
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=-expr<6>( lap,vars)*id(v));
+                  _expr=-expr<1,1,6>( lap,vars)*id(v));
     //_expr=id(v));
 
 

@@ -20,6 +20,11 @@ Options:
      --cmakeflags                    add extra cmake flags 
      --prefix=PATH                   define install path
      --root=PATH                     define root path
+     --enable-pch                    enable precompiled headers (default)
+     --disable-pch                   disable precompiled headers
+     --enable-python                 enable python 
+     --enable-cling                  enable cling 
+     --disable-cling                 disable cling (default)
  -v, --verbose                       enable verbose output
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
@@ -49,6 +54,9 @@ if [ "X${BUILDROOT}" = "X" ]; then
   fi
 fi
 BUILDTYPE=Release
+_WANT_PCH=no
+_WANT_PYTHON=yes
+_WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
 _WANT_RELWITHDEBINFO=no
@@ -141,9 +149,24 @@ while [ -n "$1" ]; do
    --release|-r)
        BUILDTYPE=Release
        ;;
-#   --og)
-   #       _WANT_OG=no
-   #       ;;
+   --enable-pch)
+       _WANT_PCH=yes
+       ;;         
+   --disable-pch)
+       _WANT_PCH=no
+       ;;
+   --enable-python)
+       _WANT_PYTHON=yes
+       ;;
+   --disable-python)
+       _WANT_PYTHON=no
+       ;;            
+   --enable-cling)
+       _WANT_CLING=yes
+       ;;         
+   --disable-cling)
+       _WANT_CLING=no
+       ;;
    --max-order=*)
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
            echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
@@ -252,8 +275,34 @@ echo "set(GMSH_INCLUDE_DIR           \"${GMSH_DIR}/include\" CACHE PATH \"root d
 echo "set(GMSH_LIBRARY_PATH          \"${GMSH_DIR}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 fi
 if [ "X${_DISABLE_RESEARCH}" != "X" ]; then
-echo "option(FEELPP__ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
+echo "option(FEELPP_ENABLE_RESEARCH OFF CACHE PATH \"enable research projects\" FORCE)" >> cmake.configure
 fi
+
+# PCH
+if [ "X${_WANT_PCH}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_PCH ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PCH_APPLICATIONS ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_PCH OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PCH_APPLICATIONS OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure    
+fi
+
+# PYTHON
+if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_PYTHON_WRAPPING ON CACHE PATH \"enable python wrapping \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PYTHON ON CACHE PATH \"enable python \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
+fi
+
+# CLING
+if [ "X${_WANT_CLING}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_CLING ON CACHE PATH \"enable cling \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_CLING OFF CACHE PATH \"disable cling \" FORCE)" >> cmake.configure
+fi
+
 if [ "X${CXXFLAGS}" != "X" ]; then
     echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
     echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure

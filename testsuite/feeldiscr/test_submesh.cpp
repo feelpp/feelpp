@@ -33,7 +33,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feel.hpp>
 
@@ -58,7 +58,7 @@ struct test_submesh: public Application
     typedef FunctionSpace<mesh_type, bases<Lagrange<3, Scalar> >, double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
-    typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
+    //typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<value_type> backend_type;
 
     test_submesh()
@@ -81,11 +81,9 @@ struct test_submesh: public Application
     }
     void operator()()
     {
-        location_element_const_iterator it,en;
-        boost::tie( it,en ) = mesh->boundaryElements( mesh->worldComm().localRank() );
-        mesh_ptrtype meshbdy( new mesh_type );
-        meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
-        BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), std::distance( it, en ) );
+        //mesh_ptrtype meshbdy( new mesh_type );
+        auto meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), nelements( boundaryelements( mesh ) ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
         double intm1 = integrate( elements( meshbdy ), cst( 1. ) ).evaluate()( 0,0 );
@@ -103,10 +101,9 @@ struct test_submesh: public Application
         BOOST_CHECK_CLOSE( intm13, intm23, 1e-12 );
 
 
-        mesh_ptrtype meshint( new mesh_type );
-        boost::tie( it,en ) = mesh->internalElements( mesh->worldComm().localRank() );
-        meshint = createSubmesh( mesh, internalelements(mesh) );
-        BOOST_CHECK_EQUAL( nelements(elements(meshint),false), std::distance( it, en ) );
+        //mesh_ptrtype meshint( new mesh_type );
+        auto meshint = createSubmesh( mesh, internalelements(mesh) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshint),false), nelements(internalelements(mesh)) );
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
         using namespace Feel::vf;

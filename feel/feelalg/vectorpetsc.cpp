@@ -36,6 +36,9 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #endif
 
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetsc<double> )
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetscMPI<double> )
+
 #if defined( FEELPP_HAS_PETSC_H )
 
 extern "C"
@@ -518,7 +521,7 @@ VectorPetsc<T>::max() const
     if ( !this->closed() )
         const_cast<VectorPetsc<T>*>( this )->close();
 
-    int index=0, ierr=0;
+    int index, ierr=0;
     PetscReal max=0.;
 
     ierr = VecMax ( M_vec, &index, &max );
@@ -527,6 +530,39 @@ VectorPetsc<T>::max() const
     // this return value is correct: VecMax returns a PetscReal
     return static_cast<Real>( max );
 }
+
+template <typename T>
+typename VectorPetsc<T>::real_type
+VectorPetsc<T>::maxWithIndex( int* index ) const
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
+    int ierr=0;
+    PetscReal max=0.;
+
+    ierr = VecMax ( M_vec, index, &max );
+    CHKERRABORT( this->comm(),ierr );
+
+    // this return value is correct: VecMax returns a PetscReal
+    return static_cast<Real>( max );
+}
+
+
+template <typename T>
+void
+VectorPetsc<T>::abs()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
+    int ierr = 0;
+    ierr = VecAbs( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+}
+
 
 template <typename T>
 typename VectorPetsc<T>::real_type
@@ -2525,5 +2561,6 @@ template class VectorPetscMPI<double>;
 template class VectorPetscMPIRange<double>;
 
 } // Feel
+
 
 #endif // FEELPP_HAS_PETSC_H

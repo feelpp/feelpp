@@ -46,6 +46,7 @@ feelpp_add_test( project NO_MPI_TEST)
 feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
+feelpp_add_test( makemesh )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( element_component )
@@ -57,7 +58,7 @@ endif()
 
 feelpp_add_test( matching NO_MPI_TEST )
 
-feelpp_add_test( wire_basket NO_MPI_TEST )
+feelpp_add_test( wire_basket CLI "--gmsh.hsize=0.075" )
 feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
 feelpp_add_test( mortar2 NO_MPI_TEST)
 
@@ -68,7 +69,7 @@ feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
 feelpp_add_test( project_prodspace )
 
 if ( FEELPP_HAS_SLEPC )
-  feelpp_add_test( eigs CLI "-st_pc_factor_mat_solver_package mumps" )
+  feelpp_add_test( eigs )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
@@ -79,5 +80,6 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
-feelpp_add_test( element0D )
-
+feelpp_add_test( idelements)
+#! not functional yet
+# feelpp_add_test( element0D )

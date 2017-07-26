@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE test_partitioner_metis
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpartition/partitionermetis.hpp>
@@ -85,7 +85,8 @@ BOOST_AUTO_TEST_CASE( partitioner_metis2 )
 
         for (rank_type p=0;p<numPartition;++p)
         {
-            int nElt = std::distance( mesh->beginElementWithProcessId(p),mesh->endElementWithProcessId(p) );
+            auto rangeElements = mesh->elementsWithProcessId( p );
+            int nElt = std::distance( std::get<0>( rangeElements ), std::get<1>( rangeElements ) );
             BOOST_CHECK( nElt > 0 );
         }
    }

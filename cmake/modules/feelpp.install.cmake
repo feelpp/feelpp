@@ -21,36 +21,65 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+#-----------------------------------------------------------------------
+# Values whose defaults are relative to DATAROOTDIR.
+# Store empty values in the cache and store the defaults in local
+# variables if the cache values are not set explicitly. This auto-updates
+# the defaults as DATAROOTDIR changes.
+#
+if(NOT CMAKE_INSTALL_DATADIR)
+  set(CMAKE_INSTALL_DATADIR "" CACHE PATH "read-only architecture-independent data (DATAROOTDIR)")
+  set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}")
+endif()
+
+if(NOT CMAKE_INSTALL_MANDIR)
+  set(CMAKE_INSTALL_MANDIR "" CACHE PATH "man documentation (DATAROOTDIR/man)")
+  set(CMAKE_INSTALL_MANDIR "${CMAKE_INSTALL_DATAROOTDIR}/man")
+endif()
+
+if(NOT CMAKE_INSTALL_DOCDIR)
+  set(CMAKE_INSTALL_DOCDIR "" CACHE PATH "documentation root (DATAROOTDIR/doc/PROJECT_NAME)")
+  set(CMAKE_INSTALL_DOCDIR "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}")
+endif()
+
+mark_as_advanced(
+  CMAKE_INSTALL_BINDIR
+  CMAKE_INSTALL_LIBDIR
+  CMAKE_INSTALL_INCLUDEDIR
+  CMAKE_INSTALL_DATAROOTDIR
+  CMAKE_INSTALL_DATADIR
+  CMAKE_INSTALL_MANDIR
+  CMAKE_INSTALL_DOCDIR
+  )
+
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
 if (NOT FEELPP_DATADIR )
-  set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
+  set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feelpp/feel )
 endif()
 
-
-FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
-INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
+#FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/applications/crb/templates/*")
+#INSTALL(FILES ${files} DESTINATION share/feel/crb/templates COMPONENT Devel)
 
 # documentation and examples
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
 #install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feelpp-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
 IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/doc/api/html" )
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feelpp/feel COMPONENT Doc
     PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
 ENDIF()
 
-FILE(GLOB files "quickstart/qs_*")
-INSTALL(FILES ${files} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 
-FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
-set(CMAKE_MODULE_PATH \"${CMAKE_INSTALL_PREFIX}/share/feel/cmake/modules/\")
-Find_Package(Feel++)
+#FILE(GLOB files "quickstart/qs_*")
+#INSTALL(FILES ${files} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
 
+#FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
+#Find_Package(Feel++ PATHS ${CMAKE_INSTALL_PREFIX}/share/feelpp/feel/cmake/modules/ )
 
-feelpp_add_application( qs_laplacian SRCS qs_laplacian.cpp INCLUDE_IN_ALL)
-feelpp_add_application( qs_stokes SRCS qs_stokes.cpp INCLUDE_IN_ALL)
-feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL)
-")
+#feelpp_add_application( qs_laplacian SRCS qs_laplacian.cpp INCLUDE_IN_ALL)
+#feelpp_add_application( qs_stokes SRCS qs_stokes.cpp INCLUDE_IN_ALL)
+#feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL)
+#")
 
 #FILE(GLOB examples
 #  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.*pp")
@@ -58,157 +87,87 @@ feelpp_add_application( qs_ns SRCS qs_ns.cpp INCLUDE_IN_ALL)
 #  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.cfg"
 #  "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.geo" )
 
-INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
-INSTALL(FILES ${examplescfg} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
-foreach(example ${examples} )
-  get_filename_component( EXAMPLE_TARGET_NAME ${example} NAME_WE )
-  get_filename_component( EXAMPLE_SRCS_NAME ${example} NAME )
-  FILE(APPEND CMakeLists.txt.doc "
+#INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
+#INSTALL(FILES ${examplescfg} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
+#foreach(example ${examples} )
+#  get_filename_component( EXAMPLE_TARGET_NAME ${example} NAME_WE )
+#  get_filename_component( EXAMPLE_SRCS_NAME ${example} NAME )
+#  FILE(APPEND CMakeLists.txt.doc "
 # target feelpp_doc_${EXAMPLE_TARGET_NAME}
-feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS ${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
-" )
-endforeach()
+#feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS ${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
+#" )
+#endforeach()
 #foreach( example myapp mymesh myintegrals myfunctionspace mylaplacian mystokes)
 #  FILE(APPEND CMakeLists.txt.doc "
 #add_dependencies(tutorial feelpp_doc_${example})
 #")
 #endforeach()
-INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT Doc RENAME CMakeLists.txt)
+#INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT Doc RENAME CMakeLists.txt)
 
 #
 # this target installs the libraries, header files and cmake files
 #
 set(_INSTALL_FEELPP_LIB_COMMAND ${CMAKE_COMMAND})
 
+if ( FEELPP_HAS_GFLAGS )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/gflags/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_GLOG )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/glog/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_GINAC )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ginac/cmake_install.cmake")
+endif()
+set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake")
 if(FEELPP_ENABLE_METIS)
-    set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/metis/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_NLOPT )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/nlopt/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_IPOPT )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/ipopt/cmake_install.cmake")
+endif()
+if ( FEELPP_HAS_PYBIND11 ) #AND FEELPP_ENABLE_PYTHON AND FEELPP_ENABLE_PYTHON_WRAPPING )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/pybind11/cmake_install.cmake")
+endif()
+
+if ( FEELPP_HAS_MONGOCXX ) 
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -P "${CMAKE_BINARY_DIR}/contrib/mongocxx/src/cmake_install.cmake")
+endif()
+
+if ( TARGET feelpp_mesh_partitioner )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake")
+endif()
+
+if ( TARGET app-databases )
+  set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND} -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/databases/cmake_install.cmake")
 endif()
 
 set(_INSTALL_FEELPP_LIB_COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-  -P "${CMAKE_BINARY_DIR}/contrib/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Bin -P "${CMAKE_BINARY_DIR}/applications/mesh/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Libs -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
+  -DCMAKE_INSTALL_COMPONENT=Bin   -P "${CMAKE_BINARY_DIR}/tools/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/contrib/eigen/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Libs  -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/feel/cmake_install.cmake"
+  -DCMAKE_INSTALL_COMPONENT=Devel -P "${CMAKE_BINARY_DIR}/cmake/modules/cmake_install.cmake"
+  )
 
-if ( FEELPP_MINIMAL_BUILD )
-  add_custom_target(install-feelpp-lib
-    DEPENDS contrib feelpp 
-    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-    )
-else()
-  add_custom_target(install-feelpp-lib
-    DEPENDS contrib feelpp feelpp_mesh_partitioner
-    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
-    )
+set( FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET contrib tools feelpp )
+if ( TARGET feelpp_mesh_partitioner )
+  list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET feelpp_mesh_partitioner )
 endif()
+if ( TARGET app-databases )
+  list(APPEND FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET app-databases )
+endif()
+  add_custom_target(install-feelpp-lib
+    DEPENDS ${FEELPP_INSTALL_FEELPP_LIB_DEPENDS_TARGET}
+    COMMAND ${_INSTALL_FEELPP_LIB_COMMAND}
+    )
 
-add_custom_target(install-libs-models-thermodyn
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  feelpp_model_thermodynamics
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Lib
-      -P "${CMAKE_BINARY_DIR}/feel/feelmodels/thermodyn/cmake_install.cmake"
-)
 
-add_custom_target(install-apps-models-thermodyn
-  DEPENDS
-  install-libs-models-thermodyn
-  feelpp_application_thermodyn_2d
-  feelpp_application_thermodyn_3d
-COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-  -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/thermodyn/cmake_install.cmake"
-)
-add_custom_target(install-libs-models-thermoelectric
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  feelpp_model_thermoelectric
-  COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=Lib
-      -P "${CMAKE_BINARY_DIR}/feel/feelmodels/thermoelectric/cmake_install.cmake"
-)
-
-add_custom_target(install-apps-models-thermoelectric
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  install-libs-models-thermoelectric
-  feelpp_application_thermoelectric_2d
-  feelpp_application_thermoelectric_3d
-    COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/thermoelectric/cmake_install.cmake"
-)
-
-add_custom_target(install-apps-models-fluid
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  install-libs-models-thermodyn
-  install-feelpp_model_fluidmec2dP2P1G1
-  install-feelpp_model_fluidmec3dP2P1G1
-  feelpp_application_fluid_2d
-  feelpp_application_fluid_3d
-  COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-  -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/fluid/cmake_install.cmake"
-)
-
-add_custom_target(install-apps-models-solid
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  install-feelpp_model_solidmec2dP1G1
-  install-feelpp_model_solidmec2dP2G1
-  install-feelpp_model_solidmec2dP1G1
-  install-feelpp_model_solidmec3dP2G1
-  feelpp_application_solid_2d
-  feelpp_application_solid_3d
-  feelpp_application_stress_2d
-  feelpp_application_stress_3d
-  feelpp_application_solenoid_3d
-  COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-  -P "${CMAKE_BINARY_DIR}/applications/models/solid/cmake_install.cmake"
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/solid/cmake_install.cmake"
-)
-
-add_custom_target(install-apps-models-fsi
-  DEPENDS
-  install-feelpp-lib
-  install-feelpp-models-common
-  install-feelpp_model_fsi_2dP2P1G1_2dP1G1
-  install-feelpp_model_fsi_3dP2P1G1_3dP1G1
-  install-feelpp_model_fsi_3dP2P1G2_3dP2G2
-  feelpp_application_fsi_2d
-  feelpp_application_fsi_3d
-  feelpp_application_fsi_3d_g2
-  COMMAND
-  "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=testcases
-  -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=ModelApplications
-      -P "${CMAKE_BINARY_DIR}/applications/models/fsi/cmake_install.cmake"
-)
 
 if ( NOT TARGET install-feelpp-base )
-  #
-  # this target installs the libraries, header files, cmake files and sample applications
-  #
+
   add_custom_target(install-feelpp-base
     DEPENDS
     install-feelpp-lib
@@ -221,21 +180,19 @@ if ( NOT TARGET install-feelpp-base )
     )
 endif()
 
-#
-# Generic install target for feel++
-#
-add_custom_target(install-feelpp
-  DEPENDS
-  install-feelpp-base
-)
+# install feel++ interpreter
+if( 0 )#FEELPP_HAS_CLING_INTERPRETER )
+    # We create the feel++ interpreter bash script in the binary dir.
+    set( CLING_INSTALL_PREFIX ${CMAKE_BINARY_DIR} )
+    include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+    # We recreate the feel++ interpreter bash script for the cmake prefix.
+    install( CODE
+        "
+        set( CLING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+        include( ${CMAKE_SOURCE_DIR}/cmake/modules/feelpp.interpreter.bash.cmake )
+        "
+        )
+endif()
 
-# install feel++ applications
-add_custom_target(install-feelpp-apps
-  DEPENDS
-  install-feelpp-base
-  install-apps-models-thermoelectric
-  install-apps-models-thermodyn
-  install-apps-models-fluid
-  install-apps-models-solid
-  install-apps-models-fsi
-)
+
+

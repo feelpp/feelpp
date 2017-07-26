@@ -26,4 +26,5 @@ add_executable( feel_perf_io
 bench_perf_io.cpp
   )
 
-target_link_libraries(feel_perf_io feelpp ${FEELPP_LIBRARIES} )
+target_link_libraries( feel_perf_io feelpp ${FEELPP_LIBRARIES} )
+feelpp_add_application( perf_io_vector SRCS bench_perf_io_vector.cpp )

@@ -31,7 +31,7 @@
 
 #include <boost/timer.hpp>
 #define BOOST_TEST_MODULE vector testsuite
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/glas.hpp>
