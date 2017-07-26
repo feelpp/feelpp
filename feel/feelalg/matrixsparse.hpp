@@ -923,6 +923,15 @@ public:
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
+    sc_ptrtype sc() { return M_sc; }
+    sc_ptrtype const& sc() const { return M_sc; }
+    sparse_matrix_ptrtype block( int row, int col )
+        {
+            //sc->setMatrix( this->shared_from_this() );
+            M_sc->block( row, col );
+            return this->shared_from_this();
+        }
+
     virtual void save( std::string filename="default_archive_name", std::string format="binary" )
     {}
 
