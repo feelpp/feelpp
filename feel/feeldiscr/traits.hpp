@@ -27,6 +27,7 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/traits.hpp>
 #include <feel/feelpoly/policy.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
 namespace Feel {
