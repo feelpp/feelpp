@@ -3953,8 +3953,8 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     std::vector<vector_ptrtype> F;
     vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
 
     double norm=0;
     int iter=0;
