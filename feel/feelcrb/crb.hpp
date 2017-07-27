@@ -332,7 +332,7 @@ public:
         M_fixedpointIncrementTol( doption(_name="crb.fixedpoint.increment-tol") ),
         M_fixedpointVerbose( boption(_name="crb.fixedpoint.verbose") ),
         M_fixedpointCriticalValue( doption(_name="crb.fixedpoint.critical-value") ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
+        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
         M_useRbSpaceContextEim( boption(_name="crb.use-fast-eim") ),
         M_hasRbSpaceContextEim( false ),
