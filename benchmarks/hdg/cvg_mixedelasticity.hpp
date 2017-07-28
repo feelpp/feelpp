@@ -1,4 +1,6 @@
+#include <feel/feel.hpp>
 #include "feel/feelmodels/hdg/mixedelasticity.hpp"
+#include <math.h>
 
 namespace Feel {
 
@@ -75,7 +77,7 @@ private:
 public:
     ConvergenceElasticityTest();
     void assembleExact();
-    void run();
+    int run();
 
     void exportTimersCvg();
 };
@@ -149,7 +151,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::ConvergenceElasticityTest(
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void
+int
 ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 {
     double h = doption("gmsh.hsize");
@@ -166,36 +168,29 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     /* %|28t|%4% %|28t|%5% %|28t|%6%\n");*/
     boost::format fmterOut;
 
+	// Checker initialization
+	auto solution = expr<Dim,1>( checker().solution(), "solution" );
+	int status = 0;
+
 
     for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
     {
-        /*
-        M_assembleTime = 0;
-        M_solveTime = 0;
-        M_totalTime = 0;    
-        */
-
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
         
         tic();
         
-        // tic();
         M_model -> init(M_mesh); // inside here assembleSTD
-        // M_assembleTime = toc("assembleTime");
 
         auto nDofSigma = M_model->fluxSpace()->nDof();
         auto nDofU = M_model->potentialSpace()->nDof();
+    	auto v = M_model->potentialSpace()->element("v");
 
-        // tic();
 		M_model->solve();	// inside here assembleF
-		// M_solveTime = toc("solveTime");
 
 		// M_model->exportResults(M_mesh);
 
         M_sigma = M_model->fluxField();
         M_u = M_model->potentialField();
-
-        // M_totalTime = toc("totalTime");
 
         // Data
         double mu = 1;
@@ -226,14 +221,12 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         Feel::cout << "||sigma-sigma_ex|| = " << errSigma << std::endl;
         Feel::cout << "***** -------------------------------- *****" << std::endl;
 
-
   
 	    // cout << fmterOut % "h" % "nDofSigma" % "errSigma" % "nDofU" % "errU";
         // cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
         cvg_sigma << fmter % h % nDofSigma % errSigma;
         cvg_u << fmter % h % nDofU % errU;
         cvg_tot << fmter2 % h % errU % errSigma ; 
-        /* % M_assembleTime % M_solveTime % M_totalTime ;*/
 		
 /*
         sigma_ex.on( elements(M_mesh), sigma_exact);
@@ -250,8 +243,43 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         e->step(i)->add("u_ex", u_ex);
 */
         e->save();
+		
+		// CHECKER
+		if ( checker().check() )
+   		{
+    		v.on(_range=elements(M_mesh), _expr=solution );
+       		e->add( "solution", v );
+
+
+   			/*
+            std::vector<double> l2(Dim);
+			auto help = integrate(_range=elements(M_mesh), _expr=(idv(M_u)-expr(solution))*(idv(M_u)-expr(solution)) );
+			for (int i = 0; i<Dim; i++)
+			{
+				l2[i] = std::sqrt(help.evaluate()(i,0));
+			}
+			*/	
+     		// compute l2 and h1 norm of u-u_h where u=solution
+     		auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+        	{
+        		tic();
+				double l2 = normL2(_range=elements(M_mesh), _expr= idv(M_u)-expr<Dim,1>(solution) );
+            	toc("L2 error norm");
+				
+            	tic();
+				double h1 = normH1(_range=elements(M_mesh), _expr=idv(M_u)-expr<Dim,1>(solution), _grad_expr=gradv(M_u)-grad(expr<Dim,1>(solution)) );
+            	toc("H1 error norm");
+				
+            	return { { "L2", l2 } , {  "H1", h1 } };
+        	};
+			
+			status += checker().runOnce( norms, rate::hp( M_mesh->hMax(), M_model->potentialSpace()->fe()->order() ) );
+			
+		}
 
         h /= doption("cvg.refine-factor");
+
+
     }
 
 
@@ -285,6 +313,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     cvg_u.close();
     cvg_tot.close();
 
+	return status==ioption("cvg.refine-nb");
 }
 
 // Time exporter
