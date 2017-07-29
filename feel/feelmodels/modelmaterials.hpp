@@ -53,11 +53,14 @@ struct FEELPP_EXPORT ModelMaterial
                    std::string const& directoryLibExpr = "" );
 
     std::string const& name() const { return M_name; }
+    std::string const& physics() const { return M_physics; }
     /*! Set Name
      */
     void setName( std::string const& name ) { M_name = name; }
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+
+    void setPhysics( std::string const s) { M_physics = s; }
 
     void setProperty( std::string const& property, pt::ptree const& p );
     void setProperty( std::string const& property, double val );
@@ -325,6 +328,8 @@ private:
 
     //! mat propeteries
     std::map<std::string, mat_property_expr_type > M_materialProperties;
+    //! material physics
+    std::string M_physics;
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
