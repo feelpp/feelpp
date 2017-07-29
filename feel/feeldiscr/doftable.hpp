@@ -109,10 +109,7 @@ struct hash<std::tuple<TT...>>
 #include <feel/feelpoly/isp0continuous.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
-#include <feel/feelalg/datamap.hpp>
-#include <feel/feeldiscr/dof.hpp>
-#include <feel/feeldiscr/traits.hpp>
-
+#include <feel/feeldiscr/doftablebase.hpp>
 #include <feel/feeldiscr/doffromelement.hpp>
 #include <feel/feeldiscr/doffrommortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
@@ -145,9 +142,9 @@ namespace bimaps = boost::bimaps;
  * \author Goncalo Pena
  */
 template<typename MeshType,  typename FEType, typename PeriodicityType, typename MortarType>
-class DofTable : public DataMap
+class DofTable : public DofTableBase
 {
-    typedef DataMap super;
+    typedef DofTableBase super;
 public:
 
     /**
@@ -377,6 +374,46 @@ public:
                  fe_type::nDofPerFace * element_type::numGeometricFaces +
                  fe_type::nDofPerEdge * element_type::numEdges +
                  fe_type::nDofPerVertex * element_type::numVertices);
+        }
+
+    DofTableInfos infos() const
+        {
+            DofTableInfos infos;
+            infos.nOrder = nOrder;
+            infos.nDim = nDim;
+            infos.nRealDim = nRealDim;
+            infos.Shape = Shape;
+            infos.nComponents = nComponents;
+            infos.nComponents1 = nComponents1;
+            infos.nComponents2 = nComponents2;
+            infos.is_continuous = is_continuous;
+            infos.is_discontinuous_locally = is_discontinuous_locally;
+            infos.is_discontinuous_totally = is_discontinuous_totally;
+
+            infos.is_scalar = is_scalar;
+            infos.is_vectorial = is_vectorial;
+            infos.is_tensor2 = is_tensor2;
+            infos.is_tensor2symm = is_tensor2symm;
+            infos.is_modal = is_modal;
+            infos.is_product = is_product;
+            infos.nRealComponents = nRealComponents;
+
+            infos.is_p0_continuous = is_p0_continuous;
+
+            infos.is_hdiv_conforming = is_hdiv_conforming;
+            infos.is_hcurl_conforming = is_hcurl_conforming;
+
+            infos.nDofPerEdge = nDofPerEdge;
+            infos.nDofPerElement = nDofPerElement;
+
+            infos.is_periodic = is_periodic;
+
+            infos.nDofComponents = this->nDofComponents();
+
+            if ( M_fe )
+                infos.feFamilyName = M_fe->familyName();
+
+            return infos;
         }
 
     constexpr size_type nLocalDof( bool per_component = false ) const
@@ -1420,7 +1457,7 @@ private:
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
         {
-            element_type _elt = *mesh.beginElement();
+            element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
             for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; i++ )
@@ -1740,11 +1777,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     for ( ; fit != fen; ++fit )
     {
         const int ncdof = is_product?nComponents:1;
-
+        auto const& elt = fit->second;
         for ( uint16_type c = 0; c < ncdof; ++c )
-            if ( !this->isElementDone( fit->id(), c ) )
+            if ( !this->isElementDone( elt.id(), c ) )
             {
-                em.push_back( boost::make_tuple( fit->id(), c, (fit->hasMarker())? fit->marker().value() : 0 ) );
+                em.push_back( boost::make_tuple( elt.id(), c, (elt.hasMarker())? elt.marker().value() : 0 ) );
             }
     } 
     if ( !em.empty() )
@@ -2526,7 +2563,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 #endif
         int ncdof = is_product ? nComponents : 1 ;
         M_face_l2g[ face.id()].resize( nDofF*ncdof );
-        dfb.add( __face_it );
+        dfb.add( face );
     }
 
 #if 0 //!defined(NDEBUG)

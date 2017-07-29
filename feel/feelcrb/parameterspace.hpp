@@ -86,13 +86,16 @@ public:
     /**
      * \brief element of a parameter space
      */
-    class Element : public Eigen::Matrix<double,nDimEigenContainer,1>
+    class Element : public Eigen::VectorXd//Eigen::Matrix<double,nDimEigenContainer,1>
     {
-        typedef Eigen::Matrix<double,nDimEigenContainer,1> super;
+        //typedef Eigen::Matrix<double,nDimEigenContainer,1> super;
+        using super = Eigen::VectorXd;
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
         typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-
+        //typedef typename Eigen::internal::ref_selector<Element>::type Nested; 
+        typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
+        
         /**
          * default constructor
          */
@@ -115,6 +118,12 @@ public:
             super( space->dimension() ),
             M_space( space )
             {}
+
+        // This constructor allows you to construct Element from Eigen expressions
+        template<typename OtherDerived>
+        Element(const Eigen::MatrixBase<OtherDerived>& other)
+            : super(other)
+            { }
         /**
          * destructor
          */
@@ -130,6 +139,24 @@ public:
         super& operator=( const Eigen::MatrixBase<OtherDerived>& other )
             {
                 return super::operator=( other );
+            }
+
+        /**
+         * access element by name
+         */
+        double const& parameterNamed( std::string name ) const
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                return this->operator()( it - paramNames.begin() );
+            }
+
+        void setParameterNamed( std::string name, double value )
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                if( it != paramNames.end() )
+                    this->operator()( it - paramNames.begin() ) = value;
             }
 
         void setParameterSpace( parameterspace_ptrtype const& space )
@@ -262,7 +289,7 @@ public:
         typedef boost::shared_ptr<kdtree_type> kdtree_ptrtype;
 #endif /* FEELPP_HAS_ANN_H */
 
-
+    public:
         Sampling( parameterspace_ptrtype const& space, int N = 0, sampling_ptrtype const& supersampling = sampling_ptrtype() )
             :
             super( N ),
@@ -434,6 +461,8 @@ public:
 
         }
 
+        void sampling( size_type N, std::string const& samplingMode ) { return sample( N, samplingMode ); }
+        
         /**
          * \brief create a sampling with global number of samples
          * \param N the number of samples
@@ -1128,8 +1157,9 @@ public:
             }
 
     private:
+        
         Sampling() {}
-    private:
+
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
             {
                 this->clear();
@@ -1261,7 +1291,11 @@ public:
     /**
      * generate a shared_ptr out of a parameter space
      */
-    static parameterspace_ptrtype New( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm() )
+    static parameterspace_ptrtype create( uint16_type dim)
+        {
+            return New( dim, Environment::worldComm() );
+        }
+    static parameterspace_ptrtype New( uint16_type dim = 0, WorldComm const& worldComm = Environment::worldComm())
         {
             return parameterspace_ptrtype( new parameterspace_type( dim,worldComm ) );
         }
@@ -1334,6 +1368,14 @@ public:
     std::string const& parameterName( uint16_type d ) const
         {
             return M_parameterNames[d];
+        }
+
+    /**
+     * \brief name of the parameters
+     */
+    std::vector<std::string> const& parameterNames() const
+        {
+            return M_parameterNames;
         }
 
     //@}
@@ -1774,6 +1816,11 @@ private:
 };
 
 template<uint16_type P> const uint16_type ParameterSpace<P>::Dimension;
+
+//!
+//! dynamic parameter space type definition
+//!
+using ParameterSpaceX = ParameterSpace<>;
 
 template<uint16_type P>
 //typename ParameterSpace<P>::sampling_ptrtype

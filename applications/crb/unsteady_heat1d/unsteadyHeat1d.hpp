@@ -122,12 +122,6 @@ createGeo( double meshSize  )
 }
 
 
-class ParameterDefinition
-{
-public :
-    static const uint16_type ParameterSpaceDimension = 4;
-    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
-};
 class FunctionSpaceDefinition
 {
 public :
@@ -158,10 +152,10 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>
+class UnsteadyHeat1D : public ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition>
 {
 public:
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
@@ -192,7 +186,7 @@ public:
     typedef space_type::element_type element_type;
 
     /* parameter space */
-    typedef ParameterDefinition::parameterspace_type parameterspace_type;
+    using parameterspace_type = ParameterSpaceX;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
@@ -245,6 +239,7 @@ private:
 
 UnsteadyHeat1D::UnsteadyHeat1D()
     :
+    super_type( "heat1d" ),
     alpha( 1 )
 {}
 
@@ -271,6 +266,7 @@ UnsteadyHeat1D::initModel()
 
     M_bdf = bdf( _space=Xh, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
+    Dmu->setDimension( 4 );
     auto mu_min = Dmu->element();
     mu_min << 0.2, 0.2, 0.01, 0.1;
     Dmu->setMin( mu_min );

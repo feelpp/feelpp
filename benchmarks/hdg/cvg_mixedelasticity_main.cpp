@@ -31,6 +31,6 @@ int main(int argc, char *argv[])
     typedef ConvergenceElasticityTest<FEELPP_DIM,FEELPP_ORDER,FEELPP_GEO_ORDER,FEELPP_EXP_ORDER> cvel_type;
 
     cvel_type CV_el;
-    CV_el.run();
-    return 0;
+    int status = CV_el.run();
+    return !status;
 }

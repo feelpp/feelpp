@@ -10,18 +10,18 @@
 namespace Feel
 {
 
-po::options_description
+FEELPP_EXPORT po::options_description
 makeHeat3dOptions();
-AboutData
+FEELPP_EXPORT AboutData
 makeHeat3dAbout( std::string const& str = "heat3d" );
 
-struct Heat3dConfig
+struct FEELPP_EXPORT Heat3dConfig
 {
     typedef Mesh<Simplex<3>> mesh_type;
     typedef Pch_type<mesh_type,1> space_type;
 };
 
-class Heat3d : public ModelCrbBase<ParameterSpace<>, Heat3dConfig::space_type >
+class FEELPP_EXPORT Heat3d : public ModelCrbBase<ParameterSpace<>, Heat3dConfig::space_type >
 {
     typedef ModelCrbBase<ParameterSpace<>, Heat3dConfig::space_type > super_type;
 

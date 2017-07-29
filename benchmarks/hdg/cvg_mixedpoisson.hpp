@@ -1,4 +1,5 @@
 #include "feel/feelmodels/hdg/mixedpoisson.hpp"
+#include "feel/feelcore/checker.hpp"
 
 namespace Feel {
 
@@ -79,7 +80,7 @@ private:
 public:
     ConvergenceTest();
     void assembleExact();
-    void run();
+    int run();
     void exportTimers();
 };
 
@@ -87,7 +88,8 @@ template<int Dim, int Order, int G_Order, int E_Order>
 ConvergenceTest<Dim,Order,G_Order,E_Order>::ConvergenceTest()
 {
     M_model = mixed_poisson_type::New("mixedpoisson");
-    M_p_exact = expr<expr_order>(soption("cvg.p_exact"));
+    auto solution = expr<expr_order>( checker().solution(), "solution");
+    M_p_exact = checker().check() ? solution : expr<expr_order>(soption("cvg.p_exact"));
     Feel::cout << "using conductivity: " << doption("cvg.cond") << std::endl;
     Feel::cout << "using p exact     : " << M_p_exact << std::endl;
     Feel::cout << "grad_p_exact      : " << grad<Dim,expr_order>(M_p_exact) << std::endl;
@@ -197,7 +199,7 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::assembleExact()
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void
+int
 ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
 {
     double h = doption("gmsh.hsize");
@@ -319,6 +321,22 @@ ConvergenceTest<Dim,Order,G_Order,E_Order>::run()
         if( boption("cvg.normal-compute") )
             cvg_n.close();
     }
+
+    auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+        {
+            tic();
+            double errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-u_exact, _quad=_Q<expr_order>());
+            toc("u error norm");
+            tic();
+            double mean_p_exact = mean( elements(M_mesh), M_p_exact)(0,0);
+            double mean_p = mean( elements(M_mesh), idv(M_p))(0,0);
+            double errP = normL2(_range=elements(M_mesh), _expr=idv(M_p)-cst(mean_p)-M_p_exact+cst(mean_p_exact), _quad=_Q<expr_order>());
+            toc("p error norm");
+            return { { "u", errU }, {  "p", errP } };
+        };
+    int status = checker().runOnce( norms, rate::hp( M_mesh->hMax(), M_u.functionSpace()->fe()->order() ) );
+
+    return !status;
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>

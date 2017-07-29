@@ -37,7 +37,7 @@
 //#define BOOST_TEST_NO_MAIN
 
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 

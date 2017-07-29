@@ -23,7 +23,7 @@
  */
 #if 0
 #define BOOST_TEST_MODULE test_matrixfield
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #endif
 
 #include <feel/options.hpp>

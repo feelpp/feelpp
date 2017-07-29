@@ -60,6 +60,7 @@ class GraphCSR
 {
 public:
 
+    friend class boost::serialization::access;
 
     /** @name Typedefs
      */
@@ -398,6 +399,59 @@ private :
     size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
     size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
     size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        Feel::DataMap map_row = this->mapRow();
+        Feel::DataMap map_col = this->mapCol();
+
+        ar & BOOST_SERIALIZATION_NVP(map_row);
+        ar & BOOST_SERIALIZATION_NVP(map_col);
+
+        ar & BOOST_SERIALIZATION_NVP(M_is_closed);
+        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_oz);
+        ar & BOOST_SERIALIZATION_NVP(M_storage);
+        ar & BOOST_SERIALIZATION_NVP(M_ia);
+        ar & BOOST_SERIALIZATION_NVP(M_ja);
+        ar & BOOST_SERIALIZATION_NVP(M_a);
+    }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        Feel::DataMap map_row;
+        Feel::DataMap map_col;
+
+        ar & BOOST_SERIALIZATION_NVP(map_row);
+        ar & BOOST_SERIALIZATION_NVP(map_col);
+
+        ar & BOOST_SERIALIZATION_NVP(M_is_closed);
+        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_oz);
+        ar & BOOST_SERIALIZATION_NVP(M_storage);
+        ar & BOOST_SERIALIZATION_NVP(M_ia);
+        ar & BOOST_SERIALIZATION_NVP(M_ja);
+        ar & BOOST_SERIALIZATION_NVP(M_a);
+
+        M_mapRow = boost::make_shared<Feel::DataMap>( map_row );
+        M_mapCol = boost::make_shared<Feel::DataMap>( map_col );
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 protected:
 

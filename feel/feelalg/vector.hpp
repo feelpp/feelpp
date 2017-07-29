@@ -25,6 +25,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
+
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
@@ -48,7 +56,7 @@ template <typename T> class MatrixShell;
  * @author Christophe Prud'homme 2005
  */
 template <typename T>
-class Vector : public boost::enable_shared_from_this<Vector<T> >
+class FEELPP_EXPORT Vector : public boost::enable_shared_from_this<Vector<T> >
 {
 public:
 
@@ -297,6 +305,10 @@ public:
      * Real part.
      */
     virtual real_type max () const = 0;
+    virtual real_type maxWithIndex( int* index=nullptr ) const;
+
+    //! Replaces every element in a vector with its absolute value
+    virtual void abs();
 
     /**
      * retrieve the max component as well as the index of the max component
@@ -621,6 +633,12 @@ public:
             return res;
         }
 
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
+
 protected:
 
     /**
@@ -673,7 +691,7 @@ inner_product( Vector<T> const& v1, Vector<T> const& v2 )
  * \return the inner product of \p v1 and \p v2
  */
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 inner_product( boost::shared_ptr<Vector<T> > const& v1,
                boost::shared_ptr<Vector<T> > const& v2 )
 {
@@ -681,14 +699,14 @@ inner_product( boost::shared_ptr<Vector<T> > const& v1,
 }
 
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 dot( boost::shared_ptr<Vector<T> > const& v1,
      boost::shared_ptr<Vector<T> > const& v2 )
 {
     return inner_product( *v1, *v2 );
 }
 template <typename T>
-typename type_traits<T>::real_type
+FEELPP_EXPORT typename type_traits<T>::real_type
 dot( Vector<T> const& v1,
      Vector<T> const& v2 )
 {
@@ -709,7 +727,7 @@ struct is_vector_ptr<boost::shared_ptr<VectorType> >
 {};
 
 template <typename T>
-struct syncOperator
+struct FEELPP_EXPORT syncOperator
 {
     typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
     syncOperator() {}
@@ -731,19 +749,46 @@ private :
 } // namespace detail
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, std::string const& opSyncStr = "=" );
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
 
 template <typename T>
-void
+FEELPP_EXPORT void
 sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
 
 
-
 } // Feel
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
+
+namespace boost {
+    namespace serialization {
+    
+    template<typename T, class Archive>
+    FEELPP_EXPORT void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map = v.map();
+        ar & BOOST_SERIALIZATION_NVP(map);
+    }
+    template<typename T, class Archive>
+    FEELPP_EXPORT void load(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        Feel::DataMap map;
+        ar & BOOST_SERIALIZATION_NVP(map);
+        auto mapPtr = boost::make_shared<Feel::DataMap>(map);
+        v.init(mapPtr);
+    }
+    template<typename T, class Archive>
+    FEELPP_EXPORT void serialize(Archive & ar, Feel::Vector<T> & v, const unsigned int version)
+    {
+        split_free( ar, v, version );
+    }
+    } // namespace serialization
+} // namespace boost
+
 
 #endif  // #ifdef __numeric_vector_h__

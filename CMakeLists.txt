@@ -107,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
@@ -141,9 +142,9 @@ endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/machines)
+add_subdirectory(cmake)
 
+include(feelpp.dirs)
 # set the Feel++ version
 include(feelpp.version)
 
@@ -314,7 +315,10 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 add_custom_target(contrib)
+
 include( feelpp.dependencies )
+add_subdirectory(contrib)
+
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -350,7 +354,6 @@ ENDIF()
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
-
 
 
 ################################################################################
@@ -426,6 +429,11 @@ include(feelpp.module.quickstart)
 if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
+endif()
+
+include(feelpp.module.pyfeelpp)
+if ( FEELPP_HAS_PYFEELPP )
+  add_subdirectory(pyfeelpp)
 endif()
 
 include(feelpp.module.toolboxes)

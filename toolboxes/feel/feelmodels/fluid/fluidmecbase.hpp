@@ -554,7 +554,8 @@ public :
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
-    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
     range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
     range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
 
@@ -949,7 +950,8 @@ protected:
     // stabilization
     bool M_stabilizationGLS;
     std::string M_stabilizationGLSType;
-    stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
     range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
     range_elements_type M_stabilizationGLSEltRangePressure;
 

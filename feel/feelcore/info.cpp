@@ -84,7 +84,13 @@ Info::versionString()
 char const*
 Info::prefix()
 {
-    return stringize( FEELPP_PREFIX );
+    return stringize( FEELPP_PREFIX ); 
+}
+
+char const*
+Info::libdir()
+{
+    return stringize( FEELPP_LIBDIR );
 }
 
 char const*

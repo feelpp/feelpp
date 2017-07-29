@@ -476,10 +476,10 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" OFF)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
-SET(BOOST_MIN_VERSION "1.55.0")
+SET(BOOST_MIN_VERSION "1.61.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -490,10 +490,11 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
     if(Boost_PYTHON_FOUND)
         set(FEELPP_HAS_BOOST_PYTHON 1)
         set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python-Wrapping" )
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
+
     else()
         message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-    endif()
+      endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -579,90 +580,6 @@ include(feelpp.module.hana)
 
 #add_definitions(-DHAVE_LIBDL)
 
-set(FEELPP_HAS_GFLAGS 1)
-set(FEELPP_HAS_GLOG 1)
-set(FEELPP_HAS_GINAC 1)
-
-if ( FEELPP_HAS_GFLAGS )
-  set(GFLAGS_IS_SUBPROJECT TRUE)
-  set(GFLAGS_NAMESPACE "google;gflags")
-  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/gflags)
-  list(APPEND FEELPP_LIBRARIES feelpp_gflags)
-
-  add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
-  #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${FEELPP_BINARY_DIR}/contrib/gflags/include ${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-
-  include_directories(${FEELPP_BINARY_DIR}/contrib/gflags/include )#${FEELPP_BINARY_DIR}/contrib/gflags/include/gflags)
-
-  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFlags/Contrib" )
-  
-  # for GLog
-  set(gflags_LIBRARIES feelpp_gflags)
-  set(gflags_FOUND 1)
-endif()
-
-if ( FEELPP_HAS_GLOG )
-    #     INCLUDE_DIRECTORIES(${FEELPP_BINARY_DIR}/contrib/glog/ ${FEELPP_SOURCE_DIR}/contrib/glog/src)
-  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/glog)
-  list(APPEND FEELPP_LIBRARIES feelpp_glog)
-  add_dependencies(contrib feelpp_glog)
-  set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLog/Contrib" )
-endif()
-
-
-if ( FEELPP_HAS_GINAC )
-  #
-  # cln and ginac
-  #
-  find_package(CLN)
-
-  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-
-  link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
-
-  include_directories(${CLN_INCLUDE_DIR} ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac)
-  set(DL_LIBS ${CMAKE_DL_LIBS})
-
-
-  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ginac)
-  add_dependencies(contrib feelpp_ginac ginsh)
-  list(APPEND FEELPP_LIBRARIES feelpp_ginac)
-endif()
-
-
-
-
-OPTION( FEELPP_ENABLE_NT2 "Enable the numerical toolkit tmplate library" OFF )
-if ( FEELPP_ENABLE_NT2 )
-  #set(NT2_SOURCE_ROOT ${FEELPP_ROOT}/contrib/nt2)
-  #set(NT2_WITH_TESTS OFF)
-  option(NT2_WITH_TESTS "Enable benchmarks and unit tests" OFF)
-  add_subdirectory(contrib/nt2)
-  set(CMAKE_CXX_FLAGS "${NT2_SIMD_FLAGS} ${CMAKE_CXX_FLAGS}")
-  INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/contrib/nt2/include/)
-
-  foreach(module ${NT2_FOUND_COMPONENTS})
-    string(TOUPPER ${module} module_U)
-    if(NT2_${module_U}_ROOT)
-      INCLUDE_DIRECTORIES(${NT2_${module_U}_ROOT}/include)
-      message(status "[feelpp/nt2] adding ${NT2_${module_U}_ROOT}/include" )
-    endif()
-  endforeach()
-
-  set(NT2_FOUND 1)
-  set(FEELPP_HAS_NT2 1)
-  SET(FEELPP_LIBRARIES nt2  ${FEELPP_LIBRARIES}  )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} NT2" )
-  message(STATUS "[feelpp] nt2 is enabled" )
-
-endif( FEELPP_ENABLE_NT2 )
-
-if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
-
-
-endif()
-
-
 option( FEELPP_ENABLE_FFTW "Enable fftw Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_FFTW)
   find_package(FFTW)
@@ -674,19 +591,8 @@ if(FEELPP_ENABLE_FFTW)
   endif()
 endif()
 
-#
-# submodules
-#
-include(feelpp.module.hpddm)
 
-option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if ( FEELPP_ENABLE_NLOPT )
-  include(feelpp.module.nlopt)
-endif()
 
-include(feelpp.module.cereal)
-include(feelpp.module.paralution)
-include(feelpp.module.jsonlab)
 
 #
 # HARTS
@@ -719,49 +625,6 @@ if ( FEELPP_ENABLE_EXODUS )
   set(FEELPP_HAS_EXODUS 1)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Exodus" )
 endif()
-
-#
-# Eigen
-#
-if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-  FIND_PACKAGE(Eigen3)
-  MESSAGE(STATUS "Eigen3 system found:")
-  MESSAGE("EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIR:")
-  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-endif()
-if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
-  option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  set( EIGEN3_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/eigen ${FEELPP_SOURCE_DIR}/contrib/eigen/unsupported )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
-elseif( EIGEN3_FOUND )
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
-else()
-  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-    PATHS
-    $ENV{FEELPP_DIR}/include/feel
-    NO_DEFAULT_PATH
-    )
-endif()
-INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
-SET(FEELPP_HAS_EIGEN3 1)
-if ( FEELPP_HAS_EIGEN3 )
-  add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/eigen)
-  unset(INCLUDE_INSTALL_DIR CACHE)
-  unset(CMAKEPACKAGE_INSTALL_DIR CACHE)
-  unset(PKGCONFIG_INSTALL_DIR CACHE)
-endif()
-message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
-
-
-#FIND_PACKAGE(Eigen2 REQUIRED)
-#INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
-#add_subdirectory(contrib/eigen)
-#INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
-#add_definitions( -DEIGEN_NO_STATIC_ASSERT )
-
 
 #
 # Ann
@@ -868,19 +731,20 @@ endif()
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
-  FIND_PACKAGE(PythonLibs)
+  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
   if ( PYTHONLIBS_FOUND )
     message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
     SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
     set( FEELPP_HAS_PYTHON 1 )
+
   endif()
 
   #
   # Python interp
   #
-  FIND_PACKAGE(PythonInterp REQUIRED)
+  FIND_PACKAGE(PythonInterp 2.7  REQUIRED)
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
@@ -892,6 +756,7 @@ if(FEELPP_ENABLE_PYTHON)
   endif()
 endif()
 
+
 #
 # Petsc
 #
@@ -902,28 +767,6 @@ endif()
 
 
 
-option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if(FEELPP_ENABLE_METIS)
-  include(feelpp.module.metis)
-endif()
-
-if ( NOT FEELPP_HAS_PARMETIS )
-  option( FEELPP_ENABLE_PARMETIS "Enable Parmetis Support" OFF )
-  if(FEELPP_ENABLE_PARMETIS)
-    FIND_LIBRARY(PARMETIS_LIBRARY
-      NAMES
-      parmetis
-      PATHS
-      $ENV{PETSC_DIR}/lib
-      $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-      )
-    IF( PARMETIS_LIBRARY )
-      message(STATUS "[feelpp] Parmetis: ${PARMETIS_LIBRARY}" )
-      SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
-      set(FEELPP_HAS_PARMETIS 1)
-    ENDIF()
-  endif()
-endif()
 
 if ( NOT FEELPP_HAS_SCOTCH )
   option( FEELPP_ENABLE_SCOTCH "Enable Scotch Support" OFF )
@@ -1150,6 +993,7 @@ IF ( FEELPP_ENABLE_OPENTURNS )
     INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
     #SET(FEELPP_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEELPP_LIBRARIES})
     # now OpenTURNS_LIBRARIES are used in crb_add_python_module
+    set(FEELPP_HAS_OPENTURNS 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenTURNS" )
   endif( OPENTURNS_FOUND )
 endif()
@@ -1346,7 +1190,7 @@ if ( FEELPP_ENABLE_OCTAVE )
     message(STATUS "[feelpp] include dir: ${OCTINCLUDEDIR}" )
 
     INCLUDE_DIRECTORIES( ${OCTINCLUDEDIR} )
-
+    set(FEELPP_HAS_OCTAVE 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Octave" )
   endif( OCTAVE_FOUND )
 endif( FEELPP_ENABLE_OCTAVE)
@@ -1417,10 +1261,9 @@ if( FEELPP_ENABLE_GMSH )
 endif()
 
 #
-# ipopt
+# conntrib configuration
 #
-include(feelpp.module.ipopt)
-
+include( contrib.dependencies )
 
 #
 # Acusim
@@ -1511,6 +1354,9 @@ else()
   INCLUDE_DIRECTORIES(${FEELPP_INCLUDE_DIR})
 endif()
 
+#if ( ${FEELPP_HAS_PYTHON} AND ${FEELPP_HAS_EIGEN3} )
+  #add_subdirectory( contrib/minieigen )
+#endif()
 
 # Cleaning variables.
 set( varstoclean
@@ -1534,7 +1380,7 @@ foreach( THELIB ${FEELPP_LIBRARIES} )
     list(APPEND FEELPP_LIBRARIES_WITH_SPACE " ${THELIB} " )
   endif()
 endforeach()
-set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY $<TARGET_FILE:feelpp> )\nset(FEELPP_LIBRARIES ${FEELPP_LIBRARIES_WITH_SPACE})" )
+set(FEELPP_LIBRARIES_TEXT "set(FEELPP_LIBRARY $<TARGET_FILE:feelpp> )\nset(FEELPP_LIBRARIES \${FEELPP_LIBRARY} ${FEELPP_LIBRARIES_WITH_SPACE})" )
 string(REPLACE ";" "" FEELPP_LIBRARIES_TEXT ${FEELPP_LIBRARIES_TEXT} )
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.libraries.config.cmake
   CONTENT ${FEELPP_LIBRARIES_TEXT} )
@@ -1549,3 +1395,20 @@ file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.include.c
 # write file which contains compile definitions
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.compile.definition.config.cmake
   CONTENT "set(FEELPP_COMPILE_DEFINITIONS \"$<TARGET_PROPERTY:feelpp,COMPILE_DEFINITIONS>\")" )
+
+set(FEELPP_BOOST_TEXT "
+set (Boost_MAJOR_VERSION \"${Boost_MAJOR_VERSION}\")
+set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
+")
+foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+  string(TOUPPER ${_c} _BOOST_LIB)
+  set(FEELPP_BOOST_TEXT 
+    "${FEELPP_BOOST_TEXT}
+    set(Boost_${_BOOST_LIB}_FOUND \"${Boost_${_BOOST_LIB}_FOUND}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY \"${Boost_${_BOOST_LIB}_LIBRARY}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY_RELEASE \"${Boost_${_BOOST_LIB}_LIBRARY_RELEASE}\")
+    set(Boost_${_BOOST_LIB}_LIBRARY_DEBUG \"${Boost_${_BOOST_LIB}_LIBRARY_DEBUG}\")
+")
+endforeach()
+
+FILE(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/modules/feelpp.boost.config.cmake CONTENT ${FEELPP_BOOST_TEXT})

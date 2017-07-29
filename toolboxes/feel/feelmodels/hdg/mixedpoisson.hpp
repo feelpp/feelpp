@@ -389,6 +389,22 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
             }
             Feel::cout << std::endl;
         }
+        
+		itType = mapField.find( "Neumann_exact" );
+        if ( itType != mapField.end() )
+        {
+            Feel::cout << "Neumann computed from exact pressure:";
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                if ( M_mesh->hasFaceMarker(marker) )
+                    Feel::cout << " " << marker;
+                else
+                    Feel::cout << std::endl << "WARNING!! marker " << marker << "does not exist!" << std::endl;
+            }
+            Feel::cout << std::endl;
+        }
+
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
@@ -861,6 +877,16 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
                 this->assembleNeumann( marker);
             }
         }
+        
+		itType = mapField.find( "Neumann_exact" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+                this->assembleNeumann( marker);
+            }
+        }
 
         // Need to be moved or at least check if the expression depend on t
         itType = mapField.find( "Robin" );
@@ -961,6 +987,29 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                     */
                     auto gn = inner(g,N());
                     this->assembleRhsNeumann( gn, marker);
+                }
+            }
+        }
+
+        itType = mapField.find( "Neumann_exact" );
+        if ( itType != mapField.end() )
+        {
+            for ( auto const& exAtMarker : (*itType).second )
+            {
+                std::string marker = exAtMarker.marker();
+				auto p_ex = expr<expr_order>(exAtMarker.expression());
+                auto gradp_ex = expr(grad<Dim>(p_ex)) ;
+                if ( !this->isStationary() )
+                	gradp_ex.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
+	
+                for( auto const& pairMat : modelProperties().materials() )
+                {
+                	auto material = pairMat.second;
+                    auto K = material.getDouble( "k" );
+
+                	auto g = expr(-K* trans(gradp_ex)) ;
+                	auto gn = inner(g,N());
+                	this->assembleRhsNeumann( gn, marker);
                 }
             }
         }

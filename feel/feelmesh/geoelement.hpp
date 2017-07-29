@@ -669,8 +669,16 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return *( static_cast<geo0d_type *>( M_facept ) );
-        //return M_facept;
+        return *M_facept;
+        //return *( static_cast<geo0d_type *>( M_facept ) );
+    }
+
+    /**
+     * \return the point associated to the face
+     */
+    geo0d_type & point( uint16_type /*i*/ )
+    {
+        return *M_facept;
     }
 
     /**
@@ -939,6 +947,10 @@ public:
         return *M_vertices[i];
     }
     point_type const& face( uint16_type i ) const
+    {
+        return *M_vertices[i];
+    }
+    point_type & face( uint16_type i )
     {
         return *M_vertices[i];
     }
