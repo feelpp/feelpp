@@ -183,7 +183,6 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->addLocalVector( i, n, v, K );
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -1292,8 +1291,6 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_t
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-
-    this->addLocalVector( i, n, v, K, K2 );
 }
 
 //----------------------------------------------------------------------------------------------------//

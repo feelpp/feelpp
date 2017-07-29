@@ -523,9 +523,8 @@ public:
     vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
                                        bool copy_values=true )
     {
-        typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
-        boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
-        return mb->getVector();
+        using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
+        return boost::make_shared<vector_block_type>( b, *this, copy_values );
     }
 
     /**
