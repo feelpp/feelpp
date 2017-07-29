@@ -154,7 +154,8 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
         if ( !M_mat->closed() )
             M_mat->close();
     }
-
+    this->setMapRow( M_mat->mapRowPtr() );
+    this->setMapCol( M_mat->mapColPtr() );
 }
 
 
@@ -183,6 +184,8 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
 
     M_mat->setIndexSplit( graph->mapRow().indexSplit() );
 
+    this->setMapRow( M_mat->mapRowPtr() );
+    this->setMapCol( M_mat->mapColPtr() );
 }
 
 

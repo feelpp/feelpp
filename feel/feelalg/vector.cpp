@@ -36,8 +36,7 @@ template <typename T>
 Vector<T>::Vector( WorldComm const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map ( new datamap_type( _worldComm ) ),
-    M_sc( new sc_type )
+    M_map ( new datamap_type( _worldComm ) )
 {}
 
 
@@ -52,8 +51,7 @@ template <typename T>
 Vector<T>::Vector( datamap_ptrtype const& dm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map ( dm ),
-    M_sc( new sc_type )
+    M_map ( dm )
 {}
 
 
@@ -62,8 +60,7 @@ Vector<T>::Vector ( const size_type n, WorldComm const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( new datamap_type(n, n, _worldComm) ),
-    M_sc( new sc_type )
+    M_map( new datamap_type(n, n, _worldComm) )
 {}
 
 
@@ -75,8 +72,7 @@ Vector<T>::Vector ( const size_type n,
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( new datamap_type(n, n_local, _worldComm) ),
-    M_sc( new sc_type )
+    M_map( new datamap_type(n, n_local, _worldComm) )
 
 {}
 
@@ -85,8 +81,7 @@ Vector<T>::Vector ( Vector const& v )
     :
     M_is_closed( v.M_is_closed ),
     M_is_initialized( v.M_is_initialized ),
-    M_map( v.M_map ),
-    M_sc( v.M_sc )
+    M_map( v.M_map )
 {
 }
 template <typename T>

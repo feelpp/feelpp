@@ -18,82 +18,70 @@
 //!
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 11 Apr 2017
+//! @date 28 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#ifndef FEELPP_MATRIXCONDENSED_HPP
-#define FEELPP_MATRIXCONDENSED_HPP 1
+#ifndef FEELPP_VECTORCONDENSED_HPP
+#define FEELPP_VECTORCONDENSED_HPP 1
 
-#include <feel/feelalg/matrixblock.hpp>
-
-
+#include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/staticcondensation.hpp>
-
 
 
 namespace Feel {
 
 //!
-//! Matrix to represent statically condensed matrices 
+//! Vector to represent statically condensed matrices 
 //!
 template<typename T, bool Condense = false>
-class MatrixCondensed  : public MatrixBlockBase<T>
+class VectorCondensed  : public VectorBlockBase<T>
 {
 public:
     
-    using super = MatrixBlockBase<T>;
-    using graph_ptrtype = typename super::graph_ptrtype;
+    using super = VectorBlockBase<T>;
     using value_type = T;
+    using vector_ptrtype = typename super::vector_ptrtype;
+    using backend_type = typename super::backend_type;
+    using backend_ptrtype = typename super::backend_ptrtype;
     using sc_type = StaticCondensation<value_type>;
     using sc_ptrtype = boost::shared_ptr<sc_type>;
-    using this_matrix_ptrtype = boost::shared_ptr<MatrixCondensed<value_type>>;
+    using this_vector_ptrtype = boost::shared_ptr<VectorCondensed<value_type>>;
     static const bool do_condense=Condense;
     
-    MatrixCondensed()
+    VectorCondensed()
         :
         super(Environment::worldComm()),
         M_sc( new sc_type )
         {}
-    MatrixCondensed( WorldComm const& wc )
+    VectorCondensed( WorldComm const& wc )
         :
         super( wc ),
         M_sc( new sc_type )
         {}
-    MatrixCondensed( vf::BlocksBase<graph_ptrtype> const& graph,
-                     backend_ptrtype backend,
-                     bool diag_is_nonzero = true )
+    VectorCondensed( vf::BlocksBase<vector_ptrtype> const & b, backend_type& ba, bool copy_values=true )
         :
-        super( graph, backend, true ),
+        super( b, ba, copy_values ),
         M_sc( new sc_type )
         {}
-#if 0    
-    MatrixCondensed ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
-        :
-        super( dmRow, dmCol, worldComm ),
-        M_sc( new sc_type )
-        {}
-#endif
     template<typename... Args>
-    MatrixCondensed( Args&&... params )
+    VectorCondensed( Args&&... params )
         :
          super( std::forward<Args>( params )... ),
-        M_sc( new sc_type )
+         M_sc( new sc_type )
         {}
-    MatrixCondensed( MatrixCondensed const& ) = default;
-    MatrixCondensed& operator=( MatrixCondensed const& ) = default;
-    ~MatrixCondensed() = default;
+    VectorCondensed( VectorCondensed const& ) = default;
+    VectorCondensed& operator=( VectorCondensed const& ) = default;
+    ~VectorCondensed() = default;
 
 
-    virtual void addMatrix ( int* rows, int nrows,
-                             int* cols, int ncols,
+    virtual void addVector ( int* rows, int nrows,
                              value_type* data,
                              size_type K, size_type K2
                              ) override
         {
-            return addMatrixImpl( rows, nrows, cols, ncols, data, K, K2, mpl::bool_<do_condense>() );
+            return addVectorImpl( rows, nrows, data, K, K2, mpl::bool_<do_condense>() );
         }
-    void addMatrixImpl ( int* rows, int nrows,
-                         int* cols, int ncols,
+    void addVectorImpl ( int* rows, int nrows,
                          value_type* data,
                          size_type K, size_type K2,
                          mpl::bool_<true>
@@ -101,67 +89,67 @@ public:
         {
             tic();
             //if ( K != invalid_size_type_value && K2 != invalid_size_type_value )
-            M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
-            //M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
-            toc("sc.addlocalmatrix",FLAGS_v>0);
+            M_sc->addLocalVector( rows, nrows, data, K, K2 );
+            //M_sc->addLocalVector( rows, nrows, cols, ncols, data, K, K2 );
+            toc("sc.addlocalvector",FLAGS_v>0);
         }
-    void addMatrixImpl ( int* rows, int nrows,
-                         int* cols, int ncols,
+    void addVectorImpl ( int* rows, int nrows,
                          value_type* data,
                          size_type K, size_type K2,
                          mpl::bool_<false>
                          )
         {
             tic();
-            super::addMatrix( rows, nrows, cols, ncols, data );
-            toc("mono.addlocalmatrix",FLAGS_v>0);
+            super::addVector( rows, nrows, data, K, K2 );
+            toc("mono.addlocalvector",FLAGS_v>0);
         }
     sc_ptrtype sc() { return M_sc; }
     sc_ptrtype const& sc() const { return M_sc; }
-    sc_ptrtype const& sc( int row, int col ) const { M_sc->block( row, col );return M_sc; }
-    sparse_matrix_ptrtype block( int row, int col )
+    sc_ptrtype const& sc( int row ) const { M_sc->block( row );return M_sc; }
+    vector_ptrtype block( int row )
         {
-            return block( row, col, mpl::bool_<Condense>() );
+            return block( row, mpl::bool_<Condense>() );
         }
-    sparse_matrix_ptrtype block( int row, int col, mpl::bool_<true> )
+    vector_ptrtype block( int row, mpl::bool_<true> )
         {
-            //sc->setMatrix( this->shared_from_this() );
-            M_sc->block( row, col );
+            //sc->setVector( this->shared_from_this() );
+            M_sc->block( row );
             return this->shared_from_this();
         }
-    sparse_matrix_ptrtype block( int row, int col, mpl::bool_<false> )
+    vector_ptrtype block( int row, mpl::bool_<false> )
         {
             return this->shared_from_this();
         }
+    
 private:
     sc_ptrtype M_sc;
 };
 
 template<typename T, bool Condense=true>
-using condensed_matrix_t = MatrixCondensed<T,Condense>;
+using condensed_vector_t = VectorCondensed<T,Condense>;
 template<typename T,bool Condense=true>
-using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T,Condense>>;
+using condensed_vector_ptr_t = boost::shared_ptr<condensed_vector_t<T,Condense>>;
 
 //!
-//! Create a shared pointer \p MatrixCondensed<T> from \p Args
+//! Create a shared pointer \p VectorCondensed<T> from \p Args
 //! @code
-//! // create a MatrixCondensed boost::shared_ptr
-//! auto mc = makeSharedMatrixCondensed<double>();
+//! // create a VectorCondensed boost::shared_ptr
+//! auto mc = makeSharedVectorCondensed<double>();
 //! @endcode
 //!
 template< class T, class... Args >
-condensed_matrix_ptr_t<T>
-makeSharedMatrixCondensed( Args&&... args )
+condensed_vector_ptr_t<T>
+makeSharedVectorCondensed( Args&&... args )
 {
-    return boost::make_shared<MatrixCondensed<T>>( args... );
+    return boost::make_shared<VectorCondensed<T>>( args... );
 }
 
-#if !defined(FEELPP_MATRIXCONDENSED_NOEXTERN)
-extern template class MatrixCondensed<double>;
+#if !defined(FEELPP_VECTORCONDENSED_NOEXTERN)
+extern template class VectorCondensed<double>;
 //extern template class Backend<std::complex<double>>;
 #endif
 
+
+
 }
-
-
 #endif
