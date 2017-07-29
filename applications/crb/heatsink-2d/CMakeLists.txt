@@ -21,7 +21,10 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+crb_add_library( heatsink2d SRCS heatsink2d.cpp EXEC CRB_LIB_HEATSINK2D)
+install(FILES heatsink2d.hpp DESTINATION include/feelpp/crb/heatsink2d COMPONENT Devel)
+set(FEELPP_CRB_HEATSINK2D_LIBRARIES ${CRB_LIB_HEATSINK2D} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEATSINK2D_LIBRARIES PARENT_SCOPE)
 
-
-crb_add_model(heatSink2d HeatSink2D HDRS heatSink2d.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heatSink2d.cfg XML heatSink2d.xml SCRIPTS heatSink2d.m)
+crb_add_model(heatsink2d HeatSink2D HDRS heatsink2d.hpp LINK_LIBRARIES ${CRB_LIB_HEATSINK2D} CFG heatsink2d.cfg XML heatsink2d.xml SCRIPTS heatsink2d.m)
 

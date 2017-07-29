@@ -128,10 +128,8 @@ public:
      */
     //@{
 
-    template<typename FaceIterator>
-    void add( FaceIterator it )
+    void add( face_type const& face )
         {
-            auto const& face = boost::unwrap_ref( *it );
             bool useConnection0 = face.processId() == face.proc_first();
             if ( face.isGhostCell() )
             {
@@ -151,9 +149,9 @@ public:
             uint16_type lcEdge = 0;
             uint16_type lcFace = 0;
 
-            addVertexBoundaryDof( it, useConnection0, lcVertex );
-            addEdgeBoundaryDof( it, useConnection0, lcEdge );
-            addFaceBoundaryDof( it, useConnection0, lcFace );
+            addVertexBoundaryDof( face, useConnection0, lcVertex );
+            addEdgeBoundaryDof( face, useConnection0, lcEdge );
+            addFaceBoundaryDof( face, useConnection0, lcFace );
         }
 
     //@}
@@ -179,18 +177,16 @@ private:
             return *this;
         }
 
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        addVertexBoundaryDof( face_it, useConnection0, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
+        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
     }
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
-        auto const& face = boost::unwrap_ref( *face_it );
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
         uint16_type iFaEl;
@@ -229,10 +225,9 @@ private:
             }
         }
     }
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
-        auto const& face = boost::unwrap_ref( *face_it );
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
         uint16_type iFaEl;
@@ -286,28 +281,26 @@ private:
             }
         }
     }
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
     {
-        addVertexBoundaryDof( face_it, useConnection0, lc, mpl::bool_<true>(), mpl::int_<2>() );
+        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<true>(), mpl::int_<2>() );
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
         static const bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
-        addEdgeBoundaryDof( face_it, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
+        addEdgeBoundaryDof( face, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
-    {
-        auto const& face = boost::unwrap_ref( *face_it );
 
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
+    {
         uint16_type iFaEl;
         size_type iElAd;
 
@@ -359,10 +352,9 @@ private:
             }
         }
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
-        auto const& face = boost::unwrap_ref( *face_it );
         //BOOST_STATIC_ASSERT( face_type::numEdges );
         uint16_type iFaEl;
         size_type iElAd;
@@ -422,19 +414,17 @@ private:
     }
 
 
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+    void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        addFaceBoundaryDof( face_it, useConnection0, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
+        addFaceBoundaryDof( face, useConnection0, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
     }
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false> )
+
+    void addFaceBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false> )
     {
     }
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
+
+    void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
         {
-            auto const& face = boost::unwrap_ref( *face_it );
 
             uint16_type iFaEl;
             size_type iElAd;

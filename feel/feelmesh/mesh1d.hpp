@@ -282,13 +282,12 @@ class Mesh1D
      * \p true after a \p clear()
      */
     virtual void clear()
-    {
-        this->elements().clear();
-        this->points().clear();
-        this->faces().clear();
-        FEELPP_ASSERT( isEmpty() )
-            .error( "all mesh containers should be empty after a clear." );
-    }
+        {
+            super_elements::clear();
+            super_points::clear();
+            super_faces::clear();
+            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+        }
 
     FEELPP_DEFINE_VISITABLE();
     //@}

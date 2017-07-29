@@ -28,7 +28,14 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
+#include <unordered_map>
+
+#if defined(FEELPP_HAS_VTK)
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#endif
 
 namespace Feel
 {
@@ -68,7 +75,7 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @author Christophe Prud'homme
 //! @see
 //!/
-class MeshBase
+class FEELPP_EXPORT MeshBase
 {
 public:
 
@@ -134,20 +141,40 @@ public:
     /**
      * \return the number of elements
      */
+    virtual size_type numGlobalElements() const = 0;
+    /**
+     * \return the number of faces
+     */
+    virtual size_type numGlobalFaces() const = 0;
+    /**
+     * \return the number of edges
+     */
+    virtual size_type numGlobalEdges() const = 0;
+    /**
+     * \return the number of points
+     */
+    virtual size_type numGlobalPoints() const = 0;
+    /**
+     * \return the number of vertices
+     */
+    virtual size_type numGlobalVertices() const = 0;
+    /**
+     * \return the number of elements (in current process)
+     */
     virtual size_type numElements() const = 0;
 
     /**
-     * \return the number of faces
+     * \return the number of faces (in current process)
      */
     virtual size_type numFaces() const = 0;
 
     /**
-     * \return the number of Points
+     * \return the number of Points (in current process)
      */
     virtual size_type numPoints() const = 0;
 
     /**
-     * \return the number of vertices
+     * \return the number of vertices (in current process)
      */
     size_type numVertices() const
     {
@@ -637,6 +664,23 @@ public:
     /// @return the set of marker id given the marker name \p marker
     std::set<flag_type> markersId( boost::any const& marker ) const;
 
+
+#if defined(FEELPP_HAS_VTK)
+    struct MappingDataWithVTK
+    {
+        MappingDataWithVTK() = default;
+        MappingDataWithVTK( MappingDataWithVTK const& ) = default;
+        MappingDataWithVTK( MappingDataWithVTK && ) = default;
+        std::unordered_map<size_type,size_type> mapPointsFeelIdToVTKId;
+        std::unordered_map<size_type,size_type> mapElementsFeelIdToVTKId;
+    };
+    typedef std::pair< vtkSmartPointer<vtkUnstructuredGrid>, std::shared_ptr<MappingDataWithVTK> > vtk_export_type;
+    //!
+    //! exporter to VTK data structure 
+    //!
+    virtual vtk_export_type exportVTK( bool exportMarkers=false, std::string const& vtkFieldNameMarkers="markers" ) const = 0;
+#endif // FEELPP_HAS_VTK
+
     //@}
 
 
@@ -680,7 +724,7 @@ protected:
     /**
      * check elements orientation and fix it if needed
      */
-    virtual void checkAndFixPermutation() = 0;
+    //virtual void checkAndFixPermutation() = 0;
 
 
 private:

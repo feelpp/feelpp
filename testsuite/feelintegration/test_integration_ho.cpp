@@ -39,7 +39,7 @@ using boost::unit_test::test_suite;
 #include <boost/test/floating_point_comparison.hpp>
 #endif
 #else
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #endif
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>

@@ -36,15 +36,24 @@
 #include <boost/signals2.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
-
 #include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#include <pybind11/pybind11.h>
+
+#if defined(FEELPP_HAS_BOOST_PYTHON)
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
 //#include <mpi4py/mpi4py.h>
-#endif
+#endif // FEELPP_HAS_BOOST_PYTHON
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
+
+
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+#include <boost/uuid/uuid_serialize.hpp>         // streaming operators etc.
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
@@ -66,6 +75,7 @@ namespace Feel
 {
 namespace tc = termcolor;
 namespace pt =  boost::property_tree;
+namespace uuids =  boost::uuids;
 
 class TimerTable;
 
@@ -73,7 +83,7 @@ class TimerTable;
 //! @class MemoryUsage
 //! @ingroup Core
 //! @brief class to query for memory usage
-struct MemoryUsage
+struct FEELPP_EXPORT MemoryUsage
 {
     MemoryUsage()
         :
@@ -117,7 +127,7 @@ struct MemoryUsage
 //! application
 //! @param name name or short name of the application
 //! 
-AboutData makeAboutDefault( std::string name );
+FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 
 //! 
 //! @class Environment "Environment"
@@ -161,7 +171,7 @@ AboutData makeAboutDefault( std::string name );
 //! @author Christophe Prud'homme
 //! @see Application
 //! 
-class Environment : boost::noncopyable
+class FEELPP_EXPORT Environment : boost::noncopyable
 {
 public:
     
@@ -215,8 +225,10 @@ public:
                  AboutData const& about,
                  std::string directory,
                  bool add_subdir_np = true );
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-    Environment( boost::python::list arg );
+
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+    Environment( pybind11::list arg, po::options_description const& desc );
+    Environment( pybind11::list arg );
 #endif
 
 
@@ -597,6 +609,14 @@ public:
     //! the exports repository is a subdirectory of the \c appRepository
     //! containing the results exported during the application execution
     static std::string exportsRepository();
+
+    //!
+    //! Generate a random UUID
+    //!
+    //! the UUID is very very very very likely to be unique as it is encoded into 128 bits
+    //! @param parallel if true generate the same uuid for all MPI process, if false it will be different
+    //!
+    static uuids::uuid randomUUID( bool parallel=true );
     
     //! @}
     
@@ -798,6 +818,9 @@ private:
     static boost::shared_ptr<po::options_description> S_desc_lib;
     static std::vector<std::string> S_to_pass_further;
 
+    
+    static uuids::random_generator S_generator;
+
     /**
      * Stores the absolute path and executable name
      */
@@ -821,7 +844,7 @@ private:
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( po::variable_value ), option, tag,
+    ( FEELPP_EXPORT po::variable_value ), option, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
@@ -835,7 +858,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( double ),
+    ( FEELPP_EXPORT double ),
     doption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -861,7 +884,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( bool ),
+    ( FEELPP_EXPORT bool ),
     boption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -887,7 +910,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( int ),
+    ( FEELPP_EXPORT int ),
     ioption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -914,7 +937,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::string ),
+    ( FEELPP_EXPORT std::string ),
     soption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -940,7 +963,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::vector<std::string> ),
+    ( FEELPP_EXPORT std::vector<std::string> ),
     vsoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -966,7 +989,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( std::vector<double> ),
+    ( FEELPP_EXPORT std::vector<double> ),
     vdoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -995,7 +1018,7 @@ BOOST_PARAMETER_FUNCTION(
 namespace detail
 {
 template<typename Args, typename Tag=tag::opt>
-struct option
+struct FEELPP_EXPORT option
 {
     typedef typename boost::remove_pointer<
     typename boost::remove_const<
@@ -1010,7 +1033,7 @@ struct option
 //! @endcond
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::option<Args>::type ),
+    ( FEELPP_EXPORT typename Feel::detail::option<Args>::type ),
     optionT, tag,
     ( required
       ( name,( std::string ) )

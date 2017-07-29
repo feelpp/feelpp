@@ -74,7 +74,7 @@ namespace Feel
 namespace detail
 {
 #pragma GCC visibility push(hidden)
-class GMSHPoint
+class FEELPP_NO_EXPORT  GMSHPoint
 {
 public:
     Eigen::Vector3d x;
@@ -121,7 +121,7 @@ public:
     GMSHPoint& operator=( GMSHPoint const& ) = default;
     GMSHPoint& operator=( GMSHPoint && ) = default;
 };
-struct GMSHElement
+struct FEELPP_NO_EXPORT GMSHElement
 {
     GMSHElement()
         :
@@ -283,13 +283,13 @@ struct GMSHElement
 //!
 //! @return true if element should be store on process, false otherwise
 //!
-bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
+FEELPP_EXPORT bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
 
 //!
 //! @return true if \p physical is found in container, false otherwise
 //!
 template<typename Iterator>
-bool isFound( Iterator beg, Iterator end, int physical )
+FEELPP_EXPORT bool isFound( Iterator beg, Iterator end, int physical )
 {
     return std::find( beg, end, physical ) != end;
 }
@@ -314,7 +314,7 @@ bool isFound( Iterator beg, Iterator end, int physical )
  */
 
 template<typename MeshType>
-class ImporterGmsh
+class FEELPP_EXPORT ImporterGmsh
     :
 
 public Importer<MeshType>
@@ -1336,6 +1336,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
+    mesh->updateOrderedPoints();
     toc( "ImporterGmsh::readFromFile store elements in Mesh", FLAGS_v > 0 );
     // treat periodic entities if any
     for ( auto const& eit : periodic_entities )
@@ -1415,7 +1416,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     pf.setId( mesh->numFaces() );
     pf.setMarker( __e.physical );
     pf.setMarker2( __e.elementary );
-    pf.setProcessId( __e.partition );
+    //pf.setProcessId( __e.partition );
     pf.setNeighborPartitionIds( __e.ghosts );
 
     pf.setPoint( 0, mesh->point( __e.indices[0] ) );
@@ -1429,11 +1430,11 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     //M_n_b_vertices[ __e.indices[0] ] = 1;
 
     __idGmshToFeel=pf.id();
-    auto fit = mesh->addFace( mesh->endFace(), std::move(pf) );
+    auto fit = mesh->addFace( std::move(pf) ).first;
     
 
     DVLOG(4) << "added point on boundary ("
-                  << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << fit->marker()
+                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id() << " and marker " << fit->second.marker()
                   << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
 }
 template<typename MeshType>
@@ -1446,7 +1447,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
     pt.setMarker( __e.physical );
     pt.setMarker2( __e.elementary );
-    pt.setProcessId( __e.partition );
+    //pt.setProcessId( __e.partition );
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
@@ -1462,7 +1463,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
     pt.setMarker( __e.physical );
     pt.setMarker2( __e.elementary );
-    pt.setProcessId( __e.partition );
+    //pt.setProcessId( __e.partition );
     pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
@@ -1518,7 +1519,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
              << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 
     __idGmshToFeel=e.id();
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
     
 
 }
@@ -1564,11 +1565,11 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     //M_n_b_vertices[ __e.indices[1] ] = 1;
 
     __idGmshToFeel=e.id();
-    auto fit = mesh->addFace( mesh->endFace(), std::move(e) );
+    auto fit = mesh->addFace( std::move(e) ).first;
     
 
     DVLOG(2) << "added edge on boundary ("
-                  << fit->isOnBoundary() << ") with id :" << fit->id()
+                  << fit->second.isOnBoundary() << ") with id :" << fit->second.id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
                   << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 }
@@ -1612,7 +1613,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     //M_n_b_vertices[ __e.indices[0] ] = 1;
     //M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    auto eit = mesh->addEdge( e );
+    auto res = mesh->addEdge( e );
+    auto const& eit = res.first->second;
     __idGmshToFeel=eit.id();
 
     if ( npoints_per_edge == 2 )
@@ -1693,7 +1695,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
 }
 template<typename MeshType>
 void
@@ -1741,7 +1743,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_QUADRANGLE_2 )
         M_n_vertices[ __e.indices[3] ] = 1;
 
-    auto fit = mesh->addFace( mesh->endFace(), std::move(e) );
+    auto fit = mesh->addFace( std::move(e) );
 
 
 }
@@ -1826,7 +1828,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         M_n_vertices[ __e.indices[7] ] = 1;
     }
     
-    mesh->addElement( mesh->endElement(), std::move(e) );
+    mesh->addElement( /*mesh->endElement(), */std::move(e) );
 }
 
 template<typename MeshType>
@@ -1909,8 +1911,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh,
             // receive idFeel
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
-            auto elttt = mesh->elementIterator( mapMsg[proc][cpt] );
-            mesh->elements().modify( elttt, Feel::detail::updateIdInOthersPartitions( proc, idFeel ) );
+            auto & eltModified = mesh->elementIterator( mapMsg[proc][cpt] )->second;
+            eltModified.setIdInOtherPartitions( proc, idFeel );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
                       << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
@@ -2065,8 +2067,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto eltToUpdate = mesh->elementIterator( memoryMsgToSend[idProc][k] );
-            mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
+            auto & eltModified = mesh->elementIterator( memoryMsgToSend[idProc][k] )->second;
+            eltModified.setIdInOtherPartitions( idProc, itFinalDataToRecv->second[k] );
         }
     }
     //-----------------------------------------------------------//

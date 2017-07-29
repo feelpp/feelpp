@@ -31,6 +31,6 @@ int main(int argc, char *argv[])
     typedef ConvergenceTest<FEELPP_DIM,FEELPP_ORDER,FEELPP_GEO_ORDER,FEELPP_EXP_ORDER> cv_type;
 
     cv_type CV;
-    CV.run();
-    return 0;
+    int status = CV.run();
+    return status;
 }

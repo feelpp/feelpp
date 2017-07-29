@@ -2,15 +2,86 @@
 
 set -eo pipefail
 #set -x
-ECHO=${ECHO:-}
-PROJECT=${1:-${PROJECT}}
-TARGET=${2:-${TARGET:-ubuntu:17.04}}
-BRANCH=${3:-${BRANCH:-master}}
+
+# default values
+TARGET=ubuntu:16.10
+BRANCH=master
 URL=https://www.github.com/feelpp/
-FROM=${4:-${FROM:-feelpp/feelpp-base}}
-FEELPP_BRANCH=${5:-${FEELPP_BRANCH:-develop}}
-JOBS=${6:-${BUILD_JOBS:-10}}
+FEELPP_BRANCH=develop
+BUILD_JOBS=10
+FROM=feelpp/feelpp-base
 FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
+FEELPP_VERSION=v@FEELPP_VERSION_STRING@
+CMAKE_FLAGS=""
+MAKE_FLAGS=""
+PROJECT=
+PROJECT_VERSION=${FEELPP_VERSION}
+
+for i in "$@"
+do
+    case $i in
+        -p=*|--project=*)
+            PROJECT="${i#*=}"
+            shift # past argument=value
+            ;;
+        -t=*|--target=*)
+            TARGET="${i#*=}"
+            shift # past argument=value
+            ;;
+        -b=*|--branch=*)
+            BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -f=*|--from=*)
+            FROM="${i#*=}"
+            shift # past argument=value
+            ;;
+        --feelpp-branch=*)
+            FEELPP_BRANCH="${i#*=}"
+            shift # past argument=value
+            ;;
+        -j=*|--jobs=*)
+            BUILD_JOBS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -c=*|--cmake-flags=*)
+            CMAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -m=*|--make-flags=*)
+            MAKE_FLAGS="${i#*=}"
+            shift # past argument=value
+            ;;
+        -d=*|--feelpp-dir=*)
+            FEELPP_DIR="${i#*=}"
+            shift # past argument=value
+            ;;
+        --feelpp-version=*)
+            FEELPP_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;
+        --project-version=*)
+            PROJECT_VERSION="v${i#*=}"
+            shift # past argument=value
+            ;;                     
+        *)
+            # unknown option
+            ;;
+    esac
+done
+
+echo "PROJECT=${PROJECT}"
+echo "PROJECT_VERSION=${PROJECT_VERSION}"
+echo "TARGET=${TARGET}"
+echo "BRANCH=${BRANCH}"
+echo "URL=${URL}"
+echo "FROM=${FROM}"
+echo "FEELPP_BRANCH=${FEELPP_BRANCH}"
+echo "BUILD_JOBS=${BUILD_JOBS}"
+echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
+echo "FEELPP_DIR=${FEELPP_DIR}"
+echo "FEELPP_VERSION=${FEELPP_VERSION}"
+
 
 # Combines a dockerfile template with a generated FROM line
 dockerfile_from() {
@@ -24,7 +95,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "$image" 
@@ -35,16 +106,16 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-${fromos}-${fromtag}"  | while read line ; do
+    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         extratags=${tokens[@]:5}
         printf "%s" "${extratags}" 
     done
 }
 
-tag=$(tag_from_target $TARGET $BRANCH)
+tag=$(tag_from_target $TARGET $BRANCH $PROJECT_VERSION)
 echo "tag: $tag"
-basetag=$(tag_from_target $TARGET $FEELPP_BRANCH)
+basetag=$(tag_from_target $TARGET $FEELPP_BRANCH $FEELPP_VERSION)
 echo "basetag: $basetag" 
 echo "--- Building $PROJECT:${tag}"
 
@@ -54,11 +125,13 @@ dockerfile_from "${FEELPP_DIR}/share/feelpp/docker/Dockerfile.template" "${FROM}
 
 ${ECHO} docker build \
        --tag=feelpp/$PROJECT:${tag} \
-       --build-arg=BUILD_JOBS=${JOBS}\
-       --build-arg=URL=${URL}\
-       --build-arg=BRANCH=${BRANCH}\
-       --build-arg=PROJECT=${PROJECT}\
+       --build-arg=BUILD_JOBS="${BUILD_JOBS}"\
+       --build-arg=URL="${URL}"\
+       --build-arg=BRANCH="${BRANCH}"\
+       --build-arg=PROJECT="${PROJECT}"\
        --build-arg=GITHUB_OAUTH=${GITHUB_OAUTH}\
+       --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}"\
+       --build-arg=MAKE_FLAGS="${MAKE_FLAGS}"\
        --build-arg=CXX="${CXX}"\
        --build-arg=CC="${CC}" \
        --no-cache=true \

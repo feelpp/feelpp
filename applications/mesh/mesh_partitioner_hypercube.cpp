@@ -26,7 +26,9 @@
 namespace Feel {
 
 template void partition<Hypercube<2>>( std::vector<int> const& nParts);
+template void partition<Hypercube<2,2>>( std::vector<int> const& nParts);
 template void partition<Hypercube<3>>( std::vector<int> const& nParts);
+template void partition<Hypercube<3,2>>( std::vector<int> const& nParts);
 
 
 }

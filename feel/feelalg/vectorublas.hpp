@@ -54,7 +54,7 @@ namespace detail
 // patch for shallow_array_adaptor from
 // http://stackoverflow.com/questions/1735841/initializing-a-ublas-vector-from-a-c-array
 template<typename T>
-class shallow_array_adaptor
+class FEELPP_EXPORT shallow_array_adaptor
     :
         public boost::numeric::ublas::shallow_array_adaptor<T>
 {
@@ -88,7 +88,7 @@ public:
  *  @see
  */
 template<typename T, typename Storage = ublas::vector<T> >
-class VectorUblas
+class FEELPP_EXPORT VectorUblas
     : public Vector<T>
     , boost::addable<VectorUblas<T,Storage> >
     , boost::subtractable<VectorUblas<T,Storage> >

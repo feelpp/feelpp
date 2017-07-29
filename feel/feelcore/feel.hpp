@@ -688,5 +688,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>
+#include <feel/feelcore/hashtables.hpp>
 
 #endif
