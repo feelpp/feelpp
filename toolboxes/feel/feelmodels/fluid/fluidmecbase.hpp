@@ -394,6 +394,8 @@ public:
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
@@ -518,6 +520,9 @@ public :
     bool hasSolveStokesStationaryAtKickOff() const { return M_hasSolveStokesStationaryAtKickOff; }
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
+    //___________________________________________________________________________________//
+    // thermo dyn
+    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
     //___________________________________________________________________________________//
     // fsi parameters
 
@@ -872,6 +877,7 @@ protected:
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
@@ -1047,6 +1053,7 @@ protected:
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
     double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics

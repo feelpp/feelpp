@@ -654,7 +654,7 @@ public :
     rangeiterator(mpl::bool_<true> /**/) const
     {
         std::list<typename rangeiteratorType<I,J>::defaultrange_type> res;
-        res.push_back( elements( _M_X1->mesh() ) );
+        res.push_back( _M_X1->dof()->hasMeshSupport()? _M_X1->dof()->meshSupport()->rangeElements() : elements( _M_X1->mesh() ) );
         return res;
     }
     template <int I,int J>
@@ -1471,6 +1471,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
     static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
 
+    bool hasMeshSupportPartialX2 = _M_X2->dof()->hasMeshSupport() && _M_X2->dof()->meshSupport()->isPartialSupport();
+
     auto rangeListTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
 
     for ( auto const& rangeTest : rangeListTest )
@@ -1497,6 +1499,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
         for ( const size_type domain_eid : domains_eid_set )
         {
+            if ( hasMeshSupportPartialX2 )
+            {
+                if ( !_M_X2->dof()->meshSupport()->hasElement( domain_eid ) )
+                    continue;
+            }
+
             if ( trial_space_type::dof_type::is_mortar )
                 element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
 
@@ -1568,6 +1576,11 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                                     auto const domainsExtended_eid_set = trialElementId( neighbor_id/*elem.id()*/, mpl::int_<nDimDiffBetweenTestTrial>() );
                                     for ( const size_type neighborEltIdTrial : domainsExtended_eid_set )
                                     {
+                                        if ( hasMeshSupportPartialX2 )
+                                        {
+                                            if ( !_M_X2->dof()->meshSupport()->hasElement( neighborEltIdTrial ) )
+                                                continue;
+                                        }
 
                                     neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighborEltIdTrial/*neighbor->id()*/ );
 
