@@ -116,3 +116,4 @@ ginac.pc
 /applications/crb/thermalfin/thermalfinapp.cpp
 /research/hpmortar/
 /tools/scripts/buildkite/feelpp_build.sh
+*.cfgbak

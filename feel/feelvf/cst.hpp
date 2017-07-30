@@ -69,8 +69,9 @@ public:
     using trial_basis = std::nullptr_t;
 
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
-            mpl::identity<T>,
-            mpl::identity<mpl::identity<T> > >::type::type::type value_type;
+                              mpl::identity<T>,
+                              mpl::identity<mpl::identity<T> > >::type::type::type _value_type;
+    using value_type = std::decay_t<_value_type>;
     typedef value_type evaluate_type;
 
     typedef Cst<T> expression_type;

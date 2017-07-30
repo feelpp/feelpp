@@ -235,7 +235,7 @@ public:
         M_backend_primal( (stage==crb::stage::offline)?backend( _name="backend-primal"):nullptr ),
         M_backend_dual( (stage==crb::stage::offline)?backend( _name="backend-dual"):nullptr ),
         M_backend_l2( (stage==crb::stage::offline)?backend( _name="backend-l2"):nullptr ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
+        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
@@ -3537,8 +3537,8 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     auto uold = Xh->element();
     u=uold;
 
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    int max_fixedpoint_iterations  = this->vm()["crb.fixedpoint.maxit"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.fixedpoint.increment-tol"].template as<double>();
     int iter=0;
     double norm=0;
 
@@ -3596,8 +3596,8 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     sparse_matrix_ptrtype A;
     std::vector<vector_ptrtype> F;
 
-    int max_fixedpoint_iterations = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol = doption(_name="crb.increment-fixedpoint-tol");
+    int max_fixedpoint_iterations = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol = doption(_name="crb.fixedpoint.increment-tol");
 
     double norm=0;
     int iter=0;
@@ -3953,8 +3953,8 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     std::vector<vector_ptrtype> F;
     vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
 
     double norm=0;
     int iter=0;

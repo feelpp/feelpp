@@ -558,6 +558,16 @@ public:
 
     /**
      * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim, false otherwise
+     */
+    bool
+    hasElementMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) && ( markerDim( marker ) == M_topodim );
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
      * associated is Dim-1, false otherwise
      */
     bool
