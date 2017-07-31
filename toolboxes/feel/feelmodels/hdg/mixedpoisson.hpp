@@ -157,9 +157,9 @@ protected:
     product2_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
-    sparse_matrix_ptrtype M_A_cst;
-    sparse_matrix_ptrtype M_A;
-    vector_ptrtype M_F;
+    condensed_matrix_ptr_t<value_type,true> M_A_cst;
+    condensed_matrix_ptr_t<value_type,true> M_A;
+    condensed_vector_ptr_t<value_type,true> M_F;
     vector_ptrtype M_U;
 
     Vh_element_t M_up; // flux solution
@@ -517,11 +517,16 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
 
    	for( int i = 0; i < M_integralCondition; i++ )
        	M_mup.push_back(M_Ch->element("mup"));
-    
+
+#if 0
 	M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
-
+#else
+    M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    M_A = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_F = makeSharedVectorCondensed<value_type,true>(blockVector(M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+#endif
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -585,15 +590,13 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
     //M_A->zero();
     M_A->close();
 	// copy constant parts of the matrix
-    MatConvert(toPETSc(M_A_cst)->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A)->mat()));
+    MatConvert(toPETSc(M_A_cst->getSparseMatrix())->mat(), MATSAME, MAT_INITIAL_MATRIX, &(toPETSc(M_A->getSparseMatrix())->mat()));
 #endif
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 {
-
-
     auto bbf = blockform2( *M_ps, M_A_cst );
     auto u = M_Vh->element( "u" );
     auto v = M_Vh->element( "v" );
