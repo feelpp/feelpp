@@ -184,7 +184,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 
         auto nDofSigma = M_model->fluxSpace()->nDof();
         auto nDofU = M_model->potentialSpace()->nDof();
-    	auto v = M_model->potentialSpace()->element("v");
+		auto v = M_model->potentialSpace()->element("v");
 
 		M_model->solve();	// inside here assembleF
 
@@ -196,39 +196,39 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         // Data
 		if ( !checker().check() )
 		{
-        	double mu = 1;
-        	double lambda = 1;
-        	for( auto const& pairMat : M_model->modelProperties()->materials() )
-        	{
-            	auto material = pairMat.second;
-            	lambda = material.getDouble("lambda");
-            	mu = material.getDouble("mu");
-        	}
+			double mu = 1;
+			double lambda = 1;
+			for( auto const& pairMat : M_model->modelProperties()->materials() )
+			{
+				auto material = pairMat.second;
+				lambda = material.getDouble("lambda");
+				mu = material.getDouble("mu");
+			}
 
     
-        	// Sigma exact
-        	auto gradu_exact = grad(M_u_exact);
-        	auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
-        	auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
+			// Sigma exact
+			auto gradu_exact = grad(M_u_exact);
+			auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
+			auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
   
 
-        	auto errSigma = normL2(_range=elements(M_mesh), _expr=idv(M_sigma)-sigma_exact, _quad=_Q<expr_order>());
-        	// double mean_u_exact = mean( elements(M_mesh), M_u_exact)(0,0);
-        	// double mean_u = mean( elements(M_mesh), idv(M_u))(0,0);
-        	//double errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-cst(mean_u)-M_u_exact+cst(mean_u_exact), _quad=_Q<expr_order>());
-        	auto errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-M_u_exact, _quad=_Q<expr_order>());
+			auto errSigma = normL2(_range=elements(M_mesh), _expr=idv(M_sigma)-sigma_exact, _quad=_Q<expr_order>());
+			// double mean_u_exact = mean( elements(M_mesh), M_u_exact)(0,0);
+			// double mean_u = mean( elements(M_mesh), idv(M_u))(0,0);
+			//double errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-cst(mean_u)-M_u_exact+cst(mean_u_exact), _quad=_Q<expr_order>());
+			auto errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-M_u_exact, _quad=_Q<expr_order>());
 
 		
-       		Feel::cout << "***** Error computed in convelasticity *****" << std::endl;
-        	Feel::cout << "||u-u_ex|| = " << errU << std::endl;
-        	Feel::cout << "||sigma-sigma_ex|| = " << errSigma << std::endl;
-        	Feel::cout << "***** -------------------------------- *****" << std::endl;
+			Feel::cout << "***** Error computed in convelasticity *****" << std::endl;
+			Feel::cout << "||u-u_ex|| = " << errU << std::endl;
+			Feel::cout << "||sigma-sigma_ex|| = " << errSigma << std::endl;
+			Feel::cout << "***** -------------------------------- *****" << std::endl;
   
-	    	// cout << fmterOut % "h" % "nDofSigma" % "errSigma" % "nDofU" % "errU";
-        	// cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
-	        cvg_sigma << fmter % h % nDofSigma % errSigma;
-    	    cvg_u << fmter % h % nDofU % errU;
-        	cvg_tot << fmter2 % h % errU % errSigma ; 
+			// cout << fmterOut % "h" % "nDofSigma" % "errSigma" % "nDofU" % "errU";
+			// cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
+			cvg_sigma << fmter % h % nDofSigma % errSigma;
+			cvg_u << fmter % h % nDofU % errU;
+			cvg_tot << fmter2 % h % errU % errSigma ; 
 		}
 /*
         sigma_ex.on( elements(M_mesh), sigma_exact);
@@ -248,23 +248,23 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 		
 		// CHECKER
 		if ( checker().check() )
-   		{
-    		v.on(_range=elements(M_mesh), _expr=solution );
-       		e->add( "solution", v );
+		{
+			v.on(_range=elements(M_mesh), _expr=solution );
+			e->add( "solution", v );
 
-     		// compute l2 and h1 norm of u-u_h where u=solution
-     		auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
-        	{
-        		tic();
+			// compute l2 and h1 norm of u-u_h where u=solution
+			auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+			{
+				tic();
 				double l2 = normL2(_range=elements(M_mesh), _expr= idv(M_u)-expr<Dim,1>(solution) );
-            	toc("L2 error norm");
+				toc("L2 error norm");
 				
-            	tic();
+				tic();
 				double h1 = normH1(_range=elements(M_mesh), _expr=idv(M_u)-expr<Dim,1>(solution), _grad_expr=gradv(M_u)-grad(expr<Dim,1>(solution)) );
-            	toc("H1 error norm");
+				toc("H1 error norm");
 				
-            	return { { "L2", l2 } , {  "H1", h1 } };
-        	};
+				return { { "L2", l2 } , {  "H1", h1 } };
+			};
 			
 			status = checker().runOnce( norms, rate::hp( M_mesh->hMax(), M_model->potentialSpace()->fe()->order() ) );
 			
@@ -283,20 +283,20 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         auto itField = M_model->modelProperties()->boundaryConditions().find("GeometricalTest");
         if ( itField != M_model->modelProperties()->boundaryConditions().end() )
         {
-	        auto mapField = itField -> second;
+			auto mapField = itField -> second;
             auto itType = mapField.find( "force_F" );
             if (itType != mapField.end() )
             {
-			    for (auto const& exAtMarker : itType->second )
+				for (auto const& exAtMarker : itType->second )
                 {
-				    auto forceF = expr<Dim,1> (exAtMarker.expression() );
-				    auto curveError = forceF; //curvedForce - forceF);
-				    auto curvedForce = integrate(_range=markedfaces(M_mesh,exAtMarker.marker()), _expr = id(M_model->fluxField()) * N() );
+					auto forceF = expr<Dim,1> (exAtMarker.expression() );
+					auto curveError = forceF; //curvedForce - forceF);
+					auto curvedForce = integrate(_range=markedfaces(M_mesh,exAtMarker.marker()), _expr = id(M_model->fluxField()) * N() );
 				
-				    Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;	
-			    }
-		    }
-	    }
+					Feel::cout << "Error for geometrical order:\t" << curveError << std::endl;	
+				}
+			}
+		}
     }
 #endif
 
@@ -324,7 +324,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::exportTimersCvg()
         for( auto const& pair : M_model->getTimers() )
             fmt % pair.first;
         timers << fmt << std::endl;
-       	 
+		 
 		int nb_refine = (checker().check()) ? 1 : ioption("cvg.refine-nb");
         for( int i = 0; i < nb_refine; ++i )
         {
