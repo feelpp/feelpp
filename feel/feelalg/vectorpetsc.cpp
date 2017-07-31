@@ -890,6 +890,76 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 
     delete[] rowMap;
 }
+template <typename T>
+void
+VectorPetsc<T>::save( std::string filename, std::string format )
+{
+    if ( !this->closed() )
+        this->close();
+
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ofstream ofs( filename );
+    if (ofs)
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_oarchive oa(ofs);
+            oa << *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_oarchive oa(ofs);
+            oa << *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+template <typename T>
+void
+VectorPetsc<T>::load( std::string filename, std::string format ) 
+{
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ifstream ifs( filename );
+    if ( ifs )
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -1671,6 +1741,7 @@ VectorPetscMPI<T>::lastLocalIndex() const
 
     return static_cast<size_type>( petsc_last );
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -2528,8 +2599,6 @@ VectorPetscMPIRange<T>::localize()
     ierr = VecScatterEnd( M_vecScatterGhost, this->vec(), M_vecGhost, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 }
-
-
 
 
 

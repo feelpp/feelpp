@@ -286,7 +286,7 @@ public:
      * Creates a copy of this vector and returns it in an \p
      * shared_ptr<>.  This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const;
+    clone_ptrtype clone () const override;
 
 
     /**
@@ -303,13 +303,13 @@ public:
      */
     void init ( const size_type N,
                 const size_type n_local,
-                const bool         fast=false );
+                const bool         fast=false ) override;
 
     /**
      * call init with n_local = N,
      */
     void init ( const size_type N,
-                const bool         fast=false )
+                const bool         fast=false ) override
     {
         this->init( N,N,fast );
     }
@@ -317,7 +317,7 @@ public:
     /**
      * call init with datamap,
      */
-    void init ( datamap_ptrtype const& dm );
+    void init ( datamap_ptrtype const& dm ) override;
 
     //@}
 
@@ -325,8 +325,8 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator() ( const size_type i ) const override;
+    value_type& operator() ( const size_type i ) override;
 
     /**
      *  \f$U = V\f$: copy all components.
@@ -337,7 +337,7 @@ public:
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T> & operator += ( const Vector<value_type> &V )
+    VectorPetsc<T> & operator += ( const Vector<value_type> &V ) override
     {
         this->add( 1., V );
         return *this;
@@ -347,7 +347,7 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T> & operator -= ( const Vector<value_type> &V )
+    VectorPetsc<T> & operator -= ( const Vector<value_type> &V ) override
     {
         this->add( -1., V );
         return *this;
@@ -371,7 +371,7 @@ public:
      * closer to the C++ standard library's
      * \p std::vector container.
      */
-    size_type size () const
+    size_type size () const override
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
@@ -388,7 +388,7 @@ public:
      * @return the local size of the vector
      * (index_stop-index_start)
      */
-    size_type localSize() const
+    size_type localSize() const override
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
@@ -431,23 +431,23 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Call the assemble functions
      */
-    void close();
+    void close() override;
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
      * faster.
      */
-    void zero ();
+    void zero () override;
 
     /**
      * Set entries to zero between \p start and \p stop
@@ -460,7 +460,7 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v )
+    void setConstant( value_type v ) override
     {
         this->set( v );
     }
@@ -468,7 +468,7 @@ public:
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    FEELPP_DONT_INLINE void clear ();
+    FEELPP_DONT_INLINE void clear () override;
 
     /**
      * Update ghost values
@@ -488,22 +488,22 @@ public:
     /**
      * v(i) = value
      */
-    void set( const size_type i, const value_type& value );
+    void set( const size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector( int* i, int n, value_type* v );
+    void setVector( int* i, int n, value_type* v ) override;
 
     /**
      * v(i) += value
      */
-    void add( const size_type i, const value_type& value );
+    void add( const size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value );
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -511,7 +511,7 @@ public:
      * want to specify WHERE to add it
      */
     void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -550,7 +550,7 @@ public:
      * the DenseVector<T> V
      */
     void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) 
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -705,7 +705,7 @@ public:
      *  prints the vector to the file named \p name.  If \p name is
      *  not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
     value_type dot( Vector<T> const& __v ) const;
 
@@ -750,74 +750,13 @@ public:
         VecRestoreArray(this->vec(), &array);
     }
 #endif
+
+    void save( std::string filename="default_archive_name", std::string format="binary" ) override;
+    void load( std::string filename="default_archive_name", std::string format="binary" ) override;
+
     //@}
 
-    void save( std::string filename="default_archive_name", std::string format="binary" )
-    {
-        if ( !this->closed() )
-            this->close();
-
-        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-        std::ofstream ofs( filename );
-        if (ofs)
-        {
-            if ( format=="binary" )
-            {
-                boost::archive::binary_oarchive oa(ofs);
-                oa << *this;
-            }
-            else if ( format=="xml")
-            {
-                boost::archive::xml_oarchive oa(ofs);
-                oa << boost::serialization::make_nvp("vectorpetsc", *this );
-            }
-            else if ( format=="text")
-            {
-                boost::archive::text_oarchive oa(ofs);
-                oa << *this;
-            }
-            else
-                Feel::cout << "VectorPetsc save() function : error with unknown format "
-                           << format <<std::endl;
-        }
-        else
-        {
-            Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
-                       << filename <<std::endl;
-        }
-    }
-
-    void load( std::string filename="default_archive_name", std::string format="binary" )
-    {
-        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-        std::ifstream ifs( filename );
-        if ( ifs )
-        {
-            if ( format=="binary" )
-            {
-                boost::archive::binary_iarchive ia(ifs);
-                ia >> *this;
-            }
-            else if ( format=="xml")
-            {
-                boost::archive::xml_iarchive ia(ifs);
-                ia >> boost::serialization::make_nvp("vectorpetsc", *this );
-            }
-            else if ( format=="text")
-            {
-                boost::archive::text_iarchive ia(ifs);
-                ia >> *this;
-            }
-            else
-                Feel::cout << "VectorPetsc save() function : error with unknown format "
-                           << format <<std::endl;
-        }
-        else
-        {
-            Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
-                       << filename <<std::endl;
-        }
-    }
+    
 
 
 private:

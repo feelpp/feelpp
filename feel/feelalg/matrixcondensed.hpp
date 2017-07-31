@@ -149,15 +149,16 @@ using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T,Condense>>
 //! auto mc = makeSharedMatrixCondensed<double>();
 //! @endcode
 //!
-template< class T, class... Args >
-condensed_matrix_ptr_t<T>
+template< class T, bool C, class... Args >
+condensed_matrix_ptr_t<T,C>
 makeSharedMatrixCondensed( Args&&... args )
 {
-    return boost::make_shared<MatrixCondensed<T>>( args... );
+    return boost::make_shared<MatrixCondensed<T,C>>( args... );
 }
 
 #if !defined(FEELPP_MATRIXCONDENSED_NOEXTERN)
-extern template class MatrixCondensed<double>;
+extern template class MatrixCondensed<double,true>;
+extern template class MatrixCondensed<double,false>;
 //extern template class Backend<std::complex<double>>;
 #endif
 
