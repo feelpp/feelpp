@@ -25,7 +25,7 @@ with static condensation in sequential on one element
 
 [source,sh]
 ----
-./feelpp_benchmarks_bench_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=false --gmsh.filename oneelt.msh  --sc.condense=true --backend.rebuild=true --nb_refine=1
+./feelpp_benchmarks_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=false --gmsh.filename oneelt.msh  --sc.condense=true --backend.rebuild=true --nb_refine=1
 ----
 
 NOTE: error should be 0 thanks to exact solution being linear
@@ -71,7 +71,7 @@ with static condensation in parallel
 
 [source,sh]
 ----
-mpirun -np 4 ./feelpp_benchmarks_bench_hdg_linear_elasticity_2D_P2 -- --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --use_hypercube=true --sc.condense=true --backend.rebuild=true
+mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_2D_P2 -- --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --use_hypercube=true --sc.condense=true --backend.rebuild=true
 ----
 
 The important options are:
