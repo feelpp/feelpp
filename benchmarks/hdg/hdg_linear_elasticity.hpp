@@ -53,7 +53,7 @@ makeOptions()
  		( "f", po::value<std::string>()->default_value( "{ 2*pi^2*sin(pi*x)*sin(pi*y)*sin(pi*z) - 2*pi^2*cos(pi*x)*sin(pi*y)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*y)*cos(pi*z), 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y) - 5*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 2*pi^2*cos(pi*x)*cos(pi*y)*sin(pi*z), 2*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*z)*sin(pi*y) - 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y)  }:x:y:z"  ), "divergence of the stress tensor")
 		( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
-        ( "nb_refine", po::value<int>()->default_value( 4 ), "nb_refine" )
+        ( "nb_refine", po::value<int>()->default_value( 1 ), "nb_refine" )
         ( "use_hypercube", po::value<bool>()->default_value( false ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
