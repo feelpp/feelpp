@@ -67,22 +67,39 @@ The important options are:
 
 == Linear elasticity
 
+=== Without IBC
+
 with static condensation in parallel
 
 [source,sh]
 ----
-mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_2D_P2 -- --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --use_hypercube=true --sc.condense=true --backend.rebuild=true
+mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_2D_P2 -- --config-file hdg_me/hdg_elasticity.cfg --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --sc.condense=true
 ----
 
 The important options are:
 
 * `u_exact`: exact expression for the displacement
 * `f`: external force applied
-* `nb_refine`: number of iteration of the convergence test
+* `nb_refine`: number of iteration of the convergence test  [default=1]
+* `sc.condense`: it has to be actived to use static condensation
 
 NOTE: error should be 0 thanks to exact solution being quadratic
 
+=== IBC
+with IBC condition and the constant space Ch defined on faces
 
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_ibc_2D_P2 -- --config-file hdg_me/hdg_elasticity_ibc.cfg --u_exact="{x*y,y^2}:x:y" --f="{0,8}:x:y" --sc.condense=1
+----
+
+The important options are:
+
+* `u_exact`: exact expression for the displacement
+* `f`: external force applied
+* `nb_refine`: number of iteration of the convergence test	[default=1]
+
+NOTE: error should be 0 thanks to exact solution being quadratic
 
 == MixedElasticity
 

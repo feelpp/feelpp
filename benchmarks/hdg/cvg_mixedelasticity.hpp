@@ -172,8 +172,9 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
 	auto solution = expr<Dim,1>( checker().solution(), "solution" );
 	int status = 0;
 
+	int nb_refine = (checker().check()) ? 1 : ioption("cvg.refine-nb");
 
-    for ( int i = 0; i < ioption("cvg.refine-nb"); i++)
+    for ( int i = 0; i < nb_refine; i++)
     {
         M_mesh = loadMesh( _mesh=new mesh_type, _h=h);
         
@@ -193,41 +194,42 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
         M_u = M_model->potentialField();
 
         // Data
-        double mu = 1;
-        double lambda = 1;
-        for( auto const& pairMat : M_model->modelProperties()->materials() )
-        {
-            auto material = pairMat.second;
-            auto lambda = expr(material.getScalar("lambda"));
-            auto mu = expr(material.getScalar("mu"));
-        }
+		if ( !checker().check() )
+		{
+        	double mu = 1;
+        	double lambda = 1;
+        	for( auto const& pairMat : M_model->modelProperties()->materials() )
+        	{
+            	auto material = pairMat.second;
+            	lambda = material.getDouble("lambda");
+            	mu = material.getDouble("mu");
+        	}
 
     
-        // Sigma exact
-        auto gradu_exact = grad(M_u_exact);
-        auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
-        auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
+        	// Sigma exact
+        	auto gradu_exact = grad(M_u_exact);
+        	auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
+        	auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
   
 
-        auto errSigma = normL2(_range=elements(M_mesh), _expr=idv(M_sigma)-sigma_exact, _quad=_Q<expr_order>());
-        // double mean_u_exact = mean( elements(M_mesh), M_u_exact)(0,0);
-        // double mean_u = mean( elements(M_mesh), idv(M_u))(0,0);
-        //double errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-cst(mean_u)-M_u_exact+cst(mean_u_exact), _quad=_Q<expr_order>());
-        auto errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-M_u_exact, _quad=_Q<expr_order>());
+        	auto errSigma = normL2(_range=elements(M_mesh), _expr=idv(M_sigma)-sigma_exact, _quad=_Q<expr_order>());
+        	// double mean_u_exact = mean( elements(M_mesh), M_u_exact)(0,0);
+        	// double mean_u = mean( elements(M_mesh), idv(M_u))(0,0);
+        	//double errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-cst(mean_u)-M_u_exact+cst(mean_u_exact), _quad=_Q<expr_order>());
+        	auto errU = normL2(_range=elements(M_mesh), _expr=idv(M_u)-M_u_exact, _quad=_Q<expr_order>());
 
-
-        Feel::cout << "***** Error computed in convelasticity *****" << std::endl;
-        Feel::cout << "||u-u_ex|| = " << errU << std::endl;
-        Feel::cout << "||sigma-sigma_ex|| = " << errSigma << std::endl;
-        Feel::cout << "***** -------------------------------- *****" << std::endl;
-
-  
-	    // cout << fmterOut % "h" % "nDofSigma" % "errSigma" % "nDofU" % "errU";
-        // cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
-        cvg_sigma << fmter % h % nDofSigma % errSigma;
-        cvg_u << fmter % h % nDofU % errU;
-        cvg_tot << fmter2 % h % errU % errSigma ; 
 		
+       		Feel::cout << "***** Error computed in convelasticity *****" << std::endl;
+        	Feel::cout << "||u-u_ex|| = " << errU << std::endl;
+        	Feel::cout << "||sigma-sigma_ex|| = " << errSigma << std::endl;
+        	Feel::cout << "***** -------------------------------- *****" << std::endl;
+  
+	    	// cout << fmterOut % "h" % "nDofSigma" % "errSigma" % "nDofU" % "errU";
+        	// cout << fmterOut % h % nDofSigma % errSigma % nDofU % errU;
+	        cvg_sigma << fmter % h % nDofSigma % errSigma;
+    	    cvg_u << fmter % h % nDofU % errU;
+        	cvg_tot << fmter2 % h % errU % errSigma ; 
+		}
 /*
         sigma_ex.on( elements(M_mesh), sigma_exact);
         u_ex.on( elements(M_mesh), M_u_exact);
@@ -250,15 +252,6 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     		v.on(_range=elements(M_mesh), _expr=solution );
        		e->add( "solution", v );
 
-
-   			/*
-            std::vector<double> l2(Dim);
-			auto help = integrate(_range=elements(M_mesh), _expr=(idv(M_u)-expr(solution))*(idv(M_u)-expr(solution)) );
-			for (int i = 0; i<Dim; i++)
-			{
-				l2[i] = std::sqrt(help.evaluate()(i,0));
-			}
-			*/	
      		// compute l2 and h1 norm of u-u_h where u=solution
      		auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
         	{
@@ -273,7 +266,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
             	return { { "L2", l2 } , {  "H1", h1 } };
         	};
 			
-			status += checker().runOnce( norms, rate::hp( M_mesh->hMax(), M_model->potentialSpace()->fe()->order() ) );
+			status = checker().runOnce( norms, rate::hp( M_mesh->hMax(), M_model->potentialSpace()->fe()->order() ) );
 			
 		}
 
@@ -313,7 +306,7 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::run()
     cvg_u.close();
     cvg_tot.close();
 
-	return status==ioption("cvg.refine-nb");
+	return status;
 }
 
 // Time exporter
@@ -331,8 +324,9 @@ ConvergenceElasticityTest<Dim,Order,G_Order,E_Order>::exportTimersCvg()
         for( auto const& pair : M_model->getTimers() )
             fmt % pair.first;
         timers << fmt << std::endl;
-        
-        for( int i = 0; i < ioption("cvg.refine-nb"); ++i )
+       	 
+		int nb_refine = (checker().check()) ? 1 : ioption("cvg.refine-nb");
+        for( int i = 0; i < nb_refine; ++i )
         {
             for( auto const& pair : M_model->getTimers() )
                 fmt % pair.second[i];
