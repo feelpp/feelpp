@@ -6,7 +6,7 @@
     {
         "omega":
         {
-            "name":"copper",
+		    "name":"copper",
 			"rho":"1",
             "lambda":"1",
 	    	"mu":"1"
@@ -30,7 +30,7 @@
 	    	"Dirichlet":
 	    	{
           		"int":
-                {
+            	{
 					"expr":"{x^2+y^2, 1, z}:x:y:z"
 		     		// "expr":"{ cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y)  }:x:y:z" 
                 },
