@@ -41,7 +41,8 @@ Thermoelectric::Thermoelectric( mesh_ptrtype mesh )
 int Thermoelectric::Qa()
 {
     auto bc = M_modelProps->boundaryConditions();
-    return 2 + bc["potential"]["Dirichlet"].size() +bc["potential"]["Neumann"].size()
+    auto materials = M_modelProps->Materials();
+    return 2*materials.size() + bc["potential"]["Dirichlet"].size() +bc["potential"]["Neumann"].size()
            + bc["temperature"]["Robin"].size() + bc["temperature"]["Dirichlet"].size();
 }
 
@@ -356,19 +357,17 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
 
     int idx = 0;
 
-    //! A vérifier, j'ai l'impression qu'il y a un problème, je prends les sigma et k dans les matériaux, car ils en
-    //! dépendent, mais ça fait qu'ils ne sont plus dans mu, donc techniquement ce ne sont plus des variables?
     for (auto const& mat : materials){
-        M_betaAqm[idx++][0] = expr(mat.getString("sigma"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(mat.getString("sigma"));
     }
 
     for (auto const& mat : materials){
-        M_betaAqm[idx++][0] = expr(mat.getString("k"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(mat.getString("k"));
     }
 
     //! A vérifier
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
-        M_betaAqm[idx++][0] = expr(materials[exAtM.material()]["sigma"]);
+        M_betaAqm[idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigma"));
 
 
     //! Devant mon expression Neumann j'ai -I/S_gammaIn, est-ce qu'il faut que je rajoute S_gammaIn ici?
@@ -377,7 +376,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
 
 
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
-        M_betaAqm[idx++][0] = expr(materials[exAtM.material()]["k"]);
+        M_betaAqm[idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("k"));
 
     //! A vérifier
     for( auto const& exAtM : bc["temperature"]["Robin"] )
@@ -403,7 +402,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
-        M_betaFqm[0][idx++][0] = expr(materials[exAtM.material()]["sigma"])*e.evaluate();
+        M_betaFqm[0][idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigma"))*e.evaluate();
     }
 
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
@@ -413,7 +412,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
-        M_betaFqm[0][idx++][0] = expr(materials[exAtM.material()]["k"])*e.evaluate();
+        M_betaFqm[0][idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("k"))*e.evaluate();
     }
 
 
@@ -481,17 +480,15 @@ Thermoelectric::solve( parameter_type const& mu )
     // Puissance suplémentaire qu'on veut rajouter sur une partie du système
     auto W = mu.parameterNamed("W");
 
-    //! A vérifier, peut être il y a des méthodes plus simple pour le faire ou bien
-    //! donner directement le type des éléments de materials, je ne sais pas si c'est
-    //! des std::string ou autre
-    std::map<decltype( (*materials.begin())),Eigen::VectorXd> sigma;
-    std::map<decltype( (*materials.begin())),Eigen::VectorXd> k;
+
+    std::map<std::string , double> sigma;
+    std::map<std::string , double> k;
 
 
     for (auto const& mat : materials){
 
-        sigma[mat]=mu.parameterNamed(mat.getString("sigma"));
-        k[mat]=mu.parameterNamed(mat.getString("k"));
+        sigma[mat.marker()]=mu.parameterNamed(mat.getString("sigma"));
+        k[mat.marker()]=mu.parameterNamed(mat.getString("k"));
     }
 
 
@@ -502,7 +499,7 @@ Thermoelectric::solve( parameter_type const& mu )
     int i = 0;
     for (auto const& mat: materials){
         a = integrate( markedelements(M_mesh,mat.marker()),
-                       sigma[mat]*inner(gradt(V),grad(phiV)) );
+                       sigma[mat.marker()]*inner(gradt(V),grad(phiV)) );
     }
 
     // V Dirichlet condition
@@ -552,7 +549,7 @@ Thermoelectric::solve( parameter_type const& mu )
     i = 0;
     for (auto const& mat : materials){
         aT += integrate( markedelements(M_mesh, mat.marker()),
-                         k[mat]*inner(gradt(T), grad(phiT)) );
+                         k[mat.marker()]*inner(gradt(T), grad(phiT)) );
     }
 
     // T Dirichlet
@@ -584,7 +581,7 @@ Thermoelectric::solve( parameter_type const& mu )
 
     for (auto const& mat : materials){
         fT = integrate(markedelements(M_mesh, mat.marker()),
-                       id(phiT)*sigma[mat]*gradv(V)*trans(gradv(V)) );
+                       id(phiT)*sigma[mat.marker()]*gradv(V)*trans(gradv(V)) );
     }
 
     // Condition Dirichlet pour T
@@ -675,7 +672,7 @@ void Thermoelectric::computeTruthCurrentDensity( current_element_type& j, parame
 {
     auto VT = this->solve(mu);
     auto V = VT.template element<0>();
-    auto sigma = mu.parameterNamed("sigma");
+    auto sigma = mu.parameterNamed("sigma_fils");
     auto Vh = j.functionSpace();
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
 }
