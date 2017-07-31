@@ -59,18 +59,44 @@ int main( int argc, char** argv)
     crb->offline();
 
     // parameter from option
-    double sigma = doption("thermoelectric.sigma");
-    double current = doption("thermoelectric.current");
-    double k = doption("thermoelectric.k");
+    double sigma_PVC = doption("thermoelectric.sigma_PVC");
+    double sigma_ABS = doption("thermoelectric.sigma_ABS");
+    double sigma_fils= doption("thermoelectric.sigma_fils");
+    double sigma_dissipateur = doption("thermoelectric.sigma_dissipateur");
+    double sigma_lugs= doption("thermoelectric.sigma_lugs");
+    double sigma_bornes= doption("thermoelectric.sigma_bornes");
+
+    double k_PVC = doption("thermoelectric.k_PVC");
+    double k_ABS = doption("thermoelectric.k_ABS");
+    double k_fils= doption("thermoelectric.k_fils");
+    double k_dissipateur = doption("thermoelectric.k_dissipateur");
+    double k_lugs= doption("thermoelectric.k_lugs");
+    double k_bornes= doption("thermoelectric.k_bornes");
+    
+    double I = doption("thermoelectric.I");
     double h = doption("thermoelectric.h");
-    double Tw = doption("thermoelectric.Tw");
+    double T_ext = doption("thermoelectric.T_ext");
+    
+    
     auto paramSpace = crbModel->parameterSpace();
     auto mu = paramSpace->element();
-    mu.setParameterNamed("sigma", sigma);
-    mu.setParameterNamed("current", current);
-    mu.setParameterNamed("k", k);
+    mu.setParameterNamed("sigma_PVC", sigma_PVC);
+    mu.setParameterNamed("sigma_ABS", sigma_ABS);
+    mu.setParameterNamed("sigma_fils", sigma_fils);
+    mu.setParameterNamed("sigma_dissipateur", sigma_dissipateur);
+    mu.setParameterNamed("sigma_lugs", sigma_lugs);
+    mu.setParameterNamed("sigma_bornes", sigma_bornes);
+
+    mu.setParameterNamed("k_PVC", k_PVC);
+    mu.setParameterNamed("k_ABS", k_ABS);
+    mu.setParameterNamed("k_fils", k_fils);
+    mu.setParameterNamed("k_dissipateur", k_dissipateur);
+    mu.setParameterNamed("k_lugs", k_lugs);
+    mu.setParameterNamed("k_bornes", k_bornes);
+
+    mu.setParameterNamed("I", I);
     mu.setParameterNamed("h", h);
-    mu.setParameterNamed("Tw", Tw);
+    mu.setParameterNamed("T_ext", T_ext);
     Feel::cout << "using parameter:" << std::endl << mu << std::endl;
 
     // online

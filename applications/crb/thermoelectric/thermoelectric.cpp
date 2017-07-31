@@ -353,6 +353,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     auto eimGradGrad = this->scalarDiscontinuousEim()[0];
     auto bc = M_modelProps->boundaryConditions();
     auto materials = M_modelProps->materials();
+    auto S_gammaIn = doption("thermoelectric.S_gammaIn");
     // auto betaEimGradGrad = eimGradGrad->beta( mu );
 
     int idx = 0;
@@ -372,7 +373,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
 
     //! Devant mon expression Neumann j'ai -I/S_gammaIn, est-ce qu'il faut que je rajoute S_gammaIn ici?
     for( auto const& exAtM : bc["potential"]["Neumann"] )
-        M_betaAqm[idx++][0] = mu.parameterNamed("I");
+        M_betaAqm[idx++][0] = -mu.parameterNamed("I")/S_gammaIn;
 
 
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
@@ -468,10 +469,10 @@ Thermoelectric::solve( parameter_type const& mu )
     auto gamma = doption("thermoelectric.gamma");
 
     // Surface de Gamma In
-    auto S_gammaIn = doption("S_gammaIn");
+    auto S_gammaIn = doption("thermoelectric.S_gammaIn");
 
     // Marker du mesh sur lequel on veut rajouter W
-    auto W_marker = soption( "W_marker");
+    auto W_marker = soption( "thermoelectric.W_marker");
 
     auto I = mu.parameterNamed("I");
     auto h = mu.parameterNamed("h");
