@@ -84,7 +84,7 @@ feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces )
 feelpp_add_test( space_cst )
-feelpp_add_test( element0D )
+# feelpp_add_test( element0D )
 feelpp_add_test( space_on_range )
 
 feelpp_add_test( idelements)
