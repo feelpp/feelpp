@@ -108,15 +108,9 @@ public:
     using Wh_ptr_t =  Pdh_ptrtype<mesh_type,OrderP>;
     using Mh_t =  Pdh_type<face_mesh_type,OrderP>;
     using Mh_ptr_t =  Pdh_ptrtype<face_mesh_type,OrderP>;
-#ifdef USE_FACE_MESH
+
     using Ch_t = Pch_type<face_mesh_type,0>;
     using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
-#else
-    using Ch_t = Pch_type<face_mesh_type,0>;
-    using Ch_ptr_t = Pch_ptrtype<face_mesh_type,0>;
-    //using Ch_t = Pch_type<mesh_type,0>;
-    //using Ch_ptr_t = Pch_ptrtype<mesh_type,0>;
-#endif
 
     //! the exporter factory type
     typedef Exporter<mesh_type> export_type;
@@ -273,12 +267,8 @@ Hdg<Dim, OrderP>::convergence()
         Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
         Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
         Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
-#ifdef USE_FACE_MESH
+
         Ch_ptr_t Ch = Pch<0>(ibc_mesh, true );
-#else
-        Ch_ptr_t Ch = Pch<0>(ibc_mesh, true );
-        //Ch_ptr_t Ch = Pch<0>(mesh, true );
-#endif
 
         toc("spaces",true);
 
@@ -315,8 +305,8 @@ Hdg<Dim, OrderP>::convergence()
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
         auto ps = product2( ibcSpaces, Vh, Wh, Mh );
 
-        auto M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
-        auto M_F = M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+        auto M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+        auto M_F = makeSharedVectorCondensed<value_type,true>(blockVector(ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
         M_F->zero();
 
         auto a = blockform2( ps, M_A_cst );//, boption("sc.condense")?Pattern::HDG:Pattern::COUPLED );
@@ -475,16 +465,12 @@ Hdg<Dim, OrderP>::convergence()
             cout << "a(4[" << i << "],4[" << i << "]) works fine" << std::endl;
 
         }
-
         toc("matrices",true);
 
         tic();
-        auto bbf = blockform2(ps, M_A_cst);
-        auto blf = blockform1(ps, M_F);
         auto U=ps.element();
 
-        bbf.solve( _solution=U, _rhs=blf, _condense=boption("sc.condense"), _name="hdg");
-        // a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _name="hdg");
+        a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _name="hdg");
         toc("solve",true);
 
         cout << "[Hdg] solve done" << std::endl;
@@ -492,8 +478,6 @@ Hdg<Dim, OrderP>::convergence()
         // ****** Compute error ******
         auto up = U(0_c);
         auto pp = U(1_c);
-
-
         tic();
 
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
@@ -516,11 +500,17 @@ Hdg<Dim, OrderP>::convergence()
 
         cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
         cout << "[" << i << "]||p_exact - p||_L2 = " << l2err_p << std::endl;
+        double intjnex = integrate(_range=markedfaces(mesh,"Ibc"),
+                                   _expr=inner(u_exact,N())).evaluate()(0,0);
+        double intjn = integrate(_range=markedfaces(mesh,"Ibc"),
+                                 _expr=inner(idv(up),N())).evaluate()(0,0);
+        cout << "[" << i << "]int u_exact.n  = " << intjnex << std::endl;
+        cout << "[" << i << "]int u.n  = " << intjn << std::endl;
         cvg << current_hsize
             << "\t" << Vh->nDof() << "\t" << l2err_u
             << "\t" << Wh->nDof() << "\t" << l2err_p << std::endl;
 
-
+        
         tic();
         std::string exportName =  ( boost::format( "%1%-refine-%2%" ) % this->about().appName() % i ).str();
         std::string uName = ( boost::format( "velocity-refine-%1%" ) % i ).str();

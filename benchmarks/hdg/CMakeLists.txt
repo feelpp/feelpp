@@ -130,7 +130,7 @@ endforeach() # dim
 
 # Linear elasticity - IBC
 #foreach( geom 1 2 )
-foreach( dim 3)# 3
+foreach( dim 2 3)# 3
   foreach( orderP 0 1 2 3 4)
     set(modulename "hdg_linear_elasticity_ibc")
     set(BENCH "${modulename}_${dim}D_P${orderP}" )
