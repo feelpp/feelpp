@@ -523,9 +523,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else
-    M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
-    M_F = makeSharedVectorCondensed<value_type,true>(blockVector(M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    M_A = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_F = makeSharedVectorCondensed<value_type,true>(blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
 #endif
 }
 
