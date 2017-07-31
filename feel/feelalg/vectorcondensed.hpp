@@ -47,17 +47,21 @@ public:
     using sc_ptrtype = boost::shared_ptr<sc_type>;
     using this_vector_ptrtype = boost::shared_ptr<VectorCondensed<value_type>>;
     static const bool do_condense=Condense;
-    
+
     VectorCondensed()
         :
-        super(Environment::worldComm()),
+        super(),
         M_sc( new sc_type )
         {}
+#if 0
+    
     VectorCondensed( WorldComm const& wc )
         :
         super( wc ),
         M_sc( new sc_type )
         {}
+#endif
+    
     VectorCondensed( vf::BlocksBase<vector_ptrtype> const & b, backend_type& ba, bool copy_values=true )
         :
         super( b, ba, copy_values ),
@@ -137,15 +141,16 @@ using condensed_vector_ptr_t = boost::shared_ptr<condensed_vector_t<T,Condense>>
 //! auto mc = makeSharedVectorCondensed<double>();
 //! @endcode
 //!
-template< class T, class... Args >
-condensed_vector_ptr_t<T>
+template< class T, bool C, class... Args >
+condensed_vector_ptr_t<T,C>
 makeSharedVectorCondensed( Args&&... args )
 {
-    return boost::make_shared<VectorCondensed<T>>( args... );
+    return boost::make_shared<VectorCondensed<T,C>>( args... );
 }
 
 #if !defined(FEELPP_VECTORCONDENSED_NOEXTERN)
-extern template class VectorCondensed<double>;
+extern template class VectorCondensed<double,true>;
+extern template class VectorCondensed<double,false>;
 //extern template class Backend<std::complex<double>>;
 #endif
 

@@ -254,7 +254,7 @@ public:
     /** @name Constructors, destructor
      */
     //@{
-
+    VectorBlockBase() = default;
     VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
                      backend_type &backend,
                      bool copy_values=true );
@@ -340,7 +340,10 @@ public:
             clone_ptrtype v = boost::make_shared<VectorBlockBase<value_type>>( *this );
             return v;
         } 
-
+    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const override
+        {
+            M_vec->printMatlab( name, renumber );
+        }
     virtual value_type sum() const override { return M_vec->sum(); }
 
     virtual real_type min () const override { return M_vec->min(); }

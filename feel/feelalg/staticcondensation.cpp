@@ -67,12 +67,12 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
     {
         this->M_local_vectors[this->M_block_row][K] = raw_vector_map_t( data, nrows );
-        //cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
+        cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
     else
     {
         this->M_local_vectors[this->M_block_row][K]+=raw_vector_map_t( data, nrows );
-        //cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
+        cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
 #if 0
     //LOG(INFO) << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K];

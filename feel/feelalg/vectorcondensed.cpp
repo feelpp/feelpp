@@ -21,14 +21,15 @@
 //! @date 28 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-
+#define FEELPP_VECTORCONDENSED_NOEXTERN 1
 #include <feel/feelalg/vectorcondensed.hpp>
 
 
 namespace Feel {
 
 
-
+template class VectorCondensed<double,true>;
+template class VectorCondensed<double,false>;
 
 
 }
