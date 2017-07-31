@@ -167,8 +167,8 @@ protected:
 	product2_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
-    sparse_matrix_ptrtype M_A_cst;
-    vector_ptrtype M_F;
+    condensed_matrix_ptr_t<value_type,true> M_A_cst;
+    condensed_vector_ptr_t<value_type,true> M_F;
 
     Vh_element_t M_up; // stress solution
     Wh_element_t M_pp; // displacement solution 
@@ -750,8 +750,10 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 
     tic();
     auto U = M_ps -> element();
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
+    M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_F = makeSharedVectorCondensed<value_type,true>(blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    //    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
+    //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
     
     // Assembling standard matrix
