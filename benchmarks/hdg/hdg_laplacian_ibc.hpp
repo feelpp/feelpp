@@ -305,12 +305,10 @@ Hdg<Dim, OrderP>::convergence()
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
         auto ps = product2( ibcSpaces, Vh, Wh, Mh );
 
-        auto M_A_cst = makeSharedMatrixCondensed<value_type,true>( csrGraphBlocks(ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
-        auto M_F = makeSharedVectorCondensed<value_type,true>(blockVector(ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
-        M_F->zero();
+        solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
 
-        auto a = blockform2( ps, M_A_cst );//, boption("sc.condense")?Pattern::HDG:Pattern::COUPLED );
-        auto rhs = blockform1( ps , M_F);
+        auto a = blockform2( ps, strategy, backend() );
+        auto rhs = blockform1( ps, strategy, backend() );
 
         auto K = expr(soption("k"));
         auto lambda = cst(1.)/K;
