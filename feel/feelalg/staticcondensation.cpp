@@ -21,6 +21,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include <future>
+
 #include <feel/feelalg/staticcondensation.hpp>
 
 
@@ -32,6 +34,7 @@ void StaticCondensation<T>::addLocalMatrix ( int* rows, int nrows,
                                           value_type* data,
                                              size_type K, size_type K2  )
 {
+    std::lock_guard<std::mutex> guard(mutex_add_m);
     if ( K == invalid_size_type_value ) return;
     if ( K2 == invalid_size_type_value ) return;
     auto key = std::make_pair(K,K2);
@@ -62,17 +65,18 @@ void StaticCondensation<T>::addLocalVector ( int* rows, int nrows,
                                              value_type* data,
                                              size_type K, size_type K2  )
 {
+    std::lock_guard<std::mutex> guard(mutex_add_v);
     if ( K == invalid_size_type_value ) return;
     auto entry = this->M_local_vectors[this->M_block_row].find(K);
     if ( entry == this->M_local_vectors[this->M_block_row].end() )
     {
         this->M_local_vectors[this->M_block_row][K] = raw_vector_map_t( data, nrows );
-        cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
+        //cout << "SC vec inserting F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
     else
     {
         this->M_local_vectors[this->M_block_row][K]+=raw_vector_map_t( data, nrows );
-        cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
+        //cout << "SC vec add F entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     }
 #if 0
     //LOG(INFO) << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K];

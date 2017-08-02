@@ -24,6 +24,9 @@
 #ifndef FEELPP_STATICCONDENSATION_HPP
 #define FEELPP_STATICCONDENSATION_HPP 1
 
+#include <future>
+
+
 #include <boost/functional/hash.hpp>
 
 #include <unordered_map>
@@ -378,6 +381,8 @@ private:
     block_index_t M_block_rowcol;
     int M_block_row;
     int M_dim4;
+    std::mutex mutex_add_v, mutex_add_m;;
+
 };
 
 
@@ -1115,24 +1120,32 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     int N1 = e2.dof()->nLocalDof();
     int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    cout << "[staticcondensation::localSolve]  N0=" << N0 << " N1=" << N1 << std::endl;
-    Eigen::VectorXd upK( N0 + N1 );
-    typename std::decay_t<decltype(e3)>::local_interpolant_type pdK( N3 );
+    LOG(INFO) << "[staticcondensation::localSolve]  N(flux)=" << N0 << " N(potential)=" << N1;
+    
+    using trace_interpolant_t  = typename std::decay_t<decltype(e3)>::local_interpolant_type;
+    std::vector<std::future<void>> futs;
+    futs.reserve( M_AinvB.size() );
     for( auto const& e : M_AinvB )
     {
-        auto K = e.first;
-        auto const& A = e.second;
-        auto const& F = M_AinvF.at( K );
+        auto f = [N0,N1,Nup=N0+N1,Nt=N3,&e,&e1,&e2,&e3,this]()
+            {
+                auto K = e.first;
+                auto const& A = e.second;
+                auto const& F = M_AinvF.at( K );
+                Eigen::VectorXd upK( Nup );
+                trace_interpolant_t pdK( Nt );
+                e3.element( M_dK[K].faces1(), pdK );
+                upK.noalias() = -A*pdK + F;
 
-        //auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(K).facesId());
-        //auto pdK = e3.element( dK );
-        e3.element( M_dK[K].faces1(), pdK );
-        upK.noalias() = -A*pdK + F;
-
-        e1.assignE( K, upK.head( N0 ) );
-        e2.assignE( K, upK.tail( N1 ) );
+                e1.assignE( K, upK.head( N0 ) );
+                e2.assignE( K, upK.tail( N1 ) );
+            };
+        futs.push_back( std::async(std::launch::async, f ) );
     }
-
+    for( auto& fut : futs )
+    {
+        fut.get();
+    }
 }
 
 template<typename T>
@@ -1157,44 +1170,55 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         N4d1 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
     }
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
-    Eigen::VectorXd upK( N0 + N1 );
-    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK1( N4d11 );
-    typename std::decay_t<decltype(e(2_c))>::local_interpolant_type pdK2( N4d1+N4 );
-    
+    using trace_interpolant_t  = typename std::decay_t<decltype(e(2_c))>::local_interpolant_type;
+    std::vector<std::future<void>> futs;
+    futs.reserve( M_AinvB.size() );
     for( auto const& m : M_AinvB )
     {
-        auto K = m.first;
-        auto const& A = m.second;
-        auto const& F = M_AinvF.at( K );
+        //f(m);
 
-        auto & dK = M_dK[K];
-        if ( dK.hasSameTrace() )
-        {
-            e3.element( dK.faces1(), pdK1 );
-            upK.noalias() = -A*pdK1 + F;
-            e1.assignE( K, upK.head( N0 ) );
-            e2.assignE( K, upK.tail( N1 ) );
-        }
-        else
-        {
-            e3.element( dK.faces1(), pdK2.topLeftCorner(N4d1,1) );
-            e(3_c,dK.spaceIndex()).element( dK.faces2(), pdK2.bottomLeftCorner(N4,1) );
-            //std::cout << "pdK2=" << pdK2 << std::endl;
-            //std::cout << "A=" << A << std::endl;
-            //std::cout << "F=" << F << std::endl;
-            upK.noalias() = -A*pdK2 + F;
-            //std::cout << "upK = " << upK << std::endl;
-            //pdK2 = local_vector_t::Constant( pdK2.size(), 1. );
-            //pdK2( pdK2.size()-1)=1;
-            //std::cout << "pdK2=" << pdK2 << std::endl;
-            //upK.noalias() = -A*pdK2 + F;
-            //std::cout << "upK2 = " << upK  << std::endl;
-            e1.assignE( K, upK.head( N0 ) );
-            e2.assignE( K, upK.tail( N1 ) );
-        }
+        auto f = [N0,N1,N4d1,N4d11,N4,&m,this,&e](  )
+            {
+                auto K = m.first;
+                auto const& A = m.second;
+                auto const& F = M_AinvF.at( K );
+                Eigen::VectorXd upK( N0 + N1 );
+                auto & dK = M_dK[K];
+                if ( dK.hasSameTrace() )
+                {
+                    trace_interpolant_t pdK1( N4d11 );
 
+                    e3.element( dK.faces1(), pdK1 );
+                    upK.noalias() = -A*pdK1 + F;
+                    e1.assignE( K, upK.head( N0 ) );
+                    e2.assignE( K, upK.tail( N1 ) );
+                }
+                else
+                {
+                    trace_interpolant_t pdK2( N4d1+N4 );
+                    e3.element( dK.faces1(), pdK2.topLeftCorner(N4d1,1) );
+                    e(3_c,dK.spaceIndex()).element( dK.faces2(), pdK2.bottomLeftCorner(N4,1) );
+                    //std::cout << "pdK2=" << pdK2 << std::endl;
+                    //std::cout << "A=" << A << std::endl;
+                    //std::cout << "F=" << F << std::endl;
+                    upK.noalias() = -A*pdK2 + F;
+                    //std::cout << "upK = " << upK << std::endl;
+                    //pdK2 = local_vector_t::Constant( pdK2.size(), 1. );
+                    //pdK2( pdK2.size()-1)=1;
+                    //std::cout << "pdK2=" << pdK2 << std::endl;
+                    //upK.noalias() = -A*pdK2 + F;
+                    //std::cout << "upK2 = " << upK  << std::endl;
+                    e1.assignE( K, upK.head( N0 ) );
+                    e2.assignE( K, upK.tail( N1 ) );
+                }
+            };
+
+        futs.push_back( std::async(std::launch::async, f ) );
     }
-
+    for( auto& fut : futs )
+    {
+        fut.get();
+    }
 }
 
 
