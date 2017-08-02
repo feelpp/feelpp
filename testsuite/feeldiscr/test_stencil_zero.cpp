@@ -38,7 +38,7 @@
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 
 
 #include <feel/feelvf/vf.hpp>
@@ -49,15 +49,15 @@
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( stencil )
+BOOST_AUTO_TEST_SUITE( stencil_zero )
 BOOST_AUTO_TEST_CASE( test_stencil )
 {
     using namespace Feel;
     using mesh_t = Mesh<Simplex<2>>;
     auto mesh = loadMesh( new mesh_t );
 
-    auto Vh = Pdhv<1>( mesh, true );
-    auto Wh = Pdh<1>( mesh, true );
+    auto Vh = Pchv<1>( mesh, true );
+    auto Wh = Pch<1>( mesh, true );
     BlocksBaseGraphCSR zero_graph(2,2);
     zero_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     zero_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
