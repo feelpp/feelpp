@@ -285,8 +285,9 @@ Hdg<Dim, OrderP>::convergence()
 
         tic();
         auto ps = product( Vh, Wh, Mh );
-        auto a = blockform2( ps );
-        auto rhs = blockform1( ps );
+        solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
+        auto a = blockform2( ps, strategy ,backend() );
+        auto rhs = blockform1( ps, strategy, backend() );
 
         auto K = expr(soption("k"));
         auto lambda = cst(1.)/K;
