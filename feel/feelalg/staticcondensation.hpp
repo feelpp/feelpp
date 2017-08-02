@@ -1177,7 +1177,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     {
         //f(m);
 
-        auto f = [N0,N1,N4d1,N4d11,N4,&m,this,&e](  )
+        auto f = [N0,N1,N4d1,N4d11,N4,&m,this,&e,&e1,&e2,&e3](  )
             {
                 auto K = m.first;
                 auto const& A = m.second;
