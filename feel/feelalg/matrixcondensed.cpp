@@ -26,8 +26,7 @@
 
 namespace Feel {
 
-template class MatrixCondensed<double,true>;
-template class MatrixCondensed<double,false>;
+template class MatrixCondensed<double>;
 
 }
 

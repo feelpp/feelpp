@@ -530,11 +530,13 @@ class MatrixBlock : public MatrixBlockBase<T>
     typedef typename super_type::backend_type backend_type;
     typedef vf::Blocks<NBLOCKROWS, NBLOCKCOLS, matrix_ptrtype> blocks_type;
     typedef vf::BlocksBase<matrix_ptrtype> blocksbase_type;
+
+    template<typename BackendT>
     MatrixBlock( blocksbase_type const& blockSet,
-                 backend_type& backend,
+                 BackendT && b,
                  bool copy_values = true,
                  bool diag_is_nonzero = true )
-        : super_type( blockSet, backend, copy_values, diag_is_nonzero )
+        : super_type( blockSet, std::forward<BackendT>(b), copy_values, diag_is_nonzero )
     {
     }
 
@@ -559,6 +561,5 @@ class MatrixBlock : public MatrixBlockBase<T>
 
 } // Feel
 
-//#include <feel/feelalg/matrixblock.cpp>
 
 #endif /* __MatrixBlock_H */

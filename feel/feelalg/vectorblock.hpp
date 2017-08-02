@@ -256,6 +256,11 @@ public:
     //@{
     VectorBlockBase() = default;
     VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
+                     backend_ptrtype backend,
+                     bool copy_values=true )
+        :VectorBlockBase( blockVec, *backend, copy_values )
+        {}
+    VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
                      backend_type &backend,
                      bool copy_values=true );
 
@@ -381,11 +386,12 @@ public:
     typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
     typedef vf::BlocksBase<vector_ptrtype> blocksbase_type;
 
+    template<typename BackendT>
     VectorBlock(  blocksbase_type const & blockVec,
-                  backend_type &backend,
+                  BackendT &&b,
                   bool copy_values=true )
         :
-        super_type( blockVec,backend,copy_values )
+        super_type( blockVec,std::forward<BackendT>(b),copy_values )
     {}
 
     VectorBlock( VectorBlock const & vb )

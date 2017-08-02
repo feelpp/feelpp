@@ -28,8 +28,8 @@
 namespace Feel {
 
 
-template class VectorCondensed<double,true>;
-template class VectorCondensed<double,false>;
+template class VectorCondensed<double>;
+//template class VectorCondensed<float>;
 
 
 }

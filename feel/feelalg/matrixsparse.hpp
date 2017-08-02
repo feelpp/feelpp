@@ -114,8 +114,6 @@ public:
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
-    enum Mode { STANDARD=0, STATIC_CONDENSATION = 1 };
-
     /**
      * Constructor; initializes the matrix to be empty, without any
      * structure, i.e.  the matrix is not usable at all. This
