@@ -304,6 +304,9 @@ Gmsh::gpstr2map( std::string const& _geopars )
 std::map<std::string, std::string>
 Gmsh::retrieveGeoParameters( std::string const& __geo ) const
 {
+#if BOOST_VERSION >= 106100
+    return std::map<std::string, std::string>{};
+#else
     std::map<std::string, std::string> __geopm;
     // (TODO should strip C/CPP comments)
     // Regex for a `keyword=value;` expression. We capture only [keyword]
@@ -333,6 +336,7 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
     }
 
     return __geopm;
+#endif
 }
 
 bool
