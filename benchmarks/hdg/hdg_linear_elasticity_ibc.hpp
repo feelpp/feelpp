@@ -398,8 +398,8 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
         auto ps = product2( ibcSpaces, Vh, Wh, Mh );
 
-		auto a = blockform2( ps );
-		auto rhs = blockform1( ps );
+		auto a = blockform2( ps, backend() );
+		auto rhs = blockform1( ps, backend() );
 
 
 
