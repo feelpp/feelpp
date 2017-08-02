@@ -33,64 +33,76 @@
 
 namespace Feel {
 
-template<typename PS, bool Condense=true>
+//!
+//! forward declarations of @c BlockBilinearForm and @c blocform2()
+//!
+template<typename PS>
 class BlockBilinearForm;
 
-template<typename PS, bool Condense=true>
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, BackendT&& b );
+
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, solve::strategy s, BackendT&& b,
+            size_type pattern = Pattern::COUPLED );
+
+template<typename PS,typename T>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, condensed_matrix_ptr_t<T> m );
+
+//!
+//! forward declarations of @c BlockLinearForm and @c blockform1()
+//!
+template<typename PS>
 class BlockLinearForm;
 
-template<typename PS,bool Condense=true>
-BlockBilinearForm<PS,Condense>
-blockform2( PS&& ps, size_type pattern  = Pattern::COUPLED  );
+template<typename PS,typename BackendT>
+BlockLinearForm<PS>
+blockform1( PS&& ps, BackendT&& b );
 
-#if 1
-template<typename PS,bool Condense=true>
-BlockBilinearForm<PS,Condense>
-blockform2( PS const& ps, size_type pattern  = Pattern::COUPLED  );
-#endif
+template<typename PS,typename BackendT>
+BlockLinearForm<PS>
+blockform1( PS&& ps, solve::strategy s, BackendT&& b );
 
-template<typename PS,bool Condense=true>
-BlockBilinearForm<PS,Condense>
-blockform2( PS&& ps, condensed_matrix_ptr_t<double,Condense> m );
 
-template<typename PS, bool Condense = true>
-BlockLinearForm<PS, Condense>
-blockform1( PS&& ps );
-
-template<typename PS, bool Condense = true>
-BlockLinearForm<PS, Condense>
-blockform1( PS const& ps );
-
-template<typename PS, bool Condense=true>
-BlockLinearForm<PS,Condense>
-blockform1( PS&& ps, boost::shared_ptr<VectorCondensed<double,Condense>> v );
+template<typename PS,typename T>
+BlockLinearForm<PS>
+blockform1( PS&& ps, condensed_vector_ptr_t<T> v );
 
 
 /**
  * Handles bilinear form over a product of spaces
  */
-template<typename PS, bool Condense>
+template<typename PS>
 class BlockBilinearForm
 {
 public :
     using value_type = typename std::decay_t<PS>::value_type;
-    static constexpr bool do_condense = Condense;
-    using condensed_matrix_type = MatrixCondensed<value_type,do_condense>;
+    using condensed_matrix_type = MatrixCondensed<value_type>;
     using condensed_matrix_ptrtype = boost::shared_ptr<condensed_matrix_type>;
     using product_space_t = PS;
-    BlockBilinearForm(product_space_t&& ps )
-        :
-        M_ps(ps),
-        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps), backend() ) )
-        {}
 
-    template<typename T>
-    BlockBilinearForm( T&& ps, size_type pattern )
+    
+    template<typename T,typename BackendT>
+    BlockBilinearForm( T&& ps, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, pattern), backend() ) )
+        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::ZERO), std::forward<BackendT>(b), false ) )
         {}
-    
+
+    template<typename T, typename BackendT>
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED )
+        :
+        M_ps(std::forward<T>(ps)),
+        M_matrix( boost::make_shared<condensed_matrix_type>( s,
+                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                             std::forward<BackendT>(b),
+                                                             (s==solve::strategy::static_condensation)?false:true )  )
+        {}
+
     BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype m)
         :
         M_ps(ps),
@@ -307,7 +319,7 @@ public :
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
-#if 1
+#if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
             e3.printMatlab("phat1.m");
@@ -344,8 +356,8 @@ public :
             auto sc = M_matrix->sc();
 
             auto Th = product2( M_ps[3_c], M_ps[2_c] );
-            auto S = blockform2<decltype(Th),false>(Th, Pattern::HDG);
-            auto V = blockform1<decltype(Th),false>(Th);
+            auto S = blockform2(Th, solve::strategy::monolithic, backend(), Pattern::HDG);
+            auto V = blockform1(Th, solve::strategy::monolithic, backend() );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto U = Th.element();
             //e3.printMatlab("phat.m");
@@ -364,7 +376,7 @@ public :
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
                 solution(3_c,i)=U(1_c,i);
-#if 1
+#if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
             e3.printMatlab("phat1.m");
@@ -387,49 +399,52 @@ public :
     product_space_t M_ps;
     condensed_matrix_ptrtype M_matrix;
 };
-template<typename PS, bool Condense>
-constexpr bool BlockBilinearForm<PS,Condense>::do_condense;
 
-template<typename PS,bool Condense>
-BlockBilinearForm<PS,Condense>
-blockform2( PS&& ps, size_type pattern)
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, BackendT&& b )
 {
-    return BlockBilinearForm<PS,Condense>( std::forward<PS>(ps), pattern );
+    return BlockBilinearForm<PS>( std::forward<PS>(ps), std::forward<BackendT>(b) );
 }
 
-template<typename PS,bool Condense>
-BlockBilinearForm<PS,Condense>
-blockform2( PS const& ps, size_type pattern)
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern )
 {
-    return BlockBilinearForm<PS,Condense>( ps, pattern );
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern );
 }
 
-template<typename PS,bool Condense>
-BlockBilinearForm<PS,Condense>
-blockform2( PS&& ps, condensed_matrix_ptr_t<double,Condense> m )
+template<typename PS,typename T>
+BlockBilinearForm<PS>
+blockform2( PS&& ps, condensed_matrix_ptr_t<T> m )
 {
-    return BlockBilinearForm<PS,Condense>( std::forward<PS>(ps), m );
+    return BlockBilinearForm<PS>( std::forward<PS>(ps), m );
 }
 /**
  * Handles linear form over a product of spaces
  */
-template<typename PS,bool Condense>
+template<typename PS>
 class BlockLinearForm
 {
 public :
     using value_type = typename std::decay_t<PS>::value_type;
     using product_space_t = PS;
-    static constexpr bool do_condense = Condense;
-    using condensed_vector_type = VectorCondensed<value_type,do_condense>;
+    using condensed_vector_type = VectorCondensed<value_type>;
     using condensed_vector_ptrtype = boost::shared_ptr<condensed_vector_type>;
 
     BlockLinearForm() = default;
 
-    template<typename T>
-    BlockLinearForm(T&& ps )
+    template<typename T, typename BackendT>
+    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), *backend(), false))
+        M_vector(boost::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
+        {}
+    template<typename T, typename BackendT>
+    BlockLinearForm(T&& ps, BackendT&& b )
+        :
+        M_ps(std::forward<T>(ps)),
+        M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
     BlockLinearForm(T&& ps, condensed_vector_ptrtype v )
@@ -461,18 +476,18 @@ public :
 
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
                                  [&] (auto _) {
-                                     cout << "filling out dyn vector block (" << int(n1) + s  << ") condense=" << do_condense << "\n";
+                                     VLOG(2) << "filling out dyn vector block (" << int(n1) + s  << ") condense=" << M_vector->staticCondensation() << "\n";
                                      return form1(_test=(*_(space))[s],_vector=M_vector->block(int(n1)+s), _rowstart=int(n1)+s );
                                  },
                                  [&] (auto _){
-                                     cout << "filling out vector block (" << n1  << ") condense=" << do_condense << "\n";
+                                     VLOG(2) << "filling out vector block (" << n1  << ") condense=" << M_vector->staticCondensation() << "\n";
                                      return form1(_test=_(space),_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
                                  });
         }
 
     decltype(auto) operator()( int n1 )
         {
-            cout << "filling out vector block (" << n1 << ") condense=" << do_condense << "\n";
+            VLOG(2) << "filling out vector block (" << n1 << ") condense=" << M_vector->staticCondensation() << "\n";
             return form1(_test=M_ps[n1],_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
         }
     void close()
@@ -505,26 +520,26 @@ public :
     condensed_vector_ptrtype M_vector;
 };
 
-template<typename PS, bool Condense>
-constexpr bool BlockLinearForm<PS,Condense>::do_condense;
 
-template<typename PS, bool Condense>
-BlockLinearForm<PS, Condense>
-blockform1( PS&& ps )
+template<typename PS, typename BackendT>
+BlockLinearForm<PS>
+blockform1( PS&& ps, BackendT&& b )
 {
-    return BlockLinearForm<PS,Condense>( std::forward<PS>(ps) );
+    return BlockLinearForm<PS>( std::forward<PS>(ps), std::forward<BackendT>(b) );
 }
-template<typename PS, bool Condense>
-BlockLinearForm<PS, Condense>
-blockform1( PS const& ps )
+
+template<typename PS, typename BackendT>
+BlockLinearForm<PS>
+blockform1( PS&& ps, solve::strategy s, BackendT&& b )
 {
-    return BlockLinearForm<PS,Condense>( ps );
+    return BlockLinearForm<PS>( std::forward<PS>(ps), s, std::forward<BackendT>(b) );
 }
-template<typename PS, bool Condense>
-BlockLinearForm<PS,Condense>
-blockform1( PS&& ps, boost::shared_ptr<VectorCondensed<double,Condense>> v )
+
+template<typename PS,typename T>
+BlockLinearForm<PS>
+blockform1( PS&& ps, condensed_vector_ptr_t<T> v )
 {
-    return BlockLinearForm<PS,Condense>( std::forward<PS>(ps), v );
+    return BlockLinearForm<PS>( std::forward<PS>(ps), v );
 }
 
 

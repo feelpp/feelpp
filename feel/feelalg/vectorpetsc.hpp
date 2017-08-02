@@ -331,7 +331,7 @@ public:
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
     Vector<value_type>& operator= ( const VectorPetsc<value_type> &V );
     /**
      * Addition operator.
@@ -452,7 +452,7 @@ public:
     /**
      * Set entries to zero between \p start and \p stop
      */
-    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    void zero ( size_type /*start*/,  size_type /*stop*/ ) override
     {
         this->zero();
     }
@@ -526,7 +526,7 @@ public:
      * the \p NumericVector<T> V
      */
     void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -540,7 +540,7 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& V_in,
-                     const MatrixSparse<value_type>& A_in );
+                     const MatrixSparse<value_type>& A_in ) override;
 
 
     /**
@@ -563,7 +563,7 @@ public:
      * and you want to specify WHERE to insert it
      */
     void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -575,7 +575,7 @@ public:
      * the Vector<T> V
      */
     void insert ( const Vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+                  const std::vector<size_type>& dof_indices ) override;
 
 
     /**
@@ -585,13 +585,13 @@ public:
      * the DenseVector<T> V
      */
     void insert ( const ublas::vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+                  const std::vector<size_type>& dof_indices ) override;
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor );
+    void scale ( const T factor ) override;
 
 
     /**
@@ -599,77 +599,76 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add ( const value_type& v_in );
+    virtual void add ( const value_type& v_in ) override;
 
     /**
      * \f$ U+=V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const Vector<value_type>& v );
+    void add ( const Vector<value_type>& v ) override;
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in );
-
+    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    virtual int reciprocal();
+    virtual int reciprocal() override;
 
     /**
      * @return the minimum element in the vector.
      * In case of complex numbers, this returns the minimum
      * Real part.
      */
-    real_type min () const;
+    real_type min () const override;
 
     /**
      * @returns the maximum element in the vector.
      * In case of complex numbers, this returns the maximum
      * Real part.
      */
-    real_type max() const;
-    real_type maxWithIndex( int* index=nullptr ) const;
+    real_type max() const override;
+    real_type maxWithIndex( int* index=nullptr ) const override;
 
 
     //! Replaces every element in a vector with its absolute value
-    void abs();
+    void abs() override;
 
     /**
      * @return the \f$l_1\f$-norm of the vector, i.e.
      * the sum of the absolute values.
      */
-    real_type l1Norm () const;
+    real_type l1Norm () const override;
 
     /**
      * @returns the \f$l_2\f$-norm of the vector, i.e.
      * the square root of the sum of the
      * squares of the elements.
      */
-    real_type l2Norm () const;
+    real_type l2Norm () const override;
 
     /**
      * @return the sum of the vector components, i.e.
      * the sum of the values.
      */
-    value_type sum () const;
+    value_type sum () const override;
 
     /**
      * @returns the maximum absolute value of the
      * elements of this vector, which is the
      * \f$l_\infty\f$-norm of a vector.
      */
-    real_type linftyNorm () const;
+    real_type linftyNorm () const override;
 
     /**
      * @return the index of the first vector element
      * actually stored on this processor
      */
-    size_type firstLocalIndex () const
+    size_type firstLocalIndex () const override
     {
         assert ( this->isInitialized() );
 
@@ -687,7 +686,7 @@ public:
      * @return the index of the last vector element
      * actually stored on this processor
      */
-    size_type lastLocalIndex () const
+    size_type lastLocalIndex () const override
     {
         assert ( this->isInitialized() );
 
@@ -707,7 +706,7 @@ public:
      */
     void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
-    value_type dot( Vector<T> const& __v ) const;
+    value_type dot( Vector<T> const& __v ) const override;
 
     /**
      * This function creates a vector which is defined
@@ -715,7 +714,7 @@ public:
      */
     boost::shared_ptr<Vector<T> >
     createSubVector( std::vector<size_type> const& rows,
-                     bool checkAndFixRange=true ) const;
+                     bool checkAndFixRange=true ) const override;
 
     /**
      * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
@@ -724,7 +723,7 @@ public:
     void
     updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
                      std::vector<size_type> const& rows,
-                     bool init=true );
+                     bool init=true ) override;
 
 #if 0
     /**

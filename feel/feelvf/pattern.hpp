@@ -38,7 +38,8 @@ enum  Pattern
     PATTERN_SYMMETRIC = 1 << 3,
     ZERO      = 1 << 4,
     HAS_NO_BLOCK_PATTERN = 1 << 5,
-    HDG = 1 << 6
+    HDG = 1 << 6,
+    NONE= 1<<7
 };
 
 //} // namespace vf

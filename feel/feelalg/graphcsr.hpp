@@ -654,6 +654,7 @@ csrGraphBlocks( PS&& ps,
     int s = ps.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
 
+
     for( int i = 0; i < ps.numberOfSpaces(); ++i )
         for( int j = 0; j < ps.numberOfSpaces(); ++j )
         {

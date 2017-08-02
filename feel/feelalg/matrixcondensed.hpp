@@ -36,7 +36,7 @@ namespace Feel {
 //!
 //! Matrix to represent statically condensed matrices 
 //!
-template<typename T, bool Condense = false>
+template<typename T>
 class MatrixCondensed  : public MatrixBlockBase<T>
 {
 public:
@@ -47,41 +47,64 @@ public:
     using sc_type = StaticCondensation<value_type>;
     using sc_ptrtype = boost::shared_ptr<sc_type>;
     using this_matrix_ptrtype = boost::shared_ptr<MatrixCondensed<value_type>>;
-    static const bool do_condense=Condense;
-    
+        
     MatrixCondensed()
         :
         super(Environment::worldComm()),
-        M_sc( new sc_type )
+        M_sc( new sc_type ),
+        M_strategy( solve::strategy::static_condensation )
         {}
     MatrixCondensed( WorldComm const& wc )
         :
         super( wc ),
-        M_sc( new sc_type )
+        M_sc( new sc_type ),
+        M_strategy( solve::strategy::static_condensation )
         {}
+    template<typename BackendT>
     MatrixCondensed( vf::BlocksBase<graph_ptrtype> const& graph,
-                     backend_ptrtype backend,
+                     BackendT&& b,
                      bool diag_is_nonzero = true )
         :
-        super( graph, backend, true ),
-        M_sc( new sc_type )
+        super( graph, std::forward<BackendT>(b), true ),
+        M_sc( new sc_type ),
+        M_strategy( solve::strategy::static_condensation )
         {}
-#if 0    
-    MatrixCondensed ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+    template<typename BackendT>
+    MatrixCondensed( solve::strategy s,
+                     vf::BlocksBase<graph_ptrtype> const& graph,
+                     BackendT&& b,
+                     bool diag_is_nonzero = true )
         :
-        super( dmRow, dmCol, worldComm ),
-        M_sc( new sc_type )
+        super( graph, std::forward<BackendT>(b), true ),
+        M_sc( new sc_type ),
+        M_strategy( s )
         {}
-#endif
+#if 0
     template<typename... Args>
     MatrixCondensed( Args&&... params )
         :
          super( std::forward<Args>( params )... ),
-        M_sc( new sc_type )
+         M_sc( new sc_type ),
+         M_strategy( solve::strategy::static_condensation )
         {}
+#endif
     MatrixCondensed( MatrixCondensed const& ) = default;
     MatrixCondensed& operator=( MatrixCondensed const& ) = default;
     ~MatrixCondensed() = default;
+
+    //!
+    //! @return true if strategy is monolithic, false otherwise
+    //!
+    bool monolithic() const { return M_strategy == solve::strategy::monolithic; }
+    //!
+    //! @return true if strategy is static condensation, false otherwise
+    //!
+    bool staticCondensation() const { return M_strategy == solve::strategy::static_condensation; }
+
+    //!
+    //! set the strategy \p s
+    //!
+    void setStrategy( solve::strategy s ) { M_strategy = s; }
 
 
     virtual void addMatrix ( int* rows, int nrows,
@@ -90,57 +113,31 @@ public:
                              size_type K, size_type K2
                              ) override
         {
-            return addMatrixImpl( rows, nrows, cols, ncols, data, K, K2, mpl::bool_<do_condense>() );
-        }
-    void addMatrixImpl ( int* rows, int nrows,
-                         int* cols, int ncols,
-                         value_type* data,
-                         size_type K, size_type K2,
-                         mpl::bool_<true>
-                         )
-        {
             tic();
-            //if ( K != invalid_size_type_value && K2 != invalid_size_type_value )
-            M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
-            //M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
-            toc("sc.addlocalmatrix",FLAGS_v>0);
-        }
-    void addMatrixImpl ( int* rows, int nrows,
-                         int* cols, int ncols,
-                         value_type* data,
-                         size_type K, size_type K2,
-                         mpl::bool_<false>
-                         )
-        {
-            tic();
-            super::addMatrix( rows, nrows, cols, ncols, data );
-            toc("mono.addlocalmatrix",FLAGS_v>0);
+            if ( staticCondensation() )
+                M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
+            else
+                super::addMatrix( rows, nrows, cols, ncols, data );
+            toc("addMatrix",FLAGS_v>0);
         }
     sc_ptrtype sc() { return M_sc; }
     sc_ptrtype const& sc() const { return M_sc; }
     sc_ptrtype const& sc( int row, int col ) const { M_sc->block( row, col );return M_sc; }
     sparse_matrix_ptrtype block( int row, int col )
         {
-            return block( row, col, mpl::bool_<Condense>() );
-        }
-    sparse_matrix_ptrtype block( int row, int col, mpl::bool_<true> )
-        {
-            //sc->setMatrix( this->shared_from_this() );
-            M_sc->block( row, col );
-            return this->shared_from_this();
-        }
-    sparse_matrix_ptrtype block( int row, int col, mpl::bool_<false> )
-        {
+            if ( staticCondensation() )
+                M_sc->block( row, col );
             return this->shared_from_this();
         }
 private:
     sc_ptrtype M_sc;
+    solve::strategy M_strategy;
 };
 
-template<typename T, bool Condense=true>
-using condensed_matrix_t = MatrixCondensed<T,Condense>;
-template<typename T,bool Condense=true>
-using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T,Condense>>;
+template<typename T>
+using condensed_matrix_t = MatrixCondensed<T>;
+template<typename T>
+using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T>>;
 
 //!
 //! Create a shared pointer \p MatrixCondensed<T> from \p Args
@@ -149,16 +146,15 @@ using condensed_matrix_ptr_t = boost::shared_ptr<condensed_matrix_t<T,Condense>>
 //! auto mc = makeSharedMatrixCondensed<double>();
 //! @endcode
 //!
-template< class T, bool C, class... Args >
-condensed_matrix_ptr_t<T,C>
+template< class T, class... Args >
+condensed_matrix_ptr_t<T>
 makeSharedMatrixCondensed( Args&&... args )
 {
-    return boost::make_shared<MatrixCondensed<T,C>>( args... );
+    return boost::make_shared<MatrixCondensed<T>>( args... );
 }
 
 #if !defined(FEELPP_MATRIXCONDENSED_NOEXTERN)
-extern template class MatrixCondensed<double,true>;
-extern template class MatrixCondensed<double,false>;
+extern template class MatrixCondensed<double>;
 //extern template class Backend<std::complex<double>>;
 #endif
 

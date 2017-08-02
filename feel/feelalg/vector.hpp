@@ -36,7 +36,6 @@
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
-#include <feel/feelalg/staticcondensation.hpp>
 
 namespace Feel
 {
@@ -71,8 +70,6 @@ public:
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
     using vector_ptrtype = boost::shared_ptr<Vector<T>>;
 
-    using sc_type = StaticCondensation<value_type>;
-    using sc_ptrtype = boost::shared_ptr<sc_type>;
     /**
      *  Dummy-Constructor. Dimension=0
      */
