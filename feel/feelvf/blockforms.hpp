@@ -90,7 +90,7 @@ public :
     BlockBilinearForm( T&& ps, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::ZERO), std::forward<BackendT>(b), false ) )
+        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
         {}
 
     template<typename T, typename BackendT>
@@ -98,7 +98,7 @@ public :
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( s,
-                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::COUPLED:pattern),
                                                              std::forward<BackendT>(b),
                                                              (s==solve::strategy::static_condensation)?false:true )  )
         {}
