@@ -157,9 +157,9 @@ protected:
     product2_space_ptrtype M_ps;
 
     backend_ptrtype M_backend;
-    condensed_matrix_ptr_t<value_type,true> M_A_cst;
-    condensed_matrix_ptr_t<value_type,true> M_A;
-    condensed_vector_ptr_t<value_type,true> M_F;
+    condensed_matrix_ptr_t<value_type> M_A_cst;
+    condensed_matrix_ptr_t<value_type> M_A;
+    condensed_vector_ptr_t<value_type> M_F;
     vector_ptrtype M_U;
 
     Vh_element_t M_up; // flux solution
