@@ -371,7 +371,6 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
         M_betaAqm[idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigma"));
 
 
-    //! Devant mon expression Neumann j'ai -I/S_gammaIn, est-ce qu'il faut que je rajoute S_gammaIn ici?
     for( auto const& exAtM : bc["potential"]["Neumann"] )
         M_betaAqm[idx++][0] = -mu.parameterNamed("I")/S_gammaIn;
 
@@ -468,17 +467,17 @@ Thermoelectric::solve( parameter_type const& mu )
     auto materials = M_modelProps->materials();
     auto gamma = doption("thermoelectric.gamma");
 
-    // Surface de Gamma In
+    // Surface of Gamma In
     auto S_gammaIn = doption("thermoelectric.S_gammaIn");
 
-    // Marker du mesh sur lequel on veut rajouter W
+    // Marker of the mesh on which we want to add W
     auto W_marker = soption( "thermoelectric.W_marker");
 
     auto I = mu.parameterNamed("I");
     auto h = mu.parameterNamed("h");
     auto T_ext = mu.parameterNamed("T_ext");
 
-    // Puissance suplémentaire qu'on veut rajouter sur une partie du système
+    // Power we want to add on a part of the system
     auto W = mu.parameterNamed("W");
 
 
@@ -553,7 +552,7 @@ Thermoelectric::solve( parameter_type const& mu )
                          k[mat.marker()]*inner(gradt(T), grad(phiT)) );
     }
 
-    // T Dirichlet
+    // T Dirichlet condition
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
     {
 
@@ -585,7 +584,7 @@ Thermoelectric::solve( parameter_type const& mu )
                        id(phiT)*sigma[mat.marker()]*gradv(V)*trans(gradv(V)) );
     }
 
-    // Condition Dirichlet pour T
+    // T Dirichlet condition
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
@@ -599,7 +598,6 @@ Thermoelectric::solve( parameter_type const& mu )
 
     // T Robin condition
 
-    //! Sensé être les mêmes si je ne me trompe pas
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto e = expr(exAtM.expression2());
@@ -611,7 +609,7 @@ Thermoelectric::solve( parameter_type const& mu )
                          e*id(phiT) );
     }
 
-    // Rajout de la puissance supplémentaire sur la partie marqué par W_marker
+    // Addition of the power due to junctions
 
     fT += integrate(markedfaces(M_mesh, W_marker),
                     W*id(phiT));

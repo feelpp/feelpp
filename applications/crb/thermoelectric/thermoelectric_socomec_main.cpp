@@ -29,28 +29,43 @@ using namespace Feel;
 
 int main( int argc, char** argv)
 {
+
     using namespace Feel;
-    usine Feel::cout;
-        po::options_description model_options(" Options for the model");
-        model_options.add_options()
-                ( "thermoelectric.sigma", po::value<double>()->default_value(1), "electric conductivity" )
-                ( "thermoelectric.current", po::value<double>()->default_value(1), "current intensity" )
-                ( "thermoelectric.k", po::value<double>()->default_value(1), "thermal conductivity" )
-                ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
-                ( "thermoelectric.Tw", po::value<double>()->default_value(1), "water's temperatur" )
-                ;
+    using Feel::cout;
+        po::options_description socomec_options("Options for the socomec model");
+        socomec_options.add_options()
+            ( "thermoelectric.sigma_fils", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.sigma_dissipateur", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.sigma_bornes", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.sigma_lugs", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.sigma_ABS", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.sigma_PVC", po::value<double>()->default_value(1), "electric conductivity" )
+            ( "thermoelectric.k_fils", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.k_dissipateur", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.k_bornes", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.k_lugs", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.k_ABS", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.k_PVC", po::value<double>()->default_value(1), "thermal conductivity" )
+            ( "thermoelectric.I", po::value<double>()->default_value(1), "current intensity" )
+            ( "thermoelectric.S_gammaIn", po::value<double>()->default_value(1), "section's surface")
+            ( "thermoelectric.W_marker", po::value<std::string>()->dafault_value("Cuivre_b"), "name of the marker for W")
+            ( "thermoelectric.W", po::value<double>()->default_value(0), "additional power due to junctions")
+            ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
+            ( "thermoelectric.T_ext", po::value<double>()->default_value(1), "exterior's temperature" )
+            ;
+
 
     Environment env( _argc=argc, _argv=argv,
-                     _desc=model_options
-                             .add(makeOptions())
-                             .add(crbOptions())
-                             .add(crbSEROptions())
-                             .add(eimOptions())
-                             .add(podOptions())
-                             .add(backend_options("backend-primal"))
-                             .add(backend_options("backend-dual"))
-                             .add(backend_options("backend-l2"))
-                             .add(bdf_options("PoissonCRB")) );
+                     _desc=socomec_options
+                     .add(makeOptions())
+                     .add(crbOptions())
+                     .add(crbSEROptions())
+                     .add(eimOptions())
+                     .add(podOptions())
+                     .add(backend_options("backend-primal"))
+                     .add(backend_options("backend-dual"))
+                     .add(backend_options("backend-l2"))
+                     .add(bdf_options("PoissonCRB")) );
 
     using rb_model_type = Thermoelectric;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
@@ -71,18 +86,44 @@ int main( int argc, char** argv)
     crb->offline();
 
     // parameter from option
-    double sigma = doption("thermoelectric.sigma");
-    double current = doption("thermoelectric.current");
-    double k = doption("thermoelectric.k");
+    double sigma_PVC = doption("thermoelectric.sigma_PVC");
+    double sigma_ABS = doption("thermoelectric.sigma_ABS");
+    double sigma_fils= doption("thermoelectric.sigma_fils");
+    double sigma_dissipateur = doption("thermoelectric.sigma_dissipateur");
+    double sigma_lugs= doption("thermoelectric.sigma_lugs");
+    double sigma_bornes= doption("thermoelectric.sigma_bornes");
+
+    double k_PVC = doption("thermoelectric.k_PVC");
+    double k_ABS = doption("thermoelectric.k_ABS");
+    double k_fils= doption("thermoelectric.k_fils");
+    double k_dissipateur = doption("thermoelectric.k_dissipateur");
+    double k_lugs= doption("thermoelectric.k_lugs");
+    double k_bornes= doption("thermoelectric.k_bornes");
+    
+    double I = doption("thermoelectric.I");
     double h = doption("thermoelectric.h");
-    double Tw = doption("thermoelectric.Tw");
+    double T_ext = doption("thermoelectric.T_ext");
+    
+    
     auto paramSpace = crbModel->parameterSpace();
     auto mu = paramSpace->element();
-    mu.setParameterNamed("sigma", sigma);
-    mu.setParameterNamed("current", current);
-    mu.setParameterNamed("k", k);
+    mu.setParameterNamed("sigma_PVC", sigma_PVC);
+    mu.setParameterNamed("sigma_ABS", sigma_ABS);
+    mu.setParameterNamed("sigma_fils", sigma_fils);
+    mu.setParameterNamed("sigma_dissipateur", sigma_dissipateur);
+    mu.setParameterNamed("sigma_lugs", sigma_lugs);
+    mu.setParameterNamed("sigma_bornes", sigma_bornes);
+
+    mu.setParameterNamed("k_PVC", k_PVC);
+    mu.setParameterNamed("k_ABS", k_ABS);
+    mu.setParameterNamed("k_fils", k_fils);
+    mu.setParameterNamed("k_dissipateur", k_dissipateur);
+    mu.setParameterNamed("k_lugs", k_lugs);
+    mu.setParameterNamed("k_bornes", k_bornes);
+
+    mu.setParameterNamed("I", I);
     mu.setParameterNamed("h", h);
-    mu.setParameterNamed("Tw", Tw);
+    mu.setParameterNamed("T_ext", T_ext);
     Feel::cout << "using parameter:" << std::endl << mu << std::endl;
 
     // online
@@ -141,4 +182,3 @@ int main( int argc, char** argv)
 
     return 0;
 }
-

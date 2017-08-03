@@ -41,27 +41,9 @@ makeOptions()
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
         ( "thermoelectric.gamma", po::value<double>()->default_value( 1e4 ), "penalisation term" )
-        ( "thermoelectric.sigma_fils", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.sigma_dissipateur", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.sigma_bornes", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.sigma_lugs", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.sigma_ABS", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.sigma_PVC", po::value<double>()->default_value(1), "electric conductivity" )
-            ( "thermoelectric.k_fils", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.k_dissipateur", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.k_bornes", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.k_lugs", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.k_ABS", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.k_PVC", po::value<double>()->default_value(1), "thermal conductivity" )
-            ( "thermoelectric.I", po::value<double>()->default_value(1), "current intensity" )
-            ( "thermoelectric.S_gammaIn", po::value<double>()->default_value(1), "section's surface")
-            ( "thermoelectric.W_marker", po::value<std::string>()->dafault_value("Cuivre_b"), "name of the marker for W")
-            ( "thermoelectric.W", po::value<double>()->default_value(0), "additional power due to junctions")
-        ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
-        ( "thermoelectric.T_ext", po::value<double>()->default_value(1), "exterior's temperature" )
-        ( "thermoelectric.N", po::value<int>()->default_value(100), "number of basis function to use" )
         ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
-        ;
+            ( "thermoelectric.N", po::value<int>()->default_value(100), "number of basis function to use" )
+            ;
     options.add(backend_options("mono") );
     return options;
 }
