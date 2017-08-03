@@ -39,22 +39,15 @@ makeOptions()
 {
     po::options_description testhdivoptions( "test h_div options" );
     testhdivoptions.add_options()
-        ( "convtest", po::value<bool>()->default_value( 1 ), "1: convergence test, 0:otherwise" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
-        ( "v_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
-        ( "w_testfun", po::value<std::string>()->default_value( "{1,0,0,1}:x:y" ), "value for the test function" )
-        // ( "u_exact", po::value<std::string>()->default_value( "{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y" ), "u exact" )
-        ( "u_exact", po::value<std::string>()->default_value( "{ cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y)  }:x:y:z" ), "u exact" )
-		// ( "f", po::value<std::string>()->default_value( "{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"  ), "divergence of the stress tensor")
- 		( "f", po::value<std::string>()->default_value( "{ 2*pi^2*sin(pi*x)*sin(pi*y)*sin(pi*z) - 2*pi^2*cos(pi*x)*sin(pi*y)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*y)*cos(pi*z), 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y) - 5*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 2*pi^2*cos(pi*x)*cos(pi*y)*sin(pi*z), 2*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*z)*sin(pi*y) - 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y)  }:x:y:z"  ), "divergence of the stress tensor")
-		( "load", po::value<std::string>()->default_value( "{0,0,0,0}:x:y"  ), "load")
-        ( "hface", po::value<int>()->default_value( 0 ), "hface" )
-        ( "nb_refine", po::value<int>()->default_value( 1 ), "nb_refine" )
+        ( "u_exact", po::value<std::string>()->default_value("empty"), "u exact" )
+		( "f", po::value<std::string>()->default_value("empty"), "divergence of the stress tensor")
+		( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "use_hypercube", po::value<bool>()->default_value( false ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
@@ -70,7 +63,7 @@ makeAbout()
     AboutData about( "hdg" ,
                      "hdg" ,
                      "0.1",
-                     "convergence test for an HDG method for linear elasticity",
+                     "benchmark test for an HDG method for linear elasticity",
                      AboutData::License_GPL,
                      "Copyright (c) 2016 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
@@ -164,7 +157,7 @@ public:
     /**
      * run the application
      */
-    void convergence();
+    void run();
 
 
 private:
@@ -181,7 +174,7 @@ private:
 
 template<int Dim, int OrderP, int OrderG>
 void
-Hdg<Dim, OrderP, OrderG>::convergence()
+Hdg<Dim, OrderP, OrderG>::run()
 {
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -195,11 +188,24 @@ Hdg<Dim, OrderP, OrderG>::convergence()
 
     // Exact solutions
     auto u_exact = expr<Dim,1,expr_order>(soption("u_exact"));
+	if (soption("u_exact") == "empty")
+	{
+		if (Dim == 2)
+			u_exact = expr<Dim,1,expr_order>("{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y");
+		else
+			u_exact = expr<Dim,1,expr_order>("{ cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y)  }:x:y:z");
+	}
     auto gradu_exact = grad<Dim,expr_order>(u_exact);
     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
     auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
     auto f = expr<Dim,1,expr_order>(soption("f"));
-
+	if (soption("f") == "empty")
+	{
+		if (Dim == 2)
+			f = expr<Dim,1,expr_order>("{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y");
+		else
+			f = expr<Dim,1,expr_order>("{ 2*pi^2*sin(pi*x)*sin(pi*y)*sin(pi*z) - 2*pi^2*cos(pi*x)*sin(pi*y)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*y)*cos(pi*z), 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y) - 5*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 2*pi^2*cos(pi*x)*cos(pi*y)*sin(pi*z), 2*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*z)*sin(pi*y) - 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y)  }:x:y:z");
+	}
 
     cout << "lambda : " << lambda      << std::endl;
     cout << "mu     : " << mu          << std::endl;
@@ -211,330 +217,323 @@ Hdg<Dim, OrderP, OrderG>::convergence()
     // Coeff for stabilization terms
     auto tau_constant = cst(M_tau_constant);
 
-    std::ofstream out;
-    MasterStream cvg( out );
-    cvg.open("data.csv");
-    cvg << "hsize" << "\t" << "nDofsigma" << "\t" << "l2err_sigma"  << "\t" << "nDofu"  << "\t" << "l2err_u" << "\n";
-
     double current_hsize = meshSize;
-    for(int i=0; i<ioption("nb_refine"); i++)
+    mesh_ptrtype mesh;
+    std::string mesh_name;
+    if( boption("use_hypercube"))
+        mesh_name = (boost::format( "%1%-%2%D" ) % "hypercube" % Dim ).str();
+    else
     {
-        mesh_ptrtype mesh;
-        std::string mesh_name;
+        Feel::fs::path mypath(soption( _name="gmsh.filename" ));
+        mesh_name = mypath.stem().string();
+    }
+
+    tic();
+    // be careful to delete the mesh if you rerun the benchmarks
+    if( !fs::exists(mesh_name+".msh") )
+    {
+        //std::cout << "createGMSHmesh" << std::endl;
+        LOG(INFO) << "[Hdg] Mesh has been created \n";
         if( boption("use_hypercube"))
-            mesh_name = (boost::format( "%1%-%2%D" ) % "hypercube" % Dim ).str();
-        else
         {
-            Feel::fs::path mypath(soption( _name="gmsh.filename" ));
-            mesh_name = mypath.stem().string();
+            mesh = createGMSHMesh( _mesh=new mesh_type,
+                                   _desc=domain( _name = mesh_name ,
+                                                 _shape = "hypercube",
+                                                 _usenames = true,
+                                                 _dim = Dim,
+                                                 _h = meshSize,
+                                                 _xmin=0,_xmax=2,
+                                                 _ymin=0,_ymax=2,
+                                                 _zmin=0,_zmax=2 ) );
+            mesh->addMarkerName( "Dirichlet",( Dim==2 )?1:19, (Dim==2)?1:2);
+            mesh->addMarkerName( "Neumann",( Dim==2)?3:27, (Dim==2)?1:2);
         }
+        else
+            mesh = loadMesh( new mesh_type);
+    }
+	else
+    {
+        //std::cout << "loadGMSHmesh" << std::endl;
+        LOG(INFO) << "[Hdg] Mesh has been loaded \n";
+        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                             _filename=mesh_name+".msh",
+                             _refine=0,
+                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    }
 
-        tic();
-        // be careful to delete the mesh if you rerun the benchmarks
-        if( !fs::exists(mesh_name+".msh") )
-        {
-            //std::cout << "createGMSHmesh" << std::endl;
-            LOG(INFO) << "[Hdg] Mesh has been created \n";
-            if( boption("use_hypercube"))
+    std::vector<std::string> M_IBCList;
+    M_IBCList.push_back("integral");
+
+    // Check bc
+    if ( mesh->hasFaceMarker("Dirichlet") )
+        Feel::cout << "Dirichlet: yes" << std::endl;
+    else
+        Feel::cout << "WARNING!! Dirichlet not found" << std::endl;
+
+    if ( mesh->hasFaceMarker("Neumann") )
+        Feel::cout << "Neumann: yes" << std::endl;
+    else
+        Feel::cout << "Neumann: no" << std::endl;
+
+    for( int i = 0; i < ioption("nb_ibc"); ++i )
+    {
+        // auto ind = i == 0 ? "" : std::to_string(i+1);
+        // std::string marker = boost::str(boost::format("ibc%1%") % ind );
+    
+        if ( mesh->hasFaceMarker( M_IBCList[i] ) )
+            Feel::cout << "Ibc: yes" << std::endl;
+        else
+            Feel::cout << "WARNING!! Ibc not found" << std::endl;
+            
+    }
+
+
+
+    auto complement_integral_bdy = complement(faces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
+            for( int i = 0; i < M_IBCList.size(); i++ )
             {
-                mesh = createGMSHMesh( _mesh=new mesh_type,
-                                       _desc=domain( _name = mesh_name ,
-                                                     _shape = "hypercube",
-                                                     _usenames = true,
-                                                     _dim = Dim,
-                                                     _h = meshSize,
-                                                     _xmin=0,_xmax=2,
-                                                     _ymin=0,_ymax=2,
-                                                     _zmin=0,_zmax=2 ) );
-                mesh->addMarkerName( "Dirichlet",( Dim==2 )?1:19, (Dim==2)?1:2);
-                mesh->addMarkerName( "Neumann",( Dim==2)?3:27, (Dim==2)?1:2);
+                if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
+                    return true;
             }
-            else
-                mesh = loadMesh( new mesh_type);
-        }
-		else
-        {
-            //std::cout << "loadGMSHmesh" << std::endl;
-            LOG(INFO) << "[Hdg] Mesh has been loaded (refine level = " << i << ") \n";
-            mesh = loadGMSHMesh( _mesh=new mesh_type,
-                                 _filename=mesh_name+".msh",
-                                 _refine=i,
-                                 _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-        }
+            return false;
+        });
 
-        std::vector<std::string> M_IBCList;
-        M_IBCList.push_back("integral");
-
-        // Check bc
-        if ( mesh->hasFaceMarker("Dirichlet") )
-            Feel::cout << "Dirichlet: yes" << std::endl;
-        else
-            Feel::cout << "WARNING!! Dirichlet not found" << std::endl;
-
-        if ( mesh->hasFaceMarker("Neumann") )
-            Feel::cout << "Neumann: yes" << std::endl;
-        else
-            Feel::cout << "Neumann: no" << std::endl;
-
-        for( int i = 0; i < ioption("nb_ibc"); ++i )
-        {
-            // auto ind = i == 0 ? "" : std::to_string(i+1);
-            // std::string marker = boost::str(boost::format("ibc%1%") % ind );
-        
-            if ( mesh->hasFaceMarker( M_IBCList[i] ) )
-                Feel::cout << "Ibc: yes" << std::endl;
-            else
-                Feel::cout << "WARNING!! Ibc not found" << std::endl;
-                
-        }
+    auto gammaMinusIntegral = complement(boundaryfaces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
+            for( int i = 0; i < M_IBCList.size(); i++ )
+            {
+                if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
+                    return true;
+            }
+            return false;
+        });
 
 
 
-        auto complement_integral_bdy = complement(faces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
-                for( int i = 0; i < M_IBCList.size(); i++ )
-                {
-                    if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
-                        return true;
-                }
-                return false;
-            });
-
-        auto gammaMinusIntegral = complement(boundaryfaces(mesh),[&mesh,&M_IBCList]( auto const& e ) {
-                for( int i = 0; i < M_IBCList.size(); i++ )
-                {
-                    if ( e.marker().value() == mesh->markerName( M_IBCList[i] ) )
-                        return true;
-                }
-                return false;
-            });
+    /*  OLD
+     auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) {
+     for( int i = 0; i < ioption("nb_ibc"); ++i )
+     {
+     auto ind = i == 0 ? "" : std::to_string(i+1);
+     std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+     if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
+     return true;
+     }
+     return false;
+     }) ;
 
 
+     auto gammaMinusIntegral = complement(boundaryfaces(mesh), [&mesh]( auto const& e ) {
+     for( int i = 0; i < ioption("nb_ibc"); ++i )
+     {
+     auto ind = i == 0 ? "" : std::to_string(i+1);
+     std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+     if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
+     return true;
+     }
+     return false;
+     });
+     */
 
-        /*  OLD
-         auto complement_integral_bdy = complement(faces(mesh),[&mesh]( auto const& e ) {
-         for( int i = 0; i < ioption("nb_ibc"); ++i )
-         {
-         auto ind = i == 0 ? "" : std::to_string(i+1);
-         std::string marker = boost::str(boost::format("Ibc%1%") % ind );
-         if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
-         return true;
-         }
-         return false;
-         }) ;
+    auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    std::vector<std::string> ibc_markers(ioption("nb_ibc"));
+    for( int i = 0; i < ioption("nb_ibc"); i++ )
+    {
+        // auto ind = i == 0 ? "" : std::to_string(i+1);
+        // std::string marker = boost::str(boost::format("Ibc%1%") % ind );
+        ibc_markers.push_back( M_IBCList[i] );
+    }
+    auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh,ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
 
+    toc("mesh",true);
 
-         auto gammaMinusIntegral = complement(boundaryfaces(mesh), [&mesh]( auto const& e ) {
-         for( int i = 0; i < ioption("nb_ibc"); ++i )
-         {
-         auto ind = i == 0 ? "" : std::to_string(i+1);
-         std::string marker = boost::str(boost::format("Ibc%1%") % ind );
-         if ( e.hasMarker() && e.marker().value() == mesh->markerName( marker ) )
-         return true;
-         }
-         return false;
-         });
-         */
+    // ****** Hybrid-mixed formulation ******
+    // We treat Vh, Wh, and Mh separately
+    tic();
 
-        auto face_mesh = createSubmesh( mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
-        std::vector<std::string> ibc_markers(ioption("nb_ibc"));
-        for( int i = 0; i < ioption("nb_ibc"); i++ )
-        {
-            // auto ind = i == 0 ? "" : std::to_string(i+1);
-            // std::string marker = boost::str(boost::format("Ibc%1%") % ind );
-            ibc_markers.push_back( M_IBCList[i] );
-        }
-        auto ibc_mesh = createSubmesh( mesh, markedfaces(mesh,ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    Vh_ptr_t Vh = Pdhms<OrderP>( mesh, true );
+    Wh_ptr_t Wh = Pdhv<OrderP>( mesh, true );
+    Mh_ptr_t Mh = Pdhv<OrderP>( face_mesh,true );
+    Ch_ptr_t Ch = Pchv<0>(ibc_mesh, true);
 
-        toc("mesh",true);
+    toc("spaces",true);
 
-        // ****** Hybrid-mixed formulation ******
-        // We treat Vh, Wh, and Mh separately
-        tic();
+    /*
+     size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
+     CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh " << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
+     auto Xh = Pdh<0>(face_mesh);
+     auto uf = Xh->element(cst(1.));
+     CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
+     */
+    cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl
+         << "Ch<" << 0 << "> : " << Ch->nDof() << std::endl;
+	/*
+     auto sigmap = Vh->elementPtr( "sigma" );
+     auto up     = Wh->elementPtr( "u" );
+     auto uhatp  = Mh->elementPtr( "uhat" );
+     */
 
-        Vh_ptr_t Vh = Pdhms<OrderP>( mesh, true );
-        Wh_ptr_t Wh = Pdhv<OrderP>( mesh, true );
-        Mh_ptr_t Mh = Pdhv<OrderP>( face_mesh,true );
-        Ch_ptr_t Ch = Pchv<0>(ibc_mesh, true);
+    auto sigma = Vh->element( "sigma" );
+    auto v     = Vh->element( "v" );
+    auto u     = Wh->element( "u" );
+    auto w     = Wh->element( "w" );
+    auto uhat  = Mh->element( "uhat" );
+    auto m     = Mh->element( "m" );
+    auto nu    = Ch->element( "nu" );
+    auto uI    = Ch->element( "uI" );
 
-        toc("spaces",true);
+    // Number of dofs associated with each space
+    auto nDofsigma = sigma.functionSpace()->nDof();
+    auto nDofu     = u.functionSpace()->nDof();
+    auto nDofuhat  = uhat.functionSpace()->nDof();
 
-        /*
-         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
-         CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh " << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
-         auto Xh = Pdh<0>(face_mesh);
-         auto uf = Xh->element(cst(1.));
-         CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
-         */
-        cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-             << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
-             << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl
-             << "Ch<" << 0 << "> : " << Ch->nDof() << std::endl;
-		/*
-         auto sigmap = Vh->elementPtr( "sigma" );
-         auto up     = Wh->elementPtr( "u" );
-         auto uhatp  = Mh->elementPtr( "uhat" );
-         */
+	// auto lambda = expr(soption("lambda"));
+	// auto mu     = expr(soption("mu"));
+	auto c1     = cst(0.5)/mu;
+ 	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
 
-        auto sigma = Vh->element( "sigma" );
-        auto v     = Vh->element( "v" );
-        auto u     = Wh->element( "u" );
-        auto w     = Wh->element( "w" );
-        auto uhat  = Mh->element( "uhat" );
-        auto m     = Mh->element( "m" );
-        auto nu    = Ch->element( "nu" );
-        auto uI    = Ch->element( "uI" );
+	tic();
+    auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
+    auto ps = product2( ibcSpaces, Vh, Wh, Mh );
 
-        // Number of dofs associated with each space
-        auto nDofsigma = sigma.functionSpace()->nDof();
-        auto nDofu     = u.functionSpace()->nDof();
-        auto nDofuhat  = uhat.functionSpace()->nDof();
-
-    	// auto lambda = expr(soption("lambda"));
-    	// auto mu     = expr(soption("mu"));
-    	auto c1     = cst(0.5)/mu;
-   	 	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
-
-		tic();
-        auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( ioption("nb_ibc"), Ch);
-        auto ps = product2( ibcSpaces, Vh, Wh, Mh );
-
-		auto a = blockform2( ps, backend() );
-		auto rhs = blockform1( ps, backend() );
+	auto a = blockform2( ps, backend() );
+	auto rhs = blockform1( ps, backend() );
 
 
 
-        // Building the RHS
-        M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
-        auto H     = M0h->element( "H" );
-        if ( ioption("hface" ) == 0 )
-            H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
-        else if ( ioption("hface" ) == 1 )
-            H.on( _range=elements(face_mesh), _expr=cst(mesh->hMin()) );
-        else if ( ioption("hface" ) == 2 )
-            H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
-        else
-            H.on( _range=elements(face_mesh), _expr=h() );
+    // Building the RHS
+    M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
+    auto H     = M0h->element( "H" );
+    if ( ioption("hface" ) == 0 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
+    else if ( ioption("hface" ) == 1 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hMin()) );
+    else if ( ioption("hface" ) == 2 )
+        H.on( _range=elements(face_mesh), _expr=cst(mesh->hAverage()) );
+    else
+        H.on( _range=elements(face_mesh), _expr=h() );
 
-        rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(f)*id(w));
-        // rhs(1_c) += integrate(_range=elements(mesh), _expr= divv(sigma_exact)*id(w));
+    rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(f)*id(w));
+    // rhs(1_c) += integrate(_range=elements(mesh), _expr= divv(sigma_exact)*id(w));
 
-        cout << "rhs2 works fine" << std::endl;
+    cout << "rhs2 works fine" << std::endl;
 
-        // in convergence test Neumann condition is given from the displacement and
-        // constitutive law
-        rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"), _expr=trans(id(m))*(sigma_exact*N()));
+    // in convergence test Neumann condition is given from the displacement and
+    // constitutive law
+    rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"), _expr=trans(id(m))*(sigma_exact*N()));
 
-        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                              _expr=trans(id(m))*u_exact);
-
-
-        cout << "rhs3 works fine" << std::endl;
-        
-        
-        a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
-        a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
-
-        a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
-
-        a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
-                                  _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
-                                           trans(idt(uhat))*rightface(id(v)*N())) );
-        a( 0_c, 2_c) += integrate(_range=gammaMinusIntegral,            // boundaryfaces(mesh),
-                                  _expr=-trans(idt(uhat))*(id(v)*N()));
-
-        a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                                  _expr=(trans(id(w))*divt(sigma)));
+    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                          _expr=trans(id(m))*u_exact);
 
 
-        // begin dp: here we need to put the projection of u on the faces
-        a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
-                                  ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-                                    rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+    cout << "rhs3 works fine" << std::endl;
+    
+    
+    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=(c1*inner(idt(sigma),id(v))) );
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
 
-        a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                                  _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+    a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
 
-        a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
-                                  ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-                                    rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+    a( 0_c, 2_c) += integrate(_range=internalfaces(mesh),
+                              _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
+                                       trans(idt(uhat))*rightface(id(v)*N())) );
+    a( 0_c, 2_c) += integrate(_range=gammaMinusIntegral,            // boundaryfaces(mesh),
+                              _expr=-trans(idt(uhat))*(id(v)*N()));
 
-        a( 1_c, 2_c) += integrate(_range=gammaMinusIntegral,             // boundaryfaces(mesh),
-                                  _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
-
-
-        a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
-                                  _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
-                                                        rightfacet(idt(sigma)*N())) ) );
-        a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
-                                  _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-                                                                        rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
-
-        a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
-                                  _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                                                                                             rightface( pow(idv(H),M_tau_order) )));
-
-        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                                  _expr=trans(idt(uhat)) * id(m) );
+    a( 1_c, 0_c) += integrate(_range=elements(mesh),
+                              _expr=(trans(id(w))*divt(sigma)));
 
 
-        a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=( trans(id(m))*(idt(sigma)*N()) ));
+    // begin dp: here we need to put the projection of u on the faces
+    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
+                              ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
+                                rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
 
-        a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+    a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
+                              _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
 
-        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+    a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
+                              ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
+                                rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
 
-        toc("matrices",true);
+    a( 1_c, 2_c) += integrate(_range=gammaMinusIntegral,             // boundaryfaces(mesh),
+                              _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
+
+    a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
+                              _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
+                                                    rightfacet(idt(sigma)*N())) ) );
+    a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
+                              _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
+                                                                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+
+    a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
+                              _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
+                                                                                         rightface( pow(idv(H),M_tau_order) )));
+
+    a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=trans(idt(uhat)) * id(m) );
+
+
+    a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                              _expr=( trans(id(m))*(idt(sigma)*N()) ));
+
+    a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                              _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+
+    a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                              _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+
+    toc("matrices",true);
+
+
+
+    tic();
+    for( int i = 0; i < ioption("nb_ibc"); i++ )
+    {
+        // std::string marker = boost::str(boost::format("Ibc%1%") % (i == 0 ? "" : std::to_string(i+1)) );
+        std::string marker = M_IBCList[i];
+
+        // <lambda, v.n>_Gamma_I
+        a( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
+
+        // <lambda, tau w>_Gamma_I
+        a( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(mesh, marker), 
+                                          _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );  
+
+        // <sigma.n, m>_Gamma_I
+        a( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(mesh, marker), _expr= inner(idt(v)*N(),id(nu)) );
+
+
+        // <tau u, m>_Gamma_I
+        a( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(mesh, marker), _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
+
+            // -<lambda2, m>_Gamma_I
+            a( 3_c, 3_c, i, i ) += integrate(_range=markedfaces(mesh, marker), _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
    
- 
-        tic();
-        for( int i = 0; i < ioption("nb_ibc"); i++ )
-        {
-            // std::string marker = boost::str(boost::format("Ibc%1%") % (i == 0 ? "" : std::to_string(i+1)) );
-            std::string marker = M_IBCList[i];
 
-            // <lambda, v.n>_Gamma_I
-            a( 0_c, 3_c, 0, i) += integrate( _range=markedfaces(mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
- 
-            // <lambda, tau w>_Gamma_I
-            a( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(mesh, marker), 
-                                              _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );  
- 
-            // <sigma.n, m>_Gamma_I
-            a( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(mesh, marker), _expr= inner(idt(v)*N(),id(nu)) );
- 
- 
-            // <tau u, m>_Gamma_I
-            a( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(mesh, marker), _expr= tau_constant * pow(idv(H),M_tau_order)* inner(idt(u),id(nu)) ),
- 
-                // -<lambda2, m>_Gamma_I
-                a( 3_c, 3_c, i, i ) += integrate(_range=markedfaces(mesh, marker), _expr=-tau_constant * pow(idv(H),M_tau_order) * inner(idt(uI),id(nu)) );
-       
+        double meas = integrate( _range=markedfaces(mesh, marker), _expr=cst(1.0)).evaluate()(0,0);
+        // <F_target,m>_Gamma_I
+        rhs(3_c,i) += integrate( _range=markedfaces(mesh, marker), _expr=inner(sigma_exact*N(),id(nu))/meas);
 
-            double meas = integrate( _range=markedfaces(mesh, marker), _expr=cst(1.0)).evaluate()(0,0);
-            // <F_target,m>_Gamma_I
-            rhs(3_c,i) += integrate( _range=markedfaces(mesh, marker), _expr=inner(sigma_exact*N(),id(nu))/meas);
- 
-        }
-        toc("assembled ibc", true);
+    }
+    toc("assembled ibc", true);
 
 
-        tic();
-        auto U = ps.element();
-        auto Ue = ps.element();
-        a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=1); //boption("sc.condense"));
-        toc("solve",true);
-        cout << "[Hdg] solve done" << std::endl;
+    tic();
+    auto U = ps.element();
+    auto Ue = ps.element();
+    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=1); //boption("sc.condense"));
+    toc("solve",true);
+    cout << "[Hdg] solve done" << std::endl;
 
-        auto sigmap = U(0_c);
-        auto up = U(1_c);
-        auto uhatp = U(2_c);
+    auto sigmap = U(0_c);
+    auto up = U(1_c);
+    auto uhatp = U(2_c);
 
-        Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
-        Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
+    Ue(0_c).on( _range=elements(mesh), _expr=sigma_exact );
+    Ue(1_c).on( _range=elements(mesh), _expr=u_exact );
 
 #if 0
         Feel::cout << "sigma exact: \t" << Ue(0_c) << std::endl;
@@ -544,53 +543,72 @@ Hdg<Dim, OrderP, OrderG>::convergence()
         Feel::cout << "uhat: \t" << uhatp << std::endl;
 #endif
 
-        // ****** Compute error ******
-        tic();
-        bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
-        BOOST_ASSERT(has_dirichlet);
+    // ****** Compute error ******
+    tic();
+    bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
+    BOOST_ASSERT(has_dirichlet);
 
-        /*
-         How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
-         Neumann on dot(sigma*n, e_y)?
-         */
+    /*
+     How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
+     Neumann on dot(sigma*n, e_y)?
+     */
 
-        auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
-        auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
+    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
+    auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
+	auto h1err_u 	 = normH1(_range=elements(mesh), _expr=idv(up)- u_exact, _grad_expr=gradv(up)-grad(u_exact) );
+   	toc("error");
 
-        toc("error");
+	if ( !checker().check() )
+	{
+    	cout << "||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
+    	cout << "||u_exact - u||_L2 = " << l2err_u << std::endl;
+	}
+	int status=1;
 
-        cout << "[" << i << "]||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
-        cout << "[" << i << "]||u_exact - u||_L2 = " << l2err_u << std::endl;
-        cvg << current_hsize
-            << "\t" << Vh->nDof() << "\t" << l2err_sigma
-            << "\t" << Wh->nDof() << "\t" << l2err_u << std::endl;
+	// CHECKER
+	if ( checker().check() )
+	{
+
+		// compute l2 and h1 norm of u-u_h where u=solution
+		auto norms = [=]( std::string const& u_exact ) ->std::map<std::string,double>
+		{
+			tic();
+			double l2 = l2err_u; 
+			toc("L2 error norm");
+			
+			tic();
+			double h1 = h1err_u; 
+			toc("H1 error norm");
+			
+			return { { "L2", l2 } , {  "H1", h1 } };
+		};
+		
+		status = checker().runOnce( norms, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+		
+	}
+
+    tic();
+    std::string exportName =  ( boost::format( "%1%" ) % this->about().appName() ).str();
+    std::string sigmaName = "stress";
+    std::string sigma_exName = "stress-ex";
+    std::string uName = "displacement";
+    std::string u_exName = "displacement-ex";
 
 
-        tic();
-        std::string exportName =  ( boost::format( "%1%-refine-%2%" ) % this->about().appName() % i ).str();
-        std::string sigmaName = ( boost::format( "stress-refine-%1%" ) % i ).str();
-        std::string sigma_exName = ( boost::format( "stress-ex-refine-%1%" ) % i ).str();
-        std::string uName = ( boost::format( "displacement-refine-%1%" ) % i ).str();
-        std::string u_exName = ( boost::format( "displacement-ex-refine-%1%" ) % i ).str();
+    v.on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
+    w.on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
+    export_ptrtype exporter_cvg( export_type::New( exportName ) );
+
+    exporter_cvg->setMesh( mesh );
+    exporter_cvg->add( sigmaName, sigmap );
+    exporter_cvg->add( uName, up );
+    exporter_cvg->add( sigma_exName, v );
+    exporter_cvg->add( u_exName, w );
+    exporter_cvg->save();
+
+    toc("export");
 
 
-        v.on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
-        w.on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
-        export_ptrtype exporter_cvg( export_type::New( exportName ) );
-
-        exporter_cvg->step( i )->setMesh( mesh );
-        exporter_cvg->step( i )->add( sigmaName, sigmap );
-        exporter_cvg->step( i )->add( uName, up );
-        exporter_cvg->step( i )->add( sigma_exName, v );
-        exporter_cvg->step( i )->add( u_exName, w );
-        exporter_cvg->save();
-
-        current_hsize /= 2.0;
-        toc("export");
-
-    }
-
-    cvg.close();
 }
 
 
