@@ -424,23 +424,24 @@ Hdg<Dim, OrderP, OrderG>::run()
         Feel::cout << "uhat: \t" << uhatp << std::endl;
 #endif
 
+
+    // ****** Compute error ******
+    tic();
+    bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
+    BOOST_ASSERT(has_dirichlet);
+
+   	/*
+    How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
+    Neumann on dot(sigma*n, e_y)?
+    */
+
+    auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
+  	auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
+	auto h1err_u 	 = normH1(_range=elements(mesh), _expr=idv(up)- u_exact, _grad_expr=gradv(up)-grad(u_exact) );
+   	toc("error");
+
 	if ( !checker().check() )
 	{
-    	// ****** Compute error ******
-    	tic();
-    	bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
-    	BOOST_ASSERT(has_dirichlet);
-
-    	/*
-     	How does Feel++ handle BC on single components? Say, Dirichlet on u_x and
-     	Neumann on dot(sigma*n, e_y)?
-     	*/
-
-    	auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact - idv(sigmap) );
-    	auto l2err_u     = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
-
-    	toc("error");
-
     	cout << "||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
     	cout << "||u_exact - u||_L2 = " << l2err_u << std::endl;
 	}
@@ -453,11 +454,11 @@ Hdg<Dim, OrderP, OrderG>::run()
 		auto norms = [=]( std::string const& u_exact ) ->std::map<std::string,double>
 		{
 			tic();
-			double l2 = normL2(_range=elements(mesh), _expr= idv(up)-expr<Dim,1>(u_exact) );
+			double l2 = l2err_u; 
 			toc("L2 error norm");
 			
 			tic();
-			double h1 = normH1(_range=elements(mesh), _expr=idv(up)-expr<Dim,1>(u_exact), _grad_expr=gradv(up)-grad(expr<Dim,1>(u_exact)) );
+			double h1 = h1err_u; 
 			toc("H1 error norm");
 			
 			return { { "L2", l2 } , {  "H1", h1 } };
