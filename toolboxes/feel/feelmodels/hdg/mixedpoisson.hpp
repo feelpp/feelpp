@@ -23,7 +23,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 
-// #define USE_SAME_MAT 1
+#define USE_SAME_MAT 1
 
 namespace Feel {
 
@@ -518,14 +518,16 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
    	for( int i = 0; i < M_integralCondition; i++ )
        	M_mup.push_back(M_Ch->element("mup"));
 
+	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
+
 #if 0
 	M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else
-    M_A_cst = makeSharedMatrixCondensed<value_type>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
-    M_F = makeSharedVectorCondensed<value_type>(blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
 #endif
 }
 
@@ -563,7 +565,8 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     toc("MixedPoisson : static condensation");
     
     toc("solve");
-     
+    
+
     
     M_up = U(0_c);
     M_pp = U(1_c);
