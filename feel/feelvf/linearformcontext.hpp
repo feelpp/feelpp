@@ -379,7 +379,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
             DVLOG(2) << "rep after sign change = " << M_rep;
         }
         M_form.addVector( M_local_rows.data(), M_local_rows.size(),
-                          M_rep.data() );
+                          M_rep.data(), elt_0 );
     }
     else
     {
@@ -392,7 +392,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
             CHECK( false ) << "TODO";
         }
         M_form.addVector( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
-                          M_rep_mortar.data() );
+                          M_rep_mortar.data(), elt_0 );
     }
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -410,9 +410,16 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 
         M_rep_2.array() *= M_local_rowsigns_2.array().template cast<value_type>();
     }
-
+    M_rep = M_rep_2.head(test_dof_type::nDofPerElement);
+    M_form.addVector( M_local_rows_2.data(), test_dof_type::nDofPerElement,
+                      M_rep.data(), elt_0 );//(nDimTest>nDimTrial)?test_elt_0:trial_elt_0 );
+    M_rep = M_rep_2.tail(test_dof_type::nDofPerElement);
+    M_form.addVector( M_local_rows_2.data()+test_dof_type::nDofPerElement,  test_dof_type::nDofPerElement,
+                      M_rep.data(), elt_1 ); //(nDimTest>nDimTrial)?test_elt_1:trial_elt_1  );
+#if 0
     M_form.addVector( M_local_rows_2.data(), M_local_rows_2.size(),
-                       M_rep_2.data() );
+                      M_rep_2.data(), elt_0 );
+#endif
 }
 
 }

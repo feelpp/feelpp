@@ -589,9 +589,9 @@ public:
     face_iterator eraseFace( face_iterator it )
     {
         size_type erasedId = it->first;
-        auto itret = M_faces.erase( it );
         auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
                                        [&erasedId]( auto & faceWrap ) { return unwrap_ref( faceWrap ).id() == erasedId; } );
+        auto itret = M_faces.erase( it );
         M_orderedFaces.erase( itOrdered );
         return itret;
     }

@@ -170,6 +170,12 @@ class MatrixBlockBase : public MatrixSparse<T>
     {
     }
 
+    MatrixBlockBase( WorldComm const& wc )
+        : super( wc ),
+          M_backend(),
+          M_mat()
+        {}
+    
     MatrixBlockBase( MatrixBlockBase const& mb )
         : super( mb ),
           M_backend( mb.M_backend ),
@@ -334,7 +340,9 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data );
+                    value_type* data,
+                    size_type K = 0,
+                    size_type K2 = invalid_size_type_value );
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -522,11 +530,13 @@ class MatrixBlock : public MatrixBlockBase<T>
     typedef typename super_type::backend_type backend_type;
     typedef vf::Blocks<NBLOCKROWS, NBLOCKCOLS, matrix_ptrtype> blocks_type;
     typedef vf::BlocksBase<matrix_ptrtype> blocksbase_type;
+
+    template<typename BackendT>
     MatrixBlock( blocksbase_type const& blockSet,
-                 backend_type& backend,
+                 BackendT && b,
                  bool copy_values = true,
                  bool diag_is_nonzero = true )
-        : super_type( blockSet, backend, copy_values, diag_is_nonzero )
+        : super_type( blockSet, std::forward<BackendT>(b), copy_values, diag_is_nonzero )
     {
     }
 
@@ -551,6 +561,5 @@ class MatrixBlock : public MatrixBlockBase<T>
 
 } // Feel
 
-//#include <feel/feelalg/matrixblock.cpp>
 
 #endif /* __MatrixBlock_H */
