@@ -110,7 +110,6 @@ struct hash<std::tuple<TT...>>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feeldiscr/doftablebase.hpp>
-
 #include <feel/feeldiscr/doffromelement.hpp>
 #include <feel/feeldiscr/doffrommortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
@@ -121,16 +120,6 @@ struct hash<std::tuple<TT...>>
 
 namespace Feel
 {
-namespace detail {
-
-inline uint16_type
-symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
-{
-    return  j + n*i - i*(i+1) /2.;
-}
-
-
-}
 template<class ITERATOR>
 ITERATOR begin( std::pair<ITERATOR,ITERATOR> &range )
 {
@@ -380,6 +369,18 @@ public:
         }
     fe_type const& fe() const { return *M_fe; }
 
+    constexpr size_type nRealLocalDof( bool per_component = false ) const
+        {
+            return  (is_product&&!per_component)?(nRealComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
+                                                                   fe_type::nDofPerFace * element_type::numGeometricFaces +
+                                                                   fe_type::nDofPerEdge * element_type::numEdges +
+                                                                   fe_type::nDofPerVertex * element_type::numVertices)):
+                (fe_type::nDofPerVolume * element_type::numVolumes +
+                 fe_type::nDofPerFace * element_type::numGeometricFaces +
+                 fe_type::nDofPerEdge * element_type::numEdges +
+                 fe_type::nDofPerVertex * element_type::numVertices);
+        }
+
     DofTableInfos infos() const
         {
             DofTableInfos infos;
@@ -420,7 +421,6 @@ public:
             return infos;
         }
 
-    
     constexpr size_type nLocalDof( bool per_component = false ) const
         {
             return  (is_product&&!per_component)?(nComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
@@ -554,22 +554,27 @@ public:
         }
 
 
-    void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
+    bool getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
         {
+            bool is_empty = false;
             for( localdof_type const& ldof: this->localDofSet( id_el ) )
             {
                 auto it = M_el_l2g.left.find( ldof );
-                DCHECK( it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
-                ind[ldof.localDof()] =this->mapGlobalProcessToGlobalCluster()[ it->second.index() ];
+                DLOG_IF( WARNING, it == M_el_l2g.left.end() ) << "Invalid element id " << id_el;
+                is_empty = is_empty || it == M_el_l2g.left.end();
+                if ( it != M_el_l2g.left.end() )
+                    ind[ldof.localDof()] =this->mapGlobalProcessToGlobalCluster()[ it->second.index() ];
 
             }
+            return is_empty;
         }
 
     std::vector<size_type> getIndicesOnGlobalCluster( size_type id_el ) const
         {
             const size_type s = getIndicesSize( id_el );
-            std::vector<size_type> ind( s );
-            getIndicesSetOnGlobalCluster( id_el, ind );
+            std::vector<size_type> ind(s);
+            bool is_empty = getIndicesSetOnGlobalCluster( id_el, ind );
+            if ( is_empty ) ind.clear();
             return ind;
         }
 
@@ -683,6 +688,20 @@ public:
             this->M_last_df_globalcluster[processor]=this->M_last_df[processor];
         }
 
+    //!
+    //! give an unsymmetric dof index i, provide the symmetric one
+    //!
+    void setUnsymmToSymm( uint16_type i, uint16_type j )
+        {
+            M_unsymm2symm[i] = j;
+        }
+    //!
+    //! give an unsymmetric dof index i, provide the symmetric one
+    //!
+    uint16_type unsymmToSymm( uint16_type i ) const
+        {
+            return M_unsymm2symm[i];
+        }
     /**
      * \return the dof index
      */
@@ -1521,6 +1540,7 @@ private:
     dof_map_type map_gdof;
     localdof_type M_ldof;
     Dof M_gdof;
+    std::vector<uint16_type> M_unsymm2symm;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
 

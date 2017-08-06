@@ -112,7 +112,9 @@ template<typename T>
 void
 MatrixEigenDense<T>::addMatrix ( int* rows, int nrows,
                                  int* cols, int ncols,
-                                 value_type* data )
+                                 value_type* data,
+                                 size_type K,
+                                 size_type K2 )
 {
     for( int i=0; i < nrows; ++i )
         for( int j=0; j < ncols; ++j )

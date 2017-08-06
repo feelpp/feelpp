@@ -1,0 +1,78 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "rho":"1",
+            "lambda":"1",
+            "mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"{8, 0, 0}"
+                    // "expr":"{ 2*pi^2*sin(pi*x)*sin(pi*y)*sin(pi*z) - 2*pi^2*cos(pi*x)*sin(pi*y)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*y)*cos(pi*z), 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y) - 5*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 2*pi^2*cos(pi*x)*cos(pi*y)*sin(pi*z), 2*pi^2*cos(pi*y)*sin(pi*x)*sin(pi*z) - 5*pi^2*cos(pi*x)*cos(pi*z)*sin(pi*y) - 2*pi^2*cos(pi*z)*sin(pi*x)*sin(pi*y)  }:x:y:z"
+                }
+            }
+        },
+        "displacement":
+        {
+            "Dirichlet":
+            {
+                "int":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                    // "expr":"{ cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y)  }:x:y:z" 
+                },
+                "in":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                },
+                "ext":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                },
+                "out":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                },
+                "top":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                },
+                "bottom":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                }
+            }
+        }/*,
+        "ExactSolution":
+        {
+            "u_exact":
+            {
+                "omega":
+                {
+                    "expr":"{x^2+y^2, 1, z}:x:y:z"
+                }
+            }
+        }*/
+     },
+    "PostProcess":
+    {
+        "Fields":["stress","displacement"]
+    }
+}
+
+
+
+

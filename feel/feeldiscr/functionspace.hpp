@@ -1816,16 +1816,21 @@ public:
 #endif
 
     // geomap
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm_type>, mpl::identity<mpl::void_> >::type::type gm_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
+    //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm_type>, mpl::identity<mpl::void_> >::type::type gm_type;
+    //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
+
+    using gm_type = typename mesh_type::gm_type;
+    using gm1_type = typename mesh_type::gm1_type;
+    //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
+    using geoelement_type = typename mesh_type::element_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::face_type>, mpl::identity<mpl::void_> >::type::type geoface_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::edge_type>, mpl::identity<mpl::void_> >::type::type geoedge_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::point_type>, mpl::identity<mpl::void_> >::type::type geopoint_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
-            mpl::identity<mpl::void_> >::type::type pts_gmc_type;
+    //typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
+    //mpl::identity<mpl::void_> >::type::type pts_gmc_type;
+    using pts_gmc_type = typename gm_type::template Context<vm::POINT, geoelement_type>;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
                               mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
@@ -2195,8 +2200,12 @@ public:
          * interpolate type if available
          */
         typedef typename mpl::if_<mpl::bool_<is_modal>,
-                                  mpl::identity<boost::none_t>,
-                                  mpl::identity<typename basis_0_type::local_interpolant_type> >::type::type local_interpolant_type;
+                                  mpl::identity<mpl::identity<boost::none_t>>,
+                                  mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+
+        typedef typename mpl::if_<mpl::bool_<is_modal>,
+                                  mpl::identity<mpl::identity<boost::none_t>>,
+                                  mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
 
         typedef Element<T,Cont> this_type;
         template<int i>
@@ -2612,6 +2621,117 @@ public:
             size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) += __v;
         }
+        local_interpolant_type element( std::vector<size_type> const& e ) const
+            {
+                local_interpolant_type l( M_functionspace->basis()->localInterpolant(e.size()) ) ;
+                element( e, l );
+                return l;
+            }
+        //!
+        //! @return the components of the element associated to the list of elements in e
+        //! @note the vector of components is already allocated
+        //! @code
+        //! Xh->element( K, EigenVector )
+        //! @endcode
+        //!
+        template<typename B = basis_0_type>
+        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            {
+                int s = l.size()/e.size();
+                int n = 0;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            size_type index = ldof.second.index();
+                            l( n*s+ldof.first.localDof() ) = super::operator[]( index );
+                        }
+                        ++n;
+                    });
+            }
+        //!
+        //! @return the components of the element associated to the list of elements in e
+        //! @note the vector of components is already allocated
+        //!
+        template<typename B = basis_0_type>
+        void element( std::vector<size_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            {
+                int s = l.size()/e.size();
+                int n = 0;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            size_type index = ldof.second.index();
+                            l( n*s+ldof.first.localDof() ) = super::operator[]( index );
+                        }
+                        ++n;
+                    });
+            }
+        std::vector<int> dofs( std::vector<size_type> const& e ) const
+            {
+                std::vector<int> d;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            d.push_back( ldof.second.index() );
+                        }
+                    });
+                return d;
+
+            }
+        std::vector<int> dofs( std::vector<size_type> const& e, DataMap const& dm, int block  ) const
+            {
+                std::vector<int> d;
+                std::for_each( e.begin(), e.end(), [&]( auto const& id ){
+
+                        for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
+                        {
+                            d.push_back( dm.dofIdToContainerId( block, ldof.second.index() ) );
+                        }
+                    });
+                return d;
+
+            }
+        template<typename Tloc>
+        void assignE( size_type e, Tloc&& loc, bool symm = true )
+            {
+                int N0 = M_functionspace->dof()->nRealLocalDof();
+                int N0c = M_functionspace->dof()->nRealLocalDof( true );
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    {
+                        size_type index = ldof.second.index();
+                        if ( is_tensor2symm )
+                        {
+                            int i = M_functionspace->dof()->unsymmToSymm(ldof.first.localDof());
+                            super::operator[]( index ) = s(i)*loc(i);
+                        }
+                        else
+                        {
+                            super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                        }
+                    }
+            }
+        void assign( size_type e, local_interpolant_type const& Ihloc )
+            {
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    size_type index = ldof.second.index();
+                    super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                }
+            }
+        void plus_assign( size_type e, local_interpolant_type const& Ihloc )
+            {
+                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    size_type index = ldof.second.index();
+                    super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                }
+            }
 
         void assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
@@ -2753,6 +2873,14 @@ public:
         {
             return M_functionspace->mesh();
         }
+
+        //!
+        //! \return the dof table
+        //!
+        dof_ptrtype dof() const
+            {
+                return M_functionspace->dof();
+            }
 
         /**
          * \return the element-wise square root

@@ -26,8 +26,22 @@
 
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/traits.hpp>
+#include <feel/feelpoly/policy.hpp>
+#include <feel/feelmesh/meshbase.hpp>
+#include <feel/feeldiscr/functionspacebase.hpp>
 
 namespace Feel {
+
+namespace detail {
+
+inline constexpr uint16_type
+symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
+{
+    return  j + n*i - i*(i+1) /2.;
+};
+
+
+}
 
 /**
  * \addtogroup Traits
@@ -103,6 +117,8 @@ constexpr bool is_tensor2_field_v = is_tensor2_field<T>::value;
  */
 template<typename T>
 using is_tensor2symm_field  =typename std::is_base_of<Tensor2SymmBase, T>::type;
+using tensor2symm_true  = std::integral_constant<bool,true>;
+using tensor2symm_false  = std::integral_constant<bool,false>;
 
 /**
  * helper variable template for is_tensor2symm_field

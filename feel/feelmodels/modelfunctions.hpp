@@ -51,6 +51,7 @@ struct FEELPP_EXPORT ModelFunction
 
     std::string const& name() const { return M_name; }
     void setName( std::string const& name ) { M_name = name; }
+    std::string const& expressionString() const { return M_exprString; }
 
     bool isScalar() const { return M_exprScalar.get_ptr() != 0; }
     bool isVectorial2() const { return M_exprVectorial2.get_ptr() != 0; }
@@ -65,6 +66,7 @@ struct FEELPP_EXPORT ModelFunction
 
 private:
     std::string M_name;
+    std::string M_exprString;
     boost::optional<expr_scalar_type> M_exprScalar;
     boost::optional<expr_vectorial2_type> M_exprVectorial2;
     boost::optional<expr_vectorial3_type> M_exprVectorial3;
