@@ -790,6 +790,7 @@ private:
 
         this->setVector(ind.data(), n, array);
         this->close();
+        delete[] array;
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER();
