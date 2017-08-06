@@ -2200,12 +2200,12 @@ public:
          * interpolate type if available
          */
         typedef typename mpl::if_<mpl::bool_<is_modal>,
-                                  mpl::identity<boost::none_t>,
-                                  mpl::identity<typename basis_0_type::local_interpolant_type> >::type::type local_interpolant_type;
+                                  mpl::identity<mpl::identity<boost::none_t>>,
+                                  mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
 
         typedef typename mpl::if_<mpl::bool_<is_modal>,
-                                  mpl::identity<boost::none_t>,
-                                  mpl::identity<typename basis_0_type::local_interpolants_type> >::type::type local_interpolants_type;
+                                  mpl::identity<mpl::identity<boost::none_t>>,
+                                  mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
 
         typedef Element<T,Cont> this_type;
         template<int i>
@@ -2630,8 +2630,12 @@ public:
         //!
         //! @return the components of the element associated to the list of elements in e
         //! @note the vector of components is already allocated
+        //! @code
+        //! Xh->element( K, EigenVector )
+        //! @endcode
         //!
-        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_type> l ) const
+        template<typename B = basis_0_type>
+        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2649,7 +2653,8 @@ public:
         //! @return the components of the element associated to the list of elements in e
         //! @note the vector of components is already allocated
         //!
-        void element( std::vector<size_type> const& e, local_interpolant_type& l ) const
+        template<typename B = basis_0_type>
+        void element( std::vector<size_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
