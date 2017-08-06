@@ -1122,7 +1122,7 @@ public:
     BilinearForm( BilinearForm && __vf ) = default;
     ~BilinearForm()
     {
-        toc(M_name, FLAGS_v > 0 );
+        //toc(M_name, FLAGS_v > 0 );
     }
 
 
@@ -1616,7 +1616,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    tic();
+    //tic();
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
@@ -1657,7 +1657,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    tic();
+    //tic();
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
         return;
