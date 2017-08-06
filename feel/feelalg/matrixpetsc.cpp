@@ -2386,32 +2386,17 @@ void MatrixPetsc<T>::load( Archive & ar, const unsigned int version )
 
     int m = this->mapRow().nLocalDofWithGhost();
     int n = this->mapCol().nLocalDofWithGhost();
-    int idxm [m];
-    int idxn [n];
-    PetscScalar array[m*n];
+    
 
-    int i=0;
-    for ( int index=this->mapRow().firstDofGlobalCluster();
-          index<=this->mapRow().lastDofGlobalCluster(); index++ )
-    {
-        idxm[i]=index;
-        i++;
-    }
-    Feel::cout <<"Load matrix : i="<<i <<", size row="<<m <<std::endl;
 
-    i=0;
-    for ( int index=this->mapCol().firstDofGlobalCluster();
-          index<=this->mapCol().lastDofGlobalCluster(); index++ )
-    {
-        idxn[i]=index;
-        i++;
-    }
-    Feel::cout <<"Load matrix : i="<<i <<", size col="<<n <<std::endl;
-
+    std::vector<int> idxm(m), idxn(n);
+    std::iota( idxm.begin(), idxm.end(), this->mapRow().firstDofGlobalCluster() );
+    std::iota( idxn.begin(), idxn.end(), this->mapCol().firstDofGlobalCluster() );
+    std::vector<PetscScalar> array(m*n);
     for( int i = 0; i < m*n; ++i )
         ar & boost::serialization::make_nvp("arrayi", array[i] );
 
-    MatSetValues( M_mat, m, idxm, n, idxn, array, INSERT_VALUES );
+    MatSetValues( M_mat, m, idxm.data(), n, idxn.data(), array.data(), INSERT_VALUES );
 
     this->close();
 
@@ -2535,6 +2520,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     CHKERRABORT( this->comm(),ierr );
 
     // free
+    delete[] dnz;
     delete[] dnzOffProc;
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
