@@ -40,6 +40,10 @@ template<typename PS>
 class BlockBilinearForm;
 
 
+template<typename PS>
+BlockBilinearForm<PS>
+blockform2( PS&& ps );
+
 template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, BackendT&& b );
@@ -58,6 +62,10 @@ blockform2( PS&& ps, condensed_matrix_ptr_t<T> m );
 //!
 template<typename PS>
 class BlockLinearForm;
+
+template<typename PS>
+BlockLinearForm<PS>
+blockform1( PS&& ps );
 
 template<typename PS,typename BackendT>
 BlockLinearForm<PS>
@@ -85,6 +93,12 @@ public :
     using condensed_matrix_ptrtype = boost::shared_ptr<condensed_matrix_type>;
     using product_space_t = PS;
 
+    template<typename T>
+    BlockBilinearForm( T&& ps )
+        :
+        M_ps(std::forward<T>(ps)),
+        M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
+        {}
     
     template<typename T,typename BackendT>
     BlockBilinearForm( T&& ps, BackendT&& b )
@@ -400,6 +414,13 @@ public :
     condensed_matrix_ptrtype M_matrix;
 };
 
+template<typename PS>
+BlockBilinearForm<PS>
+blockform2( PS&& ps )
+{
+    return BlockBilinearForm<PS>( std::forward<PS>(ps) );
+}
+
 template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, BackendT&& b )
@@ -439,6 +460,12 @@ public :
         :
         M_ps(std::forward<T>(ps)),
         M_vector(boost::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
+        {}
+    template<typename T>
+    BlockLinearForm(T&& ps)
+        :
+        M_ps(std::forward<T>(ps)),
+        M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T, typename BackendT>
     BlockLinearForm(T&& ps, BackendT&& b )
@@ -520,6 +547,12 @@ public :
     condensed_vector_ptrtype M_vector;
 };
 
+template<typename PS>
+BlockLinearForm<PS>
+blockform1( PS&& ps )
+{
+    return BlockLinearForm<PS>( std::forward<PS>(ps) );
+}
 
 template<typename PS, typename BackendT>
 BlockLinearForm<PS>

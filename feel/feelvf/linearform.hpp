@@ -534,9 +534,9 @@ public:
      */
     //@{
 
-    LinearForm( ) {}
+    LinearForm( ) {  }
     LinearForm( LinearForm const & __vf );
-    LinearForm( LinearForm      && __vf ) = default;
+    LinearForm( LinearForm      && __vf );
 
     LinearForm( std::string name,
                 space_ptrtype const& __X,
@@ -555,7 +555,7 @@ public:
                 value_type threshold = type_traits<value_type>::epsilon()  );
 
     ~LinearForm()
-        { toc( M_name, FLAGS_v > 0  ); }
+        { /*toc( M_name, FLAGS_v > 0  );*/ }
 
 
 
@@ -909,11 +909,30 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_threshold( __vf.M_threshold ),
     M_dofIdToContainerId( __vf.M_dofIdToContainerId )
 {
-    tic();
+    //tic();
     // add the vector contrib
     *M_F += *__vf.M_F;
 
     DVLOG(2) << "LinearForm copy constructor\n";
+    DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
+    DVLOG(2) << "    F size : " << M_F->size() << "\n";
+    DVLOG(2) << "block size : " << M_lb.size() << "\n";
+}
+
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm && __vf )
+    :
+    M_name( std::move(__vf.M_name) ),
+    M_X( std::move(__vf.M_X) ),
+    M_F( std::move(__vf.M_F) ),
+    M_lb( std::move(__vf.M_lb) ),
+    M_row_startInVector( std::move(__vf.M_row_startInVector) ),
+    M_do_threshold( std::move(__vf.M_do_threshold) ),
+    M_threshold( std::move(__vf.M_threshold) ),
+    M_dofIdToContainerId( std::move(__vf.M_dofIdToContainerId) )
+{
+    //tic();
+    DVLOG(2) << "LinearForm move constructor\n";
     DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
     DVLOG(2) << "    F size : " << M_F->size() << "\n";
     DVLOG(2) << "block size : " << M_lb.size() << "\n";
@@ -936,7 +955,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    tic();
+    //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
     for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
@@ -972,7 +991,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    tic();
+    //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
     if ( init )
