@@ -747,11 +747,15 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 
     // auto ps = product(M_Vh,M_Wh,M_Mh);
 
-
+	
     tic();
+	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
+
     auto U = M_ps -> element();
-    M_A_cst = makeSharedMatrixCondensed<value_type>( csrGraphBlocks(*M_ps), M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
-    M_F = makeSharedVectorCondensed<value_type>(blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+	//M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s==solve::strategy::static_condensation)?Pattern::COUPLED:pattern), *M_backend, (s==solve::strategy::static_condensation)?false:true);
+
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
     //    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
@@ -786,10 +790,11 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     M_F->close();
     M_timers["asbRHS"].push_back(toc("assembleRHS"));
 	
+
     auto U = M_ps -> element();
 	auto bbf = blockform2(*M_ps, M_A_cst);
-    auto blf = blockform1(*M_ps, M_F);
-
+    
+	auto blf = blockform1(*M_ps, M_F);
 
     std::string solver_string = "MixedElasticity : ";
     if( boption(prefixvm(prefix(), "use-sc")) )

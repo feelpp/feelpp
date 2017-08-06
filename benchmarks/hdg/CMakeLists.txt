@@ -118,7 +118,7 @@ foreach( dim 2 3)
       //Feel::Assert::setLog( \"${BENCH}.assert\");
       //Feel::Environment env( argc, argv, makeOptions() );
       Hdg<${dim}, ${orderP}> hdg;
-      hdg.convergence();
+      hdg.run();
     }
     BOOST_AUTO_TEST_SUITE_END()
     \n" )
@@ -152,7 +152,7 @@ foreach( dim 2 3)# 3
       //Feel::Assert::setLog( \"${BENCH}.assert\");
       //Feel::Environment env( argc, argv, makeOptions() );
       Hdg<${dim}, ${orderP}> hdg;
-      hdg.convergence();
+      hdg.run();
     }
     BOOST_AUTO_TEST_SUITE_END()
     \n" )
