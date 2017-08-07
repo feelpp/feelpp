@@ -941,7 +941,15 @@ public:
     {
         return edge_permutation_type();
     }
-
+    //!
+    //! @return true if GeoElement1D is connected to a face 
+    //!
+    bool hasFace( uint16_type i ) const
+        {
+            if ( i >= numLocalFaces )
+                return false;
+            return M_vertices[i] != nullptr;
+        }
     point_type const& edge( uint16_type i ) const
     {
         return *M_vertices[i];
