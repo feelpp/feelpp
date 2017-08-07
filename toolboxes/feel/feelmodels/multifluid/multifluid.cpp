@@ -400,6 +400,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::densityviscosity_model_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::fluidDensityViscosityModel( uint16_type n ) const
+{
+    if( n == 0 )
+        return M_fluidDensityViscosityModel;
+    else
+        return M_levelsetDensityViscosityModels.at(n-1);
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
@@ -451,7 +461,43 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
-    return this->hasSurfaceTension() || M_hasInterfaceForcesModel;
+    return this->hasSurfaceTension() || M_hasInterfaceForcesModel || (M_additionalInterfaceForcesModel.size() > 0);
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::addInterfaceForce( interfaceforces_model_ptrtype model, std::string const& name )
+{
+    std::string forceName;
+    if( name.empty() )
+    {
+        forceName = ( boost::format("force%1%" ) %(M_additionalInterfaceForcesModel.size()) ).str();
+    }
+    else
+    {
+        CHECK( M_additionalInterfaceForcesModel.find(name) == M_additionalInterfaceForcesModel.end() ) 
+            << "Multifluid already has an interface force model named " << name << std::endl;
+        forceName = name;
+    }
+
+    M_additionalInterfaceForcesModel[forceName] = model;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceforces_model_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceForce( std::string const& name ) const
+{
+    auto it = M_additionalInterfaceForcesModel.find(name);
+    CHECK( it != M_additionalInterfaceForcesModel.end() ) << "no force named " << name << std::endl;
+    return it->second;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+std::map<std::string, typename MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceforces_model_ptrtype> const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceForces() const
+{ 
+    // TODO : get more general access to forces
+    return M_additionalInterfaceForcesModel; 
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -699,6 +745,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
 
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
         this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+    }
+
+    if( M_additionalInterfaceForcesModel.size() > 0 )
+    {
+        this->timerTool("Solve").start();
+        for( auto const& f: M_additionalInterfaceForcesModel )
+            f.second->updateInterfaceForces( M_interfaceForces, false );
+
+        double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+        this->log("MultiFluid", "updateInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }
 
     this->updateSourceAdded( idv(M_interfaceForces) );
