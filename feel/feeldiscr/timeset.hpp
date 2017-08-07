@@ -1010,6 +1010,10 @@ public:
                         M_scalar_p1 = M_ts->M_scalar_p1;
                         DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                     }
+                    else
+                    {
+                        M_scalar_p1 = M_ts->M_scalar_p1;
+                    }
 
                     auto scalar_P0toP1 = M_scalar_p1->element();
                     scalar_P0toP1 = div( sum( M_scalar_p1, idv(func)*meas() ), sum( M_scalar_p1, meas() ) );
@@ -1071,6 +1075,8 @@ public:
                         M_vector_p1 = M_ts->M_vector_p1;
                         DVLOG(2) << "[TimeSet::setMesh] setMesh space vector p1 created\n";
                     }
+                    else
+                        M_vector_p1 = M_ts->M_vector_p1;
 
                     auto vector_P0toP1 = M_vector_p1->element();
                     //vector_P0toP1 = div( sum( M_vector_p1, trans(idv(func))*meas() ), sum( M_vector_p1, meas()*one() ) );
