@@ -40,14 +40,14 @@ public:
     std::string const& prefix() const { return M_prefix; }
     levelset_ptrtype const& levelset() const { return M_levelset; }
     //--------------------------------------------------------------------//
-    void updateInterfaceForces( element_ptrtype & F, bool overwrite = false);
+    void updateInterfaceForces( element_ptrtype & F, bool overwrite = false) const;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
     virtual void loadParametersFromOptionsVm() =0;
-    virtual void updateInterfaceForcesImpl( element_ptrtype & F ) =0;
+    virtual void updateInterfaceForcesImpl( element_ptrtype & F ) const =0;
 
     //--------------------------------------------------------------------//
     std::string M_prefix;
@@ -77,7 +77,7 @@ InterfaceForcesModel<LevelSetType>::getInfo() const
 
 template<typename LevelSetType>
 void
-InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, bool overwrite )
+InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, bool overwrite ) const
 {
     if( overwrite )
         F->zero();

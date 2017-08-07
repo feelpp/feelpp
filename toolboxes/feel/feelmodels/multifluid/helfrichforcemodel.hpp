@@ -44,8 +44,8 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F );
-    void addHelfrichForce( element_ptrtype & F, int impl );
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const;
+    void addHelfrichForce( element_ptrtype & F, int impl ) const;
 
     //--------------------------------------------------------------------//
     double M_helfrichBendingModulus;
@@ -90,14 +90,14 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
 
 template<typename LevelSetType>
 void
-HelfrichForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
+HelfrichForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
     this->addHelfrichForce( F, M_forceImpl );
 }
 
 template<typename LevelSetType>
 void
-HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl )
+HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl ) const
 {
 #ifdef DEBUG_HELFRICHFORCEMODEL
     if( !M_exporterInitDone )

@@ -1,7 +1,7 @@
 #ifndef _INEXTENSIBILITYFORCEMODEL_HPP
 #define _INEXTENSIBILITYFORCEMODEL_HPP 1
 
-#define DEBUG_INEXTENSIBILITYFORCEMODEL
+//#define DEBUG_INEXTENSIBILITYFORCEMODEL
 
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
@@ -46,7 +46,7 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F );
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const;
 
     void updateInterfaceRectangularFunction();
 
@@ -143,7 +143,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
 
 template<typename LevelSetType>
 void
-InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
+InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     if( !M_exporterInitDone )
