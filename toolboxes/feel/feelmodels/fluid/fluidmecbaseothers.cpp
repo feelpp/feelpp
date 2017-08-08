@@ -61,7 +61,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq = 1;
-    if (M_isHOVisu)
+    if ( M_exporter_ho )
     {
         std::string hovisuSpaceUsed = soption(_name="hovisu.space-used",_prefix=this->prefix());
         if ( hovisuSpaceUsed == "velocity" || hovisuSpaceUsed == "pressure" )
@@ -76,6 +76,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     else
     {
         hovisuMode = "OFF";
+    }
+    if ( M_exporter )
+    {
         myexporterType = M_exporter->type();
         myexporterFreq = M_exporter->freq();
     }
@@ -315,19 +318,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 {
-    if (!M_isHOVisu)
-    {
-        CHECK( M_exporter )  << "export not init\n";
-        M_exporter->setDoExport(b);
-    }
-    else
-    {
-#if 1 //defined(FEELPP_HAS_VTK)
-        //CHECK( M_exporter_ho )  << "hoexport not init\n";
-        if ( M_exporter_ho )
-            M_exporter_ho->setDoExport(b);
-#endif
-    }
+    if ( M_exporter )
+        M_exporter->setDoExport( b );
+    if ( M_exporter_ho )
+        M_exporter_ho->setDoExport( b );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -366,7 +360,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 #endif
     }
 
-    if (!M_isHOVisu)
+    if ( nOrderGeo == 1 )
     {
         this->exportResultsImpl( time );
 
@@ -390,7 +384,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
             M_exporterLagrangeMultiplierPressureBC->save();
         }
     }
-    else
+
+    if ( M_isHOVisu )
     {
         this->exportResultsImplHO( time );
     }
@@ -424,6 +419,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
     //if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
     //{
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
 
@@ -571,6 +567,7 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
 #if 1//defined(FEELPP_HAS_VTK)
+    if ( !M_exporter_ho ) return;
     if ( !M_exporter_ho->doExport() ) return;
 
     // because write geofile at each step ( TODO fix !!! )
@@ -981,12 +978,18 @@ void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
     if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
-        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    {
+        if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        else
+            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                                                                 _range=M_rangeMeshElements );
+    }
     else if ( this->definePressureCstMethod() == "algebraic" )
     {
         auto p = this->functionSpacePressure()->element();
         M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
-                                                                      _range=elements(this->mesh()),
+                                                                      _range=M_rangeMeshElements,
                                                                       _expr=id(p) ).vectorPtr();
         M_definePressureCstAlgebraicOperatorMeanPressure->close();
     }
@@ -999,20 +1002,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 namespace detail
 {
 
-template <typename VorticityFieldType, typename VelocityFieldType >
+template <typename VorticityFieldType, typename VelocityFieldType, typename RangeEltType >
 void
-updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, GeomapStrategyType geomapUsed, mpl::int_<2> /**/ )
+updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, RangeEltType const& rangeElt, GeomapStrategyType geomapUsed, mpl::int_<2> /**/ )
 {
-    fieldVorticity.on(_range=elements(fieldVorticity.mesh()),
+    fieldVorticity.on(_range=rangeElt,
                       _expr=/*vf::abs*/(vf::dxv( fieldVelocity.template comp<ComponentType::Y>())
                                     -vf::dyv(fieldVelocity.template comp<ComponentType::X>())),
                       _geomap=geomapUsed );
 }
-template <typename VorticityFieldType, typename VelocityFieldType >
+template <typename VorticityFieldType, typename VelocityFieldType, typename RangeEltType >
 void
-updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, GeomapStrategyType geomapUsed, mpl::int_<3> /**/ )
+updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, RangeEltType const& rangeElt, GeomapStrategyType geomapUsed, mpl::int_<3> /**/ )
 {
-    fieldVorticity.on(_range=elements(fieldVorticity.mesh()),
+    fieldVorticity.on(_range=rangeElt,
                       _expr=vf::curlv(fieldVelocity),
                       _geomap=geomapUsed );
 }
@@ -1026,7 +1029,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity()
 
     if (!M_XhVorticity) this->createFunctionSpacesVorticity();
 
-    detail::updateVorticityImpl( this->fieldVelocity(),*M_fieldVorticity, this->geomap(), mpl::int_<nDim>() );
+    detail::updateVorticityImpl( this->fieldVelocity(),*M_fieldVorticity, M_rangeMeshElements, this->geomap(), mpl::int_<nDim>() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1419,11 +1422,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype 
     auto u2 = U2.template element<0>();
     auto p2 = U2.template element<1>();
 
-    double err_u = integrate(_range=elements(this->mesh()),
+    double err_u = integrate(_range=M_rangeMeshElements,
                              //_expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
                              _expr= inner(idv(u1)-idv(u2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
-    double err_p = integrate(_range=elements(this->mesh()),
+    double err_p = integrate(_range=M_rangeMeshElements,
                              //_expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
                              _expr= inner(idv(p1)-idv(p2)),
                              _geomap=this->geomap() ).evaluate()(0,0);
@@ -1524,7 +1527,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> 
 {
     double area = 0;
     if ( markers.empty() || markers.front().empty() )
-        area = integrate(_range=elements(this->mesh()),
+        area = integrate(_range=M_rangeMeshElements,//elements(this->mesh()),
                          _expr=cst(1.),
                          _geomap=this->geomap() ).evaluate()(0,0);
     else
@@ -1593,7 +1596,7 @@ double
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureSum() const
 {
     auto const& p = this->fieldPressure();
-    double res = integrate(_range=elements(this->mesh()),
+    double res = integrate(_range=M_rangeMeshElements,
                            _expr= idv(p),
                            _geomap=this->geomap() ).evaluate()(0,0);
     return res;
@@ -1615,7 +1618,7 @@ double
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
 {
     auto const& u = this->fieldVelocity();
-    double res = integrate(_range=elements(this->mesh()),
+    double res = integrate(_range=M_rangeMeshElements,
                            _expr= divv(u),
                            _geomap=this->geomap() ).evaluate()(0,0);
     return res;
@@ -1640,7 +1643,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 
     auto const& u = this->fieldVelocity();
 
-    double res = math::sqrt( integrate(_range=elements(this->mesh()),
+    double res = math::sqrt( integrate(_range=M_rangeMeshElements,
                                        _expr= pow(divv(u),2),
                                        _geomap=this->geomap() ).evaluate()(0,0));
     return res;

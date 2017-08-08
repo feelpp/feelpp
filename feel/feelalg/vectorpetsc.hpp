@@ -36,9 +36,11 @@
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetsc<double>)
+BOOST_CLASS_EXPORT_KEY(Feel::VectorPetscMPI<double>)
+
 #if defined(FEELPP_HAS_PETSC_H)
 #include <feel/feelcore/application.hpp>
-
 
 extern "C"
 {
@@ -64,7 +66,7 @@ template<typename T> class MatrixPetsc;
  * @see
  */
 template<typename T>
-class VectorPetsc : public Vector<T>
+class FEELPP_EXPORT VectorPetsc : public Vector<T>
 {
     typedef Vector<T> super;
 
@@ -284,7 +286,7 @@ public:
      * Creates a copy of this vector and returns it in an \p
      * shared_ptr<>.  This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const;
+    clone_ptrtype clone () const override;
 
 
     /**
@@ -301,13 +303,13 @@ public:
      */
     void init ( const size_type N,
                 const size_type n_local,
-                const bool         fast=false );
+                const bool         fast=false ) override;
 
     /**
      * call init with n_local = N,
      */
     void init ( const size_type N,
-                const bool         fast=false )
+                const bool         fast=false ) override
     {
         this->init( N,N,fast );
     }
@@ -315,7 +317,7 @@ public:
     /**
      * call init with datamap,
      */
-    void init ( datamap_ptrtype const& dm );
+    void init ( datamap_ptrtype const& dm ) override;
 
     //@}
 
@@ -323,19 +325,19 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const;
-    value_type& operator() ( const size_type i );
+    value_type operator() ( const size_type i ) const override;
+    value_type& operator() ( const size_type i ) override;
 
     /**
      *  \f$U = V\f$: copy all components.
      */
-    Vector<value_type>& operator= ( const Vector<value_type> &V );
+    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
     Vector<value_type>& operator= ( const VectorPetsc<value_type> &V );
     /**
      * Addition operator.
      * Fast equivalent to \p U.add(1, V).
      */
-    Vector<T> & operator += ( const Vector<value_type> &V )
+    VectorPetsc<T> & operator += ( const Vector<value_type> &V ) override
     {
         this->add( 1., V );
         return *this;
@@ -345,7 +347,7 @@ public:
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T> & operator -= ( const Vector<value_type> &V )
+    VectorPetsc<T> & operator -= ( const Vector<value_type> &V ) override
     {
         this->add( -1., V );
         return *this;
@@ -369,7 +371,7 @@ public:
      * closer to the C++ standard library's
      * \p std::vector container.
      */
-    size_type size () const
+    size_type size () const override
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
@@ -386,7 +388,7 @@ public:
      * @return the local size of the vector
      * (index_stop-index_start)
      */
-    size_type localSize() const
+    size_type localSize() const override
     {
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
@@ -429,28 +431,28 @@ public:
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
      */
-    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseMult ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      *  \f$v = x/y\f$: coefficient-wise divide
      */
-    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y );
+    virtual void pointwiseDivide ( Vector<T> const& x, Vector<T> const& y ) override;
 
     /**
      * Call the assemble functions
      */
-    void close();
+    void close() override;
 
     /**
      * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
      * faster.
      */
-    void zero ();
+    void zero () override;
 
     /**
      * Set entries to zero between \p start and \p stop
      */
-    void zero ( size_type /*start*/,  size_type /*stop*/ )
+    void zero ( size_type /*start*/,  size_type /*stop*/ ) override
     {
         this->zero();
     }
@@ -458,7 +460,7 @@ public:
     /**
      * set the entries to the constant \p v
      */
-    void setConstant( value_type v )
+    void setConstant( value_type v ) override
     {
         this->set( v );
     }
@@ -466,7 +468,7 @@ public:
     /**
      * @returns the \p VectorPetsc<T> to a pristine state.
      */
-    FEELPP_DONT_INLINE void clear ();
+    FEELPP_DONT_INLINE void clear () override;
 
     /**
      * Update ghost values
@@ -486,22 +488,22 @@ public:
     /**
      * v(i) = value
      */
-    void set( const size_type i, const value_type& value );
+    void set( const size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) = [value1,...,valuen]
      */
-    void setVector( int* i, int n, value_type* v );
+    void setVector( int* i, int n, value_type* v ) override;
 
     /**
      * v(i) += value
      */
-    void add( const size_type i, const value_type& value );
+    void add( const size_type i, const value_type& value ) override;
 
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector( int* i, int n, value_type* v );
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -509,7 +511,7 @@ public:
      * want to specify WHERE to add it
      */
     void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -524,7 +526,7 @@ public:
      * the \p NumericVector<T> V
      */
     void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) override
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -538,7 +540,7 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& V_in,
-                     const MatrixSparse<value_type>& A_in );
+                     const MatrixSparse<value_type>& A_in ) override;
 
 
     /**
@@ -548,7 +550,7 @@ public:
      * the DenseVector<T> V
      */
     void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
+                     const std::vector<size_type>& dof_indices ) 
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -561,7 +563,7 @@ public:
      * and you want to specify WHERE to insert it
      */
     void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ )
+                  const std::vector<size_type>& /*dof_indices*/ ) override
     {
         FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
     }
@@ -573,7 +575,7 @@ public:
      * the Vector<T> V
      */
     void insert ( const Vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+                  const std::vector<size_type>& dof_indices ) override;
 
 
     /**
@@ -583,13 +585,13 @@ public:
      * the DenseVector<T> V
      */
     void insert ( const ublas::vector<T>& V,
-                  const std::vector<size_type>& dof_indices );
+                  const std::vector<size_type>& dof_indices ) override;
 
     /**
      * Scale each element of the
      * vector by the given factor.
      */
-    void scale ( const T factor );
+    void scale ( const T factor ) override;
 
 
     /**
@@ -597,72 +599,76 @@ public:
      * Addition of \p s to all components. Note
      * that \p s is a scalar and not a vector.
      */
-    virtual void add ( const value_type& v_in );
+    virtual void add ( const value_type& v_in ) override;
 
     /**
      * \f$ U+=V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    void add ( const Vector<value_type>& v );
+    void add ( const Vector<value_type>& v ) override;
 
     /**
      * \f$ U+=a*V \f$ .
      * Simple vector addition, equal to the
      * \p operator +=.
      */
-    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in );
-
+    virtual void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
     /**
      * Replaces each component of a vector by its reciprocal.
      */
-    virtual int reciprocal();
+    virtual int reciprocal() override;
 
     /**
      * @return the minimum element in the vector.
      * In case of complex numbers, this returns the minimum
      * Real part.
      */
-    real_type min () const;
+    real_type min () const override;
 
     /**
      * @returns the maximum element in the vector.
      * In case of complex numbers, this returns the maximum
      * Real part.
      */
-    real_type max() const;
+    real_type max() const override;
+    real_type maxWithIndex( int* index=nullptr ) const override;
+
+
+    //! Replaces every element in a vector with its absolute value
+    void abs() override;
 
     /**
      * @return the \f$l_1\f$-norm of the vector, i.e.
      * the sum of the absolute values.
      */
-    real_type l1Norm () const;
+    real_type l1Norm () const override;
 
     /**
      * @returns the \f$l_2\f$-norm of the vector, i.e.
      * the square root of the sum of the
      * squares of the elements.
      */
-    real_type l2Norm () const;
+    real_type l2Norm () const override;
 
     /**
      * @return the sum of the vector components, i.e.
      * the sum of the values.
      */
-    value_type sum () const;
+    value_type sum () const override;
 
     /**
      * @returns the maximum absolute value of the
      * elements of this vector, which is the
      * \f$l_\infty\f$-norm of a vector.
      */
-    real_type linftyNorm () const;
+    real_type linftyNorm () const override;
 
     /**
      * @return the index of the first vector element
      * actually stored on this processor
      */
-    size_type firstLocalIndex () const
+    size_type firstLocalIndex () const override
     {
         assert ( this->isInitialized() );
 
@@ -680,7 +686,7 @@ public:
      * @return the index of the last vector element
      * actually stored on this processor
      */
-    size_type lastLocalIndex () const
+    size_type lastLocalIndex () const override
     {
         assert ( this->isInitialized() );
 
@@ -698,9 +704,9 @@ public:
      *  prints the vector to the file named \p name.  If \p name is
      *  not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
-    value_type dot( Vector<T> const& __v ) const;
+    value_type dot( Vector<T> const& __v ) const override;
 
     /**
      * This function creates a vector which is defined
@@ -708,7 +714,7 @@ public:
      */
     boost::shared_ptr<Vector<T> >
     createSubVector( std::vector<size_type> const& rows,
-                     bool checkAndFixRange=true ) const;
+                     bool checkAndFixRange=true ) const override;
 
     /**
      * Copy (default) or add (boolean init=false) entries of subvector (already built from a createSubVector)
@@ -717,8 +723,9 @@ public:
     void
     updateSubVector( boost::shared_ptr<Vector<T> > & subvector,
                      std::vector<size_type> const& rows,
-                     bool init=true );
+                     bool init=true ) override;
 
+#if 0
     /**
      * Serialization for PETSc VECSEQ
      */
@@ -741,8 +748,52 @@ public:
 
         VecRestoreArray(this->vec(), &array);
     }
+#endif
+
+    void save( std::string filename="default_archive_name", std::string format="binary" ) override;
+    void load( std::string filename="default_archive_name", std::string format="binary" ) override;
+
     //@}
 
+    
+
+
+private:
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+        double * array;
+        VecGetArray(M_vec, &array);
+
+        int n = this->localSize();
+
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        VecRestoreArray(M_vec, &array );
+    }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+
+        int n = this->mapPtr()->nLocalDof();
+        std::vector<int> ind(n);
+        std::iota( ind.begin(), ind.end(), 0);
+
+        double* array = new double[n];
+        for(int i = 0; i < n; ++i)
+            ar & boost::serialization::make_nvp("arrayi", array[i] );
+
+        this->setVector(ind.data(), n, array);
+        this->close();
+        delete[] array;
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
 
 protected:
 
@@ -800,6 +851,8 @@ class VectorPetscMPI : public VectorPetsc<T>
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 public:
+    friend class boost::serialization::access;
+
     typedef typename super::value_type value_type;
 
     VectorPetscMPI()
@@ -878,7 +931,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
-    void addVector( int* i, int n, value_type* v );
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value );
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
@@ -925,6 +978,14 @@ public:
 
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
+private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version )
+    {
+        if ( Archive::is_saving::value && !this->closed() )
+            this->close();
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+    }
 
 private :
 
@@ -1084,5 +1145,7 @@ vector_uptrtype vec( Vec v, datamap_ptrtype d );
 
 
 } // Feel
+
+
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __VectorPetsc_H */

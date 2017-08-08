@@ -120,7 +120,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         {
             auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= inner(Sigmat,grad(v)),
                            _geomap=this->geomap() );
         }
@@ -133,14 +133,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             auto betaU = BetaU.template element<0>();
             auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel());
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= 2*myViscosity*inner(deft,grad(v)),
                            _geomap=this->geomap() );
         }
         if ( BuildCstPart )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -div(v)*idt(p),
                            _geomap=this->geomap() );
         }
@@ -150,7 +150,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     if ( BuildCstPart )
     {
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -idv(rho)*divt(u)*id(q),
                        _geomap=this->geomap() );
     }
@@ -166,7 +166,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         {
             double beta = this->definePressureCstPenalisationBeta();
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
+                integrate( _range=M_rangeMeshElements,
                            _expr=beta*idt(p)*id(q),
                            _geomap=this->geomap() );
         }
@@ -176,25 +176,20 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                 << " start dof index for define-pressure-cst-lm is not present\n";
             size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
 
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-            auto therange=boundaryfaces(mesh);
-#else
-            auto therange=elements(mesh);
-#endif
             auto lambda = M_XhMeanPressureLM->element();
             if (BuildCstPart)
             {
                 form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=A,
                        _rowstart=this->rowStartInMatrix(),
                        _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=therange,//elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                                _geomap=this->geomap() );
 
                 form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=A,
                        _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM,
                        _colstart=this->colStartInMatrix() ) +=
-                    integrate( _range=therange,//elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= + idt(p)*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -205,7 +200,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
                 this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
                 form1( _test=M_XhMeanPressureLM, _vector=F,
                        _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=therange,//elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this())*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -226,7 +221,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
                            _geomap=this->geomap() );
 #endif
@@ -234,7 +229,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         else
         {
             bilinearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
         }
@@ -242,7 +237,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         if ( this->doStabConvectionEnergy() )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= 0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }
@@ -254,7 +249,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         bilinearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
                        _geomap=this->geomap() );
 #endif
@@ -269,7 +264,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
         if (build_Form2TransientTerm)
         {
             bilinearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
                            _geomap=this->geomap() );
         }
@@ -279,7 +274,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             auto Buzz = M_bdf_fluid->polyDeriv();
             auto buzz = Buzz.template element<0>();
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= idv(rho)*trans(idv(buzz))*id(v),
                            _geomap=this->geomap() );
         }
@@ -292,14 +287,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     if ( M_haveSourceAdded && BuildNonCstPart)
     {
         myLinearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= trans(idv(*M_SourceAdded))*id(v),
                        _geomap=this->geomap() );
     }
     if ( M_useGravityForce && BuildCstPart )
     {
         myLinearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= idv(rho)*inner(M_gravityForce,id(v)),
                        _geomap=this->geomap() );
     }
@@ -308,13 +303,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
     {
         myLinearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
         myLinearForm +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= val(coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
 
@@ -323,7 +318,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             auto BetaU = M_bdf_fluid->poly();
             auto betaU = BetaU.template element<0>();
             myLinearForm +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= 0.5*idv(rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
         }

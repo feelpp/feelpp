@@ -159,28 +159,33 @@ public:
      */
     //@{
 
-    CRBModelTrilinear()
+    CRBModelTrilinear( crb::stage stage, int level = 0 )
         :
-        super()
+        super( boost::make_shared<model_type>(), stage, level )
+        {
+        }
+
+    CRBModelTrilinear( model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        super( model, stage, level )
+        {}
+    
+    FEELPP_DEPRECATED CRBModelTrilinear( int level=0, bool doInit=true )
+        :
+        super(level,doInit)
     {
-        this->init();
+        //this->init();
     }
 
-    CRBModelTrilinear( po::variables_map const& vm, CRBModelMode mode = CRBModelMode::PFEM  )
-        :
-        super( vm, mode )
-    {
-        this->init();
-    }
 
     /**
      * \param model the model to be used
      */
-    CRBModelTrilinear( model_ptrtype & model )
+    FEELPP_DEPRECATED CRBModelTrilinear( model_ptrtype const& model, bool doInit=true )
         :
-        super( model )
+        super( model, doInit )
     {
-        this->init();
+        //this->init();
     }
 
     /**
@@ -190,7 +195,7 @@ public:
         :
         super( o )
     {
-        this->init();
+        //this->init();
     }
 
     //! destructor

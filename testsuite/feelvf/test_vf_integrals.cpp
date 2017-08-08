@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #define BOOST_TEST_MODULE test_integrals
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -129,7 +129,25 @@ public :
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
             }
-
+#if !defined(FEELPP_DISABLE_COMPILE_FAILURE)
+            tic();
+            auto mid = mat<3,3>( cst(1.), cst(0.), cst(0.),
+                                 cst(0.), cst(1.), cst(0.),
+                                 cst(0.), cst(0.), cst(1.) );
+            v = integrate(_range=elements(mesh),_expr=cross(trans(trans(idv(u))*mid),_e1v-P()),_quad=_Q<3>()).evaluate( x );
+            toc("lambda integral u x (_1-X)", FLAGS_v>0);
+            i = 0;
+            for( auto e : x )
+            {
+                tic();
+                auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate(false);
+                toc("integral u x ((x,y,z)-X) ",FLAGS_v>0);
+                BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
+                ++i;
+            }
+#else
+#warning disabling compile failure in test_vf_integrals
+#endif
         }
 };
 

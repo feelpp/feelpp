@@ -23,7 +23,7 @@
  */
 
 #define BOOST_TEST_MODULE test_on
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>

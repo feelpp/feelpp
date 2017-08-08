@@ -9,20 +9,20 @@
 namespace Feel
 {
 
-po::options_description
+FEELPP_EXPORT po::options_description
 makeLinearElasticity3dOptions();
-AboutData
+FEELPP_EXPORT AboutData
 makeLinearElasticity3dAbout( std::string const& str = "linearelasticity3d"/*"linear-elasticity-3d"*/ );
 
-struct LinearElasticity3dConfig
+struct FEELPP_EXPORT LinearElasticity3dConfig
 {
     typedef Mesh<Simplex<3>> mesh_type;
     typedef Pchv_type<mesh_type,1> space_type;
 };
 
-class LinearElasticity3d : public ModelCrbBase<ParameterSpace<5>, LinearElasticity3dConfig::space_type >
+class FEELPP_EXPORT LinearElasticity3d : public ModelCrbBase<ParameterSpace<>, LinearElasticity3dConfig::space_type >
 {
-    typedef ModelCrbBase<ParameterSpace<5>, LinearElasticity3dConfig::space_type > super_type;
+    typedef ModelCrbBase<ParameterSpace<>, LinearElasticity3dConfig::space_type > super_type;
 public:
 
     LinearElasticity3d();
@@ -41,6 +41,7 @@ public:
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
 };
+
 
 }
 

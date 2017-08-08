@@ -1047,7 +1047,7 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
         for ( int k=0; k<nDataRecv; ++k )
         {
            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ );
+            auto & eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k]/*,idProc*/ )->second;
 #if 0
             std::cout << "k = " << k << std::endl;
             std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;
@@ -1057,7 +1057,7 @@ MeshStructured::updateGhostCellInfoByUsingNonBlockingComm( std::map<int,int> con
             std::cout << "eltToUpdate->refDim()         " << eltToUpdate->refDim()         << std::endl;
             std::cout << "eltToUpdate->nPoints()        " << eltToUpdate->nPoints()        << std::endl;
 #endif
-            this->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
+            eltToUpdate.setIdInOtherPartitions( idProc, itFinalDataToRecv->second[k] );
         }
     }
     //-----------------------------------------------------------//
