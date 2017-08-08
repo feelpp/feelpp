@@ -38,7 +38,7 @@ namespace Feel {
 //!   . xv.size() > order+1 then it is least square fitting
 //!
 template<typename T>
-std::vector<T>
+FEELPP_EXPORT std::vector<T>
 polyfit(const std::vector<T> &xv, const std::vector<T> &yv, int order = 1)
 {
 	Eigen::MatrixXd A(xv.size(), order+1);

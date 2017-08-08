@@ -69,7 +69,7 @@ namespace Feel
  * @author Christophe Prud'homme
  */
 template<typename MeshType, int N = 1>
-class Exporter
+class FEELPP_EXPORT Exporter
     :
 public VisitorBase,
 public Visitor<MeshType>

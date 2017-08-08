@@ -17,9 +17,13 @@
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
 //! @file
+//! This file provides the header of the 1D mesh data structure
+//!
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 05 Feb 2017
-//! @copyright 2017 Feel++ Consortium
+//! @copyright 2005,2006 EPFL
+//! @copyright 2007-2010 Université Joseph Fourier (Grenoble I)
+//! @copyright 2011-2017 Feel++ Consortium
 //!
 #ifndef FEELPP_MESH1D_HPP
 #define FEELPP_MESH1D_HPP 1
@@ -27,20 +31,20 @@
 #include <iomanip>
 #include <fstream>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
 #include <boost/numeric/ublas/io.hpp>
-
-
+#include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
@@ -83,9 +87,7 @@ class Mesh1D
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 1 );
 
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -109,7 +111,7 @@ public:
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,typename super_elements::element_type> super_faces;
+    typedef Faces<typename Shape::template shape<0, Shape::nOrder, Shape::nRealDim>::type, typename super_elements::element_type> super_faces;
     typedef typename super_faces::face_iterator face_iterator;
     typedef typename super_faces::face_const_iterator face_const_iterator;
     typedef typename super_faces::faces_type faces_type;
@@ -125,6 +127,7 @@ public:
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
     typedef Mesh1D<Shape,T> self_type;
+
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename element_type::vertex_permutation_type vertex_permutation_type;
@@ -132,149 +135,152 @@ public:
 
     typedef typename super::face_processor_type face_processor_type;
 
+    //@}
 
-//@}
-
-/** @name Constructors, destructor
- */
-//@{
+    /** @name Constructors, destructor
+     */
+    //@{
 
     /**
      * default constructor
      */
     Mesh1D( WorldComm const& worldComm = Environment::worldComm() )
-        :
-        super_visitable(),
-        super( 1, nRealDim, worldComm ),
-        super_elements( worldComm ),
-        super_points( worldComm ),
-        super_faces( worldComm )
-        {}
+        : super_visitable(),
+          super( 1, nRealDim, worldComm ),
+          super_elements( worldComm ),
+          super_points( worldComm ),
+          super_faces( worldComm )
+    {
+    }
 
-/**
- * copy constructor
- */
-    Mesh1D( Mesh1D const & m )
-        :
-        super_visitable(),
-        super( m ),
-        super_elements( m ),
-        super_points( m ),
-        super_faces( m )
-        {}
+    //! copy constructor
+    Mesh1D( Mesh1D const& m )
+        : super_visitable(),
+          super( m ),
+          super_elements( m ),
+          super_points( m ),
+          super_faces( m )
+    {
+    }
 
-/**
- * destructor
- */
+    //! destructor
     ~Mesh1D()
-        {}
+    {
+    }
 
-//@}
+    //@}
 
-/** @name Operator overloads
- */
-//@{
+    /** @name Operator overloads
+     */
+    //@{
 
     Mesh1D& operator=( Mesh1D const& m )
+    {
+        if ( this != &m )
         {
-            if ( this != &m )
-            {
-                super::operator=( m );
-                super_elements::operator=( m );
-                super_points::operator=( m );
-                super_faces::operator=( m );
-            }
-
-            return *this;
+            super::operator=( m );
+            super_elements::operator=( m );
+            super_points::operator=( m );
+            super_faces::operator=( m );
         }
 
+        return *this;
+    }
 
-//@}
+    //@}
 
-/** @name Accessors
- */
-//@{
+    /** @name Accessors
+     */
+    //@{
 
-/**
- * \return \p true if all containers are empty, \p false otherwise
- */
+    /**
+     * \return \p true if all containers are empty, \p false otherwise
+     */
     bool isEmpty() const
-        {
-            return ( super_elements::isEmpty() &&
-                     super_points::isEmpty() &&
-                     super_faces::isEmpty() );
-        }
+    {
+        return ( super_elements::isEmpty() &&
+                 super_points::isEmpty() &&
+                 super_faces::isEmpty() );
+    }
 
-
-/**
- * \return the number of elements
- */
+    //!
+    //! @brief get the number of elements in the mesh
+    //! @return the number of elements in the mesh
+    //!
     size_type numElements() const
-        {
-            return this->elements().size();
-        }
+    {
+        return this->elements().size();
+    }
 
-/**
- * \return the number of faces in an element
- */
+    /**
+     * \return the number of faces in an element
+     */
     size_type numLocalFaces() const
-        {
-            return super_elements::element_type::numLocalFaces;
-        }
+    {
+        return super_elements::element_type::numLocalFaces;
+    }
 
-/**
- * \return the number of vertices in an element
- */
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
+    uint16_type numLocalTopologicalFaces() const
+    {
+        return super_elements::element_type::numTopologicalFaces;
+    }
+
+    /**
+     * \return the number of vertices in an element
+     */
     size_type numLocalVertices() const
-        {
-            return super_elements::element_type::numLocalVertices;
-        }
+    {
+        return super_elements::element_type::numLocalVertices;
+    }
 
-/**
- * \return the number of faces
- */
+    /**
+     * \return the number of faces
+     */
     size_type numFaces() const
-        {
-            return this->faces().size();
-        }
+    {
+        return this->faces().size();
+    }
     size_type numEdges() const
-        {
-            return this->faces().size();
-        }
+    {
+        return this->faces().size();
+    }
 
-/**
- * \return the number of points
- */
+    /**
+     * \return the number of points
+     */
     size_type numPoints() const
-        {
-            return this->points().size();
-        }
+    {
+        return this->points().size();
+    }
 
-//@}
+    //@}
 
-/** @name  Mutators
- */
-//@{
+    /** @name  Mutators
+     */
+    //@{
 
+    //@}
 
-//@}
-
-/** @name  Methods
- */
-//@{
+    /** @name  Methods
+     */
+    //@{
 
     virtual void setWorldComm( WorldComm const& _worldComm )
-        {
-            this->setWorldCommMeshBase( _worldComm );
-            this->setWorldCommElements( _worldComm );
-            this->setWorldCommFaces( _worldComm );
-            this->setWorldCommPoints( _worldComm );
-        }
+    {
+        this->setWorldCommMeshBase( _worldComm );
+        this->setWorldCommElements( _worldComm );
+        this->setWorldCommFaces( _worldComm );
+        this->setWorldCommPoints( _worldComm );
+    }
 
-/**
- * clear out all data from the mesh, \p isEmpty() should return
- * \p true after a \p clear()
- */
+    /**
+     * clear out all data from the mesh, \p isEmpty() should return
+     * \p true after a \p clear()
+     */
     virtual void clear()
         {
             super_elements::clear();
@@ -283,44 +289,39 @@ public:
             FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
         }
 
-
-
     FEELPP_DEFINE_VISITABLE();
-//@}
+    //@}
 
-
-
-protected:
-
-/**
- * dummy  implementation
- * \see Mesh
- */
+  protected:
+    /**
+     * dummy  implementation
+     * \see Mesh
+     */
     void renumber()
-        {
-            FEELPP_ASSERT( 0 ).error( "invalid call" );
-        }
+    {
+        FEELPP_ASSERT( 0 )
+            .error( "invalid call" );
+    }
 
-
-/**
- * update permutation of entities of co-dimension 1
- */
+    /**
+     * update permutation of entities of co-dimension 1
+     */
     void updateEntitiesCoDimensionOnePermutation()
-        {
-            // no-op
-        }
+    {
+        // no-op
+    }
 
-/**
- * update the entities of co-dimension 2
- */
+    /**
+     * update the entities of co-dimension 2
+     */
     void updateEntitiesCoDimensionTwo()
-        {
-            // no-op
-        }
+    {
+        // no-op
+    }
 
-private:
-
+  private:
     friend class boost::serialization::access;
+
     template<class Archive>
     FEELPP_NO_EXPORT void serialize( Archive & ar, const unsigned int version )
         {
@@ -333,11 +334,7 @@ private:
             ar & boost::serialization::base_object<super_elements>( *this );
         }
 
-
 };
-
-
-
 
 } // Feel
 

@@ -34,8 +34,7 @@
 #include <stdexcept>
 #include <string>
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/typeinfo.hpp>
@@ -87,7 +86,7 @@ struct FactoryDefaultError
         std::string M_ex;
     };
 
-    static AbstractProduct* onUnknownType( IdentifierType id )
+    static std::unique_ptr<AbstractProduct> onUnknownType( IdentifierType id )
     {
         throw Exception( id );
     }
@@ -105,10 +104,10 @@ struct FactoryDefaultError
 template
 <
 class AbstractProduct,
-      typename IdentifierType,
-      typename ProductCreator = boost::function<AbstractProduct*()>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+    typename IdentifierType,
+    typename ProductCreator = std::function<std::unique_ptr<AbstractProduct>()>,
+    template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+     >
 class Factory
     :
 public FactoryErrorPolicy<IdentifierType,AbstractProduct>
@@ -172,7 +171,7 @@ public:
      *
      * @return the object associate with \c id
      */
-    product_type* createObject( const identifier_type& id )
+    std::unique_ptr<product_type> createObject( const identifier_type& id )
     {
         typename id_to_product_type::const_iterator i = M_associations.find( id );
 
@@ -206,7 +205,7 @@ private:
 */
 template <
 class AbstractProduct,
-      class ProductCreator = boost::function<AbstractProduct* ( const AbstractProduct* )>,
+    class ProductCreator = boost::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
       template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
       >
 class FactoryClone
@@ -265,7 +264,7 @@ public:
         return M_associations.erase( id ) == 1;
     }
 
-    AbstractProduct* createObject( const AbstractProduct* model )
+    std::unique_ptr<AbstractProduct> createObject( const AbstractProduct* model )
     {
         if ( model == 0 ) return 0;
 

@@ -31,6 +31,9 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_type& mesh )
 {
+    if ( this->hasMeshSupport() )
+        this->meshSupport()->updateParallelData();
+
     if ( !mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
     {
         this->buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh );
@@ -123,12 +126,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
 namespace detail {
 
-template <typename MeshType>
+template <typename DofTableType>
 boost::tuple<rank_type,size_type >
-updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& theface, const rank_type myIdProcess,
-                     const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
+updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_type::face_type const& theface, const rank_type myIdProcess,
+                     const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const& eltOnProc,
                      const uint16_type locDof, std::set<rank_type> & procRecvData )
 {
+    typedef typename DofTableType::mesh_type MeshType;
+    auto mesh = doftable.mesh();
     rank_type procMin = IdProcessOfGhost;
     size_type idFaceMin = idFaceInPartition;
 
@@ -139,6 +144,8 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
     auto const& thept = eltOnProc.point(iPtEl);
     auto const theptId = thept.id();
 
+    bool hasMeshSupportPartial = doftable.hasMeshSupport() && doftable.meshSupport()->isPartialSupport();
+
     auto itprocghost=thept.elementsGhost().begin();
     auto const enprocghost=thept.elementsGhost().end();
     for ( ; itprocghost!=enprocghost ; ++itprocghost)
@@ -147,9 +154,28 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
         {
             const rank_type theprocGhost=itprocghost->first;
             bool findFace=false;
-            DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
-            auto iteltghost = itprocghost->second.begin();
-            auto const& eltGhost = mesh.element(*iteltghost);
+
+            size_type ghostEltId = invalid_size_type_value;// *itprocghost->second.begin();
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : itprocghost->second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        ghostEltId = _ghostEltId;
+                        break;
+                    }
+                }
+                if ( ghostEltId == invalid_size_type_value )
+                    continue;
+            }
+            else
+            {
+                DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
+                ghostEltId = *itprocghost->second.begin();
+                //auto iteltghost = itprocghost->second.begin();
+            }
+            auto const& eltGhost = mesh->element(ghostEltId);
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
                 if ( !eltGhost.facePtr(f) )
@@ -176,7 +202,21 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::face_type const& t
         for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
             const rank_type procIdGhost = itprocghost->first;
-            procRecvData.insert( procIdGhost );
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : itprocghost->second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        procRecvData.insert( procIdGhost );
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                procRecvData.insert( procIdGhost );
+            }
         }
     }
 
@@ -220,36 +260,24 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::element_type const
 }
 //--------------------------------------------------------------------------------------------------------//
 
-template <typename MeshType>
+template <typename DofTableType>
 boost::tuple<rank_type,size_type>
-updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& theface,const rank_type myIdProcess,
-                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
-                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData, mpl::int_<0> /**/ )
+updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type::face_type const& theface, const rank_type myIdProcess,
+                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const& eltOnProc,
+                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData,
+                  typename std::enable_if< mpl::not_<is_3d<typename DofTableType::mesh_type>>::value >::type* = nullptr )
 {
     return boost::make_tuple(0,0);
 }
-template <typename MeshType>
+template <typename DofTableType>
 boost::tuple<rank_type,size_type>
-updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& theface, const rank_type myIdProcess,
-                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
-                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData, mpl::int_<1> /**/ )
+updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type::face_type const& theface, const rank_type myIdProcess,
+                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const& eltOnProc,
+                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData,
+                  typename std::enable_if< is_3d<typename DofTableType::mesh_type>::value >::type* = nullptr )
 {
-    return boost::make_tuple(0,0);
-}
-template <typename MeshType>
-boost::tuple<rank_type,size_type>
-updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& theface, const rank_type myIdProcess,
-                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
-                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData, mpl::int_<2> /**/ )
-{
-    return boost::make_tuple(0,0);
-}
-template <typename MeshType>
-boost::tuple<rank_type,size_type>
-updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& theface, const rank_type myIdProcess,
-                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
-                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData, mpl::int_<3> /**/ )
-{
+    typedef typename DofTableType::mesh_type MeshType;
+    auto mesh = doftable.mesh();
     rank_type procMin = IdProcessOfGhost;
     size_type idFaceMin = idFaceInPartition;
 
@@ -260,6 +288,8 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
     auto const& theedge = eltOnProc.edge(iEdEl);
     auto const theedgeId = theedge.id();
 
+    bool hasMeshSupportPartial = doftable.hasMeshSupport() && doftable.meshSupport()->isPartialSupport();
+
     auto itprocghost=theedge.elementsGhost().begin();
     auto const enprocghost=theedge.elementsGhost().end();
     for ( ; itprocghost!=enprocghost ; ++itprocghost)
@@ -268,9 +298,27 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
         {
             const rank_type theprocGhost=itprocghost->first;
 
-            DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
-            auto iteltghost = itprocghost->second.begin();
-            auto const& eltGhost = mesh.element(*iteltghost);
+            size_type ghostEltId = invalid_size_type_value;
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : itprocghost->second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        ghostEltId = _ghostEltId;
+                        break;
+                    }
+                }
+                if ( ghostEltId == invalid_size_type_value )
+                    continue;
+            }
+            else
+            {
+                DCHECK(itprocghost->second.size()>0) << "need to have at least one ghost element\n";
+                ghostEltId = *itprocghost->second.begin();
+            }
+            auto const& eltGhost = mesh->element(ghostEltId);
+
             bool findFace=false;
             for ( uint16_type f = 0; f < MeshType::element_type::numTopologicalFaces && !findFace; ++f )
             {
@@ -298,23 +346,26 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
         for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
             const rank_type procIdGhost = itprocghost->first;
-            procRecvData.insert( procIdGhost );
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : itprocghost->second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        procRecvData.insert( procIdGhost );
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                procRecvData.insert( procIdGhost );
+            }
         }
 
     }
 
     return boost::make_tuple(procMin,idFaceMin);
-}
-
-//--------------------------------------------------------------------------------------------------------//
-
-template <typename MeshType>
-boost::tuple<rank_type,size_type>
-updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& theface, const rank_type myIdProcess,
-                  const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename MeshType::element_type const& eltOnProc,
-                  const uint16_type idEdgesInFace, std::set<rank_type> & procRecvData )
-{
-    return updateDofOnEdges( mesh,theface,myIdProcess,IdProcessOfGhost,idFaceInPartition,eltOnProc,idEdgesInFace,procRecvData,mpl::int_<MeshType::nDim>() );
 }
 
 } // namespace detail
@@ -357,13 +408,10 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     size_type nDofNotPresent=0;
 
     // iteration on all interprocessfaces in order to send requests to the near proc
-    auto rangeInterProcessFaces = mesh.interProcessFaces();
-    auto face_it = std::get<0>( rangeInterProcessFaces );
-    auto const face_en = std::get<1>( rangeInterProcessFaces );
-    DVLOG(2) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
-    for ( ; face_it != face_en ; ++face_it )
+    auto rangeInterProcessFaces = (this->hasMeshSupport())? this->meshSupport()->rangeInterProcessFaces() : interprocessfaces(mesh);
+    for ( auto const& faceipWrap : rangeInterProcessFaces )
     {
-        auto const& faceip = boost::unwrap_ref( *face_it );
+        auto const& faceip = unwrap_ref(faceipWrap);
         DVLOG(2) << "[buildGhostInterProcessDofMap] face id: " << faceip.id() << "\n";
         auto const& elt0 = faceip.element0();
         auto const& elt1 = faceip.element1();
@@ -385,6 +433,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         for ( uint16_type locDof = 0; locDof < nbFaceDof; ++locDof )
         {
             // check only component 0
+            DCHECK( M_face_l2g.find( faceip.id() ) != M_face_l2g.end() ) << "not found the face id "<< faceip << "into the mapping faceLocalToGlobal";
             const size_type theglobdoftest = faceLocalToGlobal( faceip.id(),locDof, 0 ).template get<0>();
             CHECK( theglobdoftest < this->M_n_localWithGhost_df[myRank] ) << "invalid globdof " << theglobdoftest << "\n";
             if ( dofdone[theglobdoftest] ) continue;
@@ -398,8 +447,8 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                        mpl::int_<fe_type::nDofPerVertex> >::type::value;
                 int pointGetLocDof = locDof / nDofPerVertexTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnVertices<mesh_type>(mesh, faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
-                                                                                                           procRecvData );
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnVertices( *this, faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
+                                                                                                       procRecvData );
             }
             else if ( nDim == 3 && locDof < (face_type::numVertices*fe_type::nDofPerVertex + face_type::numEdges*fe_type::nDofPerEdge) )
             {
@@ -409,8 +458,8 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                      mpl::int_<fe_type::nDofPerEdge> >::type::value;
                 int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnEdges<mesh_type>(mesh,faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
-                                                                                                        procRecvData);
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnEdges( *this, faceip, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
+                                                                                                    procRecvData );
             }
             else
             {
@@ -1681,12 +1730,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myGhostEltsExtended( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     std::set<size_type> dofdoneActive, dofdoneGhost;
+#if 0
     auto rangeInterProcessFaces = mesh.interProcessFaces();
     auto face_it = std::get<0>( rangeInterProcessFaces );
     auto const face_en = std::get<1>( rangeInterProcessFaces );
-    for ( ; face_it!=face_en ; ++face_it )
+#endif
+    auto rangeInterProcessFaces = (this->hasMeshSupport())? this->meshSupport()->rangeInterProcessFaces() : interprocessfaces(mesh);
+    //for ( ; face_it!=face_en ; ++face_it )
+    for ( auto const& faceWrap : rangeInterProcessFaces )
     {
-        auto const& faceip = boost::unwrap_ref( *face_it );
+        auto const& faceip = boost::unwrap_ref( faceWrap );//*face_it );
         auto const& elt0 = faceip.element0();
         auto const& elt1 = faceip.element1();
         const bool elt0isGhost = elt0.isGhostCell();
@@ -2050,6 +2103,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
 }
 
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtendedGhostMap( mesh_type& mesh ) const
@@ -2080,7 +2134,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPointsExtend
                                             myGhostEltsExtended->begin(),myGhostEltsExtended->end(),myGhostEltsExtended );
     this->generateDofPoints( myrangeGhost );
 }
-
+#endif
 
 } // namespace Feel
 

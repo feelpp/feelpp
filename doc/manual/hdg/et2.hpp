@@ -150,7 +150,7 @@ ElectroThermal<Dim, OrderP>::run()
 
     auto Mh = Pdh<OrderP>( face_mesh, true );
     auto Xh = Pch<OrderP>( mesh );
-    auto Ch = Pch<0>( mesh );
+    auto Ch = Pch<0>( face_mesh );
 
     toc("spaces",true);
 

@@ -176,7 +176,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
+VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
@@ -186,7 +186,6 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -891,6 +890,76 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 
     delete[] rowMap;
 }
+template <typename T>
+void
+VectorPetsc<T>::save( std::string filename, std::string format )
+{
+    if ( !this->closed() )
+        this->close();
+
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ofstream ofs( filename );
+    if (ofs)
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_oarchive oa(ofs);
+            oa << *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_oarchive oa(ofs);
+            oa << *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+template <typename T>
+void
+VectorPetsc<T>::load( std::string filename, std::string format ) 
+{
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ifstream ifs( filename );
+    if ( ifs )
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -1317,7 +1386,7 @@ VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
+VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
@@ -1672,6 +1741,7 @@ VectorPetscMPI<T>::lastLocalIndex() const
 
     return static_cast<size_type>( petsc_last );
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -2529,8 +2599,6 @@ VectorPetscMPIRange<T>::localize()
     ierr = VecScatterEnd( M_vecScatterGhost, this->vec(), M_vecGhost, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 }
-
-
 
 
 

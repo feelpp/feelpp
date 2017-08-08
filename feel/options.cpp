@@ -413,6 +413,15 @@ po::options_description stabilization_options( std::string const& prefix )
     return _options.add( backend_options( prefixvm(prefix,"stab") ) );
 }
 
+po::options_description sc_options( std::string const& prefix )
+{
+    po::options_description _options("Options for static condensation");
+    _options.add_options()
+        ( prefixvm( prefix, "sc.condense" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable static condensation" )
+        ;
+
+    return _options;
+}
 
 
 Feel::po::options_description
@@ -604,13 +613,15 @@ crbOptions( std::string const& prefix )
         ( "crb.compute-variance" , Feel::po::value<bool>()->default_value( 0 ), " if true the output is the variance and not l(v)" )
         ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
-        ( "crb.use-aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
         ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
-        ( "crb.max-fixedpoint-iterations",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
-        ( "crb.increment-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
-        ( "crb.output-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
-        ( "crb.fixedpoint-verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
-        ( "crb.fixedpoint-critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
+        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
+        
+        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
+        ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
+        ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
+        ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
+        ( "crb.fixedpoint.critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
+        
         ( "crb.use-continuity",Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
         ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
         ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
@@ -929,6 +940,7 @@ feel_options( std::string const& prefix  )
         .add( backend_options("Fu") )
         .add( backend_options("Bt") )
         .add( blockns_options( prefix ) )
+        .add( sc_options( prefix ) )
         //.add( blockms_options( prefix ) )
 
         /* nonlinear solver options */

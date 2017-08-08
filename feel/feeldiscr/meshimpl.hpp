@@ -2339,7 +2339,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
 
         //memoryMsgToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]] = &ghostelt;
-        memoryMsgToSend[ghosteltPid][ dataToSend[ghosteltPid].size() ] = &ghostelt;
+        memoryMsgToSend[ghosteltPid][ dataToSend[ghosteltPid].size() ] = std::addressof(ghostelt);
         // update container
         //dataToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
         dataToSend[ghosteltPid].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
@@ -2567,14 +2567,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     {
         const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
+        DCHECK( nDataRecv == memoryMsgToSend[idProc].size() ) << "invalid data size to send/recv, got " << nDataRecv << " expected:" << memoryMsgToSend[idProc].size();
         for ( int k=0; k<nDataRecv; ++k )
         {
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
             auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
-            //auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
-            auto & theelt = *memoryMsgToSend[idProc][k];
-
+            DCHECK( k < memoryMsgToSend[idProc].size() ) << "invalid data index : " << k << " must be less than " << memoryMsgToSend[idProc].size();
+            auto & theelt = *memoryMsgToSend.at(idProc).at(k);
+            
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -2590,7 +2591,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 bool hasFind=false;
                 for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
                 {
-                    if ( !theelt.facePtr( j2 ) )
+                    if ( ! theelt.hasFace( j2 ) )
                         continue;
                     auto const& thefacej2 = theelt.face( j2 );
                     //auto const& theGj2 = thefacej2.G();

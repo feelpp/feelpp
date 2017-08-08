@@ -74,7 +74,7 @@ namespace Feel
 namespace detail
 {
 #pragma GCC visibility push(hidden)
-class GMSHPoint
+class FEELPP_NO_EXPORT  GMSHPoint
 {
 public:
     Eigen::Vector3d x;
@@ -121,7 +121,7 @@ public:
     GMSHPoint& operator=( GMSHPoint const& ) = default;
     GMSHPoint& operator=( GMSHPoint && ) = default;
 };
-struct GMSHElement
+struct FEELPP_NO_EXPORT GMSHElement
 {
     GMSHElement()
         :
@@ -283,13 +283,13 @@ struct GMSHElement
 //!
 //! @return true if element should be store on process, false otherwise
 //!
-bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
+FEELPP_EXPORT bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_type worldcommrank, rank_type worldcommsize);
 
 //!
 //! @return true if \p physical is found in container, false otherwise
 //!
 template<typename Iterator>
-bool isFound( Iterator beg, Iterator end, int physical )
+FEELPP_EXPORT bool isFound( Iterator beg, Iterator end, int physical )
 {
     return std::find( beg, end, physical ) != end;
 }
@@ -314,7 +314,7 @@ bool isFound( Iterator beg, Iterator end, int physical )
  */
 
 template<typename MeshType>
-class ImporterGmsh
+class FEELPP_EXPORT ImporterGmsh
     :
 
 public Importer<MeshType>
@@ -473,7 +473,7 @@ public:
      * @brief set the GMsh GModel object
      * @param gmodel GMsh GModel object
      */
-    void setGModel( GModel* gmodel ) { M_gmodel = gmodel; }
+    void setGModel( boost::shared_ptr<GModel> gmodel ) { M_gmodel = gmodel; }
 #endif
 
     //@}
@@ -542,7 +542,7 @@ private:
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 #if defined( FEELPP_HAS_GMSH_H )
-    GModel* M_gmodel;
+    boost::shared_ptr<GModel> M_gmodel;
 #endif
 };
 
@@ -2078,7 +2078,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 
 // Gmsh reader factory
 #if defined( FEELPP_HAS_GMSH_H )
-using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,GModel*>(std::string)> > >;
+using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,boost::shared_ptr<GModel>>(std::string)> > >;
 #endif
 
 
