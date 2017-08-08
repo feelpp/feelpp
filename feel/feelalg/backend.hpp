@@ -86,38 +86,38 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
+FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
     return t->mapPtr();
 }
 template<typename T>
-boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
+FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
     return t.mapPtr();
 }
 template<typename T>
-boost::shared_ptr<DataMap> datamap( T const& t )
+FEELPP_EXPORT boost::shared_ptr<DataMap> datamap( T const& t )
 {
     return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 template<typename T>
 #if BOOST_VERSION >= 105300
-typename boost::detail::sp_dereference< typename T::element_type >::type
+FEELPP_EXPORT typename boost::detail::sp_dereference< typename T::element_type >::type
 #else
-typename T::reference
+FEELPP_EXPORT typename T::reference
 #endif
 ref( T t, mpl::true_ )
 {
     return *t;
 }
 template<typename T>
-T& ref( T& t, mpl::false_ )
+FEELPP_EXPORT T& ref( T& t, mpl::false_ )
 {
     return t;
 }
 template<typename T>
-auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
+FEELPP_EXPORT auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 {
     return ref( t, Feel::detail::is_shared_ptr<T>() );
 }
@@ -150,7 +150,7 @@ class BackendBase{};
  * @see
  */
 template<typename T>
-class Backend:
+class FEELPP_EXPORT Backend:
         public BackendBase,
         public boost::enable_shared_from_this<Backend<T> >
 {
@@ -450,9 +450,9 @@ public:
         return m;
     }
 
-    /**
-     * instantiate a new block matrix sparse
-     */
+    //!
+    //! create a new block Matrix from a set of blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
@@ -474,6 +474,9 @@ public:
         return mb->getSparseMatrix();
     }
 
+    //!
+    //! create a new block Matrix from a set of graph blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
@@ -520,9 +523,8 @@ public:
     vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
                                        bool copy_values=true )
     {
-        typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
-        boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
-        return mb->getVector();
+        using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
+        return boost::make_shared<vector_block_type>( b, *this, copy_values );
     }
 
     /**

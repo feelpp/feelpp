@@ -35,7 +35,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-class ModelPointPosition
+class FEELPP_EXPORT ModelPointPosition
 {
 public :
     typedef Eigen::MatrixXd coord_value_type;
@@ -83,7 +83,7 @@ private:
 
 };
 
-class ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >
+class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >
 {
     typedef std::pair< ModelPointPosition, std::set<std::string> > super_type;
 public :
@@ -126,7 +126,7 @@ private:
     std::string M_directoryLibExpr;
 };
 
-class ModelExtremum
+class FEELPP_EXPORT ModelExtremum
 {
 public :
     ModelExtremum() = default;
@@ -151,7 +151,7 @@ private :
     std::string M_type;
     std::list<std::string> M_meshMarkers;
 };
-class ModelPostprocessExtremum : public std::pair< ModelExtremum, std::set<std::string> >
+class FEELPP_EXPORT ModelPostprocessExtremum : public std::pair< ModelExtremum, std::set<std::string> >
 {
 public :
     ModelPostprocessExtremum( WorldComm const& world = Environment::worldComm() )
@@ -182,7 +182,7 @@ private:
     std::string M_directoryLibExpr;
 };
 
-class ModelPostprocess: public std::map<std::string,std::vector<std::string>>
+class FEELPP_EXPORT ModelPostprocess: public std::map<std::string,std::vector<std::string>>
 {
 public:
 

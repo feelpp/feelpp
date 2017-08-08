@@ -39,7 +39,7 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class FunctionSpaceBase
+class FEELPP_EXPORT FunctionSpaceBase
 {
 public:
 

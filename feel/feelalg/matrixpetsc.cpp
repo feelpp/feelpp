@@ -880,7 +880,9 @@ template <typename T>
 void
 MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                             int* cols, int ncols,
-                            value_type* data )
+                            value_type* data,
+                            size_type K,
+                            size_type K2 )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -1277,12 +1279,12 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
                                      name.c_str(),
                                      FILE_MODE_WRITE,
                                      &petsc_viewer );
-#endif
+#else
         ierr = PetscViewerASCIIOpen( this->comm(),
                                      name.c_str(),
                                      &petsc_viewer );
+#endif
         CHKERRABORT( this->comm(),ierr );
-
 #if 0
 #if PETSC_VERSION_LESS_THAN(3,7,0)
         ierr = PetscViewerSetFormat ( petsc_viewer,
@@ -1296,6 +1298,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
                                        PETSC_VIEWER_ASCII_MATLAB );
 #endif
         //PETSC_VIEWER_ASCII_PYTHON );
+
         CHKERRABORT( this->comm(),ierr );
 
         ierr = MatView ( M_mat, petsc_viewer );
@@ -2383,32 +2386,17 @@ void MatrixPetsc<T>::load( Archive & ar, const unsigned int version )
 
     int m = this->mapRow().nLocalDofWithGhost();
     int n = this->mapCol().nLocalDofWithGhost();
-    int idxm [m];
-    int idxn [n];
-    PetscScalar array[m*n];
+    
 
-    int i=0;
-    for ( int index=this->mapRow().firstDofGlobalCluster();
-          index<=this->mapRow().lastDofGlobalCluster(); index++ )
-    {
-        idxm[i]=index;
-        i++;
-    }
-    Feel::cout <<"Load matrix : i="<<i <<", size row="<<m <<std::endl;
 
-    i=0;
-    for ( int index=this->mapCol().firstDofGlobalCluster();
-          index<=this->mapCol().lastDofGlobalCluster(); index++ )
-    {
-        idxn[i]=index;
-        i++;
-    }
-    Feel::cout <<"Load matrix : i="<<i <<", size col="<<n <<std::endl;
-
+    std::vector<int> idxm(m), idxn(n);
+    std::iota( idxm.begin(), idxm.end(), this->mapRow().firstDofGlobalCluster() );
+    std::iota( idxn.begin(), idxn.end(), this->mapCol().firstDofGlobalCluster() );
+    std::vector<PetscScalar> array(m*n);
     for( int i = 0; i < m*n; ++i )
         ar & boost::serialization::make_nvp("arrayi", array[i] );
 
-    MatSetValues( M_mat, m, idxm, n, idxn, array, INSERT_VALUES );
+    MatSetValues( M_mat, m, idxm.data(), n, idxn.data(), array.data(), INSERT_VALUES );
 
     this->close();
 
@@ -2532,6 +2520,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     CHKERRABORT( this->comm(),ierr );
 
     // free
+    delete[] dnz;
     delete[] dnzOffProc;
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
@@ -2574,7 +2563,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     //CHKERRABORT(this->comm(),ierr);
 
     // generates an error for new matrix entry
-    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE );
+    ierr = MatSetOption ( this->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
     CHKERRABORT( this->comm(),ierr );
 #endif
 
@@ -2746,7 +2735,9 @@ template <typename T>
 void
 MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               int* cols, int ncols,
-                              value_type* data )
+                              value_type* data,
+                              size_type K,
+                              size_type K2)
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
     /*for (int k=0;k<nrows;++k)

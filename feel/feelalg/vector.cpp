@@ -73,6 +73,7 @@ Vector<T>::Vector ( const size_type n,
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map( new datamap_type(n, n_local, _worldComm) )
+
 {}
 
 template <typename T>
