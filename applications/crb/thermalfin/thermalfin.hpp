@@ -33,9 +33,12 @@ makeThermalFinAbout( std::string const& str = "thermalfin" )
     return about;
 }
 
-class ThermalFin : public ModelCrbBase<ParameterSpace<6>, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>
+class ThermalFin : public ModelCrbBase<ParameterSpaceX, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>
 {
 public:
+    using super = ModelCrbBase<ParameterSpaceX, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>;
+    ThermalFin() : super( "thermafin" ) {}
+    
     //! initialisation of the model
     void initModel();
 
@@ -63,6 +66,7 @@ ThermalFin::initModel()
     auto Xh = Pch<3>( mesh );
     this->setFunctionSpaces( Xh );
 
+    Dmu->setDimension( 6 );
     //static const int N = 2;
     auto mu_min = Dmu->element();
     mu_min << 0.1, 0.1, 0.1, 0.1, 0.001, 1;

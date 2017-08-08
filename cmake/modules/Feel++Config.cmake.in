@@ -6,8 +6,8 @@
 #  FEELPP_LIBRARIES  = libraries of feel++ dependencies
 
 set(FEELPP_INSTALL_DIR @CMAKE_INSTALL_PREFIX@)
-set(FEELPP_BINARY_BUILD_DIR @FEELPP_BINARY_DIR@)
-set(FEELPP_SOURCE_BUILD_DIR @FEELPP_SOURCE_DIR@)
+set(FEELPP_DIR ${FEELPP_INSTALL_DIR})
+set(FEELPP_PREFIX ${FEELPP_INSTALL_DIR})
 
 if (0)
 set(FEELPP_CONFIG_FILE ${CMAKE_CURRENT_LIST_FILE})
@@ -22,18 +22,29 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
 endif()
 
 set(FEELPP_FOUND "1")
+set(Feel++_FOUND "1")
+
+set(CTEST_TIMEOUT "@CTEST_TIMEOUT@")
+message(STATUS "[feelpp] timeout set to ${CTEST_TIMEOUT}s in tests")
+set(NProcs2 "@NProcs2@")
+message(STATUS "[feelpp] use up to ${NProcs2} MPI processes in parallel tests")
 
 set(FEELPP_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@")  
 set(FEELPP_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@")
+set(FEELPP_CXX_STANDARD @CMAKE_CXX_STANDARD@)
+set(FEELPP_CXX_STANDARD_REQUIRED @CMAKE_CXX_STANDARD_REQUIRED@)
 
 set(FEELPP_C_FLAGS "@CMAKE_C_FLAGS@")
 set(FEELPP_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+
+set(FEELPP_CMAKE_BUILD_TYPE @CMAKE_BUILD_TYPE@)
 
 set(FEELPP_ENABLED_OPTIONS "@FEELPP_ENABLED_OPTIONS@")
 # Feel++ mesh configuration
 set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
 set(FEELPP_INSTANTIATION_ORDER_MAX "@FEELPP_INSTANTIATION_ORDER_MAX@")
 
+set(BOOST_MIN_VERSION "@BOOST_MIN_VERSION@")
 # Add info about with what Feel++ has been built
 set(FEELPP_HAS_GFLAGS "@FEELPP_HAS_GFLAGS@")
 set(FEELPP_HAS_GLOG "@FEELPP_HAS_GLOG@" )
@@ -41,15 +52,26 @@ set(FEELPP_HAS_GINAC "@FEELPP_HAS_GINAC@" )
 set(FEELPP_HAS_METIS "@FEELPP_HAS_METIS@")
 set(FEELPP_HAS_NLOPT "@FEELPP_HAS_NLOPT@")
 set(FEELPP_HAS_IPOPT "@FEELPP_HAS_IPOPT@")
+set(FEELPP_HAS_PYBIND11 "@FEELPP_HAS_PYBIND11@")
+set(FEELPP_HAS_BSONCXX "@FEELPP_HAS_BSONCXX@")
+set(FEELPP_HAS_MONGOCXX "@FEELPP_HAS_MONGOCXX@")
 set(FEELPP_HAS_ANN "@FEELPP_HAS_ANN_H@")
 set(FEELPP_HAS_GMSH "@FEELPP_HAS_GMSH@")
 set(FEELPP_HAS_HDF5 "@FEELPP_HAS_HDF5@")
 set(FEELPP_HAS_PARAVIEW "@FEELPP_HAS_PARAVIEW@")
 set(FEELPP_HAS_VTK "@FEELPP_HAS_VTK@")
 set(FEELPP_VTK_INSITU_ENABLED "@FEELPP_VTK_INSITU_ENABLED@")
+if (FEELPP_HAS_PARAVIEW)
+  set(FEELPP_PARAVIEW_DIR "@FEELPP_PARAVIEW_DIR@")
+elseif (FEELPP_HAS_VTK)
+  set(FEELPP_VTK_DIR "@FEELPP_VTK_DIR@")
+endif()
 set(FEELPP_HAS_PETSC "@FEELPP_HAS_PETSC@")
 set(FEELPP_HAS_SLEPC "@FEELPP_HAS_SLEPC@")
 set(FEELPP_HAS_VTK "@FEELPP_HAS_VTK@")
+set(FEELPP_HAS_PYTHON "@FEELPP_HAS_PYTHON@")
+set(FEELPP_HAS_OPENTURNS "@FEELPP_HAS_OPENTURNS@")
+set(FEELPP_HAS_OCTAVE "@FEELPP_HAS_OCTAVE@")
 
 set(FEELPP_HAS_ASCIIDOCTOR "@FEELPP_HAS_ASCIIDOCTOR@")
 if (FEELPP_HAS_ASCIIDOCTOR)
@@ -65,9 +87,27 @@ if (FEELPP_HAS_CLING_INTERPRETER)
   set(FEELPP_CLING_BIN "@FEELPP_CLING_BIN@")
 endif()
 
+set(PYTHON_EXECUTABLE "@PYTHON_EXECUTABLE@")
+set(PYTHON_INCLUDE_DIRS "@PYTHON_INCLUDE_DIRS@")
+set(PYTHON_LIBRARIES "@PYTHON_LIBRARIES@")
+
+set(MPI_CXX_FOUND "@MPI_CXX_FOUND")
+set(MPI_CXX_COMPILER "@MPI_CXX_COMPILER@")
+set(MPI_CXX_COMPILE_FLAGS "@MPI_CXX_COMPILE_FLAGS@")
+set(MPI_CXX_INCLUDE_PATH "@MPI_CXX_INCLUDE_PATH@")
+set(MPI_CXX_LINK_FLAGS "@MPI_CXX_LINK_FLAGS@")
+set(MPI_CXX_LIBRARIES "@MPI_CXX_LIBRARIES@")
+
+set(MPIEXEC "@MPIEXEC@")
+set(MPIEXEC_NUMPROC_FLAG "@MPIEXEC_NUMPROC_FLAG@")
+set(MPIEXEC_PREFLAGS "@MPIEXEC_PREFLAGS@")
+set(MPIEXEC_POSTFLAGS "@MPIEXEC_POSTFLAGS@")
+
+include(${CMAKE_CURRENT_LIST_DIR}/feelpp.boost.config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/feelpp.compile.definition.config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/feelpp.libraries.config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/feelpp.include.config.cmake)
+string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIES "${FEELPP_LIBRARIES}")
 
 # the variable FEELPP_DONT_SETUP_CMAKE allows the users to not setup the library
 # meaning that this file will will automatically use
@@ -94,10 +134,43 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
 
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FEELPP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEELPP_CXX_FLAGS}")
+  set(CMAKE_CXX_STANDARD ${FEELPP_CXX_STANDARD})
+  set(CMAKE_CXX_STANDARD_REQUIRED ${FEELPP_CXX_STANDARD_REQUIRED})
   
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
   include(feelpp.host)
   include(feelpp.macros)
 
+  if ( FEELPP_HAS_PYBIND11 )
+    include(pybind11Tools)
+  endif()
+  find_package(libfeelpp_bsoncxx PATHS ${CMAKE_CURRENT_LIST_DIR})
+  find_package(libfeelpp_mongocxx PATHS ${CMAKE_CURRENT_LIST_DIR})
+
+  find_library(FEELPP_GFLAGS NAMES feelpp_gflags_nothreads feelpp_gflags PATHS ${FEELPP_INSTALL_DIR}/lib)
+  message(STATUS "[feelpp/gflags]: ${FEELPP_GFLAGS}")
+  set(FEELPP_LIBRARIES ${FEELPP_GFLAGS} ${FEELPP_LIBRARIES})
+  foreach( _l  glog ginac nlopt metis bsoncxx mongocxx ipopt )
+    string(TOUPPER ${_l} _FEELPP_LIB)
+    if ( FEELPP_HAS_${_FEELPP_LIB} )
+      find_library(FEELPP_${_FEELPP_LIB} feelpp_${_l} PATHS ${FEELPP_INSTALL_DIR}/lib)
+      set(FEELPP_LIBRARIES ${FEELPP_${_FEELPP_LIB}} ${FEELPP_LIBRARIES})
+      message(STATUS "[feelpp/${_l}]: ${FEELPP_${_FEELPP_LIB}}")
+    endif()
+  endforeach()
+  
+  MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
 endif()
+
+
+foreach( _FEELPP_COMPONENTS ${Feel++_FIND_COMPONENTS})
+  if ( ${_FEELPP_COMPONENTS} MATCHES CRB )
+    if ( EXISTS ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
+      include( ${FEELPP_INSTALL_DIR}/share/feelpp/crb/cmake/Feel++-CRBConfig.cmake )
+      message(STATUS "[Feel++] found component CRB")
+    else()
+      message(WARNING "[Feel++] component CRB does not found")
+    endif()
+  endif()
+endforeach()
