@@ -90,7 +90,7 @@ public:
 
     void init();
 
-    virtual void loadParametersFromOptionsVm();
+    void loadParametersFromOptionsVm();
 
     std::string const& prefix() const { return M_prefix; }
     std::string const& fluidPrefix() const { return super_type::prefix(); }

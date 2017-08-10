@@ -42,17 +42,19 @@ public:
     //--------------------------------------------------------------------//
     void updateInterfaceForces( element_ptrtype & F, bool overwrite = false) const;
 
+    element_ptrtype const& lastInterfaceForce() const { return M_interfaceForce; }
+
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    virtual void loadParametersFromOptionsVm() =0;
     virtual void updateInterfaceForcesImpl( element_ptrtype & F ) const =0;
 
     //--------------------------------------------------------------------//
     std::string M_prefix;
-
     levelset_ptrtype M_levelset;
+    // Cache last force value
+    mutable element_ptrtype M_interfaceForce;
 };
 
 template<typename LevelSetType>
@@ -64,7 +66,7 @@ InterfaceForcesModel<LevelSetType>::build(
 {
     M_prefix = prefix;
     M_levelset = ls;
-    this->loadParametersFromOptionsVm();
+    M_interfaceForce.reset( new element_type(ls->functionSpaceVectorial(), "InterfaceForce") );
 }
 
 template<typename LevelSetType>
@@ -79,9 +81,11 @@ template<typename LevelSetType>
 void
 InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, bool overwrite ) const
 {
+    this->updateInterfaceForcesImpl( M_interfaceForce );
     if( overwrite )
-        F->zero();
-    this->updateInterfaceForcesImpl( F );
+        *F = *M_interfaceForce;
+    else
+        *F += *M_interfaceForce;
 }
 
 namespace detail {
