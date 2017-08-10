@@ -343,7 +343,7 @@ public :
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 protected:
-    virtual void loadParametersFromOptionsVm();
+    void loadParametersFromOptionsVm();
 
     void createMesh();
     void createFunctionSpaces();

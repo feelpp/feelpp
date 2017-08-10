@@ -33,10 +33,10 @@ public:
 
     //--------------------------------------------------------------------//
     // Construction
-    InextensibilityForceModel() {}
+    InextensibilityForceModel() = default;
     InextensibilityForceModel( InextensibilityForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
@@ -69,6 +69,7 @@ void
 InextensibilityForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
 {
     super_type::build( prefix, ls );
+    this->loadParametersFromOptionsVm();
 
     M_levelsetModGradPhi.reset( new element_levelset_type(this->levelset()->functionSpace(), "ModGradPhi") );
 }
@@ -239,7 +240,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     auto Fe = this->levelset()->projectorL2Vectorial()->project(
             _expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
-    *F += Fe;
+    *F = Fe;
 
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     M_exporter->step(this->levelset()->time())->add(

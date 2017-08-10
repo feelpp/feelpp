@@ -299,16 +299,6 @@ public:
     void initLevelsetValue();
     void initPostProcess();
 
-    virtual void loadParametersFromOptionsVm();
-    virtual void loadConfigICFile();
-    virtual void loadConfigBCFile();
-    virtual void loadConfigPostProcess();
-
-    void createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable = false );
-    void createInterfaceQuantities();
-    void createReinitialization();
-    void createOthers();
-
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
     //--------------------------------------------------------------------//
@@ -468,6 +458,16 @@ protected:
     void updateMarkerInterface();
 
 private:
+    void loadParametersFromOptionsVm();
+    void loadConfigICFile();
+    void loadConfigBCFile();
+    void loadConfigPostProcess();
+
+    void createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable = false );
+    void createInterfaceQuantities();
+    void createReinitialization();
+    void createOthers();
+
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);
 
