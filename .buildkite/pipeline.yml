@@ -33,7 +33,7 @@ steps:
      CXX: clang++-3.9
      CC: clang-3.9
      TARGET: ubuntu:16.10
- - wait     
+ - wait
  - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
@@ -52,10 +52,10 @@ steps:
    env:
      TARGET: ubuntu:16.10
  - wait
- - command: tools/scripts/buildkite/singularity-generate.sh feelpp/feelpp-libs feelpp/feelpp-base feelpp/feelpp-toolboxes feelpp/feelpp-crb
-   name: ":singularity: generate images"
-   agents:
-     docker: true
-     ubuntu: "16.10"
-   env:
-     TARGET: ubuntu:16.10
+ - trigger: "feelpp-singularity"
+   label: ":singularity: generate images"
+   async: true
+   build:
+     branch: "${BUILDKITE_BRANCH}"
+     env:
+       TARGET: ubuntu:16.10
