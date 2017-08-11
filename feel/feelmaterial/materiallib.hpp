@@ -41,9 +41,9 @@ namespace Feel
 namespace detail
 {
 template<typename T>
-Material* createMaterial()
+std::unique_ptr<Material> createMaterial()
 {
-    return new T;
+    return std::make_unique<T>();
 }
 }
 /**

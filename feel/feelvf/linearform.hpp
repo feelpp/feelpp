@@ -534,17 +534,19 @@ public:
      */
     //@{
 
-    LinearForm( ) {}
+    LinearForm( ) {  }
     LinearForm( LinearForm const & __vf );
-    LinearForm( LinearForm      && __vf ) = default;
+    LinearForm( LinearForm      && __vf );
 
-    LinearForm( space_ptrtype const& __X,
+    LinearForm( std::string name,
+                space_ptrtype const& __X,
                 vector_ptrtype __F,
                 size_type rowstart = 0,
                 bool init = true,
                 bool do_threshold = false,
                 value_type threshold = type_traits<value_type>::epsilon() );
-    LinearForm( space_ptrtype const& __X,
+    LinearForm( std::string name,
+                space_ptrtype const& __X,
                 vector_ptrtype __F,
                 list_block_type const& __lb,
                 size_type rowstart = 0,
@@ -553,7 +555,7 @@ public:
                 value_type threshold = type_traits<value_type>::epsilon()  );
 
     ~LinearForm()
-    {}
+        { /*toc( M_name, FLAGS_v > 0  );*/ }
 
 
 
@@ -670,9 +672,14 @@ public:
      */
     //@{
 
-    /**
-    * \return the test function space
-     */
+    //!
+    //! @return the name of the linear form
+    //!
+    std::string const& name() const { return M_name; }
+    
+    //!
+    //! \return the test function space
+    //! 
     space_ptrtype const& functionSpace() const
     {
         return M_X;
@@ -830,9 +837,9 @@ public:
      * add data \p v at indices \c i of the vector
      * associated with the linear form
      */
-    void addVector( int* i, int n,  value_type* v )
+    void addVector( int* i, int n,  value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value )
     {
-        M_F->addVector( i, n, v );
+        M_F->addVector( i, n, v, K, K2 );
     }
 
     /**
@@ -853,11 +860,14 @@ public:
      * scale linear form by \p s
      */
     void scale( value_type s ) { M_F->scale( s ); }
-    
+
     LinearForm& operator+=( LinearForm& f )
         {
             if ( this == &f )
+            {
+                M_F->scale( 2. );
                 return *this;
+            }
 
             *M_F += *f.M_F;
 
@@ -869,6 +879,8 @@ private:
     template <class ExprT> void assign( Expr<ExprT> const& expr, bool init, mpl::bool_<false> );
     template <class ExprT> void assign( Expr<ExprT> const& expr, bool init, mpl::bool_<true> );
 private:
+
+    std::string M_name;
 
     space_ptrtype M_X;
 
@@ -888,6 +900,7 @@ private:
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & __vf )
     :
+    M_name( __vf.M_name ),
     M_X( __vf.M_X ),
     M_F( __vf.M_F->clone() ),
     M_lb( __vf.M_lb ),
@@ -896,9 +909,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     M_threshold( __vf.M_threshold ),
     M_dofIdToContainerId( __vf.M_dofIdToContainerId )
 {
+    //tic();
     // add the vector contrib
     *M_F += *__vf.M_F;
-    
+
     DVLOG(2) << "LinearForm copy constructor\n";
     DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
     DVLOG(2) << "    F size : " << M_F->size() << "\n";
@@ -906,13 +920,34 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
-LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_ptrtype __F,
-        size_type rowstart,
-        bool init,
-        bool do_threshold,
-        value_type threshold  )
+LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm && __vf )
     :
+    M_name( std::move(__vf.M_name) ),
+    M_X( std::move(__vf.M_X) ),
+    M_F( std::move(__vf.M_F) ),
+    M_lb( std::move(__vf.M_lb) ),
+    M_row_startInVector( std::move(__vf.M_row_startInVector) ),
+    M_do_threshold( std::move(__vf.M_do_threshold) ),
+    M_threshold( std::move(__vf.M_threshold) ),
+    M_dofIdToContainerId( std::move(__vf.M_dofIdToContainerId) )
+{
+    //tic();
+    DVLOG(2) << "LinearForm move constructor\n";
+    DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
+    DVLOG(2) << "    F size : " << M_F->size() << "\n";
+    DVLOG(2) << "block size : " << M_lb.size() << "\n";
+}
+
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
+                                                             space_ptrtype const& __X,
+                                                             vector_ptrtype __F,
+                                                             size_type rowstart,
+                                                             bool init,
+                                                             bool do_threshold,
+                                                             value_type threshold  )
+:
+    M_name( name ),
     M_X( __X ),
     M_F( __F ),
     M_lb(),
@@ -920,16 +955,16 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-
+    //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
     for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
     {
         M_lb.push_back( Block( __i, 0,
-                                __i*M_X->nDofPerComponent(),
-                                0 ) );
+                               __i*M_X->nDofPerComponent(),
+                               0 ) );
         DVLOG(2) << "[linearform::linearform] block: "
-                      << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
+                 << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
     datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
@@ -939,14 +974,16 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
-LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_ptrtype __F,
-        list_block_type const& __lb,
-        size_type rowstart,
-        bool init,
-        bool do_threshold,
-        value_type threshold )
-    :
+LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
+                                                             space_ptrtype const& __X,
+                                                             vector_ptrtype __F,
+                                                             list_block_type const& __lb,
+                                                             size_type rowstart,
+                                                             bool init,
+                                                             bool do_threshold,
+                                                             value_type threshold )
+:
+    M_name( name ),
     M_X( __X ),
     M_F( __F ),
     M_lb( __lb ),
@@ -954,6 +991,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
     if ( init )
@@ -994,7 +1032,8 @@ struct LFAssign
                 return;
             }
 
-            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
+            LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( M_lf.name() + "["+std::to_string(M_index)+"]",
+                                                                                                  X,
                                                                                                   M_lf.vectorPtr(),
                                                                                                   M_lf.rowStartInVector() + M_index,
                                                                                                   false,
@@ -1110,7 +1149,7 @@ struct LinearForm
 }
 
 /**
- * @brief provide the type of the linear form 
+ * @brief provide the type of the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
@@ -1118,7 +1157,7 @@ template<typename FE1,
 using form1_type = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>;
 
 /**
- * @brief provide the type of the linear form 
+ * @brief provide the type of the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
@@ -1126,7 +1165,7 @@ template<typename FE1,
 using form1_t = form1_type<FE1,VectorType,ElemContType>;
 
 /**
- * @brief provide the type of the space associated to the linear form 
+ * @brief provide the type of the space associated to the linear form
  */
 template<typename FE1,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
