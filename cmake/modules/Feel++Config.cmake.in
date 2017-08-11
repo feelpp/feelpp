@@ -24,6 +24,11 @@ endif()
 set(FEELPP_FOUND "1")
 set(Feel++_FOUND "1")
 
+set(CTEST_TIMEOUT "@CTEST_TIMEOUT@")
+message(STATUS "[feelpp] timeout set to ${CTEST_TIMEOUT}s in tests")
+set(NProcs2 "@NProcs2@")
+message(STATUS "[feelpp] use up to ${NProcs2} MPI processes in parallel tests")
+
 set(FEELPP_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@")  
 set(FEELPP_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@")
 set(FEELPP_CXX_STANDARD @CMAKE_CXX_STANDARD@)

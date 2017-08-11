@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE( test_projection_hdiv_rt )
     auto Xh = Pchv<1>( mesh );
     auto ul = Xh->element();
     ul = vf::project( _space=Xh, _range=elements(mesh), _expr=P() );
-    ul.printMatlab( "ul.m" );
+    //ul.printMatlab( "ul.m" );
     BOOST_TEST_MESSAGE( "Xh defined, dimension: " << Xh->nLocalDof() );
     BOOST_TEST_MESSAGE( "n elements: " << nelements( elements(mesh)  ) );
     for( auto const& elementRange : elements(mesh) )
@@ -118,8 +118,9 @@ BOOST_AUTO_TEST_CASE( test_projection_hdiv_rt )
         BOOST_TEST_MESSAGE( "dimension of Ph : " << Ph->nLocalDof() );
         auto p = Ph->element();
         auto l = form1( _test=Ph );
-        l = integrate( _range=boundaryfaces(mesh_element), _expr=trans(print(idv(ul),"ul"))*print(N(),"n")*print(id(p),"p" ) );
-        l.vector().printMatlab( "l.m" );
+        //l = integrate( _range=boundaryfaces(mesh_element), _expr=trans(print(idv(ul),"ul"))*print(N(),"n")*print(id(p),"p" ) );
+        l = integrate( _range=boundaryfaces(mesh_element), _expr=trans(idv(ul))*N()*id(p) );
+        //l.vector().printMatlab( "l.m" );
         for( auto const& dof: RTh->dof()->localDof( element.id() ) )
         {
             LOG(INFO) << "dof[ " << element.id() << ", " << dof.first.localDof() << "]=" << dof.second.index();
@@ -127,7 +128,7 @@ BOOST_AUTO_TEST_CASE( test_projection_hdiv_rt )
             LOG(INFO) << "value[dof.second.index()] = " << urt[dof.second.index()];
         }
     }
-    urt.printMatlab( "urt.m" );
+    //urt.printMatlab( "urt.m" );
 
     BOOST_TEST_MESSAGE( "test Directional component integration done" );
 }

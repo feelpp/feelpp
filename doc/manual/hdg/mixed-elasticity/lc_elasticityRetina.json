@@ -1,0 +1,80 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "Retina": 
+        {
+            "name":"copper",
+			"rho":"0.0011",
+            "lambda":"3.280",
+	    	"mu":"0.067"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "strain":
+        {
+            "SourceTerm":
+            {
+                "Retina": 
+                {
+					"expr":"{0,0,0}"
+                }
+            },
+			"Neumann_scalar":
+			{	
+                "BC_spherical_Retina": 			// IOP  -0.2066
+                {
+                    "expr":"-0.30 + 0.0366 * sin (pi*t):t" 	
+                }
+			},
+            "Neumann":
+            {
+            	"Lamina_Retina":
+                {
+                	"expr":"{-0.1,0,0, 0,-0.1,0, 0,0,-0.1}:x:y"
+                },
+                "BC_planar_Retina":
+                {
+                    "expr":"{-0.2,0,0, 0,-0.2,0, 0,0,-0.2}"
+                },
+                "BC_cylindrical_Retina":
+                {
+                    "expr":"{-0.1,0,0, 0,-0.1,0, 0,0,-0.1}"
+                }/*,
+                "Choroid_Retina":
+                {
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}"
+                },
+                "Retina_Sclera":
+                {
+                    "expr":"{0,0,0, 0,0,0, 0,0,0}"
+                }*/
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+				"Choroid_Retina":
+				{	
+		     		"expr":"{0,0,0}:x:y:z" 
+				},	
+				"Retina_Sclera":
+				{	
+		     		"expr":"{0,0,0}:x:y:z" 
+				}	
+ 	    	}
+    	}
+     },
+    "PostProcess":
+    {
+        "Fields":["strain","displacement"]
+    }
+}
+
+
+
+

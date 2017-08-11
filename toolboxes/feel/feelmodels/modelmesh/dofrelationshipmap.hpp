@@ -305,58 +305,58 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
     auto const en1 = M_Xh1->mesh()->endElement();
     for ( ; it1 != en1 ; ++it1 )
     {
+        auto const& elem1 = it1->second;
+        auto itFindGeoElt = M_geoElementMap.find( elem1.id() );
+        if ( itFindGeoElt == M_geoElementMap.end() )
+            continue;
+
+        size_type eltIdRelated = itFindGeoElt->second.first;
+        rank_type procIdRelated = itFindGeoElt->second.second;
+        //if ( M_geoElementMap[it1->id()].first == invalid_size_type_value ) continue;
+
+        auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated );
+
+        auto mapPoint=buildElementaryMapPoints(elem1,elem2);
+        auto mapEdge=buildElementaryMapEdges(mapPoint);
+        auto mapFace=buildElementaryMapFaces(mapPoint);
+
         for ( uint16_type iloc1 = 0; iloc1 < functionspace1_type::basis_type::nLocalDof; ++iloc1 )
         {
+            //we search this num local
+            uint16_type iloc2=iloc1;
+
+            if ( iloc1 < nDofPerVertex*numVertices )
+                iloc2=mapPoint[iloc1];
+            else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges )
+                for (uint16_type ndpe=0;ndpe<numEdges;++ndpe) {
+                    if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*ndpe)) &&
+                         (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*(ndpe+1))) ) {
+                        auto numLocEdge = boost::get<0>(mapEdge[ndpe]);
+                        auto PermLocEdge = boost::get<1>(mapEdge[ndpe]);
+                        if (PermLocEdge==0)
+                            iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
+                                      (iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
+                        else
+                            iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
+                                      nDofPerEdge-1-(iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
+                    }
+                }
+            else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces )
+                for (uint16_type ndpf=0;ndpf<numGeometricFaces;++ndpf) {
+                    if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf )) &&
+                         (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*(ndpf+1))) ) {
+                        auto numLocFace = mapFace[ndpf];
+                        auto ilocModif = iloc1 - (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf);
+                        auto numDofLocInface=convertInternalDofInFace(elem1,ndpf,ilocModif,mapEdge,mapFace);
+                        iloc2 = nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numLocFace + numDofLocInface;
+                    }
+                }
+            else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces + nDofPerVolume*numVolumes)
+                iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
+
+
             for ( uint16_type comp = 0;comp < functionspace1_type::basis_type::nComponents;++comp )
             {
-                auto itFindGeoElt = M_geoElementMap.find( it1->id() );
-                if ( itFindGeoElt == M_geoElementMap.end() )
-                    continue;
-
-                size_type eltIdRelated = itFindGeoElt->second.first;
-                rank_type procIdRelated = itFindGeoElt->second.second;
-                //if ( M_geoElementMap[it1->id()].first == invalid_size_type_value ) continue;
-
-                auto const& elem1 = *it1;
-                auto const& elem2 = M_Xh2->mesh()->element( eltIdRelated );
-
-                auto mapPoint=buildElementaryMapPoints(elem1,elem2);
-                auto mapEdge=buildElementaryMapEdges(mapPoint);
-                auto mapFace=buildElementaryMapFaces(mapPoint);
-
-                //we search this num local
-                uint16_type iloc2=iloc1;
-
-                if ( iloc1 < nDofPerVertex*numVertices )
-                    iloc2=mapPoint[iloc1];
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges )
-                    for (uint16_type ndpe=0;ndpe<numEdges;++ndpe) {
-                        if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*ndpe)) &&
-                             (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*(ndpe+1))) ) {
-                            auto numLocEdge = boost::get<0>(mapEdge[ndpe]);
-                            auto PermLocEdge = boost::get<1>(mapEdge[ndpe]);
-                            if (PermLocEdge==0)
-                                iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
-                                          (iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
-                            else
-                                iloc2 = ( nDofPerVertex*numVertices + numLocEdge*nDofPerEdge +
-                                          nDofPerEdge-1-(iloc1-nDofPerVertex*numVertices-ndpe*nDofPerEdge) );
-                        }
-                    }
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces )
-                    for (uint16_type ndpf=0;ndpf<numGeometricFaces;++ndpf) {
-                        if ( (iloc1 >= (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf )) &&
-                             (iloc1 < (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*(ndpf+1))) ) {
-                            auto numLocFace = mapFace[ndpf];
-                            auto ilocModif = iloc1 - (nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*ndpf);
-                            auto numDofLocInface=convertInternalDofInFace(elem1,ndpf,ilocModif,mapEdge,mapFace);
-                            iloc2 = nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numLocFace + numDofLocInface;
-                        }
-                    }
-                else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces + nDofPerVolume*numVolumes)
-                    iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
-
-
                 size_type i1 = dof1->localToGlobal( elem1.id(), iloc1 , comp ).index();
                 size_type i2 = dof2->localToGlobal( eltIdRelated , iloc2 , comp ).index();
 

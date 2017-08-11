@@ -9,6 +9,7 @@ steps:
      CC: clang-3.9
      TARGET: ubuntu:16.10
      CMAKE_FLAGS: -DFEELPP_DISABLE_COMPILE_FAILURE=ON
+     CTEST_FLAGS: -V -j3
  - wait
  - command: tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
