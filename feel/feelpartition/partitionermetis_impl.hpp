@@ -221,8 +221,8 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
         dof_id_type gid = pairElt.second.first;
         rank_type initialPid = pairElt.second.second;
         rank_type newPid = static_cast<rank_type>(part[gid]);
-        auto eltToUpdate = mesh->elementIterator( eltId );
-        mesh->elements().modify( eltToUpdate, Feel::detail::UpdateProcessId( newPid ) );
+        auto & eltToUpdate = mesh->elementIterator( eltId )->second;
+        eltToUpdate.setProcessId( newPid );
     }
 }
 

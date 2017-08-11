@@ -37,6 +37,7 @@ set(SRC
   debug.cpp
   utility.cpp
   removecomments.cpp
+  checker.cpp
   )
 if(FEELPP_HAS_HDF5)
     set(SRC hdf5.cpp ${SRC})

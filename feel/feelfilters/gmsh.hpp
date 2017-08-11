@@ -52,6 +52,7 @@
 #if defined( FEELPP_HAS_GMSH_H )
 class GModel;
 class Msg;
+#include <GModel.h>
 #endif
 
 // there is a macro called sign in Gmsh that conflicts with
@@ -252,7 +253,7 @@ public:
     /**
      * \return the geometry description
      */
-    std::string description() const
+    std::string const& description() const
         {
             std::string d = this->getDescription();
 
@@ -268,12 +269,17 @@ public:
     //! \return Return the geo parameter value.
     double geoParameter( std::string const& _name )
         {
-            return boost::lexical_cast<double>( M_geoParamMap.at( _name ) );
+            return std::stod( M_geoParamMap.at( _name ) );
         }
 
     //! \brief Get all GMSH geometry parameters.
     //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
-    std::map<std::string, std::string> geoParameters()
+    std::map<std::string, std::string> const& geoParameters() const
+        {
+            return M_geoParamMap;
+        }
+
+    std::map<std::string, std::string>& geoParameters() 
         {
             return M_geoParamMap;
         }
@@ -343,8 +349,9 @@ public:
      * @brief get the Gmsh GModel data structure
      * @return the Gmsh GModel data structure
      */
-    GModel* gModel() const { return M_gmodel; }
+    boost::shared_ptr<GModel> gModel() const { return boost::make_shared<GModel>(); }
 #endif
+
 
     //@}
 
@@ -410,7 +417,7 @@ public:
     void setOrder( int o )
         {
             M_order = ( GMSH_ORDER ) o;
-            M_geoParamMap["ElementOrder"]=boost::lexical_cast<std::string>(o);
+            M_geoParamMap.insert({"ElementOrder",std::to_string(o)});
         }
 
     /**
@@ -473,8 +480,9 @@ public:
         {
             FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
-            M_geoParamMap["xmin"]=boost::lexical_cast<std::string>(x.first);
-            M_geoParamMap["xmax"]=boost::lexical_cast<std::string>(x.second);
+
+            M_geoParamMap.insert({"xmin", std::to_string(x.first)});
+            M_geoParamMap.insert({"xmax", std::to_string(x.second)});
         }
     virtual void setY( std::pair<double,double> const& y )
         {
@@ -483,8 +491,8 @@ public:
             if ( dimension() >= 2 )
             {
                 M_I[1] = y;
-                M_geoParamMap["ymin"]=boost::lexical_cast<std::string>(y.first);
-                M_geoParamMap["ymax"]=boost::lexical_cast<std::string>(y.second);
+                M_geoParamMap.insert({"ymin", std::to_string(y.first)});
+                M_geoParamMap.insert({"ymax", std::to_string(y.second)});
             }
         }
     virtual void setZ( std::pair<double,double> const& z )
@@ -494,8 +502,8 @@ public:
             if ( dimension() >= 3 )
             {
                 M_I[2] = z;
-                M_geoParamMap["zmin"]=boost::lexical_cast<std::string>(z.first);
-                M_geoParamMap["zmax"]=boost::lexical_cast<std::string>(z.second);
+                M_geoParamMap.insert({"zmin", std::to_string(z.first)});
+                M_geoParamMap.insert({"zmax", std::to_string(z.second)});
             }
         }
 
@@ -503,13 +511,13 @@ public:
     virtual void setReferenceDomain()
         {
             if ( dimension() >= 1 )
-                M_I[0] = std::make_pair( -1, 1 );
+                M_I[0] = {-1,1};
 
             if ( dimension() >= 2 )
-                M_I[1] = std::make_pair( -1, 1 );
+                M_I[1] = {-1,1};
 
             if ( dimension() >= 3 )
-                M_I[2] = std::make_pair( -1, 1 );
+                M_I[2] = {-1,1};
         }
 
     //! set the characteristic length to \p h
@@ -553,7 +561,7 @@ public:
     //! \return Return the current Gmsh object.
     void setGeoParameter( std::string const& _name, double _value )
         {
-            M_geoParamMap[ _name ] = boost::lexical_cast<std::string>( _value );
+            M_geoParamMap.at( _name ) = std::to_string( _value );
         }
 
     //! \brief Modify geo gmsh geometry parameters from a map of parameters.
@@ -565,10 +573,14 @@ public:
             if( _update )
             {
                 for( const auto& iter : geomap)
-                    M_geoParamMap[iter.first] = iter.second;
+                {
+                    M_geoParamMap.at(iter.first) = iter.second;
+                }
             }
             else
+            {
                 M_geoParamMap = geomap;
+            }
         }
 
     /**
@@ -703,7 +715,7 @@ protected:
      */
     virtual std::string getDescription() const
         {
-            return std::string();
+            return {};
         }
 
     /**
@@ -785,7 +797,7 @@ protected:
     mutable std::pair<std::string,std::string> M_geo;
 
 #if defined( FEELPP_HAS_GMSH_H )
-    mutable GModel*  M_gmodel;
+    mutable boost::shared_ptr<GModel>  M_gmodel;
 #endif
 };
 

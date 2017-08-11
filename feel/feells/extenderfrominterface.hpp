@@ -86,12 +86,13 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
     int nb_elt_crossed = 0;
     for (;it_elt!=en_elt; it_elt++)
     {
+        auto const& elt = it_elt->second;
         int nbplus=0;
         int nbminus=0;
         std::vector<size_type> indices_nodes( convex_type::numPoints );
         for (int j=0; j<convex_type::numPoints; j++)
         {
-            size_type index = M_phi.start() + boost::get<0>(M_Xh->dof()->localToGlobal( it_elt->id(), j, 0 ));
+            size_type index = M_phi.start() + boost::get<0>(M_Xh->dof()->localToGlobal( elt.id(), j, 0 ));
             //double index = velocX.localToGlobal(it_elt->id(), j, 0);
             indices_nodes[j]=index;
 
@@ -104,7 +105,7 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
         //if elt crossed by interface -> store its informations
         if ( (nbminus != convex_type::numPoints) && (nbplus!=convex_type::numPoints) )
         {
-            LOG(INFO) << "element crossed " << it_elt->id();
+            LOG(INFO) << "element crossed " << elt.id();
             nb_elt_crossed++;
             for (int j=0; j<convex_type::numPoints; j++)
             {

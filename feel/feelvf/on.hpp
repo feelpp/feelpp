@@ -480,6 +480,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
         auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
+        bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
+
+
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
@@ -502,14 +505,21 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             // corresponding face
             if ( theface.isGhostFace() )
             {
-                LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
-                continue;
+                if ( hasMeshSupportPartial )
+                {
+                    if ( __dof->meshSupport()->isGhostFace( theface ) )
+                        continue;
+                }
+                else
+                {
+                    LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
+                    continue;
+                }
             }
 
             DVLOG(2) << "FACE_ID = " << theface.id()
                      << " element id= " << theface.ad_first()
-                     << " pos in elt= " << theface.pos_first()
-                     << " marker: " << theface.marker() << "\n";
+                     << " pos in elt= " << theface.pos_first();
             DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
 
             uint16_type __face_id = theface.pos_first();
@@ -824,7 +834,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         {
             pt_it = lit.template get<1>();
             pt_en = lit.template get<2>();
-            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " with marker " << boost::unwrap_ref( *pt_it ).marker() << " nb: " << std::distance(pt_it,pt_en);
+            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " nb: " << std::distance(pt_it,pt_en);
             
             if ( pt_it == pt_en )
                 continue;

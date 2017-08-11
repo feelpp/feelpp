@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE test_normal3d
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 
 #include <feel/options.hpp>
