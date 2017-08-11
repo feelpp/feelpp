@@ -226,6 +226,10 @@ public:
      */
     //@{
 
+    //!
+    //! @return order of the finite element
+    //!
+    int order() const { return M_primal.nOrder; }
 
     /**
      * \return the domain shape of the finite element

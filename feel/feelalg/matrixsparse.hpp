@@ -95,7 +95,7 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class MatrixSparse
+class FEELPP_EXPORT MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
 
@@ -108,9 +108,11 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    using sparse_matrix_ptrtype = boost::shared_ptr<MatrixSparse<T>>;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
+
 
     /**
      * Constructor; initializes the matrix to be empty, without any
@@ -488,15 +490,15 @@ public:
                              const std::vector<size_type> &rows,
                              const std::vector<size_type> &cols ) = 0;
 
-    /**
-     * Add the full matrix to the
-     * Sparse matrix.  This is useful
-     * for adding an element matrix
-     * at assembly time
-     */
+    //!
+    //! Add the full matrix to the
+    //! Sparse matrix.  This is useful
+    //! for adding an element matrix
+    //! at assembly time
+    //!
     virtual void addMatrix ( int* rows, int nrows,
                              int* cols, int ncols,
-                             value_type* data ) = 0;
+                             value_type* data, size_type K, size_type K2 ) = 0;
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -907,13 +909,12 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-
+    
     virtual void save( std::string filename="default_archive_name", std::string format="binary" )
     {}
 
     virtual void load( std::string filename="default_archive_name", std::string format="binary" )
     {}
-
 
 protected:
     /**
@@ -958,7 +959,6 @@ protected:
     //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
-
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -975,6 +975,7 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
+
 {}
 
 template <typename T>
@@ -1134,7 +1135,7 @@ namespace boost {
 namespace serialization {
 
 template<typename T, class Archive>
-void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     ar & BOOST_SERIALIZATION_NVP(m.mapRow());
     ar & BOOST_SERIALIZATION_NVP(m.mapCol());
@@ -1143,7 +1144,7 @@ void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int vers
 }
 
 template<typename T, class Archive>
-void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     Feel::DataMap map_row;
     Feel::DataMap map_col;
@@ -1165,7 +1166,7 @@ void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 }
 
 template<typename T, class Archive>
-void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+FEELPP_EXPORT void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
 {
     split_free( ar, m, version );
 }

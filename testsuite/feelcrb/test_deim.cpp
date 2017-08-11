@@ -81,7 +81,6 @@ public :
     }
 
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
-
     parameterspace_ptrtype parameterSpace() { return Dmu;}
 
     void run()

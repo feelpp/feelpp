@@ -29,7 +29,7 @@ namespace Feel {
 //! \p max included
 //!
 template<typename T>
-std::vector<T>
+FEELPP_EXPORT std::vector<T>
 randint(int N, T min, T max )
 {
     std::random_device rd;     // only used once to initialise (seed) engine

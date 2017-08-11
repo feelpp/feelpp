@@ -148,7 +148,7 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            auto rangeBodyForceUsed = ( marker(d).empty() )? elements(this->mesh()) : markedelements(this->mesh(),marker(d));
+            auto rangeBodyForceUsed = ( marker(d).empty() )? this->rangeMeshElements() : markedelements(this->mesh(),marker(d));
             myLinearForm +=
                 integrate( _range=rangeBodyForceUsed,
                            _expr= expression(d)*id(v),

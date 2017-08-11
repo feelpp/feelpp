@@ -197,6 +197,15 @@ public :
         using Feel::cout;
         tic();
         int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
+        int sampling_size = M_trainset->size();
+        if ( mMax>sampling_size )
+        {
+            cout << "DEIM : Sampling size (="<< sampling_size
+                 << ") smaller than deim.dimension-max (=" << mMax
+                 << "), dimension max is now " << sampling_size << std::endl;
+            mMax = sampling_size;
+        }
+
         double error=0;
         auto mu = M_trainset->max().template get<0>();
 
@@ -277,7 +286,6 @@ public :
     void saveDB() override;
     //! load the database
     bool loadDB() override;
-
     //!
     //! loadDB from \p filename with load strately \p l
     //!

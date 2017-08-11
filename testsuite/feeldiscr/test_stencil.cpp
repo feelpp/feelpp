@@ -41,6 +41,11 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/thch.hpp>
+
+
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feeldiscr/projector.hpp>
@@ -76,7 +81,9 @@ makeAbout()
                      "0.1",
                      "Test for stencil manager",
                      AboutData::License_GPL,
-                     "Copyright (c) 2012 Universite Joseph Fourier" );
+                     "Copyright (c) 2012 Universite Joseph Fourier"
+                     "Copyright (c) 2012-2016 Feel++ Consortium"
+                     );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
@@ -170,12 +177,72 @@ private:
 
 }; //TestStencil
 
+struct A
+{
+    static const int nSpaces = 1;
 
+    single_space_t f( single_space_t )
+        {
+            return single_space_t{};
+        }
+};
+struct B
+{
+    static const int nSpaces = 3;
+
+    multiple_space_t f( multiple_space_t )
+        {
+            return multiple_space_t{};
+        }
+};
 }
 #if USE_BOOST_TEST
 FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
+BOOST_AUTO_TEST_CASE( test_stencil1 )
+{
+    BOOST_TEST_MESSAGE( "test_stencil1\n" );
+    using namespace Feel;
+    using namespace hana::literals;
+    BOOST_HANA_CONSTANT_CHECK( single_space_t{} == 1_c);
+    BOOST_HANA_CONSTANT_CHECK( multiple_space_t{} == 2_c);
+    BOOST_HANA_CONSTANT_CHECK( single_spaces_t{} == 1_c);
+    BOOST_HANA_CONSTANT_CHECK( multiple_spaces_t{} ==  2_c);
+}
+BOOST_AUTO_TEST_CASE( test_stencil2 )
+{
+    BOOST_TEST_MESSAGE( "test_stencil2\n" );
+    using namespace Feel;
+    using namespace hana::literals;
+
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>> );
+    auto Xh = Pch<1>( mesh );
+    auto Yh = THch<1>( mesh );
+
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( Xh ) == single_space_c );
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( Yh ) == multiple_space_c );
+    A a; B b;
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( a ) == single_space_c );
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( a ) == single_space_t() );
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( a ) == 1_c );
+    BOOST_HANA_CONSTANT_CHECK( type_space_t( b ) == 2_c );
+    std::cout << "type_space_t(a)=" << type_space_t(a) << "," << single_space_t{} << std::endl;
+    BOOST_HANA_CONSTANT_CHECK( a.f( single_space_c ) == single_space_t{} );
+    BOOST_HANA_CONSTANT_CHECK( single_space_c == single_space_t{} );
+    BOOST_HANA_CONSTANT_CHECK(hana::integral_c<int, 2> == hana::int_c<2>);
+    //static_assert(std::is_same<decltype(single_space_c), decltype(type_space_t(a))>::value,
+    // "decltype(single_space_c) != single_space_t");
+#if 0
+
+    static_assert(std::is_same<decltype(type_space_t(a)), single_space_t>::value,
+                  "decltype(type_space_t(a)) != single_space_t");
+    #endif
+    BOOST_HANA_CONSTANT_CHECK( a.f( type_space_t( a ) ) == single_space_t{} );
+    BOOST_HANA_CONSTANT_CHECK( b.f( type_space_t( b ) ) == multiple_space_t{} );
+    BOOST_TEST_MESSAGE( "test_stencil2 done\n" );
+}
+#if 1
 BOOST_AUTO_TEST_CASE( test_stencil )
 {
     BOOST_TEST_MESSAGE( "test_stencil" );
@@ -194,7 +261,7 @@ BOOST_AUTO_TEST_CASE( test_stencil )
 
     BOOST_TEST_MESSAGE( "test_stencil" );
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 #else
 
@@ -211,4 +278,3 @@ main( int argc, char* argv[] )
 }
 
 #endif
-
