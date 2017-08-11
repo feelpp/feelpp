@@ -628,40 +628,11 @@ public:
             return res;
         }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     save,
-                                     tag,
-                                     ( required
-                                       ( path,* ) )
-                                     ( optional
-                                       ( type,( std::string ),std::string( "binary" ) )
-                                       ( filename,( std::string ),std::string( "vector" ) )
-                                       ) )
-    {
-        return this->save( filename, type, path );
-    }
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-                                    ( bool ),
-                                    load,
-                                    tag,
-                                    ( required
-                                      ( path,* ) )
-                                    ( optional
-                                      ( type,( std::string ),std::string( "binary" ) )
-                                      ( filename,( std::string ),std::string( "vector" ) )
-                                      ) )
-    {
-        return this->load( filename, type, path );
-    }
-
-    virtual void save( std::string filename, std::string type, std::string path  )
+    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
     {}
 
-    virtual bool load( std::string filename, std::string type, std::string path )
-    {
-        return 0;
-    }
-
+    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    {}
 
 
 protected:
