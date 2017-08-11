@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     int index = 0;
     double max = absV->maxWithIndex( &index );
 
-    int proc_n = V->map().procOnGlobalCluster(index);
+    int proc_n = Xh->dof()->procOnGlobalCluster(index);
 
     std::set<int> element_ids;
     std::set<int> points_id;
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
 
     if ( Environment::worldComm().globalRank()==proc_n )
     {
-        for ( auto const& dof : Xh->dof()->globalDof(index-V->map().firstDofGlobalCluster()) )
+        for ( auto const& dof : Xh->dof()->globalDof(index-Xh->dof()->firstDofGlobalCluster()) )
         {
             element_ids.insert( dof.second.elementId() );
             if ( elt_id==-1)
