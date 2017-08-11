@@ -99,7 +99,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "mdeim_test_sampling" );
 
-        mdeim_ptrtype M_deim ( new mdeim_type( Dmu, this->uuid(), Pset ) );
+        mdeim_ptrtype M_deim ( new mdeim_type( this->shared_from_this(), Pset ) );
         M_deim->assemble = boost::bind( &MDeimTest::assemble, boost::ref(*this), _1  );
 
         M_deim->run();
@@ -130,6 +130,8 @@ public :
 
     }
 
+    parameterspace_ptrtype parameterSpace() { return Dmu;}
+
     sparse_matrix_ptrtype assemble( parameter_type mu)
     {
         M->zero();
@@ -139,6 +141,8 @@ public :
         M->addMatrix( mu[1]*mu[1] + 37*mu[0], M4 );
         return M;
     }
+
+
 
 private :
     sparse_matrix_ptrtype M, M1, M2, M3, M4;
