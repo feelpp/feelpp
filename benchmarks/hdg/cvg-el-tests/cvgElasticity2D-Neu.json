@@ -1,0 +1,81 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{-3.0*sin(pi*x)*cos(pi*y),-3.0*sin(pi*y)*cos(pi*x)}:x:y"
+				}
+            },
+            "Neumann_exact":
+            {
+                "int":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                },
+                "ext":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                },
+                "out":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                }
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+          		"in":
+                {
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{	
+			"u_exact":
+			{
+				"omega":
+				{
+					"expr":"{(1/(2*Pi*Pi))*sin(Pi*x)*cos(Pi*y),(1/(2*Pi*Pi))*cos(Pi*x)*sin(Pi*y)}:x:y"
+				}
+			}
+		}/*,
+		"GeometricalTest":
+		{
+            "force_F":
+            {
+                "ext":
+                {
+                    "expr":"{-2*Pi,-4}" 
+                }
+            }
+		}*/
+     },
+    "PostProcess":
+    {
+        "Fields":["stress","displacement"]
+    }
+}
+
+
+
+

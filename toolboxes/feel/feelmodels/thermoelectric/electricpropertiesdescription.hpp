@@ -19,25 +19,64 @@ namespace FeelModels
         typedef boost::shared_ptr<SpaceType> space_ptrtype;
         typedef typename SpaceType::element_type element_type;
         typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef typename space_type::mesh_type mesh_type;
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
         static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
-        ElectricPropertiesDescription( space_ptrtype const& space, std::string const& prefix )
-            {
-                M_cstElectricConductivity[self_type::defaultMaterialName()] = doption(_name="electric-conductivity",_prefix=prefix);
-                this->initFromSpace( space );
-            }
 
         ElectricPropertiesDescription( std::string const& prefix )
+            :
+            M_isDefinedOnWholeMesh( true )
             {
                 M_cstElectricConductivity[self_type::defaultMaterialName()] = doption(_name="electric-conductivity",_prefix=prefix);
             }
 
-        ElectricPropertiesDescription( ElectricPropertiesDescription const& app  ) = default;
+        ElectricPropertiesDescription( ElectricPropertiesDescription const& app ) = default;
 
-        void initFromSpace( space_ptrtype const& space )
-        {
-            M_space = space;
-            M_fieldElectricConductivity = space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
-        }
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm )
+            {
+                std::set<std::string> eltMarkersInMesh;
+                for (auto const& markPair : mesh->markerNames() )
+                {
+                    std::string meshMarker = markPair.first;
+                    if ( mesh->hasElementMarker( meshMarker ) )
+                        eltMarkersInMesh.insert( meshMarker );
+                }
+
+                M_markers.clear();
+                for( auto const& m : mat )
+                {
+                    auto const& matmarker = m.first;
+                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                        continue;
+                    auto const& mat = m.second;
+                    std::string matphysics = ( mat.physics().empty() )? "electric" : mat.physics();
+                    if ( ( matphysics != "electric" ) && ( matphysics != "thermo-electric" ) )
+                        continue;
+                    M_markers.insert( matmarker );
+                }
+
+                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+                if ( M_isDefinedOnWholeMesh )
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+                else
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+                M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
+
+                for( auto const& m : mat )
+                {
+                    auto const& mat = m.second;
+                    auto const& matmarker = m.first;
+                    if ( M_markers.find( matmarker ) == M_markers.end() )
+                        continue;
+
+                    if ( mat.hasPropertyExprScalar("sigma") )
+                        this->setElectricConductivity( mat.propertyExprScalar("sigma"),matmarker );
+                    else
+                        this->setCstElectricConductivity( mat.propertyConstant("sigma"), matmarker );
+                }
+
+            }
 
         double cstElectricConductivity( std::string const& marker = "" ) const
         {
@@ -49,38 +88,32 @@ namespace FeelModels
 
         std::set<std::string> const& markers() const { return M_markers; }
 
+        bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
+
         element_type const& fieldElectricConductivity() const { return *M_fieldElectricConductivity; }
         element_ptrtype const& fieldElectricConductivityPtr() const { return M_fieldElectricConductivity; }
 
-        void setCstElectricConductivity( double val, std::string const& marker = "" )
+        void setCstElectricConductivity( double val, std::string const& marker = "", bool update = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstElectricConductivity[markerUsed]=val;
-            this->updateElectricConductivity( cst(val), marker );
+            if ( update )
+                this->updateElectricConductivity( cst(val), marker );
         }
+        template < typename ExprT >
+        void setElectricConductivity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+            {
+                this->updateElectricConductivity( vfexpr,marker);
+                if ( M_fieldElectricConductivity )
+                    this->setCstElectricConductivity( M_fieldElectricConductivity->min(), marker, false );
+            }
 
         template < typename ExprT >
         void updateElectricConductivity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
         {
             if ( !M_fieldElectricConductivity ) return;
-            if ( marker.empty() )
-                M_fieldElectricConductivity->on(_range=elements( M_space->mesh()),_expr=__expr);
-            else
-                M_fieldElectricConductivity->on(_range=markedelements( M_space->mesh(),marker ),_expr=__expr);
-        }
-
-        void updateFromModelMaterials( ModelMaterials const& mat )
-        {
-            if ( mat.empty() ) return;
-
-            for( auto const& m : mat )
-            {
-                auto const& mat = m.second;
-                auto const& matmarker = m.first;
-                //LOG(INFO) << "set material " << mat.name() << " associated to marker : " << matmarker<< "\n";
-                M_markers.insert( matmarker );
-                this->setCstElectricConductivity( mat.sigma(), matmarker );
-            }
+            auto rangeEltUsed = (marker.empty())? markedelements( M_space->mesh(), M_markers ) : markedelements( M_space->mesh(),marker );
+            M_fieldElectricConductivity->on(_range=rangeEltUsed,_expr=__expr);
         }
 
         boost::shared_ptr<std::ostringstream>
@@ -102,6 +135,7 @@ namespace FeelModels
     private :
         std::map<std::string,double> M_cstElectricConductivity;// [ W/(m*K) ]
         std::set<std::string> M_markers;
+        bool M_isDefinedOnWholeMesh;
         space_ptrtype M_space;
         element_ptrtype M_fieldElectricConductivity;
     };

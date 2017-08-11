@@ -328,11 +328,11 @@ public:
         M_SER_useGreedyInRb( boption(_name="ser.use-greedy-in-rb") ),
         M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_save_output_behavior( boption(_name="crb.save-output-behavior") ),
-        M_fixedpointMaxIterations( ioption(_name="crb.max-fixedpoint-iterations") ),
-        M_fixedpointIncrementTol( doption(_name="crb.increment-fixedpoint-tol") ),
-        M_fixedpointVerbose( boption(_name="crb.fixedpoint-verbose") ),
-        M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
+        M_fixedpointMaxIterations( ioption(_name="crb.fixedpoint.maxit") ),
+        M_fixedpointIncrementTol( doption(_name="crb.fixedpoint.increment-tol") ),
+        M_fixedpointVerbose( boption(_name="crb.fixedpoint.verbose") ),
+        M_fixedpointCriticalValue( doption(_name="crb.fixedpoint.critical-value") ),
+        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
         M_useRbSpaceContextEim( boption(_name="crb.use-fast-eim") ),
         M_hasRbSpaceContextEim( false ),
@@ -1684,9 +1684,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     auto Apr = M_model->newMatrix();
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint.critical-value");
     int iteration=0;
     double increment_norm=1e3;
     bool is_linear=M_model->isLinear();
@@ -1905,9 +1905,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     double dt = M_model->timeStep();
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint.critical-value");
     int iteration=0;
     double increment_norm=1e3;
 

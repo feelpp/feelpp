@@ -1,0 +1,121 @@
+Benchmarks for HDG
+==================
+:toc: macro
+:toclevels: 3
+
+toc::[]
+
+NOTE: we need to rebuild the backend when we do a convergence analysis to avoid
+petsc crashing because it keeps data(preconditioner) between runs
+
+== Laplacian
+
+=== Without IBC
+
+with static condensation in parallel
+
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=true --sc.condense=true --backend.rebuild=true
+----
+
+NOTE: error should be 0 thanks to exact solution being linear
+
+with static condensation in sequential on one element
+
+[source,sh]
+----
+./feelpp_benchmarks_hdg_laplacian_2D_P1 -- --p_exact="x:x" --use_hypercube=false --gmsh.filename oneelt.msh  --sc.condense=true --backend.rebuild=true --nb_refine=1
+----
+
+NOTE: error should be 0 thanks to exact solution being linear
+
+=== IBC
+with IBC condition and the constant space Ch defined on elements
+
+[source,sh]
+----
+./feelpp_benchmarks_hdg_laplacian_ibc_elt_2D_P1 -- --config-file hdg_mp_ibc/hdg_laplacian_ibc.cfg
+----
+
+with IBC condition and the constant space Ch defined on faces
+
+[source,sh]
+----
+./feelpp_benchmarks_hdg_laplacian_ibc_face_2D_P1 -- --config-file hdg_mp_ibc/hdg_laplacian_ibc.cfg
+----
+
+== MixedPoisson
+
+The model file, the geometries and the configuration files are in cvg-tests. +
+The simplest way to launch the tests is with the following command:
+
+[source,sh]
+----
+mpirun -np 1 feelpp_benchmarks_cvg_mixedpoisson_2DP1G1E3 --config-files cvg-mp-tests/darcy2DP1.cfg cvg-mp-tests/darcy2DDir.cfg cvg-mp-tests/darcyGASM.cfg
+----
+
+The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
+You have different configuration files, one for the dimension and the polynomial order, one for the boundary conditions and one for the solver and preconditioner used. +
+The important options are:
+
+* `cvg.p_exact`: exact expression for the pressure
+* `cvg.cond`: conductivity
+* `cvg.refine-nb`: number of iteration of the convergence test
+* `cvg.refine-factor`: factor by which to divide hsize at each iteration
+* `mixedpoisson.use-sc`: use static condensation or not
+
+== Linear elasticity
+
+=== Without IBC
+
+with static condensation in parallel
+
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_2D_P2 -- --config-file hdg_me/hdg_elasticity.cfg --u_exact="{x*x,x*y}:x:y" --f="{8,0}:x:y" --sc.condense=true
+----
+
+The important options are:
+
+* `u_exact`: exact expression for the displacement
+* `f`: external force applied
+* `nb_refine`: number of iteration of the convergence test  [default=1]
+* `sc.condense`: it has to be actived to use static condensation
+
+NOTE: error should be 0 thanks to exact solution being quadratic
+
+=== IBC
+with IBC condition and the constant space Ch defined on faces
+
+[source,sh]
+----
+mpirun -np 4 ./feelpp_benchmarks_hdg_linear_elasticity_ibc_2D_P2 -- --config-file hdg_me/hdg_elasticity_ibc.cfg --u_exact="{x*y,y^2}:x:y" --f="{0,8}:x:y" --sc.condense=1
+----
+
+The important options are:
+
+* `u_exact`: exact expression for the displacement
+* `f`: external force applied
+* `nb_refine`: number of iteration of the convergence test	[default=1]
+
+NOTE: error should be 0 thanks to exact solution being quadratic
+
+== MixedElasticity
+
+The model file, the geometries and the configuration files are in cvg-el-tests. +
+The simplest way to launch the tests is with the following command:
+
+[source,sh]
+----
+mpirun -np 1 feelpp_benchmarks_elasticity_conv_2DP1G1E4 --config-file cvg-el-tests/cvgElasticity2D.cfg
+----
+
+The templates parameters stand for the dimension, the polynomial order, the geometric order and the expression order. +
+You have two different configuration files for 2D and 3D. +
+You have two different json files (2D and 3D) to specify the exact solution and the model properties. +
+The important options are:
+
+* `cvg.refine-nb`: number of iteration of the convergence test
+* `cvg.refine-factor`: factor by which to divide hsize at each iteration
+* `mixedelasticity.use-sc`: use static condensation or not
