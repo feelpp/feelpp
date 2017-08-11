@@ -45,8 +45,6 @@ BOOST_CLASS_EXPORT_KEY(Feel::VectorPetscMPI<double>)
 extern "C"
 {
 #include <petscmat.h>
-#include "petscsys.h"
-#include "petscviewerhdf5.h"
 }
 
 
