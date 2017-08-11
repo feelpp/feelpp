@@ -37,7 +37,7 @@
 //#define BOOST_TEST_NO_MAIN
 
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>

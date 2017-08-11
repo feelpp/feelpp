@@ -16,8 +16,8 @@ Options:
      --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
      --stdlib=libxx                  c++ standard library libstdc++, libc++ (default: libstdc++)
      --max-order=x                   maximum polynomial order to instantiate(default: 3)
-     --cxxflags                      override cxxflags 
-     --cmakeflags                    add extra cmake flags 
+     --cxxflags                      override cxxflags
+     --cmakeflags                    add extra cmake flags
      --prefix=PATH                   define install path
      --root=PATH                     define root path
      --enable-pch                    enable precompiled headers (default)
@@ -134,7 +134,7 @@ while [ -n "$1" ]; do
        export PETSC_DIR
        ;;
    --debug|-d)
-       BUILDTYPE=Debug    
+       BUILDTYPE=Debug
        _WANT_CHECK=yes
        ;;
    --relwithdebinfo|-rd)
@@ -171,7 +171,7 @@ while [ -n "$1" ]; do
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
            echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
            export PROJECT_MAX_ORDER
-           ;;  
+           ;;
    --std=c++*)
        PROJECT_STD_CPP=`echo $1 | sed "s,^--std=c++\(.*\),\1,"`
        echo "using c++$PROJECT_STD_CPP..."
@@ -181,7 +181,7 @@ while [ -n "$1" ]; do
        PROJECT_STDLIB_CPP=`echo $1 | sed "s,^--stdlib=lib\(.*\),\1,"`
        echo "using lib$PROJECT_STDLIB_CPP..."
        export PROJECT_STDLIB_CPP
-       ;;  
+       ;;
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
@@ -240,6 +240,7 @@ if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
 fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+echo "SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)" >> cmake.configure
 echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++14 or c++1z\")"  >> cmake.configure
 echo "SET(FEELPP_STDLIB_CPP \"$PROJECT_STDLIB_CPP\" CACHE PATH \"Feel++ c++ standard library stdc++ or c++\")"  >> cmake.configure
 echo "SET(FEELPP_INSTANTIATION_ORDER_MAX \"$PROJECT_MAX_ORDER\" CACHE PATH \"Feel++ maximum polynomial order instantiation\")"  >> cmake.configure

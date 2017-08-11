@@ -70,17 +70,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual 
             this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
 #if 1
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            //_expr= inner( StressTensorExpr,grad(v) ),
                            _expr= inner( val(Sigmav_newtonian),grad(v) ),
                            _geomap=this->geomap() );
 #else
             form1( Xh, R ) +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
                            _geomap=this->geomap() );
             form1( Xh, R ) +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -idv(p)*div(v),
                            _geomap=this->geomap() );
 #endif
@@ -92,7 +92,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual 
         if (!BuildCstPart && !UseJacobianLinearTerms )
         {
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -idv(p)*div(v),
                            _geomap=this->geomap() );
         }
@@ -102,7 +102,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual 
             auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
             // sigma : grad(v) on Omega
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= inner( StressTensorExpr,grad(v) ),
                            _geomap=this->geomap() );
         }
@@ -115,13 +115,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual 
     if (!this->velocityDivIsEqualToZero() && BuildCstPart)
     {
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= val(-coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
     }

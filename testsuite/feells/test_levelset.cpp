@@ -25,7 +25,7 @@
 #undef USE_BOOST_TEST
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE levelset
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #endif
 
 #include <feel/feelfilters/exporter.hpp>
