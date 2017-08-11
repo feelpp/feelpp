@@ -1072,7 +1072,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-                         ( typename Feel::detail::compute_deim_return<Args>::ptrtype ), // 1. return type
+                         ( typename Feel::detail::compute_mdeim_return<Args>::ptrtype ), // 1. return type
                          mdeim,                        // 2. name of the function template
                          tag,                                        // 3. namespace of tag types
                          ( required

@@ -100,8 +100,8 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "mdeim_test_sampling" );
 
-        auto M_deim = mdeim(_model=this->shared_from_this(),
-                            _sampling=Pset );
+        auto M_deim = mdeim( _model=this->shared_from_this(),
+                             _sampling=Pset );
 
         M_deim->run();
         int m = M_deim->size();
