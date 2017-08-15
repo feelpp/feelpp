@@ -241,12 +241,16 @@ template<typename SparseMatrixType> void sparse_product()
     // also check with a SparseWrapper:
     DenseVector v1 = DenseVector::Random(cols);
     DenseVector v2 = DenseVector::Random(rows);
+    DenseVector v3 = DenseVector::Random(rows);
     VERIFY_IS_APPROX(m3=m2*v1.asDiagonal(), refM3=refM2*v1.asDiagonal());
     VERIFY_IS_APPROX(m3=m2.transpose()*v2.asDiagonal(), refM3=refM2.transpose()*v2.asDiagonal());
     VERIFY_IS_APPROX(m3=v2.asDiagonal()*m2, refM3=v2.asDiagonal()*refM2);
     VERIFY_IS_APPROX(m3=v1.asDiagonal()*m2.transpose(), refM3=v1.asDiagonal()*refM2.transpose());
     
     VERIFY_IS_APPROX(m3=v2.asDiagonal()*m2*v1.asDiagonal(), refM3=v2.asDiagonal()*refM2*v1.asDiagonal());
+
+    VERIFY_IS_APPROX(v2=m2*v1.asDiagonal()*v1, refM2*v1.asDiagonal()*v1);
+    VERIFY_IS_APPROX(v3=v2.asDiagonal()*m2*v1, v2.asDiagonal()*refM2*v1);
     
     // evaluate to a dense matrix to check the .row() and .col() iterator functions
     VERIFY_IS_APPROX(d3=m2*d1, refM3=refM2*d1);
@@ -292,6 +296,10 @@ template<typename SparseMatrixType> void sparse_product()
     VERIFY_IS_APPROX(x=mUp.template selfadjointView<Upper>()*b, refX=refS*b);
     VERIFY_IS_APPROX(x=mLo.template selfadjointView<Lower>()*b, refX=refS*b);
     VERIFY_IS_APPROX(x=mS.template selfadjointView<Upper|Lower>()*b, refX=refS*b);
+
+    VERIFY_IS_APPROX(x=b * mUp.template selfadjointView<Upper>(),       refX=b*refS);
+    VERIFY_IS_APPROX(x=b * mLo.template selfadjointView<Lower>(),       refX=b*refS);
+    VERIFY_IS_APPROX(x=b * mS.template selfadjointView<Upper|Lower>(),  refX=b*refS);
 
     VERIFY_IS_APPROX(x.noalias()+=mUp.template selfadjointView<Upper>()*b, refX+=refS*b);
     VERIFY_IS_APPROX(x.noalias()-=mLo.template selfadjointView<Lower>()*b, refX-=refS*b);
