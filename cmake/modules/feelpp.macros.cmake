@@ -647,7 +647,37 @@ macro (feelpp_add_man NAME MAN SECT)
         )
       endif()
 
-  endmacro (feelpp_add_man)
+endmacro (feelpp_add_man)
 
-  # CRB cmake macros
-  include(feelpp.macros.crb)
+# CRB cmake macros
+include(feelpp.macros.crb)
+
+
+# feelppContribPrepare( submodulename )
+# Clone/Update a contrib submodule hold on feel++ repository /contrib
+macro( feelppContribPrepare contribname )
+  set( FEELPP_CONTRIB_PREPARE_SUCCEED FALSE )
+  message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/contrib/${contribname}")
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/${contribname} )
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+      execute_process(
+        COMMAND git submodule update --init --recursive contrib/${contribname}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        ERROR_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "Git submodule contrib/${contribname} updated.")
+        set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
+      else()
+        MESSAGE(WARNING "Git submodule contrib/${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/${contribname})
+        message( WARNING "Please make sure that git submodule contrib/${contribname} is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/${contribname}`")
+      endif()
+    endif()
+  endif()
+endmacro( feelppContribPrepare )
