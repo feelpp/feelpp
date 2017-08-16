@@ -29,30 +29,9 @@
 OPTION( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
 
 if ( FEELPP_ENABLE_MONGOCXX )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/mongocxx )
-    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
-      execute_process(
-        COMMAND git submodule update --init --recursive contrib/mongocxx
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_FILE git.mongocxx.log
-        ERROR_FILE git.mongocxx.log
-        RESULT_VARIABLE ERROR_CODE
-        )
-      if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "[feelpp] Git submodule contrib/mongocxx updated.")
-      else()
-        MESSAGE(WARNING "Git submodule contrib/mongocxx failed to be updated. Possible cause: No internet access, firewalls ...")
-      endif()
-    else()
-      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/ )
-        message( WARNING "Please make sure that git submodule contrib/mongocxx is available")
-        message( WARNING "  run `git submodule update --init --recursive contrib/mongocxx`")
-      endif()
-    endif()
+  feelppContribPrepare( mongocxx )
 
-  endif()
-  
-  if( EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake")
     find_package(LibBSON 1.5 )
     find_package(LibMongoC 1.5 )
@@ -78,5 +57,4 @@ if ( FEELPP_ENABLE_MONGOCXX )
   else()
       MESSAGE(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
   endif()
- 
 endif()
