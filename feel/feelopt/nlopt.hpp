@@ -54,10 +54,6 @@ public :
 
     OptimizationNonLinear( ::nlopt::algorithm a, unsigned n) : super_type(a,n) {}
 
-//    void set_min_objective(::nlopt::func f, void *f_data)
-//        {
-//            super_type::set_min_objective( f,f_data );
-//        }
     void set_min_objective( nlopt_func_type f, void *f_data)
         {
             objective_function = f;
@@ -74,10 +70,6 @@ public :
             objective_data = f_data;
             super_type::set_min_objective( feel_nlopt_objective_vfunction,this );
         }
-//   void set_max_objective(::nlopt::func f, void *f_data)
-//       {
-//           super_type::set_max_objective( f,f_data );
-//       }
     void set_max_objective( nlopt_func_type f, void *f_data)
         {
             objective_function = f;
@@ -94,10 +86,6 @@ public :
             objective_data = f_data;
             super_type::set_max_objective( feel_nlopt_objective_vfunction,this );
         }
-//    void add_inequality_constraint( ::nlopt::func f, void *f_data, double tol=0)
-//        {
-//            super_type::add_inequality_constraint( f,f_data,tol );
-//        }
     void add_inequality_constraint( nlopt_func_type f, void *f_data, double tol=0)
         {
             int constraintId = constraints_config.size();
