@@ -463,9 +463,8 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
-        ( prefixvm( prefix, "deim.greedy-tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
-        ( prefixvm( prefix, "deim.greedy-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
-        ( prefixvm( prefix, "deim.greedy-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
         ;
 
         return deimoptions;

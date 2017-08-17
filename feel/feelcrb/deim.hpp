@@ -174,8 +174,8 @@ public :
         M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol( doption( prefixvm( M_prefix, "deim.greedy-rtol") ) ),
-        M_Atol( doption( prefixvm( M_prefix, "deim.greedy-atol") ) ),
+        M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
+        M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
         M_max_error( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
     {
