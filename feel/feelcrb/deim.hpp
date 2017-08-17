@@ -176,7 +176,7 @@ public :
         M_M(0),
         M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
         M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
-        M_max_error( -1 ),
+        M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
     {
         using Feel::cout;
@@ -267,10 +267,8 @@ public :
             error = best_fit.template get<1>();
             mu = best_fit.template get<0>();
 
-            if ( M_max_error==-1 )
-                M_max_error=error;
-            if ( M_max_error!=0 )
-                r_error = error/M_max_error;
+            if ( M_max_value!=0 )
+                r_error = error/M_max_value;
 
             cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
                  << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
@@ -291,7 +289,7 @@ public :
                 error = best_fit.template get<1>();
                 mu = best_fit.template get<0>();
 
-                r_error = error/M_max_error;
+                r_error = error/M_max_value;
                 cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
                      << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
                 cout <<"===========================================\n";
@@ -357,6 +355,8 @@ protected :
         auto i = vec_max.template get<1>();
         double max = vec_max.template get<0>();
 
+        if ( M_max_value==-1 )
+            M_max_value=max;
         M_M++;
 
         Phi->scale( 1./max );
@@ -609,7 +609,7 @@ protected :
     parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
     int M_M;
-    double M_tol, M_Atol, M_max_error;
+    double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
