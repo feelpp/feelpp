@@ -463,6 +463,9 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
+        ( prefixvm( prefix, "deim.greedy-tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Tolerance for greedy algorithm"  )
         ;
 
         return deimoptions;
@@ -615,13 +618,13 @@ crbOptions( std::string const& prefix )
 
         ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
         ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
-        
+
         ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
         ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
         ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
         ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
         ( "crb.fixedpoint.critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
-        
+
         ( "crb.use-continuity",Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
         ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
         ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
