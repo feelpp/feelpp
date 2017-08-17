@@ -170,13 +170,13 @@ public :
                 model->uuid(),
                 worldComm ),
         M_model( model ),
+        M_prefix( prefix ),
         M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol( 1e-8 ),
-        M_Atol(1e-16),
+        M_tol( doption( prefixvm( M_prefix, "deim.greedy-rtol") ) ),
+        M_Atol( doption( prefixvm( M_prefix, "deim.greedy-atol") ) ),
         M_max_error( -1 ),
-        M_prefix( prefix ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
     {
         using Feel::cout;
@@ -605,6 +605,7 @@ protected :
 
 protected :
     model_ptrtype M_model;
+    std::string M_prefix;
     parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
     int M_M;
@@ -613,9 +614,7 @@ protected :
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
     solutionsmap_type M_solutions;
-    std::string M_prefix;
     bool M_rebuild;
-
 };
 
 template <typename ModelType, typename TensorType,
