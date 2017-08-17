@@ -173,7 +173,9 @@ public :
         M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol(1e-8),
+        M_tol( 1e-8 ),
+        M_Atol(1e-16),
+        M_max_error( -1 ),
         M_prefix( prefix ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
     {
@@ -247,6 +249,7 @@ public :
         }
 
         double error=0;
+        double r_error=0;
         auto mu = M_trainset->max().template get<0>();
 
         if ( M_M==0 )
@@ -263,12 +266,18 @@ public :
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
             mu = best_fit.template get<0>();
-            cout << "DEIM : Current error : "<< error
-                 <<", tolerance : " << M_tol <<std::endl;
+
+            if ( M_max_error==-1 )
+                M_max_error=error;
+            if ( M_max_error!=0 )
+                r_error = error/M_max_error;
+
+            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
             cout <<"===========================================\n";
         }
 
-        while( M_M<mMax && error>M_tol )
+        while( M_M<mMax && r_error>M_tol && error>M_Atol )
         {
             cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
 
@@ -281,11 +290,12 @@ public :
                 auto best_fit = computeBestFit();
                 error = best_fit.template get<1>();
                 mu = best_fit.template get<0>();
-                cout << "DEIM : Current error : "<< error
-                           <<", tolerance : " << M_tol <<std::endl;
+
+                r_error = error/M_max_error;
+                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
                 cout <<"===========================================\n";
             }
-
         }
 
         M_solutions.clear();
@@ -328,9 +338,9 @@ public :
     }
 
     //! save the database
-    void saveDB();
+    void saveDB() override;
     //! load the database
-    bool loadDB();
+    bool loadDB() override;
     //!
     //! loadDB from \p filename with load strately \p l
     //!
@@ -473,8 +483,9 @@ protected :
         {
             for ( int i=0; i<M_M; i++ )
                 rhs(i) = evaluate( T, M_index[i] );
-            coeff = M_B.lu().solve( rhs );
+            coeff = M_B.fullPivLu().solve( rhs );
         }
+
         return coeff;
     }
 
@@ -496,15 +507,15 @@ protected :
         for ( auto const& mu : *M_trainset )
         {
             tensor_ptrtype T = residual( mu );
+            auto vec_max = vectorMaxAbs(T);
+            auto norm = vec_max.template get<0>();
 
-            double norm = T->linftyNorm();
             if ( norm>max )
             {
                 max = norm;
                 mu_max = mu;
             }
         }
-
         LOG(INFO) << "DEIM : computeBestFit() end";
         toc("DEIM : compute best fit");
 
@@ -597,7 +608,7 @@ protected :
     parameterspace_ptrtype M_parameter_space;
     sampling_ptrtype M_trainset;
     int M_M;
-    double M_tol;
+    double M_tol, M_Atol, M_max_error;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
     std::vector<indice_type> M_index;
