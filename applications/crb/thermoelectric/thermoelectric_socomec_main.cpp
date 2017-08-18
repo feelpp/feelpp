@@ -48,7 +48,7 @@ int main( int argc, char** argv)
             ( "thermoelectric.k_PVC", po::value<double>()->default_value(1), "thermal conductivity" )
             ( "thermoelectric.I", po::value<double>()->default_value(1), "current intensity" )
             ( "thermoelectric.S_gammaIn", po::value<double>()->default_value(1), "section's surface")
-            ( "thermoelectric.W_marker", po::value<std::string>()->dafault_value("Cuivre_b"), "name of the marker for W")
+            ( "thermoelectric.W_marker", po::value<std::string>()->default_value("Cuivre_b"), "name of the marker for W")
             ( "thermoelectric.W", po::value<double>()->default_value(0), "additional power due to junctions")
             ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
             ( "thermoelectric.T_ext", po::value<double>()->default_value(1), "exterior's temperature" )
@@ -99,12 +99,12 @@ int main( int argc, char** argv)
     double k_dissipateur = doption("thermoelectric.k_dissipateur");
     double k_lugs= doption("thermoelectric.k_lugs");
     double k_bornes= doption("thermoelectric.k_bornes");
-    
+
     double I = doption("thermoelectric.I");
     double h = doption("thermoelectric.h");
     double T_ext = doption("thermoelectric.T_ext");
-    
-    
+
+
     auto paramSpace = crbModel->parameterSpace();
     auto mu = paramSpace->element();
     mu.setParameterNamed("sigma_PVC", sigma_PVC);

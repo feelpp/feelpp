@@ -157,7 +157,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    std::string getString( std::string const& key ) {
+    std::string getString( std::string const& key ) const {
         try { return M_p.get<std::string>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;

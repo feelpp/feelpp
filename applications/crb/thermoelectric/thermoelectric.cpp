@@ -41,7 +41,7 @@ Thermoelectric::Thermoelectric( mesh_ptrtype mesh )
 int Thermoelectric::Qa()
 {
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->Materials();
+    auto materials = M_modelProps->materials();
     return 2*materials.size() + bc["potential"]["Dirichlet"].size() +bc["potential"]["Neumann"].size()
            + bc["temperature"]["Robin"].size() + bc["temperature"]["Dirichlet"].size();
 }
@@ -215,7 +215,7 @@ void Thermoelectric::decomposition()
     int idx = 0;
     for (auto const& mat : materials ){
         auto a0 = form2(_test=Xh, _trial=Xh);
-        a0 = integrate( markedelements(M_mesh, mat.marker()),
+        a0 = integrate( markedelements(M_mesh, mat.first),
                         inner(gradt(u),grad(v)) );
         M_Aqm[idx++][0] = a0.matrixPtr();
 
@@ -224,7 +224,7 @@ void Thermoelectric::decomposition()
     // thermo
     for (auto const& mat : materials){
         auto a1 = form2(_test=Xh, _trial=Xh);
-        a1 = integrate( markedelements(M_mesh,mat.marker()),
+        a1 = integrate( markedelements(M_mesh,mat.first),
                         inner(gradt(t), grad(p)) );
         M_Aqm[idx++][0] = a1.matrixPtr();
     }
@@ -245,7 +245,7 @@ void Thermoelectric::decomposition()
         auto aVN = form2(_test=Xh, _trial=Xh);
         aVN += integrate( markedfaces(M_mesh, exAtM.marker() ),
                           id(v) );
-        M_Aqm[idx++][0] = aVD.matrixPtr();
+        M_Aqm[idx++][0] = aVN.matrixPtr();
     }
 
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
@@ -273,7 +273,7 @@ void Thermoelectric::decomposition()
         for( int m = 0; m < eimGradGrad->mMax(); ++m )
         {
             auto f0 = form1(_test=Xh);
-            f0 = integrate(markedelements(M_mesh, mat.marker()),
+            f0 = integrate(markedelements(M_mesh, mat.first),
                            inner(id(p), idv(eimGradGrad->q(m))) );
             M_Fqm[0][idx++][m] = f0.vectorPtr();
         }
@@ -359,11 +359,11 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     int idx = 0;
 
     for (auto const& mat : materials){
-        M_betaAqm[idx++][0] = mu.parameterNamed(mat.getString("sigma"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("sigma"));
     }
 
     for (auto const& mat : materials){
-        M_betaAqm[idx++][0] = mu.parameterNamed(mat.getString("k"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("k"));
     }
 
     //! A vérifier
@@ -487,8 +487,8 @@ Thermoelectric::solve( parameter_type const& mu )
 
     for (auto const& mat : materials){
 
-        sigma[mat.marker()]=mu.parameterNamed(mat.getString("sigma"));
-        k[mat.marker()]=mu.parameterNamed(mat.getString("k"));
+        sigma[mat.first]=mu.parameterNamed(mat.second.getString("sigma"));
+        k[mat.first]=mu.parameterNamed(mat.second.getString("k"));
     }
 
 
@@ -498,8 +498,8 @@ Thermoelectric::solve( parameter_type const& mu )
     // V
     int i = 0;
     for (auto const& mat: materials){
-        a = integrate( markedelements(M_mesh,mat.marker()),
-                       sigma[mat.marker()]*inner(gradt(V),grad(phiV)) );
+        a = integrate( markedelements(M_mesh,mat.first),
+                       sigma[mat.first]*inner(gradt(V),grad(phiV)) );
     }
 
     // V Dirichlet condition
@@ -548,8 +548,8 @@ Thermoelectric::solve( parameter_type const& mu )
 
     i = 0;
     for (auto const& mat : materials){
-        aT += integrate( markedelements(M_mesh, mat.marker()),
-                         k[mat.marker()]*inner(gradt(T), grad(phiT)) );
+        aT += integrate( markedelements(M_mesh, mat.first),
+                         k[mat.first]*inner(gradt(T), grad(phiT)) );
     }
 
     // T Dirichlet condition
@@ -580,8 +580,8 @@ Thermoelectric::solve( parameter_type const& mu )
     i = 0;
 
     for (auto const& mat : materials){
-        fT = integrate(markedelements(M_mesh, mat.marker()),
-                       id(phiT)*sigma[mat.marker()]*gradv(V)*trans(gradv(V)) );
+        fT = integrate(markedelements(M_mesh, mat.first),
+                       id(phiT)*sigma[mat.first]*gradv(V)*trans(gradv(V)) );
     }
 
     // T Dirichlet condition
