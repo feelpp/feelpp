@@ -30,7 +30,7 @@ using namespace Feel;
 int main( int argc, char** argv)
 {
     using namespace Feel;
-    usine Feel::cout;
+    using Feel::cout;
         po::options_description model_options(" Options for the model");
         model_options.add_options()
                 ( "thermoelectric.sigma", po::value<double>()->default_value(1), "electric conductivity" )
@@ -141,4 +141,3 @@ int main( int argc, char** argv)
 
     return 0;
 }
-
