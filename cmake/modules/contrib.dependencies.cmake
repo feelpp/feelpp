@@ -8,7 +8,7 @@ if ( FEELPP_HAS_GFLAGS )
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gflags)
   list(INSERT FEELPP_LIBRARIES 0 feelpp_gflags)
 
-  #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
+  add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
   #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${FEELPP_BINARY_DIR}/gflags/include ${FEELPP_BINARY_DIR}/gflags/include/gflags)
 
   include_directories(${FEELPP_BINARY_DIR}/contrib/gflags/include )#${FEELPP_BINARY_DIR}/gflags/include/gflags)
@@ -44,7 +44,7 @@ if ( FEELPP_HAS_GINAC )
 
 
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ginac)
-  #add_dependencies(contrib feelpp_ginac ginsh)
+  add_dependencies(contrib feelpp_ginac ginsh)
   list(INSERT FEELPP_LIBRARIES 0 feelpp_ginac)
 endif()
 
