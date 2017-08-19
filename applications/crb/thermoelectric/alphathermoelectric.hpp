@@ -219,9 +219,7 @@ public:
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
-    int mMaxSigma();
-    q_sigma_element_type eimSigmaQ(int m);
-    vectorN_type eimSigmaBeta( parameter_type const& mu );
+    double sigma();
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
 }; // AlphaThermoelectric class
 
