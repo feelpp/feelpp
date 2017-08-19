@@ -211,7 +211,7 @@ AlphaThermoelectric::assembleForMDEIM( parameter_type const& mu )
                            -inner(gradVJ*N(),id(phiV))
                            -inner(gradPhiVJ*N(),idt(V)) ) );
     a += integrate( elements(M_mesh), k*inner(gradTJ,gradPhiTJ) );
-    a += integrate( markedfaces(M_mesh, {"helixS1","helixS2"}),
+    a += integrate( markedfaces(M_mesh, {"ext","int"}),
                     h*inner(idt(T),id(phiT)) );
 
     auto am = a.matrixPtr();
@@ -260,8 +260,8 @@ AlphaThermoelectric::assembleForDEIMnl( parameter_type const& mu, element_type c
     auto f = form1(_test=Xh);
     f = integrate( markedfaces(M_mesh, "top"),
                    sigma*dif*(gamma/hFace()*id(phiV) - gradPhiVJ*N()) );
-    f += integrate(elements(M_mesh), sigma*inner(gradvVJ)*id(phiT) );
-    f += integrate(markedfaces(M_mesh, {"helixS1","helixS2"}),
+    f += integrate(elements(M_mesh), sigma*inner(gradvVJ,gradvVJ)*id(phiT) );
+    f += integrate(markedfaces(M_mesh, {"ext","int"}),
                    h*Tw*id(phiT) );
 
     auto fv = f.vectorPtr();
@@ -361,6 +361,7 @@ void AlphaThermoelectric::initModel()
 
     auto s = this->solve(M_mu);
     auto VFE = s.template element<0>();
+    auto TFE = s.template element<1>();
     auto A = this->assembleForMDEIM(M_mu);
     auto F = this->assembleForDEIMnl(M_mu,s);
 
@@ -386,15 +387,30 @@ void AlphaThermoelectric::initModel()
     auto VT = Xh->element();
     backend()->solve( _matrix=Am, _rhs=Fm, _solution=VT);
     auto VRB = VT.template element<0>();
+    auto TRB = VT.template element<1>();
+
+    auto e = exporter(M_mesh);
+    e->add("VFE", VFE);
+    e->add("TFE", TFE);
+    e->add("VEIM", VRB);
+    e->add("TEIM", TRB);
+    e->save();
 
     auto errV = normL2(elements(M_mesh), idv(VFE)-idv(VRB) );
-    Feel::cout << "err = " << errV << std::endl;
+    auto normV = normL2(elements(M_mesh), idv(VFE) );
+    auto errT = normL2(elements(M_mesh), idv(TFE)-idv(TRB) );
+    auto normT = normL2(elements(M_mesh), idv(TFE) );
+    Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl
+               << "T: err = " << errT << " relative err = " << errT/normT << std::endl;
 
     Am->addMatrix(-1., A);
     Fm->add(-1., F);
     auto errA = Am->linftyNorm();
+    auto normA = A->linftyNorm();
     auto errF = Fm->linftyNorm();
-    Feel::cout << "errA = " << errA << "\nerrF = " << errF << std::endl;
+    auto normF = F->linftyNorm();
+    Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
+               << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
 }
 
 void AlphaThermoelectric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -591,11 +607,11 @@ AlphaThermoelectric::solve( parameter_type const& mu )
     tic();
     auto aT = form2(_test=Th, _trial=Th);
     aT = integrate( elements(M_mesh), k*inner(gradTJ,gradPhiTJ) );
-    aT += integrate( markedfaces(M_mesh, {"helixS1","helixS2"}),
+    aT += integrate( markedfaces(M_mesh, {"ext","int"}),
                      h*inner(idt(T),id(phiT)) );
     auto fT = form1(_test=Th);
-    fT = integrate(elements(M_mesh), sigma*inner(gradvVJ)*id(phiT) );
-    fT += integrate(markedfaces(M_mesh, {"helixS1","helixS2"}),
+    fT = integrate(elements(M_mesh), sigma*inner(gradvVJ,gradvVJ)*id(phiT) );
+    fT += integrate(markedfaces(M_mesh, {"ext","int"}),
                     h*Tw*id(phiT) );
     aT.solve(_rhs=fT, _solution=M_T, _name="feT");
     toc("solve T");
@@ -604,9 +620,9 @@ AlphaThermoelectric::solve( parameter_type const& mu )
     solution.template element<0>() = *M_V;
     solution.template element<1>() = *M_T;
 
-    auto e = exporter(M_mesh);
-    e->add("sol", solution);
-    e->save();
+    // auto e = exporter(M_mesh);
+    // e->add("sol", solution);
+    // e->save();
 
     return solution;
 }
@@ -630,25 +646,10 @@ double AlphaThermoelectric::output( int output_index, parameter_type const& mu ,
     return output;
 }
 
-int AlphaThermoelectric::mMaxSigma()
+double AlphaThermoelectric::sigma()
 {
-    return 1;
-}
-
-AlphaThermoelectric::q_sigma_element_type AlphaThermoelectric::eimSigmaQ(int m)
-{
-    auto Vh = Xh->template functionSpace<0>();
-    q_sigma_element_type q = Vh->element();
-    q.on( _range=elements(M_mesh), _expr=cst(1.) );
-    return q;
-}
-
-AlphaThermoelectric::vectorN_type AlphaThermoelectric::eimSigmaBeta( parameter_type const& mu )
-{
-    vectorN_type beta(1);
     auto parameters = M_modelProps->parameters();
-    beta(0) = parameters["sigma"].value();
-    return beta;
+    return parameters["sigma"].value();
 }
 
 void AlphaThermoelectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu )
