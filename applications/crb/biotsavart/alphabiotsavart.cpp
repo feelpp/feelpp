@@ -153,23 +153,22 @@ AlphaBiotSavartCRB<te_rb_model_type>::assembleForDEIMnl( parameter_type const& m
                 std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
                 for( int d = 0; d < dofSize; d+= 3 )
                 {
-                    auto dof_coord = M_dofMgn.at(i)[d].template get<0>();
-                    Eigen::Matrix<double,3,1> coord;
-                    coord << dof_coord[0],dof_coord[1],dof_coord[2];
-                    coords[d/3] = coord;
-                }
+                    auto dofCoord = M_dofMgn.at(i)[d].template get<0>();
+                    auto coord = vec(cst(dofCoord[0]), cst(dofCoord[1]), cst(dofCoord[2]));
 
-                auto dist = inner( _e1v-psi,_e1v-psi,
-                                   mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-                auto mgnField = integrate(_range = elements( M_Xh->mesh() ),
-                                          _expr=mu0*coeff*sigma*cross(trans(gradv(V)*Jinv), _e1v-psi)/(dist*dist*dist),
-                                          _quad=_Q<1>()
-                    ).template evaluate(coords);
+                    std::vector<uint16_type> comps(3);
+                    for( int j = 0; j < 3; ++j )
+                        comps[j] = M_dofMgn.at(i)[d+j].template get<2>();
 
-                for( int d = 0; d < dofSize; d++)
-                {
-                    auto dofComp = M_dofMgn.at(i)[d].template get<2>();
-                    intLocD[d] = mgnField[d/3](dofComp,0);
+                    auto dist = inner( coord-psi, coord-psi,
+                                       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+                    auto mgnField = integrate(_range = elements( M_Xh->mesh() ),
+                                              _expr=mu0*coeff*sigma*cross(trans(gradv(V)*Jinv),
+                                                                          coord-psi)/(dist*dist*dist),
+                                              _quad=_Q<1>()
+                                              ).evaluate(false);
+                    for( int j = 0; j < 3; ++j )
+                        intLocD[d+j] = mgnField(comps[j],0);
                 }
             }
             toc("integral_computation");
