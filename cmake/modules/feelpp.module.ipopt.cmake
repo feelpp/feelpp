@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
+option( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 if( FEELPP_ENABLE_IPOPT )
   feelppContribPrepare( ipopt )
