@@ -38,7 +38,7 @@ if( FEELPP_ENABLE_IPOPT )
 
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
     SET(FEELPP_HAS_IPOPT 1)
-    list(INSERT FEELPP_LIBRARIES 0 feelpp_ipopt)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_ipopt feelpp_ipoptfort)
   endif()
 endif()
 
