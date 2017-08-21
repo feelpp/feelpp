@@ -26,7 +26,7 @@
 #
 # MONGOCXX
 #
-OPTION( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
+option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
 
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
@@ -47,14 +47,14 @@ if ( FEELPP_ENABLE_MONGOCXX )
       set(LIBBSON_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
       list(APPEND LIBBSONCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
       list(APPEND LIBMONGOCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
-      SET(FEELPP_HAS_BSONCXX 1)
-      SET(FEELPP_HAS_MONGOCXX 1)
-      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
+      set(FEELPP_HAS_BSONCXX 1)
+      set(FEELPP_HAS_MONGOCXX 1)
+      set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
       #set(FEELPP_LIBRARIES "${MONGOCXX_LIBRARIES} ${FEELPP_LIBRARIES}")
       list(APPEND MONGO_LIBRARIES feelpp_mongocxx feelpp_bsoncxx ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES} )
       list(INSERT FEELPP_LIBRARIES 0 ${MONGO_LIBRARIES})
     endif()
   else()
-      MESSAGE(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
+      message(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
   endif()
 endif()

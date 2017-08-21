@@ -25,15 +25,15 @@
 #
 # PyBind11
 #
-OPTION( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
+option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
 
 if ( FEELPP_ENABLE_PYBIND11 )
   feelppContribPrepare( pybind11 )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     #add_subdirectory(pybind11)
     include_directories(${FEELPP_SOURCE_DIR}/contrib/pybind11/include)
-    SET(FEELPP_HAS_PYBIND11 1)
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" )
-    ADD_DEFINITIONS( -DFEELPP_HAS_PYBIND11 )
+    set(FEELPP_HAS_PYBIND11 1)
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" )
+    add_definitions( -DFEELPP_HAS_PYBIND11 )
   endif()
 endif()
