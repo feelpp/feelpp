@@ -1096,7 +1096,8 @@ public:
 
 
      */
-    BilinearForm( space_1_ptrtype const& __X1,
+    BilinearForm( std::string name,
+                  space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
                   matrix_ptrtype& __M,
                   size_type rowstart = 0,
@@ -1106,7 +1107,8 @@ public:
                   value_type threshold = type_traits<value_type>::epsilon(),
                   size_type graph_hints = Pattern::COUPLED );
 
-    BilinearForm( space_1_ptrtype const& __X1,
+    BilinearForm( std::string name,
+                  space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
                   matrix_ptrtype& __M,
                   list_block_type const& __lb,
@@ -1116,24 +1118,12 @@ public:
                   value_type threshold = type_traits<value_type>::epsilon(),
                   size_type graph_hints = Pattern::COUPLED );
 
-    BilinearForm( BilinearForm const& __vf )
-        :
-        M_pattern( __vf.M_pattern ),
-        M_X1( __vf.M_X1 ),
-        M_X2( __vf.M_X2 ),
-        M_matrix( __vf.M_matrix ),
-        M_lb( __vf.M_lb ),
-        M_row_startInMatrix( __vf.M_row_startInMatrix ),
-        M_col_startInMatrix( __vf.M_col_startInMatrix ),
-        M_do_threshold( __vf.M_do_threshold ),
-        M_threshold( __vf.M_threshold ),
-        M_dofIdToContainerIdTest( __vf.M_dofIdToContainerIdTest ),
-        M_dofIdToContainerIdTrial( __vf.M_dofIdToContainerIdTrial )
-
-    {}
-
+    BilinearForm( BilinearForm const& __vf ) = default;
+    BilinearForm( BilinearForm && __vf ) = default;
     ~BilinearForm()
-    {}
+    {
+        //toc(M_name, FLAGS_v > 0 );
+    }
 
 
 
@@ -1151,6 +1141,7 @@ public:
     {
         if ( this != &form )
         {
+            M_name = form.M_name;
             M_pattern = form.M_pattern;
             CHECK( M_X1 == form.M_X1 ) << "Invalid test function spaces";
             CHECK( M_X2 == form.M_X2 ) << "Invalid trial function spaces";
@@ -1213,6 +1204,11 @@ public:
      */
     //@{
 
+    //!
+    //! @return the name of the bilinear form
+    //!
+    std::string const& name() const { return M_name; }
+    
     /**
      * return the pattern
      */
@@ -1472,7 +1468,9 @@ public:
      */
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data )
+                    value_type* data,
+                    size_type K  = 0,
+                    size_type K2 = invalid_size_type_value)
     {
 #if 0
         if ( this->rowStartInMatrix()!=0 )
@@ -1484,7 +1482,7 @@ public:
                 cols[i]+=this->colStartInMatrix();
 #endif
 
-        M_matrix->addMatrix( rows, nrows, cols, ncols, data );
+        M_matrix->addMatrix( rows, nrows, cols, ncols, data, K, K2 );
     }
 
 
@@ -1573,8 +1571,8 @@ private:
 
 private:
 
+    std::string M_name;
     size_type M_pattern;
-
     space_1_ptrtype M_X1;
     space_2_ptrtype M_X2;
 
@@ -1595,16 +1593,18 @@ private:
     std::vector<size_type> const* M_dofIdToContainerIdTrial;
 };
 template<typename FE1,  typename FE2, typename ElemContType>
-BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-        space_2_ptrtype const& Yh,
-        matrix_ptrtype& __M,
-        size_type rowstart,
-        size_type colstart,
-        bool build,
-        bool do_threshold,
-        value_type threshold,
-        size_type graph_hints )
-    :
+BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
+                                                    space_1_ptrtype const& Xh,
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_ptrtype& __M,
+                                                    size_type rowstart,
+                                                    size_type colstart,
+                                                    bool build,
+                                                    bool do_threshold,
+                                                    value_type threshold,
+                                                    size_type graph_hints )
+:
+    M_name( name ),
     M_pattern( graph_hints ),
     M_X1( Xh ),
     M_X2( Yh ),
@@ -1616,6 +1616,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    //tic();
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
@@ -1633,16 +1634,18 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
-        space_2_ptrtype const& Yh,
-        matrix_ptrtype& __M,
-        list_block_type const& __lb,
-        size_type rowstart,
-        size_type colstart,
-        bool do_threshold ,
-        value_type threshold,
-        size_type graph_hints )
-    :
+BilinearForm<FE1, FE2, ElemContType>::BilinearForm( std::string name,
+                                                    space_1_ptrtype const& Xh,
+                                                    space_2_ptrtype const& Yh,
+                                                    matrix_ptrtype& __M,
+                                                    list_block_type const& __lb,
+                                                    size_type rowstart,
+                                                    size_type colstart,
+                                                    bool do_threshold ,
+                                                    value_type threshold,
+                                                    size_type graph_hints )
+:
+    M_name( name ),
     M_pattern( graph_hints ),
     M_X1( Xh ),
     M_X2( Yh ),
@@ -1654,6 +1657,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    //tic();
     // do nothing if process not active for this space
     if ( !this->M_X1->worldComm().isActive() )
         return;
@@ -1855,7 +1859,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
         bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
         bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
-        bf_type bf( M_test, trial, M_bf.matrixPtr(),
+        bf_type bf( M_bf.name()+"["+std::to_string(M_test_index)+","+std::to_string(M_trial_index)+"]", M_test, trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif
@@ -1935,7 +1939,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         bf.setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_bf.rowStartInMatrix() + M_test_index ) );
         bf.setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_bf.colStartInMatrix() + M_trial_index ) );
 #else
-        bf_type bf( test, M_trial, M_bf.matrixPtr(),
+        bf_type bf( M_bf.name()+"["+std::to_string(M_test_index)+","+std::to_string(M_trial_index)+"]",
+                    test, M_trial, M_bf.matrixPtr(),
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif

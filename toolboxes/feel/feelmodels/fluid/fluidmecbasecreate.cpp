@@ -129,16 +129,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-#if 1 //defined(FEELPP_HAS_VTK)
-    M_isHOVisu =nOrderGeo > 1;
+    M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
-#else
-    M_isHOVisu=false;
-    if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
-        FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "WARNING : hovisu disable because VTK not find",
-                        this->worldComm(),this->verboseAllProc());
-#endif
 
     // overwrite export field options in json if given in cfg
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
@@ -361,17 +354,42 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
     // maybe build extended dof table
     std::vector<bool> extendedDT( space_fluid_type::nSpaces,false );
+    bool hasExtendedDofTable = false;
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
     {
         this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
         extendedDT[0] = true;
+        hasExtendedDofTable = true;
     }
     if ( this->doCIPStabPressure() )
     {
         this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
         extendedDT[1] = true;
+        hasExtendedDofTable = true;
     }
+
+    // update rho, mu, nu,...
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    M_densityViscosityModel->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm(), hasExtendedDofTable );
+
     // fluid mix space : velocity and pressure
+    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+    {
+        M_rangeMeshElements = elements(this->mesh());
+        M_Xh = space_fluid_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
+                                      _extended_doftable=extendedDT );
+    }
+    else
+    {
+        M_rangeMeshElements = markedelements(this->mesh(), M_densityViscosityModel->markers());
+        M_Xh = space_fluid_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
+                                      _extended_doftable=extendedDT, _range=M_rangeMeshElements );
+    }
+
+    
+    
+#if 0
 #if 1
     M_Xh = detail::createFluidFunctionSpaces(*this,extendedDT,mpl::bool_<UsePeriodicity>());
 #else
@@ -394,6 +412,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
                                   _periodicity=theperiodicity );
 #endif
 #endif
+#endif
     M_Solution.reset( new element_fluid_type(M_Xh,"U"));
 
     // space usefull to tranfert sigma*N()
@@ -403,7 +422,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
 
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-        M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    {
+        if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        else
+            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                                                                 _range=M_rangeMeshElements );
+    }
 
 
     if (this->hasMarkerDirichletBClm())
@@ -440,7 +465,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdf_fluid = bdf( _vm=Environment::vm(), _space=M_Xh,
+    M_bdf_fluid = bdf(  _space=M_Xh,
                        _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),
                        _prefix=this->prefix(),
                        // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
@@ -525,21 +550,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
     this->log("FluidMechanics","createPostProcessExporters", "start" );
 
+    bool doExport = boption(_name="exporter.export");
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";//change_coords_only, change, static
 
-#if 0
-    if ( !fs::exists(this->exporterPath()) )
-    {
-        // master rank create directories
-        if ( this->worldComm().isMasterRank() )
-            fs::create_directories( this->exporterPath() );
-        // wait for all process
-        this->worldComm().globalComm().barrier();
-    }
-#endif
-
-    if (!M_isHOVisu)
+    if ( nOrderGeo == 1 && doExport )
     {
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
@@ -554,7 +569,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                                  prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_gmshHo")), M_Xh->worldComm() );
 #endif
     }
-    else
+
+    if ( M_isHOVisu && doExport )
     {
 #if 1 //defined(FEELPP_HAS_VTK)
         //M_exporter_ho = export_ho_type::New( this->application()->vm(), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Export_HO"))/*.c_str()*/, M_Xh->worldComm() );
@@ -699,12 +715,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
 {
     this->log("FluidMechanics","createOthers", "start" );
     this->timerTool("Constructor").start();
-    //----------------------------------------------------------------------------//
-    // update rho, mu, nu,...
-    M_densityViscosityModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    M_densityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     //----------------------------------------------------------------------------//
     // space usefull to tranfert sigma*N()
@@ -752,7 +762,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 {
     if ( M_XhNormalBoundaryStress ) return;
 
-    M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    else
+        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
     M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
     M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -767,7 +780,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 {
-    M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
+    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+        M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
+    else
+        M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                                                   _range=M_rangeMeshElements );
     M_fieldVorticity.reset( new element_vorticity_type(M_XhVorticity));
 }
 
@@ -777,7 +794,11 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
-    M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh );
+    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm() );
+    else
+        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm(),
+                                                      _range=M_rangeMeshElements );
     M_SourceAdded.reset( new element_vectorial_PN_type(M_XhSourceAdded,"SourceAdded"));
 }
 
@@ -939,6 +960,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
         // disable thermo exporter if we use fluid exporter
         M_thermodynModel->setDoExportResults( false );
         M_thermodynModel->init( !M_useGravityForce/*false*/ );
+
+        M_rangeMeshElementsAeroThermal = intersect( M_rangeMeshElements, M_thermodynModel->rangeMeshElements() );
     }
     //-------------------------------------------------//
     // add ALE markers
@@ -1377,26 +1400,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // restart exporters if restart is activated
-    if (this->doRestart() && this->restartPath().empty() )
+    if ( this->doRestart() && this->restartPath().empty() )
     {
-        if (!M_isHOVisu)
-        {
-            // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
-            if ( true )//nOrderGeo == 1 && this->application()->vm()["exporter.format"].as< std::string >() == "ensight")
-            {
-                if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-            }
-            else
-            {
-                //if ( M_exporter_gmsh->doExport() ) M_exporter_gmsh->restart(this->timeInitial());
-            }
-        }
-        else
-        {
-#if 1 // defined(FEELPP_HAS_VTK)
-            if ( M_exporter_ho && M_exporter_ho->doExport() ) M_exporter_ho->restart(this->timeInitial());
-#endif
-        }
+        // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
+        if ( M_exporter && M_exporter->doExport() )
+            M_exporter->restart( this->timeInitial() );
+        if ( M_exporter_ho && M_exporter_ho->doExport() )
+            M_exporter_ho->restart( this->timeInitial() );
     }
 
     // add user functions

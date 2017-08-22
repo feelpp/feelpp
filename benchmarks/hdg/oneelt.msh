@@ -1,0 +1,21 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+2
+1 1 "Dirichlet"
+1 2 "Neumann"
+$EndPhysicalNames
+$Nodes
+3
+1 -1 -1 0
+2 1 -1 0
+3 -1 1 0
+$EndNodes
+$Elements
+4
+1 1 4 1 1 1 2 1 2
+2 1 4 1 2 1 2 2 3
+3 1 4 2 3 1 2 3 1
+4 2 4 9 5 1 2 1 2 3
+$EndElements

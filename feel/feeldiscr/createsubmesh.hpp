@@ -442,7 +442,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     VLOG(2) << "submesh created\n";
     // newMesh->setNumVertices( newMesh->numPoints() );
-
+    if (!renumberPoint )
+        newMesh->updateOrderedPoints();
     VLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     newMesh->components().reset();
@@ -662,6 +663,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     // newMesh->setNumVertices( newMesh->numPoints() );
     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] update face/edge info if necessary\n";
+    if (!renumberPoint )
+        newMesh->updateOrderedPoints();
     // Prepare the new_mesh for use
     newMesh->components().reset();
     newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
@@ -861,6 +864,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
     // newMesh->setNumVertices( newMesh->numPoints() );
     DVLOG(2) << "[CreateSubmesh] update face/edge info if necessary\n";
+    if ( !renumberPoint )
+        newMesh->updateOrderedPoints();
     // Prepare the new_mesh for use
     newMesh->components().reset();
     newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
@@ -1048,8 +1053,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 idEltInNewMesh = itFindId->second;
                 // update NeighborPartition for this active elt
                 CHECK( newMesh->hasElement( idEltInNewMesh) ) << "mesh has not elt whit id " << idEltInNewMesh << "\n";
-                auto eltToUpdate = newMesh->elementIterator( idEltInNewMesh );
-                newMesh->elements().modify( eltToUpdate, Feel::detail::UpdateNeighborPartition( rankRecv ) );
+                auto & eltToUpdate = newMesh->elementIterator( idEltInNewMesh )->second;
+                eltToUpdate.addNeighborPartitionId( rankRecv );
             }
             dataToReSend.push_back( idEltInNewMesh );
         }
@@ -1121,12 +1126,12 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( boost::
                 auto itFindGhostOld = ghostOldEltDone.find( oldElem.id() );
                 if ( itFindGhostOld != ghostOldEltDone.end() )
                 {
-                    auto eltIt = newMesh->elementIterator( itFindGhostOld->second.first );
-                    newMesh->elements().modify( eltIt, Feel::detail::updateIdInOthersPartitions( rankRecv, idEltActiveInOtherProc ) );
-                    if ( rankRecv < eltIt->processId() )
+                    auto & eltModified = newMesh->elementIterator( itFindGhostOld->second.first )->second;
+                    eltModified.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
+                    if ( rankRecv < eltModified.processId() )
                     {
-                        newMesh->elements().modify( eltIt, Feel::detail::UpdateProcessId( rankRecv ) );
-                        ghostOldEltDone[oldElem.id()]= std::make_pair( eltIt->id(),rankRecv);
+                        eltModified.setProcessId( rankRecv );
+                        ghostOldEltDone[oldElem.id()]= std::make_pair( eltModified.id(),rankRecv);
                     }
                     continue;
                 }

@@ -592,11 +592,18 @@ public:
     //@{
 
 
-    typedef Eigen::MatrixXd local_interpolant_type;
+    typedef Eigen::VectorXd local_interpolant_type;
     local_interpolant_type
-    localInterpolant() const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nLocalDof );
+        }
+
+    typedef Eigen::MatrixXd local_interpolants_type;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -612,15 +619,15 @@ public:
                     expr.geom()->faceNormal(  f, n, true );
                 else
                     expr.geom()->faceNormal(  g->faceId(), n, true );
-                
+
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
                     int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
                     for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
-                              
-                    
+
+
                 }
             }
         }
@@ -642,7 +649,7 @@ public:
                     expr.geom()->faceNormal(  f, n, true );
                 else
                     expr.geom()->faceNormal(  g->faceId(), n, true );
-                
+
                 auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
                 for ( int l = 0; l < nLocalDof; ++l )
                 {
@@ -651,17 +658,17 @@ public:
                     {
                         Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
                     }
-                    
+
                 }
             }
         }
 
     using apply_curl_t = mpl::bool_<true>;
     using apply_id_t = mpl::bool_<false>;
-    
+
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType& expr, local_interpolant_type& Ihloc ) const
+    interpolateBasisFunction( ExprType& expr, local_interpolants_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
@@ -683,7 +690,7 @@ public:
                 for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
                 {
                     int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-                    
+
                     for ( uint16_type c = 0; c < ncomp; ++c )
                     {
                         uint16_type I = expr_basis_t::nLocalDof*c + i;

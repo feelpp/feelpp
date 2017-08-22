@@ -1,0 +1,18 @@
+= Biot and Savart
+
+This application aims to compute the magnetic field depending on a current's density stem:[-\sigma\nabla V] by the Biot and Savart law:
+[stem]
+++++
+\begin{equation}
+B(\boldsymbol{r},\boldsymbol{\mu}) = \frac{\mu_0}{4\pi}\int_{\Omega_{cond}} \frac{-\sigma(\boldsymbold{r},\boldsymbol{\mu})\nabla V(\boldsymbold{r},\boldsymbol{\mu}) \times (\boldsymbol{r}-\boldsymbol{p})}{|\boldsymbol{r}-\boldsymbol{p}|^3} d\boldsymbol{p} \quad \forall \boldsymbol{r}\in\Omega_{mgn}
+\end{equation}
+++++
+
+By using the reduced basis method to compute the electric potential stem:[V=\sum_{i=1}^N V_i\xi_i] and the empirical interpolation method to compute the electric conductivity stem:[\sigma=\sum_{m=1}^M\beta_m q_m], we can rewrite this equation as:
+[stem]
+++++
+\begin{equation}
+B(\boldsymbol{r},\boldsymbol{\mu}) = \sum_{i=1}^N\sum_{m=1}^M \beta_m(\boldsymbol{\mu})\V_i(\boldsymbol{\mu})
+\frac{\mu_0}{4\pi} \int_{\Omega_{cond}} \frac{-q_m(\boldsymbold{r})\nabla \xi_i(\boldsymbold{r}) \times (\boldsymbol{r}-\boldsymbol{p})}{|\boldsymbol{r}-\boldsymbol{p}|^3} d\boldsymbol{p} \quad \forall \boldsymbol{r}\in\Omega_{mgn}
+\end{equation}
+++++

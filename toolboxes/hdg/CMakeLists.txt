@@ -23,3 +23,45 @@
 #
 
 #feelpp_add_application( hdg_darcy main.cpp )
+
+foreach(D 3)
+    foreach(P RANGE 0 4 0) #3 
+        feelpp_add_application( mixed-poisson-model_${D}DP${P}
+                                SRCS mixedpoisson_main.cpp
+                                LINK_LIBRARIES feelpp_modelcore
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                                INSTALL )
+  endforeach()
+endforeach()
+
+foreach(D 2 3)
+  foreach(P  RANGE 0 4 0) #3 
+	foreach (N RANGE 1 2 1)
+	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
+							SRCS mixedelasticity_main.cpp 
+							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
+							INCLUDE_IN_ALL
+							LINK_LIBRARIES feelpp_modelcore
+                            INSTALL )
+	endforeach()
+  endforeach()
+endforeach()
+
+foreach(D 2 3)
+  foreach(P RANGE 0 4 0) #3 
+    feelpp_add_application( thermoelectricHDG_${D}DP${P}
+                            SRCS thermoelectric.hpp thermoelectric_main.cpp
+                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                            LINK_LIBRARIES feelpp_modelcore
+                            INSTALL
+                            )
+  endforeach()
+endforeach()
+
+
+feelpp_add_testcase(bitter CATEGORY hdg)
+feelpp_add_testcase(cylinder CATEGORY hdg )
+feelpp_add_testcase(testDarcy CATEGORY hdg )
+feelpp_add_testcase(mixed-poisson CATEGORY hdg )
+feelpp_add_testcase(mixed-elasticity CATEGORY hdg )
+feelpp_add_testcase(mp-red CATEGORY hdg )

@@ -1,0 +1,79 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "strain":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                   	//"expr":"{-3*sin(pi*x)*cos(pi*y),-3*sin(pi*y)*cos(pi*x)}:x:y"
+					"expr":"{8,0,0}"
+                }
+            }/*,
+            "Neumann":
+            {
+                "Rint":
+                {
+                     "expr":"0.0"
+                },
+                "Rext":
+                {
+                     "expr":"0.0"
+                }
+            }*/
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"top":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"bottom":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"out":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"in":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Fields":["strain","displacement"]
+    }
+}
+
+
+
+
