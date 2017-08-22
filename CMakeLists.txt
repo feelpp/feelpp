@@ -107,6 +107,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
+OPTION(FEELPP_ENABLE_PYFEELPP "enable Feel++ PyFeelpp" ON)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" ON)
 
 # enable PCH only for GCC as for now
@@ -141,9 +142,9 @@ endif()
 
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines ${FEELPP_HOME_DIR}/contrib/nt2/cmake )
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/machines)
+add_subdirectory(cmake)
 
+include(feelpp.dirs)
 # set the Feel++ version
 include(feelpp.version)
 
@@ -178,9 +179,11 @@ endif(APPLE)
 if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic  -ftemplate-depth-256 -Wno-inline" )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -fPIC -fsanitize=address -fno-omit-frame-pointer" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
 #  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
+else()
+  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0  -fsanitize=address -fno-omit-frame-pointer" CACHE STRING "Debug flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
@@ -314,7 +317,10 @@ include( feelpp.macros )
 
 # Find feel++ dependencies 
 add_custom_target(contrib)
+
 include( feelpp.dependencies )
+add_subdirectory(contrib)
+
 
 # Load documented project for Doxygen
 # it assumes that a project is valid if :
@@ -350,7 +356,6 @@ ENDIF()
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 endif()
-
 
 
 ################################################################################
@@ -426,6 +431,11 @@ include(feelpp.module.quickstart)
 if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
+endif()
+
+include(feelpp.module.pyfeelpp)
+if ( FEELPP_HAS_PYFEELPP )
+  add_subdirectory(pyfeelpp)
 endif()
 
 include(feelpp.module.toolboxes)

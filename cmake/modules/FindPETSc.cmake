@@ -58,7 +58,7 @@ ELSE()
   set( DARWIN_FLAVORS darwin-cxx-opt  arch-darwin-cxx-opt darwin-cxx-debug arch-darwin-cxx-debug  ${DARWIN_FLAVORS})
 ENDIF()
 #message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
-set(PETSC_VERSIONS 3.7.6 3.7.4 3.6.3 3.6.1_5 3.6.1_3 3.6.1 3.6.0 3.5.3_2 3.5.3 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
+set(PETSC_VERSIONS 3.7.6 3.7.4 3.7.3_2 3.6.3 3.6.1_5 3.6.1_3 3.6.1 3.6.0 3.5.3_2 3.5.3 3.5.2 3.5.1 3.5.0 3.4.4 3.4.3 3.4.2 3.3 3.2 )
 
 if ( NOT PETSC_DIR )
   foreach( version ${PETSC_VERSIONS} )

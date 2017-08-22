@@ -347,7 +347,7 @@ void Steady_Ns::run()
             LOG(INFO) << "p_exact = " << p_exact_g;
 
             auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
-            auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
+            auto p_exact = expr<1,1,7>( p_exact_g, vars, "p_exact" );
             auto beta=u_exact;
 
             auto gradu_exact_g = grad( u_exact_g, vars );
@@ -434,7 +434,7 @@ void Steady_Ns::run()
     u_exact_g = u1,u2 ;
     auto p_exact_g = parse( p_str, vars );
     auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
-    auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
+    auto p_exact = expr<1,1,7>( p_exact_g, vars, "p_exact" );
     auto beta=u_exact;
 
     auto gradu_exact_g = grad( u_exact_g, vars );

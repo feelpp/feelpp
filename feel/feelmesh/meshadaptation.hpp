@@ -119,11 +119,10 @@ namespace Feel
         //! the exporter factory (shared_ptr<> type)
         typedef boost::shared_ptr<export_type> export_ptrtype;
 
-        typedef bases<Lagrange<Order, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type> space_type;
-        //! the approximation function space type (shared_ptr<> type)
+        // typedef bases<Lagrange<Order, Scalar> > basis_type;
+        // typedef FunctionSpace<mesh_type, basis_type> space_type;
+        typedef Pch_type<mesh_type, Order> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
-        //! an element type of the approximation function space
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space

@@ -39,6 +39,7 @@ add_custom_target(crb)
 set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
+
 include_directories(${FEELPP_CRB_SOURCE_DIR})
 include_directories(${FEELPP_CRB_BINARY_DIR})
 
@@ -61,7 +62,7 @@ OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ${FEEL
 OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
-
+OPTION(FEELPP_ENABLE_CRB_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_CRB_ALL})
 
 set(FEELPP_CRB_LIBRARIES)
 IF ( FEELPP_ENABLE_CRB_EADS )
@@ -84,6 +85,8 @@ ENDIF()
 if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
     add_subdirectory(linearelasticity3d)
 endif()
+add_subdirectory(thermalbuilding)
+add_subdirectory(opusheat)
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -136,8 +139,15 @@ IF ( FEELPP_ENABLE_CRB_EEG )
   add_subdirectory(eeg)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_CONVECTION )
+  add_subdirectory(convection)
+ENDIF()
+
+
 
 add_subdirectory(onlinerun)
-
+add_subdirectory(minimal)
+add_subdirectory(thermoelectric)
+add_subdirectory(biotsavart)
 
 include(${FEELPP_CRB_SOURCE_DIR}/cmake/feelpp.crb.cmake)
