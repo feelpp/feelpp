@@ -47,11 +47,12 @@ int main( int argc, char** argv)
             ( "thermoelectric.k_ABS", po::value<double>()->default_value(1), "thermal conductivity" )
             ( "thermoelectric.k_PVC", po::value<double>()->default_value(1), "thermal conductivity" )
             ( "thermoelectric.I", po::value<double>()->default_value(1), "current intensity" )
-            ( "thermoelectric.S_gammaIn", po::value<double>()->default_value(1), "section's surface")
+            ( "thermoelectric.S_gammaIn", po::value<double>()->default_value(0.0002), "section's surface")
             ( "thermoelectric.W_marker", po::value<std::string>()->default_value("Cuivre_b"), "name of the marker for W")
             ( "thermoelectric.W", po::value<double>()->default_value(0), "additional power due to junctions")
             ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
             ( "thermoelectric.T_ext", po::value<double>()->default_value(1), "exterior's temperature" )
+
             ;
 
 

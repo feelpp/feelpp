@@ -184,7 +184,7 @@ void Thermoelectric::initModel()
     auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<Thermoelectric>(this->shared_from_this() ),
                              _element=*M_V,
                              _parameter=M_mu,
-                             _expr=cst_ref(M_mu.parameterNamed("sigma"))*inner(gradv(*M_V)),
+                             _expr=cst_ref(M_mu.parameterNamed("s"))*inner(gradv(*M_V)),
                              _space=JspaceEim,
                              _name="eim_gradgrad",
                              _sampling=Pset );
@@ -359,7 +359,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     int idx = 0;
 
     for (auto const& mat : materials){
-        M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("sigma"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("s"));
     }
 
     for (auto const& mat : materials){
@@ -368,7 +368,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
 
     //! A vérifier
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
-        M_betaAqm[idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigma"));
+        M_betaAqm[idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("s"));
 
 
     for( auto const& exAtM : bc["potential"]["Neumann"] )
@@ -402,7 +402,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
-        M_betaFqm[0][idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigma"))*e.evaluate();
+        M_betaFqm[0][idx++][0] = mu.parameterNamed(materials[exAtM.material()].getString("s"))*e.evaluate();
     }
 
     for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
@@ -487,7 +487,7 @@ Thermoelectric::solve( parameter_type const& mu )
 
     for (auto const& mat : materials){
 
-        sigma[mat.first]=mu.parameterNamed(mat.second.getString("sigma"));
+        sigma[mat.first]=mu.parameterNamed(mat.second.getString("s"));
         k[mat.first]=mu.parameterNamed(mat.second.getString("k"));
     }
 
@@ -663,7 +663,7 @@ Thermoelectric::q_sigma_element_type Thermoelectric::eimSigmaQ(int m)
 Thermoelectric::vectorN_type Thermoelectric::eimSigmaBeta( parameter_type const& mu )
 {
     vectorN_type beta(1);
-    beta(0) = mu.parameterNamed( "sigma" );
+    beta(0) = mu.parameterNamed( "s" );
     return beta;
 }
 
