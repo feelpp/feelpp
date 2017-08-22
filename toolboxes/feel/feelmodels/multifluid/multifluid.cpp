@@ -72,8 +72,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
-    M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
+    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
+    //M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
+    //M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
@@ -98,8 +99,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
                 );
-        M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
-        M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
+        //M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+        //M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
+        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
@@ -112,10 +114,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
             for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
             {
-                M_levelsetInterfaceForcesModels[i][n].reset( 
-                        interfaceforces_factory_type::instance().createObject( 
-                            interfaceForcesModels[n]
-                            )
+                M_levelsetInterfaceForcesModels[i][n] = interfaceforces_factory_type::instance().createObject( 
+                        interfaceForcesModels[n]
                         );
                 M_levelsetInterfaceForcesModels[i][n]->build( levelset_prefix, M_levelsets[i] );
             }

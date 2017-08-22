@@ -91,9 +91,10 @@ InterfaceForcesModel<LevelSetType>::updateInterfaceForces( element_ptrtype & F, 
 namespace detail {
 
 template<template <typename> class ModelType, typename LevelSetType>
-InterfaceForcesModel<LevelSetType>* createInterfaceForcesModel()
+std::unique_ptr<InterfaceForcesModel<LevelSetType>> createInterfaceForcesModel()
 {
-    return new ModelType<LevelSetType>;
+    //return new ModelType<LevelSetType>;
+    return std::make_unique<ModelType<LevelSetType>>();
 }
 
 } // namespace detail
