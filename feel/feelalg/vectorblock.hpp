@@ -158,6 +158,11 @@ public :
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 
+    //! return the monolithic vector
+    vector_ptrtype& vectorMonolithic();
+    //! return the monolithic vector
+    vector_ptrtype const& vectorMonolithic() const;
+
     /**
      * termination function to fill
      */
@@ -289,10 +294,8 @@ public:
     /** @name Accessors
      */
     //@{
-    vector_ptrtype getVector()
-    {
-        return M_vec;
-    }
+    vector_ptrtype& getVector() { return M_vec; }
+    vector_ptrtype const& getVector() const { return M_vec; }
     //@}
 
     /** @name  Mutators
