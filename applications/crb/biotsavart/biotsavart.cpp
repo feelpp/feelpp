@@ -333,14 +333,14 @@ void BiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
                 // we are in the communicator and we have some dof in Omega_cond
                 if( M_commsC1M[i] && M_Xh->nLocalDof() > 0 )
                 {
-                    std::vector<Eigen::Matrix<double,3,1>> coords( dofSize );
+                    std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
                     // fill vector of coordinates
-                    for(int d = 0; d < dofSize; ++d)
+                    for(int d = 0; d < dofSize; d+= 3)
                     {
                         auto dof_coord = M_dofMgn.at(i)[d].template get<0>();
                         Eigen::Matrix<double,3,1> coord;
                         coord << dof_coord[0],dof_coord[1],dof_coord[2];
-                        coords[d] = coord;
+                        coords[d/3] = coord;
                     }
 
                     auto dist = inner( _e1v-P(),_e1v-P(),
@@ -353,7 +353,7 @@ void BiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
                     for( int d = 0; d < dofSize; ++d)
                     {
                         auto dofComp = M_dofMgn.at(i)[d].template get<2>();
-                        intLocD[d] = mgnField[d](dofComp,0);
+                        intLocD[d] = mgnField[d/3](dofComp,0);
                     }
                 }
                 if( M_commsC1M[i] )

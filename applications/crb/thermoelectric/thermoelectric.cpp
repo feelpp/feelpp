@@ -51,7 +51,7 @@ int Thermoelectric::mQA( int q )
 
 int Thermoelectric::Nl()
 {
-    return 1;
+    return 3;
 }
 
 int Thermoelectric::Ql( int l)
@@ -60,6 +60,10 @@ int Thermoelectric::Ql( int l)
     switch(l) {
     case 0:
         return 1 + bc["potential"]["Dirichlet"].size() + bc["temperature"]["Robin"].size();
+    case 1:
+        return 1;
+    case 2:
+        return 1;
     default:
         return 0;
     }
@@ -71,6 +75,10 @@ int Thermoelectric::mLQF( int l, int q )
     {
     case 0:
         return mCompliantQ(q);
+    case 1:
+        return mIntensity(q);
+    case 2:
+        return mAvgTemp(q);
     default:
         return 0;
     }
@@ -88,6 +96,16 @@ int Thermoelectric::mCompliantQ(int q )
         return 1;
     else
         return 0;
+}
+
+int Thermoelectric::mIntensity(int q )
+{
+    return 1;
+}
+
+int Thermoelectric::mAvgTemp(int q )
+{
+    return 1;
 }
 
 void Thermoelectric::resizeQm()
@@ -147,11 +165,13 @@ void Thermoelectric::initModel()
     M_V = pT->template elementPtr<0>();
     M_T = pT->template elementPtr<1>();
 
-    auto JspaceEim = J_space_type::New( M_mesh );
+    Jh = J_space_type::New( M_mesh );
 
     auto Pset = this->Dmu->sampling();
     int Ne = ioption(_name="thermoelectric.trainset-eim-size");
-    std::vector<size_type> N(parameterSpace()->dimension(), Ne);
+    std::vector<size_type> N(parameterSpace()->dimension(), 1);
+    N[Dmu->indexOfParameterNamed("sigma")] = Ne;
+    N[Dmu->indexOfParameterNamed("current")] = Ne;
 
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
     std::ifstream file ( supersamplingname );
@@ -171,7 +191,7 @@ void Thermoelectric::initModel()
                              _element=*M_V,
                              _parameter=M_mu,
                              _expr=cst_ref(M_mu.parameterNamed("sigma"))*inner(gradv(*M_V)),
-                             _space=JspaceEim,
+                             _space=Jh,
                              _name="eim_gradgrad",
                              _sampling=Pset );
     this->addEimDiscontinuous( eim_gradgrad );
@@ -194,7 +214,7 @@ void Thermoelectric::decomposition()
     auto eimGradGrad = this->scalarDiscontinuousEim()[0];
     auto bc = M_modelProps->boundaryConditions();
 
-    /************** Right hand side **************/
+    /************** Left hand side **************/
     // electro
     auto a0 = form2(_test=Xh, _trial=Xh);
     a0 = integrate( elements(M_mesh),
@@ -226,7 +246,7 @@ void Thermoelectric::decomposition()
         M_Aqm[idx++][0] = aTR.matrixPtr();
     }
 
-    /************** Left hand side **************/
+    /************** Right hand side **************/
     for( int m = 0; m < eimGradGrad->mMax(); ++m )
     {
         auto f0 = form1(_test=Xh);
@@ -251,6 +271,22 @@ void Thermoelectric::decomposition()
                          idt(p) );
         M_Fqm[0][idx++][0] = fTR.vectorPtr();
     }
+
+    // Intensity output
+    auto fI = form1(_test=Xh);
+    for( auto const& exAtM : bc["potential"]["Dirichlet"] )
+    {
+        if( exAtM.expression() != "0" )
+            fI += integrate( markedfaces(M_mesh, exAtM.marker() ),
+                             -grad(v)*N() );
+    }
+    M_Fqm[1][0][0] = fI.vectorPtr();
+
+    // Average temperature output
+    auto fAvgTemp = form1(_test=Xh);
+    auto area = integrate( elements(M_mesh), cst(1.) ).evaluate()(0,0);
+    fAvgTemp = integrate( elements(M_mesh), id(p)/area );
+    M_Fqm[2][0][0] = fAvgTemp.vectorPtr();
 
     // Energy matrix
     auto m = form2(_test=Xh, _trial=Xh);
@@ -301,6 +337,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
     auto bc = M_modelProps->boundaryConditions();
     // auto betaEimGradGrad = eimGradGrad->beta( mu );
 
+    // Left Hand Side
     M_betaAqm[0][0] = mu.parameterNamed("sigma");
     M_betaAqm[1][0] = mu.parameterNamed("k");
     int idx = 2;
@@ -316,6 +353,7 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
         M_betaAqm[idx++][0] = e.evaluate();
     }
 
+    // Right Hand Side
     for( int m = 0; m < eimGradGrad->mMax(); ++m )
         M_betaFqm[0][0][m] = betaEimGradGrad(m);
     idx = 1;
@@ -337,6 +375,12 @@ void Thermoelectric::fillBetaQm( parameter_type const& mu, vectorN_type betaEimG
 
         M_betaFqm[0][idx++][0] = e.evaluate();
     }
+
+    // Intensity Output
+    M_betaFqm[1][0][0] = mu.parameterNamed("sigma");
+
+    // Average Temperature Output
+    M_betaFqm[2][0][0] = 1.;
 }
 
 Thermoelectric::beta_vector_type
@@ -409,14 +453,14 @@ Thermoelectric::solve( parameter_type const& mu )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
         f += integrate( markedfaces(M_mesh, exAtM.marker() ),
-                        sigma*e*(gamma/hFace()*id(phiV) -  grad(phiV)*N()) );
+                        sigma*e.evaluate()*(gamma/hFace()*id(phiV) -  grad(phiV)*N()) );
     }
-    a.solve( _solution=V, _rhs=f, _name="mono" );
+    a.solve( _solution=V, _rhs=f, _name="electro" );
 
     auto aT = form2(_test=Th, _trial=Th);
     // T
-    aT += integrate( elements(M_mesh),
-                     k*inner(gradt(T), grad(phiT)) );
+    aT = integrate( elements(M_mesh),
+                    k*inner(gradt(T), grad(phiT)) );
 
     // T Robin condition
     for( auto const& exAtM : bc["temperature"]["Robin"] )
@@ -427,13 +471,13 @@ Thermoelectric::solve( parameter_type const& mu )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
         aT += integrate( markedfaces(M_mesh, exAtM.marker() ),
-                         e*inner(idt(T), id(phiT)) );
+                         e.evaluate()*inner(idt(T), id(phiT)) );
     }
 
     auto fT = form1(_test=Th);
     // T right hand side
     fT = integrate(elements(M_mesh),
-                   id(phiT)*sigma*gradv(V)*trans(gradv(V)) );
+                   id(phiT)*sigma*inner(gradv(V), gradv(V)) );
 
     // T Robin condition
     for( auto const& exAtM : bc["temperature"]["Robin"] )
@@ -444,18 +488,24 @@ Thermoelectric::solve( parameter_type const& mu )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
         fT += integrate( markedfaces(M_mesh, exAtM.marker() ),
-                         e*id(phiT) );
+                         e.evaluate()*id(phiT) );
     }
 
-    aT.solve( _solution=T, _rhs=fT, _name="mono" );
+    aT.solve( _solution=T, _rhs=fT, _name="thermo" );
 
     auto solution = Xh->element();
     solution.template element<0>() = V;
     solution.template element<1>() = T;
 
-    auto e = exporter(M_mesh);
-    e->add("sol", solution);
-    e->save();
+    if( boption("thermoelectric.export-FE") )
+    {
+        auto e = exporter(M_mesh);
+        auto j = vf::project( _range=elements(M_mesh), _space=Jh,
+                              _expr=sigma*inner(gradv(V),gradv(V)) );
+        e->add( "joule", j );
+        e->add("sol", solution);
+        e->save();
+    }
     toc("mono");
 
     return solution;

@@ -59,7 +59,6 @@ New contributors are always welcome!
 image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
 
 
-
 == Continuous Integration
 
 {feelpp} maintains various branches.
