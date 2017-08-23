@@ -54,13 +54,14 @@ int main(int argc, char *argv[])
     }
     else
     {
-		MP->assembleCstPart();
+		//MP->assembleCstPart();
         for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )
         {
             Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << MP->time() << "s \n";
             Feel::cout << "============================================================\n";
-			MP->assembleNonCstPart();
+			// MP->assembleNonCstPart();
+			MP->assembleAll();
             MP->solve();
             MP->exportResults( mesh, Idh, Idhv );
         }
