@@ -26,13 +26,13 @@
 #include <feel/feelcrb/crbplugin.hpp>
 
 
-#include "biotsavart.hpp"
-#include <thermoelectric.hpp>
+#include "alphabiotsavart.hpp"
+#include <alphathermoelectric.hpp>
 
 namespace Feel {
 
 template<typename te_rb_model_type>
-BiotSavartCRB<te_rb_model_type>::BiotSavartCRB()
+AlphaBiotSavartCRB<te_rb_model_type>::AlphaBiotSavartCRB()
     : super_type("biotsavart"),
       M_mode(( CRBModelMode )ioption(_name="biotsavart.run-mode" ) )
 {
@@ -62,23 +62,42 @@ BiotSavartCRB<te_rb_model_type>::BiotSavartCRB()
     M_crb = boost::make_shared<crb_type>("biotsavart_crb", M_crbModel);
     toc("constructor + eim");
 
+    auto Pset = this->parameterSpace()->sampling();
+    int N = ioption("biotsavart.trainset-deim-size");
+    std::string supersampling = (boost::format("DmuDeimBS-N%1%") % N ).str();
+    std::ifstream file( supersampling);
+    bool all_proc_same_sampling=true;
+    if( ! file )
+    {
+        Pset->randomize( N , all_proc_same_sampling , supersampling );
+        Pset->writeOnFile( supersampling );
+    }
+    else
+    {
+        Pset->clear();
+        Pset->readFromFile(supersampling);
+    }
+
     M_Xh = M_teCrbModel->functionSpace();
     M_XhMgn = vec_space_type::New( M_meshMgn);
+
+    M_deim = boost::make_shared<deim_type>(boost::dynamic_pointer_cast<self_type>(this->shared_from_this()), Pset, "bs");
+    this->M_deim->assemble = boost::bind( &self_type::assembleForDEIMnl, boost::ref(*this), _1);
 
     this->setupCommunicatorsBS();
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::initModel()
+void AlphaBiotSavartCRB<te_rb_model_type>::initModel()
 {}
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::runBS()
+void AlphaBiotSavartCRB<te_rb_model_type>::runBS()
 {
     M_mu = this->paramFromOption();
     if( boption("biotsavart.compute-offline") )
     {
-        this->offline();
+        this->M_deim->run();
         if( boption("biotsavart.compute-online") )
             this->online(M_mu);
     }
@@ -90,23 +109,94 @@ void BiotSavartCRB<te_rb_model_type>::runBS()
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::offline()
+typename AlphaBiotSavartCRB<te_rb_model_type>::vector_ptrtype
+AlphaBiotSavartCRB<te_rb_model_type>::assembleForDEIMnl( parameter_type const& mu )
 {
-    tic();
+    vector_ptrtype Bvec = backend()->newVector( M_XhMgn );
+    auto B = M_XhMgn->element( Bvec );
 
-    tic();
-    M_crb->offline();
-    toc("CRB offline");
+    double online_tol = doption(_name="crb.online-tolerance");
+    vectorN_type time_crb;
+    auto o = M_crb->run( mu, time_crb, online_tol);
 
-    this->setDimensions();
+    auto solutions = o.template get<2>();
+    M_uN = solutions.template get<0>()[0];
+    M_VT = M_crb->expansion( M_uN, M_uN.size() );
+    auto V = M_VT.template element<0>();
 
-    this->loadIntegrals();
+    auto alphaExpr = expr(M_teCrbModel->alpha(mu));
+    auto alphaPrimeExpr = expr(M_teCrbModel->alphaPrime(mu));
 
-    toc("offline");
+    auto psi = vec( cos(alphaExpr)*Px() + sin(alphaExpr)*Py(),
+                    -sin(alphaExpr)*Px() + cos(alphaExpr)*Py(),
+                    Pz() );
+    auto Jinv = mat<3,3>( cos(alphaExpr), -sin(alphaExpr), -alphaPrimeExpr*Py(),
+                          sin(alphaExpr), cos(alphaExpr), alphaPrimeExpr*Px(),
+                          cst(0.), cst(0.), cst(1.) );
+
+    auto coeff = 1/(4*M_PI);
+    auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
+    auto sigma = M_teCrbModel->sigma();
+
+    std::vector<double> intLocD, intSumD;
+    for(int i = 0; i < M_dofMgn.size(); ++i)
+    {
+        if( M_commsC1M[i] )
+        {
+            int dofSize = M_dofMgn.at(i).size();
+            intLocD.resize( dofSize );
+            intSumD.resize( dofSize );
+
+            tic();
+            if( M_Xh->nLocalDof() > 0 )
+            {
+                std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
+                for( int d = 0; d < dofSize; d+= 3 )
+                {
+                    auto dof_coord = M_dofMgn.at(i)[d].template get<0>();
+                    Eigen::Matrix<double,3,1> coord;
+                    coord << dof_coord[0],dof_coord[1],dof_coord[2];
+                    coords[d/3] = coord;
+                }
+
+                auto dist = inner( _e1v-psi,_e1v-psi,
+                                   mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+                auto mgnField = integrate(_range = elements( M_Xh->mesh() ),
+                                          _expr=mu0*coeff*sigma*cross(trans(gradv(V)*Jinv), _e1v-psi)/(dist*dist*dist),
+                                          _quad=_Q<1>()
+                    ).template evaluate(coords);
+
+                for( int d = 0; d < dofSize; d++)
+                {
+                    auto dofComp = M_dofMgn.at(i)[d].template get<2>();
+                    intLocD[d] = mgnField[d/3](dofComp,0);
+                }
+            }
+            toc("integral_computation");
+
+            tic();
+            mpi::reduce(M_commsC1M[i], intLocD.data(), dofSize, intSumD.data(), std::plus<double>(), 0);
+            toc("reduce_contributions_of_integrals");
+
+            if( M_commsC1M[i].rank() == 0 )
+            {
+                for(int d=0; d<dofSize; d++)
+                    B.set(M_dofMgn.at(i)[d].template get<1>(), intSumD[d]);
+            }
+        }
+        Environment::worldComm().barrier();
+    }
+
+    B.close();
+    toc("compute BiotSavart FE");
+
+    toc("compute FE");
+
+    return Bvec;
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::setupCommunicatorsBS()
+void AlphaBiotSavartCRB<te_rb_model_type>::setupCommunicatorsBS()
 {
     tic();
     M_dofMgn.clear();
@@ -185,192 +275,94 @@ void BiotSavartCRB<te_rb_model_type>::setupCommunicatorsBS()
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::setDimensions()
+void AlphaBiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
 {
-    int mMax = M_teCrbModel->mMaxSigma(); // eim_sigma->mMax()
-    int nMax = M_crb->dimension();
-    int M = ioption("biotsavart.eim-dimension");
-    int N = ioption("biotsavart.crb-dimension");
-    M_N = N < nMax ? N : nMax;
-    M_M = M < mMax ? M : mMax;
-    Feel::cout << "Computing Biot&Savart using "
-               << M_N << " reduced basis and "
-               << M_M << " EIM basis." << std::endl;
+    // tic();
+    // auto coeff = 1/(4*M_PI);
+    // auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
+
+    // Feel::cout << "Computing " << (M_M-M)*(M_N-N) << " integrals for "
+    //            << M_XhMgn->nDof() << " dofs distributed on " << M_dofMgn.size()
+    //            << " procs on a domain with:"<< std::endl;
+    // std::cout << "Proc[" << Environment::rank() << "] " << M_Xh->nLocalDof()
+    //           << " dofs" << std::endl;
+
+    // std::vector<double> intLocD, intSumD;
+    // if ( M == 0 )
+    //     M_intMND = std::vector<Eigen::MatrixXd>(M_M);
+    // else
+    //     M_intMND.resize(M_M);
+
+    // for( int i = 0; i < M_dofMgn.size(); ++i)
+    // {
+    //     int dofSize = M_dofMgn.at(i).size();
+    //     intLocD.resize(dofSize);
+    //     intSumD.resize(dofSize);
+
+    //     for( int m = 0; m < M_M; ++m)
+    //     {
+    //         if( M_commsC1M[i].rank() == 0 )
+    //         {
+    //             if ( N == 0 )
+    //                 M_intMND[m] = Eigen::MatrixXd::Zero(dofSize, M_N);
+    //             else
+    //                 M_intMND[m].conservativeResize(Eigen::NoChange, M_N);
+    //         }
+
+    //         // retrieve qm
+    //         auto qm = M_teCrbModel->eimSigmaQ(m);
+
+    //         for( int n = 0; n < M_N; ++n)
+    //         {
+    //             // if already computed, skip
+    //             if ( m < M && n < N )
+    //                 continue;
+
+    //             // retrieve xi_n
+    //             element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
+    //             auto xi_n = xiVT_n.template element<0>();
+
+    //             // we are in the communicator and we have some dof in Omega_cond
+    //             if( M_commsC1M[i] && M_Xh->nLocalDof() > 0 )
+    //             {
+    //                 std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
+    //                 // fill vector of coordinates
+    //                 for(int d = 0; d < dofSize; d+= 3)
+    //                 {
+    //                     auto dof_coord = M_dofMgn.at(i)[d].template get<0>();
+    //                     Eigen::Matrix<double,3,1> coord;
+    //                     coord << dof_coord[0],dof_coord[1],dof_coord[2];
+    //                     coords[d/3] = coord;
+    //                 }
+
+    //                 auto dist = inner( _e1v-P(),_e1v-P(),
+    //                                    mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>());
+    //                 auto mgnField
+    //                     = integrate(_range=elements( M_Xh->mesh() ),
+    //                                 _expr=-mu0*coeff*idv(qm)*cross(trans(gradv(xi_n)),
+    //                                                                _e1v-P() )/(dist*dist*dist),
+    //                                 _quad=_Q<1>() ).template evaluate(coords);
+    //                 for( int d = 0; d < dofSize; ++d)
+    //                 {
+    //                     auto dofComp = M_dofMgn.at(i)[d].template get<2>();
+    //                     intLocD[d] = mgnField[d/3](dofComp,0);
+    //                 }
+    //             }
+    //             if( M_commsC1M[i] )
+    //                 boost::mpi::reduce(M_commsC1M[i], intLocD.data(),
+    //                                    dofSize, intSumD.data(), std::plus<double>(), 0);
+    //             if( M_commsC1M[i].rank() == 0 )
+    //                 M_intMND[m].col(n) = Eigen::Map<Eigen::VectorXd>(intSumD.data(), dofSize);
+    //         }
+    //     }
+    // }
+    // toc("compute integrals");
+    // this->saveIntegrals();
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::loadIntegrals()
-{
-    if ( boption("biotsavart.rebuild-database") )
-    {
-        this->computeIntegrals();
-        return;
-    }
-
-    fs::path dbDir(M_crb->dbDirectory());
-    fs::path bs(soption("biotsavart.path-to-database"));
-    fs::path bsDbDir = dbDir / bs;
-    fs::path filename(boost::str( boost::format("BS_integrals_MND_p%1%.db")
-                                  % Environment::rank() ));
-    fs::path db = bsDbDir / filename;
-    if ( !fs::exists( db ) )
-    {
-        this->computeIntegrals();
-        return;
-    }
-
-    fs::ifstream ifs( db );
-    if ( ifs )
-    {
-        int M, N;
-        tic();
-        boost::archive::binary_iarchive ia( ifs );
-        ia >> M;
-        ia >> N;
-        ia >> M_intMND;
-
-        if ( M > M_M )
-            M_intMND.resize(M_M);
-
-        for ( int m = 0; m < M_intMND.size(); ++m )
-        {
-            if ( M_intMND[m].size() > 0 )
-            {
-                if ( N > M_N )
-                    M_intMND[m].conservativeResize(Eigen::NoChange, M_N);
-            }
-        }
-
-        if ( M < M_M || N < M_N )
-            this->computeIntegrals(M, N);
-
-        toc("load integrals");
-        return;
-    }
-    else
-    {
-        this->computeIntegrals();
-        return;
-    }
-}
-
-template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::saveIntegrals()
-{
-    tic();
-    fs::path dbDir(M_crb->dbDirectory());
-    fs::path bs(soption("biotsavart.path-to-database"));
-    fs::path bsDbDir = dbDir / bs;
-    fs::path filename(boost::str( boost::format("BS_integrals_MND_p%1%.db")
-                                  % Environment::rank() ));
-    fs::path db = bsDbDir / filename;
-    if ( Environment::isMasterRank() )
-    {
-        if ( !fs::exists( bsDbDir ) )
-            fs::create_directories( bsDbDir );
-    }
-    Environment::worldComm().barrier();
-
-    fs::ofstream ofs( db );
-    if ( ofs )
-    {
-        boost::archive::binary_oarchive oa( ofs );
-        oa << M_M;
-        oa << M_N;
-        oa << M_intMND;
-    }
-    toc("save integrals");
-}
-
-template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
-{
-    tic();
-    auto coeff = 1/(4*M_PI);
-    auto mu0 = 4*M_PI*1e-7; //SI unit : H.m-1 = m.kg.s-2.A-2
-
-    Feel::cout << "Computing " << (M_M-M)*(M_N-N) << " integrals for "
-               << M_XhMgn->nDof() << " dofs distributed on " << M_dofMgn.size()
-               << " procs on a domain with:"<< std::endl;
-    std::cout << "Proc[" << Environment::rank() << "] " << M_Xh->nLocalDof()
-              << " dofs" << std::endl;
-
-    std::vector<double> intLocD, intSumD;
-    if ( M == 0 )
-        M_intMND = std::vector<Eigen::MatrixXd>(M_M);
-    else
-        M_intMND.resize(M_M);
-
-    for( int i = 0; i < M_dofMgn.size(); ++i)
-    {
-        int dofSize = M_dofMgn.at(i).size();
-        intLocD.resize(dofSize);
-        intSumD.resize(dofSize);
-
-        for( int m = 0; m < M_M; ++m)
-        {
-            if( M_commsC1M[i].rank() == 0 )
-            {
-                if ( N == 0 )
-                    M_intMND[m] = Eigen::MatrixXd::Zero(dofSize, M_N);
-                else
-                    M_intMND[m].conservativeResize(Eigen::NoChange, M_N);
-            }
-
-            // retrieve qm
-            auto qm = M_teCrbModel->eimSigmaQ(m);
-
-            for( int n = 0; n < M_N; ++n)
-            {
-                // if already computed, skip
-                if ( m < M && n < N )
-                    continue;
-
-                // retrieve xi_n
-                element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
-                auto xi_n = xiVT_n.template element<0>();
-
-                // we are in the communicator and we have some dof in Omega_cond
-                if( M_commsC1M[i] && M_Xh->nLocalDof() > 0 )
-                {
-                    std::vector<Eigen::Matrix<double,3,1>> coords( dofSize/3 );
-                    // fill vector of coordinates
-                    for(int d = 0; d < dofSize; d+= 3)
-                    {
-                        auto dof_coord = M_dofMgn.at(i)[d].template get<0>();
-                        Eigen::Matrix<double,3,1> coord;
-                        coord << dof_coord[0],dof_coord[1],dof_coord[2];
-                        coords[d/3] = coord;
-                    }
-
-                    auto dist = inner( _e1v-P(),_e1v-P(),
-                                       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>());
-                    auto mgnField
-                        = integrate(_range=elements( M_Xh->mesh() ),
-                                    _expr=-mu0*coeff*idv(qm)*cross(trans(gradv(xi_n)),
-                                                                   _e1v-P() )/(dist*dist*dist),
-                                    _quad=_Q<1>() ).template evaluate(coords);
-                    for( int d = 0; d < dofSize; ++d)
-                    {
-                        auto dofComp = M_dofMgn.at(i)[d].template get<2>();
-                        intLocD[d] = mgnField[d/3](dofComp,0);
-                    }
-                }
-                if( M_commsC1M[i] )
-                    boost::mpi::reduce(M_commsC1M[i], intLocD.data(),
-                                       dofSize, intSumD.data(), std::plus<double>(), 0);
-                if( M_commsC1M[i].rank() == 0 )
-                    M_intMND[m].col(n) = Eigen::Map<Eigen::VectorXd>(intSumD.data(), dofSize);
-            }
-        }
-    }
-    toc("compute integrals");
-    this->saveIntegrals();
-}
-
-template<typename te_rb_model_type>
-typename BiotSavartCRB<te_rb_model_type>::parameter_type
-BiotSavartCRB<te_rb_model_type>::paramFromOption()
+typename AlphaBiotSavartCRB<te_rb_model_type>::parameter_type
+AlphaBiotSavartCRB<te_rb_model_type>::paramFromOption()
 {
     std::vector<double> muOpt = vdoption("biotsavart.param");
     auto paramSpace = M_crbModel->parameterSpace();
@@ -399,7 +391,7 @@ BiotSavartCRB<te_rb_model_type>::paramFromOption()
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
+void AlphaBiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
 {
     tic();
 
@@ -412,15 +404,15 @@ void BiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
     auto solutions = o.template get<2>();
     M_uN = solutions.template get<0>()[0];
     M_VT = M_crb->expansion( M_uN, M_uN.size() );
-    M_betaMu = M_teCrbModel->eimSigmaBeta(mu);
+    // M_betaMu = M_teCrbModel->eimSigmaBeta(mu);
 
-    this->computeB(M_uN, M_betaMu);
+    // this->computeB(M_uN, M_betaMu);
 
     toc("online");
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN, eigen_vector_type & betaMu )
+void AlphaBiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN, eigen_vector_type & betaMu )
 {
     tic();
     Eigen::VectorXd results;
@@ -447,7 +439,7 @@ void BiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN, eigen_vector_
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
+void AlphaBiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
 {
     tic();
 
@@ -531,7 +523,7 @@ void BiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::exportResults()
+void AlphaBiotSavartCRB<te_rb_model_type>::exportResults()
 {
     exporter_ptrtype eC( exporter_type::New( "conductor") );
     eC->setMesh(M_Xh->mesh());
@@ -547,16 +539,16 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
 
         auto Jh = current_space_type::New( M_meshCond );
         auto j = Jh->element();
-        for( int n = 0; n < M_uN.size(); ++n )
-        {
-            element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
-            auto xi_n = xiVT_n.template element<0>();
-            for( int m = 0; m < M_betaMu.size(); ++m )
-            {
-                auto qm = M_teCrbModel->eimSigmaQ(m);
-                j += vf::project( _space=Jh, _range=elements(M_Xh->mesh()), _expr=M_betaMu(m)*M_uN(n)*idv(qm)*trans(gradv(xi_n)) );
-            }
-        }
+        // for( int n = 0; n < M_uN.size(); ++n )
+        // {
+        //     element_type xiVT_n = M_crbModel->rBFunctionSpace()->primalBasisElement(n);
+        //     auto xi_n = xiVT_n.template element<0>();
+        //     for( int m = 0; m < M_betaMu.size(); ++m )
+        //     {
+        //         auto qm = M_teCrbModel->eimSigmaQ(m);
+        //         j += vf::project( _space=Jh, _range=elements(M_Xh->mesh()), _expr=M_betaMu(m)*M_uN(n)*idv(qm)*trans(gradv(xi_n)) );
+        //     }
+        // }
 
         eC->add( "V", V);
         eC->add( "T", T);
@@ -574,17 +566,16 @@ void BiotSavartCRB<te_rb_model_type>::exportResults()
 }
 
 template<typename te_rb_model_type>
-typename BiotSavartCRB<te_rb_model_type>::value_type
-BiotSavartCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
+typename AlphaBiotSavartCRB<te_rb_model_type>::value_type
+AlphaBiotSavartCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
-    
+    return 0;
 }
 
-using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;
+using alphabiotsavartcrbthermoelectric = AlphaBiotSavartCRB<AlphaThermoelectric>;
 
-template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
+template class FEELPP_EXPORT AlphaBiotSavartCRB<AlphaThermoelectric>;
 
-FEELPP_CRB_PLUGIN( biotsavartcrbthermoelectric, "biotsavartcrbthermoelectric")
-//FEELPP_CRB_PLUGIN( BiotSavartCRB<NLThermoelectric>, "biotsavartcrbnlthermoelectric")
+FEELPP_CRB_PLUGIN( alphabiotsavartcrbthermoelectric, "alphabiotsavartcrbthermoelectric")
 
 }

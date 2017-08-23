@@ -76,7 +76,7 @@ int main( int argc, char** argv)
     std::vector<double> p = vdoption("thermoelectric.p");
     auto paramSpace = crbModel->parameterSpace();
     auto mu = paramSpace->element();
-    mu=Eigen::Map<Eigen::VectorXd const>( p.data(), mu.size());
+    mu = Eigen::Map<Eigen::VectorXd const>( p.data(), mu.size());
     Feel::cout << "using parameter:" << std::endl << mu << std::endl;
 
     // online
@@ -120,8 +120,11 @@ int main( int argc, char** argv)
     e->add("alpha", a);
 
     double errV = normL2(elements(meshCond), idv(V)-idv(VFE) );
+    double normV = normL2(elements(meshCond), idv(VFE) );
     double errT = normL2(elements(meshCond), idv(T)-idv(TFE) );
-    Feel::cout << "errV = " << errV << " errT = " << errT << std::endl;
+    double normT = normL2(elements(meshCond), idv(TFE) );
+    Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl
+               << "T: err = " << errT << " relative err = " << errT/normT << std::endl;
 #if 0
     // export EIM basis
     auto eimSigma = model->scalarContinuousEim()[0];
