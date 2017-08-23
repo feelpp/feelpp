@@ -304,7 +304,7 @@ public :
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
-    //! CRB type object is created because they use the id 
+    //! CRB type object is created because they use the id
     //!
     void setId( uuids::uuid const& i ) { M_uuid = i; }
 
@@ -597,6 +597,18 @@ public :
     virtual funsd_type scalarDiscontinuousEim () const
     {
         return M_funs_d;
+    }
+
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    {
+        vector_ptrtype V;
+        return V;
+    }
+
+    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu )
+    {
+        sparse_matrix_ptrtype M;
+        return M;
     }
 
     /**
@@ -1805,7 +1817,7 @@ public:
 
 protected :
 
-    
+
     uuids::uuid M_uuid;
 
     std::string M_name;
