@@ -62,6 +62,7 @@
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/feelcore/functors.hpp>
+#include <feel/feelcore/observer.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -173,6 +174,8 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! @see Application
 //! 
 class FEELPP_EXPORT Environment : boost::noncopyable
+    Observer::SignalManager,
+    Observer::SlotManager
 {
 public:
     //!
@@ -188,9 +191,6 @@ public:
     //@{
     typedef WorldComm worldcomm_type;
     typedef boost::shared_ptr<WorldComm> worldcomm_ptrtype;
-
-    using simdata_sig_type = boost::signals2::signal< pt::ptree (),
-                                                      Functor::SimDataProcess<pt::ptree> >;
 
     //@}
 
@@ -716,25 +716,18 @@ public:
     //!
     static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
 
-    template<typename Obs>
+    template<typename Observer>
     static void
-    addDeleteObserver( Obs const& obs )
+    addDeleteObserver( Observer const& obs )
     {
         S_deleteObservers.connect( obs );
     }
-    template<typename Obs>
+    template<typename Observer>
     static void
-    addDeleteObserver( boost::shared_ptr<Obs> const& obs )
+    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
     {
-        S_deleteObservers.connect( boost::bind( &Obs::operator(), obs ) );
+        S_deleteObservers.connect( boost::bind( &Observer::operator(), obs ) );
     }
-
-    //! Get simulation data signals.
-    //! \return boost signal2 with simulation data property tree.
-    static simdata_sig_type& simDataSignals();
-
-    //! Observe data for all connected signals.
-    static void simDataWatch();
 
     static void clearSomeMemory();
 
@@ -841,9 +834,6 @@ private:
     static std::vector<std::string> olAutoloadFiles;
 
     static boost::signals2::signal<void()> S_deleteObservers;
-
-    //! Simulation data signal. The functor SimDataProcess is executed for all signals.
-    static simdata_sig_type S_simdata_sig;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
     static boost::shared_ptr<WorldComm> S_worldcommSeq;
