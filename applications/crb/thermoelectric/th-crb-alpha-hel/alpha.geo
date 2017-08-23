@@ -136,18 +136,18 @@ Macro Helix
     	EndIf
 
         ll = newll; Line Loop(ll) = {helL[8*i+2],helL[8*i+1],-helL[8*i+3],-helL[8*i]};
-        helS[] += {news}; Surface(helS[5*i]) = {ll};
+        helS[] += {news}; Ruled Surface(helS[5*i]) = {ll};
 
         If ( i != 0 )
             ll = newll; Line Loop(ll) = {helL[8*i],helL[8*i+5],-helL[8*(i-1)],-helL[8*i+4]};
-            helS[] += {newll}; Surface(helS[5*i+1]) = {ll};
+            helS[] += {newll}; Ruled Surface(helS[5*i+1]) = {ll};
             ll = newll; Line Loop(ll) = {helL[8*i+1],helL[8*i+7],-helL[8*(i-1)+1],-helL[8*i+6]};
-            helS[] += {newll}; Surface(helS[5*i+2]) = {ll};
+            helS[] += {newll}; Ruled Surface(helS[5*i+2]) = {ll};
     
 	    ll = newll; Line Loop(ll) = {helL[8*i+2],helL[8*i+6],-helL[8*(i-1)+2],-helL[8*i+4]};
-            helS[] += {news}; Surface(helS[5*i+3]) = {ll};
+            helS[] += {news}; Ruled Surface(helS[5*i+3]) = {ll};
             ll = newll; Line Loop(ll) = {helL[8*i+3],helL[8*i+7],-helL[8*(i-1)+3],-helL[8*i+5]};
-            helS[] += {news}; Surface(helS[5*i+4]) = {ll};
+            helS[] += {news}; Ruled Surface(helS[5*i+4]) = {ll};
 	Else
 	    ll = newll; helS[] += {news};
 	    ll = newll; helS[] += {news};
@@ -174,9 +174,9 @@ Macro CondDown
     	condDL[] += {newl}; Line(condDL[4*(i-1)+3]) = {baseP[4*(n/2+i)+3],hel2P[4*i+1]};
 
 	ll = newll; Line Loop(ll) = {baseL[8*i+1],condDL[4*(i-1)+1],-hel1L[8*i],-condDL[4*(i-1)]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)]) = {ll};
 	ll = newll; Line Loop(ll) = {baseL[8*(n/2+i)+1],condDL[4*(i-1)+3],-hel2L[8*i],-condDL[4*(i-1)+2]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)+1]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)+1]) = {ll};
 
 	lll1[] = {baseL[8*i+6],condDL[4*(i-1)],hel1L[8*i+4]};
 	lll2[] = {baseL[8*(n/2+i)+6],condDL[4*(i-1)+2],hel2L[8*i+4]};
@@ -189,13 +189,13 @@ Macro CondDown
 	   lll4[] += {-condDL[4*(i-2)+3]};
 	EndIf
 	ll = newll; Line Loop(ll) = {lll1[]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)+2]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)+2]) = {ll};
 	ll = newll; Line Loop(ll) = {lll2[]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)+3]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)+3]) = {ll};
 	ll = newll; Line Loop(ll) = {lll3[]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)+4]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)+4]) = {ll};
 	ll = newll; Line Loop(ll) = {lll4[]};
-	condDS[] += {news}; Surface(condDS[6*(i-1)+5]) = {ll};
+	condDS[] += {news}; Ruled Surface(condDS[6*(i-1)+5]) = {ll};
 
 	ssl1[] = {condDS[6*(i-1)],condDS[6*(i-1)+2],condDS[6*(i-1)+4],baseS[5*i+1],hel1S[5*i+1]};
 	ssl2[] = {condDS[6*(i-1)+1],condDS[6*(i-1)+3],condDS[6*(i-1)+5],baseS[5*(n/2+i)+1],hel2S[5*i+1]};
@@ -219,17 +219,17 @@ Macro CondDown
     condDL[] += {newl}; Line(condDL[4*(n/2)+3]) = {hel2P[3],hel1P[4*(n/2)+1]};
 
     ll = newll; Line Loop(ll) = {hel1L[1],condDL[4*(n/2-1)+1],-baseL[8*(n-1)+1],-condDL[4*(n/2-1)+0]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[1],condDL[4*(n/2-1)+3],-baseL[8*(n/2-1)+1],-condDL[4*(n/2-1)+2]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)+1]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)+1]) = {ll};
     ll = newll; Line Loop(ll) = {hel1L[2],condDL[4*(n/2-1)],baseL[8*n+6]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)+2]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)+2]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[2],condDL[4*(n/2-1)+2],baseL[8*n/2+6]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)+3]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)+3]) = {ll};
     ll = newll; Line Loop(ll) = {hel1L[3],condDL[4*(n/2-1)+1],baseL[8*n+7]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)+4]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)+4]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[3],condDL[4*(n/2-1)+3],baseL[8*n/2+7]};
-    condDS[] += {news}; Surface(condDS[6*(n/2-1)+5]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2-1)+5]) = {ll};
 
     sl = newsl; Surface Loop(sl) = {condDS[6*(n/2-1)],condDS[6*(n/2-1)+2],condDS[6*(n/2-1)+4],baseS[5*n+1],hel1S[0]};
     condDV[] += {newv}; Volume(condDV[2*(n/2-1)]) = {sl};
@@ -237,17 +237,17 @@ Macro CondDown
     condDV[] += {newv}; Volume(condDV[2*(n/2-1)+1]) = {sl};
 
     ll = newll; Line Loop(ll) = {hel1L[1],condDL[4*(n/2)+1],-hel2L[8*(n/2)],-condDL[4*(n/2)]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[1],condDL[4*(n/2)+3],-hel1L[8*(n/2)],-condDL[4*(n/2)+2]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)+1]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)+1]) = {ll};
     ll = newll; Line Loop(ll) = {condDL[4*(n/2)],hel2L[8*(n/2)+4],-condDL[4*(n/2-2)+2],-condDL[4*(n/2-1)]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)+2]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)+2]) = {ll};
     ll = newll; Line Loop(ll) = {condDL[4*(n/2)+2],hel1L[8*(n/2)+4],-condDL[4*(n/2-2)],-condDL[4*(n/2-1)+2]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)+3]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)+3]) = {ll};
     ll = newll; Line Loop(ll) = {condDL[4*(n/2)+1],hel2L[8*(n/2)+5],-condDL[4*(n/2-2)+3],-condDL[4*(n/2-1)+1]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)+4]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)+4]) = {ll};
     ll = newll; Line Loop(ll) = {condDL[4*(n/2)+3],hel1L[8*(n/2)+5],-condDL[4*(n/2-2)+1],-condDL[4*(n/2-1)+3]};
-    condDS[] += {news}; Surface(condDS[6*(n/2)+5]) = {ll};
+    condDS[] += {news}; Ruled Surface(condDS[6*(n/2)+5]) = {ll};
 
     sl = newsl; Surface Loop(sl) = {condDS[6*(n/2)],condDS[6*(n/2)+2],condDS[6*(n/2)+4],condDS[6*(n/2-1)],hel2S[5*(n/2)+1],condDS[6*(n/2-2)+1]};
     condDV[] += {newv}; Volume(condDV[2*(n/2)]) = {sl};
@@ -267,9 +267,9 @@ Macro CondUp
     	condUL[] += {newl}; Line(condUL[4*(i-1)+3]) = {hel2P[4*(N-i)+3],topP[4*(n/2-i)+1]};
     	
 	ll = newll; Line Loop(ll) = {hel1L[8*(N-i)+1],condUL[4*(i-1)+1],-topL[8*(n-i)],-condUL[4*(i-1)]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)]) = {ll};
 	ll = newll; Line Loop(ll) = {hel2L[8*(N-i)+1],condUL[4*(i-1)+3],-topL[8*(n/2-i)],-condUL[4*(i-1)+2]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)+1]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)+1]) = {ll};
 
 	lll1[] = {-topL[8*(n-i+1)+4],-condUL[4*(i-1)+0],-hel1L[8*(N-i+1)+6]};
 	lll2[] = {-topL[8*(n/2-i+1)+4],-condUL[4*(i-1)+2],-hel2L[8*(N-i+1)+6]};
@@ -282,13 +282,13 @@ Macro CondUp
 	   lll4[] += {condUL[4*(i-2)+3]};
 	EndIf
 	ll = newll; Line Loop(ll) = {lll1[]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)+2]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)+2]) = {ll};
 	ll = newll; Line Loop(ll) = {lll2[]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)+3]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)+3]) = {ll};
 	ll = newll; Line Loop(ll) = {lll3[]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)+4]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)+4]) = {ll};
 	ll = newll; Line Loop(ll) = {lll4[]};
-	condUS[] += {news}; Surface(condUS[6*(i-1)+5]) = {ll};
+	condUS[] += {news}; Ruled Surface(condUS[6*(i-1)+5]) = {ll};
 
 	ssl1[] = {condUS[6*(i-1)],condUS[6*(i-1)+2],condUS[6*(i-1)+4],topS[5*(n-i+1)],hel1S[5*(N-i+1)+2]};
 	ssl2[] = {condUS[6*(i-1)+1],condUS[6*(i-1)+3],condUS[6*(i-1)+5],topS[5*(n/2-i+1)],hel2S[5*(N-i+1)+2]};
@@ -312,17 +312,17 @@ Macro CondUp
     condUL[] += {newl}; Line(condUL[4*(n/2)+3]) = {hel1P[4*(N-n/2)+3],hel2P[4*N+1]};
 
     ll = newll; Line Loop(ll) = {topL[8],-condUL[4*(n/2-1)+1],-hel1L[8*N],condUL[4*(n/2-1)+0]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)]) = {ll};
     ll = newll; Line Loop(ll) = {topL[8*(n/2+1)],-condUL[4*(n/2-1)+3],-hel2L[8*N],condUL[4*(n/2-1)+2]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)+1]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)+1]) = {ll};
     ll = newll; Line Loop(ll) = {hel1L[8*N+2],topL[12],-condUL[4*(n/2-1)]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)+2]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)+2]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[8*N+2],topL[8*(n/2+1)+4],-condUL[4*(n/2-1)+2]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)+3]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)+3]) = {ll};
     ll = newll; Line Loop(ll) = {hel1L[8*N+3],topL[13],-condUL[4*(n/2-1)+1]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)+4]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)+4]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[8*N+3],topL[8*(n/2+1)+5],-condUL[4*(n/2-1)+3]};
-    condUS[] += {news}; Surface(condUS[6*(n/2-1)+5]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2-1)+5]) = {ll};
 
     sl = newsl; Surface Loop(sl) = {condUS[6*(n/2-1)],condUS[6*(n/2-1)+2],condUS[6*(n/2-1)+4],topS[5],hel1S[5*N]};
     condUV[] += {newv}; Volume(condUV[2*(n/2-1)]) = {sl};
@@ -330,17 +330,17 @@ Macro CondUp
     condUV[] += {newv}; Volume(condUV[2*(n/2-1)+1]) = {sl};
 
     ll = newll; Line Loop(ll) = {hel1L[8*N],-condUL[4*(n/2)+1],-hel2L[8*(N-n/2)+1],condUL[4*(n/2)]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)]) = {ll};
     ll = newll; Line Loop(ll) = {hel2L[8*N],-condUL[4*(n/2)+3],-hel1L[8*(N-n/2)+1],condUL[4*(n/2)+2]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)+1]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)+1]) = {ll};
     ll = newll; Line Loop(ll) = {condUL[4*(n/2)],condUL[4*(n/2-1)],-condUL[4*(n/2-2)+2],hel2L[8*(N-n/2+1)+6]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)+2]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)+2]) = {ll};
     ll = newll; Line Loop(ll) = {condUL[4*(n/2)+2],condUL[4*(n/2-1)+2],-condUL[4*(n/2-2)],hel1L[8*(N-n/2+1)+6]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)+3]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)+3]) = {ll};
     ll = newll; Line Loop(ll) = {condUL[4*(n/2)+1],condUL[4*(n/2-1)+1],-condUL[4*(n/2-2)+3],hel2L[8*(N-n/2+1)+7]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)+4]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)+4]) = {ll};
     ll = newll; Line Loop(ll) = {condUL[4*(n/2)+3],condUL[4*(n/2-1)+3],-condUL[4*(n/2-2)+1],hel1L[8*(N-n/2+1)+7]};
-    condUS[] += {news}; Surface(condUS[6*(n/2)+5]) = {ll};
+    condUS[] += {news}; Ruled Surface(condUS[6*(n/2)+5]) = {ll};
 
     sl = newsl; Surface Loop(sl) = {condUS[6*(n/2)],condUS[6*(n/2)+2],condUS[6*(n/2)+4],condUS[6*(n/2-1)],hel2S[5*(N-n/2+1)+2],condUS[6*(n/2-2)+1]};
     condUV[] += {newv}; Volume(condUV[2*(n/2)]) = {sl};
@@ -370,20 +370,20 @@ Macro CondBet
 	   condBL[] += {newl}; Line(condBL[4*i+3]) = {hel2P[4*i+3],hel1P[4*(n/2+i)+1]};
 
 	   ll = newll; Line Loop(ll) = {condBL[4*i],hel2L[8*(n/2+i)],-condBL[4*i+1],-hel1L[8*i+1]};
-	   condBS[] += {news}; Surface(condBS[6*i]) = {ll};
+	   condBS[] += {news}; Ruled Surface(condBS[6*i]) = {ll};
 	   ll = newll; Line Loop(ll) = {condBL[4*i+2],hel1L[8*(n/2+i)],-condBL[4*i+3],-hel2L[8*i+1]};
-	   condBS[] += {news}; Surface(condBS[6*i+1]) = {ll};
+	   condBS[] += {news}; Ruled Surface(condBS[6*i+1]) = {ll};
 	EndIf
 
 	ll = newll; Line Loop(ll) = {condBL[4*(i-1)],-hel2L[8*(n/2+i)+4],-condBL[4*i],hel1L[8*i+6]};
-	condBS[] += {news}; Surface(condBS[6*i+2]) = {ll};
+	condBS[] += {news}; Ruled Surface(condBS[6*i+2]) = {ll};
 	ll = newll; Line Loop(ll) = {condBL[4*(i-1)+2],-hel1L[8*(n/2+i)+4],-condBL[4*i+2],hel2L[8*i+6]};
-	condBS[] += {news}; Surface(condBS[6*i+3]) = {ll};
+	condBS[] += {news}; Ruled Surface(condBS[6*i+3]) = {ll};
 
 	ll = newll; Line Loop(ll) = {condBL[4*(i-1)+1],-hel2L[8*(n/2+i)+5],-condBL[4*i+1],hel1L[8*i+7]};
-	condBS[] += {news}; Surface(condBS[6*i+4]) = {ll};
+	condBS[] += {news}; Ruled Surface(condBS[6*i+4]) = {ll};
 	ll = newll; Line Loop(ll) = {condBL[4*(i-1)+3],-hel1L[8*(n/2+i)+5],-condBL[4*i+3],hel2L[8*i+7]};
-	condBS[] += {news}; Surface(condBS[6*i+5]) = {ll};
+	condBS[] += {news}; Ruled Surface(condBS[6*i+5]) = {ll};
 
 	sl = newsl; Surface Loop(sl) = {condBS[6*i],condBS[6*i+2],condBS[6*i+4],condBS[6*(i-1)],hel1S[5*i+2],hel2S[5*(n/2+i)+1]};
 	condBV[] += {newv}; Volume(condBV[2*(i-1)]) = {sl};
@@ -421,21 +421,21 @@ Macro Box
     boxL[] += {newl}; Circle(boxL[11]) = {boxP[4],boxP[0],boxP[6]};
 
     ll = newll; Line Loop(ll) = {boxL[0],boxL[6],-boxL[4]};
-    boxS[] += {news}; Surface(boxS[0]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[0]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[1],boxL[8],-boxL[6]};
-    boxS[] += {news}; Surface(boxS[1]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[1]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[2],boxL[10],-boxL[8]};
-    boxS[] += {news}; Surface(boxS[2]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[2]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[3],boxL[4],-boxL[10]};
-    boxS[] += {news}; Surface(boxS[3]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[3]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[0],boxL[7],-boxL[5]};
-    boxS[] += {news}; Surface(boxS[4]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[4]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[1],boxL[9],-boxL[7]};
-    boxS[] += {news}; Surface(boxS[5]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[5]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[2],boxL[11],-boxL[9]};
-    boxS[] += {news}; Surface(boxS[6]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[6]) = {ll};
     ll = newll; Line Loop(ll) = {boxL[3],boxL[5],-boxL[11]};
-    boxS[] += {news}; Surface(boxS[7]) = {ll};
+    boxS[] += {news}; Ruled Surface(boxS[7]) = {ll};
 
     sl = newsl; Surface Loop(sl) = {boxS[]};
     boxV = newv; Volume(boxV) = {sl};
