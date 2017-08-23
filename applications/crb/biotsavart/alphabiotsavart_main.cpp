@@ -46,6 +46,7 @@ int main(int argc, char**argv )
     nloptoptions.add(crbOptions());
     nloptoptions.add(crbSEROptions());
     nloptoptions.add(eimOptions());
+    nloptoptions.add(eimOptions());
     nloptoptions.add(podOptions());
     nloptoptions.add(backend_options("backend-primal"));
     nloptoptions.add(backend_options("backend-dual"));
@@ -55,7 +56,7 @@ int main(int argc, char**argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
-                     _about=about(_name="biotsavart_nlopt",
+                     _about=about(_name="biotsavart_alpha",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
@@ -68,125 +69,150 @@ int main(int argc, char**argv )
         ("LD_MMA", ::nlopt::LD_MMA )
         ("LD_SLSQP", ::nlopt::LD_SLSQP );
 
-    AlphaBiotSavartCRB<AlphaThermoelectric> BS = AlphaBiotSavartCRB<AlphaThermoelectric>();
-    BS.offline();
-    int N = BS.nbParameters();
+    auto BS = AlphaBiotSavartCRB<AlphaThermoelectric>::New();
+    BS->init();
+    if( !boption("biotsavart.do-opt") )
+        BS->runBS();
+    else
+    {
+        // BS->offline();
+        int N = BS->nbParameters();
 
-    // auto salgo = soption("nlopt.algo");
-    // cout << "NLOP algorithm: " << salgo << "\n";
-    // auto algo = authAlgo.at(salgo);
-    // opt::OptimizationNonLinear opt( algo, N );
+        auto salgo = soption("nlopt.algo");
+        cout << "NLOP algorithm: " << salgo << "\n";
+        auto algo = authAlgo.at(salgo);
+        opt::OptimizationNonLinear opt( algo, N );
 
-    // // lower and upper bounds
-    // auto muMin = BS.parameterSpace()->min();
-    // auto muMax = BS.parameterSpace()->max();
+        // lower and upper bounds
+        auto muMin = BS->parameterSpace()->min();
+        auto muMax = BS->parameterSpace()->max();
 
-    // std::vector<double> lb(muMin.data(), muMin.data()+muMin.size());
-    // std::vector<double> ub(muMax.data(), muMax.data()+muMax.size());
+        std::vector<double> lb(muMin.data(), muMin.data()+muMin.size());
+        std::vector<double> ub(muMax.data(), muMax.data()+muMax.size());
 
-    // opt.set_lower_bounds(lb);
-    // opt.set_upper_bounds(ub);
+        opt.set_lower_bounds(lb);
+        opt.set_upper_bounds(ub);
 
-    // // stopping criteria
-    // opt.set_maxeval( ioption("nlopt.maxeval") );
-    // opt.set_xtol_rel( doption("nlopt.xtol_rel") );
-    // opt.set_ftol_rel( doption("nlopt.ftol_rel") );
-    // opt.set_xtol_abs( doption("nlopt.xtol_abs") );
-    // opt.set_ftol_abs( doption("nlopt.ftol_abs") );
+        // stopping criteria
+        opt.set_maxeval( ioption("nlopt.maxeval") );
+        opt.set_xtol_rel( doption("nlopt.xtol_rel") );
+        opt.set_ftol_rel( doption("nlopt.ftol_rel") );
+        opt.set_xtol_abs( doption("nlopt.xtol_abs") );
+        opt.set_ftol_abs( doption("nlopt.ftol_abs") );
 
-    // // Objective function.
-    // auto myfunc = [&]( const std::vector<double> &x, std::vector<double> &grad, void *my_func_data )->double
-    // {
-    //     iter++;
-    //     auto mu = BS.newParameter();
-    //     mu=Eigen::Map<Eigen::VectorXd const>( x.data(), mu.size());
-    //     BS.online(mu);
-    //     auto B = BS.magneticFlux();
-    //     return B.max();
-    // };
+        // Objective function.
+        auto myfunc = [&]( const std::vector<double> &x, std::vector<double> &grad, void *my_func_data )->double
+            {
+                iter++;
+                auto mu = BS->newParameter();
+                mu=Eigen::Map<Eigen::VectorXd const>( x.data(), mu.size());
+                // BS->online(mu);
+                // auto B = BS->magneticFlux();
+                BS->computeFE(mu);
+                auto B = BS->magneticFluxFE();
+                return BS->homogeneity(B);
+            };
 
-    // opt.set_max_objective( myfunc, nullptr );
+        opt.set_min_objective( myfunc, nullptr );
 
-    // // inequality constraints
-    // auto myconstraint = [&]( const std::vector<double> &x, std::vector<double> &grad, void *data)->double
-    // {
-    //     auto VT = BS.potentialTemperature();
-    //     auto T = VT.template element<1>();
-    //     return T.max() - doption("Tcritic");
-    // };
+        // optimization
+        double minf;
+        tic();
+        std::vector<double> x(N);
+        Eigen::VectorXd::Map(x.data(), N) = muMin;
 
-    // opt.add_inequality_constraint(myconstraint, nullptr, 1e-8);
+        ::nlopt::result result = opt.optimize(x, minf);
 
-    // // optimization
-    // double minf;
-    // tic();
-    // std::vector<double> x(N);
-    // Eigen::VectorXd::Map(x.data(), N) = muMin;
+        double optiTime = toc("optimization", false);
+        cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
 
-    // ::nlopt::result result = opt.optimize(x, minf);
+        // export
+        auto mu = BS->newParameter();
+        mu = Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
 
-    // double optiTime = toc("optimization", false);
-    // cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
+        auto eC = Exporter<Mesh<Simplex<3> > >::New( "conductor");
+        eC->setMesh(BS->meshCond());
+        auto eM = Exporter<Mesh<Simplex<3> > >::New( "magneto");
+        eM->setMesh(BS->meshMgn());
 
-    // // export
-    // auto mu = BS.newParameter();
-    // mu=Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
+        auto VTFe = BS->potentialTemperatureFE();
+        auto VFe = VTFe.template element<0>();
+        auto TFe = VTFe.template element<1>();
+        auto alphaExpr = expr(BS->alpha(mu));
+        auto alpha = BS->spaceCond()->template functionSpace<0>()->element(alphaExpr);
+        auto BFe = BS->magneticFluxFE();
+        eC->add("alpha", alpha);
+        eC->add("VFe", VFe);
+        eC->add("TFe", TFe);
+        eM->add("BFe", BFe);
 
-    // BS.exportResults();
+        mu = BS->param0();
+        BS->computeFE(mu);
+        auto VT0 = BS->potentialTemperatureFE();
+        auto V0 = VTFe.template element<0>();
+        auto T0 = VTFe.template element<1>();
+        auto B0 = BS->magneticFluxFE();
+        eC->add("V0", V0);
+        eC->add("T0", T0);
+        eM->add("B0", B0);
 
-    // switch( result )
-    // {
-    //     case ::nlopt::FAILURE:
-    //         Feel::cerr << "NLOPT Generic Failure!" << "\n";
-    //         break;
-    //     case ::nlopt::INVALID_ARGS:
-    //         Feel::cerr << "NLOPT Invalid arguments!" << "\n";
-    //         break;
-    //     case ::nlopt::OUT_OF_MEMORY:
-    //         Feel::cerr << "NLOPT Out of memory!" << "\n";
-    //         break;
-    //     case ::nlopt::ROUNDOFF_LIMITED:
-    //         Feel::cerr << "NLOPT Roundoff limited!" << "\n";
-    //         break;
-    //     case ::nlopt::FORCED_STOP:
-    //         Feel::cerr << "NLOPT Forced stop!" << "\n";
-    //         break;
-    //     case::nlopt::SUCCESS:
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    //     case ::nlopt::STOPVAL_REACHED:
-    //         cout << "NLOPT Stop value reached!" << "\n";
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    //     case ::nlopt::FTOL_REACHED:
-    //         cout << "NLOPT ftol reached!" << "\n";
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    //     case ::nlopt::XTOL_REACHED:
-    //         cout << "NLOPT xtol reached!" << "\n";
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    //     case ::nlopt::MAXEVAL_REACHED:
-    //         cout << "NLOPT Maximum number of evaluation reached!" << "\n";
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    //     case ::nlopt::MAXTIME_REACHED:
-    //         cout << "NLOPT Maximum time reached" << "\n";
-    //         cout << "NLOPT coefficient found! (status " << result << ") \n"
-    //                    << mu << "\n"
-    //                    << "Evaluation number: " << iter << "\n";
-    //         break;
-    // }
+        eC->save();
+        eM->save();
 
+        auto homoFE = BS->homogeneity(BFe);
+        auto homo0 = BS->homogeneity(B0);
+        std::stringstream ss;
+        ss << "homogeneity = " << homoFE << " for parameter\n" << mu << "\n"
+           << "default homogeneity = " << homo0 << "\n"
+           << "Evaluation number: " << iter << "\n";
+
+        switch( result )
+        {
+        case ::nlopt::FAILURE:
+            Feel::cerr << "NLOPT Generic Failure!" << "\n";
+            break;
+        case ::nlopt::INVALID_ARGS:
+            Feel::cerr << "NLOPT Invalid arguments!" << "\n";
+            break;
+        case ::nlopt::OUT_OF_MEMORY:
+            Feel::cerr << "NLOPT Out of memory!" << "\n";
+            break;
+        case ::nlopt::ROUNDOFF_LIMITED:
+            Feel::cerr << "NLOPT Roundoff limited!" << "\n";
+            break;
+        case ::nlopt::FORCED_STOP:
+            Feel::cerr << "NLOPT Forced stop!" << "\n";
+            break;
+        case::nlopt::SUCCESS:
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        case ::nlopt::STOPVAL_REACHED:
+            cout << "NLOPT Stop value reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        case ::nlopt::FTOL_REACHED:
+            cout << "NLOPT ftol reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        case ::nlopt::XTOL_REACHED:
+            cout << "NLOPT xtol reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        case ::nlopt::MAXEVAL_REACHED:
+            cout << "NLOPT Maximum number of evaluation reached!" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        case ::nlopt::MAXTIME_REACHED:
+            cout << "NLOPT Maximum time reached" << "\n";
+            cout << "NLOPT coefficient found! (status " << result << ") \n"
+                 << ss.str();
+            break;
+        }
+    }
     return 0;
 }
