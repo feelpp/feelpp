@@ -30,11 +30,16 @@
 #define FEELPP_CORE_FUNCTORS_HPP 1
 
 #include <vector>
+#include <feel/feelcore/environment.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 namespace Feel
 {
 namespace Functor
 {
+namespace pt = boost::property_tree;
+
+
 template<typename T, typename C>
 static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
 {
@@ -48,21 +53,23 @@ static inline void AvgMinMax(const T* const in, T* const inout, const int* const
 //! Functor that process observer data from environment signal to generate
 //! a metadata.
 template<typename Container>
-struct SimDataProcess
+struct SimulationObserverProcess
 {
-    using result_type = Container;
-    result_type p;
+        using result_type = Container;
+        result_type p;
 
-    template<typename InputIterator>
-        result_type operator()(InputIterator first, InputIterator last) const
-        {
-            while(first != last)
+        template<typename InputIterator>
+            result_type operator()(InputIterator first, InputIterator last) const
             {
-                //std::cout << *first << std::endl;
-                ++first;
+                while(first != last)
+                {
+                    //               std::string jsonfname = Feel::Environment::about().appName()+"_simdb.json";
+                    //std::cout << *first << std::endl;
+                    //               pt::write_json(jsonfname, *first);
+                    ++first;
+                }
+                return p;
             }
-            return p;
-        }
 };
 
 } // Functor

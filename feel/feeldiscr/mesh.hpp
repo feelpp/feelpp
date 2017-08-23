@@ -157,8 +157,7 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
-        public Observer
+        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -167,11 +166,8 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape,T> >,
                                                                         mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type;
-    //using super_observer = typename Observer;
 
 public:
-    //namespace pt = boost::property_tree;
-
 
     //!  @name Constants
      //!
@@ -1199,7 +1195,7 @@ public:
      //!
     void decode();
 
-    virtual pt::ptree& watch() const;
+    virtual pt::ptree& simulationNotify() const;
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      save,
@@ -2685,7 +2681,7 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 //! Mesh observer watch mesh properties.
 template<typename Shape, typename T, int Tag>
 pt::ptree&
-Mesh<Shape, T, Tag>::watch() const
+Mesh<Shape, T, Tag>::simulationNotify() const
 {
     pt::ptree p;
     p.put("mesh.shape", Shape::name() );
