@@ -124,11 +124,13 @@ int main(int argc, char**argv )
         ::nlopt::result result = opt.optimize(x, minf);
 
         double optiTime = toc("optimization", false);
+
+        auto mu = BS->newParameter();
+        mu = Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
+
         cout << iter << " iterations in " << optiTime << " (" << optiTime/iter << "/iter)" << std::endl;
 
         // export
-        auto mu = BS->newParameter();
-        mu = Eigen::Map<Eigen::VectorXd>( x.data(), mu.size());
 
         auto eC = Exporter<Mesh<Simplex<3> > >::New( "conductor");
         eC->setMesh(BS->meshCond());
@@ -138,9 +140,14 @@ int main(int argc, char**argv )
         auto VTFe = BS->potentialTemperatureFE();
         auto VFe = VTFe.template element<0>();
         auto TFe = VTFe.template element<1>();
-        auto alphaExpr = expr(BS->alpha(mu));
-        auto alpha = BS->spaceCond()->template functionSpace<0>()->element(alphaExpr);
         auto BFe = BS->magneticFluxFE();
+        auto alphaStr = BS->alpha(mu);
+        Feel::cout << "alpha: " <<alphaStr << std::endl;
+        auto alphaExpr = expr(BS->alpha(mu));
+        auto Xh = BS->spaceCond();
+        auto Vh = Xh->template functionSpace<0>();
+        auto alpha = Vh->element();
+        alpha.on( elements( BS->meshMgn()), alphaExpr);
         eC->add("alpha", alpha);
         eC->add("VFe", VFe);
         eC->add("TFe", TFe);
