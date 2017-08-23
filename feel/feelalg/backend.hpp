@@ -1367,9 +1367,9 @@ public:
     /**
      * register a backend observer for the delete signal of backend
      */
-    template<typename Obs>
+    template<typename Observer>
     void
-    addDeleteObserver( Obs const& obs )
+    addDeleteObserver( Observer const& obs )
         {
             M_deleteObservers.connect( obs );
         }
@@ -1377,11 +1377,11 @@ public:
      * register a backend observer for the delete signal of backend that is a
      * shared_ptr<>
      */
-    template<typename Obs>
+    template<typename Observer>
     void
-    addDeleteObserver( boost::shared_ptr<Obs> const& obs )
+    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
         {
-            M_deleteObservers.connect(boost::bind(&Obs::operator(), obs));
+            M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
     /**
      * send the delete signal to all observers
