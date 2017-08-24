@@ -582,7 +582,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     else if ( M_solverName == "Newton" )
     {
         M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
-        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vector() );
+        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
         M_blockVectorSolutionMonolithic.localize();
     }
 

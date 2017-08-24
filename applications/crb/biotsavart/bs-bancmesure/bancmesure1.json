@@ -36,12 +36,12 @@
         {
             "Dirichlet":
             {
-                "V00":
+                "H0_V0":
                 {
                     "expr":"current:current",
                     "params":"current"
                 },
-                "V11":
+                "H1_V0":
                 {
                     "expr":"0"
                 }
@@ -51,65 +51,45 @@
         {
             "Robin":
             {
-                "Rext_H0":
+                "H0_rInt":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "Rint_H0":
+                "H0_rExt":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "Rext_H1":
+                "H1_rInt":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "Rint_H1":
+                "H1_rExt":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "R0n_R0":
+                "R0_R0n":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "R1n_R0":
+                "R0_R1n":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "Cooling_Slits_R0":
+                "R0_CoolingSlits":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 },
-                "BP_R0":
+                "R0_BP":
                 {
                     "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
-                },
-                "V00":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
-                },
-                "V11":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw",
-                    "params":"h,Tw"
+                    "expr2":"h*Tw:h:Tw"
                 }
             }
         }

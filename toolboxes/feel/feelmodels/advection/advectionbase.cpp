@@ -877,7 +877,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     std::string algebraicSolverType = "LinearSystem";
-    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vector() ); 
+    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vectorMonolithic() ); 
     
     M_blockVectorSolution.localize();
 

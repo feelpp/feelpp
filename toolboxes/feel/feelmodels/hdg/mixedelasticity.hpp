@@ -221,7 +221,7 @@ public:
 
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    vector_ptrtype getF() {return M_F; }
+    condensed_vector_ptr_t<value_type> getF() {return M_F; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
 
     // Exporter
