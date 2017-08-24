@@ -48,11 +48,11 @@ feelpp_add_application( alpha-thermoelectricCRB
                         SRCS alphathermoelectric.hpp alphathermoelectric_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_ALPHATHERMOELECTRIC} INSTALL )
 
-feelpp_add_application( testthCRB SRCS test.cpp )
-feelpp_add_application( thermoelectric_geo_FE_2D
-                        SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=2 )
-feelpp_add_application( thermoelectric_geo_FE_3D
-                        SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=3 )
+# feelpp_add_application( testthCRB SRCS test.cpp )
+# feelpp_add_application( thermoelectric_geo_FE_2D
+#                         SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=2 )
+# feelpp_add_application( thermoelectric_geo_FE_3D
+#                         SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=3 )
 
 
 feelpp_add_testcase( th-crb-quarterturn CATEGORY CRB)
