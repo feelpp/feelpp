@@ -78,6 +78,20 @@ BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
     M_vector = backend->newBlockVector( _block=*this );
 }
 
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype&
+BlocksBaseVector<T>::vectorMonolithic()
+{
+    boost::shared_ptr< VectorBlockBase<T> > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
+    return vcast->getVector();
+}
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype const&
+BlocksBaseVector<T>::vectorMonolithic() const
+{
+    boost::shared_ptr< VectorBlockBase<T> const > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
+    return vcast->getVector();
+}
 
 template <typename T>
 void
