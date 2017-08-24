@@ -23,36 +23,20 @@
 //!
 //!
 
-#ifndef FEELPP_BIOTSAVART_HPP
-#define FEELPP_BIOTSAVART_HPP
+#ifndef FEELPP_ALPHABIOTSAVART_HPP
+#define FEELPP_ALPHABIOTSAVART_HPP
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
+#include <feel/feelcrb/deim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <thermoelectric.hpp>
+#include <alphathermoelectric.hpp>
 
 namespace Feel
 {
-
-#if 0
-/*
- * base class for thermoelectric model for biotsavart
- * need also:
- * - a constructor taking a mesh
- * - a function makeThermoElectricCRBOptions() returning the options
- */
-class ThermoElectricBase
-{
-public:
-    virtual int mMaxSigma() = 0;
-    virtual auto eimSigmaQ(int m) = 0;
-    virtual Eigen::VectorXd eimSigmaBeta( ParameterSpace<5> mu ) = 0;
-    virtual template<typename space_type> computeTruthCurrentDensity( ParameterSpace<5> mu ) = 0;
-};
-#endif
 
 FEELPP_EXPORT po::options_description biotsavartOptions()
 {
@@ -74,30 +58,38 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
           "compute the offline part of Biot Savart" )
         ( "biotsavart.compute-online", po::value<bool>()->default_value(true),
           "compute the online part of Biot Savart" )
+        ( "biotsavart.export", po::value<bool>()->default_value(true),
+          "compute the online part of Biot Savart" )
+        ( "biotsavart.export-fe", po::value<bool>()->default_value(false),
+          "compute the online part of Biot Savart" )
         ( "biotsavart.rebuild-database", po::value<bool>()->default_value(false),
           "rebuild the integrals or not" )
         ( "biotsavart.path-to-database", po::value<std::string>()->default_value("BiotSavart"),
           "path to the database" )
-        ( "biotsavart.crb-dimension", po::value<int>()->default_value(-1),
-          "number of reduced basis to use" )
-        ( "biotsavart.eim-dimension", po::value<int>()->default_value(-1),
-          "number of eim basis to use" )
+        ( "biotsavart.trainset-deim-size", po::value<int>()->default_value(10),
+          "size of the trainset for DEIM of BiotSavart" )
+        ( "biotsavart.do-opt", po::value<bool>()->default_value(false),
+          "do or not the optimization" )
         ;
+    opt.add(deimOptions("bs"));
     return opt;
 }
 
 template<typename te_rb_model_type>
-class FEELPP_EXPORT BiotSavartCRB
-    : public ModelCrbBase<typename te_rb_model_type::parameter_space_type,
+class FEELPP_EXPORT AlphaBiotSavartCRB
+    : public ModelCrbBase<typename te_rb_model_type::parameterspace_type,
                           typename te_rb_model_type::function_space_type,
                           NonLinear, // BiotSavart ??
                           typename te_rb_model_type::eim_definition_type >
 {
   public:
-    using super_type = ModelCrbBase<typename te_rb_model_type::parameter_space_type,
+    using super_type = ModelCrbBase<typename te_rb_model_type::parameterspace_type,
                                     typename te_rb_model_type::function_space_type,
                                     NonLinear,
                                     typename te_rb_model_type::eim_definition_type >;
+
+    using self_type = AlphaBiotSavartCRB<te_rb_model_type>;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
     using te_rb_model_ptrtype = boost::shared_ptr<te_rb_model_type>;
     using crb_model_type = CRBModel<te_rb_model_type>;
@@ -149,43 +141,47 @@ class FEELPP_EXPORT BiotSavartCRB
     using dof_point_type = boost::tuple<node_type, size_type, uint16_type >;
     using dof_points_type = typename std::vector<dof_point_type>;
 
+    using deim_type = DEIM<self_type>;
+    using deim_ptrtype = boost::shared_ptr<deim_type>;
+    using vector_ptrtype = typename super_type::vector_ptrtype;
 
 public:
-    BiotSavartCRB();
+    static self_ptrtype New() { return boost::make_shared<self_type>(); }
+    AlphaBiotSavartCRB();
+    void init();
 
     void initModel();
     // setupSpecificityModel
 
     //!
-    //! 
+    //!
     //!
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     parameter_type paramFromOption();
+    parameter_type param0();
     void runBS();
-    void offline();
     void setupCommunicatorsBS();
-    void setDimensions();
-    void loadIntegrals();
-    void saveIntegrals();
-    void computeIntegrals(int M = 0, int N = 0);
+    vector_ptrtype assembleForDEIM( parameter_type const& mu );
+    void offline();
     void online( parameter_type & mu );
-    void computeUn( parameter_type &mu, int N);
-    void computeB( vectorN_type & uN );
     void computeFE( parameter_type & mu );
     void exportResults();
+    double homogeneity( vec_element_type& B );
 
     parameter_type newParameter() { return M_teCrbModel->newParameter(); }
+    void setParameter( parameter_type& mu ) { M_mu = mu; }
     int nbParameters() const { return M_crbModel->parameterSpace()->dimension();  }
     auto parameterSpace() const { return M_crbModel->parameterSpace(); }
-    int nMax() const { return M_N; }
-    vectorN_type uN() const { return M_uN; }
     element_type potentialTemperature() const { return M_VT; }
     element_type potentialTemperatureFE() const { return M_VTFe; }
     vec_element_type magneticFlux() const { return M_B; }
     vec_element_type magneticFluxFE() const { return M_BFe; }
     mesh_ptrtype meshCond() const { return M_meshCond; }
     mesh_ptrtype meshMgn() const { return M_meshMgn; }
+    space_ptrtype spaceCond() const { return M_Xh; }
+    vec_space_ptrtype spaceMgn() const { return M_XhMgn; }
+    std::string alpha( parameter_type& mu ) { return M_teCrbModel->alpha(mu); }
 
 protected:
     CRBModelMode M_mode;
@@ -193,6 +189,7 @@ protected:
     crb_model_ptrtype M_crbModel;
     crb_ptrtype M_crb;
 
+    deim_ptrtype M_deim;
     std::vector<Eigen::MatrixXd> M_intMND;
 
     mesh_ptrtype M_meshCond;
@@ -213,10 +210,10 @@ protected:
     std::vector< mpi::communicator > M_commsC1M;
     std::map<int, dof_points_type> M_dofMgn;
 
-}; // class BiotSavartCRB
+}; // class AlphaBiotSavartCRB
 
-#if !defined(FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC)
-extern template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
+#if !defined(FEELPP_INSTANTIATE_ALPHABIOTSAVART_THERMOELECTRIC)
+extern template class FEELPP_EXPORT AlphaBiotSavartCRB<AlphaThermoelectric>;
 #endif
 } // namespace Feel
 
