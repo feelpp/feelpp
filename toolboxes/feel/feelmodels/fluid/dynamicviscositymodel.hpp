@@ -107,7 +107,10 @@ public :
             M_markers.insert( matmarker );
         }
 
-        M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+        if( M_markers.size() > 0 )
+            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+        else
+            M_isDefinedOnWholeMesh = true;
         if ( M_isDefinedOnWholeMesh )
             M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm, _extended_doftable=useExtendedDofTable );
         else
