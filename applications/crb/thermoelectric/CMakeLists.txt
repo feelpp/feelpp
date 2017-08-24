@@ -23,16 +23,20 @@
 #
 
 crb_add_library( thermoelectric SRCS thermoelectric.cpp EXEC CRB_LIB_THERMOELECTRIC)
-crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
-crb_add_library( alphathermoelectric SRCS alphathermoelectric.cpp EXEC CRB_LIB_ALPHATHERMOELECTRIC)
-install( FILES thermoelectric.hpp nlthermoelectric.hpp alphathermoelectric.hpp
-         DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 set(FEELPP_CRB_THERMOELECTRIC_LIBRARIES ${CRB_LIB_THERMOELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+
+crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
 set(FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+
+crb_add_library( alphathermoelectric SRCS alphathermoelectric.cpp EXEC CRB_LIB_ALPHATHERMOELECTRIC)
 set(FEELPP_CRB_ALPHATHERMOELECTRIC_LIBRARIES ${CRB_LIB_ALPHATHERMOELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ALPHATHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+
+install( FILES thermoelectric.hpp nlthermoelectric.hpp alphathermoelectric.hpp
+         DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
+
 
 feelpp_add_application( thermoelectricCRB
                         SRCS thermoelectric.hpp thermoelectric_main.cpp
@@ -44,7 +48,13 @@ feelpp_add_application( alpha-thermoelectricCRB
                         SRCS alphathermoelectric.hpp alphathermoelectric_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_ALPHATHERMOELECTRIC} INSTALL )
 
-feelpp_add_application( testthCRB SRCS test.cpp )
+# feelpp_add_application( testthCRB SRCS test.cpp )
+# feelpp_add_application( thermoelectric_geo_FE_2D
+#                         SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=2 )
+# feelpp_add_application( thermoelectric_geo_FE_3D
+#                         SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=3 )
+
 
 feelpp_add_testcase( th-crb-quarterturn CATEGORY CRB)
 feelpp_add_testcase( th-crb-alpha-hel CATEGORY CRB)
+feelpp_add_testcase( te-bancmesure CATEGORY CRB)

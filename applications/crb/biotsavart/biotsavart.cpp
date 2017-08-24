@@ -322,6 +322,7 @@ void BiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
 
             for( int n = 0; n < M_N; ++n)
             {
+                tic();
                 // if already computed, skip
                 if ( m < M && n < N )
                     continue;
@@ -361,6 +362,9 @@ void BiotSavartCRB<te_rb_model_type>::computeIntegrals(int M, int N)
                                        dofSize, intSumD.data(), std::plus<double>(), 0);
                 if( M_commsC1M[i].rank() == 0 )
                     M_intMND[m].col(n) = Eigen::Map<Eigen::VectorXd>(intSumD.data(), dofSize);
+                double time = toc("Done computing integral", false );
+                Feel::cout << "[Done computing integralN" << n << "M" << m << "] Time : "
+                           << time << "s" << std::endl;
             }
         }
     }
@@ -403,24 +407,29 @@ void BiotSavartCRB<te_rb_model_type>::online( parameter_type & mu )
 {
     tic();
 
+    this->computeUn(mu, M_N);
+    this->computeB(M_uN);
+
+    toc("online");
+}
+
+template<typename te_rb_model_type>
+void BiotSavartCRB<te_rb_model_type>::computeUn( parameter_type & mu, int N )
+{
     tic();
     double online_tol = doption(_name="crb.online-tolerance");
     vectorN_type time_crb;
-    auto o = M_crb->run( mu, time_crb, online_tol, M_N);
+    auto o = M_crb->run( mu, time_crb, online_tol, N);
     toc("crb run");
 
     auto solutions = o.template get<2>();
     M_uN = solutions.template get<0>()[0];
     M_VT = M_crb->expansion( M_uN, M_uN.size() );
     M_betaMu = M_teCrbModel->eimSigmaBeta(mu);
-
-    this->computeB(M_uN, M_betaMu);
-
-    toc("online");
 }
 
 template<typename te_rb_model_type>
-void BiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN, eigen_vector_type & betaMu )
+void BiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN )
 {
     tic();
     Eigen::VectorXd results;
@@ -435,7 +444,7 @@ void BiotSavartCRB<te_rb_model_type>::computeB( vectorN_type & uN, eigen_vector_
         {
             for( int m = 0; m < M_M; ++m)
             {
-                auto betaM = betaMu(m);
+                auto betaM = M_betaMu(m);
                 results += betaM*(M_intMND[m]*uN);
             }
             for( int d = 0; d < dofSize; ++d)
@@ -454,7 +463,8 @@ void BiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
     tic();
     auto Vh = current_space_type::New( M_meshCond );
     M_j = Vh->element();
-    M_teCrbModel->template computeTruthCurrentDensity( M_j, mu);
+    M_VTFe = M_teCrbModel->solve(mu);
+    M_teCrbModel->template computeTruthCurrentDensity( M_j, mu, M_VTFe);
     toc("compute j FE");
 
     tic();
@@ -521,13 +531,6 @@ void BiotSavartCRB<te_rb_model_type>::computeFE( parameter_type & mu )
     toc("compute BiotSavart FE");
 
     toc("compute FE");
-
-    if( boption("biotsavart.compute-offline") && boption("biotsavart.compute-online") )
-    {    auto err = normL2( elements(M_meshMgn), idv(M_B)-idv(M_BFe) );
-        Feel::cout << "dimension CRB: " << M_N
-                   << " dimension EIM: " << M_M
-                   << " ||B_{rb} - B_{fe}||_L2 = " << err << std::endl;
-    }
 }
 
 template<typename te_rb_model_type>
