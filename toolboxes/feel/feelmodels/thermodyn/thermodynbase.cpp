@@ -525,7 +525,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vector() );
+    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vector() );
 
     M_blockVectorSolution.localize();
@@ -669,7 +669,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
         {
             if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "do rebuildCstLinearPDE",
                                                        this->worldComm(),this->verboseAllProc());
-            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vector());
+            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
         }
     }
 
