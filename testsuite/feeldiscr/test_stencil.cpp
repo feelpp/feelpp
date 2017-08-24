@@ -26,7 +26,6 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-04-11
  */
-#define USE_BOOST_TEST 1
 
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN
@@ -43,6 +42,7 @@
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/thch.hpp>
 
 
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE( test_stencil2 )
     BOOST_HANA_CONSTANT_CHECK( b.f( type_space_t( b ) ) == multiple_space_t{} );
     BOOST_TEST_MESSAGE( "test_stencil2 done\n" );
 }
-#if 1
+
 BOOST_AUTO_TEST_CASE( test_stencil )
 {
     BOOST_TEST_MESSAGE( "test_stencil" );
@@ -261,7 +261,24 @@ BOOST_AUTO_TEST_CASE( test_stencil )
 
     BOOST_TEST_MESSAGE( "test_stencil" );
 }
-#endif
+
+BOOST_AUTO_TEST_CASE( test_stencil_zero )
+{
+    using namespace Feel;
+    using mesh_t = Mesh<Simplex<2>>;
+    auto mesh = loadMesh( new mesh_t );
+
+    auto Vh = Pchv<1>( mesh, true );
+    auto Wh = Pch<1>( mesh, true );
+    BlocksBaseGraphCSR zero_graph(2,2);
+    zero_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    zero_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    zero_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+    zero_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
+
+    auto A = backend()->newBlockMatrix(_block=zero_graph);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #else
 

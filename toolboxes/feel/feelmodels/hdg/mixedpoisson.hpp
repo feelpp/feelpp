@@ -208,7 +208,7 @@ public:
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
 	product2_space_ptrtype getPS() const { return M_ps; }
-	vector_ptrtype getF() { return M_F; }
+	condensed_vector_ptr_t<value_type> getF() { return M_F; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;
