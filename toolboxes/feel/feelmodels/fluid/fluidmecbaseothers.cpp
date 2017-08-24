@@ -879,7 +879,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
     std::string algebraicSolver = M_solverName;
     if ( algebraicSolver == "Oseen" )
         algebraicSolver = "LinearSystem";
-    M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vector() );
+    M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vectorMonolithic() );
     // update sub vector
     M_blockVectorSolution.localize();
 
@@ -2075,7 +2075,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
         vecAlgebraic->set(k, fieldVelPres(k) );
 #else
     //M_blockVectorSolution.vector()->close();
-    M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldVelocityPressure(), 0 );
+    M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldVelocityPressure(), 0 );
 #endif
 
     // do nothing for others block (fields define only in blockVectorSolution)

@@ -205,6 +205,7 @@ public:
     q_sigma_element_type eimSigmaQ(int m);
     vectorN_type eimSigmaBeta( parameter_type const& mu );
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
+    void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu, element_type& VT );
 }; // Thermoelectric class
 
 } // namespace Feel
