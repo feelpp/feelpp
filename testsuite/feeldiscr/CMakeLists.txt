@@ -49,7 +49,6 @@ feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destr
 feelpp_add_test( spaces )
 
 feelpp_add_test( stencil )
-feelpp_add_test( stencil_zero )
 
 feelpp_add_test( makemesh )
 feelpp_add_test( submesh )
