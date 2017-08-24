@@ -288,14 +288,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     if (this->isStandardModel())
     {
-        M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldDisplacement(), 0 );
+        M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldDisplacement(), 0 );
 
         if ( M_useDisplacementPressureFormulation )
         {
             size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
-            M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldPressure(), blockIndexPressure );
+            M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldPressure(), blockIndexPressure );
         }
-        M_blockVectorSolution.vector()->close();
+        //M_blockVectorSolution.vectorMonolithic()->close();
     }
     else if (this->is1dReducedModel())
     {
@@ -834,11 +834,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     {
         if (M_pdeSolver=="LinearSystem")
         {
-            M_algebraicFactory->linearSolver( M_blockVectorSolution.vector() );
+            M_algebraicFactory->linearSolver( M_blockVectorSolution.vectorMonolithic() );
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
@@ -849,7 +849,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if (M_pdeType=="Generalised-String")
