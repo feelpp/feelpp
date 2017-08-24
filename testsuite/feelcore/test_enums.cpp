@@ -43,9 +43,9 @@ BOOST_AUTO_TEST_CASE( test_to_underlying )
     BOOST_TEST_MESSAGE( "test_to_underlying" );
 
     int toto = to_underlying( E::TOTO );
-    BOOST_CHECK_EQUAL( toto, 1 )
+    BOOST_CHECK_EQUAL( toto, 1 );
     int tutu = to_underlying( E::TUTU );
-    BOOST_CHECK_EQUAL( tutu, 2 )
+    BOOST_CHECK_EQUAL( tutu, 2 );
     
     BOOST_TEST_MESSAGE( "test_to_underlying done" );
 }
@@ -55,12 +55,12 @@ BOOST_AUTO_TEST_CASE( test_to_enum )
     using namespace Feel;
     BOOST_TEST_MESSAGE( "test_to_enum" );
 
-    E e = to_enum<E>( 1 );
-    BOOST_CHECK_EQUAL( e, E::TOTO );
-    E e = to_enum<E>( 2 );
-    BOOST_CHECK_EQUAL( e, E::TUTU );
+    E etoto = to_enum<E>( 1 );
+    BOOST_CHECK_EQUAL( (int)etoto, (int)E::TOTO );
+    E etutu = to_enum<E>( 2 );
+    BOOST_CHECK_EQUAL( (int)etutu, (int)E::TUTU );
     
-        BOOST_TEST_MESSAGE( "test_to_enum done" );
+    BOOST_TEST_MESSAGE( "test_to_enum done" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
