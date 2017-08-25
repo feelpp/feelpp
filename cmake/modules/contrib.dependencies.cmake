@@ -147,26 +147,10 @@ endif()
 
 # include pybind11 after python cmake macros to avoid detecting different python versions
 include(feelpp.module.pybind11)
-
 include(feelpp.module.mongocxx)
-
-#
-# submodules
-#
-
 include(feelpp.module.hpddm)
-
-option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if ( FEELPP_ENABLE_NLOPT )
-  include(feelpp.module.nlopt)
-endif()
-
-#
-# ipopt support
-#
-# include(feelpp.module.ipopt)
-
-
+include(feelpp.module.nlopt)
+include(feelpp.module.ipopt)
 #include(feelpp.module.cereal)
 #include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
