@@ -6,8 +6,8 @@ nbProc=${3}
 CxxCompiler=${4}
 
 ## should be able to choice a version or svn
-VERSION="svn"
-## VERSION="2.12.0"
+#VERSION="svn"
+VERSION="2.16.0"
 wget -c http://geuz.org/gmsh/src/gmsh-$VERSION-source.tgz
 tar xzf gmsh-$VERSION-source.tgz
 
