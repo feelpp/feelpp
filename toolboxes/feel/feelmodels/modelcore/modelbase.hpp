@@ -35,7 +35,7 @@
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 
-//#include <feel/toolboxes/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
+#include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
