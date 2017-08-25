@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
+#include <feel/feelalg/vectorblock.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -157,6 +158,11 @@ BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
         vector_ptrtype _newvecPetsc( boost::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
         return _newvecPetsc;
     }
+
+    const VectorBlockBase<T> * vecBlock = dynamic_cast< VectorBlockBase<T> const * >( &v );
+    if ( vecBlock )
+        return this->toBackendVectorPtr( vecBlock->getVector() );
+
     //std::cout << "DefaultConvert vector\n";
     return super::toBackendVectorPtr( v );
 }
@@ -207,6 +213,10 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
         return _newvec;
     }
 #endif
+
+    boost::shared_ptr<VectorBlockBase<T> > vecBlock = boost::dynamic_pointer_cast< VectorBlockBase<T> >( v );
+    if ( vecBlock )
+        return this->toBackendVectorPtr( vecBlock->getVector() );
 
     //std::cout << "DefaultConvert vector\n";
     return super::toBackendVectorPtr( v );
