@@ -95,6 +95,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 _smoother=M_globalLevelset->smoother(),
                 _smoother_vectorial=M_globalLevelset->smootherVectorial()
                 );
+        // Set global options if unspecified otherwise
+        if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
+            M_levelsets[i]->setThicknessInterface( M_globalLevelset->thicknessInterface() );
 
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
@@ -241,6 +244,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 
     // Initialize FluidMechanics
     super_type::init();
+    this->updateFluidDensityViscosity();
 
     M_doRebuildMatrixVector = false;
 
