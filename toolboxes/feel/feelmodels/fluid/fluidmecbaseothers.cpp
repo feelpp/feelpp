@@ -2466,7 +2466,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
             {
                 size_type compdof = ldof.index();
                 size_type thedof = compDofShift + nDofComponentsVelocity*compdof;
-                dofsWithValueImposedVelocity.insert( ldof.index() );
+                dofsWithValueImposedVelocity.insert( thedof );
             }
         }
         // points
