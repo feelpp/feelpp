@@ -376,10 +376,7 @@ public:
     void createALE();
     void createMesh();
     void createFunctionSpaces();
-    void createTimeDiscretisation();
-    void createPostProcess();
     void createPostProcessExporters();
-    void createOthers();
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
