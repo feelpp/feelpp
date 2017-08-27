@@ -301,9 +301,10 @@ public :
             style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
             allow_unregistered().run();
         po::store(parsed,M_vm);
-        for ( std::string cfgfile : Environment::configFileNames() )
+        for ( auto & configFile : Environment::configFiles() )
         {
-            std::ifstream ifs( cfgfile );
+            //std::ifstream ifs( cfgfile );
+            std::ifstream & ifs = std::get<1>( configFile );
             po::store(po::parse_config_file(ifs, _options,true), M_vm);
         }
         po::notify(M_vm);
