@@ -272,7 +272,8 @@ FSI<FluidType,SolidType>::init()
         M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMshfileStr(M_mshfilepathFluidPartN.string());
-        M_fluidModel->build();
+        //M_fluidModel->build();
+        M_fluidModel->init();
     }
 
     // solid model build
@@ -303,6 +304,7 @@ FSI<FluidType,SolidType>::init()
                 M_solidModel->setMshfileStr( M_mshfilepathSolidPartN.string() );
             M_solidModel->build();
         }
+        M_solidModel->init();
     }
 
     CHECK( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" ||
@@ -335,8 +337,8 @@ FSI<FluidType,SolidType>::init()
     M_reuseJacRebuildAtFirstNewtonStepOptSolid = M_solidModel->backend()->reuseJacRebuildAtFirstNewtonStep();
     //-------------------------------------------------------------------------//
     // call init
-    M_fluidModel->init();
-    M_solidModel->init();
+    // M_fluidModel->init();
+    // M_solidModel->init();
     this->updateTime( this->timeStepBase()->time() );
     //-------------------------------------------------------------------------//
     M_fluidModel->setCouplingFSI_solidIs1dReduced( M_solidModel->is1dReducedModel() );
