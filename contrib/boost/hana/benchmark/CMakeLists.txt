@@ -48,7 +48,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/measure.in.rb #input
 ##############################################################################
 # Add the benchmarks
 ##############################################################################
-add_custom_target(benchmarks COMMENT "Generate all the benchmarks.")
+add_custom_target(benchmarks.hana COMMENT "Generate all the benchmarks.")
 
 add_custom_target(travis_compiler_slug USES_TERMINAL
     COMMAND ${CMAKE_COMMAND} -E echo "travis_compiler_slug: $<LOWER_CASE:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}>")
@@ -81,5 +81,5 @@ foreach(benchmark IN LISTS BOOST_HANA_BENCHMARKS)
     )
 
     add_custom_target(${target} DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${target}.json")
-    add_dependencies(benchmarks ${target})
+    add_dependencies(benchmarks.hana ${target})
 endforeach()
