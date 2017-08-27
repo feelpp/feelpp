@@ -5,6 +5,10 @@ leak:lt__malloc
 leak:__vasprintf_chk
 leak:opal_hash_table_init2
 leak:/usr/lib/x86_64-linux-gnu/openmpi/lib/openmpi/mca_pmix_pmix112
+leak:mca_io_ompio
+leak:mca_sharedfp_sm
+leak:libopen-rte
+leak:libmpi
 leak:mca_base_component_repository_open
 leak:opal_proc_table_set_value
 leak:opal_free_list_grow_st
