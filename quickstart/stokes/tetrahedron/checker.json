@@ -1,5 +1,5 @@
 {
-    "{0,0}:x:y":{
+    "1":{
         "1": {
             "exact": true
         }
@@ -7,20 +7,21 @@
             "exact": true
         }
     },
-    "{x,-y}:x:y":{
+    "x:x":{
         "1": {
             "exact": true
         },
         "2": {
             "exact": true
-        },
-        "3": {
+        }
+    },
+    "x+y:x:y":{
+        "2": {
             "exact": true
-        },
-        "4": {
-            "exact": true
-        },
-        "5": {
+        }
+    },
+    "x^2+y^2:x:y":{
+        "2": {
             "exact": true
         }
     }
