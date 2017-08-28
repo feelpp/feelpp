@@ -82,14 +82,6 @@ public:
     void updateBCNeumannResidual( vector_ptrtype& R ) const;
     void updateBCPressureResidual( vector_ptrtype& R ) const;
 
-    void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const;
-    void updateBCDirichletNitscheLinearPDE( vector_ptrtype& F ) const;
-    void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
-    void updateBCPressureLinearPDE( vector_ptrtype& F ) const;
-
-
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//

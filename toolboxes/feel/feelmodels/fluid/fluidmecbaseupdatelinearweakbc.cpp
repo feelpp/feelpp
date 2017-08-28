@@ -11,30 +11,35 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & data ) const
 {
     using namespace Feel::vf;
 
-    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateLinearPDEWeakBC", "start"+sc );
+    this->log("FluidMechanics","updateLinearPDEWeakBC", "start" );
 
     boost::timer thetimer;
 
-    bool BuildNonCstPart = !_BuildCstPart;
-    bool BuildCstPart = _BuildCstPart;
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool BuildCstPart = data.buildCstPart();
+    bool BuildNonCstPart = !BuildCstPart;
 
+    bool build_BoundaryNeumannTerm = BuildNonCstPart;
     bool BuildNonCstPart_robinFSI = BuildNonCstPart;
-    if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
+    if ( this->useFSISemiImplicitScheme() )
+    {
+        BuildNonCstPart_robinFSI = BuildCstPart;
+        build_BoundaryNeumannTerm = BuildCstPart;
+    }
 
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
-    auto U = Xh->element("u");
-    auto V = Xh->element("v");
+    auto const& U = this->fieldVelocityPressure();
     auto u = U.template element<0>();
-    auto v = V.template element<0>();
+    auto v = U.template element<0>();
     auto p = U.template element<1>();
-    auto q = V.template element<1>();
+    auto q = U.template element<1>();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
@@ -43,6 +48,8 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
+    auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
+                               _rowstart=this->rowStartInVector() );
 
     //Deformations tensor (trial)
     auto deft = sym(gradt(u));
@@ -104,10 +111,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
         }
         if ( BuildNonCstPart)
         {
-            this->updateBCDirichletLagMultLinearPDE( F );
+            for( auto const& d : this->M_bcDirichlet )
+            {
+                form1( _test=this->XhDirichletLM(),_vector=F,
+                       _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
+                    integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",marker(d) ) ),
+                               //_range=markedelements(this->meshDirichletLM(),PhysicalName),
+                               _expr= inner( expression(d),id(lambdaBC) ),
+                               _geomap=this->geomap() );
+            }
 
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
+#if 0 //defined( FEELPP_MODELS_HAS_MESHALE )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
             {
                 form1( _test=this->XhDirichletLM(),_vector=F,
                        _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
@@ -132,10 +147,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
         }
         if ( BuildNonCstPart)
         {
-            this->updateBCDirichletNitscheLinearPDE( F );
+            for( auto const& d : this->M_bcDirichlet )
+            {
+                myLinearForm +=
+                    integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",marker(d) ) ),
+                               _expr= this->dirichletBCnitscheGamma()*inner( expression(d),id(v) )/hFace(),
+                               _geomap=this->geomap() );
+            }
 
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" && false )
+#if 0 //defined( FEELPP_MODELS_HAS_MESHALE )
+            if ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" )
             {
                 form1( _test=Xh, _vector=F,
                        _rowstart=rowStartInVector) +=
@@ -145,7 +166,27 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
             }
 #endif
         }
+    }
 
+    //--------------------------------------------------------------------------------------------------//
+    // Neumann bc
+    if ( build_BoundaryNeumannTerm )
+    {
+        for( auto const& d : this->M_bcNeumannScalar )
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
+                           _expr= expression(d)*inner( N(),id(v) ),
+                           _geomap=this->geomap() );
+        for( auto const& d : this->M_bcNeumannVectorial )
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,marker(d)) ),
+                           _expr= inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
+        for( auto const& d : this->M_bcNeumannTensor2 )
+            myLinearForm +=
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,marker(d)) ),
+                           _expr= inner( expression(d)*N(),id(v) ),
+                           _geomap=this->geomap() );
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -214,7 +255,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptr
         }
         if ( BuildNonCstPart )
         {
-            this->updateBCPressureLinearPDE( F );
+            for( auto const& d : this->M_bcPressure )
+            {
+                myLinearForm +=
+                    integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(marker(d)) ),
+                               _expr= -expression(d)*trans(N())*id(v),
+                               _geomap=this->geomap() );
+            }
         }
 
     }

@@ -848,15 +848,10 @@ public :
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
+    void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
-    virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
-    virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
-    virtual void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const = 0;
-    virtual void updateBCDirichletNitscheLinearPDE( vector_ptrtype& F ) const = 0;
-    virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
-    virtual void updateBCPressureLinearPDE( vector_ptrtype& F ) const = 0;
+    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;

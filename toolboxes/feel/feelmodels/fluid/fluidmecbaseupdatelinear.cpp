@@ -37,8 +37,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     bool build_ConvectiveTerm = BuildNonCstPart;
     bool build_Form2TransientTerm = BuildNonCstPart;
     bool build_Form1TransientTerm = BuildNonCstPart;
-    //bool build_SourceTerm = BuildNonCstPart;
-    bool build_BoundaryNeumannTerm = BuildNonCstPart;
+    bool build_SourceTerm = BuildNonCstPart;
     bool build_StressTensorNonNewtonian = BuildNonCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
     {
@@ -51,8 +50,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
             build_ConvectiveTerm=BuildCstPart;
         build_Form2TransientTerm=BuildCstPart;
         build_Form1TransientTerm=BuildCstPart;
-        //build_SourceTerm=BuildCstPart;
-        build_BoundaryNeumannTerm=BuildCstPart;
+        build_SourceTerm=BuildCstPart;
     }
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -281,8 +279,26 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     }
 
     //--------------------------------------------------------------------------------------------------//
-    // volume force
-    this->updateSourceTermLinearPDE(F,BuildCstPart);
+    // body forces
+    if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
+    {
+        this->M_overwritemethod_updateSourceTermLinearPDE(F,BuildCstPart);
+    }
+    else
+    {
+        if ( build_SourceTerm )
+        {
+            for( auto const& d : this->M_volumicForcesProperties )
+            {
+                auto rangeBodyForceUsed = ( marker(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+                myLinearForm +=
+                    integrate( _range=rangeBodyForceUsed,
+                               _expr= inner( expression(d),id(v) ),
+                               _geomap=this->geomap() );
+            }
+        }
+    }
+
     // source given by user
     if ( M_haveSourceAdded && BuildNonCstPart)
     {
@@ -329,14 +345,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     this->updateLinearPDEStabilisation( data );
 
     //--------------------------------------------------------------------------------------------------//
-    // neumann condition
-    if (build_BoundaryNeumannTerm)
-    {
-        this->updateBCNeumannLinearPDE( F );
-    }
 
     // others bc
-    this->updateLinearPDEWeakBC(A,F,_BuildCstPart);
+    this->updateLinearPDEWeakBC( data );
 
     //--------------------------------------------------------------------------------------------------//
     // strong Dirichlet bc
@@ -395,6 +406,108 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
     this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 
 } // updateLinearPDE
+
+
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+{
+    using namespace Feel::vf;
+
+    if ( !this->hasDirichletBC() ) return;
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE", "start",
+                                               this->worldComm(),this->verboseAllProc());
+    boost::mpi::timer timerBClinear;
+
+    auto Xh = this->functionSpace();
+    auto mesh = this->mesh();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    // special hack : use bilinearform only on velocity
+    // use operotor on(..) doesnt work on composite space (velocity+pressure) ( see bilinearform.hpp l731 no support component)
+    auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=A,
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=this->colStartInMatrix() );
+    auto const& u = this->fieldVelocity();
+
+    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+    std::map<std::string, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapMarkerBCToEntitiesMeshMarker;
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        mapMarkerBCToEntitiesMeshMarker[marker(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+    }
+    std::map<std::pair<std::string,ComponentType>, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > mapCompMarkerBCToEntitiesMeshMarker;
+    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            mapCompMarkerBCToEntitiesMeshMarker[std::make_pair(marker(d),comp)] =
+                detail::distributeMarkerListOnSubEntity(mesh,this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+        }
+    }
+
+    // apply strong Dirichle bc on velocity field
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( marker(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+        if ( !listMarkerFaces.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerFaces ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+        auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm +=
+                on( _range=markedfaces( mesh, listMarkerEdges ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+        auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm +=
+                on( _range=markedpoints( mesh, listMarkerPoints ),
+                    _element=u, _rhs=F, _expr=expression(d) );
+    }
+    // apply strong Dirichle bc on velocity component
+    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(marker(d),comp) );
+            if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                continue;
+            auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+            if ( !listMarkerFaces.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces( mesh, listMarkerFaces ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+            if ( !listMarkerEdges.empty() )
+                bilinearFormComp +=
+                    on( _range=markedfaces( this->mesh(), listMarkerEdges ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+            auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+            if ( !listMarkerPoints.empty() )
+                bilinearFormComp +=
+                    on( _range=markedpoints( mesh, listMarkerPoints ),
+                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _rhs=F, _expr=expression(d) );
+        }
+    }
+
+    double t1=timerBClinear.elapsed();
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE",
+                                               "finish in "+(boost::format("%1% s") % t1).str(),
+                                               this->worldComm(),this->verboseAllProc());
+}
+
+
 
 } // end namespace FeelModels
 } // end namespace Feel
