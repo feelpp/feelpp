@@ -183,16 +183,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
             *_ostr << " ( beta=" << this->definePressureCstPenalisationBeta() << ")";
     }
 
-    *_ostr << "\n   Time Discretization"
-           << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
-           << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
-           << "\n     -- time step    : " << this->timeStepBase()->timeStep()
-           << "\n     -- order        : " << this->timeStepBDF()->timeOrder()
-           << "\n     -- restart mode : " << ResartMode
-           << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
-    if ( this->timeStepBase()->saveFreq() )
-        *_ostr << "\n     -- freq save : " << this->timeStepBase()->saveFreq()
-               << "\n     -- file format save : " << this->timeStepBase()->fileFormat();
+    if ( !this->isStationary() )
+    {
+        *_ostr << "\n   Time Discretization"
+               << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+               << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+               << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+               << "\n     -- order        : " << this->timeStepBDF()->timeOrder()
+               << "\n     -- restart mode : " << ResartMode
+               << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
+        if ( this->timeStepBase()->saveFreq() )
+            *_ostr << "\n     -- freq save : " << this->timeStepBase()->saveFreq()
+                   << "\n     -- file format save : " << this->timeStepBase()->fileFormat();
+    }
     *_ostr << "\n   Exporter"
            << "\n     -- type            : " << myexporterType
            << "\n     -- high order visu : " << hovisuMode
