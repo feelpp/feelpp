@@ -717,9 +717,15 @@ include(feelpp.macros.crb)
 # Clone/Update a contrib submodule hold on feel++ repository /contrib
 macro( feelppContribPrepare contribname )
   set( FEELPP_CONTRIB_PREPARE_SUCCEED FALSE )
+  set( FEELPP_CONTRIB_SUBMODULE_UPDATED FALSE )
   message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/contrib/${contribname}")
+  # Count files number in contrib/<name>.
+  file(GLOB CONTRIB_LIST_FILES "${CMAKE_SOURCE_DIR}/contrib/${contribname}/*")
+  list(LENGTH CONTRIB_LIST_FILES CONTRIB_NFILES)
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/${contribname} )
-    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+    # Update submodule if the contrib/<name> directory is empty. User should run
+    # `git submodule update --init --recursive` in other cases.
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git/ AND CONTRIB_NFILES EQUAL 0 )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/${contribname}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -728,7 +734,7 @@ macro( feelppContribPrepare contribname )
         RESULT_VARIABLE ERROR_CODE
         )
       if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "Git submodule contrib/${contribname} updated.")
+        message( STATUS "[feelpp] contrib/${contribname}: submodule updated!`")
         set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
       else()
         MESSAGE(WARNING "Git submodule contrib/${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
@@ -737,6 +743,10 @@ macro( feelppContribPrepare contribname )
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/${contribname})
         message( WARNING "Please make sure that git submodule contrib/${contribname} is available")
         message( WARNING "  run `git submodule update --init --recursive contrib/${contribname}`")
+      else()
+        message( STATUS "[feelpp] contrib/${contribname}: submodule hold!`")
+        set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
+        set( FEELPP_CONTRIB_SUBMODULE_UPDATED TRUE ) # Diplay message info."$Feel++ submodules are not updated automatically. Please be sure to run `git submodule update --init --recurse` in the source directory beforehand!"
       endif()
     endif()
   endif()
