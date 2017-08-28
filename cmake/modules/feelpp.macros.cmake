@@ -751,3 +751,41 @@ macro( feelppContribPrepare contribname )
     endif()
   endif()
 endmacro( feelppContribPrepare )
+
+
+# Colorized cmake message.
+macro( feelpp_message )
+  set(options OPT)
+  set(onearg ARG)
+  set(multargs STATUS INFO WARNING ERROR)
+  # Generate parsed_<tag> variables with their arguments.
+  cmake_parse_arguments( parsed "${options}" "${onearg}" "${multargs}" ${ARGN})
+  if( parsed_STATUS )
+    foreach(msg ${parsed_STATUS})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --green --bold "STATUS: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_INFO )
+    foreach(msg ${parsed_INFO})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1
+        ${CMAKE_COMMAND} -E cmake_echo_color --cyan --bold "INFO: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_WARNING )
+    foreach(msg ${parsed_WARNING})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --yellow --bold "WARNING: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_ERROR )
+    foreach(msg ${parsed_ERROR})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --red --bold "ERROR: ${msg}" )
+    endforeach()
+  endif()
+endmacro()
