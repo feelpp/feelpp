@@ -802,7 +802,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
-                                              typename model_algebraic_factory_type::appli_ptrtype const& app )
+                                              typename model_algebraic_factory_type::model_ptrtype const& app )
 {
     if ( M_isUpdatedForUse ) return;
 
