@@ -75,13 +75,7 @@ public:
     void solve();
     //___________________________________________________________________________________//
     // assembly using bc
-    void updateSourceTermResidual( vector_ptrtype& R ) const;
     void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
-    void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const;
-    void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const;
-    void updateBCNeumannResidual( vector_ptrtype& R ) const;
-    void updateBCPressureResidual( vector_ptrtype& R ) const;
-
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//

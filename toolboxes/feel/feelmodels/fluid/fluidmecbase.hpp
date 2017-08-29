@@ -834,12 +834,7 @@ public :
     void updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
 
-    virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
-    virtual void updateBCDirichletLagMultResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCDirichletNitscheResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCPressureResidual( vector_ptrtype& R ) const = 0;
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
