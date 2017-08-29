@@ -177,7 +177,7 @@ macro(feelpp_add_application)
       list(REMOVE_ITEM APP_TESTS ${test})
     endforeach()
   endif()
-  if ( NOT FEELPP_APP_NO_TEST )
+
     if ( FEELPP_APP_TESTS )
       message(STATUS "reading ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME}..." )
       if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} )
@@ -226,23 +226,7 @@ macro(feelpp_add_application)
         endif()
     
       endif()
-    else(FEELPP_APP_TESTS)
-
-      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
-      
-        list(APPEND APP_TESTS ${execname}-np-${NProcs2})
-      endif()
-
-      IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
-        list(APPEND APP_TESTS ${execname}-np-1)
-      endif()
     endif(FEELPP_APP_TESTS)
-
-    
-    
-  endif( NOT FEELPP_APP_NO_TEST )
   
   foreach(APP_TEST ${APP_TESTS})
     # disable leak detection for now
