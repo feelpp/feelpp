@@ -277,12 +277,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptr
         vf::chi( phi<-epsilon_rect )*vf::constant(0.0)
         +
         vf::chi( phi>=-epsilon_rect )*vf::chi( phi<=-epsilon )*
-        1/2*(1 + (phi+epsilon_zero)/epsilon_delta + 1/M_PI*vf::sin( M_PI*(phi+epsilon_zero)/epsilon_delta ) )
+        0.5*(1 + (phi+epsilon_zero)/epsilon_delta + 1/M_PI*vf::sin( M_PI*(phi+epsilon_zero)/epsilon_delta ) )
         +
         vf::chi( phi>=-epsilon )*vf::chi( phi<=epsilon )*vf::constant(1.0)
         +
         vf::chi( phi>=epsilon )*vf::chi( phi<=epsilon_rect )*
-        1/2*(1 - (phi-epsilon_zero)/epsilon_delta - 1/M_PI*vf::sin( M_PI*(phi-epsilon_zero)/epsilon_delta ) )
+        0.5*(1 - (phi-epsilon_zero)/epsilon_delta - 1/M_PI*vf::sin( M_PI*(phi-epsilon_zero)/epsilon_delta ) )
         +
         vf::chi(phi>epsilon_rect)*vf::constant(0.0)
         ;
@@ -919,7 +919,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
+            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
@@ -934,7 +934,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
+            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
