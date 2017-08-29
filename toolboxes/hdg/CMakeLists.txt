@@ -30,7 +30,7 @@ foreach(D 3)
                                 SRCS mixedpoisson_main.cpp
                                 LINK_LIBRARIES feelpp_modelcore
                                 DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
-                                INSTALL )
+                                INSTALL NO_TEST )
   endforeach()
 endforeach()
 
@@ -42,7 +42,7 @@ foreach(D 2 3)
 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
 							INCLUDE_IN_ALL
 							LINK_LIBRARIES feelpp_modelcore
-                            INSTALL )
+                            INSTALL NO_TEST )
 	endforeach()
   endforeach()
 endforeach()
@@ -53,7 +53,7 @@ foreach(D 2 3)
                             SRCS thermoelectric.hpp thermoelectric_main.cpp
                             DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
                             LINK_LIBRARIES feelpp_modelcore
-                            INSTALL
+                            INSTALL NO_TEST
                             )
   endforeach()
 endforeach()
