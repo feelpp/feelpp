@@ -511,12 +511,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->log("MultiFluid", "solve", "start");
     this->timerTool("Solve").start();
 
-    double errorVelocityL2 = 0.;
-    int picardIter = 0;
-    auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
-    do
-    {
-        u_old = this->fieldVelocity();
+    auto solveImpl = [=]() {
         // Update density and viscosity
         this->updateFluidDensityViscosity();
         // Update interface forces
@@ -539,25 +534,38 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
 		    M_levelsets[n]->reinitialize( true );
         }
 
-        auto u = this->fieldVelocity();
-        double uOldL2Norm = integrate(
-                _range=elements(this->mesh()),
-                _expr=trans(idv(u_old))*idv(u_old)
-                ).evaluate()(0,0);
-        errorVelocityL2 = integrate(
-                _range=elements(this->mesh()),
-                _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
-                ).evaluate()(0,0);
-        errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
-
-        Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
-        picardIter++;
-
         if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
         {
             M_doRebuildMatrixVector = true;
         }
-    } while( M_usePicardIterations && errorVelocityL2 > 0.01);
+    };
+
+    solveImpl();
+    if( M_usePicardIterations )
+    {
+        double errorVelocityL2 = 0.;
+        int picardIter = 0;
+        auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
+        do
+        {
+            picardIter++;
+            u_old = this->fieldVelocity();
+            solveImpl();
+            auto u = this->fieldVelocity();
+
+            double uOldL2Norm = integrate(
+                    _range=elements(this->mesh()),
+                    _expr=trans(idv(u_old))*idv(u_old)
+                    ).evaluate()(0,0);
+            errorVelocityL2 = integrate(
+                    _range=elements(this->mesh()),
+                    _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
+                    ).evaluate()(0,0);
+            errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
+
+            Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
+        } while( errorVelocityL2 > 0.01);
+    }
 
     // Update global levelset
     this->updateGlobalLevelset();
