@@ -4,7 +4,7 @@ feelpp_add_application( solid_2d SRCS main_sm.cpp
   feelpp_model_solidmec2dP1G1
   feelpp_model_solidmec2dP2G1
   DEFS FEELPP_DIM=2
-  INSTALL NO_TEST
+  INSTALL
  )
 
 feelpp_add_application( solid_3d SRCS main_sm.cpp
@@ -12,28 +12,28 @@ feelpp_add_application( solid_3d SRCS main_sm.cpp
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
   DEFS FEELPP_DIM=3
-  INSTALL NO_TEST
+  INSTALL
  )
 
 feelpp_add_application( stress_2d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec2dP1G1
   feelpp_model_solidmec2dP2G1
-  DEFS FEELPP_DIM=2 NO_TEST
+  DEFS FEELPP_DIM=2
  )
 
 feelpp_add_application( stress_3d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
-  DEFS FEELPP_DIM=3 NO_TEST
+  DEFS FEELPP_DIM=3
  )
 
 feelpp_add_application( solenoid_3d SRCS stress.cpp
   LINK_LIBRARIES
   feelpp_model_solidmec3dP1G1
   feelpp_model_solidmec3dP2G1
-  DEFS FEELPP_DIM=3 ELASTICITY_ANA NO_TEST
+  DEFS FEELPP_DIM=3 ELASTICITY_ANA
  )
 
 
