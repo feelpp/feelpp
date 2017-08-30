@@ -368,10 +368,11 @@ public:
     void build();
     void init( bool buildMethodNum, typename model_algebraic_factory_type::model_ptrtype const& app );
 
-    virtual void loadConfigBCFile() = 0;
-    virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
-
+    void loadConfigBCFile();
+    void loadConfigPostProcess();
+    void loadConfigMeshFile( std::string const& geofilename );
     void loadParameterFromOptionsVm();
+
     void createWorldsComm();
     void createALE();
     void createMesh();
@@ -822,7 +823,7 @@ public :
     //___________________________________________________________________________________//
 
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
-    virtual void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const = 0;
+    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//
 
