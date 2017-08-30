@@ -75,7 +75,6 @@ public:
     void solve();
     //___________________________________________________________________________________//
     // assembly using bc
-    void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//

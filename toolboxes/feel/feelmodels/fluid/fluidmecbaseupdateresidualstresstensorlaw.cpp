@@ -15,7 +15,7 @@ namespace FeelModels
 
 FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
 
