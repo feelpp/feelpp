@@ -66,17 +66,9 @@ public:
                              std::string const& subPrefix = "",
                              std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     //___________________________________________________________________________________//
-    // load config files
-    void loadConfigBCFile();
-    void loadConfigPostProcess();
-    void loadConfigMeshFile( std::string const& geofilename );
     // update for use
     void init( bool buildModelAlgebraicFactory=true );
     void solve();
-    //___________________________________________________________________________________//
-    // assembly using bc
-    void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol ) const;
-
     //___________________________________________________________________________________//
 
 
