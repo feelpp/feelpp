@@ -165,6 +165,7 @@ protected:
     void updateInterfaceForces();
     void solveFluid();
     void advectLevelsets();
+    virtual void solveImpl();
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }

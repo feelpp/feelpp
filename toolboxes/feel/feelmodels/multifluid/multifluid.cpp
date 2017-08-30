@@ -511,36 +511,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->log("MultiFluid", "solve", "start");
     this->timerTool("Solve").start();
 
-    auto solveImpl = [=]() {
-        // Update density and viscosity
-        this->updateFluidDensityViscosity();
-        // Update interface forces
-        if( this->hasInterfaceForces() )
-        {
-            this->updateInterfaceForces();
-        }
-        // Solve fluid equations
-        this->solveFluid();
-        // Advect levelsets
-        this->advectLevelsets();
-        // Reinitialize
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
-        {
-	    if( M_levelsetReinitEvery[n] > 0 
-			    && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
-		    M_levelsets[n]->reinitialize();
-	    else if( M_levelsetReinitSmoothEvery[n] > 0 
-			    && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
-		    M_levelsets[n]->reinitialize( true );
-        }
-
-        if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
-        {
-            M_doRebuildMatrixVector = true;
-        }
-    };
-
-    solveImpl();
+    this->solveImpl();
     if( M_usePicardIterations )
     {
         double errorVelocityL2 = 0.;
@@ -550,7 +521,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         {
             picardIter++;
             u_old = this->fieldVelocity();
-            solveImpl();
+            this->solveImpl();
             auto u = this->fieldVelocity();
 
             double uOldL2Norm = integrate(
@@ -567,11 +538,43 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         } while( errorVelocityL2 > 0.01);
     }
 
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
+{
+    // Update density and viscosity
+    this->updateFluidDensityViscosity();
+    // Update interface forces
+    if( this->hasInterfaceForces() )
+    {
+        this->updateInterfaceForces();
+    }
+    // Solve fluid equations
+    this->solveFluid();
+    // Advect levelsets
+    this->advectLevelsets();
+    // Reinitialize
+    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    {
+        if( M_levelsetReinitEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
+            M_levelsets[n]->reinitialize();
+        else if( M_levelsetReinitSmoothEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
+            M_levelsets[n]->reinitialize( true );
+    }
+
     // Update global levelset
     this->updateGlobalLevelset();
 
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        M_doRebuildMatrixVector = true;
+    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
