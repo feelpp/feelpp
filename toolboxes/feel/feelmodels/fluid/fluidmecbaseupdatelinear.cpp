@@ -12,16 +12,16 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicard( DataUpdateLinear & data ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicard( DataUpdateLinear & data ) const
 {
     this->updateLinearPDE( data );
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
     using namespace Feel::vf;
 
@@ -408,9 +408,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 } // updateLinearPDE
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
     using namespace Feel::vf;
 

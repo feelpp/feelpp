@@ -11,9 +11,9 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
 
@@ -343,9 +343,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian
 
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
 {
     if ( !this->hasDirichletBC() ) return;
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateJacobianStrongDirichletBC", "start",

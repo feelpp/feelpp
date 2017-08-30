@@ -12,9 +12,9 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     using namespace Feel::vf;
 
