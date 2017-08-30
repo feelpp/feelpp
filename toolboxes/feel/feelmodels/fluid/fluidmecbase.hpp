@@ -27,8 +27,8 @@
  \date 2011-07-17
  */
 
-#ifndef FEELPP_FLUIDMECHANICSBASE_HPP
-#define FEELPP_FLUIDMECHANICSBASE_HPP 1
+#ifndef FEELPP_FLUIDMECHANICS_HPP
+#define FEELPP_FLUIDMECHANICS_HPP 1
 
 
 #include <feel/feeldiscr/functionspace.hpp>
@@ -66,8 +66,12 @@ enum class FluidMechanicsPostProcessFieldExported
     Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
 };
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType, bool UsePeriodicity=false>
-class FluidMechanicsBase : public ModelNumerical,
+template< typename ConvexType, typename BasisVelocityType,
+          typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
+          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/>,
+          bool UsePeriodicity=false>
+class FluidMechanics : public ModelNumerical,
+                           public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC,
                            public MarkerManagementALEMeshBC,
@@ -77,7 +81,7 @@ class FluidMechanicsBase : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
 
-    typedef FluidMechanicsBase< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
+    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -355,18 +359,24 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanicsBase( std::string const& prefix,
+    FluidMechanics( std::string const& prefix,
                         bool __buildMesh = true,
                         WorldComm const& _worldComm = Environment::worldComm(),
                         std::string const& subPrefix = "",
                         std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
-    FluidMechanicsBase( self_type const & M ) = default;
+    FluidMechanics( self_type const & M ) = default;
+
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
 
     void build();
-    void init( bool buildMethodNum, typename model_algebraic_factory_type::model_ptrtype const& app );
+    void init( bool buildModelAlgebraicFactory=true );
 
     void loadConfigBCFile();
     void loadConfigPostProcess();
@@ -814,7 +824,7 @@ public :
 #endif
     //___________________________________________________________________________________//
 
-    virtual void solve();
+    void solve();
     //___________________________________________________________________________________//
     void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
@@ -822,6 +832,7 @@ public :
     void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
     //___________________________________________________________________________________//
 
+    void initInHousePreconditioner();
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
@@ -1048,7 +1059,7 @@ protected:
 #if 0
 template <typename SetMeshSlicesType>
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
+FLUIDMECHANICS_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
 {
     using namespace Feel::vf;
 
@@ -1079,7 +1090,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const
 
 template <typename SetMeshSlicesType>
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
+FLUIDMECHANICS_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
 {
     using namespace Feel::vf;
 
@@ -1150,7 +1161,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const
 // Flow rate computed on a set of slice
 template <typename SetMeshSlicesType>
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
+FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
 {
     using namespace Feel::vf;
 
@@ -1178,7 +1189,7 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMesh
 // Flow rate computed on a set of slice
 template <typename SetMeshSlicesType>
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
+FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
 {
     using namespace Feel::vf;
 
@@ -1242,6 +1253,6 @@ FLUIDMECHANICSBASE_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMesh
 } // namespace Feel
 
 
-#endif /* FEELPP_FLUIDMECHANICSBASE_HPP */
+#endif /* FEELPP_FLUIDMECHANICS_HPP */
 
 

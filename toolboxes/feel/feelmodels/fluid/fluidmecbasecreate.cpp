@@ -7,6 +7,7 @@
 //#include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 //#include <feel/feelvf/inv.hpp>
+#include <feel/feelpde/preconditionerblockns.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
@@ -15,12 +16,12 @@
 namespace Feel {
 namespace FeelModels {
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( std::string const& prefix,
-                                                            bool buildMesh,
-                                                            WorldComm const& worldComm,
-                                                            std::string const& subPrefix,
-                                                            std::string const& rootRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
+                                                        bool buildMesh,
+                                                        WorldComm const& worldComm,
+                                                        std::string const& subPrefix,
+                                                        std::string const& rootRepository )
     :
     super_type( prefix,worldComm,subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
@@ -59,9 +60,19 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::FluidMechanicsBase( std::string const& p
 
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+                                             WorldComm const& worldComm, std::string const& subPrefix,
+                                             std::string const& rootRepository )
+{
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
 {
     std::string res = expr;
     boost::replace_all( res, "$fluid_u_order", (boost::format("%1%")%nOrderVelocity).str() );
@@ -73,12 +84,12 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const&
 }
 
 // add members instatantiations need by static function expandStringFromSpec
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderVelocity;
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderPressure;
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderVelocity;
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderPressure;
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
 
 
@@ -101,9 +112,9 @@ generateMarkerBCList(BoundaryConditions const bc,std::string const& field,std::s
 }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     // clear
     this->clearMarkerDirichletBC();
@@ -291,9 +302,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
 {
     if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
         for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
@@ -313,18 +324,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
         }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadConfigMeshFile( std::string const& geofilename )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile( std::string const& geofilename )
 {
     CHECK( false ) << "not allow";
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("FluidMechanics","build", "start");
     //-----------------------------------------------------------------------------//
@@ -337,9 +348,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
 {
     this->log("FluidMechanics","loadMesh", "start");
     //-----------------------------------------------------------------------------//
@@ -355,9 +366,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("FluidMechanics","loadParameterFromOptionsVm", "start");
 
@@ -487,9 +498,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createWorldsComm()
 {
     this->log("FluidMechanics","createWorldsComm", "start");
 
@@ -536,9 +547,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("FluidMechanics","createMesh", "start");
     this->timerTool("Constructor").start();
@@ -579,9 +590,9 @@ createFluidFunctionSpaces( FMtype const& FM, std::vector<bool> const& extendedDT
 }
 
 } // namespace detail
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     this->log("FluidMechanics","createFunctionSpaces","start");
     this->timerTool("Constructor").start();
@@ -689,9 +700,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 //---------------------------------------------------------------------------------------------------------//
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if ( this->isMoveDomain() )
@@ -734,9 +745,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createALE()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
     this->log("FluidMechanics","createPostProcessExporters", "start" );
 
@@ -899,9 +910,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 {
     if ( M_XhNormalBoundaryStress ) return;
 
@@ -919,9 +930,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 {
     if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
         M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
@@ -933,9 +944,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
     if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm() );
@@ -948,9 +959,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 //---------------------------------------------------------------------------------------------------------//
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createBCFluidInlet()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createBCFluidInlet()
 {
     if ( !this->hasFluidInlet() ) return;
 
@@ -1008,9 +1019,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createBCFluidInlet()
     this->updateFluidInletVelocity();
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 {
    for ( auto & inletbc : M_fluidInletDesc )
    {
@@ -1061,10 +1072,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
-                                              typename model_algebraic_factory_type::model_ptrtype const& app )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
@@ -1260,9 +1270,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
     // init vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
     //-------------------------------------------------//
-    if (buildMethodNum)
+    if ( buildModelAlgebraicFactory )
     {
-        M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend()) );
+        M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 #if 1
         bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
         if ( attachMassMatrix )
@@ -1276,7 +1286,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
             M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
         }
 #endif
+        this->initInHousePreconditioner();
     }
+
     //-------------------------------------------------//
     this->updateBoundaryConditionsForUse();
     //-------------------------------------------------//
@@ -1289,9 +1301,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildMethodNum,
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
 {
     this->log("FluidMechanics","updateMarkedZonesInMesh", "start" );
 
@@ -1345,9 +1357,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateMarkedZonesInMesh()
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     this->log("FluidMechanics","initTimeStep", "start" );
 
@@ -1406,9 +1418,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 {
     this->log("FluidMechanics","initFluidOutlet", "start" );
 
@@ -1583,9 +1595,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initFluidOutlet()
 
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
 {
     if ( this->modelProperties().functions().empty() )
         return;
@@ -1620,9 +1632,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
     this->updateUserFunctions();
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
 {
     if ( this->modelProperties().functions().empty() )
         return;
@@ -1657,9 +1669,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTi
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     // update post-process expression
     this->modelProperties().parameters().updateParameterValues();
@@ -1817,6 +1829,142 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         else if ( !this->isStationary() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
     }
+}
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
+{
+    if ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" )
+    {
+        BoundaryConditions bcPrecPCD;
+        bcPrecPCD.clear();
+
+        auto itFindFieldVelocity = this->modelProperties().boundaryConditions().find("velocity");
+        bool hasFindFieldVelocity = itFindFieldVelocity != this->modelProperties().boundaryConditions().end();
+        if ( hasFindFieldVelocity )
+        {
+            auto itFindDirichletType = itFindFieldVelocity->second.find("Dirichlet");
+            if ( itFindDirichletType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindDirichletType->second )
+                {
+                    auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",myBcDesc.marker() ) );
+                    auto const& listMarkerFaces = std::get<0>( ret );
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( listMarkerFaces );
+                    bcPrecPCD["velocity"]["Dirichlet"].push_back( myBcDesc2 );
+                }
+            }
+            // For weak Dirichlet (Nitche,Magrange Multiplier ) ???
+            // TODO Dirchlet component
+
+            auto itFindNeumannScalType = itFindFieldVelocity->second.find("Neumann_scalar");
+            if ( itFindNeumannScalType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannScalType->second )
+                {
+                    auto markList = this->markerNeumannBC( NeumannBCShape::SCALAR,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
+            }
+            auto itFindNeumannVecType = itFindFieldVelocity->second.find("Neumann_vectorial");
+            if ( itFindNeumannVecType != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannVecType->second )
+                {
+                    auto markList = this->markerNeumannBC( NeumannBCShape::VECTORIAL,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
+            }
+            auto itFindNeumannTensor2Type = itFindFieldVelocity->second.find("Neumann_tensor2");
+            if ( itFindNeumannTensor2Type != itFindFieldVelocity->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindNeumannTensor2Type->second )
+                {
+                    auto markList = this->markerNeumannBC( NeumannBCShape::TENSOR2,myBcDesc.marker() );
+                    if ( markList.empty() ) continue;
+                    ExpressionStringAtMarker myBcDesc2( myBcDesc );
+                    myBcDesc2.setMeshMarkers( markList );
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+                }
+            }
+        }
+#if 0
+        auto itFindFieldFluid = this->modelProperties().boundaryConditions().find("fluid");
+        if ( itFindFieldFluid != this->modelProperties().boundaryConditions().end() )
+        {
+            auto itFindOutletType = itFindFieldFluid->second.find("outlet");
+            if ( itFindOutletType != itFindFieldFluid->second.end() )
+            {
+                for ( auto const& myBcDesc : itFindOutletType->second )
+                    bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc );
+            }
+        }
+#else
+        if ( !this->M_fluidOutletsBCType.empty() )
+        {
+            std::list<std::string> markList;
+            for ( auto const& bcOutlet : this->M_fluidOutletsBCType )
+                markList.push_back( std::get<0>(bcOutlet) );
+            ExpressionStringAtMarker myBcDesc2( std::make_tuple( "expression","wind","0","","" ) );
+            myBcDesc2.setMeshMarkers( markList );
+            bcPrecPCD["velocity"]["Neumann"].push_back( myBcDesc2 );
+        }
+#endif
+
+        // TODO other bc (fsi,...)
+#if 1
+        if ( Environment::isMasterRank() )
+        {
+            for( auto const& s : bcPrecPCD )
+            {
+                std::cout << "field " << s.first << "\n";
+                for( auto const& t : s.second )
+                {
+                    std::cout << " - type " << t.first << "\n";
+                    for( auto const& c : t.second )
+                    {
+                        std::ostringstream ostrMarkers;
+                        ostrMarkers << "(";
+                        for ( std::string const& mark : c.meshMarkers() )
+                            ostrMarkers << mark << " ";
+                        ostrMarkers << ")";
+                        if ( c.hasExpression2() )
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression1() << " expr2:" << c.expression2() << "\n";
+                        else
+                            std::cout << "  . boundary  " << c.marker() << " " << ostrMarkers.str() << " expr : " << c.expression() << "\n";
+                    }
+                }
+            }
+        }
+#endif
+        CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
+        // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+
+        typedef space_fluid_type space_type;
+        typedef space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
+                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
+                                        _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
+                                        _bc=bcPrecPCD,
+                                        _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
+                                        _prefix="velocity",
+                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
+                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
+                                        _alpha=myalpha );
+        this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+    }
+
 }
 
 

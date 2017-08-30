@@ -28,9 +28,9 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 {
     if ( this->worldComm().localSize() == 1 ) return false;
     bool useExtendedDofTable=false;
@@ -41,9 +41,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::string ALEmode;if (M_isMoveDomain) ALEmode="Yes"; else ALEmode="No";
     std::string StateTemporal;if (this->isStationary()) StateTemporal="Stationary"; else StateTemporal="Transient";
@@ -232,9 +232,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 {
     // if pde change -> force to rebuild all algebraic data at next solve
     if ( type != M_modelName )
@@ -261,17 +261,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string const&
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::modelName() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::modelName() const
 {
     return M_modelName;
 }
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 {
     // if solver change -> force to rebuild all algebraic data at next solve
     if ( type != M_solverName )
@@ -291,25 +291,25 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string const&
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solverName() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solverName() const
 {
     return M_solverName;
 }
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string const&
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
 {
     return this->densityViscosityModel()->dynamicViscosityLaw();
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& type )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& type )
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
     if ( type != this->densityViscosityModel()->dynamicViscosityLaw() )
@@ -320,9 +320,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string cons
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 {
     if ( M_exporter )
         M_exporter->setDoExport( b );
@@ -332,9 +332,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::setDoExport(bool b)
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
@@ -417,9 +417,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 } // FluidMechanics::exportResult
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     //if (this->worldComm().globalSize()==1) this->updateVorticity(mpl::int_<nDim>());
 
@@ -568,9 +568,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 #endif
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 {
 #if 1//defined(FEELPP_HAS_VTK)
     if ( !M_exporter_ho ) return;
@@ -704,9 +704,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
 
@@ -829,12 +829,40 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    //this->modelProperties().materials().setParameterValues( paramValues );
+    this->M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : this->M_bcDirichletComponents )
+        bcDirComp.second.setParameterValues( paramValues );
+    this->M_bcNeumannScalar.setParameterValues( paramValues );
+    this->M_bcNeumannVectorial.setParameterValues( paramValues );
+    this->M_bcNeumannTensor2.setParameterValues( paramValues );
+    this->M_bcPressure.setParameterValues( paramValues );
+    this->M_volumicForcesProperties.setParameterValues( paramValues );
+    this->updateFluidInletVelocity();
+
+    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    {
+        typedef space_fluid_type space_type;
+        typedef space_densityviscosity_type properties_space_type;
+
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
+            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
+        myPrecBlockNs->setParameterValues( paramValues );
+    }
+
+    if ( this->M_useThermodynModel && this->M_useGravityForce )
+        this->M_thermodynModel->updateParameterValues();
+
 
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
@@ -936,14 +964,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {
     if ( this->definePressureCstMethod() == "algebraic" )
     {
@@ -955,21 +983,21 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vec
     }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
                                                                      vector_ptrtype const& vecSol ) const
 {
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
@@ -978,9 +1006,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matr
     }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
 {
     if ( this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
@@ -1044,9 +1072,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_m
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
     if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
     {
@@ -1093,9 +1121,9 @@ updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldT
 
 } //  namesapce detail
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
 {
 
     if (!M_XhVorticity) this->createFunctionSpacesVorticity();
@@ -1105,9 +1133,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVorticity()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 {
     this->log("FluidMechanics","updateTimeStepBDF", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
@@ -1204,9 +1232,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<std::string> const& listMarkers )
 {
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "start" );
 
@@ -1237,9 +1265,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::li
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::list<std::string> const& listMarkers )
 {
     if (this->useFSISemiImplicitScheme())
         this->updateNormalStressOnReferenceMeshOptSI( listMarkers );
@@ -1249,9 +1277,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1320,9 +1348,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandar
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrecompute( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1393,9 +1421,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptPrec
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std::list<std::string> const& listMarkers )
 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     using namespace Feel::vf;
@@ -1447,9 +1475,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( 
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 {
     using namespace Feel::vf;
 
@@ -1479,9 +1507,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateWallShearStress()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
 {
     using namespace Feel::vf;
 
@@ -1509,9 +1537,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype 
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
@@ -1585,16 +1613,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::string const& marker ) const
 {
     return this->computeMeshArea( std::list<std::string>( { marker } ) );
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> const& markers ) const
 {
     double area = 0;
     if ( markers.empty() || markers.front().empty() )
@@ -1609,10 +1637,10 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> 
 }
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-Eigen::Matrix<typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::value_type,
-              FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nDim,1>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+Eigen::Matrix<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::value_type,
+              FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nDim,1>
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
     using namespace Feel::vf;
 
@@ -1637,16 +1665,16 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerNa
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::string const& marker, bool useExteriorNormal ) const
 {
     return this->computeFlowRate( std::list<std::string>( { marker } ),useExteriorNormal );
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal ) const
 {
     using namespace Feel::vf;
 
@@ -1662,9 +1690,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate( std::list<std::string> 
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureSum() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computePressureSum() const
 {
     auto const& p = this->fieldPressure();
     double res = integrate(_range=M_rangeMeshElements,
@@ -1673,9 +1701,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureSum() const
     return res;
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureMean() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computePressureMean() const
 {
     double area = this->computeMeshArea();
     double res = (1./area)*this->computePressureSum();
@@ -1684,9 +1712,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computePressureMean() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
 {
     auto const& u = this->fieldVelocity();
     double res = integrate(_range=M_rangeMeshElements,
@@ -1695,9 +1723,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceSum() const
     return res;
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceMean() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceMean() const
 {
     double area = this->computeMeshArea();
     double res = (1./area)*this->computeVelocityDivergenceSum();
@@ -1706,9 +1734,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceMean() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 {
     using namespace Feel::vf;
 
@@ -1724,9 +1752,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
                                                                   std::vector<op_interp_pressure_ptrtype> const& opInterp,
                                                                   bool computeOnRefMesh,
                                                                   std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
@@ -1798,9 +1826,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<me
     return res;
 
 }
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::vector<double>
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
                                                         std::vector<op_interp_velocity_ptrtype> const& opInterp,
                                                         bool computeOnRefMesh,
                                                         std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
@@ -1869,9 +1897,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::block_pattern_type
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::block_pattern_type
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
     size_type pat_uu = size_type(Pattern::COUPLED);
     size_type pat_pp = size_type(Pattern::ZERO);
@@ -1897,9 +1925,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 int
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -1919,9 +1947,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     return nBlock;
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     this->log("FluidMechanics","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
@@ -2054,9 +2082,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
@@ -2067,9 +2095,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::indexsplit_ptrtype
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::indexsplit_ptrtype
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
 {
     // WARNING : this function is not use now
 
@@ -2118,9 +2146,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 size_type
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -2132,9 +2160,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
     return res;
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     // copy velocity/pressure in block
 #if 0
@@ -2159,9 +2187,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
 {
     if ( M_couplingFSI_RNG_matrix ) return;
 
@@ -2333,9 +2361,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateForUse()
 
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_ptrtype& F) const
 {
 
 #if 0
@@ -2408,9 +2436,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::couplingFSI_RNG_updateLinearPDE( vector_
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 {
     auto XhVelocity = this->functionSpaceVelocity();
     auto XhCompVelocity = XhVelocity->compSpace();
