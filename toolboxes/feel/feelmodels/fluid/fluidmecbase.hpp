@@ -831,15 +831,13 @@ public :
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
 
-    void updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
-    void updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-
-    virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
-
     void updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
+    void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;

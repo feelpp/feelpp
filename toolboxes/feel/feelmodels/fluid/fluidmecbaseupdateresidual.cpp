@@ -323,7 +323,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
     //------------------------------------------------------------------------------------//
 
-    this->updateResidualModel( data, U );
+    this->updateResidualWeakBC( data, U );
 
     //------------------------------------------------------------------------------------//
     if ( M_useThermodynModel && M_useGravityForce )
