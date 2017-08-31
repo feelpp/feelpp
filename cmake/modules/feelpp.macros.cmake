@@ -206,7 +206,7 @@ macro(feelpp_add_application)
           endif()
 
           IF(NOT FEELPP_APP_NO_SEQ_TEST)
-            add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} ${MPIEXEC_POSTFLAGS})
+            add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST})
             list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-1)
           endif()
     
@@ -341,7 +341,7 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI;PROJECT;EXEC"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY;SKIP_TEST;SKIP_SEQ_TEST;SKIP_MPI_TEST"
     ${ARGN}
     )
 
@@ -388,13 +388,23 @@ macro(feelpp_add_test)
         set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
       endif()
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-        add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+        if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_MPI_TEST )
+           add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND /bin/sh -c "exit 77")
+           set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES SKIP_RETURN_CODE 77 )
+        else()
+          add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+        endif()
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
         if(CMAKE_BUILD_TYPE MATCHES Debug)
           set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../tools/lsan/suppressions.txt")
         endif()
       ENDIF()
-      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+      if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_SEQ_TEST )
+         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND /bin/sh -c "exit 77")
+         set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES SKIP_RETURN_CODE 77 )
+      else()
+         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+      endif()
       set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/suppressions.txt")
