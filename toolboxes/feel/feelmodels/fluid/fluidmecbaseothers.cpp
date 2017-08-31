@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
-#include <feel/feelmodels/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/unary.hpp>
@@ -1638,7 +1638,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::list<std::string> cons
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-Eigen::Matrix<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::value_type,
+Eigen::Matrix<typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::value_type,
               FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nDim,1>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
@@ -1898,7 +1898,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptr
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::block_pattern_type
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::block_pattern_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
     size_type pat_uu = size_type(Pattern::COUPLED);

@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
