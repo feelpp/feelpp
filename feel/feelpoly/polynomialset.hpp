@@ -1117,7 +1117,8 @@ public:
                     for ( index c1 = 0; c1 < nc1dof; ++c1 )
                     {
                         // symmetric case
-                        if ( is_symm_v<polyset_type> )
+                        //if ( is_symm_v<polyset_type> )
+                        if ( 0 )
                         {
                             for ( index c2 = 0; c2 < c1; ++c2 )
                             {
@@ -1127,15 +1128,13 @@ public:
                                 {
                                     for ( index j = 0; j < nDim; ++j )
                                     {
-                                        for ( index k = 0; k < j; ++k )
+                                        for ( index k = 0; k < nDim; ++k )
                                         {
                                             M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+k, q );
-                                            M_phi[II][q]( k,j ) = M_phi[II][q]( j,k );
-                                            M_phi[JJ][q]( j,k ) = phiv( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*j+k, q );
-                                            M_phi[JJ][q]( k,j ) = M_phi[JJ][q]( j,k );
+                                            M_phi[JJ][q]( j,k ) = M_phi[II][q]( j,k );
                                         }
-                                        M_phi[II][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+j, q );
-                                        M_phi[JJ][q]( j,j ) = phiv( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*j+j, q );
+                                        //M_phi[II][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+j, q );
+                                        //M_phi[JJ][q]( j,j ) = M_phi[II][q]( j,j ) ;//phiv( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*j+j, q );
                                     }
                                 }
 
@@ -1161,13 +1160,13 @@ public:
                             {
                                 for ( index j = 0; j < nDim; ++j )
                                 {
-                                    for ( index k = 0; k < j; ++k )
+                                    for ( index k = 0; k < nDim; ++k )
                                     {
                                         M_phi[KK][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*j+k, q );
-                                        M_phi[KK][q]( k,j ) = M_phi[KK][q]( j,k );
+                                        //M_phi[KK][q]( k,j ) = M_phi[KK][q]( j,k );
 
                                     }
-                                    M_phi[KK][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*j+j, q );
+                                    //M_phi[KK][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*j+j, q );
                                 }
 
                                 for ( index j = 0; j < nDim; ++j )

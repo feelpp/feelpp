@@ -23,7 +23,7 @@
 #
 if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
-  add_subdirectory(contrib/gmsh)
+  #add_subdirectory(contrib/gmsh)
   # we include this directory : add some missing headers from Gmsh
   INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 

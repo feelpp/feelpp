@@ -128,20 +128,19 @@ public:
      */
     //@{
 
-    template<typename FaceIterator>
-    void add( FaceIterator it )
+    void add( face_type const& face )
         {
-            bool useConnection0 = it->processId() == it->proc_first();
-            if ( it->isGhostCell() )
+            bool useConnection0 = face.processId() == face.proc_first();
+            if ( face.isGhostCell() )
             {
-                if ( M_doftable->isElementDone( it->ad_first() ) )
+                if ( M_doftable->isElementDone( face.ad_first() ) )
                 {
                     useConnection0 = true;
                 }
                 else
                 {
-                    CHECK( it->isConnectedTo1() ) << "no connection1";
-                    CHECK( M_doftable->isElementDone( it->ad_second() ) ) << " no dof table define on this elt " << it->ad_second() << "\n";
+                    CHECK( face.isConnectedTo1() ) << "no connection1";
+                    CHECK( M_doftable->isElementDone( face.ad_second() ) ) << " no dof table define on this elt " << face.ad_second() << "\n";
                     useConnection0 = false;
                 }
             }
@@ -150,9 +149,22 @@ public:
             uint16_type lcEdge = 0;
             uint16_type lcFace = 0;
 
-            addVertexBoundaryDof( it, useConnection0, lcVertex );
-            addEdgeBoundaryDof( it, useConnection0, lcEdge );
-            addFaceBoundaryDof( it, useConnection0, lcFace );
+            addVertexBoundaryDof( face, useConnection0, lcVertex );
+            addEdgeBoundaryDof( face, useConnection0, lcEdge );
+            addFaceBoundaryDof( face, useConnection0, lcFace );
+        }
+
+    void add( face_type const& face, uint8_type connectionId )
+        {
+            bool useConnection0 = (connectionId == 0);
+
+            uint16_type lcVertex = 0;
+            uint16_type lcEdge = 0;
+            uint16_type lcFace = 0;
+
+            addVertexBoundaryDof( face, useConnection0, lcVertex );
+            addEdgeBoundaryDof( face, useConnection0, lcEdge );
+            addFaceBoundaryDof( face, useConnection0, lcFace );
         }
 
     //@}
@@ -178,16 +190,15 @@ private:
             return *this;
         }
 
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        addVertexBoundaryDof( face_it, useConnection0, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
+        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
     }
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    template<typename FaceIterator> void addVertexBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
@@ -196,21 +207,21 @@ private:
 
         if ( useConnection0 )
         {
-            iElAd = face_it->ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            iElAd = face.ad_first();
+            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_first();
+            iFaEl = face.pos_first();
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
 
         else
         {
-            iElAd = face_it->ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            iElAd = face.ad_second();
+            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_second();
+            iFaEl = face.pos_second();
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
 
@@ -223,12 +234,12 @@ private:
             {
                 uint16_type ldinelt = iFaEl * fe_type::nDofPerVertex + l;
                 auto const& temp= M_doftable->localToGlobal( iElAd, ldinelt, c );
-                M_doftable->M_face_l2g[ face_it->id()][ lc ] = FaceDof( temp, lc, ldinelt );
+                M_doftable->M_face_l2g[ face.id()][ lc ] = FaceDof( temp, lc, ldinelt );
             }
         }
     }
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
     {
         BOOST_STATIC_ASSERT( face_type::numVertices );
 
@@ -237,20 +248,20 @@ private:
 
         if ( useConnection0 )
         {
-            iElAd = face_it->ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            iElAd = face.ad_first();
+            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_first();
+            iFaEl = face.pos_first();
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
         else
         {
-            iElAd = face_it->ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            iElAd = face.ad_second();
+            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_second();
+            iFaEl = face.pos_second();
             FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
         size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
@@ -278,30 +289,30 @@ private:
                 {
                     uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
                     auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }
     }
-    template<typename FaceIterator>
-    void addVertexBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
     {
-        addVertexBoundaryDof( face_it, useConnection0, lc, mpl::bool_<true>(), mpl::int_<2>() );
+        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<true>(), mpl::int_<2>() );
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
         static const bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
-        addEdgeBoundaryDof( face_it, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
+        addEdgeBoundaryDof( face, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
+
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
+
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
+
+    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
     {
         uint16_type iFaEl;
         size_type iElAd;
@@ -310,22 +321,22 @@ private:
 
         if ( useConnection0 )
         {
-            iElAd = face_it->ad_first();
+            iElAd = face.ad_first();
             FEELPP_ASSERT( iElAd != invalid_size_type_value )
-            ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_first();
+            iFaEl = face.pos_first();
         }
 
         else
         {
-            iElAd = face_it->ad_second();
+            iElAd = face.ad_second();
             FEELPP_ASSERT( iElAd != invalid_size_type_value )
-            ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_second();
+            iFaEl = face.pos_second();
         }
 
         FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
@@ -350,12 +361,12 @@ private:
                 uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
                     iFaEl * fe_type::nDofPerEdge + l ;
                 auto const& temp = M_doftable->localToGlobal( iElAd,ldinelt, c );
-                M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
             }
         }
     }
-    template<typename FaceIterator>
-    void addEdgeBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
+
+    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
     {
         //BOOST_STATIC_ASSERT( face_type::numEdges );
         uint16_type iFaEl;
@@ -363,22 +374,22 @@ private:
 
         if ( useConnection0 )
         {
-            iElAd = face_it->ad_first();
+            iElAd = face.ad_first();
             FEELPP_ASSERT( iElAd != invalid_size_type_value )
-            ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_first();
+            iFaEl = face.pos_first();
         }
 
         else
         {
-            iElAd = face_it->ad_second();
+            iElAd = face.ad_second();
             FEELPP_ASSERT( iElAd != invalid_size_type_value )
-            ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
-            iFaEl = face_it->pos_second();
+            iFaEl = face.pos_second();
         }
 
 #if !defined(NDEBUG)
@@ -409,46 +420,46 @@ private:
                     uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
                         iEdEl * fe_type::nDofPerEdge + l;
                     auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }
     }
 
 
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc )
+    void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        addFaceBoundaryDof( face_it, useConnection0, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
+        addFaceBoundaryDof( face, useConnection0, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
     }
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator /*face_it*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false> )
+
+    void addFaceBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false> )
     {
     }
-    template<typename FaceIterator>
-    void addFaceBoundaryDof( FaceIterator face_it, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
+
+    void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
         {
+
             uint16_type iFaEl;
             size_type iElAd;
 
             if ( useConnection0 )
             {
-                iElAd = face_it->ad_first();
+                iElAd = face.ad_first();
                 FEELPP_ASSERT( iElAd != invalid_size_type_value )
-                    ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                    ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
-                iFaEl = face_it->pos_first();
+                iFaEl = face.pos_first();
             }
 
             else
             {
-                iElAd = face_it->ad_second();
+                iElAd = face.ad_second();
                 FEELPP_ASSERT( iElAd != invalid_size_type_value )
-                    ( face_it->id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+                    ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
-                iFaEl = face_it->pos_second();
+                iFaEl = face.pos_second();
             }
 
 #if !defined(NDEBUG)
@@ -473,7 +484,7 @@ private:
                         element_type::numEdges*fe_type::nDofPerEdge +
                         iFaEl * fe_type::nDofPerFace + l;
                     auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face_it->id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
                 }
             }
         }

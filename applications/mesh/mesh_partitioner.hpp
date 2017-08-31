@@ -48,7 +48,8 @@ void partition( std::vector<int> const& nParts)
         tic();
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeq()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
-                             _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
+                             _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED),
+                             _straighten=false );
                              //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                              //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
@@ -73,6 +74,39 @@ void partition( std::vector<int> const& nParts)
 
         fs::path inputDir = inputPathMesh.parent_path();
         std::string inputFilenameWithoutExt = inputPathMesh.stem().string();
+
+        std::vector<elements_reference_wrapper_t<mesh_type>> partitionByRange;
+        if ( Environment::vm().count("by-markers-desc") )
+        {
+            std::vector<std::string> inputMarkers = Environment::vm()["by-markers-desc"].template as<std::vector<std::string> >();
+            std::string inputMarkersAsString;
+            for ( std::string const& marker : inputMarkers )
+                inputMarkersAsString += marker;
+
+            boost::char_separator<char> sep(":");
+            boost::char_separator<char> sep2(",");
+            boost::tokenizer< boost::char_separator<char> > kvlist( inputMarkersAsString, sep );
+            for( const auto& ikvl : kvlist )
+            {
+                boost::tokenizer< boost::char_separator<char> > kvlist2( ikvl, sep2);
+                std::vector<std::string> markerList;
+                for( const auto& ikvl2 : kvlist2 )
+                {
+                    markerList.push_back( ikvl2 );
+                }
+                if ( !markerList.empty() )
+                    partitionByRange.push_back( markedelements(mesh,markerList) );
+            }
+        }
+        else if ( Environment::vm().count("by-markers") )
+        {
+            for ( auto const& markPair : mesh->markerNames() )
+            {
+                std::string marker = markPair.first;
+                if ( mesh->markerDim( marker ) == mesh_type::nDim ) // mesh->hasElementMarker( marker ) )
+                    partitionByRange.push_back( markedelements(mesh,marker) );
+            }
+        }
 
         for ( int nPartition : nParts )
         {
@@ -105,7 +139,7 @@ void partition( std::vector<int> const& nParts)
             tic();
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
-            io.write( partitionMesh( mesh, nPartition ) );
+            io.write( partitionMesh( mesh, nPartition, partitionByRange ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
     }

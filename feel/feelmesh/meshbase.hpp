@@ -1,47 +1,53 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-09
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file meshbase.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-09
- */
-#ifndef __MeshBase_H
-#define __MeshBase_H 1
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+//! @copyright 2005-2006 EPFL
+//! @copyright 2011-2017 Feel++ Consortium
+//!
+#ifndef FEELPP_MESHBASE_HPP
+#define FEELPP_MESHBASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
+#include <unordered_map>
+
+#if defined(FEELPP_HAS_VTK)
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#endif
 
 namespace Feel
 {
 class SubMeshData;
 
-/**
- * Components of a mesh that can be enabled or disabled when calling
- * \c updateForUse()
- */
+//!
+//! @brief Mesh components enum
+//! @ingroup Mesh
+//! 
+//! Components of a mesh that can be enabled or disabled when calling
+//! \c updateForUse()
+//!
 enum MeshComponents
 {
     MESH_UPDATE_EDGES     = ( 1 << 0 ),
@@ -54,21 +60,22 @@ enum MeshComponents
     MESH_REMOVE_PERIODIC_FACES_FROM_BOUNDARY = ( 1 << 7 ),
     MESH_NO_UPDATE_MEASURES = ( 1 << 8 ),
     MESH_UPDATE_ELEMENTS_ADJACENCY = ( 1 << 9 ),
-    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 )
+    MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 ),
+    MESH_GEOMAP_NOT_CACHED = ( 1 << 11 )
 
 
 };
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
 const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 
-/**
- * \class MeshBase
- * \brief base mesh class
- *
- *  @author Christophe Prud'homme
- *  @see
- */
-class MeshBase
+//!
+//! @brief base mesh class
+//! @ingroup Mesh
+//!
+//! @author Christophe Prud'homme
+//! @see
+//!/
+class FEELPP_EXPORT MeshBase
 {
 public:
 
@@ -134,20 +141,40 @@ public:
     /**
      * \return the number of elements
      */
+    virtual size_type numGlobalElements() const = 0;
+    /**
+     * \return the number of faces
+     */
+    virtual size_type numGlobalFaces() const = 0;
+    /**
+     * \return the number of edges
+     */
+    virtual size_type numGlobalEdges() const = 0;
+    /**
+     * \return the number of points
+     */
+    virtual size_type numGlobalPoints() const = 0;
+    /**
+     * \return the number of vertices
+     */
+    virtual size_type numGlobalVertices() const = 0;
+    /**
+     * \return the number of elements (in current process)
+     */
     virtual size_type numElements() const = 0;
 
     /**
-     * \return the number of faces
+     * \return the number of faces (in current process)
      */
     virtual size_type numFaces() const = 0;
 
     /**
-     * \return the number of Points
+     * \return the number of Points (in current process)
      */
     virtual size_type numPoints() const = 0;
 
     /**
-     * \return the number of vertices
+     * \return the number of vertices (in current process)
      */
     size_type numVertices() const
     {
@@ -201,17 +228,13 @@ public:
      */
     //@{
 
-    /**
-     * set the number of partitions
-     */
+    //! set the number of partitions 
     void setNumberOfPartitions( rank_type n )
     {
         M_n_parts = n;
     }
 
-    /**
-     * set the number of vertices
-     */
+    //! set the number of vertices 
     void setNumVertices( size_type n )
     {
         M_n_vertices = n ;
@@ -430,6 +453,27 @@ public:
             return invalid_size_type_value;
         }
 
+    //! \return ids in sub mesh given the ids in the parent mesh
+    std::pair<std::vector<size_type>,bool> meshToSubMesh( std::vector<size_type> const& p, bool add_invalid_indices = false ) const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            std::vector<size_type> sid;//(std::distance(p.first,p.second) );
+            bool has_invalid_values = false;
+            std::for_each( p.begin(), p.end(), [&]( auto const& id ){
+                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                        sid.push_back( M_smd->bm.right.find( id )->second );
+                    else
+                    {
+                        if ( add_invalid_indices )
+                            sid.push_back( invalid_size_type_value );
+                        has_invalid_values = true;
+                    }
+                    // the submesh element id has not been found, return invalid value
+                    //return invalid_size_type_value;
+                });
+            return std::make_pair(sid,has_invalid_values);
+        }
+
     //! \return id in parent mesh given the id in the sub mesh
     size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
         {
@@ -510,6 +554,16 @@ public:
     hasMarker( std::string const& marker ) const
         {
             return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim, false otherwise
+     */
+    bool
+    hasElementMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) && ( markerDim( marker ) == M_topodim );
         }
 
     /**
@@ -615,7 +669,27 @@ public:
         }
 
     /// @return the marker id given the marker name \p marker
-    flag_type markerId( boost::any const& marker );
+    flag_type markerId( boost::any const& marker ) const;
+
+    /// @return the set of marker id given the marker name \p marker
+    std::set<flag_type> markersId( boost::any const& marker ) const;
+
+
+#if defined(FEELPP_HAS_VTK)
+    struct MappingDataWithVTK
+    {
+        MappingDataWithVTK() = default;
+        MappingDataWithVTK( MappingDataWithVTK const& ) = default;
+        MappingDataWithVTK( MappingDataWithVTK && ) = default;
+        std::unordered_map<size_type,size_type> mapPointsFeelIdToVTKId;
+        std::unordered_map<size_type,size_type> mapElementsFeelIdToVTKId;
+    };
+    typedef std::pair< vtkSmartPointer<vtkUnstructuredGrid>, std::shared_ptr<MappingDataWithVTK> > vtk_export_type;
+    //!
+    //! exporter to VTK data structure 
+    //!
+    virtual vtk_export_type exportVTK( bool exportMarkers=false, std::string const& vtkFieldNameMarkers="markers" ) const = 0;
+#endif // FEELPP_HAS_VTK
 
     //@}
 
@@ -660,7 +734,7 @@ protected:
     /**
      * check elements orientation and fix it if needed
      */
-    virtual void checkAndFixPermutation() = 0;
+    //virtual void checkAndFixPermutation() = 0;
 
 
 private:

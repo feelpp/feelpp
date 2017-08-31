@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2017 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,59 +21,72 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+project(crb)
+
+
+# with this it is possible to compile applications/crb from an installed
+# version of feel++. This is useful also for staged compilation for docker
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  cmake_minimum_required(VERSION VERSION 3.1.3)
+  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+endif()
+
 add_custom_target(crb)
 set(FEELPP_CRB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_CRB_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-include(UseCRB)
 
-OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" ON)
-OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ON)
-OPTION(FEELPP_ENABLE_CRB_HEAT2D "enable HEAT2D testcase" ON)
+
+include_directories(${FEELPP_CRB_SOURCE_DIR})
+include_directories(${FEELPP_CRB_BINARY_DIR})
+
+OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
+
+OPTION(FEELPP_ENABLE_CRB_EADS "enable EADS testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HEAT1D "enable HEAT1D testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HEAT2D "enable HEAT2D testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HEAT3D "enable HEAT3D testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_LINEARELASTICITY "enable LINEARELASTICITY testcase" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_RBHEAT "enable RBHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_CABINEHEAT "enable CABINEHEAT testcases" OFF)
 OPTION(FEELPP_ENABLE_CRB_FINALCABINEHEAT "enable FINALCABINEHEAT testcases" OFF)
-OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" ON)
-OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" ON)
-OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ON)
-OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
-OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ON)
-OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ON)
-OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ON)
-OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_AD1 "enable AD1(Advection-Diffusion) testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_BENCHMARKGREPL "enable BenchmarkGrepl testcases" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
+OPTION(FEELPP_ENABLE_CRB_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_CRB_ALL})
 
-OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
-if (FEELPP_ENABLE_CRB_ALL)
-  set(FEELPP_ENABLE_CRB_EADS ON)
-  set(FEELPP_ENABLE_CRB_HEAT1D ON)
-  set(FEELPP_ENABLE_CRB_HEAT2D ON)
-  set(FEELPP_ENABLE_CRB_RBHEAT OFF)
-  set(FEELPP_ENABLE_CRB_CABINEHEAT OFF)
-  set(FEELPP_ENABLE_CRB_FINALCABINEHEAT OFF)
-  set(FEELPP_ENABLE_CRB_HEATSINK ON)
-  set(FEELPP_ENABLE_CRB_AD1 ON)
-  set(FEELPP_ENABLE_CRB_THERMALBLOCK ON)
-  set(FEELPP_ENABLE_CRB_HELMHOLTZ ON)
-  set(FEELPP_ENABLE_CRB_HEATSHIELD ON)
-  set(FEELPP_ENABLE_CRB_BENCHMARKGREPL ON)
-  set(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION ON)
-  set(FEELPP_ENABLE_CRB_THERMALFIN ON)
-  set(FEELPP_ENABLE_CRB_EEG OFF)
-endif()
-
-
+set(FEELPP_CRB_LIBRARIES)
 IF ( FEELPP_ENABLE_CRB_EADS )
-  add_subdirectory(eads)
+  #add_subdirectory(eads)
 ENDIF()
 
 IF ( FEELPP_ENABLE_CRB_HEAT2D )
   add_subdirectory(heat2d)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_HEAT3D )
+  add_subdirectory(heat3d)
+ENDIF()
+
 IF ( FEELPP_ENABLE_CRB_HEAT1D )
   add_subdirectory(heat1d)
   add_subdirectory(unsteady_heat1d)
 ENDIF()
+
+if ( FEELPP_ENABLE_CRB_LINEARELASTICITY )
+    add_subdirectory(linearelasticity3d)
+endif()
+add_subdirectory(thermalbuilding)
+add_subdirectory(opusheat)
 
 IF ( FEELPP_ENABLE_CRB_RBHEAT )
   #add_subdirectory(Rbheat)
@@ -125,3 +138,16 @@ ENDIF()
 IF ( FEELPP_ENABLE_CRB_EEG )
   add_subdirectory(eeg)
 ENDIF()
+
+IF ( FEELPP_ENABLE_CRB_CONVECTION )
+  add_subdirectory(convection)
+ENDIF()
+
+
+
+add_subdirectory(onlinerun)
+add_subdirectory(minimal)
+add_subdirectory(thermoelectric)
+add_subdirectory(biotsavart)
+
+include(${FEELPP_CRB_SOURCE_DIR}/cmake/feelpp.crb.cmake)

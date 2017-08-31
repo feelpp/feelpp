@@ -53,7 +53,7 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F );
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const override;
     virtual element_energyderivative_ptrtype const& energyDerivative1Impl() const =0;
     virtual element_energyderivative_ptrtype const& energyDerivative2Impl() const =0;
 
@@ -113,7 +113,7 @@ HyperelasticForceModel<LevelSetType>::energyDerivative2() const
 
 template<typename LevelSetType>
 void
-HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
+HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
 #ifdef DEBUG_HYPERELASTICFORCEMODEL
     if( !M_exporterInitDone )

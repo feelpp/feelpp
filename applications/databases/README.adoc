@@ -1,0 +1,75 @@
+:toc:
+:math:
+:latex:
+
+= Feel++ database applications
+
+== Database conversion : from Acusim to Feel{plus}{plus}
+
+The goal of the executable `feelpp_databases_converter_acusim` is to convert a database  
+built from the Acusim software into a Feel{plus}{plus}  database. The input directory (`idir`) is
+is the base directory of Acusim database. Inside this one, we must have a subdirectory called
+work directory (`acusim.work-dir`) and generally named `ACUSIM.DIR`.
+The name of database (`iname`) is also required. The fields which are extracted in new database are
+defined by a list of field name (`iname`) provided by user. The partitioning for parallel job is automatically
+done with respect to the number of process required by the run. The converter
+will build the Feel{plus}{plus} database into the output directory (`odir`).
+
+=== Options
+[cols="1,1,1,1", options="header"]
+|=======
+| option | type | default value |  description
+| iname  | string |  | name of Acusim database
+| idir | string |  | base directory of Acusim database
+| acusim.work-dir | string | ACUSIM.DIR | subdir directory of Acusim database
+| fields | list of string |  | list of fields to extract
+| odir | string |  | output directory of the Feel{plus}{plus} database
+|=======
+
+=== Example of run
+We run the converter on the database named `test` and located in `~/acusimdata/db1/ACUSIM.DIR/`.
+We extract the `velocity` and `pressure` fields. The mesh is partitioned into 24 parts and the
+fields extracted are stored on this partitioning.
+```
+mpirun -np 24 ./feelpp_databases_converter_acusim \
+       --idir ~/acusimdata/db1 \
+       --iname=test \
+       --fields velocity pressure \
+       --odir ~/myAcusimDbConversion/p24
+```
+
+== Build POD matrix from a Feel++ database
+The program `feelpp_databases_pod` allows to build the POD matrix and to compute the eigen modes and eigen vectors of this matrix.
+The inputs required are the filename of a database (`ifile`) and the field name  ( `field` ) choosen. We denote by stem:[m] the pod matrix,
+stem:[u_i] the a function at a time index i and stem:[u_i^k] the value of this function at dof index stem:[k].
+Two kinds of scalar product are available in this application :
+
+ - `L2` : stem:[ m(i,j)= \int_\Omega u_i \cdot u_j ]
+ - `euclidian` : stem:[ m(i,j)=\sum_{k=0}^{N_{dof}} u_i^k u_j^k ] 
+
+By default, the POD matrix is built on all time steps registered in database. The user can select a portion of temporal range
+by adding the options `time-initial` and `time-final`. The outputs are saved in disk in the directory defined by `directory` option.
+There is the POD matrix which are been saved in text format (`pod.txt`) and in Matlab/Octave format (`pod.m`).
+
+=== Options
+[cols="1,1,1,1", options="header"]
+|=======
+| option | type | default value |  description
+| ifile  | string |  | filename of a database description
+| field |  string |  | field name defined in database which are used in POD
+| directory | string |  | output directory of results
+| scalar-product |  string | L2 | scalar product used in the build of POD matrix. possible values are : L2,euclidian
+| scalar-product.use-operator | string | true  | build the scalar product operator : more efficient but need to store a sparse matrix
+| time-initial | string |  | select an initial time. if not given, it take the first time step registered.
+| time-final | string |  | select an final time. if not given, it take the first time step registered.
+|=======
+
+=== Example of run
+```
+mpirun -np 24 ./feelpp_databases_pod \
+       --ifile ~/myAcusimDbConversion/p24/mydb.dbfeelpp.json \
+       --directory ~/feel/newpod
+       --field pressure \
+       --scalar-product L2 \
+       --time-initial=0.1 --time-final=0.2
+```

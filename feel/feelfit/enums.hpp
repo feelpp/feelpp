@@ -25,6 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef FEELPP_INTERPOLATOR_ENUMS_HPP
 #define FEELPP_INTERPOLATOR_ENUMS_HPP 1
 
+namespace Feel
+{
+
 enum InterpolationType
 {
   P0=0,
@@ -32,6 +35,8 @@ enum InterpolationType
   Spline,
   Akima
 };
+
+extern std::map<std::string, InterpolationType> InterpolationTypeMap;
 
 /*
  * left : f(x_{i-1} < x < x_i     ) = x_i
@@ -66,5 +71,7 @@ enum ExtrapolationType_spline
   natural=0,
   clamped
 };
+
+} // namespace Feel
 
 #endif //FEELPP_INTERPOLATOR_ENUMS_HPP

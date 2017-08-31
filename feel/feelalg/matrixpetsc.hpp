@@ -30,12 +30,13 @@
 #ifndef __MatrixPetsc_H
 #define __MatrixPetsc_H 1
 
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
 #include <feel/feelconfig.h>
 
 #if defined(FEELPP_HAS_PETSC_H)
 
-
-#include <feel/feelcore/application.hpp>
+#include <Eigen/Core>
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/graphcsr.hpp>
@@ -69,7 +70,7 @@ extern "C" {
 namespace Feel
 {
 template<typename T> class VectorPetsc;
-
+template<typename T> class VectorPetscMPI;
 /**
  * \class MatrixPetsc
  * \brief Wrapper for petsc matrices
@@ -83,7 +84,7 @@ template<typename T> class VectorPetsc;
  * @see
  */
 template<typename T>
-class MatrixPetsc : public MatrixSparse<T>
+class FEELPP_EXPORT MatrixPetsc : public MatrixSparse<T>
 {
     typedef MatrixSparse<T> super;
 public:
@@ -217,7 +218,7 @@ public:
     //! @return the number of non-zero entries
     //!
     std::size_t nnz() const;
-    
+
     //@}
 
     /** @name  Mutators
@@ -366,7 +367,9 @@ public:
      */
     void addMatrix ( int* rows, int nrows,
                      int* cols, int ncols,
-                     value_type* data );
+                     value_type* data,
+                     size_type K = 0,
+                     size_type K2 = invalid_size_type_value);
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -562,9 +565,14 @@ public:
     virtual void getMatInfo(std::vector<double> &);
 
     //!
-    //! 
+    //!
     //!
     virtual void threshold( void );
+
+    void save( std::string const& filename="default_archive_name", std::string const& format="binary" );
+
+    void load( std::string const& filename="default_archive_name", std::string const& format="binary" );
+
 
 private:
 
@@ -574,12 +582,20 @@ private:
     void getSubMatrixPetsc( std::vector<size_type> const& rows,
                             std::vector<size_type> const& cols,
                             Mat &submat, bool doClose = true ) const;
+
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version );
+
 protected:
 
     /**
      * Petsc matrix datatype to store values
      */
     Mat M_mat;
+
+
 
 private:
 
@@ -663,7 +679,7 @@ public :
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_size_type_value );
 
     void addMatrix( const T a, MatrixSparse<T> const&X );
 
@@ -679,11 +695,19 @@ public :
 
 private :
 
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version )
+    {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+    }
+
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
 };
 
-
-
 } // Feel
+
+
 #endif /* FEELPP_HAS_PETSC */
 #endif /* __MatrixPetsc_H */

@@ -637,3 +637,4 @@ ex color_trace(const ex & e, unsigned char rl)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

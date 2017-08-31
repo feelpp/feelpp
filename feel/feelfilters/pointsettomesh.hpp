@@ -41,6 +41,7 @@
 #if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #endif
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -221,7 +222,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         __nd = pset->point( __i );
 
         point_type __pt( __i,__nd, false );
-        __pt.marker() = 0;
+        __pt.setMarker( 0 );
 
         if ( __nd[0] == -1 || __nd[0] == 1 )
         {
@@ -244,7 +245,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     face_type* pf0 = new face_type;
 
-    pf0->marker() = 0;
+    pf0->setMarker( 0 );
     pf0->setPoint( 0, M_mesh->point( 0 ) );
 
     pf0->setId( n_faces++ );
@@ -255,7 +256,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     face_type* pf1 = new face_type;
 
-    pf1->marker() = 0;
+    pf1->setMarker( 0 );
     pf1->setPoint( 0, M_mesh->point( 1 ) );
 
     pf1->setId( n_faces++ );
@@ -271,7 +272,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         element_type  pf;
 
         pf.setId( __i );
-        pf.marker() = 0;
+        pf.setMarker( 0 );
 
         if ( __nele == 1 )
         {

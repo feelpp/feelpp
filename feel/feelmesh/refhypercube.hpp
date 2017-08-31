@@ -29,6 +29,8 @@
 #ifndef __refhypercube_H
 #define __refhypercube_H 1
 
+#include <feel/feelmesh/marker.hpp>
+
 namespace Feel
 {
 template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
@@ -445,7 +447,11 @@ public:
     {
         return 0;
     }
-    size_type marker() const
+    std::map<uint16_type,Marker1> markers() const
+    {
+        return std::map<uint16_type,Marker1>();
+    }
+    flag_type marker() const
     {
         return 0;
     }

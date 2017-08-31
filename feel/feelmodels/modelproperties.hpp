@@ -38,7 +38,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-class ModelProperties
+class FEELPP_EXPORT ModelProperties
 {
 public:
     ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
@@ -53,7 +53,7 @@ public:
 
     std::string const& name() const {  return M_name; }
     void setName( std::string const& t) { M_name = t; }
-    std::string shortName() const {  return M_shortname; }
+    std::string const& shortName() const {  return M_shortname; }
     void setShortName( std::string const& t) { M_shortname = t; }
 
     std::string const& description() const {  return M_description; }

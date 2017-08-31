@@ -1,6 +1,6 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-project( feel-benchmarks )
+project( benchmarks )
 
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 

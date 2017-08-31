@@ -31,36 +31,29 @@
 #ifndef FEELPP_ELEMENTS_HPP
 #define FEELPP_ELEMENTS_HPP 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/random_access_index.hpp>
+#include <unordered_map>
 
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
-namespace multi_index = boost::multi_index;
+
 /// \cond detail
 
 namespace detail
 {
     template <typename EltType >
     void
-    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<1> /**/)
+    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<1> /**/)
     {}
     template <typename EltType >
     void
-    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<2> /**/)
+    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<2> /**/)
     {}
     template <typename EltType >
     void
-    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<3> /**/)
+    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<3> /**/)
     {
         if ( e.edgePtr(i) )
             e.edge( i ).addElementGhost( e.processId(),e.id() );
@@ -75,7 +68,7 @@ namespace detail
   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   @see
 */
-template<typename ElementType>
+template<typename ElementType, typename T = double>
 class Elements
 {
 public:
@@ -91,106 +84,27 @@ public:
      * dimension of the geometric space.
      */
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
-            mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType> >,
+                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-            mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType> >,
+                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-            mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType> >,
-            mpl::identity<GeoElement0D<ElementType::nRealDim, ElementType> > >::type>::type>::type::type element_type;
-
-    /**
-     * multi-indexed element container
-     */
-    typedef multi_index::multi_index_container<
-        element_type,
-        multi_index::indexed_by<
-            //multi_index::random_access<>,
-            // sort by less<int> on id() + pid()
-            multi_index::ordered_unique<
-                multi_index::composite_key<element_type,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      rank_type,
-                                                                      &element_type::processId>,
-                                           multi_index::const_mem_fun<element_type,
-                                                                      size_type,
-                                                                      &element_type::id> > >,
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker1 const&,
-                                                                                                  &element_type::marker>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker2>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker2 const&,
-                                                                                                  &element_type::marker2>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker3>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  Marker3 const&,
-                                                                                                  &element_type::marker3>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId> > >,
-
-            // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                            multi_index::composite_key<element_type,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  rank_type,
-                                                                                                  &element_type::processId>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  bool,
-                                                                                                  &element_type::isOnBoundary>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  uint16_type,
-                                                                                                  &element_type::boundaryEntityDimension> > >,
-
-            // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_ghostcell>,
-                                            multi_index::const_mem_fun<element_type,
-                                                                       bool,
-                                                                       &element_type::isGhostCell> >
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
+                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone/*ElementType*/, T> > >::type>::type>::type::type element_type;
 
 
-            > > elements_type;
-
+    typedef std::unordered_map<size_type,element_type> elements_type;
 
     typedef typename elements_type::iterator element_iterator;
     typedef typename elements_type::const_iterator element_const_iterator;
 
-    // marker
-    typedef typename elements_type::template index<Feel::detail::by_marker>::type marker_elements;
-    typedef typename marker_elements::iterator marker_element_iterator;
-    typedef typename marker_elements::const_iterator marker_element_const_iterator;
+    typedef std::vector<boost::reference_wrapper<element_type const> > elements_reference_wrapper_type;
+    typedef std::shared_ptr<elements_reference_wrapper_type> elements_reference_wrapper_ptrtype;
+    typedef typename elements_reference_wrapper_type::iterator element_reference_wrapper_iterator;
+    typedef typename elements_reference_wrapper_type::const_iterator element_reference_wrapper_const_iterator;
 
-    // marker2
-    typedef typename elements_type::template index<Feel::detail::by_marker2>::type marker2_elements;
-    typedef typename marker2_elements::iterator marker2_element_iterator;
-    typedef typename marker2_elements::const_iterator marker2_element_const_iterator;
-
-    // marker3
-    typedef typename elements_type::template index<Feel::detail::by_marker3>::type marker3_elements;
-    typedef typename marker3_elements::iterator marker3_element_iterator;
-    typedef typename marker3_elements::const_iterator marker3_element_const_iterator;
-
-    typedef typename elements_type::template index<Feel::detail::by_location>::type location_elements;
-    typedef typename location_elements::iterator location_element_iterator;
-    typedef typename location_elements::const_iterator location_element_const_iterator;
-
-    typedef typename elements_type::template index<Feel::detail::by_ghostcell>::type ghostcell_elements;
-    typedef typename ghostcell_elements::iterator ghostcell_element_iterator;
-    typedef typename ghostcell_elements::const_iterator ghostcell_element_const_iterator;
+    typedef std::vector<boost::reference_wrapper<element_type> > ordered_elements_reference_wrapper_type;
+    typedef typename ordered_elements_reference_wrapper_type::iterator ordered_element_reference_wrapper_iterator;
+    typedef typename ordered_elements_reference_wrapper_type::const_iterator ordered_element_reference_wrapper_const_iterator;
 
     typedef std::map<int, size_type> parts_map_type;
     typedef typename parts_map_type::const_iterator parts_const_iterator_type;
@@ -256,7 +170,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numPoints; ++i )
+            for ( uint16_type i = 0; i < e.numPoints; ++i )
                 e.point( i ).addElement( e.id() );
         }
     };
@@ -270,7 +184,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numPoints; ++i )
+            for ( uint16_type i = 0; i < e.numPoints; ++i )
             {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
                 // only if point is on interprocess
@@ -289,7 +203,7 @@ public:
     {
         void operator()( element_type& e )
         {
-            for ( int i = 0; i < e.numEdges; ++i )
+            for ( uint16_type i = 0; i < e.numEdges; ++i )
                 Feel::detail::updateElementGhostConnectEdgeToElement(e,i,mpl::int_<element_type::nDim>());
         }
     };
@@ -306,24 +220,28 @@ public:
     Elements( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommElements(worldComm),
-        M_elements()
+        M_elements(),
+        M_needToOrderElements( false )
     {}
 
     Elements( Elements const & f )
         :
         M_worldCommElements( f.worldCommElements() ),
-        M_elements( f.M_elements )
-    {}
-
-    virtual ~Elements()
+        M_elements( f.M_elements ),
+        M_needToOrderElements( false )
     {
-        this->clear();
+        this->buildOrderedElements();
     }
+
+    virtual ~Elements() {}
 
     void clear()
         {
-            VLOG(1) << "deleting elements...\n";
+            DVLOG(1) << "deleting elements...\n";
+            M_orderedElements.clear();
             M_elements.clear();
+            M_needToOrderElements = false;
+            M_parts.clear();
         }
     //@}
 
@@ -340,6 +258,7 @@ public:
         {
             M_worldCommElements = e.M_worldCommElements;
             M_elements = e.M_elements;
+            this->buildOrderedElements();
         }
 
         return *this;
@@ -383,46 +302,69 @@ public:
 
     bool isBoundaryElement( element_type const & e ) const
     {
-        return elementIterator(e.id())->isOnBoundary();
+        return e.isOnBoundary();
     }
     bool isBoundaryElement( size_type const & id ) const
     {
-        return elementIterator(id)->isOnBoundary();
+        auto itFindElt = M_elements.find( id );
+        if ( itFindElt == M_elements.end() )
+            return false;
+        return itFindElt->second.isOnBoundary();
     }
 
-    element_iterator elementIterator( size_type i ) const
+    element_const_iterator elementIterator( size_type i ) const
     {
-        return  M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        return M_elements.find( i );
+    };
+    element_iterator elementIterator( size_type i )
+    {
+        return M_elements.find( i );
     };
 
-    element_iterator elementIterator( size_type i, rank_type p ) const
+    FEELPP_DEPRECATED
+    element_const_iterator elementIterator( size_type i, rank_type p ) const
     {
-        return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        return M_elements.find( i );
     };
 
-    element_iterator elementIterator( element_type const& elt ) const
+    element_const_iterator elementIterator( element_type const& elt ) const
     {
-        return elementIterator( elt.id(), elt.processId() );
+        return elementIterator( elt.id() );
+    };
+    element_iterator elementIterator( element_type const& elt )
+    {
+        return elementIterator( elt.id() );
     };
 
     element_type const& element( size_type i ) const
     {
-        return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
+        auto itFindElt = M_elements.find( i );
+        CHECK( itFindElt != M_elements.end() ) << " element " << i << "does not found";
+        return itFindElt->second;
     };
 
+    FEELPP_DEPRECATED
     element_type const& element( size_type i, rank_type p ) const
     {
-        return *M_elements.template get<0>().find( boost::make_tuple( p, i ) );
+        return this->element( i );
     };
 
     /**
      * \return \c true if element with id \p i is found, \c false otherwise
      */
-    bool hasElement( size_type i, rank_type p = invalid_rank_type_value ) const
+    bool hasElement( size_type i ) const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
-               M_elements.template get<0>().end();
+        return M_elements.find( i ) != M_elements.end();
+    }
+
+    bool hasElement( size_type i, rank_type p ) const
+    {
+        auto itFindElt = M_elements.find( i );
+        if ( itFindElt == M_elements.end() )
+            return false;
+        if ( itFindElt->second.processId() != p )
+            return false;
+        return true;
     }
 
     element_iterator beginElement()
@@ -441,6 +383,23 @@ public:
     {
         return M_elements.end();
     }
+
+    ordered_element_reference_wrapper_iterator beginOrderedElement()
+        {
+            return M_orderedElements.begin();
+        }
+    ordered_element_reference_wrapper_const_iterator beginOrderedElement() const
+        {
+            return M_orderedElements.begin();
+        }
+    ordered_element_reference_wrapper_iterator endOrderedElement()
+        {
+            return M_orderedElements.end();
+        }
+    ordered_element_reference_wrapper_const_iterator endOrderedElement() const
+        {
+            return M_orderedElements.end();
+        }
 
 
     parts_const_iterator_type beginParts() const
@@ -472,268 +431,209 @@ public:
         return std::make_pair( M_elements.begin(), M_elements.end() );
     }
 
-    element_iterator beginElementWithId( size_type m )
-    {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_const_iterator beginElementWithId( size_type m ) const
-    {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_iterator endElementWithId( size_type m )
-    {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
-    element_const_iterator endElementWithId( size_type m ) const
-    {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), m ) );
-    }
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Id \p m
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithId( size_type m ) const
+        {
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            if ( this->hasElement( m ) )
+                myelements->push_back( boost::cref( this->element( m ) ) );
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
 
     /**
-     * \return the iterator \c begin over the elements with \c Marker1 \p m
+     * \return the range of iterator \c (begin,end) over the elements
+     * with any \c Marker1 \p on processor \p p
      */
-    marker_element_const_iterator beginElementWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).first;
-    }
-
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginOrderedElement();
+            auto en = this->endOrderedElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = unwrap_ref( *it );
+                if ( elt.processId() != part )
+                    continue;
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
     /**
-     * \return the iterator \c begin over the elements with \c Marker2 \p m
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p markerFlags on processor \p p
      */
-    marker2_element_const_iterator beginElementWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) ).first;
-    }
-
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+            auto it = this->beginOrderedElement();
+            auto en = this->endOrderedElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = unwrap_ref( *it );
+                if ( elt.processId() != part )
+                    continue;
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
+                    continue;
+                if ( markerFlags.find( elt.marker( markerType ).value() ) == markerFlags.end() )
+                    continue;
+                myelements->push_back(boost::cref(elt));
+            }
+            return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+        }
     /**
-     * \return the iterator \c begin over the elements with \c Marker3 \p m
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p m on processor \p p
      */
-    marker3_element_const_iterator beginElementWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) ).first;
-    }
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            if ( m == invalid_flag_type_value )
+                return this->elementsWithMarkerByType( markerType, p );
+            else
+                return this->elementsWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
 
-    /**
-     * \return the iterator \c end over the elements with \c Marker1 \p m
-     */
-    marker_element_const_iterator endElementWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) ).second;
-    }
-
-    /**
-     * \return the iterator \c end over the elements with \c Marker2 \p m
-     */
-    marker2_element_const_iterator endElementWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) ).second;
-    }
-
-    /**
-     * \return the iterator \c end over the elements with \c Marker3 \p m
-     */
-    marker3_element_const_iterator endElementWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) ).second;
-    }
+        }
 
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
-    std::pair<marker_element_const_iterator, marker_element_const_iterator>
-    elementsWithMarker( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), part ) );
-    }
-
-
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->elementsWithMarkerByType( 1, m, p );
+        }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker2 \p m on processor \p p
      */
-    std::pair<marker2_element_const_iterator, marker2_element_const_iterator>
-    elementsWithMarker2( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker2>().equal_range( boost::make_tuple( Marker2( m ), part ) );
-    }
-
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarker2( flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->elementsWithMarkerByType( 2, m, p );
+        }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker3 \p m on processor \p p
      */
-    std::pair<marker3_element_const_iterator, marker3_element_const_iterator>
-    elementsWithMarker3( size_type m, rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), part ) );
-    }
-
-    element_iterator beginElementWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
-    }
-    element_const_iterator beginElementWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
-    }
-    element_iterator endElementWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
-    }
-    element_const_iterator endElementWithProcessId( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
-    }
-
-    std::pair<element_const_iterator, element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsWithMarker3( flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->elementsWithMarkerByType( 3, m, p );
+        }
+    /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
-    }
-
-    std::pair<element_iterator, element_iterator>
-    elementsWithProcessId( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
-    }
-
-    /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
-     */
-    typename elements_type::template nth_index<0>::type &
-    elementsById()
-    {
-        return M_elements.template get<0>();
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginOrderedElement();
+        auto en = this->endOrderedElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = unwrap_ref( *it );
+            if ( elt.processId() != part )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
     /**
-     * get the elements container by id
-     *
-     *
-     * @return the element container by id
+     * \return the first iterator over the elements
+     * on processor \p p if exist else return endElement iterator
      */
-    typename elements_type::template nth_index<0>::type const&
-    elementsById() const
-    {
-        return M_elements.template get<0>();
-    }
+    element_const_iterator
+    firstElementIteratorWithProcessId( rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+            auto it = this->beginElement();
+            auto en = this->endElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = it->second;
+                if ( elt.processId() == part )
+                    return it;
+            }
+            return en;
+        }
 
-    /**
-     * get the elements container using the \c Marker1 view
-     *
-     *
-     * @return the element container using \c Marker1 view
-     */
-    marker_elements &
-    elementsByMarker()
-    {
-        return M_elements.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the elements container using the \c Marker2 view
-     *
-     *
-     * @return the element container using \c Marker2 view
-     */
-    marker2_elements &
-    elementsByMarker2()
-    {
-        return M_elements.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the elements container using the \c Marker3 view
-     *
-     *
-     * @return the element container using \c Marker3 view
-     */
-    marker3_elements &
-    elementsByMarker3()
-    {
-        return M_elements.template get<Feel::detail::by_marker3>();
-    }
-
-    /**
-     * get the elements container using the \c Marker1 view
-     *
-     *
-     * @return the element container using \c Marker1 view
-     */
-    marker_elements const&
-    elementsByMarker() const
-    {
-        return M_elements.template get<Feel::detail::by_marker>();
-    }
-
-    /**
-     * get the elements container using the \c Marker2 view
-     *
-     *
-     * @return the element container using \c Marker2 view
-     */
-    marker2_elements const&
-    elementsByMarker2() const
-    {
-        return M_elements.template get<Feel::detail::by_marker2>();
-    }
-
-    /**
-     * get the elements container using the \c Marker3 view
-     *
-     *
-     * @return the element container using \c Marker3 view
-     */
-    marker3_elements const&
-    elementsByMarker3() const
-    {
-        return M_elements.template get<Feel::detail::by_marker3>();
-    }
     /**
      * \return the range of iterator \c (begin,end) over the boundary
-     *  element on processor \p p
+     *  element on processor \p p which share a subentity of minDim<= dim <= maxDim on boundary
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        auto lower = M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, bool(ON_BOUNDARY), entity_min_dim ) );
-        auto upper = M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, bool(ON_BOUNDARY), entity_max_dim ) );
-        return std::make_pair( lower, upper );
-
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginOrderedElement();
+        auto en = this->endOrderedElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = unwrap_ref( *it );
+            if ( elt.processId() != part )
+                continue;
+            if ( !elt.isOnBoundary() )
+                continue;
+            if ( elt.boundaryEntityDimension() < entity_min_dim )
+                continue;
+            if ( elt.boundaryEntityDimension() > entity_max_dim )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
     /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
         return boundaryElements( 0, 2, part );
-        //auto lower = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 0);
-        //auto upper = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 2);
-        //return M_elements.template get<Feel::detail::by_location>().range( lower, upper );
+    }
 
+    /**
+     * \return the range of iterator \c (begin,end) over the internal
+     *  element on processor \p p
+     */
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    internalElements( rank_type p = invalid_rank_type_value  ) const
+    {
+        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginOrderedElement();
+        auto en = this->endOrderedElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = unwrap_ref( *it );
+            if ( elt.processId() != part )
+                continue;
+            if ( !elt.isInternal() )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
 
@@ -741,174 +641,21 @@ public:
      * \return the range of iterator \c (begin,end) over the internal
      *  element on processor \p p
      */
-    std::pair<location_element_const_iterator, location_element_const_iterator>
-    internalElements( rank_type p = invalid_rank_type_value  ) const
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    ghostElements() const
     {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        auto lower = M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, bool(INTERNAL), 0 ) );
-        auto upper = M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, bool(INTERNAL), invalid_uint16_type_value ) );
-        return std::make_pair( lower, upper );
+        elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
+        auto it = this->beginOrderedElement();
+        auto en = this->endOrderedElement();
+        for ( ; it!=en;++it )
+        {
+            auto const& elt = unwrap_ref( *it );
+            if ( !elt.isGhostCell() )
+                continue;
+            myelements->push_back(boost::cref(elt));
+        }
+        return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
-
-
-    /**
-     * get the elements container using the location view
-     *
-     *
-     * @return the element container using location view
-     */
-    location_elements &
-    elementsByLocation()
-    {
-        return M_elements.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the elements container using the location view
-     *
-     *
-     * @return the element container using location view
-     */
-    location_elements const&
-    elementsByLocation() const
-    {
-        return M_elements.template get<Feel::detail::by_location>();
-    }
-
-    /**
-     * get the begin() iterator on all the internal elements
-     *
-     * @return the begin() iterator on all the internal elements
-     */
-    location_element_iterator beginInternalElement( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).first;
-    }
-    /**
-     * get the end() iterator on all the internal elements
-     *
-     * @return the end() iterator on all the internal elements
-     */
-    location_element_iterator endInternalElement( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).second;
-    }
-
-    /**
-     * get the begin() iterator on all the internal elements
-     *
-     * @return the begin() iterator on all the internal elements
-     */
-    location_element_const_iterator beginInternalElement( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).first;
-    }
-
-    /**
-     * get the end() iterator on all the internal elements
-     *
-     * @return the end() iterator on all the internal elements
-     */
-    location_element_const_iterator endInternalElement( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().equal_range( boost::make_tuple( part, INTERNAL, invalid_uint16_type_value ) ).second;
-    }
-
-    /**
-     * get the begin() iterator on all the boundary elements
-     *
-     * @return the begin() iterator on all the boundary elements
-     */
-    location_element_iterator beginElementOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, ON_BOUNDARY, 0 ) );
-    }
-    /**
-     * get the end() iterator on all the boundary elements
-     *
-     * @return the end() iterator on all the boundary elements
-     */
-    location_element_iterator endElementOnBoundary( rank_type p = invalid_rank_type_value )
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, ON_BOUNDARY, 2 ) );
-    }
-
-    /**
-     * get the begin() iterator on all the boundary elements
-     *
-     * @return the begin() iterator on all the boundary elements
-     */
-    location_element_const_iterator beginElementOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().lower_bound( boost::make_tuple( part, ON_BOUNDARY, 0 ) );
-    }
-
-    /**
-     * get the end() iterator on all the boundary elements
-     *
-     * @return the end() iterator on all the boundary elements
-     */
-    location_element_const_iterator endElementOnBoundary( rank_type p = invalid_rank_type_value ) const
-    {
-        const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return M_elements.template get<Feel::detail::by_location>().upper_bound( boost::make_tuple( part, ON_BOUNDARY, 2 ) );
-    }
-
-    /**
-     * get the begin() iterator on all ghost elements
-     *
-     * @return the begin() iterator on all ghost elements
-     */
-    ghostcell_element_iterator beginGhostElement()
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).first;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().begin();
-    }
-
-    /**
-     * get the end() iterator on all ghost elements
-     *
-     * @return the end() iterator on all ghost elements
-     */
-    ghostcell_element_iterator endGhostElement()
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).second;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().end();
-    }
-
-    /**
-     * get the begin() iterator on all ghost elements
-     *
-     * @return the begin() iterator on all ghost elements
-     */
-    ghostcell_element_const_iterator beginGhostElement() const
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).first;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).first;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().begin();
-    }
-
-    /**
-     * get the end() iterator on all ghost elements
-     *
-     * @return the end() iterator on all ghost elements
-     */
-    ghostcell_element_const_iterator endGhostElement() const
-    {
-        //return M_elements.template get<Feel::detail::by_ghostcell>().equal_range(boost::make_tuple(true)).second;
-        return M_elements.template get<Feel::detail::by_ghostcell>().equal_range( true ).second;
-        //return M_elements.template get<Feel::detail::by_ghostcell>().end();
-    }
-
 
 
     //@}
@@ -925,19 +672,36 @@ public:
     //@{
 
     //!
+    //! reserve size of container
+    //! @param nElt : the size reserved
+    //!
+    void reserveNumberOfElement( size_type nElt )
+        {
+            M_elements.reserve( nElt );
+            M_orderedElements.reserve( nElt );
+        }
+
+    //!
     //! add a new element in the mesh
     //! @param f a new point
     //! @return the new point from the list
     //!
     element_type const& addElement( element_type& f, bool setid = true )
     {
-        M_parts[f.marker().value()]++;
+        if ( f.hasMarker() )
+            M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
-        return *M_elements.insert( M_elements.end(), f );
-        //M_elements.push_back( f );
-        //return M_elements.back();
+        auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
+        auto & newElement = ret.first->second;
+        if ( ret.second )
+        {
+            if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
+                M_needToOrderElements = true;
+            M_orderedElements.push_back( boost::ref( newElement ) );
+        }
+        return newElement;
     }
     //!
     //! move an element into the mesh
@@ -946,135 +710,118 @@ public:
     //!
     element_type const& addElement( element_type&& f )
         {
-            M_parts[f.marker().value()]++;
-            return *M_elements.insert( f );
+            if ( f.hasMarker() )
+                M_parts[f.marker().value()]++;
+            //return *M_elements.insert( f );
+            auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
+
+            auto & newElement = ret.first->second;
+            if ( ret.second )
+            {
+                if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
+                    M_needToOrderElements = true;
+                M_orderedElements.push_back( boost::ref( newElement ) );
+            }
+            return newElement;
         }
-    //!
-    //! add a new element in the mesh
-    //! @param f a new point
-    //! @param pos provide an hint for the position to insert
-    //! @return the new point from the list
-    //!
-    element_type const& addElement( element_iterator pos, element_type& f, bool setid = true )
+
+
+    element_iterator eraseElementOnly( element_iterator it )
         {
-            M_parts[f.marker().value()]++;
-            if ( setid )
-                f.setId( M_elements.size() );
-            return *M_elements.insert( pos, f );
-            //M_elements.push_back( f );
-            //return M_elements.back();
-
-        }
-    //!
-    //! move a new element into the mesh
-    //! @param f a new point
-    //! @param pos provide an hint for the position to insert
-    //! @return the new point from the list
-    //!
-    element_type const& addElement( element_iterator pos, element_type&& f )
-        {
-            M_parts[f.marker().value()]++;
-            return *M_elements.insert( pos, f );
-            //M_elements.push_back( f );
-            //return M_elements.back();
-
+            size_type erasedId = it->first;
+            auto itret = M_elements.erase( it );
+            auto itOrdered = std::find_if( M_orderedElements.begin(), M_orderedElements.end(),
+                                           [&erasedId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() == erasedId; } );
+            M_orderedElements.erase( itOrdered );
+            return itret;
         }
 
-    template<typename... Args>
-    element_iterator emplaceHintElement( element_iterator position, Args&&... args)
-    {
-        return M_elements.emplace_hint( position, args... );
-    }
-    
+
     template<typename ElementVecType>
-    void updateMarker2( ElementVecType const& evec )
+    void updateMarker( uint16_type markerType, ElementVecType const& evec )
     {
         EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
-
         for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
         {
-            e.setMarker2(  evec.localToGlobal( e.id(), 0, 0 ) );
-        } );
+            size_type eltId = boost::unwrap_ref(*it).id();
+            auto & eltModified = this->elementIterator( eltId )->second;
+            eltModified.setMarker( markerType, evec.localToGlobal( eltId, 0, 0 ) );
+        }
+    }
+
+    template<typename ElementVecType>
+    void updateMarker2( ElementVecType const& evec )
+    {
+        this->updateMarker( 2, evec );
     }
 
     template<typename ElementVecType>
     void updateMarker3( ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
+        this->updateMarker( 3, evec );
+    }
 
-        for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( boost::unwrap_ref(*it).id(), boost::unwrap_ref(*it).processId() ), [&evec]( element_type& e )
-        {
-            e.setMarker3(  evec.localToGlobal( e.id(), 0, 0 ) );
-        } );
+    template<typename IteratorRange>
+    void updateMarkerWithRangeElements( uint16_type markerType, IteratorRange const& range, flag_type flag )
+    {
+        for ( auto const& elt : range )
+            this->elementIterator( boost::unwrap_ref( elt ) )->second.setMarker( markerType,flag );
+    }
+
+    template<typename IteratorRange>
+    void updateMarkerWithRangeElements( IteratorRange const& range, flag_type flag )
+    {
+        this->updateMarkerWithRangeElements( 1,range,flag );
     }
 
     template<typename IteratorRange>
     void updateMarker2WithRangeElements( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_range_type;
-        iterator_range_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
-        for (  ; it != en; ++it )
-            M_elements.modify( this->elementIterator( it->id() ), [&flag]( element_type& e )
-        {
-            e.setMarker2( flag );
-        } );
+        this->updateMarkerWithRangeElements( 2,range,flag );
     }
 
     template<typename IteratorRange>
     void updateMarker3WithRangeElements( IteratorRange const& range, flag_type flag )
     {
-        typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
-        iterator_type it, en;
-        boost::tie( boost::tuples::ignore, it, en ) = range;
-
-        for ( ; it != en; ++it )
-            M_elements.modify( this->elementIterator( it->id() ), [&flag]( element_type& e )
-        {
-            e.setMarker3( flag );
-        } );
+        this->updateMarkerWithRangeElements( 3,range,flag );
     }
 
 
     /**
      * update the elements markers by setting them from the face markers associated to the elements
-     * warning the marker2 and marker3 must be > 0. if 2 several markers are find in elt, the element take
-     * the last find as marker
+     * if 2 several markers are find in elt, the element take the last find as marker
      */
+    void updateMarkersFromFaces( std::initializer_list<uint16_type> const& markersType )
+    {
+        auto it = beginElement(), en = endElement();
+        for ( ; it != en; ++it )
+        {
+            auto const& elt = it->second;
+
+            auto & eltModified = this->elementIterator( elt )->second;
+
+            std::map<uint16_type,flag_type> newEltMarkers;
+            for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
+            {
+                auto const& theface = elt.face(f);
+                for ( uint16_type const& markerType : markersType )
+                {
+                    if ( theface.hasMarker( markerType ) )
+                        newEltMarkers[ markerType ] = theface.marker( markerType ).value();
+                }
+            }
+            for ( auto const& newMark : newEltMarkers )
+                eltModified.setMarker( newMark.first, newMark.second );
+
+        }
+    }
     void updateMarkersFromFaces()
     {
-
-        auto it = beginElement(), en = endElement();
-
-        for (  ; it != en; ++it )
-            M_elements.modify( it,
-                             []( element_type& e )
-        {
-            int newtag2=0, newtag3=0;
-            for (uint16_type f=0;f<e.numTopologicalFaces; ++f)
-                {
-                    int tag2 = e.face(f).marker2().value();
-                    int tag3 = e.face(f).marker3().value();
-                    if (tag2>0) newtag2=tag2;
-                    if (tag3>0) newtag3=tag3;
-                }
-
-            if (newtag2>0) e.setMarker2( newtag2 );
-            if (newtag3>0) e.setMarker3( newtag3 );
-
-        } );
-
+        this->updateMarkersFromFaces( { 2,3 } );
     }
-
 
 
     void setWorldCommElements( WorldComm const& _worldComm )
@@ -1082,22 +829,69 @@ public:
         M_worldCommElements = _worldComm;
     }
 
+    void updateOrderedElement()
+        {
+            if ( !M_needToOrderElements )
+                return;
+            std::sort( M_orderedElements.begin(), M_orderedElements.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+            M_needToOrderElements = false;
+        }
+
     //@}
 
 private:
+
+    void buildOrderedElements()
+        {
+            M_orderedElements.clear();
+            auto it = beginElement(), en = endElement();
+            size_type nElement = std::distance( it, en );
+            M_orderedElements.reserve( nElement );
+            for ( ; it != en ; ++it )
+                M_orderedElements.push_back( boost::ref( it->second ) );
+            M_needToOrderElements = true;
+            this->updateOrderedElements();
+        }
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_elements;
             ar & M_parts;
+            if ( Archive::is_loading::value )
+            {
+                M_elements.clear();
+                M_orderedElements.clear();
+                M_needToOrderElements =  false;
+                size_type nElements = 0;
+                ar & BOOST_SERIALIZATION_NVP( nElements );
+                element_type newElt;
+                for ( size_type k=0 ; k<nElements ; ++k )
+                {
+                    ar & boost::serialization::make_nvp( "element", newElt );
+                    this->addElement( std::move( newElt ) );
+                }
+            }
+            else
+            {
+                auto it = beginOrderedElement(), en = endOrderedElement();
+                size_type nElements = std::distance( it, en );
+                ar & BOOST_SERIALIZATION_NVP( nElements );
+                for ( ; it != en ; ++it )
+                    ar & boost::serialization::make_nvp( "element", unwrap_ref( *it ) );
+            }
         }
 
 
 private:
     WorldComm M_worldCommElements;
     elements_type M_elements;
+    ordered_elements_reference_wrapper_type M_orderedElements;
+    bool M_needToOrderElements;
     parts_map_type M_parts;
 };
 /// \endcond

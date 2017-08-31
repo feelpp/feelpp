@@ -55,6 +55,13 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <Eigen/Core>
 
@@ -88,7 +95,7 @@ template <typename T> inline std::ostream& operator << ( std::ostream& os, const
  * @author Christophe Prud'homme, 2005
  */
 template <typename T>
-class MatrixSparse
+class FEELPP_EXPORT MatrixSparse : public boost::enable_shared_from_this<MatrixSparse<T> >
 {
 public:
 
@@ -101,9 +108,11 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    using sparse_matrix_ptrtype = boost::shared_ptr<MatrixSparse<T>>;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
+
 
     /**
      * Constructor; initializes the matrix to be empty, without any
@@ -256,7 +265,7 @@ public:
     //! @return the number of allocated non-zero entries
     //!
     virtual std::size_t nnz() const = 0;
-    
+
     /**
      * set matrix properties, @see MatrixProperties
      */
@@ -352,7 +361,7 @@ public:
             checkProperties();
             return M_mprop.test( INDEFINITE );
         }
-    
+
     bool haveConsistentProperties() const
     {
         bool p1 = M_mprop.test( SINGULAR ) && M_mprop.test( POSITIVE_DEFINITE );
@@ -380,9 +389,9 @@ public:
         {
             std::ostringstream ostr;
             ostr << "Invalid matrix properties:\n"
-                 << "                   SPD: " << isSPD() << "\n"                
+                 << "                   SPD: " << isSPD() << "\n"
                  << "             SYMMETRIC: " << this->isSymmetric() << "\n"
-                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"                
+                 << "STRUCTURALLY_SYMMETRIC: " << isStructurallySymmetric() << "\n"
                  << "             HERMITIAN: " << isHermitian() << "\n"
                  << "         NON_HERMITIAN: " << isNonHermitian() << "\n"
                  << "              SINGULAR: " << isSingular() << "\n"
@@ -481,15 +490,15 @@ public:
                              const std::vector<size_type> &rows,
                              const std::vector<size_type> &cols ) = 0;
 
-    /**
-     * Add the full matrix to the
-     * Sparse matrix.  This is useful
-     * for adding an element matrix
-     * at assembly time
-     */
+    //!
+    //! Add the full matrix to the
+    //! Sparse matrix.  This is useful
+    //! for adding an element matrix
+    //! at assembly time
+    //!
     virtual void addMatrix ( int* rows, int nrows,
                              int* cols, int ncols,
-                             value_type* data ) = 0;
+                             value_type* data, size_type K, size_type K2 ) = 0;
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -826,9 +835,9 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, 
-                           Vector<value_type> const& values, 
-                           Vector<value_type>& rhs, 
+    virtual void zeroRows( std::vector<int> const& rows,
+                           Vector<value_type> const& values,
+                           Vector<value_type>& rhs,
                            Context const& on_context,
                            value_type value_on_diagonal ) = 0;
 
@@ -890,17 +899,22 @@ public:
      * Get informations (filling, nnz, ...)
      * Implemented in MatrixPetsc
      */
-    virtual void getMatInfo( std::vector<double> &) 
+    virtual void getMatInfo( std::vector<double> &)
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    virtual void threshold( void ) 
+    virtual void threshold( void )
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
 
+    virtual void save( std::string const& filename="default_archive_name", std::string const& format="binary" )
+    {}
+
+    virtual void load( std::string const& filename="default_archive_name", std::string const& format="binary" )
+    {}
 
 protected:
     /**
@@ -945,7 +959,6 @@ protected:
     //! col data distribution in matrix
     datamap_ptrtype M_mapCol;
 
-
 };
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
@@ -962,6 +975,7 @@ MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
     M_is_initialized( false ),
     M_is_closed( false ),
     M_mprop( NON_HERMITIAN )
+
 {}
 
 template <typename T>
@@ -1114,5 +1128,52 @@ bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
 }
 
 } // Feel
+
+#if 0
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::MatrixSparse)
+
+namespace boost {
+namespace serialization {
+
+template<typename T, class Archive>
+FEELPP_EXPORT void save(Archive & ar, const Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    ar & BOOST_SERIALIZATION_NVP(m.mapRow());
+    ar & BOOST_SERIALIZATION_NVP(m.mapCol());
+    ar & BOOST_SERIALIZATION_NVP(*(m.graph()));
+;
+}
+
+template<typename T, class Archive>
+FEELPP_EXPORT void load(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    Feel::DataMap map_row;
+    Feel::DataMap map_col;
+    Feel::GraphCSR graph;
+
+    ar & BOOST_SERIALIZATION_NVP(map_row);
+    ar & BOOST_SERIALIZATION_NVP(map_col);
+    ar & BOOST_SERIALIZATION_NVP(graph);
+
+    auto map_row_ptr = boost::make_shared<Feel::DataMap>( map_row );
+    auto map_col_ptr = boost::make_shared<Feel::DataMap>( map_col );
+    m.setMapRow( map_row_ptr );
+    m.setMapCol( map_col_ptr );
+    auto graph_ptr = boost::make_shared<Feel::GraphCSR>( graph );
+
+    m.init( map_row.nDof(), map_col.nDof(),
+            map_row.nLocalDofWithoutGhost(), map_col.nLocalDofWithoutGhost(),
+            graph_ptr );
+}
+
+template<typename T, class Archive>
+FEELPP_EXPORT void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsigned int version)
+{
+    split_free( ar, m, version );
+}
+
+} // namespace serialization
+} // namespace boost
+#endif
 
 #endif // #ifndef __sparse_matrix_h__
