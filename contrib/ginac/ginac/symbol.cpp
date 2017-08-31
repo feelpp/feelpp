@@ -354,3 +354,4 @@ GINAC_BIND_UNARCHIVER(possymbol);
 unsigned symbol::next_serial = 0;
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

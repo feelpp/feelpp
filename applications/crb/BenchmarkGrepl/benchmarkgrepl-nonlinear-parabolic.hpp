@@ -180,6 +180,8 @@ public:
     
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
 
+    BenchmarkGreplNonLinearParabolic() : super_type( "greplparabolic" ) {}
+    
     //! initialization of the model
     void initModel();
     //@}

@@ -342,7 +342,7 @@ public :
     size_type globalId() const { return M_globalId; }
     node_type const& node() const { return M_node; }
     double hSize() const { return M_hSize; }
-    std::string physicalMarker() const { return M_physicalMarker; }
+    std::string const& physicalMarker() const { return M_physicalMarker; }
 
     void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
 
@@ -406,7 +406,7 @@ public :
     std::string lineType() const { return M_lineType; }
     std::list<size_type> const& listPt() const { return M_listPt; }
     std::list<size_type> const& listPoint() const { return M_listPt; }
-    std::string physicalMarker() const { return M_physicalMarker; }
+    std::string const& physicalMarker() const { return M_physicalMarker; }
     size_type firstPointIdConnection() const
     {
         // warning must depend on type
@@ -536,7 +536,7 @@ public :
     size_type globalId() const { return M_globalId; }
     std::string surfaceType() const { return M_surfaceType; }
     std::list<int> const& listLineLoop() const { return M_lineLoopId; }
-    std::string physicalMarker() const { return M_physicalMarker; }
+    std::string const& physicalMarker() const { return M_physicalMarker; }
     std::set<int> const& ptsInSurface() const { return M_ptsInSurface; }
 
     void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
@@ -676,7 +676,7 @@ public :
     size_type localId() const { return M_localId; }
     size_type globalId() const { return M_globalId; }
     std::list<int> const& listSurfaceLoop() const { return M_surfaceLoopId; }
-    std::string physicalMarker() const { return M_physicalMarker; }
+    std::string const& physicalMarker() const { return M_physicalMarker; }
 
     void setPhysicalMarker( std::string s ) { M_physicalMarker=s; }
 

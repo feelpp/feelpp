@@ -397,11 +397,18 @@ public:
      */
     //@{
 
-    typedef Eigen::MatrixXd local_interpolant_type;
+    typedef Eigen::VectorXd local_interpolant_type;
     local_interpolant_type
-    localInterpolant() const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
+        }
+
+    typedef Eigen::MatrixXd local_interpolants_type;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nComponents*nLocalDof, p );
         }
 
     template<typename ExprType>

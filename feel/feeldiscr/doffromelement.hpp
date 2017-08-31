@@ -1,39 +1,36 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-10-23
-
-  Copyright (C) 2013 Université de Strasbourg
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file doflocal.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-10-23
- */
-#ifndef FEELPP_DofFromElement_H
-#define FEELPP_DofFromElement_H 1
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+//!
+//! This file is part of the Feel++ library
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+//!
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 23 Mar 2013
+//! @copyright 2013-2017 Feel++ Consortium
+//!
+#ifndef FEELPP_DOFFROMELEMENT_HPP
+#define FEELPP_DOFFROMELEMENT_HPP 1
 
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelpoly/policy.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
+#include <feel/feelmesh/marker.hpp>
 
 namespace Feel
 {
@@ -182,12 +179,14 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numVertices; ++i )
         {
+            auto const& thepoint = __elt.point( i );
+            Marker1 pointMarker = thepoint.hasMarker()? thepoint.marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
             {
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                const size_type gDof = ( thepoint.id() ) * fe_type::nDofPerVertex + l;
                 M_doftable->insertDof( ie, lc, i, std::make_tuple(  0, gDof ),
-                                 processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
+                                       processor, next_free_dof, 1, false, global_shift, pointMarker );
             }
         }
 
@@ -222,11 +221,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker = __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -252,6 +252,8 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
+
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -290,7 +292,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -317,6 +319,7 @@ private:
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
+            Marker1 edgeMarker = __elt.edge( i ).hasMarker()? __elt.edge( i ).marker() : Marker1(0);
             for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -353,7 +356,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
             }
         }
 
@@ -385,11 +388,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -415,6 +419,7 @@ private:
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = __elt.facePermutation( i );
+            Marker1 faceMarker =  __elt.face( i ).hasMarker()? __elt.face( i ).marker() : Marker1(0);
 
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error ( "invalid face permutation" );
 
@@ -495,7 +500,7 @@ private:
                     }
                 }
 
-                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, std::make_tuple(  2, gDof ), processor, next_free_dof, sign, false, global_shift, faceMarker );
 
             }
         }
@@ -524,11 +529,12 @@ private:
 
         size_type ie = __elt.id();
         uint16_type lc = local_shift;
+        Marker1 eltMarker =  __elt.hasMarker()? __elt.marker() : Marker1(0);
 
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, std::make_tuple(  3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
         // update shifts
@@ -548,6 +554,7 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
                                           size_type shift )
 {
 
+    size_type tndof = M_doftable->nLocalDof(  );
     size_type nldof = M_doftable->nLocalDof( true );
 
     DVLOG(3) << "adding dof from element " << __elt.id() << "\n";
@@ -555,6 +562,24 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
     DVLOG(3) << "next_free_dof " << next_free_dof  << "\n";
     DVLOG(3) << "current dof " << M_doftable->dofIndex( next_free_dof ) << "\n";
 
+    M_doftable->M_unsymm2symm.resize( tndof );
+    for ( uint16_type l = 0; l < nldof; ++l )
+    {
+        if ( is_tensor2symm )
+        {
+            for ( int c1 = 0; c1 < nComponents1; ++c1)
+            {
+                for ( int c2 = c1+1; c2 < nComponents1; ++c2 )
+                {
+                    const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
+                    M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c1+c2) + l, nldof*k+l );
+                    M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c2+c1) + l, nldof*k+l );
+                }
+                const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
+                M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c1+c1) + l, nldof*k+l );
+            }
+        }
+    }
 
     /*
      * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]

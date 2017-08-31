@@ -100,18 +100,18 @@ public:
         typedef ElementType type;
     };
     typedef ElementType entity_type;
-    typedef boost::tuple<ElementType const*, size_type, uint16_type, rank_type> element_connectivity_type;
+    typedef boost::tuple<ElementType const*, uint16_type> element_connectivity_type;
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element0( 0, invalid_uint16_type_value ),
+        M_element1( 0, invalid_uint16_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element1( 0, invalid_uint16_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -134,8 +134,8 @@ public:
         }
     SubFaceOf( SubFaceOfNone const& /*sf*/ )
         :
-        M_element0( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value ),
-        M_element1( 0, invalid_size_type_value, invalid_uint16_type_value, invalid_rank_type_value )
+        M_element0( 0, invalid_uint16_type_value ),
+        M_element1( 0, invalid_uint16_type_value )
     {
     }
     virtual ~SubFaceOf() {}
@@ -179,25 +179,25 @@ public:
     {
         return *boost::get<0>( M_element1 );
     }
-    size_type idElement0() const { return boost::get<1>( M_element0 ); }
-    uint16_type idInElement0() const { return boost::get<2>( M_element0 ); }
-    rank_type pidElement0() const { return boost::get<3>( M_element0 ); }
+    size_type idElement0() const { return this->element0().id(); }
+    uint16_type idInElement0() const { return boost::get<1>( M_element0 ); }
+    rank_type pidElement0() const { return this->element0().processId(); }
 
-    size_type idElement1() const { return boost::get<1>( M_element1 ); }
-    uint16_type idInElement1() const { return boost::get<2>( M_element1 ); }
-    rank_type pidElement1() const { return boost::get<3>( M_element1 ); }
-    
+    size_type idElement1() const { return this->element1().id(); }
+    uint16_type idInElement1() const { return boost::get<1>( M_element1 ); }
+    rank_type pidElement1() const { return this->element1().processId(); }
+
     size_type ad_first() const
     {
-        return boost::get<1>( M_element0 );
+        return this->element0().id();
     }
     uint16_type pos_first() const
     {
-        return boost::get<2>( M_element0 );
+        return boost::get<1>( M_element0 );
     }
     rank_type proc_first() const
     {
-        return boost::get<3>( M_element0 );
+        return this->element0().processId();
     }
     rank_type partition1( rank_type p ) const
     {
@@ -206,15 +206,15 @@ public:
 
     size_type ad_second() const
     {
-        return boost::get<1>( M_element1 );
+        return this->element1().id();
     }
     uint16_type pos_second() const
     {
-        return boost::get<2>( M_element1 );
+        return boost::get<1>( M_element1 );
     }
     rank_type proc_second() const
     {
-        return boost::get<3>( M_element1 );
+        return this->element1().processId();
     }
     rank_type partition2( size_type p ) const
     {
@@ -253,53 +253,50 @@ public:
 
     bool isConnectedTo0() const
     {
-        return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
-                 boost::get<2>( M_element0 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element0 ) != invalid_rank_type_value );
+        return ( boost::get<0>( M_element0 ) != 0 );
     }
     bool isConnectedTo1() const
     {
-        return ( boost::get<1>( M_element1 ) != invalid_size_type_value &&
-                 boost::get<2>( M_element1 ) != invalid_uint16_type_value &&
-                 boost::get<3>( M_element1 ) != invalid_rank_type_value );
+        return ( boost::get<0>( M_element1 ) != 0 );
     }
 
     bool
     isGhostFace( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
-                 ( ( ( boost::get<3>( M_element0 ) == p ) && ( boost::get<3>( M_element1 ) < p ) ) ||
-                   ( ( boost::get<3>( M_element0 ) < p ) && ( boost::get<3>( M_element1 ) == p ) ) ) );
+        return ( this->isConnectedTo0() && this->isConnectedTo1() &&
+                 ( ( ( this->pidElement0() == p ) && ( this->pidElement1() < p ) ) ||
+                   ( ( this->pidElement0() < p ) && ( this->pidElement1() == p ) ) ) );
     }
 
     bool
     isInterProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element1 ) != invalid_rank_type_value ) &&
-                 ( ( boost::get<3>( M_element0 ) == p ) || ( boost::get<3>( M_element1 ) == p ) ) &&
-                 ( boost::get<3>( M_element0 ) != boost::get<3>( M_element1 ) ) );
+        return ( this->isConnectedTo0() && this->isConnectedTo1() &&
+                 ( ( this->pidElement0() == p ) || ( this->pidElement1() == p ) ) &&
+                 ( this->pidElement0() != this->pidElement1() ) );
     }
     bool
     isIntraProcessDomain( rank_type p ) const
     {
-        return ( ( boost::get<3>( M_element0 ) == p ) &&
-                 ( boost::get<3>( M_element1 ) == p ) );
+        bool hasConnect0 = this->isConnectedTo0();
+        bool hasConnect1 = this->isConnectedTo1();
+        if ( hasConnect0 && hasConnect1 )
+            return ( ( this->pidElement0() == p ) && ( this->pidElement1() == p ) );
+        else if ( hasConnect0 && !hasConnect1 )
+            return ( this->pidElement0() == p );
+        else if ( !hasConnect0 && hasConnect1 )
+            return ( this->pidElement1() == p );
+        return false;
     }
 
     void disconnect0()
     {
-        M_element0 = boost::make_tuple( ( ElementType const* )0,
-                                        invalid_size_type_value,
-                                        invalid_uint16_type_value,
-                                        invalid_rank_type_value );
+        M_element0 = boost::make_tuple( ( ElementType const* )0, invalid_uint16_type_value );
     }
 
     void disconnect1()
     {
-        M_element1 = boost::make_tuple( ( ElementType const* )0,
-                                        invalid_size_type_value,
-                                        invalid_uint16_type_value,
-                                        invalid_rank_type_value );
+        M_element1 = boost::make_tuple( ( ElementType const* )0, invalid_uint16_type_value );
     }
 
     void disconnect()
@@ -329,17 +326,10 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
 #if 1
-            //ar & M_element0.template get<0>();
             ar & M_element0.template get<1>();
-            ar & M_element0.template get<2>();
-            ar & M_element0.template get<3>();
             M_element0.template get<0>() = 0;
 
-
-            //ar & M_element1.template get<0>();
             ar & M_element1.template get<1>();
-            ar & M_element1.template get<2>();
-            ar & M_element1.template get<3>();
             M_element1.template get<0>() = 0;
 #endif
         }
@@ -522,6 +512,7 @@ public:
 
     static const uint16_type nDim = 0;
     static const uint16_type nRealDim = Dim;
+    static const bool is_simplex = true;
 
     typedef Geo0D<Dim,T> geo0d_type;
     typedef typename geo0d_type::node_type node_type;
@@ -532,12 +523,12 @@ public:
     typedef GeoElement0D<Dim,SubFace,T> self_type;
 #if 0
     using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
-                                           mpl::identity<self_type>, 
+                                           mpl::identity<self_type>,
                                            mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
 #else
     using element_type = self_type;
-    using gm_type = boost::none_t;
-    using gm1_type = boost::none_t;
+    using gm_type = GT_Lagrange<0, 1, nRealDim, Simplex, T>;
+    using gm1_type = gm_type;
 #endif
     typedef self_type point_type;
 
@@ -588,7 +579,7 @@ public:
 
     GeoElement0D & operator = ( GeoElement0D const& g ) = default;
     GeoElement0D & operator = ( GeoElement0D && g ) = default;
-    
+
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -678,8 +669,16 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return *( static_cast<geo0d_type *>( M_facept ) );
-        //return M_facept;
+        return *M_facept;
+        //return *( static_cast<geo0d_type *>( M_facept ) );
+    }
+
+    /**
+     * \return the point associated to the face
+     */
+    geo0d_type & point( uint16_type /*i*/ )
+    {
+        return *M_facept;
     }
 
     /**
@@ -719,49 +718,6 @@ public:
     matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
     {
         return M_facept->vertices();
-    }
-
-    /**
-     * \return marker1() index
-     */
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    /**
-     * \return marker1() index
-     */
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    /**
-     * \return marker2() index
-     */
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    /**
-     * \return marker2() index
-     */
-    Marker2& marker2()
-    {
-        return super::marker2();
-    }
-    /**
-     * \return marker3() index
-     */
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
-    }
-    /**
-     * \return marker3() index
-     */
-    Marker3& marker3()
-    {
-        return super::marker3();
     }
 
 //private:
@@ -972,23 +928,6 @@ public:
         return M_map[ k_1 ];
     }
 
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
-    }
-
     /**
      * Inserts a point as face of the edge geometric element
      */
@@ -1002,12 +941,24 @@ public:
     {
         return edge_permutation_type();
     }
-
+    //!
+    //! @return true if GeoElement1D is connected to a face 
+    //!
+    bool hasFace( uint16_type i ) const
+        {
+            if ( i >= numLocalFaces )
+                return false;
+            return M_vertices[i] != nullptr;
+        }
     point_type const& edge( uint16_type i ) const
     {
         return *M_vertices[i];
     }
     point_type const& face( uint16_type i ) const
+    {
+        return *M_vertices[i];
+    }
+    point_type & face( uint16_type i )
     {
         return *M_vertices[i];
     }
@@ -1042,7 +993,13 @@ public:
     {
         return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
-
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_vertices.begin(), M_vertices.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     /**
      * \sa edgePermutation(), permutation()
      */
@@ -1191,23 +1148,6 @@ public:
     size_type id() const
     {
         return super::id();
-    }
-
-    Marker1 const& marker() const
-    {
-        return super::marker();
-    }
-    Marker1& marker()
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const
-    {
-        return super::marker3();
     }
 
     bool isGhostFace() const
@@ -1413,6 +1353,13 @@ public:
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_edges.begin(), M_edges.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     void disconnectSubEntities()
     {
         for(unsigned int i = 0; i<numLocalEdges;++i)
@@ -1545,23 +1492,6 @@ public:
     size_type id() const noexcept
     {
         return super::id();
-    }
-
-    Marker1 const& marker() const noexcept
-    {
-        return super::marker();
-    }
-    Marker1& marker() noexcept
-    {
-        return super::marker();
-    }
-    Marker2 const& marker2() const noexcept
-    {
-        return super::marker2();
-    }
-    Marker3 const& marker3() const noexcept
-    {
-        return super::marker3();
     }
 
     bool isGhostFace() const
@@ -1784,6 +1714,13 @@ public:
     {
         return std::make_pair( M_faces.begin(), M_faces.end() );
     }
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_faces.begin(), M_faces.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
 private:
 
     friend class boost::serialization::access;
@@ -1831,6 +1768,6 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag )
     }
     return false;
 }
-    
+
 } // Feel
 #endif

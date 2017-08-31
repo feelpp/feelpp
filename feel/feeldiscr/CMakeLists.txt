@@ -28,7 +28,7 @@ endif()
 
 
 SET( SRC
-  mesh.cpp stencil.cpp oseendata.cpp ${FEELDISCR_INST_SRCS}
+  mesh.cpp meshstructured.cpp stencil.cpp oseendata.cpp ${FEELDISCR_INST_SRCS}
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)

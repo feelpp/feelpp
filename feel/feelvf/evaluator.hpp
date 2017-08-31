@@ -91,7 +91,8 @@ public:
 
     typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
     typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
-    typedef typename iterator_type::value_type mesh_element_type;
+    typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_fromiterator_type;
+    typedef typename boost::remove_const< typename boost::remove_reference< mesh_element_fromiterator_type >::type >::type mesh_element_type;
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_<mpl::bool_<mesh_element_type::is_simplex>,
                               mpl::identity<typename Pset::template apply<mesh_element_type::nRealDim, value_type, Simplex>::type >,
@@ -220,8 +221,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     typedef typename t_expr_type::shape shape;
 
 
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = M_range;
+    auto it = boost::get<1>( M_range );
+    auto en = boost::get<2>( M_range );
 
     int npoints = M_pset.points().size2();
     element_type __v( std::distance( it, en ), npoints, shape::M, shape::N );
@@ -240,15 +241,16 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( it->gm(),
+    auto const& initElt = boost::unwrap_ref( *it );
+    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( initElt.gm(),
                                                                                          M_pset.points() ) );
-    typename gm1_type::precompute_ptrtype __geopc1( new typename gm1_type::precompute_type( it->gm1(),
+    typename gm1_type::precompute_ptrtype __geopc1( new typename gm1_type::precompute_type( initElt.gm1(),
                                                                                             M_pset.points() ) );
 
 
 
-    gm_context_ptrtype __c( new gm_context_type( it->gm(),*it,__geopc ) );
-    gm1_context_ptrtype __c1( new gm1_context_type( it->gm1(),*it,__geopc1 ) );
+    gm_context_ptrtype __c( new gm_context_type( initElt.gm(), initElt,__geopc ) );
+    gm1_context_ptrtype __c1( new gm1_context_type( initElt.gm1(),initElt,__geopc1 ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type tensor_expr( M_expr, mapgmc );
@@ -259,11 +261,12 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
     for ( int e = 0; it!=en ; ++it, ++e )
     {
+        auto const& curElt =  boost::unwrap_ref( *it );
         switch ( M_geomap_strategy )
         {
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( *it );
+            __c->update( curElt );
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
             tensor_expr.update( mapgmc );
 
@@ -287,7 +290,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( *it );
+            __c1->update( curElt );
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
             tensor_expr1.update( mapgmc1 );
 
@@ -310,10 +313,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
         case GeomapStrategyType::GEOMAP_OPT:
         {
-            if ( it->isOnBoundary() )
+            if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
-                __c->update( *it );
+                __c->update( curElt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                 tensor_expr.update( mapgmc );
 
@@ -336,7 +339,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
 
             else
             {
-                __c1->update( *it );
+                __c1->update( curElt );
                 map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                 tensor_expr1.update( mapgmc1 );
 
@@ -407,8 +410,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     // start
     //
 
-    iterator_type __face_it, __face_en;
-    boost::tie( boost::tuples::ignore, __face_it, __face_en ) = M_range;
+    auto __face_it = boost::get<1>( M_range );
+    auto __face_en = boost::get<2>( M_range );
 
     int npoints = M_pset.fpoints(0,1).size2();
     //element_type __v( M_pset.fpoints(0,1).size2()*std::distance( __face_it, __face_en )*shape::M );
@@ -456,9 +459,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         }
     }
 
-    uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
-    gmc1_ptrtype __c1( new gmc1_type( __gm1, __face_it->element( 0 ), __geopc1, __face_id ) );
+    auto const& initFace = boost::unwrap_ref( *__face_it );
+    uint16_type __face_id = initFace.pos_first();
+    gmc_ptrtype __c( new gmc_type( __gm, initFace.element( 0 ), __geopc, __face_id ) );
+    gmc1_ptrtype __c1( new gmc1_type( __gm1, initFace.element( 0 ), __geopc1, __face_id ) );
 
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
     t_expr_type expr( M_expr, mapgmc );
@@ -472,21 +476,22 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
     for ( int e = 0; __face_it != __face_en; ++__face_it, ++e )
     {
-        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-        ( __face_it->marker() )
-        ( __face_it->isOnBoundary() )
-        ( __face_it->ad_first() )
-        ( __face_it->pos_first() )
-        ( __face_it->ad_second() )
-        ( __face_it->pos_second() )
-        ( __face_it->id() ).warn( "inconsistent data face" );
-        DVLOG(2) << "[evaluator] FACE_ID = " << __face_it->id()
-                      << " element id= " << __face_it->ad_first()
-                      << " pos in elt= " << __face_it->pos_first()
-                      << " marker: " << __face_it->marker() << "\n";
-        DVLOG(2) << "[evaluator] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
+        auto const& curFace = boost::unwrap_ref( *__face_it );
+        FEELPP_ASSERT( curFace.isOnBoundary() && !curFace.isConnectedTo1() )
+        ( curFace.marker() )
+        ( curFace.isOnBoundary() )
+        ( curFace.ad_first() )
+        ( curFace.pos_first() )
+        ( curFace.ad_second() )
+        ( curFace.pos_second() )
+        ( curFace.id() ).warn( "inconsistent data face" );
+        DVLOG(2) << "[evaluator] FACE_ID = " << curFace.id()
+                      << " element id= " << curFace.ad_first()
+                      << " pos in elt= " << curFace.pos_first()
+                      << " marker: " << curFace.marker() << "\n";
+        DVLOG(2) << "[evaluator] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
-        uint16_type __face_id = __face_it->pos_first();
+        uint16_type __face_id = curFace.pos_first();
 
 
         switch ( M_geomap_strategy )
@@ -495,9 +500,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            __c->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -523,9 +528,9 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( __face_it->element( 0 ), __face_id );
-            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
-            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+            __c1->update( curFace.element( 0 ), __face_id );
+            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
+            DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 

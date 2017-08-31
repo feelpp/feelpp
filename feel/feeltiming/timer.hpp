@@ -75,8 +75,8 @@ public :
 
     std::stack<type>& times() const
     {
-        static std::stack<type> local;
-        return local;
+        static std::stack<type> localStack;
+        return localStack;
     }
 };
 }

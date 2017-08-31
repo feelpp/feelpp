@@ -37,16 +37,26 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     :
     M_worldComm( world ),
     M_params( world ),
-    M_bc( world ),
+    M_mat( world ),
+    M_bc( world, false ),
+    M_ic( world, false ),
     M_postproc( world )
 {
     if ( !fs::exists( filename ) ) 
     {
-      LOG(INFO) << "Could not find " << filename << std::endl;
-      return;
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
+        }
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return;
     }
     else
     {
+        if ( Environment::isMasterRank() )
+        {
+            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
+        }
         LOG(INFO) << "Loading " << filename << std::endl;
     }
 
@@ -124,8 +134,9 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     if ( mat )
     {
         LOG(INFO) << "Model with materials\n";
+        if ( !directoryLibExpr.empty() )
+            M_mat.setDirectoryLibExpr( directoryLibExpr );
         M_mat.setPTree( *mat );
-        
     }
     else
     {
@@ -138,7 +149,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
-        
     }
     else
     {

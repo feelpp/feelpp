@@ -102,7 +102,7 @@ endif()
 # setting rpath on installed binaries.
 
 # rpath for making binaries/libraries relocatable
-set(_ginac_rpath_reloc "$ORIGIN/../lib")
+#set(_ginac_rpath_reloc "$ORIGIN/../lib")
 set(_wl_rpath "${CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG}")
 
 # rpath for the pkg-config meta-data.
@@ -129,7 +129,9 @@ foreach(_d ${CLN_LIBRARY_DIRS} ${LIB_INSTALL_DIR})
 		list(APPEND _ginac_rpath "${_d}")
 	endif()
 endforeach()
-list(REMOVE_DUPLICATES _ginac_rpath)
+if (_ginac_rpath)
+    list(REMOVE_DUPLICATES _ginac_rpath)
+endif()
 string(REPLACE ";" ":" ginac_rpath "${_ginac_rpath}")
 
 if (NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_RPATH)
@@ -168,7 +170,10 @@ if (READLINE_FOUND)
 	set(HAVE_READLINE_HISTORY_H 1)
 endif()
 
+set(SAVE_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} )
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules )
 find_package(LibDL)
+set(CMAKE_MODULE_PATH ${SAVE_CMAKE_MODULE_PATH})
 if (LIBDL_FOUND)
 	set(HAVE_LIBDL 1)
 endif()

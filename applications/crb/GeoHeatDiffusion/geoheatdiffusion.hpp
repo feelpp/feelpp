@@ -118,11 +118,11 @@ public :
  * @author Stephane Veys
  * @see
  */
-class GeoHeatDiffusion : public ModelCrbBase< ParameterSpace<3>, FunctionSpaceDefinition >
+class GeoHeatDiffusion : public ModelCrbBase< ParameterSpaceX, FunctionSpaceDefinition >
 {
 public:
 
-    typedef ModelCrbBase<ParameterSpace<3>,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition> super_type;
 
     typedef double value_type;
 
@@ -204,9 +204,13 @@ private:
 };
 
 GeoHeatDiffusion::GeoHeatDiffusion()
+    :
+    super_type( "geoheatdiffusion" )
 {}
 
 GeoHeatDiffusion::GeoHeatDiffusion( po::variables_map const& vm )
+    :
+    super_type( "geoheatdiffusion" )
 {}
 
 void GeoHeatDiffusion::initModel()
@@ -233,7 +237,7 @@ void GeoHeatDiffusion::initModel()
         std::cout << "Number of dof " << Xh->nDof() << "\n";
         std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
     }
-
+    Dmu->setDimension(3);
     auto mu_min = Dmu->element();
     mu_min <<  /*length*/0.1, /*heat transfer coefficient*/ 0.1 , 0.1;
     Dmu->setMin( mu_min );

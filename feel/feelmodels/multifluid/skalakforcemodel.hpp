@@ -101,6 +101,7 @@ SkalakForceModel<LevelSetType>::energyDerivative1Impl() const
         _space=M_energyDerivative1->functionSpace(),
         _expr=0.25*M_skalakForceShearModulus * I1p1
         );
+    return M_energyDerivative1;
 }
 
 template<typename LevelSetType>
@@ -116,6 +117,7 @@ SkalakForceModel<LevelSetType>::energyDerivative2Impl() const
         _space=M_energyDerivative2->functionSpace(),
         _expr=0.25*(M_skalakForceStretchModulus * I2 - M_skalakForceShearModulus)
         );
+    return M_energyDerivative2;
 }
 
 }

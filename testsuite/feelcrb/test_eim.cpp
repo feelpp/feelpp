@@ -29,7 +29,7 @@
 #define USE_BOOST_TEST 1
 #define BOOST_TEST_MODULE eim testsuite
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <boost/timer.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
@@ -223,6 +223,7 @@ public:
             return Dmu;
         }
     std::string modelName() const { return std::string("test_eim_model1" );}
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
 
     space_ptrtype const& functionSpace() const { return Xh; }
 
@@ -402,6 +403,8 @@ public:
 
         }
     std::string modelName() const { return std::string("test_eim_model2" );}
+    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+
     //! return the parameter space
     parameterspace_ptrtype const& parameterSpace() const
     {

@@ -34,7 +34,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelParameter
+struct FEELPP_EXPORT ModelParameter
 {
     ModelParameter() = default;
     ModelParameter( ModelParameter const& ) = default;
@@ -70,6 +70,7 @@ struct ModelParameter
     void setMin( double v ) { M_min = v; }
     double max() const { return M_max; }
     void setMax( double v ) { M_max = v; }
+    bool hasMinMax() const { return M_min != 0 || M_max != 0; }
 
     bool hasExpression() const { return M_expr.get_ptr() != 0; } //M_expr != boost::none; }
     void setParameterValues( std::map<std::string,double> const& mp )
@@ -87,6 +88,10 @@ private:
     boost::optional<scalar_field_expression<2>> M_expr;
 
 };
+
+//!
+//! class for Model Parameters
+//!
 class ModelParameters: public std::map<std::string,ModelParameter>
 {
 public:

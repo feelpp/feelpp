@@ -1723,26 +1723,9 @@ buildGmcWithRelationDifferentMeshType2( boost::shared_ptr<SpaceType> const& spac
     typedef typename gmc_type::gm_type::precompute_ptrtype geopc_ptrtype;
 
     geopc_ptrtype geopc( boost::make_shared<geopc_type>( gm, im.points() ) );
-    if ( space->mesh()->hasElement( idElt ) ) // test if is an active element
-    {
-        auto const& eltInit = space->mesh()->element( idElt );
-        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
-    }
-    else // maybe a ghost, else error
-    {
-        rank_type ghostProcId = invalid_rank_type_value;
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-        CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-        auto const& eltInit = space->mesh()->element( idElt,ghostProcId );
-        return boost::make_shared<gmc_type>( gm, eltInit, geopc );
-    }
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
+    auto const& eltInit = space->mesh()->element( idElt );
+    return boost::make_shared<gmc_type>( gm, eltInit, geopc );
 }
 
 template<typename FaceType, typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
@@ -1772,29 +1755,8 @@ updateGmcWithRelationDifferentMeshType2( FaceType const& theface, boost::shared_
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
-#if 0
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& theelt = space->mesh()->element( idElt );
-#else
-     // find process of element
-    rank_type ghostProcId = invalid_rank_type_value;
-    if ( space->mesh()->hasElement( idElt ) )
-    {
-        ghostProcId = space->mesh()->element( idElt ).processId();
-    }
-    else
-    {
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-    }
-    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
-#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
     CHECK(found) << "the permutation of quad point was not found\n";
@@ -1809,29 +1771,8 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, boost::shared
 {
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
 
-#if 0
+    CHECK( space->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
     auto const& theelt = space->mesh()->element( idElt );
-#else
-     // find process of element
-    rank_type ghostProcId = invalid_rank_type_value;
-    if ( space->mesh()->hasElement( idElt ) )
-    {
-        ghostProcId = space->mesh()->element( idElt ).processId();
-    }
-    else
-    {
-        for ( rank_type p : space->mesh()->neighborSubdomains() )
-        {
-            if ( space->mesh()->hasElement( idElt, p ) )
-            {
-                ghostProcId = p;
-                break;
-            }
-        }
-    }
-    CHECK( ghostProcId != invalid_rank_type_value ) << "element id " << idElt << "not found";
-    auto const& theelt = space->mesh()->element( idElt,ghostProcId );
-#endif
     gmc->update(theelt);
     bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element1(), theface.idInElement1(), gmc );
     //bool found = gmcExpr->updateFromNeighborMatchingFace( theface.element0(), theface.idInElement0(), gmc );
@@ -2611,20 +2552,20 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<false>()->points() ) );
     VLOG(2) << "pts non mortar : " << __form.template testFiniteElement<false>()->points();
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     // mortar
     pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar>()->points() ) );
     VLOG(2) << "pts mortar : " << __form.template testFiniteElement<true>()->points();
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
     pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar>()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrialMortar ) );
     map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -3071,7 +3012,7 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
             res=false;
         else
         {
-            auto const& faceTrial = __form.trialSpace()->mesh()->element(idEltTrial, eltTest.processId() ).face( faceIdInElt );
+            auto const& faceTrial = __form.trialSpace()->mesh()->element(idEltTrial ).face( faceIdInElt );
             res = faceTrial.isConnectedTo0() && faceTrial.isConnectedTo1();
         }
     }
@@ -3150,6 +3091,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         }
     }
 
+    bool hasMeshSupportPartialTest = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
+
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
         auto it = lit->template get<1>();
@@ -3209,7 +3152,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
         }
 
-        auto const& elt0TestInit = __form.testSpace()->mesh()->element( idEltTestInit,procIdElt0 );
+        auto const& elt0TestInit = __form.testSpace()->mesh()->element( idEltTestInit );
         //auto const& faceTestInit = elt0TestInit.face( __face_id_in_elt_0 );
 
         // get the geometric mapping associated with element 0
@@ -3279,7 +3222,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             }
             //CHECK( idElt1TestInit != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
             // get element1
-            auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit,procIdElt1 );
+            auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit );
 
             // init linear/bilinear form for two connections
             __c1 = gmc_ptrtype( new gmc_type( __gm, elt1TestInit, __geopc, __face_id_in_elt_1 ) );
@@ -3323,38 +3266,90 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             rank_type procIdElt0 = faceCur.proc_first();
             size_type idEltTest = faceCur.element( 0 ).id();
             bool swapElt0Elt1WithSameMesh = false;
+            bool tryTwoConnections = true;
             if ( !useSameMesh)
             {
                 boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,faceCur);
                 if ( idEltTest == invalid_size_type_value )
                     continue;
             }
-            else if ( faceCur.element0().isGhostCell() && faceCur.isConnectedTo1() )
+            else if ( faceCur.isConnectedTo1() )
             {
-                __face_id_in_elt_0 = faceCur.pos_second();
-                procIdElt0 = faceCur.proc_second();
-                idEltTest = faceCur.element( 1 ).id();
-                swapElt0Elt1WithSameMesh = true;
+                if ( !hasMeshSupportPartialTest )
+                {
+                    if ( faceCur.element0().isGhostCell() )
+                    {
+                        __face_id_in_elt_0 = faceCur.pos_second();
+                        procIdElt0 = faceCur.proc_second();
+                        idEltTest = faceCur.element( 1 ).id();
+                        swapElt0Elt1WithSameMesh = true;
+                    }
+                }
+                else
+                {
+                    bool partialSupportHasConnection0 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltTest );
+                    size_type idEltOtherConnection = faceCur.element( 1 ).id();
+                    bool partialSupportHasConnection1 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltOtherConnection );
+
+                    if ( ( partialSupportHasConnection0 && !partialSupportHasConnection1 ) ||
+                         ( !partialSupportHasConnection0 && partialSupportHasConnection1 ) )
+                        tryTwoConnections = false;
+
+                    if ( tryTwoConnections )
+                    {
+                        if ( faceCur.element0().isGhostCell() )
+                        {
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = faceCur.element( 1 ).id();
+                            swapElt0Elt1WithSameMesh = true;
+                        }
+                    }
+                    else
+                    {
+                        if ( partialSupportHasConnection0 )
+                        {
+                            if ( faceCur.element0().isGhostCell() )
+                                continue;
+                        }
+                        else
+                        {
+                            if ( faceCur.element1().isGhostCell() )
+                                continue;
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = idEltOtherConnection;//faceCur.element( 1 ).id();
+                            //swapElt0Elt1WithSameMesh = true;
+                        }
+                    }
+                }
             }
 
             // element0 (from test mesh) used in integration
-            auto const& elt0Test = __form.testSpace()->mesh()->element( idEltTest,procIdElt0 );
+            auto const& elt0Test = __form.testSpace()->mesh()->element( idEltTest );
             CHECK( !elt0Test.isGhostCell() ) << "elt0 can't be a ghost element";
             //auto const& faceTest = elt0Test.face( __face_id_in_elt_0 );
 
 
             //if ( faceCur.isConnectedTo1() )
-            if ( this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
+            if ( tryTwoConnections && this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
             {
-
                 if ( faceCur.isGhostFace() )
                 {
-                    LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
-                    continue;
+                    if ( hasMeshSupportPartialTest )
+                    {
+                        if ( __form.testSpace()->dof()->meshSupport()->isGhostFace( faceCur ) )
+                            continue;
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
+                        continue;
+                    }
                 }
-                // if is a interprocess faces, only integrate in one process
-                if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                    continue;
+                // // if is a interprocess faces, only integrate in one process
+                // if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
+                //     continue;
 
 
                 // get some info about test mesh element1 connected to the current face
@@ -3386,7 +3381,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 CHECK( idElt1Test != invalid_size_type_value ) << "mesh relation fail : no find a corresponding element\n";
 
                 // element1 (from test mesh) used in integration
-                auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test,procIdElt1 );
+                auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test );
 
                 if ( !isInitConnectionTo1 )
                 {
@@ -4392,7 +4387,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-
+        DCHECK( idEltTestInit != invalid_size_type_value ) << "invalid element id getting correspondance from "<< idEltRangeInit;
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();
@@ -4830,18 +4825,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     //-----------------------------------------------//
 
     pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
-    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTest ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrial ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
 
     // mortar
     pc_formTest_ptrtype geopcFormTestMortar( new pc_formTest_type( __form.gm(), __form.template testFiniteElement<FormType::test_space_type::is_mortar/*true*/>()->points() ) );
-    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormTestMortar ) );
+    gmc_formTest_ptrtype gmcFormTestMortar( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormTestMortar ) );
     map_gmc_formTest_type mapgmcFormTestMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTestMortar ) );
     pc_formTrial_ptrtype geopcFormTrialMortar( new pc_formTrial_type( __form.gmTrial(), __form.template trialFiniteElement<FormType::trial_space_type::is_mortar/*true*/>()->points() ) );
-    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), *__form.trialSpace()->mesh()->beginElementWithProcessId(), geopcFormTrialMortar ) );
+    gmc_formTrial_ptrtype gmcFormTrialMortar( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->beginElement()->second, geopcFormTrialMortar ) );
     map_gmc_formTrial_type mapgmcFormTrialMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrialMortar ) );
 
     //-----------------------------------------------//
@@ -5084,7 +5079,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     //-----------------------------------------------//
     // test form context
     pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), __form.testSpace()->fe()->points() ) );
-    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcForm ) );
+    gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcForm ) );
     map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
     focb_ptrtype formc( new form_context_type( __form,
@@ -5101,7 +5096,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     {
         // mortar
         geopcFormMortar.reset( new pc_form_type( __form.gm(), __form.template testFiniteElement<has_mortar_test>()->points() ) );
-        gmcFormMortar.reset( new gmc_form_type( __form.gm(), *__form.testSpace()->mesh()->beginElementWithProcessId(), geopcFormMortar ) );
+        gmcFormMortar.reset( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->beginElement()->second, geopcFormMortar ) );
         map_gmc_form_type mapgmcFormMortar( fusion::make_pair<vf::detail::gmc<0> >( gmcFormMortar ) );
 
         formcMortar.reset( new form_mortar_context_type( __form,
@@ -5197,6 +5192,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     delete formc;
 }
 
+namespace detail_integrator
+{
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<1> ) { return exprLambda(exprX); }
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<2> ) { return exprLambda(vec(exprX,exprY)); }
+template <typename ExprLambdaType, typename ExprXType, typename ExprYType, typename ExprZType>
+auto
+generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<3> ) { return exprLambda(vec(exprX,exprY,exprZ)); }
+}
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
@@ -5221,26 +5228,30 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         if ( it == en )
             continue;
 
-        auto gm = it->gm();
-        auto gm1 = it->gm1();
+        auto const& eltInit = boost::unwrap_ref( *it );
+        auto gm = eltInit.gm();
+        auto gm1 = eltInit.gm1();
 
         auto geopc = gm->preCompute( this->im().points() );
         auto geopc1 = gm1->preCompute( this->im().points() );
-        auto const& worldComm = const_cast<MeshBase*>( it->mesh() )->worldComm();
-        auto ctx = gm->template context<context|vm::JACOBIAN>( *it, geopc );
-        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( *it, geopc );
+        auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
+        auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
+        auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc1 );
         double x=100,y=101,z=102;
-        auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
+        //auto expr_= expression()(vec(cst_ref(x),cst_ref(y), cst_ref(z)));
+        static const int inputDataDim = M;
+        auto expr_= detail_integrator::generateLambdaExpr( expression(), cst_ref(x), cst_ref(y), cst_ref(z), mpl::int_<inputDataDim>() );
         auto expr_evaluator = expr_.evaluator( mapgmc(ctx) );
 
         for ( ; it != en; ++it )
         {
+            auto const& eltCur = boost::unwrap_ref( *it );
             switch ( M_gt )
             {
             default:
             case  GeomapStrategyType::GEOMAP_HO :
             {
-                ctx->update( *it );
+                ctx->update( eltCur );
                 expr_evaluator.update( mapgmc(ctx) );
                 M_im.update( *ctx );
 
@@ -5248,13 +5259,14 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 for( auto const& e : v )
                 {
                     x=e(0,0);
-                    y=e(1,0);
-                    z=e(2,0);
+                    if ( inputDataDim > 1 )
+                        y=e(1,0);
+                    if ( inputDataDim > 2 )
+                        z=e(2,0);
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            double v = M_im( expr_evaluator, c1, c2 );
-                            res[i]( (int)c1,(int)c2 ) += v;
+                            res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
                         }
                     ++i;
                 }
@@ -5263,7 +5275,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
             case GeomapStrategyType::GEOMAP_O1:
             {
-                ctx1->update( *it );
+                ctx1->update( eltCur );
                 expr_evaluator.update( mapgmc(ctx) );
                 M_im.update( *ctx1 );
 
@@ -5271,8 +5283,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 for( auto const& e : v )
                 {
                     x=e(0,0);
-                    y=e(1,0);
-                    z=e(2,0);
+                    if ( inputDataDim > 1 )
+                        y=e(1,0);
+                    if ( inputDataDim > 2 )
+                        z=e(2,0);
 
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5288,9 +5302,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
             case GeomapStrategyType::GEOMAP_OPT:
             {
                 //DDLOG(INFO) << "geomap opt" << "\n";
-                if ( it->isOnBoundary() )
+                if ( eltCur.isOnBoundary() )
                 {
-                    ctx->update( *it );
+                    ctx->update( eltCur );
                     expr_evaluator.update( mapgmc(ctx) );
                     M_im.update( *ctx );
 
@@ -5298,8 +5312,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     for( auto const& e : v )
                     {
                         x=e(0,0);
-                        y=e(1,0);
-                        z=e(2,0);
+                        if ( inputDataDim > 1 )
+                            y=e(1,0);
+                        if ( inputDataDim > 2 )
+                            z=e(2,0);
 
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                             for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5313,7 +5329,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
                 else
                 {
-                    ctx1->update( *it );
+                    ctx1->update( eltCur );
                     expr_evaluator.update( mapgmc(ctx) );
                     M_im.update( *ctx1 );
 
@@ -5321,8 +5337,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     for( auto const& e : v )
                     {
                         x=e(0,0);
-                        y=e(1,0);
-                        z=e(2,0);
+                        if ( inputDataDim > 1 )
+                            y=e(1,0);
+                        if ( inputDataDim > 2 )
+                            z=e(2,0);
 
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                             for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5367,10 +5385,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
 
         for ( auto _it = it; _it != en; ++_it )
-            _v.push_back( boost::cref( *_it ) );
+            _v.push_back( boost::cref( _it->second ) );
 
         tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
-        context_type thecontext( this->expression(), this->im(), *it );
+        context_type thecontext( this->expression(), this->im(), it->second );
 
         if ( M_partitioner == "auto" )
             tbb::parallel_reduce( r,  thecontext );

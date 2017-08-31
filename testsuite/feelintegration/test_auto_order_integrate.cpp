@@ -1,7 +1,7 @@
 
 
 #define BOOST_TEST_MODULE auto_order_integration tests
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 
 #include <feel/options.hpp>
