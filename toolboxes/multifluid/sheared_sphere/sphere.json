@@ -1,0 +1,32 @@
+{
+    "Name": "VesicleRest3d",
+    "ShortName": "VesicleRest3d",
+    "Model": "Levelset",
+
+    "Parameters":
+    {
+    },
+
+    "InitialConditions":
+    {
+        "multifluid.levelset1":
+        {
+            "shapes":
+            {
+                "sphere1":
+                {
+                    "shape": "sphere",
+                    "xc": "0",
+                    "yc": "0",
+                    "zc": "0",
+                    "radius": "0.5"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields": ["modgradphi", "cauchygreeninvariant1", "cauchygreeninvariant2"],
+        "PhysicalQuantities": ["volume", "perimeter"]
+    }
+}
