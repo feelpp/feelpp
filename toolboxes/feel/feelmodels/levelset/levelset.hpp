@@ -618,6 +618,8 @@ private:
     // Backward characteristics advection
     bool M_useCauchyAugmented;
     backwardcharacteristics_advection_ptrtype M_backwardCharacteristicsAdvection;
+    vector_field_expression<nDim> M_initialBackwardCharacteristics;
+    bool M_hasInitialBackwardCharacteristics;
     // Cauchy-Green tensor
     element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
     mutable bool M_doUpdateCauchyGreenTensor;

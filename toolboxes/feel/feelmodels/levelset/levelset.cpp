@@ -232,11 +232,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( M_useCauchyAugmented )
     {
         // Initialize backward characteristics
-        *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
-                _space=M_backwardCharacteristicsAdvection->functionSpace(),
-                _range=elements(M_backwardCharacteristicsAdvection->mesh()),
-                _expr=vf::P()
-                );
+        if( M_hasInitialBackwardCharacteristics )
+        {
+            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
+                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
+                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+                    _expr=M_initialBackwardCharacteristics
+                    );
+        }
+        else
+        {
+            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
+                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
+                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+                    _expr=vf::P()
+                    );
+        }
     }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
@@ -677,6 +688,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_reinitStretchAugmented = boption( _name="reinit-stretch-augmented", _prefix=this->prefix() );
 
     M_useCauchyAugmented = boption( _name="use-cauchy-augmented", _prefix=this->prefix() );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"initial-backward-characteristics").c_str()) )
+    {
+        M_initialBackwardCharacteristics = expr<2,1>( soption(_name="initial-backward-characteristics", _prefix=this->prefix()) );
+        M_hasInitialBackwardCharacteristics = true;
+    }
+    else
+    {
+        M_hasInitialBackwardCharacteristics = false;
+    }
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
