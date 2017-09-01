@@ -21,55 +21,24 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ON )
+option( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point OPTimizer Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
-if ( FEELPP_ENABLE_IPOPT )
+if( FEELPP_ENABLE_IPOPT )
+  feelppContribPrepare( ipopt )
 
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/ipopt )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    #add_subdirectory(contrib/ipopt)
+    SET(IPOPT_INCLUDE_DIR
+      ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
+      ${FEELPP_BINARY_DIR}/contrib/ipopt/include/
+      )
 
-    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+    # Compile/copy header in cmake binary dirs.
+    include_directories(${IPOPT_INCLUDE_DIR})
 
-      execute_process(
-        COMMAND git submodule update --init --recursive contrib/ipopt
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_FILE ${CMAKE_BUILD_DIR}/git.ipopt.log
-        ERROR_FILE ${CMAKE_BUILD_DIR}/git.ipopt.log
-        RESULT_VARIABLE ERROR_CODE
-        )
-      if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "Git submodule contrib/ipopt updated.")
-      else()
-        MESSAGE(WARNING "Git submodule contrib/ipopt failed to be updated. Possible cause: No internet access, firewalls ...")
-      endif()
-    else()
-      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/ )
-        message( WARNING "Please make sure that git submodule contrib/ipopt is available")
-        message( WARNING "  run `git submodule update --init --recursive contrib/ipopt`")
-      endif()
-    endif()
-
-    if ( EXISTS ${FEELPP_SOURCE_DIR}/contrib/ipopt/CMakeLists.txt )
-
-      message(STATUS "[feelpp] use contrib/ipopt : ${CMAKE_SOURCE_DIR}/contrib/ipopt/")
-      SET(FEELPP_HAS_IPOPT 1)
-      #ADD_DEFINITIONS( -DFEELPP_HAS_IPOPT )
-      #ADD_DEFINITIONS( -fPIC )
-
-      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
-      #add_subdirectory(contrib/ipopt)
-
-      #SET(IPOPT_INCLUDE_DIR
-      #          ${FEELPP_SOURCE_DIR}/contrib/ipopt/Ipopt/src/Interfaces
-      #)
-
-      # Compile/copy header in cmake binary dirs.
-      include_directories(${CMAKE_BINARY_DIR}/contrib/ipopt/include/)
-
-      #add_subdirectory(${FEELPP_SOURCE_DIR}/contrib/ipopt)
-      list(APPEND FEELPP_LIBRARIES feelpp_ipopt)
-      add_dependencies(contrib feelpp_ipopt)
-
-    endif()
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Ipopt/Contrib" )
+    SET(FEELPP_HAS_IPOPT 1)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_ipopt feelpp_ipoptfort)
   endif()
 endif()
 

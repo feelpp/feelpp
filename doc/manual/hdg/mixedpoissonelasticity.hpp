@@ -194,7 +194,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
 	auto t_fin = M_PoissonModel->timeStepBDF()->timeFinal();	
 	
-	M_PoissonModel->assembleCstPart();
+	// M_PoissonModel->assembleCstPart();
 	
 	for (; !M_PoissonModel->timeStepBase()->isFinished() && !M_ElasticityModel->timeStepBase()->isFinished() ; M_PoissonModel->updateTimeStep() )
 	{
@@ -208,7 +208,8 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 		M_ElasticityModel->exportResults( M_ElasticityModel->mesh(), Idh_el, Idhv_el );
 
 		// Poisson problem
-		M_PoissonModel->assembleNonCstPart();
+		// M_PoissonModel->assembleNonCstPart();
+		M_PoissonModel->assembleAll();
 		this->assembleF_Poisson();
 		M_PoissonModel->solve();	
 		M_PoissonModel->exportResults( M_PoissonModel->mesh(), Idh_poi, Idhv_poi );
