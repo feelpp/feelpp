@@ -1,0 +1,1 @@
+tetrahedron-oneelt-{x,y,-2*z} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --functions.f={0,0,0} --checker.solution={x,y,-2*z}:x:y:z

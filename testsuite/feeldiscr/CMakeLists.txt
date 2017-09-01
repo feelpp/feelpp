@@ -14,7 +14,7 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
-feelpp_add_test( space_0d )
+feelpp_add_test( space_0d SKIP_TEST )
 
 
 feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
@@ -84,7 +84,7 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
-feelpp_add_test( productspaces )
+feelpp_add_test( productspaces CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
 feelpp_add_test( space_cst )
 # feelpp_add_test( element0D )
 feelpp_add_test( space_on_range )

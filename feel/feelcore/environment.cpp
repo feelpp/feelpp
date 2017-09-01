@@ -1253,10 +1253,10 @@ Environment::doOptions( int argc, char** argv,
                     if ( !fs::exists( cfgfile ) ) continue;
                     cout << tc::green << "Reading " << cfgfile << "..." << tc::reset << std::endl;
                     // LOG( INFO ) << "Reading " << cfgfile << "...";
-                    S_configFileNames.insert( fs::absolute( cfgfile ).string() );
                     S_cfgdir = fs::absolute( cfgfile ).parent_path();
                     std::ifstream ifs( cfgfile.c_str() );
                     po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                    S_configFiles.push_back( std::make_tuple( cfgfile, std::forward<std::ifstream>( ifs ) ) );
                 }
             }
 
@@ -1265,10 +1265,11 @@ Environment::doOptions( int argc, char** argv,
                 cout << tc::green << "Reading " << S_vm["config-file"].as<std::string>()
                      << "..." << tc::reset << std::endl;
                 // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
-                S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
                 S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                S_configFiles.push_back( std::make_tuple( fs::absolute( S_vm["config-file"].as<std::string>()).string(),
+                                                          std::forward<std::ifstream>( ifs ) ) );
             }
 
             po::notify( S_vm );
@@ -1325,13 +1326,13 @@ Environment::doOptions( int argc, char** argv,
             if ( found )
             {
                 LOG( INFO ) << "Reading  " << config_name << "...\n";
-                S_configFileNames.insert( fs::absolute( config_name ).string() );
                 S_cfgdir = fs::absolute( config_name ).parent_path();
                 std::ifstream ifs( config_name.c_str() );
                 store( parse_config_file( ifs, *S_desc, true ), S_vm );
                 LOG( INFO ) << "Reading  " << config_name << " done.\n";
                 //po::store(po::parse_command_line(argc, argv, desc), S_vm);
                 po::notify( S_vm );
+                S_configFiles.push_back( std::make_tuple( config_name, std::forward<std::ifstream>( ifs ) ) );
             }
         }
 
@@ -2284,7 +2285,7 @@ char** Environment::S_argv = 0;
 AboutData Environment::S_about;
 pt::ptree Environment::S_summary;
 boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
-std::set<std::string> Environment::S_configFileNames;
+std::vector<std::tuple<std::string,std::ifstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
 boost::shared_ptr<po::options_description> Environment::S_desc_app;
