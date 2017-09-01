@@ -298,16 +298,52 @@ private :
                 faceInRange[faceId].second = 3;
             }
 
+            std::map<rank_type,std::vector<size_type> > dataToSend;
+            std::map<rank_type,std::vector<size_type> > dataToRecv;
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype mybfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myifaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             for ( auto const& faceDataPair : faceInRange )
             {
                 auto const& faceData = faceDataPair.second;
                 if ( faceData.second == 1 )
-                    mybfaces->push_back( boost::cref( *faceData.first ) );
+                {
+                    auto const& theface = *faceData.first;
+                    if ( theface.isInterProcessDomain() )
+                    {
+                        rank_type neighborPid = theface.partition2();
+                        dataToSend[neighborPid].push_back( theface.idInOthersPartitions(neighborPid) );
+                    }
+                    mybfaces->push_back( boost::cref( theface ) );
+                }
                 else
                     myifaces->push_back( boost::cref( *faceData.first ) );
             }
+
+            // maybe some boundary faces on interprocess faces are not detected
+            // on neighbor part (because not connected to an element of partial support)
+            // but should be added on range : required mpi comm
+            int neighborSubdomains = M_mesh->neighborSubdomains().size();
+            int nbRequest = 2*neighborSubdomains;
+            mpi::request * reqs = new mpi::request[nbRequest];
+            int cptRequest=0;
+            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+            {
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+            }
+            mpi::wait_all(reqs, reqs + nbRequest);
+            delete [] reqs;
+
+            for ( auto const& dataRecvByProc : dataToRecv )
+            {
+                for ( size_type faceId : dataRecvByProc.second )
+                {
+                    if ( faceInRange.find( faceId ) == faceInRange.end() )
+                        mybfaces->push_back( boost::cref( M_mesh->face( faceId ) ) );
+                }
+            }
+
+
             M_rangeBoundaryFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces );
             M_rangeInternalFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),myifaces->begin(),myifaces->end(),myifaces );
         }
