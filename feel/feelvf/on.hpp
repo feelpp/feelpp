@@ -524,12 +524,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                     __face_id = theface.pos_second();
                     faceConnectionId = 1;
                 }
-                CHECK( __dof->meshSupport()->hasElement( theface.element( faceConnectionId ).id() ) ) << "element not present in partial support";
-                CHECK( !theface.element( faceConnectionId ).isGhostCell() ) << "face connection to a ghost element is forbidden";
+                DCHECK( __dof->meshSupport()->hasElement( theface.element( faceConnectionId ).id() ) ) << "element not present in partial support";
+                DCHECK( !theface.element( faceConnectionId ).isGhostCell() ) << "face connection to a ghost element is forbidden";
             }
             else if ( theface.element( 0 ).isGhostCell() )
             {
-                CHECK( theface.isConnectedTo1() ) << "invalid face, no other connection";
+                DCHECK( theface.isConnectedTo1() ) << "invalid face, no other connection";
                 __face_id = theface.pos_second();
                 faceConnectionId = 1;
             }
