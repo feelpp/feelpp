@@ -143,16 +143,24 @@ public :
 
     bool isGhostFace( face_type const& face ) const
         {
-            if ( !face.isGhostFace() )
-                return false;
-
             if ( M_isFullSupport )
-                return true;
+                return face.isGhostFace();
             else
             {
-                bool hasElt0 = this->hasElement( face.element(0).id() );
-                bool hasElt1 = this->hasElement( face.element(1).id() );
-                return ( hasElt0 && hasElt1 );
+                if ( !face.isInterProcessDomain() )
+                    return false;
+                auto const& elt0 = face.element(0);
+                auto const& elt1 = face.element(1);
+                bool hasElt0 = this->hasElement( elt0.id() );
+                bool hasElt1 = this->hasElement( elt1.id() );
+                if ( hasElt0 && hasElt1 )
+                    return face.isGhostFace();
+                else if ( hasElt0 )
+                    return elt0.isGhostCell();
+                else if ( hasElt1 )
+                    return elt1.isGhostCell();
+                else
+                    return true;
             }
         }
 
