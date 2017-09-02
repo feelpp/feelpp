@@ -1322,9 +1322,11 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh )
 {
-    static const uint16_type nLocalDofVertex = element_type::numVertices*fe_type::nDofPerVertex;
-    static const uint16_type nLocalDofVertexEdge = element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
-    static const uint16_type nLocalDofVertexEdgeFace =
+    static const uint16_type nLocalDofUpToVertices = element_type::numVertices*fe_type::nDofPerVertex;
+    static const uint16_type nLocalDofUpToEdges = element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
+    static const uint16_type nLocalDofUpToFaces =
+        (nDim==1)? element_type::numVertices*fe_type::nDofPerVertex :
+        (nDim==2)? element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge :
         element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge + element_type::numGeometricFaces*fe_type::nDofPerFace;
     static const uint16_type nDofPerVertexForDivision = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerVertex>,mpl::int_<0> >,
                                                                  mpl::int_<1>,
@@ -1333,13 +1335,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     static const uint16_type nDofPerEdgeForDivision = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerEdge>,mpl::int_<0> >,
                                                                mpl::int_<1>,
                                                                mpl::int_<fe_type::nDofPerEdge> >::type::value;
+    static const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
+        (nDim==1)? 0 :
+        (nDim==2)? element_type::numVertices*fe_type::nDofPerVertex :
+        element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
 
-    static const uint16_type nLocalDofBeforeDofFaces = (nDim==3)?
-        element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge :
-        element_type::numVertices*fe_type::nDofPerVertex;
-    static const uint16_type nDofPerFaceForDivision = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerFace>,mpl::int_<0> >,
-                                                               mpl::int_<1>,
-                                                               mpl::int_<fe_type::nDofPerFace> >::type::value;
+    static const uint16_type nDofPerTopologicalFace =
+        (nDim==1)?fe_type::nDofPerVertex : (nDim==2)?fe_type::nDofPerEdge : fe_type::nDofPerFace;
+    static const uint16_type nDofPerTopologicalFaceForDivision = mpl::if_<boost::is_same<mpl::int_<nDofPerTopologicalFace>,mpl::int_<0> >,
+                                                                          mpl::int_<1>,
+                                                                          mpl::int_<nDofPerTopologicalFace> >::type::value;
 
     const rank_type myRank = this->worldComm().localRank();
     const rank_type nProc = this->worldComm().localSize();
@@ -1407,23 +1412,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
                 rank_type pidDofActive = invalid_rank_type_value;
                 size_type idEltInPartition = invalid_size_type_value;
-                if ( locDof < nLocalDofVertex )
+                if ( locDof < nLocalDofUpToVertices )
                 {
                     uint16_type pointIdInElt = locDof / nDofPerVertexForDivision;
                     boost::tie( pidDofActive, idEltInPartition ) = Feel::detail::updateDofOnVertices( *this,activeElt,pointIdInElt );
                 }
-                else if ( nDim == 3 && locDof < nLocalDofVertexEdge )
+                else if ( nDim == 3 && locDof < nLocalDofUpToEdges )
                 {
-                    uint16_type locDofInEgdes = locDof - nLocalDofVertex;
+                    uint16_type locDofInEgdes = locDof - nLocalDofUpToVertices;
                     uint16_type edgeIdInElt = locDofInEgdes / nDofPerEdgeForDivision;
                     boost::tie( pidDofActive, idEltInPartition ) = Feel::detail::updateDofOnEdges( *this,activeElt,edgeIdInElt );
                 }
-                else if ( locDof < nLocalDofVertexEdgeFace )
+                else if ( locDof < nLocalDofUpToFaces )
                 {
                     if ( nDim < 2 && nDim != nRealDim )
                         continue;
-                    uint16_type locDofInFaces = locDof - nLocalDofBeforeDofFaces;
-                    uint16_type faceIdInElt = locDofInFaces / nDofPerFaceForDivision;
+                    uint16_type locDofInTopologicalFaces = locDof - nLocalDofBeforeDofsOfTopologicalFaces;
+                    uint16_type faceIdInElt = locDofInTopologicalFaces / nDofPerTopologicalFaceForDivision;
                     auto facePtr = activeElt.facePtr( faceIdInElt );
                     if ( !facePtr )
                         continue;
@@ -1445,7 +1450,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 }
                 else
                 {
-                    // dof in volume
+                    // dof inside the element : do nothing
                 }
 
                 // if dof is ghost -> prepare send/recv
