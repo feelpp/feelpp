@@ -119,10 +119,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
             for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
             {
-                M_levelsetInterfaceForcesModels[i][n] = interfaceforces_factory_type::instance().createObject( 
-                        interfaceForcesModels[n]
+                std::string const forceName interfaceForcesModels[n];
+                M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
+                        forceName
                         );
-                M_levelsetInterfaceForcesModels[i][n]->build( levelset_prefix, M_levelsets[i] );
+                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i] );
             }
 
             M_hasInterfaceForcesModel = true;
@@ -614,11 +615,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("MultiFluid","exportResults", "start");
 
+    // Export forces
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
+        for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+        {
+            this->M_exporter->step(time)->add( prefixvm(levelset_prefix, force.first),
+                    prefixvm(levelset_prefix, force.first),
+                    force.second->lastInterfaceForce() );
+        }
+    }
+    for( auto const& force: M_additionalInterfaceForcesModel )
+    {
+        this->M_exporter->step(time)->add( prefixvm("additional", force.first),
+                prefixvm("additional", force.first),
+                force.second->lastInterfaceForce() );
+    }
+    // Export fluid
     super_type::exportResults(time);
-
+    // Export levelsets
     if( this->nLevelsets() > 1 )
         M_globalLevelset->exportResults(time);
-
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->exportResults(time);
