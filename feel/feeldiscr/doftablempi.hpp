@@ -34,7 +34,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
     if ( this->hasMeshSupport() )
         this->meshSupport()->updateParallelData();
 
-    if ( !mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
+    if ( true )//!mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
     {
         this->buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh );
     }
