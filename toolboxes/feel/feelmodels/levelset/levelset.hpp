@@ -61,9 +61,11 @@ namespace Feel {
 
     BOOST_PARAMETER_NAME(space_vectorial)
     BOOST_PARAMETER_NAME(space_markers)
+    BOOST_PARAMETER_NAME(space_tensor2symm)
     BOOST_PARAMETER_NAME(reinitializer)
     BOOST_PARAMETER_NAME(projectorL2)
     BOOST_PARAMETER_NAME(projectorL2_vectorial)
+    BOOST_PARAMETER_NAME(projectorL2_tensor2symm)
     BOOST_PARAMETER_NAME(smoother)
     BOOST_PARAMETER_NAME(smoother_vectorial)
 
@@ -148,7 +150,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Tensor2 symmetric function space
-    typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
+    //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
+    typedef Lagrange<Order, Tensor2> basis_tensor2symm_type;
     typedef FunctionSpace<mymesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
     typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
@@ -288,9 +291,11 @@ public:
             ( optional
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              ( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
+              ( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
               ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
               ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
@@ -300,6 +305,12 @@ public:
         // createFunctionSpaces
         M_spaceLevelSetVec = space_vectorial;
         M_spaceMarkers = space_markers;
+        if( M_useCauchyAugmented )
+        {
+            if( !space_tensor2symm )
+                space_tensor2symm = self_type::space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+            M_spaceTensor2Symm = space_tensor2symm;
+        }
         // createInterfaceQuantities
         this->createInterfaceQuantities();
         // createReinitialization
@@ -311,9 +322,17 @@ public:
         // createOthers
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
+        if( M_useCauchyAugmented )
+        {
+            if( !projectorL2_tensor2symm )
+                projectorL2_tensor2symm = Feel::projector(
+                        this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
+                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                        );
+            M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
+        }
         M_smoother = smoother;
         M_smootherVectorial = smoother_vectorial;
-
     }
 
     //--------------------------------------------------------------------//

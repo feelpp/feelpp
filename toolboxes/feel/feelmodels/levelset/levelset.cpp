@@ -690,7 +690,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useCauchyAugmented = boption( _name="use-cauchy-augmented", _prefix=this->prefix() );
     if ( Environment::vm().count(prefixvm(this->prefix(),"initial-backward-characteristics").c_str()) )
     {
-        M_initialBackwardCharacteristics = expr<2,1>( soption(_name="initial-backward-characteristics", _prefix=this->prefix()) );
+        M_initialBackwardCharacteristics = expr<nDim,1>( soption(_name="initial-backward-characteristics", _prefix=this->prefix()) );
         M_hasInitialBackwardCharacteristics = true;
     }
     else
