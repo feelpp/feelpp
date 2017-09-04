@@ -57,6 +57,6 @@ steps:
    branches: "master develop feature/*"
    async: true
    build:
-     branch: "$BUILDKITE_BRANCH"
+     branch: "${BUILDKITE_BRANCH}"
      env:
        TARGET: ubuntu:16.10
