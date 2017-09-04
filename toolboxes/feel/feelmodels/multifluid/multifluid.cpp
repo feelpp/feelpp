@@ -113,11 +113,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
             interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
 
-            M_levelsetInterfaceForcesModels[i].resize( interfaceForcesModels.size() );
-
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+            for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
             {
-                std::string const forceName interfaceForcesModels[n];
+                std::string const forceName = interfaceForcesModels[n];
                 M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
                         forceName
                         );
@@ -368,8 +366,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
         for( uint16_type i = 0; i < M_levelsets.size(); ++i )
         {
     *_ostr << "\n     -- level set " << i;
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
-    *_ostr << "\n       * force model : " << this->M_levelsetInterfaceForcesModels[i][n]->getInfo()->str();
+            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+    *_ostr << "\n       * force model : " << force.second->getInfo()->str();
         }
     }
 
@@ -767,11 +765,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         this->timerTool("Solve").start();
         for( uint16_type i = 0; i < M_levelsets.size(); ++i )
         {
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
             {
-                if( M_levelsetInterfaceForcesModels[i][n] )
+                if( force.second )
                 {
-                    M_levelsetInterfaceForcesModels[i][n]->updateInterfaceForces( M_interfaceForces, false );
+                    force.second->updateInterfaceForces( M_interfaceForces, false );
                 }
             }
         }
