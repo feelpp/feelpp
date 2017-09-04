@@ -819,6 +819,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
             if( o == "modgradphi" || o == "all" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+            if( o == "backwardcharacteristics" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
             if( o == "cauchygreeninvariant1" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
             if( o == "cauchygreeninvariant2" )
@@ -832,6 +834,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
+        if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
         if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
@@ -1993,6 +1998,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     if( M_useCauchyAugmented )
     {
         M_backwardCharacteristicsAdvection->exportResults( time );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::BackwardCharacteristics ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"BackwardCharacteristics"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"BackwardCharacteristics")),
+                                       M_backwardCharacteristicsAdvection->fieldSolution() );
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant1 ) )
     {

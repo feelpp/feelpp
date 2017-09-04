@@ -87,7 +87,7 @@ enum class LevelSetMeasuresExported
 enum class LevelSetFieldsExported
 {
     GradPhi, ModGradPhi, 
-    CauchyGreenInvariant1, CauchyGreenInvariant2
+    BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
 };
 
 template<typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity>
