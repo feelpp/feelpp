@@ -1362,6 +1362,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     this->log("FluidMechanics","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
@@ -1381,9 +1382,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     M_bdf_fluid->setfileFormat( myFileFormat );
     M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdf_fluid->bdfOrder()).str() ) ) ).string() );
-
-    double tElapsed = this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("FluidMechanics","createTimeDiscretisation", (boost::format("finish in %1% s") %tElapsed).str() );
 
     // start or restart time step scheme
     if (!this->doRestart())
@@ -1413,7 +1411,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
 
-    this->log("FluidMechanics","initTimeStep", "finish" );
+    double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
+    this->log("FluidMechanics","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
