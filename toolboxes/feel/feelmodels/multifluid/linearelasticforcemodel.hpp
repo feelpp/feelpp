@@ -61,15 +61,14 @@ template<typename LevelSetType>
 void
 LinearElasticForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
 {
-    super_type::build( prefix, ls, "skalak-force" );
+    super_type::build( prefix, ls, "linear-elastic-force" );
+    this->loadParametersFromOptionsVm();
 }
 
 template<typename LevelSetType>
 void
 LinearElasticForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
-    super_type::loadParametersFromOptionsVm();
-
     M_elasticStretchModulus = doption( _name="elastic-stretch-modulus", _prefix=this->prefix() );
     M_elasticShearModulus = doption( _name="elastic-shear-modulus", _prefix=this->prefix() );
 }
@@ -80,7 +79,7 @@ LinearElasticForceModel<LevelSetType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Linear elastic force ("
-           << "stretch modulus = " << this->M_elasticStretchModulus
+           << "stretch modulus = " << this->M_elasticStretchModulus << ", "
            << "shear modulus = " << this->M_elasticShearModulus
            << ")";
 

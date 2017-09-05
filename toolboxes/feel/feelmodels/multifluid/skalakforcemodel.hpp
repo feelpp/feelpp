@@ -62,14 +62,13 @@ void
 SkalakForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
 {
     super_type::build( prefix, ls, "skalak-force" );
+    this->loadParametersFromOptionsVm();
 }
 
 template<typename LevelSetType>
 void
 SkalakForceModel<LevelSetType>::loadParametersFromOptionsVm()
 {
-    super_type::loadParametersFromOptionsVm();
-
     M_skalakForceStretchModulus = doption( _name="skalak-stretch-modulus", _prefix=this->prefix() );
     M_skalakForceShearModulus = doption( _name="skalak-shear-modulus", _prefix=this->prefix() );
 }
@@ -80,7 +79,7 @@ SkalakForceModel<LevelSetType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Skalak force ("
-           << "stretch modulus C = " << this->M_skalakForceStretchModulus
+           << "stretch modulus C = " << this->M_skalakForceStretchModulus << ", "
            << "shear modulus B = " << this->M_skalakForceShearModulus
            << ")";
 

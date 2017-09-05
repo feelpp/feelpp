@@ -11,22 +11,29 @@
     {
         "multifluid.levelset1":
         {
-            "shapes":
+            "Dirichlet":
             {
-                "sphere1":
+                "":
                 {
-                    "shape": "sphere",
-                    "xc": "0",
-                    "yc": "0",
-                    "zc": "0",
-                    "radius": "0.5"
+                    "expr": "sqrt(x*x+y*y+z*z)-0.5:x:y:z"
                 }
             }
+            //"shapes":
+            //{
+                //"sphere1":
+                //{
+                    //"shape": "sphere",
+                    //"xc": "0",
+                    //"yc": "0",
+                    //"zc": "0",
+                    //"radius": "0.5"
+                //}
+            //}
         }
     },
     "PostProcess":
     {
-        "Fields": ["modgradphi", "cauchygreeninvariant1", "cauchygreeninvariant2"],
+        "Fields": ["modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"],
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }
