@@ -78,8 +78,8 @@ template<typename LevelSetType>
 void
 HyperelasticForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls, std::string const& name )
 {
-    M_name = name;
     super_type::build( prefix, ls );
+    M_name = name;
 }
 
 template<typename LevelSetType>
@@ -143,12 +143,12 @@ HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype
     auto Fe_expr = this->levelset()->projectorL2Tensor2Symm()->project(
             _expr=2.*(idv(Ep1)*A + idv(Ep2)*(A*trace(A)-A*A) )
             );
-    //auto Fe = this->levelset()->smootherVectorial()->project(
-    auto Fe = this->levelset()->projectorL2Vectorial()->project(
+    auto Fe = this->levelset()->smootherVectorial()->project(
+    //auto Fe = this->levelset()->projectorL2Vectorial()->project(
             _expr=divv(Fe_expr)*idv(this->levelset()->D())
             );
     
-    *F += Fe;
+    *F = Fe;
 
 #ifdef DEBUG_HYPERELASTICFORCEMODEL
     M_exporter->step(this->levelset()->time())->add(

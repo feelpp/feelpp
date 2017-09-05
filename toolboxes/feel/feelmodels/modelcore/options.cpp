@@ -490,6 +490,12 @@ interfaceforces_options(std::string const& prefix)
 
         (prefixvm(prefix,"inextensibility-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Inextensibility force coefficient (Lambda)" )
         (prefixvm(prefix,"inextensibility-force-epsilon").c_str(), Feel::po::value<double>(), "Inextensibility force epsilon" )
+
+        (prefixvm(prefix,"elastic-stretch-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Linear elastic force stretch modulus" )
+        (prefixvm(prefix,"elastic-shear-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Linear elastic force shear modulus" )
+
+        (prefixvm(prefix,"skalak-stretch-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force stretch modulus" )
+        (prefixvm(prefix,"skalak-shear-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force shear modulus" )
         ;
 
     return interfaceForcesOptions;
