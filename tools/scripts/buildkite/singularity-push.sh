@@ -37,7 +37,7 @@ cd ${REPO_NAME}
 echo "-- Push Feel++ singularity images"
 git add *.img
 git commit -am "[buildkite] Deploy new singularity images"
-git push
+git lfs push
 cd ${ROOT_DIR}
 
 echo "-- Remove temporary Feel++ singularity images"
