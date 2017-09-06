@@ -4,11 +4,12 @@ set -euo pipefail
 
 source $(dirname $0)/common.sh
 
+IMAGES_ROOT=./docker/singularity/images
 REPO_NAME=feelpp-singularity-images.git
 
 # Remove old local images (NOT LFS).
-if [ -d ./docker/singularity/images ]; then
-    find ./docker/singularity/images/ -name "*.img" -exec  rm -r {} \;
+if [ -d ${IMAGES_ROOT} ]; then
+    find ${IMAGES_ROOT} -name "*.img" -exec  rm -r {} \;
 else
     echo "./docker.git/singularity/images does not exist"
     pwd
@@ -24,7 +25,7 @@ else
 fi
 
 # Copy (overide) generated images in the repository.
-find ./docker.git/singularity/images/ -name "*.img" \
+find ${IMAGES_ROOT} -name "*.img" \
 -exec echo "--- push singularity image:" {} \; \
 -exec cp -r {} ${REPO_NAME} \;
 
