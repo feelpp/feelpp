@@ -184,6 +184,7 @@ public:
     void setTimeOrder( int order )
     {
         M_order_cur = order;
+        this->computePolyAndPolyDeriv();
     }
 
     //! return the order in time
