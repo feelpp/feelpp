@@ -7,8 +7,8 @@ source $(dirname $0)/common.sh
 REPO_NAME=feelpp-singularity-images.git
 
 # Remove old local images (NOT LFS).
-if [ -d ./docker.git/singularity/images ]; then
-    find ./docker.git/singularity/images/ -name "*.img" -exec  rm -r {} \;
+if [ -d ./docker/singularity/images ]; then
+    find ./docker/singularity/images/ -name "*.img" -exec  rm -r {} \;
 else
     echo "./docker.git/singularity/images does not exist"
     pwd
