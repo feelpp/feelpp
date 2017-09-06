@@ -7,7 +7,7 @@ source $(dirname $0)/common.sh
 ROOT_DIR=`pwd`
 IMAGES_ROOT=./docker/singularity/images
 REPO_NAME=feelpp-singularity-images.git
-REPO=git@gitlab.math.unistra.fr:dolle/feelpp-singularity-images.git
+REPO=git@gitlab.math.unistra.fr:feelpp/feelpp-singularity-images.git
 REPO_MAX_IMAGES=20 #( x10 GB )
 
 # Remove old local images (NOT LFS).
