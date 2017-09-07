@@ -128,10 +128,12 @@ public :
                 i,
                 worldComm ),
         mesh( Xh->mesh() ),
+        M_prefix( prefix ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol(1e-8),
-        M_prefix( prefix ),
+        M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
+        M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
+        M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
         M_nl_assembly(false)
     {
@@ -207,6 +209,7 @@ public :
         }
 
         double error=0;
+        double r_error=0;
         auto mu = M_trainset->max().template get<0>();
 
         if ( M_M==0 )
@@ -223,12 +226,16 @@ public :
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
             mu = best_fit.template get<0>();
-            cout << "DEIM : Current error : "<< error
-                 <<", tolerance : " << M_tol <<std::endl;
+
+            if ( M_max_value!=0 )
+                r_error = error/M_max_value;
+
+            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
             cout <<"===========================================\n";
         }
 
-        while( M_M<mMax && error>M_tol )
+        while( M_M<mMax && r_error>M_tol && error>M_Atol )
         {
             cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
 
@@ -241,11 +248,12 @@ public :
                 auto best_fit = computeBestFit();
                 error = best_fit.template get<1>();
                 mu = best_fit.template get<0>();
-                cout << "DEIM : Current error : "<< error
-                           <<", tolerance : " << M_tol <<std::endl;
+
+                r_error = error/M_max_value;
+                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
                 cout <<"===========================================\n";
             }
-
         }
 
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
@@ -302,6 +310,8 @@ protected :
         auto i = vec_max.template get<1>();
         double max = vec_max.template get<0>();
 
+        if ( M_max_value==-1 )
+            M_max_value=max;
         M_M++;
 
         Phi->scale( 1./max );
@@ -441,8 +451,9 @@ protected :
         {
             for ( int i=0; i<M_M; i++ )
                 rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
-            coeff = M_B.lu().solve( rhs );
+            coeff = M_B.fullPivLu().solve( rhs );
         }
+
         return coeff;
     }
 
@@ -464,15 +475,15 @@ protected :
         for ( auto const& mu : *M_trainset )
         {
             tensor_ptrtype T = residual( mu );
+            auto vec_max = vectorMaxAbs(T);
+            auto norm = vec_max.template get<0>();
 
-            double norm = T->linftyNorm();
             if ( norm>max )
             {
                 max = norm;
                 mu_max = mu;
             }
         }
-
         LOG(INFO) << "DEIM : computeBestFit() end";
         toc("DEIM : compute best fit");
 
@@ -563,16 +574,18 @@ protected :
 
 protected :
     mesh_ptrtype mesh;
+    std::string M_prefix;
+
     sampling_ptrtype M_trainset;
     int M_M;
-    double M_tol;
+    double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
+
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
     std::vector<ptsset_type> M_ptsset;
     std::set<int> M_elts_ids;
 
-    std::string M_prefix;
     bool M_rebuild, M_nl_assembly;
 };
 
@@ -630,7 +643,9 @@ public :
     {
         if ( this->M_nl_assembly )
         {
-            CHECK(!online) << "Call of online nl assembly with no solution u\n";
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = M_model->solve(mu);
             return M_model->assembleForDEIMnl(mu,u);
         }
@@ -783,7 +798,9 @@ public :
     {
         if ( this->M_nl_assembly )
         {
-            CHECK(!online) << "Call of online nl assembly with no solution u\n";
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = M_model->solve(mu);
             return M_model->assembleForMDEIMnl(mu,u);
         }
@@ -968,7 +985,6 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::save( Archive & ar, const uns
 {
 #if 0
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
     ar & BOOST_SERIALIZATION_NVP( M_M );
     ar & BOOST_SERIALIZATION_NVP( M_B );
     ar & BOOST_SERIALIZATION_NVP( M_index );
