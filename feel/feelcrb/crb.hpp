@@ -9241,7 +9241,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
     FEELPP_ASSERT( Nwn <= WN.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and WN ) ");
     FEELPP_ASSERT( Nwn <= u.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and u ) ");
     //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( WN, u, N );
+    return Feel::expansion( WN, u, Nwn );
 }
 
 
