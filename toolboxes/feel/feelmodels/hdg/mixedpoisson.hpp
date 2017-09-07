@@ -208,7 +208,7 @@ public:
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
 	product2_space_ptrtype getPS() const { return M_ps; }
-	vector_ptrtype getF() { return M_F; }
+	condensed_vector_ptr_t<value_type> getF() { return M_F; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;
@@ -1198,6 +1198,24 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
             else
                 d = exAtMarker.data(0.1);
 
+			// Scale entries if necessary
+    		auto postProcess = modelProperties().postProcess();
+    		auto itField = postProcess.find( "Fields");
+    		if ( itField != postProcess.end() )
+    		{
+        		for ( auto const& field : (*itField).second )
+        		{
+            		if ( field == "scaled_flux" )
+					{
+            			for( auto const& pairMat : modelProperties().materials() )
+            			{
+                			auto material = pairMat.second;
+                			double kk = material.getDouble( "scale_integral_file" );
+							d = kk*d;
+						}
+					}
+				}
+			}
             LOG(INFO) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 

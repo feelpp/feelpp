@@ -124,7 +124,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( space_advection_ptrtype const& space)
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app )
 {
     //if ( M_isUpdatedForUse ) return;
 
@@ -877,7 +877,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     std::string algebraicSolverType = "LinearSystem";
-    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vector() ); 
+    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vectorMonolithic() ); 
     
     M_blockVectorSolution.localize();
 

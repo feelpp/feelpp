@@ -160,6 +160,9 @@ void Thermoelectric::initModel()
         M_mesh = loadMesh( new mesh_type );
     this->setFunctionSpaces(functionspace_type::New( M_mesh ) );
 
+    Feel::cout << "Potential nDof  : " << Xh->template functionSpace<0>()->nDof() << std::endl
+               << "Temperature nDof: " << Xh->template functionSpace<1>()->nDof() << std::endl;
+
     if( !pT )
         pT = element_ptrtype( new element_type( Xh ) );
     M_V = pT->template elementPtr<0>();
@@ -553,6 +556,14 @@ Thermoelectric::vectorN_type Thermoelectric::eimSigmaBeta( parameter_type const&
 void Thermoelectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu )
 {
     auto VT = this->solve(mu);
+    auto V = VT.template element<0>();
+    auto sigma = mu.parameterNamed("sigma");
+    auto Vh = j.functionSpace();
+    j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
+}
+
+void Thermoelectric::computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu, element_type& VT )
+{
     auto V = VT.template element<0>();
     auto sigma = mu.parameterNamed("sigma");
     auto Vh = j.functionSpace();
