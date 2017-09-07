@@ -310,6 +310,9 @@ void AlphaThermoelectric::initModel()
         M_mesh = loadMesh( new mesh_type );
     this->setFunctionSpaces(functionspace_type::New( M_mesh ) );
 
+    Feel::cout << "Potential nDof  : " << Xh->template functionSpace<0>()->nDof() << std::endl
+               << "Temperature nDof: " << Xh->template functionSpace<1>()->nDof() << std::endl;
+
     if( !pT )
         pT = element_ptrtype( new element_type( Xh ) );
     M_V = pT->template elementPtr<0>();
