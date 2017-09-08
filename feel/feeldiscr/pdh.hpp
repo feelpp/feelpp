@@ -50,7 +50,22 @@ Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                              _extended_doftable=buildExtendedDofTable );
+}
+
+/**
+ Given a \p mesh, build a function space of discontinuous function which are
+ piecewise polynomial of degree (total or in each variable) less than k.
+ */
+template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
+inline
+Pdh_ptrtype<MeshType,Order,Pts>
+Pdh( boost::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false )
+{
+    return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
+                                              _range=rangeElt,
+                                              _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                              _extended_doftable=buildExtendedDofTable );
 }
 
 }
