@@ -1539,6 +1539,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 {
                     double meas = 0.0;
                     double j_integral = 0;
+					
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         auto marker = exAtMarker.marker();
@@ -1552,6 +1553,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     }
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralFlux"), j_integral);
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralVelocity"), j_integral/meas);
+					
                 }
             }
             else if (field == "scaled_flux" )
@@ -1574,14 +1576,19 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 LOG(INFO) << "exporting potential at time " << time;
                 M_exporter->step( time )->add(prefixvm(prefix(), "potential"),
                                               Idh?(*Idh)(M_pp):M_pp);
+
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
-                    LOG(INFO) << "exporting IBC potential " << i << " at time "
-                              << time << " value " << (M_mup[i])[0];
-                    M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"),
-                                                  (M_mup[i])[0] );
+                    double export_mup = M_mup[i].max();
+					
+					LOG(INFO) << "exporting IBC potential " << i << " at time "
+                             << time << " value " << export_mup;
+                   
+		
+					M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
+					
                     Feel::cout << "Integral value of potential(mup) on "
-                               << M_IBCList[i].marker() << " : \t " << (M_mup[i])[0] << std::endl;
+                               << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
 					
 					auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
 					auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
@@ -1668,6 +1675,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
+					
                     auto scaled_ibc = M_mup[i];
                     for( auto const& pairMat : modelProperties().materials() )
                     {
@@ -1735,20 +1743,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
         }
     }
 
-    /*
-    double Ui_mean = 0;
-    double meas = 0;
-    for( auto marker : this->M_integralMarkersList)
-    {
-        Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
-    meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
-    }
-    if (M_integralCondition)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
-    if ( M_integralCondition == 2)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
-    // Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
-    */
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
