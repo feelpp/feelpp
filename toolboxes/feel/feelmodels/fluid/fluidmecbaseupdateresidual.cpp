@@ -89,7 +89,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         if ( this->doStabConvectionEnergy() )
         {
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
                            _expr=inner( Feel::vf::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
                            _geomap=this->geomap() );
@@ -111,7 +111,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             auto convecTerm = inner( Feel::vf::FeelModels::fluidMecConvection(u,rho),id(v) );
 #endif
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr=convecTerm,
                            _geomap=this->geomap() );
         }
@@ -126,7 +126,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     {
         // mesh velocity (convection) term
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
                        _geomap=this->geomap() );
         timeElapsedBis=thetimerBis.elapsed();
@@ -144,7 +144,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
     if (!BuildCstPart && !UseJacobianLinearTerms )
     {
         linearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -idv(rho)*divv(u)*id(q),
                        _geomap=this->geomap() );
     }
@@ -372,14 +372,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         if (M_haveSourceAdded)
         {
             linearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -trans(idv(*M_SourceAdded))*id(v),
                            _geomap=this->geomap() );
         }
         if ( M_useGravityForce )
         {
             linearForm_PatternCoupled +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -idv(rho)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
@@ -396,7 +396,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         if (Build_TransientTerm) //  !BuildCstPart && !UseJacobianLinearTerms )
         {
             linearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= val(idv(rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
                            _geomap=this->geomap() );
         }
@@ -406,7 +406,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             auto Buzz = M_bdf_fluid->polyDeriv();
             auto buzz = Buzz.template element<0>();
             linearForm_PatternDefault +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= val(-idv(rho)*trans(idv(buzz)))*id(v),
                            _geomap=this->geomap() );
         }
@@ -424,7 +424,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
         {
             double beta = this->definePressureCstPenalisationBeta();
             linearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
+                integrate( _range=M_rangeMeshElements,
                            _expr=beta*idv(p)*id(q),
                            _geomap=this->geomap() );
         }
@@ -434,11 +434,6 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                 << " start dof index for define-pressure-cst-lm is not present\n";
             size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
 
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-            auto therange = boundaryfaces(mesh);
-#else
-            auto therange = elements(mesh);
-#endif
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
                 auto lambda = M_XhMeanPressureLM->element();
@@ -449,7 +444,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 
                 form1( _test=M_XhMeanPressureLM,_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=therange,//elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -459,7 +454,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
                 auto lambda = M_XhMeanPressureLM->element();
                 form1( _test=M_XhMeanPressureLM,_vector=R,
                        _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
-                    integrate( _range=elements(mesh),
+                    integrate( _range=M_rangeMeshElements,
                                _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -744,14 +739,14 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
             form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
                    _pattern=size_type(Pattern::COUPLED),
                    _rowstart=M_thermodynModel->rowStartInVector() ) +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
 
             double T0 = M_BoussinesqRefTemperature;
             auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
             linearForm_PatternCoupled +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }

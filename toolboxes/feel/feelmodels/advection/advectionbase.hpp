@@ -266,11 +266,15 @@ public :
     // Algebraic data
     backend_ptrtype const& backend() const { return M_backend; }
     size_type matrixPattern() const;
+    virtual int nBlockMatrixGraph() const;
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
+    virtual int buildBlockVectorSolution();
+    void buildVectorSolution();
     //indexsplit_ptrtype buildIndexSplit() const;
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    size_type nLocalDof() const;
+    virtual size_type nLocalDof() const;
 
     //--------------------------------------------------------------------//
     // Time scheme
@@ -292,6 +296,7 @@ public :
     // Algebraic model updates
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
     virtual void updateLinearPDEStabilization( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
     virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const {};
     virtual bool hasSourceTerm() const =0;
@@ -352,7 +357,7 @@ public :
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 protected:
-    virtual void loadParametersFromOptionsVm();
+    void loadParametersFromOptionsVm();
 
     void createMesh();
     void createFunctionSpaces();
@@ -360,7 +365,6 @@ protected:
     void createTimeDiscretization();
     void createExporters();
     void createOthers();
-    void buildBlockVector();
 
     virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
 

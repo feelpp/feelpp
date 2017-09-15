@@ -25,9 +25,9 @@
 
 namespace Feel {
 
-MasterStream cout( std::cout );
-MasterStream cerr( std::cerr );
-MasterStream clog( std::clog );
+FEELPP_EXPORT MasterStream cout( std::cout );
+FEELPP_EXPORT MasterStream cerr( std::cerr );
+FEELPP_EXPORT MasterStream clog( std::clog );
 
 
 }

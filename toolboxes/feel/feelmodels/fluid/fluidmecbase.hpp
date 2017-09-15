@@ -216,8 +216,7 @@ public:
     typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
     //___________________________________________________________________________________//
     // stabilization
-    static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
-    typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+    typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
     typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -395,6 +394,8 @@ public:
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
@@ -521,6 +522,9 @@ public :
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
     //___________________________________________________________________________________//
+    // thermo dyn
+    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
+    //___________________________________________________________________________________//
     // fsi parameters
 
     bool useFSISemiImplicitScheme() const { return M_useFSISemiImplicitScheme; }
@@ -556,7 +560,8 @@ public :
     // stabilization
     bool stabilizationGLS() const { return M_stabilizationGLS; }
     std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
-    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterConvectionDiffusion() const { return M_stabilizationGLSParameterConvectionDiffusion; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameterPressure() const { return M_stabilizationGLSParameterPressure; }
     range_elements_type const& stabilizationGLSEltRangeConvectionDiffusion() const { return M_stabilizationGLSEltRangeConvectionDiffusion; }
     range_elements_type const& stabilizationGLSEltRangePressure() const { return M_stabilizationGLSEltRangePressure; }
 
@@ -879,6 +884,7 @@ protected:
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     // fluid space and solution
     space_fluid_ptrtype M_Xh;
@@ -957,7 +963,8 @@ protected:
     // stabilization
     bool M_stabilizationGLS;
     std::string M_stabilizationGLSType;
-    stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterConvectionDiffusion;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameterPressure;
     range_elements_type M_stabilizationGLSEltRangeConvectionDiffusion;
     range_elements_type M_stabilizationGLSEltRangePressure;
 
@@ -1053,6 +1060,7 @@ protected:
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
     double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics

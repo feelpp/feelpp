@@ -72,8 +72,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
-    M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
+    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
+    //M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
+    //M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     M_levelsets.resize( nLevelSets );
     M_levelsetDensityViscosityModels.resize( nLevelSets );
@@ -94,12 +95,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 _smoother=M_globalLevelset->smoother(),
                 _smoother_vectorial=M_globalLevelset->smootherVectorial()
                 );
+        // Set global options if unspecified otherwise
+        if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
+            M_levelsets[i]->setThicknessInterface( M_globalLevelset->thicknessInterface() );
 
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
                 );
-        M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
-        M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
+        //M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+        //M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
+        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
@@ -108,16 +113,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             std::sort( interfaceForcesModels.begin(), interfaceForcesModels.end() );
             interfaceForcesModels.erase( std::unique(interfaceForcesModels.begin(), interfaceForcesModels.end()), interfaceForcesModels.end() );
 
-            M_levelsetInterfaceForcesModels[i].resize( interfaceForcesModels.size() );
-
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+            for( uint16_type n = 0; n < interfaceForcesModels.size(); ++n )
             {
-                M_levelsetInterfaceForcesModels[i][n].reset( 
-                        interfaceforces_factory_type::instance().createObject( 
-                            interfaceForcesModels[n]
-                            )
+                std::string const forceName = interfaceForcesModels[n];
+                M_levelsetInterfaceForcesModels[i][forceName] = interfaceforces_factory_type::instance().createObject( 
+                        forceName
                         );
-                M_levelsetInterfaceForcesModels[i][n]->build( levelset_prefix, M_levelsets[i] );
+                M_levelsetInterfaceForcesModels[i][forceName]->build( levelset_prefix, M_levelsets[i] );
             }
 
             M_hasInterfaceForcesModel = true;
@@ -243,6 +245,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
 
     // Initialize FluidMechanics
     super_type::init();
+    this->updateFluidDensityViscosity();
 
     M_doRebuildMatrixVector = false;
 
@@ -365,8 +368,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
         for( uint16_type i = 0; i < M_levelsets.size(); ++i )
         {
     *_ostr << "\n     -- level set " << i;
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
-    *_ostr << "\n       * force model : " << this->M_levelsetInterfaceForcesModels[i][n]->getInfo()->str();
+            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+    *_ostr << "\n       * force model : " << force.second->getInfo()->str();
         }
     }
 
@@ -399,6 +402,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
         M_doRebuildSpaceInextensibilityLM = false;
     }
     return M_spaceInextensibilityLM;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::densityviscosity_model_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::fluidDensityViscosityModel( uint16_type n ) const
+{
+    if( n == 0 )
+        return M_fluidDensityViscosityModel;
+    else
+        return M_levelsetDensityViscosityModels.at(n-1);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -453,7 +466,43 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
-    return this->hasSurfaceTension() || M_hasInterfaceForcesModel;
+    return this->hasSurfaceTension() || M_hasInterfaceForcesModel || (M_additionalInterfaceForcesModel.size() > 0);
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::addInterfaceForce( interfaceforces_model_ptrtype model, std::string const& name )
+{
+    std::string forceName;
+    if( name.empty() )
+    {
+        forceName = ( boost::format("force%1%" ) %(M_additionalInterfaceForcesModel.size()) ).str();
+    }
+    else
+    {
+        CHECK( M_additionalInterfaceForcesModel.find(name) == M_additionalInterfaceForcesModel.end() ) 
+            << "Multifluid already has an interface force model named " << name << std::endl;
+        forceName = name;
+    }
+
+    M_additionalInterfaceForcesModel[forceName] = model;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceforces_model_ptrtype const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceForce( std::string const& name ) const
+{
+    auto it = M_additionalInterfaceForcesModel.find(name);
+    CHECK( it != M_additionalInterfaceForcesModel.end() ) << "no force named " << name << std::endl;
+    return it->second;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+std::map<std::string, typename MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceforces_model_ptrtype> const&
+MULTIFLUID_CLASS_TEMPLATE_TYPE::interfaceForces() const
+{ 
+    // TODO : get more general access to forces
+    return M_additionalInterfaceForcesModel; 
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -463,59 +512,70 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->log("MultiFluid", "solve", "start");
     this->timerTool("Solve").start();
 
-    double errorVelocityL2 = 0.;
-    int picardIter = 0;
-    auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
-    do
+    this->solveImpl();
+    if( M_usePicardIterations )
     {
-        u_old = this->fieldVelocity();
-        // Update density and viscosity
-        this->updateFluidDensityViscosity();
-        // Update interface forces
-        if( this->hasInterfaceForces() )
+        double errorVelocityL2 = 0.;
+        int picardIter = 0;
+        auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
+        do
         {
-            this->updateInterfaceForces();
-        }
-        // Solve fluid equations
-        this->solveFluid();
-        // Advect levelsets
-        this->advectLevelsets();
-        // Reinitialize
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
-        {
-	    if( M_levelsetReinitEvery[n] > 0 
-			    && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
-		    M_levelsets[n]->reinitialize();
-	    else if( M_levelsetReinitSmoothEvery[n] > 0 
-			    && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
-		    M_levelsets[n]->reinitialize( true );
-        }
+            picardIter++;
+            u_old = this->fieldVelocity();
+            this->solveImpl();
+            auto u = this->fieldVelocity();
 
-        auto u = this->fieldVelocity();
-        double uOldL2Norm = integrate(
-                _range=elements(this->mesh()),
-                _expr=trans(idv(u_old))*idv(u_old)
-                ).evaluate()(0,0);
-        errorVelocityL2 = integrate(
-                _range=elements(this->mesh()),
-                _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
-                ).evaluate()(0,0);
-        errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
+            double uOldL2Norm = integrate(
+                    _range=elements(this->mesh()),
+                    _expr=trans(idv(u_old))*idv(u_old)
+                    ).evaluate()(0,0);
+            errorVelocityL2 = integrate(
+                    _range=elements(this->mesh()),
+                    _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
+                    ).evaluate()(0,0);
+            errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
 
-        Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
-        picardIter++;
+            Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
+        } while( errorVelocityL2 > 0.01);
+    }
 
-        if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
-        {
-            M_doRebuildMatrixVector = true;
-        }
-    } while( M_usePicardIterations && errorVelocityL2 > 0.01);
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
+{
+    // Update density and viscosity
+    this->updateFluidDensityViscosity();
+    // Update interface forces
+    if( this->hasInterfaceForces() )
+    {
+        this->updateInterfaceForces();
+    }
+    // Solve fluid equations
+    this->solveFluid();
+    // Advect levelsets
+    this->advectLevelsets();
+    // Reinitialize
+    for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+    {
+        if( M_levelsetReinitEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitEvery[n] == 0 )
+            M_levelsets[n]->reinitialize();
+        else if( M_levelsetReinitSmoothEvery[n] > 0 
+                && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
+            M_levelsets[n]->reinitialize( true );
+    }
 
     // Update global levelset
     this->updateGlobalLevelset();
 
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
+    {
+        M_doRebuildMatrixVector = true;
+    }
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -553,11 +613,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("MultiFluid","exportResults", "start");
 
+    // Export forces
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
+        for( auto const& force: M_levelsetInterfaceForcesModels[i] )
+        {
+            this->M_exporter->step(time)->add( prefixvm(levelset_prefix, force.first),
+                    prefixvm(levelset_prefix, force.first),
+                    force.second->lastInterfaceForce() );
+        }
+    }
+    for( auto const& force: M_additionalInterfaceForcesModel )
+    {
+        this->M_exporter->step(time)->add( prefixvm("additional", force.first),
+                prefixvm("additional", force.first),
+                force.second->lastInterfaceForce() );
+    }
+    // Export fluid
     super_type::exportResults(time);
-
+    // Export levelsets
     if( this->nLevelsets() > 1 )
         M_globalLevelset->exportResults(time);
-
     for( uint16_type i = 0; i < M_levelsets.size(); ++i)
     {
         M_levelsets[i]->exportResults(time);
@@ -690,17 +767,27 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
         this->timerTool("Solve").start();
         for( uint16_type i = 0; i < M_levelsets.size(); ++i )
         {
-            for( uint16_type n = 0; n < M_levelsetInterfaceForcesModels[i].size(); ++n )
+            for( auto const& force: M_levelsetInterfaceForcesModels[i] )
             {
-                if( M_levelsetInterfaceForcesModels[i][n] )
+                if( force.second )
                 {
-                    M_levelsetInterfaceForcesModels[i][n]->updateInterfaceForces( M_interfaceForces, false );
+                    force.second->updateInterfaceForces( M_interfaceForces, false );
                 }
             }
         }
 
         double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
         this->log("MultiFluid", "updateInterfaceForces", "update interface (model) forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
+    }
+
+    if( M_additionalInterfaceForcesModel.size() > 0 )
+    {
+        this->timerTool("Solve").start();
+        for( auto const& f: M_additionalInterfaceForcesModel )
+            f.second->updateInterfaceForces( M_interfaceForces, false );
+
+        double timeElapsedInterfaceForces = this->timerTool("Solve").stop();
+        this->log("MultiFluid", "updateInterfaceForces", "update additional interface forces in "+(boost::format("%1% s")%timeElapsedInterfaceForces).str() );
     }
 
     this->updateSourceAdded( idv(M_interfaceForces) );

@@ -73,36 +73,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::build()
-{
-    this->log("LevelSet", "build", "start");
-
-    M_advectionToolbox->build();
-    this->createFunctionSpaces();
-    this->createInterfaceQuantities();
-    this->createReinitialization();
-    this->createOthers();
-
-    this->log("LevelSet", "build", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
-{
-    this->log("LevelSet", "build (from mesh)", "start");
-
-    M_advectionToolbox->build( mesh );
-    this->createFunctionSpaces();
-    this->createInterfaceQuantities();
-    this->createReinitialization();
-    this->createOthers();
-
-    this->log("LevelSet", "build (from mesh)", "finish");
-}
-
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -320,12 +290,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_ptr
         vf::chi( phi<-epsilon_rect )*vf::constant(0.0)
         +
         vf::chi( phi>=-epsilon_rect )*vf::chi( phi<=-epsilon )*
-        1/2*(1 + (phi+epsilon_zero)/epsilon_delta + 1/M_PI*vf::sin( M_PI*(phi+epsilon_zero)/epsilon_delta ) )
+        0.5*(1 + (phi+epsilon_zero)/epsilon_delta + 1/M_PI*vf::sin( M_PI*(phi+epsilon_zero)/epsilon_delta ) )
         +
         vf::chi( phi>=-epsilon )*vf::chi( phi<=epsilon )*vf::constant(1.0)
         +
         vf::chi( phi>=epsilon )*vf::chi( phi<=epsilon_rect )*
-        1/2*(1 - (phi-epsilon_zero)/epsilon_delta - 1/M_PI*vf::sin( M_PI*(phi-epsilon_zero)/epsilon_delta ) )
+        0.5*(1 - (phi-epsilon_zero)/epsilon_delta - 1/M_PI*vf::sin( M_PI*(phi-epsilon_zero)/epsilon_delta ) )
         +
         vf::chi(phi>epsilon_rect)*vf::constant(0.0)
         ;
@@ -396,10 +366,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable )
 {
     M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    M_spaceMarkers = space_markers_type::New( 
+            _mesh=this->mesh(), _worldscomm=this->worldsComm(),
+            _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
+            );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -642,8 +615,6 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    //super_type::loadParametersFromOptionsVm();
-
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
@@ -975,7 +946,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
+            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
@@ -990,7 +961,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/2*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
+            0.5*(1 + psi/eps + 1/M_PI*vf::sin( M_PI*psi/eps ) )
             +
             vf::chi(psi>eps)*vf::constant(1.0);
 
@@ -1200,7 +1171,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
@@ -1247,7 +1218,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mesh_type>::element_type const> element_ref_type;
+    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
     typedef std::vector<element_ref_type> cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
@@ -1641,6 +1612,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
             ;
     }
     std::string vectorialSmootherParameters;
+
     if ( M_smootherVectorial )
     {
         double vectorialSmootherCoeff = this->smootherVectorial()->epsilon() * Order / this->mesh()->hAverage();
@@ -1690,12 +1662,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize stretch augmented  : " << std::boolalpha << this->M_reinitStretchAugmented;
 
-    if ( M_smoother || M_smootherVectorial )
-        *_ostr << "\n   Smoothers Parameters";
+    if( M_smoother || M_smootherVectorial )
+    *_ostr << "\n   Smoothers Parameters";
     if( M_smoother )
-        *_ostr << "\n     -- scalar smoother    : " << scalarSmootherParameters;
-    if ( M_smootherVectorial )
-        *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
+    *_ostr << "\n     -- scalar smoother    : " << scalarSmootherParameters;
+    if( M_smootherVectorial )
+    *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";
     if( this->hasGeofileStr() )

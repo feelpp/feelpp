@@ -57,6 +57,8 @@
 namespace Feel {
 
     // LevelSet::build parameters
+    BOOST_PARAMETER_NAME(space_markers_extended_doftable)
+
     BOOST_PARAMETER_NAME(space_vectorial)
     BOOST_PARAMETER_NAME(space_markers)
     BOOST_PARAMETER_NAME(reinitializer)
@@ -103,8 +105,8 @@ public:
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef Mesh<convex_type> mymesh_type;
+    typedef boost::shared_ptr<mymesh_type> mesh_ptrtype;
 
     //--------------------------------------------------------------------//
     // Periodicity
@@ -125,7 +127,7 @@ public:
     // Space vectorial levelset
     //typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_levelset_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
+    typedef FunctionSpace<mymesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
     typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
     typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
@@ -133,7 +135,7 @@ public:
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
-    typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
+    typedef FunctionSpace<mymesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
     typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
     typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
@@ -194,7 +196,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Exporter
-    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
+    typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -218,13 +220,47 @@ public:
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    void build();
-    void build( mesh_ptrtype const& mesh );
+    //BOOST_PARAMETER_MEMBER_FUNCTION(
+            //(void), build, tag,
+            //( optional
+              //( space_markers_extended_doftable, (bool), false )
+            //)
+            //)
+    void build()
+    {
+        this->log("LevelSet", "build", "start");
+        super_type::build();
+        this->createFunctionSpaces( true );
+        this->createInterfaceQuantities();
+        this->createReinitialization();
+        this->createOthers();
+        this->log("LevelSet", "build", "finish");
+    }
+
+    //BOOST_PARAMETER_MEMBER_FUNCTION(
+            //(void), build, tag,
+            //( required
+              //( mesh, (mesh_ptrtype) )
+            //)
+            //( optional
+              //( space_markers_extended_doftable, (bool), false )
+            //)
+            //)
+    void build( mesh_ptrtype const& mesh )
+    {
+        this->log("LevelSet", "build (from mesh)", "start");
+        super_type::build( mesh );
+        this->createFunctionSpaces( true );
+        this->createInterfaceQuantities();
+        this->createReinitialization();
+        this->createOthers();
+        this->log("LevelSet", "build (from mesh)", "finish");
+    }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( 
             (void), build, tag,
             ( required
-              ( space, * )
+              ( space, (space_levelset_ptrtype) )
             )
             ( optional
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
@@ -262,16 +298,6 @@ public:
     void init();
     void initLevelsetValue();
     void initPostProcess();
-
-    virtual void loadParametersFromOptionsVm();
-    virtual void loadConfigICFile();
-    virtual void loadConfigBCFile();
-    virtual void loadConfigPostProcess();
-
-    void createFunctionSpaces();
-    void createInterfaceQuantities();
-    void createReinitialization();
-    void createOthers();
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
@@ -445,6 +471,16 @@ protected:
     void updateMarkerInterface();
 
 private:
+    void loadParametersFromOptionsVm();
+    void loadConfigICFile();
+    void loadConfigBCFile();
+    void loadConfigPostProcess();
+
+    void createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable = false );
+    void createInterfaceQuantities();
+    void createReinitialization();
+    void createOthers();
+
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);
 

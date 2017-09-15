@@ -102,7 +102,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             auto const convecTerm = Feel::vf::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
-                integrate ( _range=elements(mesh),
+                integrate ( _range=M_rangeMeshElements,
                             _expr=convecTerm,
                             _geomap=this->geomap() );
         }
@@ -115,7 +115,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 #endif
             bilinearForm_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
-                integrate ( _range=elements(mesh),
+                integrate ( _range=M_rangeMeshElements,
                             _expr=convecTerm,
                             _geomap=this->geomap() );
         }
@@ -126,7 +126,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     {
         bilinearForm_PatternCoupled +=
             //bilinearForm_PatternDefault +=
-            integrate (_range=elements(mesh),
+            integrate (_range=M_rangeMeshElements,
                        _expr= -trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
                        _geomap=this->geomap() );
     }
@@ -140,7 +140,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
         if (BuildNonCstPart)
         {
             bilinearForm_PatternCoupled +=
-                integrate (_range=elements(mesh),
+                integrate (_range=M_rangeMeshElements,
                            _expr= trans(divt(u)*val(0.5*idv(rho)*idv(u))+val(0.5*idv(rho)*divv(u))*idt(u))*id(v),
                            _geomap=this->geomap() );
         }
@@ -168,7 +168,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     if (BuildCstPart)
     {
         bilinearForm_PatternCoupled +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= -idv(rho)*divt(u)*id(q),
                        _geomap=this->geomap() );
     }
@@ -181,7 +181,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
     if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
     {
         bilinearForm_PatternDefault +=
-            integrate( _range=elements(mesh),
+            integrate( _range=M_rangeMeshElements,
                        _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
                        _geomap=this->geomap() );
     }
@@ -198,7 +198,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
         {
             double beta = this->definePressureCstPenalisationBeta();
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
+                integrate( _range=M_rangeMeshElements,
                            _expr=beta*idt(p)*id(q),
                            _geomap=this->geomap() );
         }
@@ -208,23 +208,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
                 << " start dof index for define-pressure-cst-lm is not present\n";
             size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
 
-#if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_ONLY_ON_BOUNDARY)
-            auto therange=boundaryfaces(mesh);
-#else
-            auto therange=elements(mesh);
-#endif
             auto lambda = M_XhMeanPressureLM->element();
             form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
                    _rowstart=this->rowStartInMatrix(),
                    _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                integrate( _range=therange,//elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                            _geomap=this->geomap() );
 
             form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM,
                    _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=therange,//elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= + idt(p)*id(lambda),
                            _geomap=this->geomap() );
         }
@@ -543,13 +538,13 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             form2( _test=XhT,_trial=XhT,_matrix=J,
                    _rowstart=M_thermodynModel->rowStartInMatrix(),
                    _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradt(t)*idv(u))*id(t),
                        _geomap=this->geomap() );
             form2( _test=XhT,_trial=Xh,_matrix=J,
                    _rowstart=M_thermodynModel->rowStartInMatrix(),
                    _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
@@ -557,7 +552,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
             form2( _test=Xh,_trial=XhT,_matrix=J,
                    _rowstart=this->rowStartInMatrix(),
                    _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=elements(this->mesh() ),
+                integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }

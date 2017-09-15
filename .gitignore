@@ -10,7 +10,7 @@ build/
 /#CTestConfig.cmake#
 /#ctest.make#
 /.DS_Store
-/.gitignore~
+*~
 /.kdev4
 /CMakeCache.txt
 /CMakeFiles
@@ -118,3 +118,4 @@ ginac.pc
 /applications/crb/thermalfin/thermalfinapp.cpp
 /research/hpmortar/
 /tools/scripts/buildkite/feelpp_build.sh
+*.cfgbak

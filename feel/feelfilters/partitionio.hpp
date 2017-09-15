@@ -989,6 +989,8 @@ void PartitionIO<MeshType>::readPoints()
     M_HDF5IO.closeTable("point_ids");
     M_HDF5IO.closeTable("point_coords");
 
+    M_meshPartIn->reserveNumberOfPoint( M_numLocalPoints[partId] );
+
     node_type coords( d );
     size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
     for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
@@ -1049,6 +1051,7 @@ void PartitionIO<MeshType>::readElements( std::map<rank_type,std::vector<size_ty
 
     M_HDF5IO.closeTable ("elements");
 
+    M_meshPartIn->reserveNumberOfElement( M_numLocalElements[partId] );
 
     size_type nActiveElement = M_numLocalElements[partId]-M_numLocalGhostElements[partId];
     mapGhostHdf5IdToFeelId[partId].resize( M_numLocalGhostElements[partId] );
@@ -1135,9 +1138,10 @@ void PartitionIO<MeshType>::readGhostElements( std::map<rank_type,std::vector<si
         //size_type idInActivePart = M_uintBuffer[currentBufferIndex++];
 
         auto it = M_meshPartIn->elementIterator( id );
-        M_meshPartIn->elements().modify( it, Feel::detail::UpdateProcessId(pid) );
+        auto & eltModified = it->second;
+        eltModified.setProcessId( pid );
+        eltModified.addNeighborPartitionId( partId );
         //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
-        M_meshPartIn->elements().modify( it, Feel::detail::UpdateNeighborPartition( partId ) );
     }
 }
 
@@ -1173,7 +1177,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newFace.setId( mesh.numFaces() );
         newFace.setProcessIdInPartition( rank );
         newFace.setMarker( marker );
-        newFace.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
             newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addFace( newFace );
@@ -1203,7 +1206,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newFace.setId( mesh.numFaces() );
         newFace.setProcessIdInPartition( rank );
         newFace.setMarker( marker );
-        newFace.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
             newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addFace( newFace );
@@ -1215,7 +1217,6 @@ void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::
         newEdge.setId( mesh.numEdges() );
         newEdge.setProcessIdInPartition( rank );
         newEdge.setMarker( marker );
-        newEdge.setOnBoundary( true );
         for ( uint16_type vLocId = 0; vLocId < MeshType::edge_type::numPoints ; ++vLocId )
             newEdge.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
         mesh.addEdge( newEdge );
@@ -1315,6 +1316,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
+        auto & eltModified = M_meshPartIn->elementIterator( elt.id() )->second;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
         {
             auto const& thepoint = elt.point( vLocId );
@@ -1323,7 +1325,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
             {
                 auto const& neighIds = pointsToNeihborPart.find( vId )->second;
                 for ( auto const& neighId : neighIds )
-                    M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( elt.id() )/*elt_it*/, Feel::detail::UpdateNeighborPartition( neighId ) );
+                    eltModified.addNeighborPartitionId( neighId );
             }
         }
     }
@@ -1449,7 +1451,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
 
-            M_meshPartIn->elements().modify( M_meshPartIn->elementIterator( itFindElt->second ), Feel::detail::UpdateNeighborPartition( pid ) );//NEW
+            auto & eltModified = M_meshPartIn->elementIterator( itFindElt->second )->second;
+            eltModified.addNeighborPartitionId( pid );
 
             dataToReSend[pid][k] = itFindElt->second;
         }
@@ -1486,8 +1489,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         const int nDataRecv = itFinalDataToRecv->second.size();
         for ( int k=0; k<nDataRecv; ++k )
         {
-            auto eltToUpdate = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] );
-            M_meshPartIn->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( pid, itFinalDataToRecv->second[k] ) );
+            auto & eltModified = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] )->second;
+            eltModified.setIdInOtherPartitions( pid, itFinalDataToRecv->second[k] );
         }
     }
 

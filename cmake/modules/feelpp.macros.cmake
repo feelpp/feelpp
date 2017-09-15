@@ -6,6 +6,8 @@ endif()
 INCLUDE(feelpp.precompiled.headers)
 INCLUDE(ParseArguments)
 
+# define CMAKE_INSTALL_DOCDIR
+include(GNUInstallDirs)
 
 
 # list the subdicrectories of directory 'curdir'
@@ -305,16 +307,16 @@ macro(feelpp_add_test)
   if ( NOT FEELPP_TEST_SRCS )
     set(filename test_${FEELPP_TEST_NAME}.cpp)
     if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-        feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+        feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
     else()
-        feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+        feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${filename} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
     endif()
     #add_executable(${targetname} ${filename})
   else()
      if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} TARGET targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
+       feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} TARGET targetname LINK_LIBRARIES ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST NO_FEELPP_LIBRARY )
      else()
-       feelpp_add_application( test_${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
+       feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${FEELPP_TEST_SRCS}  CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}   PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES}  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}  NO_TEST )
      endif()
     #add_executable(${targetname} ${FEELPP_TEST_SRCS})
   endif()
@@ -343,9 +345,16 @@ macro(feelpp_add_test)
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
+        if(CMAKE_BUILD_TYPE MATCHES Debug)
+          set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/suppressions.txt")
+        endif()
       ENDIF()
       add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
       set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
+      if(CMAKE_BUILD_TYPE MATCHES Debug)
+        set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/suppressions.txt")
+        message(STATUS "option 1: feelpp_test_${FEELPP_TEST_NAME}-np-1")
+      endif()
     endif()
 
 
@@ -638,4 +647,37 @@ macro (feelpp_add_man NAME MAN SECT)
         )
       endif()
 
-  endmacro (feelpp_add_man)
+endmacro (feelpp_add_man)
+
+# CRB cmake macros
+include(feelpp.macros.crb)
+
+
+# feelppContribPrepare( submodulename )
+# Clone/Update a contrib submodule hold on feel++ repository /contrib
+macro( feelppContribPrepare contribname )
+  set( FEELPP_CONTRIB_PREPARE_SUCCEED FALSE )
+  message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/contrib/${contribname}")
+  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/${contribname} )
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+      execute_process(
+        COMMAND git submodule update --init --recursive contrib/${contribname}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        ERROR_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        MESSAGE(STATUS "Git submodule contrib/${contribname} updated.")
+        set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
+      else()
+        MESSAGE(WARNING "Git submodule contrib/${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/${contribname})
+        message( WARNING "Please make sure that git submodule contrib/${contribname} is available")
+        message( WARNING "  run `git submodule update --init --recursive contrib/${contribname}`")
+      endif()
+    endif()
+  endif()
+endmacro( feelppContribPrepare )

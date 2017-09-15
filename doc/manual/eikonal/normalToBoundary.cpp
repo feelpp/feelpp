@@ -145,7 +145,7 @@ namespace Feel
 				doption("gamma"));
 		auto n_phi_p   = vf::project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2))/sqrt( gradv(phi_P2) * trans(gradv(phi_P2))));
 		auto n_phi_s = l2pv->project(_space=XhV, _range=boundaryfaces(mesh), _expr=trans(gradv(phi_P2)));
-		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s.comp(X))*idv(n_phi_s.comp(X))+idv(n_phi_s.comp(Y))*idv(n_phi_s.comp(Y))));
+		n_phi_s = vf::project(XhV, boundaryfaces(mesh),idv(n_phi_s)/sqrt(idv(n_phi_s[Component::X])*idv(n_phi_s[Component::X])+idv(n_phi_s[Component::Y])*idv(n_phi_s[Component::Y])));
 
 		auto Nmesh = vf::project(XhV, boundaryfaces(mesh),-N());
 		auto Nexact = vf::project( _space=XhV, _range=boundaryfaces(mesh), _expr=vec(Px(),Py())/sqrt(Px()*Px()+Py()*Py()));

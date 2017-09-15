@@ -16,12 +16,13 @@ Options:
      --std=c++xx                     c++ standard c++14, c++1z (default: c++14)
      --stdlib=libxx                  c++ standard library libstdc++, libc++ (default: libstdc++)
      --max-order=x                   maximum polynomial order to instantiate(default: 3)
-     --cxxflags                      override cxxflags 
-     --cmakeflags                    add extra cmake flags 
+     --cxxflags                      override cxxflags
+     --cmakeflags                    add extra cmake flags
      --prefix=PATH                   define install path
      --root=PATH                     define root path
      --enable-pch                    enable precompiled headers (default)
      --disable-pch                   disable precompiled headers
+     --enable-python                 enable python 
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
  -v, --verbose                       enable verbose output
@@ -53,7 +54,8 @@ if [ "X${BUILDROOT}" = "X" ]; then
   fi
 fi
 BUILDTYPE=Release
-_WANT_PCH=yes
+_WANT_PCH=no
+_WANT_PYTHON=yes
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
@@ -132,7 +134,7 @@ while [ -n "$1" ]; do
        export PETSC_DIR
        ;;
    --debug|-d)
-       BUILDTYPE=Debug    
+       BUILDTYPE=Debug
        _WANT_CHECK=yes
        ;;
    --relwithdebinfo|-rd)
@@ -153,6 +155,12 @@ while [ -n "$1" ]; do
    --disable-pch)
        _WANT_PCH=no
        ;;
+   --enable-python)
+       _WANT_PYTHON=yes
+       ;;
+   --disable-python)
+       _WANT_PYTHON=no
+       ;;            
    --enable-cling)
        _WANT_CLING=yes
        ;;         
@@ -163,7 +171,7 @@ while [ -n "$1" ]; do
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
            echo "using max polynomial order instantiate $PROJECT_MAX_ORDER..."
            export PROJECT_MAX_ORDER
-           ;;  
+           ;;
    --std=c++*)
        PROJECT_STD_CPP=`echo $1 | sed "s,^--std=c++\(.*\),\1,"`
        echo "using c++$PROJECT_STD_CPP..."
@@ -173,7 +181,7 @@ while [ -n "$1" ]; do
        PROJECT_STDLIB_CPP=`echo $1 | sed "s,^--stdlib=lib\(.*\),\1,"`
        echo "using lib$PROJECT_STDLIB_CPP..."
        export PROJECT_STDLIB_CPP
-       ;;  
+       ;;
    --cxxflags=*)
        CXXFLAGS=`echo $1 | sed "s,^--cxxflags=\(.*\),\1,"`
        ;;
@@ -232,6 +240,7 @@ if [ "X${PROJECT_INSTALL_PREFIX}" != "X" ]; then
 fi
 echo "SET(BUILDROOT ${BUILDROOT} CACHE PATH \"Compilation directory\")" >> cmake.configure
 echo "SET(CMAKE_INSTALL_PREFIX \"${PROJECT_INSTALL_PREFIX}\" CACHE PATH \"Installation directory\" FORCE)" >> cmake.configure
+echo "SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)" >> cmake.configure
 echo "SET(FEELPP_STD_CPP \"$PROJECT_STD_CPP\" CACHE PATH \"Feel++ c++ standard c++14 or c++1z\")"  >> cmake.configure
 echo "SET(FEELPP_STDLIB_CPP \"$PROJECT_STDLIB_CPP\" CACHE PATH \"Feel++ c++ standard library stdc++ or c++\")"  >> cmake.configure
 echo "SET(FEELPP_INSTANTIATION_ORDER_MAX \"$PROJECT_MAX_ORDER\" CACHE PATH \"Feel++ maximum polynomial order instantiation\")"  >> cmake.configure
@@ -272,18 +281,27 @@ fi
 
 # PCH
 if [ "X${_WANT_PCH}" = "Xyes" ]; then
-    echo "option(FEELPP_ENABLE_PCH ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
-    echo "option(FEELPP_ENABLE_PCH_APPLICATIONS ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PCH ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PCH_APPLICATIONS ON CACHE PATH \"enable pch \" FORCE)" >> cmake.configure
 else
-    echo "option(FEELPP_ENABLE_PCH OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure
-    echo "option(FEELPP_ENABLE_PCH_APPLICATIONS OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure    
+    echo "set(FEELPP_ENABLE_PCH OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PCH_APPLICATIONS OFF CACHE PATH \"disable pch \" FORCE)" >> cmake.configure    
+fi
+
+# PYTHON
+if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
+    echo "set(FEELPP_ENABLE_PYTHON_WRAPPING ON CACHE PATH \"enable python wrapping \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PYTHON ON CACHE PATH \"enable python \" FORCE)" >> cmake.configure
+else
+    echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
 fi
 
 # CLING
 if [ "X${_WANT_CLING}" = "Xyes" ]; then
-    echo "option(FEELPP_ENABLE_CLING ON CACHE PATH \"enable cling \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_CLING ON CACHE PATH \"enable cling \" FORCE)" >> cmake.configure
 else
-    echo "option(FEELPP_ENABLE_CLING OFF CACHE PATH \"disable cling \" FORCE)" >> cmake.configure
+    echo "set(FEELPP_ENABLE_CLING OFF CACHE PATH \"disable cling \" FORCE)" >> cmake.configure
 fi
 
 if [ "X${CXXFLAGS}" != "X" ]; then
