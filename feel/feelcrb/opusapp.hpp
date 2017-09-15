@@ -33,8 +33,10 @@
 
 #include <feel/feel.hpp>
 
+#include <feel/feelcrb/options.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/eim.hpp>
+#include <feel/feelcrb/ser.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
@@ -102,6 +104,9 @@ public:
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef RM<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef SER<crb_type> ser_type;
+    typedef boost::shared_ptr<ser_type> ser_ptrtype;
 
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
@@ -208,8 +213,7 @@ public:
                 LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
 
-                crbs.push_back( newCRB() );
-                crb = crbs.back();
+                crb = newCRB();
 
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
@@ -230,10 +234,8 @@ public:
      */
     crb_ptrtype newCRB( int level=0 )
         {
-            models.push_back( boost::make_shared<crbmodel_type>( M_mode, level) );
-            model = models.back();
-            return boost::make_shared<crb_type>( this->about().appName() + "-" + std::to_string(level),
-                                                 model );
+            model = boost::make_shared<crbmodel_type>(crb::stage::offline,level);
+            return boost::make_shared<crb_type>( model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
@@ -381,18 +383,16 @@ public:
             parameter_type mu;
             for( int i=0; i<mu.size(); i++)
             {
-                std::string mu_str = (boost::format("mu%1%") %i).str();
-                mu(i)=mu_map[mu_str];
+                mu(i) = mu_map[crb->Dmu->parameterName(i)];
             }
             auto o = crb->run( mu, time_crb, online_tol, N, print_rb_matrix);
             auto solutions = o.template get<2>();
             auto uN = solutions.template get<0>();
             auto WN = crb->wn();
-            auto u_crb = crb->expansion( uN[uN.size()-1], N, WN );
+            auto u_crb = crb->expansion( uN[uN.size()-1], N, false );
             return u_crb;
         }
 
-    FEELPP_DONT_INLINE void SER();
 
     FEELPP_DONT_INLINE void run();
 
@@ -932,9 +932,8 @@ private:
 private:
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
-    std::vector<crbmodel_ptrtype> models;
+
     crb_ptrtype crb;
-    std::vector<crb_ptrtype> crbs;
 
     // For SCM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
@@ -944,6 +943,8 @@ private:
     std::vector< sampling_ptrtype > vector_sampling_for_dual_efficiency_under_1;
 
     fs::path M_current_path;
+
+    ser_ptrtype M_ser;
 }; // OpusApp
 
 } // Feel

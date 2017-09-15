@@ -2,7 +2,7 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi)
+foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums)
 
   feelpp_add_test( ${TEST} )
 
@@ -13,7 +13,7 @@ feelpp_add_test( range NO_FEELPP_LIBRARY )
 
 # test scatter/gather: identified a bug in PETSc up to 3.5.1
 if(FEELPP_HAS_PETSC)
-feelpp_add_test(gatherscatter_boostmpi_petsc_datatype SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1 USE_DATATYPE=1)
+feelpp_add_test(gatherscatter_boostmpi_petsc_datatype SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1 USE_DATATYPE=1  )
 endif()
 # the next one fails for now
 #feelpp_add_test(gatherscatter_boostmpi_petsc SRCS test_gatherscatter.cpp DEFS USE_BOOST_MPI=1 USE_PETSC=1)
@@ -27,14 +27,14 @@ feelpp_add_test(gatherscatter_mpi  SRCS test_gatherscatter.cpp )
 feelpp_add_test(comm  SRCS test_comm.cpp )
 feelpp_add_test(worldcomm  SRCS test_worldcomm.cpp GEO test_twodomains.geo )
 
-add_custom_target(feelpp_test_gatherscatter)
-add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi)
+#add_custom_target(feelpp_test_gatherscatter)
+#add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi)
 #add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi_petsc)
-add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_boostmpi)
-if(FEELPP_HAS_PETSC)
-add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi_petsc_datatype)
-add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_boostmpi_petsc_datatype)
-endif()
+#add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_boostmpi)
+#if(FEELPP_HAS_PETSC)
+#add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_mpi_petsc_datatype)
+#add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_boostmpi_petsc_datatype)
+#endif()
 
 #add_dependencies(feelpp_test_gatherscatter feelpp_test_gatherscatter_boostmpi_petsc)
 
@@ -53,3 +53,5 @@ endif()
 if ( FEELPP_HAS_HARTS OR FEELPP_HAS_OPENMP )
   feelpp_add_test(multithread)
 endif()
+
+feelpp_add_test(serialization)

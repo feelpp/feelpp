@@ -118,8 +118,11 @@ public :
 
             // create a P0 elt containing the ids of the elements
             ids = M_spaceP0->element();
-            for (auto const& it : elements(M_mesh) )
-                ids.assign( it.id(), 0, 0, it.id() );
+            for (auto const& eltWrap : elements(M_mesh) )
+            {
+                auto const& elt = unwrap_ref( eltWrap );
+                ids.assign( elt.id(), 0, 0, elt.id() );
+            }
 
             eltHavingPoints = M_spaceP0->element();
 
@@ -689,33 +692,35 @@ private :
                 };
 
 
-            auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
-            auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;
+            auto markedelements = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank());
+            auto it_elt = std::get<0>( markedelements );
+            auto en_elt = std::get<1>( markedelements );
 
             int skippedElements=0;
             for(; it_elt!=en_elt; it_elt++)
             {
+                auto const& elt = boost::unwrap_ref( *it_elt );
                 for (int j=0; j<ndofv; ++j)
                 {
 
                     double closestDist = bigdouble;
                     double closestPoint = bigdouble;
 
-                    const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(it_elt->id(), j, 0).index();
+                    const size_type indexGlobDof = M_spaceP1->dof()->localToGlobal(elt.id(), j, 0).index();
 
                     // coords of the dof
                     const node_type dofCoord = M_spaceP1->dof()->dofPoint( indexGlobDof ).template get<0>();
 
                     // find the point in the element having the closest distance with the dof. This distance will be the value of shape at this dof (if a smaller distance on the same dof is not found in an other element).
                     //This method assumes that the distance between the points of the curve is very small compared to the size of the mesh
-                    // CHECK( pointsAtIndex[ it_elt->id() ].size() > 1)
+                    // CHECK( pointsAtIndex[ elt.id() ].size() > 1)
                     //     << "in at lease one element, there are less than two points defining the curve. Not able to compute a normale.\nConsider to increase the discretization of the curve.\n";
 
-                    auto ptAtIdx = pointsAtIndex.find(it_elt->id());
+                    auto ptAtIdx = pointsAtIndex.find(elt.id());
 
                     if (ptAtIdx->second.size() < 1)
                     {
-                        LOG(INFO) << "Warning, element "<< it_elt->id() << " contains less than two points to define the curve. Not able to compute a normal.\nThe element will be skipped\n";
+                        LOG(INFO) << "Warning, element "<< elt.id() << " contains less than two points to define the curve. Not able to compute a normal.\nThe element will be skipped\n";
                         ++skippedElements;
                         LOG(INFO)<< "Number of total element skipped so far "<<skippedElements<<std::endl;
                         continue;

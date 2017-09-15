@@ -4,7 +4,7 @@
 
 
 #define BOOST_TEST_MODULE test_form_severaltrialtestmesh
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/options.hpp>
 

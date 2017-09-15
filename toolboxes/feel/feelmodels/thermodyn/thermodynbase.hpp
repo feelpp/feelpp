@@ -45,7 +45,7 @@
 
 #include <feel/feelmodels/thermodyn/thermalpropertiesdescription.hpp>
 
-#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 namespace Feel
 {
@@ -96,8 +96,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
         typedef boost::shared_ptr<bdf_temperature_type> bdf_temperature_ptrtype;
         // stabilization
-        static const uint16_type nStabGlsOrderPoly = (nOrderTemperature>1)? nOrderTemperature : 2;
-        typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+        typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
         typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
         // exporter
         typedef Exporter<mesh_type,nOrderGeo> export_type;
@@ -122,6 +121,8 @@ class ThermoDynamicsBase : public ModelNumerical,
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
+        elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
         element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
@@ -197,6 +198,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
+        void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
         virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
         virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
@@ -233,6 +235,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
         mesh_ptrtype M_mesh;
+        elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
         element_temperature_ptrtype M_fieldTemperature;

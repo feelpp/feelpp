@@ -37,6 +37,7 @@
 #include <boost/foreach.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
@@ -116,10 +117,11 @@ public:
 
     //! constructor with no model
     CRBSCM( std::string const& name = "defaultname_crbscm",
+            std::string const& ext = "scma",
             bool scm_for_mass_matrix = false,
             WorldComm const& worldComm = Environment::worldComm() )
         :
-        super( name, worldComm ),
+        super( name, ext, worldComm ),
         M_is_initialized( false ),
         M_model(),
         M_tolerance( doption(_name="crb.scm.tol" ) ),
@@ -142,10 +144,11 @@ public:
 
     //! constructor with model
     CRBSCM( std::string const& name,
+            std::string const& ext, 
             truth_model_ptrtype const & model ,
             bool scm_for_mass_matrix = false )
         :
-        CRBSCM( name,scm_for_mass_matrix )
+        CRBSCM( name, ext, scm_for_mass_matrix )
     {
         this->setTruthModel( model );
         // if ( this->loadDB() )
@@ -264,6 +267,7 @@ public:
         if ( !model )
             return;
         M_model = model;
+        this->setDBDirectory( model->uuid() );
         M_Dmu = M_model->parameterSpace();
         M_mu_ref = M_model->refParameter();
 
@@ -446,13 +450,18 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+    
     /**
      * \brief update scm description in property_tree
      * \param ptree to update
@@ -1792,7 +1801,7 @@ void
 CRBSCM<TruthModelType>::saveDB()
 {
     fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-
+    std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
     if ( ofs )
     {
         boost::archive::text_oarchive oa( ofs );

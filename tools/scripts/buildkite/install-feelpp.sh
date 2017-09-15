@@ -6,42 +6,15 @@ component=${1:-base}
 
 COMPONENTS=(base toolboxes crb) 
 
-# Combines a dockerfile template with a generated FROM line
-dockerfile_from() {
-    local dockerfile="$1"
-    local from="$2"
-    printf 'FROM %s\n%s' "$from" "$(<$dockerfile)"
-}
-
-tag_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    tools/scripts/buildkite/list.sh | grep "${BUILDKITE_BRANCH}-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        image=${tokens[0]}
-        printf "%s" "$image" 
-    done
-}
-extratags_from_target() {
-    splitfrom=(`echo "$TARGET" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    tools/scripts/buildkite/list.sh | grep "${BUILDKITE_BRANCH}-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        extratags=${tokens[@]:5}
-        printf "%s" "${extratags}" 
-    done
-}
+source $(dirname $0)/common.sh
 
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
 #tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
-tag=$(tag_from_target $TARGET)
+BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
+tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 echo "--- Building feelpp-${component}:${tag}"
 
 if [ "${component}" = "base" ] ; then
@@ -60,15 +33,14 @@ docker build \
        docker/feelpp-${component}
 
 
-if [ "${BUILDKITE_BRANCH}" = "develop" -o "${BUILDKITE_BRANCH}" = "master" ]; then
-    echo "--- Tagging feelpp-${component}:${tag}"
-    extratags=`extratags_from_target $TARGET`
-    # add extra tags
-    for tagalias in ${extratags[@]}; do
-        echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
-        docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
-    done
-fi
+echo "--- Tagging feelpp-${component}:${tag}"
+extratags=$(extratags_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
+# add extra tags
+for tagalias in ${extratags[@]}; do
+    echo "Tagging feelpp/feelpp-${component}:$tag as feelpp/feelpp-${component}:$tagalias"
+    docker tag "feelpp/feelpp-${component}:$tag" "feelpp/feelpp-${component}:$tagalias"
+done
+
     
 
 

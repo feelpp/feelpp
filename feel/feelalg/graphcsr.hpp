@@ -41,7 +41,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelalg/products.hpp>
 
 namespace Feel
 {
@@ -58,6 +60,7 @@ class GraphCSR
 {
 public:
 
+    friend class boost::serialization::access;
 
     /** @name Typedefs
      */
@@ -397,6 +400,59 @@ private :
     size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
     size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
 
+    template<class Archive>
+    void save( Archive & ar, const unsigned int version ) const
+    {
+        Feel::DataMap map_row = this->mapRow();
+        Feel::DataMap map_col = this->mapCol();
+
+        ar & BOOST_SERIALIZATION_NVP(map_row);
+        ar & BOOST_SERIALIZATION_NVP(map_col);
+
+        ar & BOOST_SERIALIZATION_NVP(M_is_closed);
+        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_oz);
+        ar & BOOST_SERIALIZATION_NVP(M_storage);
+        ar & BOOST_SERIALIZATION_NVP(M_ia);
+        ar & BOOST_SERIALIZATION_NVP(M_ja);
+        ar & BOOST_SERIALIZATION_NVP(M_a);
+    }
+
+    template<class Archive>
+    void load( Archive & ar, const unsigned int version )
+    {
+        Feel::DataMap map_row;
+        Feel::DataMap map_col;
+
+        ar & BOOST_SERIALIZATION_NVP(map_row);
+        ar & BOOST_SERIALIZATION_NVP(map_col);
+
+        ar & BOOST_SERIALIZATION_NVP(M_is_closed);
+        ar & BOOST_SERIALIZATION_NVP(M_first_row_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_row_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_first_col_entry_on_proc);
+        ar & BOOST_SERIALIZATION_NVP(M_last_col_entry_on_proc );
+        ar & BOOST_SERIALIZATION_NVP(M_max_nnz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_total_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_nz);
+        ar & BOOST_SERIALIZATION_NVP(M_n_oz);
+        ar & BOOST_SERIALIZATION_NVP(M_storage);
+        ar & BOOST_SERIALIZATION_NVP(M_ia);
+        ar & BOOST_SERIALIZATION_NVP(M_ja);
+        ar & BOOST_SERIALIZATION_NVP(M_a);
+
+        M_mapRow = boost::make_shared<Feel::DataMap>( map_row );
+        M_mapCol = boost::make_shared<Feel::DataMap>( map_col );
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
+
 protected:
 
 private:
@@ -514,14 +570,97 @@ private :
  * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
  *
  */
-template<typename Arg1, typename ...Args>
+template<typename PS>
 BlocksBaseGraphCSR
-csrGraphBlocks( const Arg1& arg1, const Args&... args )
+csrGraphBlocks( PS&& ps,
+                size_type pattern = Pattern::COUPLED,
+                std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
-    const int size = sizeof...(Args)+1;
-    BlocksBaseGraphCSR g( size, size );
+    int s = ps.numberOfSpaces();
+    BlocksBaseGraphCSR g( s, s );
+
     int n = 0;
-    g.rowcol( n, arg1, args...);
+    auto cp = hana::cartesian_product( hana::make_tuple( ps, ps ) );
+    int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(ps))>>{},
+                            [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
+                            [s] (auto&& x ) { return s; } )( ps );
+    hana::for_each( cp, [&]( auto const& e )
+                    {
+                        int r = n/nstatic;
+                        int c = n%nstatic;
+
+                        auto test_space = e[0_c];
+                        auto trial_space = e[1_c];
+
+                        hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(test_space)>>{},
+                                  [&]( auto&& xx, auto&& yy ) { return hana::if_( std::is_base_of<ProductSpaceBase,decay_type<decltype(yy)>>{},
+                                                                                [&] (auto&&x,auto&& y) {
+                                                                                    for( int i = 0; i < x->numberOfSpaces(); ++i)
+                                                                                        for( int j = 0; j < y->numberOfSpaces(); ++j)
+                                                                                        {
+                                                                                            cout << "filling out stencil (" << r+i << "," << c+j << ")\n";
+                                                                                            g( r+i, c+j ) =
+                                                                                                stencil( _test=(*x)[i],
+                                                                                                         _trial=(*y)[j],
+                                                                                                         _pattern=pattern,
+                                                                                                     _diag_is_nonzero=false, _close=false)->graph();
+                                                                                        }
+                                                                                },
+                                                                                [&] (auto&&x,auto && y){
+                                                                                    for( int i = 0; i < x->numberOfSpaces(); ++i)
+                                                                                    {
+                                                                                        cout << "filling out stencil (" << r+i << "," << c << ")\n";
+                                                                                        g( r+i, c ) =
+                                                                                            stencil( _test=(*x)[i],
+                                                                                                     _trial=y,
+                                                                                                     _pattern=pattern,
+                                                                                                     _diag_is_nonzero=false, _close=false)->graph();
+                                                                                    }
+                                                                                })(xx,yy); },
+                                  [&]( auto &&xx, auto &&yy ) { return hana::if_( std::is_base_of<ProductSpaceBase,decay_type<decltype(yy)>>{},
+                                                                                      [&] (auto &&x, auto&& y) {
+                                                                                          for( int i = 0; i < y->numberOfSpaces(); ++i)
+                                                                                          {
+                                                                                              cout << "filling out stencil (" << r << "," << c+i << ")\n";
+                                                                                              g( r, c+i ) =
+                                                                                                  stencil( _test=x,
+                                                                                                           _trial=(*y)[i],
+                                                                                                           _pattern=pattern,
+                                                                                                           _diag_is_nonzero=false, _close=false)->graph();
+                                                                                          }
+                                                                                      },
+                                                                                      [&] (auto && x, auto &&y){
+                                                                                          cout << "filling out stencil (" << r << "," << c << ")\n";
+                                                                                          g( r, c ) =
+                                                                                              stencil( _test=x,
+                                                                                                       _trial=y,
+                                                                                                       _pattern=pattern,
+                                                                                                       _diag_is_nonzero=false, _close=false)->graph();
+                                                                                      })(xx,yy); })(test_space,trial_space);
+
+
+
+                        ++n;
+                    });
+    return g;
+}
+
+template<typename PS>
+BlocksBaseGraphCSR
+csrGraphBlocks( PS&& ps,
+                size_type pattern = Pattern::COUPLED,
+                std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    int s = ps.numberOfSpaces();
+    BlocksBaseGraphCSR g( s, s );
+
+
+    for( int i = 0; i < ps.numberOfSpaces(); ++i )
+        for( int j = 0; j < ps.numberOfSpaces(); ++j )
+        {
+            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
+            cout << "filling out stencil (" << i << "," << j << ")\n";
+        }
     return g;
 }
 

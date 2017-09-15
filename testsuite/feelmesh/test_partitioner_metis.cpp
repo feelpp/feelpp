@@ -28,7 +28,7 @@
  */
 
 #define BOOST_TEST_MODULE test_partitioner_metis
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpartition/partitionermetis.hpp>

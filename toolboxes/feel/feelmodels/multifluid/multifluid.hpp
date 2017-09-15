@@ -90,7 +90,7 @@ public:
 
     void init();
 
-    virtual void loadParametersFromOptionsVm();
+    void loadParametersFromOptionsVm();
 
     std::string const& prefix() const { return M_prefix; }
     std::string const& fluidPrefix() const { return super_type::prefix(); }
@@ -119,6 +119,8 @@ public:
 
     levelset_ptrtype const& globalLevelset() const { return M_globalLevelset; }
 
+    densityviscosity_model_ptrtype const& fluidDensityViscosityModel( uint16_type n = 0 ) const;
+
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const override;
@@ -131,6 +133,10 @@ public:
     //--------------------------------------------------------------------//
     bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
+
+    void addInterfaceForce( interfaceforces_model_ptrtype model, std::string const& name = "" );
+    interfaceforces_model_ptrtype const& interfaceForce( std::string const& name ) const;
+    std::map<std::string, interfaceforces_model_ptrtype> const& interfaceForces() const;
 
     //--------------------------------------------------------------------//
     // Solve
@@ -159,6 +165,7 @@ protected:
     void updateInterfaceForces();
     void solveFluid();
     void advectLevelsets();
+    virtual void solveImpl();
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
@@ -190,7 +197,8 @@ private:
     // Parameters
     densityviscosity_model_ptrtype M_fluidDensityViscosityModel;
     std::vector<densityviscosity_model_ptrtype> M_levelsetDensityViscosityModels;
-    std::vector<std::vector<interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
+    std::vector<std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
+    std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//
     // Forces
     bool M_enableSurfaceTension;

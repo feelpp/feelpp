@@ -362,13 +362,15 @@ public:
 
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
+    static constexpr int Nm1 = (N>0)?N-1:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<boost::none_t>,
-            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+            mpl::identity< Lagrange<Nm1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
     typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
@@ -485,11 +487,25 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::MatrixXd local_interpolant_type;
+
+    //!
+    //! build interpolant object on \p n finite elements
+    //!
+    using  local_interpolant_type = Eigen::VectorXd;
     local_interpolant_type
-    localInterpolant() const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
+        }
+
+    //!
+    //! build \p p  interpolants object on \p n finite elements
+    //!
+    using  local_interpolants_type = Eigen::MatrixXd;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nComponents*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -629,7 +645,7 @@ public:
         }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*

@@ -32,15 +32,18 @@ namespace Feel {
 
 ModelMaterial::ModelMaterial( WorldComm const& worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( &worldComm )
 {}
 ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
     :
-    M_worldComm( worldComm ),
+    M_worldComm( &worldComm ),
     M_name( name ),
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr )
 {
+    if( boost::optional<std::string> itphyisic = p.get_optional<std::string>( "physics" ) )
+        M_physics = *itphyisic;
+
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
                                             "k11","k12","k13","k22","k23","k33",
                                             "E","nu","sigma","C","Cs","Cl","L",
@@ -48,7 +51,6 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     for ( std::string const& prop : matProperties )
         this->setProperty( prop,M_p );
 }
-
 
 bool
 ModelMaterial::hasPropertyConstant( std::string const& prop ) const
@@ -171,11 +173,11 @@ ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
             VLOG(1) << "set property " << property << " build symbolic expr with nComp=" << nComp;
             M_materialProperties[property] = mat_property_expr_type();
             if ( nComp == 1 )
-                std::get<1>( M_materialProperties[property] ) = boost::optional<expr_scalar_type>( expr<expr_order>( feelExprString,"",M_worldComm,M_directoryLibExpr ) );
+                std::get<1>( M_materialProperties[property] ) = boost::optional<expr_scalar_type>( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
             else if ( nComp == 2 )
-                std::get<2>( M_materialProperties[property] ) = boost::optional<expr_vectorial2_type>( expr<2,1,expr_order>( feelExprString,"",M_worldComm,M_directoryLibExpr ) );
+                std::get<2>( M_materialProperties[property] ) = boost::optional<expr_vectorial2_type>( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
             else if ( nComp == 3 )
-                std::get<3>( M_materialProperties[property] ) = boost::optional<expr_vectorial3_type>( expr<3,1,expr_order>( feelExprString,"",M_worldComm,M_directoryLibExpr ) );
+                std::get<3>( M_materialProperties[property] ) = boost::optional<expr_vectorial3_type>( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
 
         }
     }
@@ -228,12 +230,12 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
 
 ModelMaterials::ModelMaterials( WorldComm const& worldComm )
     :
-    M_worldComm( worldComm )
+    M_worldComm( &worldComm )
 {}
 
 ModelMaterials::ModelMaterials( pt::ptree const& p, WorldComm const& worldComm )
     :
-    M_worldComm( worldComm ),
+    M_worldComm( &worldComm ),
     M_p( p )
 {
     setup();
@@ -268,7 +270,7 @@ ModelMaterials::getMaterial( pt::ptree const& v )
 {
     std::string t = v.get<std::string>( "name" );
     LOG(INFO) << "loading material name: " << t << std::endl;
-    ModelMaterial m( t, v, M_worldComm, M_directoryLibExpr );
+    ModelMaterial m( t, v, *M_worldComm, M_directoryLibExpr );
     LOG(INFO) << "adding material " << m;
     return m;
 }

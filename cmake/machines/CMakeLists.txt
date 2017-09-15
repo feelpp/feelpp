@@ -24,4 +24,4 @@
 #
 FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 
-INSTALL(FILES ${files} DESTINATION share/feel/cmake/machines COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION share/feelpp/feel/cmake/machines COMPONENT Devel)

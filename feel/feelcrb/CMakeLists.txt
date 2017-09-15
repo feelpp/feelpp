@@ -23,8 +23,9 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC crbdb.cpp pfemapp.cpp opusapp.cpp )
+set(SRC crbdb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
 
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelcrb "${SRC};${HDR}")
+
