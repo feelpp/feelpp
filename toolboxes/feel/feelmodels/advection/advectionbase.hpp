@@ -41,7 +41,7 @@
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
 
-#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -196,8 +196,7 @@ public :
                                map_scalar_field_type
                                >::type bc_map_field_type;
     // stabilization
-    static const uint16_type nStabGlsOrderPoly = (nOrder>1)? nOrder : 2;
-    typedef StabilizationGLSParameter<mesh_type, nStabGlsOrderPoly> stab_gls_parameter_type;
+    typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
     typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//

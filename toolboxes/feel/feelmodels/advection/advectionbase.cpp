@@ -4,6 +4,7 @@
 #include <feel/feelmodels/advection/advectionbase.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -141,7 +142,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
          ( (this->stabilizationMethod() == AdvectionStabMethod::GALS) ||
            (this->stabilizationMethod() == AdvectionStabMethod::SUPG)  ) )
     {
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        typedef StabilizationGLSParameter<mesh_type, nOrder> stab_gls_parameter_impl_type;
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
         M_stabilizationGLSParameter->init();
     }
 
@@ -154,8 +156,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     // Post-process
     this->initPostProcess();
 
-    // Vector solution
-    this->buildBlockVector();
     // Algebraic factory
     if( buildModelAlgebraicFactory )
     {
@@ -827,7 +827,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 #else
                 auto kappa = idv(D);
                 auto uconv = beta;
-                auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+                //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa, true, false );
+
 
                 auto L_op = grad(psi) * beta // advection term
                     + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
@@ -874,7 +876,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 #else
                 auto kappa = idv(D);
                 auto uconv = beta;
-                auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+                //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
+                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa );
 #endif
                 auto L_op = grad(psi) * val(beta);
                 //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
