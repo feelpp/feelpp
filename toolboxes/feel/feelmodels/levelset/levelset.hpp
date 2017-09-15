@@ -229,7 +229,7 @@ public:
     void build()
     {
         this->log("LevelSet", "build", "start");
-        super_type::build();
+        M_advectionToolbox->build();
         this->createFunctionSpaces( true );
         this->createInterfaceQuantities();
         this->createReinitialization();
@@ -249,7 +249,7 @@ public:
     void build( mesh_ptrtype const& mesh )
     {
         this->log("LevelSet", "build (from mesh)", "start");
-        super_type::build( mesh );
+        M_advectionToolbox->build( mesh );
         this->createFunctionSpaces( true );
         this->createInterfaceQuantities();
         this->createReinitialization();
