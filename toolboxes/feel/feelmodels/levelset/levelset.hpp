@@ -105,8 +105,9 @@ public:
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
     static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mymesh_type;
-    typedef boost::shared_ptr<mymesh_type> mesh_ptrtype;
+    typedef Mesh<convex_type> mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef mesh_type mymesh_type;
 
     //--------------------------------------------------------------------//
     // Periodicity
