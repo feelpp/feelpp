@@ -1,7 +1,7 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 18 Sep 2017
+#       Date: 17 Sep 2017
 #
 #  Copyright (C) 2017 Feel++ Consortium
 #
@@ -22,32 +22,12 @@
 #
 #
 
-if (FEELPP_ENABLE_PYTHON_WRAPPING )
+if ( FEELPP_ENABLE_PYTHON_WRAPPING )
+set_directory_properties(PROPERTIES LABEL testpython )
+foreach(TEST python1)
 
-  
-set( SRC  pyexpr.cpp  )
+  feelpp_add_test( ${TEST} )
 
-
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelpython "${SRC};${HDR}")
-
-  
-  
-# include_directories(${Boost_INCLUDE_DIRS})
-
-# add_library(PyFeelpp SHARED libPyFeelpp.cpp)
-# target_link_libraries(PyFeelpp feelpp ${FEELPP_LIBRARIES} )
-
-# #add_library(PyFeelpp2 SHARED libPyFeelpp2.cpp)
-# #target_link_libraries(PyFeelpp2 feelpp ${FEELPP_LIBRARIES})
-
-# add_library(PyInteg SHARED libPyInteg.cpp)
-# target_link_libraries(PyInteg feelpp ${FEELPP_LIBRARIES} PyFeelpp)
-
-# add_library(PyLapla SHARED libPyLapla.cpp)
-# target_link_libraries(PyLapla feelpp ${FEELPP_LIBRARIES} PyFeelpp)
-
-# #add_library(libtest SHARED libtest.cpp)
-# #target_link_libraries(libtest feelpp ${FEELPP_LIBRARIES})
-
+endforeach()
+#target_link_libraries(feelpp_test_python1 PRIVATE pybind11::embed)
 endif()
