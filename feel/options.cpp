@@ -465,6 +465,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.store-tensors" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store tensors for the parameters in the trainset"  )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
