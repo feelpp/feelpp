@@ -54,6 +54,44 @@ namespace Feel
 {
 
 /**
+ * Comparison structure for 2 parameters mu1 and mu2
+ * The comparison is made component by component :
+ * - we start with i=0
+ * - if mu1[i]<mu2[i] then mu1<mu2
+ * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
+ */
+template <typename ParameterType>
+struct paramCompare
+{
+public :
+    typedef ParameterType parameter_type;
+
+    /**
+     * Compare the component \p i of \p mu1 and \p mu2
+     * \return true if mu1[i]<mu2[i]
+     */
+    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
+    {
+        return compare( mu1, mu2, 0 );
+    }
+private :
+    /**
+     * Compare \p mu1 and \p mu2
+     * \return true if mu1 < mu2
+     */
+    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
+    {
+        if ( i==mu1.size() )
+            return false;
+        else if ( mu1[i]==mu2[i] )
+            return compare( mu1, mu2, i+1 );
+        else
+            return mu1[i]<mu2[i];
+    }
+};
+
+
+/**
  * \brief Base class for DEIM algorithm
  *
  * Considering a parametrized Tensor \f$ T(\mu)\f$, which can be
@@ -109,6 +147,8 @@ public :
     typedef typename space_type::element_type element_type;
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
 
     //! Default Constructor
     DEIMBase()
@@ -256,6 +296,7 @@ public :
             }
         }
 
+        M_solutions.clear();
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
         toc("DEIM : Total Time");
@@ -501,7 +542,14 @@ protected :
         LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
         tensor_ptrtype T;
 
-        T = this->assemble( mu );
+        if( !boption( prefixvm( M_prefix, "deim.store-tensors") ) || !M_solutions[mu] )
+        {
+            T = this->assemble( mu );
+            if( boption( prefixvm( M_prefix, "deim.store-tensors") ) )
+                M_solutions[mu] = copyTensor(T);
+        }
+        else
+            T = M_solutions[mu];
 
         double norm = T->linftyNorm();
         vectorN_type coeff = computeCoefficient(T, false);
@@ -585,6 +633,8 @@ protected :
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
     std::vector<ptsset_type> M_ptsset;
     std::set<int> M_elts_ids;
+
+    solutionsmap_type M_solutions;
 
     bool M_rebuild, M_nl_assembly;
 };
