@@ -26,10 +26,14 @@
 
 crb_add_library( biotsavart SRCS biotsavart.hpp biotsavart.cpp LINK_LIBRARIES ${FEELPP_CRB_THERMOELECTRIC_LIBRARIES} EXEC CRB_LIB_BIOTSAVART )
 target_include_directories(${CRB_LIB_BIOTSAVART} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
-install( FILES biotsavart.hpp 
+crb_add_library( alphabiotsavart SRCS alphabiotsavart.hpp alphabiotsavart.cpp LINK_LIBRARIES ${FEELPP_CRB_THERMOELECTRIC_LIBRARIES} EXEC CRB_LIB_ALPHABIOTSAVART )
+target_include_directories(${CRB_LIB_ALPHABIOTSAVART} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
+install( FILES biotsavart.hpp alphabiotsavart.hpp
          DESTINATION include/feelpp/crb/biotsavart COMPONENT Devel)
 set(FEELPP_CRB_BIOTSAVART_LIBRARIES ${CRB_LIB_BIOTSAVART} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_LIBRARIES PARENT_SCOPE)
+set(FEELPP_CRB_ALPHABIOTSAVART_LIBRARIES ${CRB_LIB_ALPHABIOTSAVART} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ALPHABIOTSAVART_LIBRARIES PARENT_SCOPE)
 
 feelpp_add_application( biotsavartCRB
                         SRCS biotsavart_main.cpp biotsavart.hpp
@@ -43,3 +47,9 @@ feelpp_add_application( biotsavartCRBOpt
                         EXEC BIOTSAVARTOPT_APP )
 target_include_directories(${BIOTSAVARTOPT_APP} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
 feelpp_add_testcase( bs-crb-quarterturn )
+feelpp_add_application( biotsavartCRBAlpha
+                        SRCS alphabiotsavart_main.cpp alphabiotsavart.hpp
+                        LINK_LIBRARIES ${CRB_LIB_ALPHABIOTSAVART}
+                        EXEC ALPHABIOTSAVART_APP
+                        )
+target_include_directories(${ALPHABIOTSAVART_APP} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)

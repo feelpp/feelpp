@@ -25,7 +25,8 @@
 #include <feel/feel.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
-
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/blockforms.hpp>
 namespace Feel {
 
 
@@ -55,7 +56,7 @@ makeOptions()
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         // end{dp}
         ;
-    return testhdivoptions.add( Feel::feel_options() );
+    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
 
 inline
@@ -204,6 +205,7 @@ Hdg<Dim, OrderP>::convergence()
     double current_hsize = meshSize;
     for(int i=0; i<ioption("nb_refine"); i++)
     {
+        backend(_rebuild=true);
         mesh_ptrtype mesh;
         std::string mesh_name;
         if( boption("use_hypercube"))
@@ -250,25 +252,23 @@ Hdg<Dim, OrderP>::convergence()
 
         Vh_ptr_t Vh = Pdhv<OrderP>( mesh, true );
         Wh_ptr_t Wh = Pdh<OrderP>( mesh, true );
-        auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+        auto face_mesh = createSubmesh( mesh, faces(mesh ), EXTRACTION_KEEP_MESH_RELATION, 0 );
         Mh_ptr_t Mh = Pdh<OrderP>( face_mesh,true );
 
         toc("spaces",true);
 
-
+        LOG(INFO)<< "number elemnts:" << mesh->numGlobalElements() << std::endl;
+        LOG(INFO) << "number local elemnts:" << mesh->numElements() << std::endl;
+        LOG(INFO) << "number local active elements:" << nelements(elements(mesh),false) << std::endl;
         size_type nFaceInParallelMesh = nelements(faces(mesh),true) - nelements(interprocessfaces(mesh),true)/2;
-        CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
+        //CHECK( nelements(elements(face_mesh),true) == nFaceInParallelMesh  ) << "something wrong with face mesh" << nelements(elements(face_mesh),true) << " " << nFaceInParallelMesh;
         auto Xh = Pdh<0>(face_mesh);
         auto uf = Xh->element(cst(1.));
-        CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
+        //CHECK( uf.size() == nFaceInParallelMesh ) << "check faces failed " << uf.size() << " " << nFaceInParallelMesh;
 
         cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
              << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
              << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
-
-        auto up = Vh->elementPtr( "u" );
-        auto pp = Wh->elementPtr( "p" );
-        auto phatp = Mh->elementPtr( "phat" );
 
         auto u = Vh->element( "u" );
         auto v = Vh->element( "v" );
@@ -284,47 +284,130 @@ Hdg<Dim, OrderP>::convergence()
         auto nDofphat = phat.functionSpace()->nDof();
 
         tic();
-        // build csr graph blocks from set of function spaces Vh Wh and Mh
+        auto ps = product( Vh, Wh, Mh );
+        solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
+        auto a = blockform2( ps, strategy ,backend() );
+        auto rhs = blockform1( ps, strategy, backend() );
+
+        auto K = expr(soption("k"));
+        auto lambda = cst(1.)/K;
+        auto tau_constant = cst(M_tau_constant);
+        auto f = -K*laplacian(p_exact);
+
+        // Building the RHS
+        //
+        // This is only a part of the RHS - how to build the whole RHS? Is it right to
+        // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
+        // How to identify Dirichlet/Neumann boundaries?
+        rhs(1_c) += integrate(_range=elements(mesh),
+                              _expr=-f*id(w));
+
+        cout << "rhs2 works fine" << std::endl;
+
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                              _expr=-id(l)*K*gradp_exact*N());
+        rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=id(l)*p_exact);
+
+        cout << "rhs3 works fine" << std::endl;
+
+        //
+        // First row a(0_c,:)
+        //
+        a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
+
+        cout << "a11 works fine" << std::endl;
+
+        a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
+
+        cout << "a12 works fine" << std::endl;
+
+        a(0_c,2_c) += integrate(_range=internalfaces(mesh),
+                                _expr=( idt(phat)*leftface(trans(id(v))*N())+
+                                        idt(phat)*rightface(trans(id(v))*N())) );
+
+        a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
+                                _expr=idt(phat)*trans(id(v))*N());
+
+        cout << "a13 works fine" << std::endl;
+
+        //
+        // Second row a(1_c,:)
+        //
 #if 0
-        auto A = backend()->newBlockMatrix(_block=csrGraphBlocks(Vh,Wh,Mh));
+        a(1_c,0_c) += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
+        a(1_c,0_c) += integrate(_range=internalfaces(mesh),
+                                _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
+        a(1_c,0_c) += integrate(_range=internalfaces(mesh),
+                                _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
+        a(1_c,0_c) += integrate(_range=boundaryfaces(mesh),
+                                _expr=(id(w)*trans(idt(u))*N()));
 #else
-        BlocksBaseGraphCSR hdg_graph(3,3);
-        hdg_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,0) = stencil( _test=Mh,_trial=Vh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,1) = stencil( _test=Vh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,1) = stencil( _test=Wh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,1) = stencil( _test=Mh,_trial=Wh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(0,2) = stencil( _test=Vh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(1,2) = stencil( _test=Wh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        hdg_graph(2,2) = stencil( _test=Mh,_trial=Mh, _diag_is_nonzero=false, _close=false)->graph();
-        auto A = backend()->newBlockMatrix(_block=hdg_graph);
+        a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
 #endif
+        cout << "a21 works fine" << std::endl;
 
+        a(1_c,1_c) += integrate(_range=internalfaces(mesh),
+                                _expr=-tau_constant *
+                                ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
+                                  rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
+        a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
+                                _expr=-(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
 
-        // build vector blocks from sub-vector of size given by set of function spaces
-        BlocksBaseVector<double> hdg_vec(3);
-        hdg_vec(0,0) = backend()->newVector( Vh );
-        hdg_vec(1,0) = backend()->newVector( Wh );
-        hdg_vec(2,0) = backend()->newVector( Mh );
-        auto F = backend()->newBlockVector(_block=hdg_vec, _copy_values=false);
+        cout << "a22 works fine" << std::endl;
 
-        // build vector blocks from concatenation of subvectors up pp and phatp
-        auto hdg_sol = vectorBlocks(up,pp,phatp);
-        auto U = backend()->newBlockVector(_block=hdg_sol, _copy_values=false);
+        a(1_c,2_c) += integrate(_range=internalfaces(mesh),
+                                _expr=tau_constant * idt(phat) *
+                                ( leftface( pow(h(),M_tau_order)*id(w) )+
+                                  rightface( pow(h(),M_tau_order)*id(w) )));
 
-        assemble_A_and_F( A, F, Vh, Wh, Mh, p_exact, gradp_exact );
+        a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
+                                _expr=tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
+
+        cout << "a23 works fine" << std::endl;
+
+        //
+        // Third row a(2_c,:)
+        //
+        a(2_c,0_c) += integrate(_range=internalfaces(mesh),
+                                _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
+                                               rightfacet(trans(idt(u))*N())) ) );
+        // BC
+        a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                                _expr=( id(l)*(trans(idt(u))*N()) ));
+
+        cout << "a31 works fine" << std::endl;
+
+        a(2_c,1_c) += integrate(_range=internalfaces(mesh),
+                                _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
+                                                               rightfacet( pow(h(),M_tau_order)*idt(p) )));
+        a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                                _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
+
+        cout << "a32 works fine" << std::endl;
+
+        a(2_c,2_c) += integrate(_range=internalfaces(mesh),
+                                _expr=-0.5*tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
+                                                                            rightface( pow(h(),M_tau_order) )));
+        a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+                                _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
+        a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                                _expr=idt(phat) * id(l) );
+
+        cout << "a33 works fine" << std::endl;
+
         toc("matrices",true);
 
         tic();
-        backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
-
-        hdg_sol.localize(U);
+        auto U=ps.element();
+        a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
         toc("solve",true);
 
         cout << "[Hdg] solve done" << std::endl;
 
         // ****** Compute error ******
+        auto up = U(0_c);
+        auto pp = U(1_c);
 
 
         tic();
@@ -332,18 +415,18 @@ Hdg<Dim, OrderP>::convergence()
         bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
 
 
-        auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(*up) );
+        auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
         double l2err_p = 1e+30;
         if ( has_dirichlet )
         {
-            l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(*pp) );
+            l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(pp) );
         }
         else
         {
             auto mean_p_exact = mean( elements(mesh), p_exact )(0,0);
-            auto mean_p = mean( elements(mesh), idv(*pp) )(0,0);
+            auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
             l2err_p = normL2( elements(mesh),
-                              (p_exact - cst(mean_p_exact)) - (idv(*pp) - cst(mean_p)) );
+                              (p_exact - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
         }
         toc("error");
 
@@ -366,8 +449,8 @@ Hdg<Dim, OrderP>::convergence()
         export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
         exporter_cvg->step( i )->setMesh( mesh );
-        exporter_cvg->step( i )->add( uName, *up );
-        exporter_cvg->step( i )->add( pName, *pp );
+        exporter_cvg->step( i )->add( uName, U(0_c) );
+        exporter_cvg->step( i )->add( pName, U(1_c) );
         exporter_cvg->step( i )->add( u_exName, v );
         exporter_cvg->step( i )->add( p_exName, q );
         exporter_cvg->save();
@@ -380,166 +463,6 @@ Hdg<Dim, OrderP>::convergence()
     cvg.close();
 }
 
-template<int Dim, int OrderP>
-template<typename MatrixType, typename VectorType, typename VhType, typename WhType, typename MhType,
-         typename ExprP, typename ExprGradP>
-void
-Hdg<Dim, OrderP>::assemble_A_and_F( MatrixType A,
-                                    VectorType F,
-                                    VhType Vh,
-                                    WhType Wh,
-                                    MhType Mh,
-                                    ExprP p_exact,
-                                    ExprGradP gradp_exact )
-{
-    auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
-    auto tau_constant = cst(M_tau_constant);
-    auto f = -K*laplacian(p_exact);
-    auto mesh = Vh->mesh();
-
-    auto u = Vh->element( "u" );
-    auto v = Vh->element( "v" );
-    auto p = Wh->element( "p" );
-    auto q = Wh->element( "q" );
-    auto w = Wh->element( "w" );
-    auto phat = Mh->element( "phat" );
-    auto l = Mh->element( "lambda" );
-
-    // Building the RHS
-    //
-    // This is only a part of the RHS - how to build the whole RHS? Is it right to
-    // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
-    // How to identify Dirichlet/Neumann boundaries?
-    auto rhs2 = form1( _test=Wh, _vector=F,
-                       _rowstart=1 );
-
-    rhs2 += integrate(_range=elements(mesh),
-                      _expr=f*id(w));
-
-    cout << "rhs2 works fine" << std::endl;
-
-    // begin dp: changed signs (to move terms to the left)
-    auto rhs3 = form1( _test=Mh, _vector=F,
-                       _rowstart=2);
-    rhs3 += integrate(_range=markedfaces(mesh,"Neumann"),
-                      _expr=-id(l)*K*gradp_exact*N());
-    rhs3 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                      _expr=id(l)*p_exact);
-    // end dp
-
-    cout << "rhs3 works fine" << std::endl;
-
-    auto a11 = form2( _trial=Vh, _test=Vh,_matrix=A );
-    a11 += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
-
-    cout << "a11 works fine" << std::endl;
-
-    auto a12 = form2( _trial=Wh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=1 );
-    a12 += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
-
-    cout << "a12 works fine" << std::endl;
-
-    // begin dp: added extended pattern, multiplied by 0.5 when integrating over internalfaces
-    auto a13 = form2( _trial=Mh, _test=Vh,_matrix=A,
-                      _rowstart=0, _colstart=2);
-
-    a13 += integrate(_range=internalfaces(mesh),
-                     _expr=( idt(phat)*leftface(trans(id(v))*N())+
-                             idt(phat)*rightface(trans(id(v))*N())) );
-    a13 += integrate(_range=boundaryfaces(mesh),
-                     _expr=idt(phat)*trans(id(v))*N());
-    // end dp
-
-    cout << "a13 works fine" << std::endl;
-
-    // begin dp: added extended pattern
-    auto a21 = form2( _trial=Vh, _test=Wh,_matrix=A,
-                      _rowstart=1, _colstart=0);
-
-    // end dp
-    a21 += integrate(_range=elements(mesh),_expr=(-grad(w)*idt(u)));
-    cout << " . a211 ok" << std::endl;
-    a21 += integrate(_range=internalfaces(mesh),
-                     _expr=( leftface(id(w))*leftfacet(trans(idt(u))*N()) ) );
-    cout << " . a212l ok" << std::endl;
-    a21 += integrate(_range=internalfaces(mesh),
-                     _expr=(rightface(id(w))*rightfacet(trans(idt(u))*N())) );
-    cout << " . a212r ok" << std::endl;
-    a21 += integrate(_range=boundaryfaces(mesh),
-                     _expr=(id(w)*trans(idt(u))*N()));
-    cout << " . a213 ok" << std::endl;
-    cout << "a21 works fine" << std::endl;
-
-    // begin dp: added extended pattern
-    auto a22 = form2( _trial=Wh, _test=Wh,_matrix=A,
-                      _rowstart=1, _colstart=1 );
-
-    // end dp
-    a22 += integrate(_range=internalfaces(mesh),
-                     _expr=tau_constant *
-                     ( leftfacet( pow(h(),M_tau_order)*idt(p))*leftface(id(w)) +
-                       rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
-    a22 += integrate(_range=boundaryfaces(mesh),
-                     _expr=(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
-
-    cout << "a22 works fine" << std::endl;
-
-    // begin dp: added extended pattern, multiplied by 0.5
-    auto a23 = form2( _trial=Mh, _test=Wh,_matrix=A,
-                      _rowstart=1, _colstart=2);
-    a23 += integrate(_range=internalfaces(mesh),
-                     _expr=-tau_constant * idt(phat) *
-                     ( leftface( pow(h(),M_tau_order)*id(w) )+
-                       rightface( pow(h(),M_tau_order)*id(w) )));
-    // end dp
-    a23 += integrate(_range=boundaryfaces(mesh),
-                     _expr=-tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
-
-    cout << "a23 works fine" << std::endl;
-
-    // begin dp: added extended pattern, multiplied by 0.5
-    auto a31 = form2( _trial=Vh, _test=Mh,_matrix=A,
-                      _rowstart=2, _colstart=0);
-    a31 += integrate(_range=internalfaces(mesh),
-                     _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                    rightfacet(trans(idt(u))*N())) ) );
-    // end dp
-
-    // BC
-    a31 += integrate(_range=markedfaces(mesh,"Neumann"),
-                     _expr=( id(l)*(trans(idt(u))*N()) ));
-
-    cout << "a31 works fine" << std::endl;
-
-    // begin dp: added extended pattern, mulitplied by 0.5
-    auto a32 = form2( _trial=Wh, _test=Mh,_matrix=A,
-                      _rowstart=2, _colstart=1);
-    a32 += integrate(_range=internalfaces(mesh),
-                     _expr=tau_constant * id(l) * ( leftfacet( pow(h(),M_tau_order)*idt(p) )+
-                                                    rightfacet( pow(h(),M_tau_order)*idt(p) )));
-    // end do
-    a32 += integrate(_range=markedfaces(mesh,"Neumann"),
-                     _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ) );
-
-    cout << "a32 works fine" << std::endl;
-
-    auto a33 = form2(_trial=Mh, _test=Mh,_matrix=A,
-                     _rowstart=2, _colstart=2);
-    // begin dp: mulitplied by 0.25
-    a33 += integrate(_range=internalfaces(mesh),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),M_tau_order) )+
-                                                                 rightface( pow(h(),M_tau_order) )));
-    // end dp
-    a33 += integrate(_range=markedfaces(mesh,"Neumann"),
-                     _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
-    a33 += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                     _expr=idt(phat) * id(l) );
-
-    cout << "a33 works fine" << std::endl;
-
-}
 
 
 } // Feel

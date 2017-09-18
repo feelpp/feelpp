@@ -44,7 +44,6 @@ BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetscMPI<double> )
 extern "C"
 {
 #include "petscsys.h"
-#include "petscviewerhdf5.h"
 }
 
 
@@ -177,7 +176,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
+VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
@@ -187,7 +186,6 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -715,200 +713,6 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
     CHKERRABORT( this->comm(),ierr );
 }
 
-template <typename T>
-void
-VectorPetsc<T>::save( std::string filename, std::string type, std::string path )
-{
-    if ( !this->closed() )
-        this->close();
-
-    // if directory does not exist, create it only by one process
-    if ( this->comm().isMasterRank() && !fs::exists( fs::path( path ) ) )
-        fs::create_directories( fs::path( path ) );
-    // wait creating directory
-    this->comm().barrier();
-
-
-    if ( type=="hdf5")
-    {
-#ifdef FEELPP_HAS_HDF5
-        std::ostringstream os;
-        os << filename << ".h5";
-        fs::path p = fs::path( path ) / os.str();
-        this->saveHDF5( p.string() );
-#else
-        CHECK(false) << "Feel++ not compiled with hdf5";
-#endif
-    }
-    else
-    {
-        std::ostringstream os;
-        os << filename  << "-" << this->comm().globalSize() << "." << this->comm().globalRank();
-
-        if ( type=="binary" )
-        {
-            os << ".bin";
-            fs::path p = fs::path( path ) / os.str();
-            LOG(INFO) << "saving "  << p << "\n";
-            fs::ofstream ofs( p );
-            boost::archive::binary_oarchive oa(ofs);
-            oa << *this;
-        }
-        if ( type=="xml")
-        {
-            os << ".xml";
-            fs::path p = fs::path( path ) / os.str();
-            LOG(INFO) << "saving "  << p << "\n";
-            fs::ofstream ofs( p );
-            boost::archive::xml_oarchive oa(ofs);
-            oa << boost::serialization::make_nvp("vectorpetsc", *this );
-        }
-        else if ( type=="text")
-        {
-            os << ".txt";
-            fs::path p = fs::path( path ) / os.str();
-            LOG(INFO) << "saving "  << p << "\n";
-            fs::ofstream ofs( p );
-            boost::archive::text_oarchive oa(ofs);
-            oa << *this;
-        }
-    }
-
-
-}
-
-template <typename T>
-bool
-VectorPetsc<T>::load( std::string filename, std::string type, std::string path )
-{
-    fs::path partial_path = fs::path(path);
-    fs::path full_path_dir_sol(fs::current_path());
-    full_path_dir_sol = full_path_dir_sol/partial_path;
-
-    if ( type=="hdf5")
-    {
-#ifdef FEELPP_HAS_HDF5
-        std::ostringstream os;
-        os << filename << ".h5";
-        fs::path p = fs::path( path ) / os.str();
-        if ( !fs::exists( p ) )
-        {
-            LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os.str() << " DO NOT EXIST";
-            return 0;
-        }
-        else
-            this->loadHDF5( p.string() );
-#else
-        CHECK(false) << "Feel++ not compiled with hdf5";
-#endif
-    }
-    else
-    {
-        std::ostringstream os;
-        os << filename  << "-" << this->comm().globalSize() << "." << this->comm().globalRank();
-        if ( type=="binary" )
-        {
-            os << ".bin";
-            fs::path p = fs::path( path ) / os.str();
-            if ( !fs::exists( p ) )
-            {
-                LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os.str() << " DO NOT EXIST" << std::endl ;
-                return 0;
-            }
-            else
-            {
-                fs::ifstream ifs( p );
-                boost::archive::binary_iarchive ia(ifs);
-                ia >> *this;
-            }
-        }
-        else if ( type=="xml" )
-        {
-            os << ".xml";
-            fs::path p = fs::path( path ) / os.str();
-            if ( !fs::exists( p ) )
-            {
-                LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os.str() << " DO NOT EXIST" << std::endl ;
-                return 0;
-            }
-            else
-            {
-                fs::ifstream ifs( p );
-                boost::archive::xml_iarchive ia(ifs);
-                ia >> boost::serialization::make_nvp("vectorpetsc", *this );
-            }
-        }
-        else if ( type=="text" )
-        {
-            os << ".txt";
-            fs::path p = fs::path( path ) / os.str();
-            if ( !fs::exists( p ) )
-            {
-                LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os.str() << " DO NOT EXIST" << std::endl ;
-                return 0;
-            }
-            else
-            {
-                fs::ifstream ifs( p );
-                boost::archive::text_iarchive ia(ifs);
-                ia >> *this;
-            }
-        }
-    }
-
-    this->close();
-    return true;
-}
-
-
-template <typename T>
-void
-VectorPetsc<T>::saveHDF5( const std::string filename )
-{
-#if defined(PETSC_HAVE_HDF5)
-    PetscViewer H5viewer;
-    int ierr = 0;
-
-    /* Create the HDF5 viewer */
-    ierr = PetscViewerHDF5Open( this->comm(), filename.c_str(), FILE_MODE_WRITE, &H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = PetscViewerSetFromOptions( H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-
-    /* Write the H5 file */
-    ierr = VecView( M_vec, H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-
-    /* Close the viewer */
-    ierr = PetscViewerDestroy( &H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-#endif
-}
-
-template <typename T>
-void
-VectorPetsc<T>::loadHDF5( const std::string filename )
-{
-#if defined(PETSC_HAVE_HDF5)
-    PetscViewer H5viewer;
-    int ierr = 0;
-
-    /* Create the HDF5 viewer */
-    ierr = PetscViewerHDF5Open( this->comm(), filename.c_str(), FILE_MODE_READ, &H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-    ierr = PetscViewerSetFromOptions(H5viewer);
-    CHKERRABORT( this->comm(),ierr );
-
-    /* Load the H5 file */
-    ierr = VecLoad( M_vec, H5viewer );
-    CHKERRABORT( this->comm(),ierr );
-
-    /* Close the viewer */
-    ierr = PetscViewerDestroy(&H5viewer);
-    CHKERRABORT( this->comm(),ierr );
-#endif
-}
-
 
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -1086,6 +890,76 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 
     delete[] rowMap;
 }
+template <typename T>
+void
+VectorPetsc<T>::save( std::string filename, std::string format )
+{
+    if ( !this->closed() )
+        this->close();
+
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ofstream ofs( filename );
+    if (ofs)
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_oarchive oa(ofs);
+            oa << *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_oarchive oa(ofs);
+            oa << *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+template <typename T>
+void
+VectorPetsc<T>::load( std::string filename, std::string format ) 
+{
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ifstream ifs( filename );
+    if ( ifs )
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -1512,7 +1386,7 @@ VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
+VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
@@ -1867,6 +1741,7 @@ VectorPetscMPI<T>::lastLocalIndex() const
 
     return static_cast<size_type>( petsc_last );
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -2724,8 +2599,6 @@ VectorPetscMPIRange<T>::localize()
     ierr = VecScatterEnd( M_vecScatterGhost, this->vec(), M_vecGhost, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 }
-
-
 
 
 

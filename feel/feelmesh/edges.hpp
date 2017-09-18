@@ -29,17 +29,12 @@
 #ifndef __edges_H
 #define __edges_H 1
 
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
+#include <unordered_map>
 
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
 {
-namespace multi_index = boost::multi_index;
 
 /// \cond \detail
 /*!
@@ -63,40 +58,7 @@ public:
                               mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;
 
-
-    typedef multi_index::multi_index_container<
-        edge_type,
-        multi_index::indexed_by<
-            // sort by employee::operator<
-            multi_index::ordered_unique<multi_index::identity<edge_type> >
-#if 0
-            // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
-                                            multi_index::composite_key<
-                                            edge_type,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       Marker1 const&,
-                                                                       &edge_type::marker>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId>
-                                            > >,
-
-            // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       rank_type,
-                                                                       &edge_type::processId> >,
-
-            // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
-                                            multi_index::const_mem_fun<edge_type,
-                                                                       bool,
-                                                                       &edge_type::isOnBoundary> >
-#endif
-            >
-        > edges_type;
-
+    typedef std::unordered_map<size_type,edge_type> edges_type;
 
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
@@ -105,6 +67,10 @@ public:
     typedef std::shared_ptr<edges_reference_wrapper_type> edges_reference_wrapper_ptrtype;
     typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
+
+    typedef std::vector<boost::reference_wrapper<edge_type> > ordered_edges_reference_wrapper_type;
+    typedef typename ordered_edges_reference_wrapper_type::iterator ordered_edge_reference_wrapper_iterator;
+    typedef typename ordered_edges_reference_wrapper_type::const_iterator ordered_edge_reference_wrapper_const_iterator;
 
     //@}
 
@@ -115,17 +81,28 @@ public:
     Edges( WorldComm const& worldComm = Environment::worldComm() )
         :
         M_worldCommEdges( worldComm ),
-        M_edges()
+        M_edges(),
+        M_needToOrderEdges( false )
     {}
 
     Edges( Edges const & f )
         :
         M_worldCommEdges( f.M_worldCommEdges ),
-        M_edges( f.M_edges )
-    {}
+        M_edges( f.M_edges ),
+        M_needToOrderEdges( false )
+    {
+        this->buildOrderedEdges();
+    }
 
-    ~Edges()
-    {}
+    virtual ~Edges() {}
+
+    void clear()
+        {
+            DVLOG(1) << "deleting edges...\n";
+            M_orderedEdges.clear();
+            M_edges.clear();
+            M_needToOrderEdges = false;
+        }
 
     //@}
 
@@ -174,11 +151,11 @@ public:
 
     bool isBoundaryEdge( edge_type const & e ) const
     {
-        return M_edges.find( e )->isOnBoundary();
+        return e.isOnBoundary();
     }
     bool isBoundaryEdge( size_type const & id ) const
     {
-        return M_edges.find( edge_type( id ) )->isOnBoundary();
+        return M_edges.find( id )->second.isOnBoundary();
     }
 
     /**
@@ -186,18 +163,23 @@ public:
      */
     bool hasEdge( size_type i ) const
     {
-        return M_edges.template get<0>().find( edge_type( i ) ) !=
-               M_edges.template get<0>().end();
+        return M_edges.find( i ) != M_edges.end();
     }
 
     edge_type const& edge( size_type i ) const
     {
-        return *M_edges.find( edge_type( i ) );
+        auto itFindEdge = M_edges.find( i );
+        CHECK( itFindEdge != M_edges.end() ) << " edge " << i << "does not found";
+        return itFindEdge->second;
     }
 
-    edge_iterator edgeIterator( size_type i ) const
+    edge_const_iterator edgeIterator( size_type i ) const
     {
-        return  M_edges.find( edge_type( i ) );
+        return  M_edges.find( i );
+    }
+    edge_iterator edgeIterator( size_type i )
+    {
+        return  M_edges.find( i );
     }
 
     edge_iterator beginEdge()
@@ -217,6 +199,24 @@ public:
         return M_edges.end();
     }
 
+    ordered_edge_reference_wrapper_iterator beginOrderedEdge()
+        {
+            return M_orderedEdges.begin();
+        }
+    ordered_edge_reference_wrapper_const_iterator beginOrderedEdge() const
+        {
+            return M_orderedEdges.begin();
+        }
+    ordered_edge_reference_wrapper_iterator endOrderedEdge()
+        {
+            return M_orderedEdges.end();
+        }
+    ordered_edge_reference_wrapper_const_iterator endOrderedEdge() const
+        {
+            return M_orderedEdges.end();
+        }
+
+
     /**
      * \return the range of iterator \c (begin,end) over the edges
      * with \c Marker1 \p m on processor \p p
@@ -226,11 +226,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
-            auto it = this->beginEdge();
-            auto en = this->endEdge();
+            auto it = this->beginOrderedEdge();
+            auto en = this->endOrderedEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.hasMarker( markerType ) )
@@ -250,11 +250,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
-            auto it = this->beginEdge();
-            auto en = this->endEdge();
+            auto it = this->beginOrderedEdge();
+            auto en = this->endOrderedEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.hasMarker( markerType ) )
@@ -300,11 +300,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
-            auto it = this->beginEdge();
-            auto en = this->endEdge();
+            auto it = this->beginOrderedEdge();
+            auto en = this->endOrderedEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.isOnBoundary() )
@@ -323,11 +323,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
-            auto it = this->beginEdge();
-            auto en = this->endEdge();
+            auto it = this->beginOrderedEdge();
+            auto en = this->endOrderedEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
                 if ( !edge.isInternal() )
@@ -346,11 +346,11 @@ public:
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
-            auto it = this->beginEdge();
-            auto en = this->endEdge();
+            auto it = this->beginOrderedEdge();
+            auto en = this->endOrderedEdge();
             for ( ; it!=en;++it )
             {
-                auto const& edge = *it;
+                auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
                 myedges->push_back( boost::cref( edge ) );
@@ -376,31 +376,123 @@ public:
      * @param f a new edge
      * @return the new edge from the list
      */
-    edge_type const& addEdge( edge_type& f )
+    std::pair<edge_iterator,bool>  addEdge( edge_type& f )
     {
-        f.setId( M_edges.size() );
-        return *M_edges.insert( f ).first;
+        //f.setId( M_edges.size() );
+        std::pair<edge_iterator,bool> ret = M_edges.emplace( std::make_pair( f.id(),f ) );
+
+        if ( ret.second )
+        {
+            auto & newEdge = ret.first->second;
+            if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
+                M_needToOrderEdges = true;
+            M_orderedEdges.push_back( boost::ref( newEdge ) );
+        }
+
+        return ret;
     }
+
+    std::pair<edge_iterator,bool>  addEdge( edge_type&& f )
+        {
+            //f.setId( M_edges.size() );
+            std::pair<edge_iterator,bool> ret = M_edges.emplace( std::make_pair( f.id(),f ) );
+
+            if ( ret.second )
+            {
+                auto & newEdge = ret.first->second;
+                if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
+                    M_needToOrderEdges = true;
+                M_orderedEdges.push_back( boost::ref( newEdge ) );
+            }
+
+            return ret;
+        }
+
+    /**
+     * erase edge at position \p position
+     *
+     * @param position \p position is a valid dereferenceable iterator of the index.
+     *
+     * @return An iterator pointing to the edge immediately
+     * following the one that was deleted, or \c end() if no such edge
+     * exists.
+     */
+    edge_iterator eraseEdge( edge_iterator it )
+        {
+            size_type erasedId = it->first;
+            auto itret = M_edges.erase( it );
+            auto itOrdered = std::find_if( M_orderedEdges.begin(), M_orderedEdges.end(),
+                                           [&erasedId]( auto & edgeWrap ) { return unwrap_ref( edgeWrap ).id() == erasedId; } );
+            M_orderedEdges.erase( itOrdered );
+            return itret;
+        }
+
 
     void setWorldCommEdges( WorldComm const& _worldComm )
     {
         M_worldCommEdges = _worldComm;
     }
 
+    void updateOrderedEdges()
+        {
+            if ( !M_needToOrderEdges )
+                return;
+            std::sort( M_orderedEdges.begin(), M_orderedEdges.end(),
+                       []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+            M_needToOrderEdges = false;
+        }
     //@}
 
 private:
+
+    void buildOrderedEdges()
+        {
+            M_orderedEdges.clear();
+            auto it = beginEdge(), en = endEdge();
+            size_type nEdge = std::distance( it, en );
+            M_orderedEdges.reserve( nEdge );
+            for ( ; it != en ; ++it )
+                M_orderedEdges.push_back( boost::ref( it->second ) );
+            M_needToOrderEdges = true;
+            this->updateOrderedEdges();
+        }
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_edges;
+            if ( Archive::is_loading::value )
+            {
+                M_edges.clear();
+                M_orderedEdges.clear();
+                M_needToOrderEdges = false;
+                size_type nEdges = 0;
+                ar & BOOST_SERIALIZATION_NVP( nEdges );
+                edge_type newEdge;
+                for ( size_type k=0 ; k<nEdges ; ++k )
+                {
+                    ar & boost::serialization::make_nvp( "edge", newEdge );
+                    this->addEdge( std::move( newEdge ) );
+                }
+            }
+            else
+            {
+                auto it = beginOrderedEdge(), en = endOrderedEdge();
+                size_type nEdges = std::distance( it, en );
+                ar & BOOST_SERIALIZATION_NVP( nEdges );
+                for ( ; it != en ; ++it )
+                    ar & boost::serialization::make_nvp( "edge", unwrap_ref( *it ) );
+            }
         }
 
 private:
     WorldComm M_worldCommEdges;
     edges_type M_edges;
+    ordered_edges_reference_wrapper_type M_orderedEdges;
+    bool M_needToOrderEdges;
 };
 /// \endcond
 } // Feel
