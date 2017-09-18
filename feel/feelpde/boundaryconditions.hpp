@@ -91,9 +91,15 @@ public:
      */
     std::string const& expression2() const { return std::get<3>( *this ); }
 
+    /**
+     * @return the material
+     */
+    std::string const& material() const { return std::get<4>( *this ); }
+
     bool hasExpression() const { return isExpression() && !std::get<2>( *this ).empty(); } 
     bool hasExpression1() const { return isExpression() && !std::get<2>( *this ).empty(); } 
     bool hasExpression2() const { return isExpression() && !std::get<3>( *this ).empty(); }
+    bool hasMaterial() const { return isExpression() && !std::get<4>( *this ).empty(); }
 
     std::string filename() const { LOG_IF( ERROR, !isFile() ) << "boundary condition is not given by a file"; return M_filename; }
     bool hasFilename() const { return isFile() && !M_filename.empty(); }
