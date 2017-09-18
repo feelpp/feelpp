@@ -50,7 +50,11 @@ loadPlugin( std::string const& name, std::string const& id )
     std::string dirname = Environment::expand( soption(_name="plugin.dir") );
     std::string pluginname = name;
 
-    auto plugin = factoryCRBPlugin( pluginname, "", dirname );
+    std::string pluginlibname = "";
+    if ( Environment::vm().count("plugin.libname") )
+        pluginlibname = soption(_name="plugin.libname");
+
+    auto plugin = factoryCRBPlugin( pluginname, pluginlibname, dirname );
     std::cout << "Loaded the plugin " << plugin->name() << std::endl;
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
 
@@ -281,7 +285,11 @@ loadPlugin()
     std::string dirname = Environment::expand( soption(_name="plugin.dir") );
     std::string pluginname = Environment::expand( soption(_name="plugin.name") );
 
-    auto plugin = factoryCRBPlugin( pluginname, "", dirname );
+    std::string pluginlibname = "";
+    if ( Environment::vm().count("plugin.libname") )
+        pluginlibname = soption(_name="plugin.libname");
+
+    auto plugin = factoryCRBPlugin( pluginname, pluginlibname, dirname );
     std::cout << "Loaded the plugin " << plugin->name() << std::endl;
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
 
@@ -309,6 +317,7 @@ int main(int argc, char**argv )
 	crbonlinerunoptions.add_options()
         ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
         ( "plugin.name", po::value<std::string>(), "CRB online code name" )
+        ( "plugin.libname", po::value<std::string>(), "CRB online libname" )
         ( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
         ( "plugin.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
         ( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
