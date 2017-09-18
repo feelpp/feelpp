@@ -71,8 +71,21 @@ int main(int argc, char**argv )
 
     tic();
     auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate(_range=elements(mesh),
-                  _expr=mu*gradt(u)*trans(grad(v)) );
+    {
+        tic();
+        a = integrate(_range=elements(mesh),
+                      _expr=inner(mu*gradt(u),grad(v)) );
+        toc("a1");
+        tic();
+        a = integrate(_range=elements(mesh),
+                      _expr=mu*inner(gradt(u),grad(v)) );
+        toc("a2");
+        tic();
+        a = integrate(_range=elements(mesh),
+                      _expr=mu*gradt(u)*trans(grad(v)) );
+        toc("a0");
+
+    }
     a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
     a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
@@ -115,6 +128,7 @@ int main(int argc, char**argv )
             toc("H1 error norm");
             return { { "L2", l2 }, {  "H1", h1 } };
         };
+
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
 
