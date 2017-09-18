@@ -303,14 +303,14 @@ public :
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
-    vectorN_type beta( parameter_type const& mu )
+    vectorN_type beta( parameter_type const& mu, int M = -1 )
     {
-        return computeCoefficient( mu );
+        return computeCoefficient( mu, M );
     }
 
-    vectorN_type beta( parameter_type const& mu, element_type const& u )
+    vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
-        return computeCoefficient( mu, u );
+        return computeCoefficient( mu, u, M );
     }
 
 
@@ -471,28 +471,30 @@ protected :
     }
 
     //! \return the beta coefficient for parameter \p mu
-    vectorN_type computeCoefficient( parameter_type const& mu )
+    vectorN_type computeCoefficient( parameter_type const& mu, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
-    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u )
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, u, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
 
 
     //! Compute the beta coefficients for a assembled tensor \p T
-    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true )
+    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
-        vectorN_type rhs (M_M);
-        vectorN_type coeff (M_M);
-        if ( M_M>0 )
+        if( (M < 0) || (M > M_M) )
+            M = M_M;
+        vectorN_type rhs (M);
+        vectorN_type coeff (M);
+        if ( M > 0 )
         {
-            for ( int i=0; i<M_M; i++ )
+            for ( int i=0; i<M; i++ )
                 rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
-            coeff = M_B.fullPivLu().solve( rhs );
+            coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
 
         return coeff;
