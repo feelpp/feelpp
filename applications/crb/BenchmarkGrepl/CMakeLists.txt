@@ -28,13 +28,19 @@ install(FILES benchmarkgrepl-options.hpp benchmarkgrepl-linear-elliptic.hpp benc
 set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-options PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BenchmarkGrepl_LIBRARIES PARENT_SCOPE)
 
+crb_add_library( benchmarkgrepl-linear-elliptic
+  SRCS benchmarkgrepl-linear-elliptic.cpp
+  LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
+  EXEC CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC )
+
+
 foreach(O 1 2 3)
   configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )
   configure_file( benchmarkgrepl-linear-elliptic.cfg.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.cfg )
 
   crb_add_model(
     benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}>
-    HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
+    HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC} # ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
     CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
 
   foreach(D 2 3)
