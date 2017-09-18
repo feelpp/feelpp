@@ -58,15 +58,20 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
           "compute the offline part of Biot Savart" )
         ( "biotsavart.compute-online", po::value<bool>()->default_value(true),
           "compute the online part of Biot Savart" )
+        ( "biotsavart.export", po::value<bool>()->default_value(true),
+          "compute the online part of Biot Savart" )
+        ( "biotsavart.export-fe", po::value<bool>()->default_value(false),
+          "compute the online part of Biot Savart" )
         ( "biotsavart.rebuild-database", po::value<bool>()->default_value(false),
           "rebuild the integrals or not" )
         ( "biotsavart.path-to-database", po::value<std::string>()->default_value("BiotSavart"),
           "path to the database" )
-        ( "biotsavart.crb-dimension", po::value<int>()->default_value(-1),
-          "number of reduced basis to use" )
-        ( "biotsavart.eim-dimension", po::value<int>()->default_value(-1),
-          "number of eim basis to use" )
+        ( "biotsavart.trainset-deim-size", po::value<int>()->default_value(10),
+          "size of the trainset for DEIM of BiotSavart" )
+        ( "biotsavart.do-opt", po::value<bool>()->default_value(false),
+          "do or not the optimization" )
         ;
+    opt.add(deimOptions("bs"));
     return opt;
 }
 
@@ -84,6 +89,7 @@ class FEELPP_EXPORT AlphaBiotSavartCRB
                                     typename te_rb_model_type::eim_definition_type >;
 
     using self_type = AlphaBiotSavartCRB<te_rb_model_type>;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
     using te_rb_model_ptrtype = boost::shared_ptr<te_rb_model_type>;
     using crb_model_type = CRBModel<te_rb_model_type>;
@@ -140,7 +146,9 @@ class FEELPP_EXPORT AlphaBiotSavartCRB
     using vector_ptrtype = typename super_type::vector_ptrtype;
 
 public:
+    static self_ptrtype New() { return boost::make_shared<self_type>(); }
     AlphaBiotSavartCRB();
+    void init();
 
     void initModel();
     // setupSpecificityModel
@@ -151,26 +159,29 @@ public:
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     parameter_type paramFromOption();
+    parameter_type param0();
     void runBS();
-    void offline();
     void setupCommunicatorsBS();
-    void setDimensions();
-    void loadIntegrals();
-    void saveIntegrals();
-    vector_ptrtype assembleForDEIMnl( parameter_type const& mu );
-    void computeIntegrals(int M = 0, int N = 0);
+    vector_ptrtype assembleForDEIM( parameter_type const& mu );
+    void offline();
     void online( parameter_type & mu );
-    void computeB( vectorN_type & uN, eigen_vector_type & betaMu );
     void computeFE( parameter_type & mu );
     void exportResults();
+    double homogeneity( vec_element_type& B );
 
     parameter_type newParameter() { return M_teCrbModel->newParameter(); }
+    void setParameter( parameter_type& mu ) { M_mu = mu; }
     int nbParameters() const { return M_crbModel->parameterSpace()->dimension();  }
     auto parameterSpace() const { return M_crbModel->parameterSpace(); }
     element_type potentialTemperature() const { return M_VT; }
+    element_type potentialTemperatureFE() const { return M_VTFe; }
     vec_element_type magneticFlux() const { return M_B; }
+    vec_element_type magneticFluxFE() const { return M_BFe; }
     mesh_ptrtype meshCond() const { return M_meshCond; }
     mesh_ptrtype meshMgn() const { return M_meshMgn; }
+    space_ptrtype spaceCond() const { return M_Xh; }
+    vec_space_ptrtype spaceMgn() const { return M_XhMgn; }
+    std::string alpha( parameter_type& mu ) { return M_teCrbModel->alpha(mu); }
 
 protected:
     CRBModelMode M_mode;
@@ -186,6 +197,7 @@ protected:
     space_ptrtype M_Xh;
     vec_space_ptrtype M_XhMgn;
     element_type M_VT;
+    element_type M_VTFe;
     vec_element_type M_B;
     current_element_type M_j;
     vec_element_type M_BFe;

@@ -1113,17 +1113,19 @@ public:
             *_sol = Feel::detail::ref( solution );
             needToCopySolution = true;
         }
+        vector_ptrtype _rhs( this->toBackendVectorPtr( rhs ) );
+        CHECK( _rhs ) << "converstion to backend vector of rhs fails";
 
         this->setTranspose( transpose );
         solve_return_type ret;
 
         if ( reuse_prec == false )
         {
-            ret = solve( matrix, matrix, _sol, rhs );
+            ret = solve( matrix, matrix, _sol, _rhs );
         }
 
         else
-            ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
+            ret = solve( matrix, matrix, _sol, _rhs, reuse_prec );
 
         _sol->close();
 
@@ -1243,12 +1245,12 @@ public:
         this->setTranspose( transpose );
         solve_return_type ret;
 
-        // this is done with nonlinerarsolver
+        // residual vector
+        vector_ptrtype _res;
         if ( !residual )
-        {
-            residual = this->newVector( dm );
-            //this->nlSolver()->residual( _sol, residual );
-        }
+            _res = this->newVector( dm );
+        else
+            _res = this->toBackendVectorPtr( residual );
 
         //this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
@@ -1281,7 +1283,7 @@ public:
         //if ( reuse_prec == false && reuse_jac == false )
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
         //else
-        ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+        ret = nlSolve( jacobian, _sol, _res, rtolerance, maxit, reuse_prec, reuse_jac );
         _sol->close();
 
         if ( needToCopySolution )

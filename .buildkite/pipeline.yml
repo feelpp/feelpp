@@ -52,11 +52,19 @@ steps:
    env:
      TARGET: ubuntu:16.10
  - wait
+ # - trigger: "feelpp-singularity"
+ #   label: ":singularity: generate images"
+ #   branches: "master develop feature/*"
+ #   async: true
+ #   build:
+ #     branch: "${BUILDKITE_BRANCH}"
+ #     env:
+ #       TARGET: ubuntu:16.10
  - trigger: "feelpp-singularity"
    label: ":singularity: generate images"
-   branches: "master develop feature/*"
+   branches: "develop"
    async: true
    build:
-     branch: "$BUILDKITE_BRANCH"
+     branch: "develop"
      env:
        TARGET: ubuntu:16.10
