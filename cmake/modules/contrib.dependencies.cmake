@@ -147,26 +147,16 @@ endif()
 
 # include pybind11 after python cmake macros to avoid detecting different python versions
 include(feelpp.module.pybind11)
-
 include(feelpp.module.mongocxx)
-
-#
-# submodules
-#
-
 include(feelpp.module.hpddm)
-
-option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if ( FEELPP_ENABLE_NLOPT )
-  include(feelpp.module.nlopt)
-endif()
-
-#
-# ipopt support
-#
-# include(feelpp.module.ipopt)
-
-
+include(feelpp.module.nlopt)
+include(feelpp.module.ipopt)
 #include(feelpp.module.cereal)
 #include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
+
+# Add an info message to be displayed at the end of the cmake process.
+if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
+  list( APPEND FEELPP_MESSAGE_INFO_END "Feel++ submodules already initialized!\nPlease make sure submodules are up to date (run `git submodule update --init --recursive` in source directory)" )
+  set( FEELPP_MESSAGE_INFO_END ${FEELPP_MESSAGE_INFO_END} )
+endif()

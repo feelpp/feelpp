@@ -358,31 +358,28 @@ macro(genLibFluidMechanics)
 
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbasecreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseothers_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinear_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinearweakbc_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobian_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidual_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisation_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisationgls_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicscreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsothers_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinear_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinearbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobian_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidual_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/fluidmecbasecreate_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseothers_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatelinear_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatelinearweakbc_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatejacobian_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidual_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisationgls_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanics_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicscreate_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsothers_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatelinear_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatejacobian_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdateresidual_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
     if (FEELPP_MODELS_ENABLE_MESHALE )
@@ -410,7 +407,7 @@ macro(genLibFluidMechanics)
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsconfig.h.in
       ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 

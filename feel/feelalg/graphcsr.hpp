@@ -598,7 +598,7 @@ csrGraphBlocks( PS&& ps,
                                                                                     for( int i = 0; i < x->numberOfSpaces(); ++i)
                                                                                         for( int j = 0; j < y->numberOfSpaces(); ++j)
                                                                                         {
-                                                                                            cout << "filling out stencil (" << r+i << "," << c+j << ")\n";
+                                                                                            LOG(INFO) << "filling out stencil (" << r+i << "," << c+j << ")\n";
                                                                                             g( r+i, c+j ) =
                                                                                                 stencil( _test=(*x)[i],
                                                                                                          _trial=(*y)[j],
@@ -609,7 +609,7 @@ csrGraphBlocks( PS&& ps,
                                                                                 [&] (auto&&x,auto && y){
                                                                                     for( int i = 0; i < x->numberOfSpaces(); ++i)
                                                                                     {
-                                                                                        cout << "filling out stencil (" << r+i << "," << c << ")\n";
+                                                                                        LOG(INFO) << "filling out stencil (" << r+i << "," << c << ")\n";
                                                                                         g( r+i, c ) =
                                                                                             stencil( _test=(*x)[i],
                                                                                                      _trial=y,
@@ -621,7 +621,7 @@ csrGraphBlocks( PS&& ps,
                                                                                       [&] (auto &&x, auto&& y) {
                                                                                           for( int i = 0; i < y->numberOfSpaces(); ++i)
                                                                                           {
-                                                                                              cout << "filling out stencil (" << r << "," << c+i << ")\n";
+                                                                                              LOG(INFO) << "filling out stencil (" << r << "," << c+i << ")\n";
                                                                                               g( r, c+i ) =
                                                                                                   stencil( _test=x,
                                                                                                            _trial=(*y)[i],
@@ -630,7 +630,7 @@ csrGraphBlocks( PS&& ps,
                                                                                           }
                                                                                       },
                                                                                       [&] (auto && x, auto &&y){
-                                                                                          cout << "filling out stencil (" << r << "," << c << ")\n";
+                                                                                          LOG(INFO) << "filling out stencil (" << r << "," << c << ")\n";
                                                                                           g( r, c ) =
                                                                                               stencil( _test=x,
                                                                                                        _trial=y,
@@ -659,7 +659,7 @@ csrGraphBlocks( PS&& ps,
         for( int j = 0; j < ps.numberOfSpaces(); ++j )
         {
             g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
-            cout << "filling out stencil (" << i << "," << j << ")\n";
+            LOG(INFO) << "filling out stencil (" << i << "," << j << ")\n";
         }
     return g;
 }

@@ -221,7 +221,7 @@ public:
 
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    vector_ptrtype getF() {return M_F; }
+    condensed_vector_ptr_t<value_type> getF() {return M_F; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
 
     // Exporter
@@ -247,6 +247,9 @@ public:
     void assembleF();
     void assembleMatrixIBC(int i, std::string markerOpt = "" ); 
     void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
+
+	void assembleCst();
+	void assembleNonCst();
 
     void geometricTest();
     
@@ -745,9 +748,6 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 {
 
-    // auto ps = product(M_Vh,M_Wh,M_Mh);
-
-	
     tic();
 	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
@@ -760,8 +760,16 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
     //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
     
+
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleCst()
+{
     // Assembling standard matrix
     tic();
+	M_A_cst->zero();
     this->assembleSTD();
     M_timers["asbStd"].push_back(toc("assembleStandardMatrix"));
 
@@ -771,8 +779,22 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
         this->assembleMatrixIBC( i );
     M_timers["asbIbc"].push_back(toc("assembleIbcMatrix"));
 
-
     M_A_cst->close();
+}
+
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleNonCst()
+{
+    tic();
+    this->assembleF( );
+
+    for ( int i = 0; i < M_IBCList.size(); i++ )
+        this->assembleRhsIBC( i );
+    M_F->close();
+    M_timers["asbRHS"].push_back(toc("assembleRHS"));
+
 }
 
 
@@ -781,16 +803,6 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 {
     
-
-    tic();
-    this->assembleF( );
-
-    for ( int i = 0; i < M_IBCList.size(); i++ )
-        this->assembleRhsIBC( i );
-    M_F->close();
-    M_timers["asbRHS"].push_back(toc("assembleRHS"));
-	
-
     auto U = M_ps -> element();
 	auto bbf = blockform2(*M_ps, M_A_cst);
     

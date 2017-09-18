@@ -23,30 +23,6 @@
 #
 
 FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
-# set(modules
-#   feelpp.extra.astyle.cmake
-#   feelpp.extra.warnings.cmake
-#   feelpp.macros.cmake
-#   feelpp.directive.cmake
-
-#   FindGooglePerfTools.cmake
-#   FindGFLAGS.cmake
-#   FindGLOG.cmake
-#   FindFeel++.cmake
-#   FindEigen2.cmake
-#   FindMetis.cmake
-#   FindOpenTURNS.cmake
-#   FindPETSc.cmake
-#   FindSLEPc.cmake
-#   FindTrilinos.cmake
-#   UseDoxygen.cmake
-#   FindMadLib.cmake
-#   FindOctave.cmake
-#   FindPackageMultipass.cmake
-#   FindReadline.cmake
-#   FindTBB.cmake
-#   ResolveCompilerPaths.cmake
-#   UseLATEX.cmake )
 
 INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
