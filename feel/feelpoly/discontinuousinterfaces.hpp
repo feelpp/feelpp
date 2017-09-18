@@ -233,11 +233,11 @@ public:
             DofFromElement<dof_type,fe_type> dfe( &M_dof, M_fe );
             while ( fit != fen )
             {
-                if ( fit->marker().value() == ( int )boost::get<1>( marker ) )
+                if ( fit->second.marker().value() == ( int )boost::get<1>( marker ) )
                 {
 
                     //M_dof.addDofFromElement( *fit, next_free_dof, 0 );
-                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
+                    dfe.add( fit->second, next_free_dof, M_dof.worldComm().localRank()  );
                 }
 
                 ++fit;
@@ -300,10 +300,10 @@ public:
 
             while ( fit != fen )
             {
-                if ( fit->marker().value() == boost::get<2>( marker ) )
+                if ( fit->second.marker().value() == boost::get<2>( marker ) )
                 {
                     //M_dof.addDofFromElement( *fit, next_free_dof );
-                    dfe.add( *fit, next_free_dof, M_dof.worldComm().localRank()  );
+                    dfe.add( fit->second, next_free_dof, M_dof.worldComm().localRank()  );
                 }
 
                 ++fit;

@@ -168,6 +168,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
             //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
 template <typename T>
@@ -190,8 +191,15 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
         for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
+template<typename T>
+void
+VectorBlockBase<T>::addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 )
+{
+    M_vec->addVector( rows, nrows, data, K, K2 );
+}
 template class VectorBlockBase<double>;
 
 } // Feel

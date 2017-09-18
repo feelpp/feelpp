@@ -26,6 +26,7 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
+#include <feel/feelcore/checker.hpp>
 
 
 #endif

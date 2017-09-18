@@ -38,7 +38,7 @@ namespace Feel
  * Given a two column file 'x - y', we compute the interpolation of that cloud.
  * We provide the first order derivative of the interpolant as well.
  */
-class Interpolator
+class FEELPP_EXPORT Interpolator
 {
 public:
     using value_type = double;
@@ -89,7 +89,7 @@ protected:
     std::vector<std::pair<value_type, value_type>> M_data;
 }; // class interpolBase
 
-class InterpolatorP0 : public Interpolator
+class FEELPP_EXPORT InterpolatorP0 : public Interpolator
 {
 public:
     typedef Interpolator super;
@@ -120,7 +120,7 @@ private:
 
 }; // InterpolatorP0
 
-class InterpolatorP1 : public Interpolator
+class FEELPP_EXPORT InterpolatorP1 : public Interpolator
 {
 public:
     typedef Interpolator super;
@@ -166,7 +166,7 @@ private:
  * \brief Interpolate with a*x**3 + b*x**2 + c*x + d
  * TODO: interpolate a(x-xi)**3 + ... instead of ax**3 (only to generate a easiest to inverse linear system)
  */
-class InterpolatorSpline : public Interpolator
+class FEELPP_EXPORT InterpolatorSpline : public Interpolator
 {
 public:
     typedef Interpolator super;
@@ -201,7 +201,7 @@ private :
  *  http://www.iue.tuwien.ac.at/phd/rottinger/node60.html
  * TODO: interpolate a(x-xi)**3 + ... instead of ax**3
  */
-class InterpolatorAkima : public Interpolator
+class FEELPP_EXPORT InterpolatorAkima : public Interpolator
 {
 public:
     typedef Interpolator super;

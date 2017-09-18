@@ -48,8 +48,10 @@ makeOptions()
         ( "thermoelectric.Tw", po::value<double>()->default_value(1), "water's temperatur" )
         ( "thermoelectric.N", po::value<int>()->default_value(100), "number of basis function to use" )
         ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
+        ( "thermoelectric.conductor", po::value<std::vector<std::string> >()->multitoken(), "marker for the conductor" )
+        ( "thermoelectric.export-FE", po::value<bool>()->default_value(true), "export FE solution" )
         ;
-    options.add(backend_options("mono") );
+    options.add(backend_options("electro") ).add(backend_options("thermo") );
     return options;
 }
 
@@ -128,6 +130,7 @@ public:
     using element_ptrtype = super_type::element_ptrtype;
 
     using J_space_type = FunctionSpaceDefinition::J_space_type;
+    using J_space_ptrtype = boost::shared_ptr<J_space_type>;
     // using V_space_type = FunctionSpaceDefinition::V_space_type;
     // using Vh_element_type = typename V_space_type::element_type;
     using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
@@ -160,6 +163,8 @@ private:
     T_view_ptrtype M_T;
     parameter_type M_mu;
 
+    J_space_ptrtype Jh;
+
 public:
     // Constructors
     Thermoelectric();
@@ -172,6 +177,8 @@ public:
     int mQA( int q );
     int mLQF( int l, int q );
     int mCompliantQ( int q );
+    int mIntensity( int q );
+    int mAvgTemp( int q );
     void resizeQm();
     parameter_type newParameter() { return Dmu->element(); }
 

@@ -216,7 +216,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     for ( ; it_elt != en_elt; ++it_elt )
     {
         element_type const& curElt = *it_elt;
-
+        auto & eltModified = imesh->elementIterator( curElt )->second;
         __c->update( *it_elt );
         __ctx->update( __c );
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
@@ -232,11 +232,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
             if ( points_done.find( curElt.point( l ).id() ) == points_done.end() )
             {
                 //std::cout << "Pt: " << thedof << "Elem " << curElt.id() << " G=" << curElt.G() << "\n";
-                imesh->elements().modify( imesh->elementIterator( curElt ), // it_elt,
-                                          lambda::bind( &element_type::applyDisplacement,
-                                                        lambda::_1,
-                                                        l,
-                                                        val ) );
+                eltModified.applyDisplacement( l, val );
                 points_done[curElt.point( l ).id()] = true;
                 //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
