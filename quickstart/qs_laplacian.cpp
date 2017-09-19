@@ -56,7 +56,9 @@ int main(int argc, char**argv )
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
     auto solution = expr( checker().solution(), "solution" );
     auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
+    // tag::v[]
     auto v = Vh->element( g, "g" );
+    // end::v[]
     toc("Vh");
     // end::mesh_space[]
 
@@ -93,14 +95,15 @@ int main(int argc, char**argv )
     if ( !mesh->hasAnyMarker({"Robin", "Neumann","Dirichlet"}) )
         a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
     toc("a");
+    // end::forms[]
 
+    // tag::solve[]
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( !boption( "no-solve" ) )
         a.solve(_rhs=l,_solution=u);
     toc("a.solve");
-
-    // end::forms[]
+    // end::solve[]
 
     // tag::export[]
     tic();

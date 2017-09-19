@@ -1089,7 +1089,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr
     
 	auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
-    
+
 	// <g_N,mu>_Gamma_N
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr);
@@ -1157,7 +1157,6 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> e
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::string markerOpt, double intjn )
 {
-
     auto blf = blockform1( *M_ps, M_F );
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
@@ -1167,7 +1166,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
 
     std::string marker;
     Expr<GinacEx<expr_order> > g;
-    
+
     if ( !markerOpt.empty())
     {
         marker = markerOpt;
@@ -1198,6 +1197,24 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
             else
                 d = exAtMarker.data(0.1);
 
+			// Scale entries if necessary
+    		auto postProcess = modelProperties().postProcess();
+    		auto itField = postProcess.find( "Fields");
+    		if ( itField != postProcess.end() )
+    		{
+        		for ( auto const& field : (*itField).second )
+        		{
+            		if ( field == "scaled_flux" )
+					{
+            			for( auto const& pairMat : modelProperties().materials() )
+            			{
+                			auto material = pairMat.second;
+                			double kk = material.getDouble( "scale_integral_file" );
+							d = kk*d;
+						}
+					}
+				}
+			}
             LOG(INFO) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 
@@ -1521,6 +1538,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 {
                     double meas = 0.0;
                     double j_integral = 0;
+					
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         auto marker = exAtMarker.marker();
@@ -1534,6 +1552,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     }
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralFlux"), j_integral);
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralVelocity"), j_integral/meas);
+					
                 }
             }
             else if (field == "scaled_flux" )
@@ -1556,21 +1575,24 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 LOG(INFO) << "exporting potential at time " << time;
                 M_exporter->step( time )->add(prefixvm(prefix(), "potential"),
                                               Idh?(*Idh)(M_pp):M_pp);
+
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
-                    LOG(INFO) << "exporting IBC potential " << i << " at time "
-                              << time << " value " << (M_mup[i])[0];
-                    M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"),
-                                                  (M_mup[i])[0] );
+                    double export_mup = M_mup[i].max();
+
+					LOG(INFO) << "exporting IBC potential " << i << " at time "
+                             << time << " value " << export_mup;
+
+					M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
+
                     Feel::cout << "Integral value of potential(mup) on "
-                               << M_IBCList[i].marker() << " : \t " << (M_mup[i])[0] << std::endl;
-					
-					auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-					auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                               << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
+
+                    auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                    auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
 
                     Feel::cout << "Integral value of potential(from pp) on "
                       		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
-                    
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
@@ -1583,7 +1605,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         {
                             if (exAtMarker.isExpression() )
                             {
-							
                                 auto p_exact = expr(exAtMarker.expression()) ;
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
@@ -1593,19 +1614,16 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
                                 }
-                                auto gradp_exact = expr(grad<Dim>(p_exact)) ;
+                                auto gradp_exact = grad<Dim>(p_exact) ;
                                 if ( !this->isStationary() )
                                     gradp_exact.setParameterValues( { {"t", time } } );
-                                auto u_exact = expr(-K* trans(gradp_exact)) ;
-                                
-	
+                                auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
+
 								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
 								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
-                                
 								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
-								
 								
                                 auto l2err_u = normL2( _range=elements(M_mesh), _expr= u_exact - idv(M_up) );
                                 auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
@@ -1630,8 +1648,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         }
                     }
                 }
-            
-            } 
+            }
             else if (field == "scaled_potential" )
             {
                 auto scaled_potential = M_Wh->element("scaled_potential");
@@ -1650,6 +1667,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
+					
                     auto scaled_ibc = M_mup[i];
                     for( auto const& pairMat : modelProperties().materials() )
                     {
@@ -1717,20 +1735,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
         }
     }
 
-    /*
-    double Ui_mean = 0;
-    double meas = 0;
-    for( auto marker : this->M_integralMarkersList)
-    {
-        Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
-    meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
-    }
-    if (M_integralCondition)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
-    if ( M_integralCondition == 2)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
-    // Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
-    */
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

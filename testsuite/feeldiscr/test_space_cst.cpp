@@ -23,7 +23,7 @@
 //!
 //!
 #define BOOST_TEST_MODULE test_space_cst
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
