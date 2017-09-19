@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -606,9 +606,9 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
 } // namespace FluidMechanicsDetail
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const
 {
     if ( M_stabilizationGLS )
     {
@@ -632,9 +632,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisationGLS( DataUpd
     }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisationGLS( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
     if ( M_stabilizationGLS )
     {
@@ -652,9 +652,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisationGLS( DataUpda
     }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     if ( M_stabilizationGLS )
     {

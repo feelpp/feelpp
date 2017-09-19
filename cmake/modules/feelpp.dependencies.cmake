@@ -748,7 +748,7 @@ if(FEELPP_ENABLE_PYTHON)
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
-      -c "import sys; print sys.version[0:3]"
+      -c "import sys; print(sys.version[0:3])"
       OUTPUT_VARIABLE PYTHON_VERSION
       OUTPUT_STRIP_TRAILING_WHITESPACE)
 
