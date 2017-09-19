@@ -495,7 +495,7 @@ public:
         }
 
 
-        value_type
+        constexpr value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( j );
@@ -511,19 +511,19 @@ public:
         }
 
 
-        value_type
+        constexpr value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
         }
 
-        value_type
+        constexpr value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
 
-        value_type
+        constexpr value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );

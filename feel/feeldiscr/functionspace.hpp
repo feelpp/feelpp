@@ -109,7 +109,7 @@ struct ID
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -141,7 +141,6 @@ struct ID
     {
         for(int k = 0;k < M_id.shape()[0]; k++ )
         {
-            M_id[k].resize( M, N );
             M_id[k].setZero();
         }
         elem.id_( context, M_id );
@@ -205,7 +204,8 @@ struct DD
 {
     typedef T value_type;
     friend class boost::serialization::access;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -226,7 +226,6 @@ struct DD
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,N);
             M_grad[k].setZero();
         }
         elem.grad_( context, M_grad );
@@ -267,11 +266,81 @@ struct DD
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 };
+
+template<typename T,int M>
+struct SymmetricDD
+{
+    typedef T value_type;
+    friend class boost::serialization::access;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,M>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
+    typedef boost::multi_array<m_type,1> array_type;
+    typedef typename array_type::index_range range;
+    struct result
+    {
+
+        typedef array_type type;
+    };
+
+    SymmetricDD()
+        :
+        M_grad()
+    {}
+
+    template<typename Elem, typename ContextType>
+    SymmetricDD( Elem const& elem, ContextType const & context )
+        :
+        M_grad( elem.gradExtents( context ) )
+    {
+        for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].setZero();
+        }
+        elem.symmetricGradient( context, M_grad );
+    }
+
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_grad[q];
+    }
+    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+    {
+        return M_grad[q]( c1,c2 );
+    }
+    array_type M_grad;
+
+    template<class Archive>
+    void save( Archive & ar, const unsigned int /*version*/ ) const
+    {
+        size_type e1 = M_grad.shape()[0];
+        DVLOG(2) << "saving in archive e1= " << e1 << "\n";
+        ar  & e1;
+        DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "saving in archive done\n";
+    }
+    template<class Archive>
+    void load( Archive & ar, const unsigned int /*version*/ )
+    {
+        size_type e1, e2, e3;
+        ar  & e1;
+        DVLOG(2) << "loading from archive e1= " << e1 << "\n";
+        M_grad.resize( boost::extents[e1] );
+        DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "loading from archive done\n";
+        DVLOG(2) << "creating view interpolation context done\n";
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+};
+
 template<typename T,int N, int M, int P>
 struct D
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,P>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
 
@@ -293,7 +362,7 @@ struct D
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,P);
+            //M_grad[k].resize(M,P);
             M_grad[k].setZero();
         }
         elem.d_( N, context, M_grad );
@@ -314,7 +383,8 @@ template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -335,7 +405,7 @@ struct Div
     {
         for(int k = 0;k < M_div.shape()[0]; k++ )
         {
-            M_div[k].resize(D,1);
+            //M_div[k].resize(D,1);
             M_div[k].setZero();
         }
         elem.div_( context, M_div );
@@ -355,7 +425,8 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -376,7 +447,7 @@ struct Curl
     {
         for(int k = 0;k < M_curl.shape()[0]; k++ )
         {
-            M_curl[k].resize(D,1);
+            //M_curl[k].resize(D,1);
             M_curl[k].setZero();
         }
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
@@ -426,7 +497,8 @@ struct H
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -448,7 +520,7 @@ struct H
     {
         for(int k = 0;k < M_hess.shape()[0]; k++ )
         {
-            M_hess[k].resize(M,N);
+            //M_hess[k].resize(M,N);
             M_hess[k].setZero();
         }
         elem.hess_( context, M_hess );
@@ -2843,12 +2915,16 @@ public:
         typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
 #else
-        typedef Eigen::Tensor<value_type,2> _id_type;
-        typedef Eigen::Tensor<value_type,2> _grad_type;
-        typedef Eigen::Tensor<value_type,2> _dn_type;
-        typedef Eigen::Tensor<value_type,2> _hess_type;
-        typedef Eigen::Tensor<value_type,2> _div_type;
-        typedef Eigen::Tensor<value_type,2> _curl_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _id_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>> _grad_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _dn_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,nRealDim>> _hess_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>> _div_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,1>> _curl_type;
+        //typedef Eigen::Tensor<value_type,2> _dn_type;
+        //typedef Eigen::Tensor<value_type,2> _hess_type;
+        //typedef Eigen::Tensor<value_type,2> _div_type;
+        //typedef Eigen::Tensor<value_type,2> _curl_type;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
@@ -3269,6 +3345,12 @@ public:
         {
             grad_( context, v );
         }
+
+        //!
+        //! compute Symmetric Gradient only in the vectorial case
+        //!
+        template<typename ContextType,typename EType = this_type>
+        void symmetricGradient( ContextType const & context, grad_array_type& v, std::enable_if_t<EType::is_vectorial>* = nullptr ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;

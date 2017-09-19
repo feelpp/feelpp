@@ -377,8 +377,13 @@ Mesh<Shape, T, Tag>::updateMeasures()
         auto const& eltInit = iv->second;
         auto ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
         auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf,0 );
-        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
-        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
+        decltype( M_gm1->template context<vm::JACOBIAN>( eltInit, pc1)) ctx1;
+        decltype( M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 )) ctxf1;
+        if ( meshIsStraightened )
+        {
+            ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
+            ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
+        }
         for ( ; iv != en; ++iv )
         {
             auto & elt = iv->second;

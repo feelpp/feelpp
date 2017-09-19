@@ -313,15 +313,26 @@ public :
     value_type operator()( ExprType const& expr,
                            IndexTest  const& indi,
                            IndexTrial  const& indj,
-                           uint16_type c1,
-                           uint16_type c2 ) const
+                           uint16_type const& c1,
+                           uint16_type const& c2 ) const
     {
+#if 0
+        
         for ( uint16_type q = 0; q < this->nPoints(); ++q )
         {
             M_exprq[q] = expr.evalijq( indi, indj, c1, c2, q );
         }
-
+        
         return M_prod.dot( M_exprq );
+#else
+        double res =  0.;
+        const int Q = this->nPoints();
+        for ( uint16_type q = 0; q < Q; ++q )
+        {
+            res += M_prod[q] * expr.evalijq( indi, indj, c1, c2, q );
+        }
+        return res;
+#endif
     }
     template<typename IndexTest, typename ExprType>
     value_type operator()( ExprType const& expr,

@@ -56,6 +56,7 @@ const size_type DIV                      = ( 1<<15 );
 const size_type CURL                     = ( 1<<16 );
 const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
+const size_type NORMAL_COMPONENT         = ( 1<<22 );
 
 
 
@@ -64,7 +65,8 @@ typedef mpl::vector_c<size_type,
                       MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
                       SYMM, UNSYMM,
                       DIV,CURL,
-                      MASS, STIFFNESS> contexts;
+                      MASS, STIFFNESS,
+                      NORMAL_COMPONENT> contexts;
 
 template<size_type Context>
 using has_jacobian = has_value<Context, JACOBIAN>;
@@ -152,6 +154,13 @@ struct has_measure
     static const bool value = has_value<Context, MEASURE>::value;
 };
 
+template<size_type Context>
+struct has_normal_component
+{
+    static const bool value = has_value<Context, NORMAL_COMPONENT>::value;
+};
+template<size_type Context>
+constexpr  bool has_normal_component_v = has_normal_component<Context>::value;
 
 } // vm
 

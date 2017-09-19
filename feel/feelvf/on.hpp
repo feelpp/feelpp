@@ -486,62 +486,62 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
-        for ( ;
-              __face_it != __face_en;//this->endElement();
-              ++__face_it )
-        {
-            auto const& theface = boost::unwrap_ref( *__face_it );
-
-            if ( !theface.isConnectedTo0() )
+            __face_it = lit.template get<1>();
+            __face_en = lit.template get<2>();
+            for ( ;
+                  __face_it != __face_en;//this->endElement();
+                  ++__face_it )
             {
-                LOG( WARNING ) << "face not connected" << theface;
+                auto const& theface = boost::unwrap_ref( *__face_it );
 
-                continue;
-            }
-            // do not process the face if it is a ghost face: belonging to two
-            // processes and being in a process id greater than the one
-            // corresponding face
-            if ( theface.isGhostFace() )
-            {
-                if ( hasMeshSupportPartial )
+                if ( !theface.isConnectedTo0() )
                 {
-                    if ( __dof->meshSupport()->isGhostFace( theface ) )
-                        continue;
-                }
-                else
-                {
-                    LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
+                    LOG( WARNING ) << "face not connected" << theface;
+
                     continue;
                 }
-            }
+                // do not process the face if it is a ghost face: belonging to two
+                // processes and being in a process id greater than the one
+                // corresponding face
+                if ( theface.isGhostFace() )
+                {
+                    if ( hasMeshSupportPartial )
+                    {
+                        if ( __dof->meshSupport()->isGhostFace( theface ) )
+                            continue;
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
+                        continue;
+                    }
+                }
 
-            DVLOG(2) << "FACE_ID = " << theface.id()
-                     << " element id= " << theface.ad_first()
-                     << " pos in elt= " << theface.pos_first();
-            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
+                DVLOG(2) << "FACE_ID = " << theface.id()
+                         << " element id= " << theface.ad_first()
+                         << " pos in elt= " << theface.pos_first();
+                DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
 
-            uint16_type __face_id = theface.pos_first();
-            __c->update( theface.element( 0 ), __face_id );
+                uint16_type __face_id = theface.pos_first();
+                __c->update( theface.element( 0 ), __face_id );
 
-            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
+                DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
+                DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
-            t_expr_type expr( M_expr, mapgmc );
-            expr.update( mapgmc );
+                t_expr_type expr( M_expr, mapgmc );
+                expr.update( mapgmc );
 
-            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
-                                                                      M_u.functionSpace()->nDof() ) );
-            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+                std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
+                                                                          M_u.functionSpace()->nDof() ) );
+                DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+                DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 
-            //use interpolant
-            __fe->faceInterpolate( expr, IhLoc );
+                //use interpolant
+                __fe->faceInterpolate( expr, IhLoc );
 
-            for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
+                for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     size_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
                     thedof = trialDofIdToContainerId[ thedof ];
@@ -558,31 +558,31 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         continue;
 
                     if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    {
+                        DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                        // this can be quite expensive depending on the
+                        // matrix storage format.
+                        //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
+
+                        // only the real dof ( not the ghosts )
+                        //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
                         {
-                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
-
-                            // this can be quite expensive depending on the
-                            // matrix storage format.
-                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
-
-                            // only the real dof ( not the ghosts )
-                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
-                            {
-                                dofs.push_back( thedof );
-                                values.push_back(  __value );
-                            }
-
-                            //M_rhs.set( thedof, __value );
+                            dofs.push_back( thedof );
+                            values.push_back(  __value );
                         }
+
+                        //M_rhs.set( thedof, __value );
+                    }
 
                     else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
                                !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-                        {
-                            __form.set( thedof, thedof, 1.0*1e30 );
-                            M_rhs->set( thedof, __value*1e30 );
-                        }
+                    {
+                        __form.set( thedof, thedof, 1.0*1e30 );
+                        M_rhs->set( thedof, __value*1e30 );
+                    }
                 }
-        }// __face_it != __face_en
+            }// __face_it != __face_en
         } // for( auto& lit : M_elts )
     }// findAFace
 

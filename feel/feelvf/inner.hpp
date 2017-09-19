@@ -295,11 +295,15 @@ public:
 #else
                 auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
                 auto const& rtensor = M_r_tensor_expr.evalijq( i,j,q );
+#if 0
                 for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
                         res += ltensor(c1,c2)*rtensor(c1,c2);
                     }
+#else
+                res=ltensor.dot(rtensor);
+#endif
 #endif
             }
             return res;
@@ -314,7 +318,7 @@ public:
                 for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
-                        res += ltensor(c1,c2)*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
+                        res += ltensor(c1+c2*left_shape::M,0)*M_r_tensor_expr.evalijq( i,j,c1,c2,q );
                     }
             }
             return res;
@@ -329,7 +333,7 @@ public:
                 for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
                     {
-                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*rtensor(c1,c2);
+                        res += M_l_tensor_expr.evalijq( i,j,c1,c2,q )*rtensor(c1+c2*left_shape::M,0);
                     }
             }
             return res;

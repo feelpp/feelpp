@@ -866,11 +866,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 
             for ( size_type q = 0; q < context.xRefs().size2(); ++q )
             {
+#if 0
+                em_fixed_size_matrix_t<nComponents1,nRealDim> mv( v[q].data() );
+                em_fixed_size_cmatrix_t<nComponents1,nRealDim> mg( context.grad( ldof, q ).data() );
+                mv.noalias()= v_*mg;
+#else
+                //v[q] = v_*context.grad( ldof, q );
                 for ( int k = 0; k < nComponents1; ++k )
                     for ( int j = 0; j < nRealDim; ++j )
                     {
                         v[q]( k,j ) += v_*context.grad( ldof, k, j, q );
                     }
+#endif
             }
         }
     }
@@ -914,6 +921,42 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         }
 
 #endif
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename ContextType,typename EType>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
+                                                                       grad_array_type& v,
+                                                                       std::enable_if_t<EType::is_vectorial>* ) const
+{
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
+    for ( int l = 0; l < basis_type::nDof; ++l )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        {
+            int ldof = c1*basis_type::nDof+l;
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+
+            value_type v_ = this->globalValue( gdof );
+
+            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            {
+                v[q] = v_*context.symmetricGradient( ldof, q );
+            }
+        }
+    }
+
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -1219,19 +1262,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
-                if ( nRealDim == 3 )
-                {
-                    for ( typename array_type::index i = 0; i < nRealDim; ++i )
-                    {
-                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
-                    }
-                }
-
-                else if ( nRealDim == 2 )
-                {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
-                }
-
+                v[q] += s(ldof)*v_*context.curl( ldof, q );
             }
         }
     }
