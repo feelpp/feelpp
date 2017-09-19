@@ -889,6 +889,7 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                             size_type K,
                             size_type K2 )
 {
+    std::lock_guard<std::mutex> guard(this->mutex_add_m);
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
     int ierr=0;
@@ -2813,6 +2814,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               size_type K,
                               size_type K2)
 {
+    std::lock_guard<std::mutex> guard(this->mutex_add_m);
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
     /*for (int k=0;k<nrows;++k)
         for (int q=0;q<ncols;++q)

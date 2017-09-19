@@ -30,6 +30,9 @@
 #ifndef __VectorPetsc_H
 #define __VectorPetsc_H 1
 
+#include <future>
+
+
 #include <feel/feelconfig.h>
 
 #include <feel/feelalg/vector.hpp>
@@ -835,6 +838,8 @@ protected:
      * for the constructor which takes a PETSc Vec object.
      */
     bool M_destroy_vec_on_exit;
+
+    std::mutex mutex_add_v;
 };
 
 
