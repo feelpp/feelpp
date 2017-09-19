@@ -2958,6 +2958,12 @@ constexpr int realdim( boost::shared_ptr<MeshType> m,
     return MeshType::nRealDim;
 }
 
+//!
+//! define a shared_ptr of Mesh<ConvexType>
+//!
+template<typename ConvexType>
+using mesh_ptr_t = boost::shared_ptr<Mesh<ConvexType>>;
+
 } // Feel
 
 

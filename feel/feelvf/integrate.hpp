@@ -29,6 +29,7 @@
 #ifndef FEELPP_VF_INTEGRATE_HPP
 #define FEELPP_VF_INTEGRATE_HPP 1
 
+#include <cxxabi.h>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
 
@@ -63,10 +64,17 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( verbose )
     {
+        int     status;
+        char   *realname;
+        const std::type_info  &te = typeid(expr);
+
+        realname = abi::__cxa_demangle(te.name(), 0, 0, &status);
+        std::cout << " -- expression: " << realname <<  " status: " << status << std::endl;
+        free(realname);
         std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
                   ret.expression().endElement() ) << "\n";
         std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
-        std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
+        std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << std::endl;
         //std::cout << " -- integrate: geomap = " << geomap << "\n";
     }
 

@@ -37,7 +37,7 @@ namespace Feel {
 //! @endcode
 //!
 template< class T, class... Args >
-boost::shared_ptr<Mesh<T>>
+mesh_ptr_t<T>
 makeSharedMesh( Args&&... args )
 {
     return boost::make_shared<Mesh<T>>( args... );

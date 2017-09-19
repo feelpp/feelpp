@@ -206,6 +206,9 @@ int nbComp( std::string expression )
     return nComp;
 }
 
+template<int Order = 2>
+using GinacExpr = Expr< GinacEx<Order> >;
+
 inline
 Expr< GinacEx<2> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="",
@@ -539,6 +542,13 @@ diff( std::string const& s, std::string const& ds, std::string const& se, ExprT 
 // ------------------------------------------------------------
 // Matrix expression
 // ------------------------------------------------------------
+template<int M, int N, int Order=2>
+using GinacMatrixExpr = Expr< GinacMatrix<M,N,Order> >;
+template<int M, int Order=2>
+using GinacVectorExpr = GinacMatrix<M,1,Order>;
+template<int M, int Order=2>
+using GinacScalarExpr = GinacMatrix<1,1,Order>;
+
 /**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
  *
@@ -961,6 +971,9 @@ expression2( std::pair<const std::string, std::vector<Expr<GinacMatrix<M,N,Order
 {
     return p.second[1];
 }
+
+
+
 
 } // vf
 } // Feel

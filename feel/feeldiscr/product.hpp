@@ -41,6 +41,9 @@ constexpr auto is_void = hana::integral(hana::metafunction<std::is_void>);
 
 struct product_space_tag {};
 
+template <bool s>
+struct _mesh_t : mpl::bool_<s> {};
+
 template<typename T, bool same_mesh = false>
 class ProductSpace : public std::vector<boost::shared_ptr<decay_type<T>>>, ProductSpaceBase
 {

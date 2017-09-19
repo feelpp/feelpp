@@ -139,7 +139,7 @@ public:
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape shape;
-
+        using symm_matrix_t = Eigen::Matrix<value_type,shape::M,shape::N>;
         template <class Args> struct sig
         {
             typedef value_type type;
@@ -216,6 +216,7 @@ public:
             else
                 return 0.5*( a-at );
         }
+        
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
@@ -228,9 +229,10 @@ public:
             else
                 return 0.5*( a-at );
         }
-
+        
     private:
         tensor_expr_type M_tensor_expr;
+        
     };
 
 private:

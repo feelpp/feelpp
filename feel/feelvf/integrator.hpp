@@ -3406,23 +3406,33 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
                         ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
+                    tic();
                     __c0->update( elt0Test, __face_id_in_elt_0 );
+                    toc("c0.update",FLAGS_v>0);
+                    tic();
                     bool found_permutation = __c1->updateFromNeighborMatchingFace( elt1Test, __face_id_in_elt_1, __c0 );
+                    toc("c1.update",FLAGS_v>0);
                     CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
+                    tic();
                     map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
                                                            fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
                     form2->update( mapgmc2, mapgmc2, mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
+                    toc("form2.update",FLAGS_v>0);
                     //t1 += ti1.elapsed();
 
                     //ti2.restart();
+                    tic();
                     form2->integrate( );
+                    toc("form2.integrate",FLAGS_v>0);
                     //t2 += ti2.elapsed();
 
                     //ti3.restart();
+                    tic();
                     form2->assemble( elt0Test.id(), elt1Test.id() );
+                    toc("form2.assemble",FLAGS_v>0);
                     //t3 += ti3.elapsed();
                 }
                 break;
@@ -3433,24 +3443,34 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
                         ( faceCur.id() ).error( "face on boundary but connected on both sides" );
                     //ti0.restart();
+                    tic();
                     __c01->update( elt0Test, __face_id_in_elt_0 );
+                    toc("c01.update",FLAGS_v>0);
+                    tic();
                     bool found_permutation = __c11->updateFromNeighborMatchingFace( elt1Test, __face_id_in_elt_1, __c01 );
+                    toc("c11.update",FLAGS_v>0);
                     CHECK(found_permutation) << "the permutation of quadrature points was not found\n";
 
                     //t0 += ti0.elapsed();
 
                     //ti1.restart();
+                    tic();
                     map21_gmc_type mapgmc21 = map21_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
                                                               fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
                     form21->update( mapgmc21, mapgmc21, mapgmc21, face_ims2[__face_id_in_elt_0], mpl::int_<2>() );
+                    toc("form21.update",FLAGS_v>0);
                     //t1 += ti1.elapsed();
 
                     //ti2.restart();
+                    tic();
                     form21->integrate( );
+                    toc("form21.integrate",FLAGS_v>0);
                     //t2 += ti2.elapsed();
 
                     //ti3.restart();
+                    tic();
                     form21->assemble( elt0Test.id(), elt1Test.id() );
+                    toc("form21.assemble",FLAGS_v>0);
                     //t3 += ti3.elapsed();
                 }
                 break;
@@ -3815,7 +3835,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType21<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
                                                                 gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
                                                                                                    idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-
+                
                 if ( test_elt_0 == invalid_size_type_value )
                 {
                     test_elt_0 = gmcExpr0->id();
@@ -3829,10 +3849,14 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
                 auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
                 auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
+
                 form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
+
                 form2->integrate();
+
                 form2->assemble( std::make_pair(test_elt_0, trial_elt_0),
                                  std::make_pair(test_elt_1, trial_elt_1)  );
+
             }
             else
             {

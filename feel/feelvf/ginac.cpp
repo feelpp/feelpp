@@ -289,8 +289,9 @@ grad( matrix const& f, std::vector<symbol> const& l )
 matrix
 div( ex const& f, std::vector<symbol> const& l )
 {
+    std::cout << "f="  << f << std::endl;
     // matricial fields are not yet supported
-    CHECK( is_a<lst>( f ) ) << "Invalid expression " << f << " : cannot compute its divergence\n";
+    //CHECK( is_a<lst>( f ) ) << "Invalid expression " << f << " : cannot compute its divergence\n";
     lst g;
     std::for_each( l.begin(), l.end(),
                    [&] ( symbol const& x ) { g.append( f.diff( x ) ); } );
