@@ -155,26 +155,26 @@ public :
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(test_space)>>{},
                                  [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
                                                                  [&] (auto _) {
-                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     LOG(INFO) << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=(*_(test_space))[s1],_trial=(*_(trial_space))[s2],
                                                                                   _name="bilinearform.a"s+"("+std::to_string(int(n1)+s1)+","s+std::to_string(int(n2)+s2)+")"s,
                                                                                   _matrix=M_matrix->block(int(n1)+s1,int(n2)+s2), _rowstart=int(n1)+s1, _colstart=int(n2)+s2 );
                                                                  },
                                                                  [&] (auto _){
-                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     LOG(INFO) << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=(*_(test_space))[s1],_trial=_(trial_space),
                                                                                   _name="bilinearform.a"s+"("+std::to_string(int(n1)+s1)+","s+std::to_string(int(n2))+")"s,
                                                                                   _matrix=M_matrix->block(int(n1)+s1,int(n2)), _rowstart=int(n1)+s1, _colstart=int(n2) );
                                                                  }); },
                                  [&]( auto _ ) { return hana::eval_if( std::is_base_of<ProductSpaceBase,decay_type<decltype(trial_space)>>{},
                                                                  [&] (auto _) {
-                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     LOG(INFO) << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=_(test_space),_trial=(*_(trial_space))[s2],
                                                                                   _name="bilinearform.a"s+"("+std::to_string(int(n1))+","s+std::to_string(int(n2)+s2)+")"s,
                                                                                   _matrix=M_matrix->block(int(n1),int(n2)+s2), _rowstart=int(n1), _colstart=int(n2)+s2 );
                                                                  },
                                                                  [&] (auto _){
-                                                                     cout << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
+                                                                     LOG(INFO) << "filling out dyn matrix block (" << int(n1) + s1 << "," << int(n2)+s2  << ")\n";
                                                                      return form2(_test=_(test_space),_trial=_(trial_space),
                                                                                   _name="bilinearform.a"s+"("+std::to_string(int(n1))+","s+std::to_string(int(n2))+")"s,
                                                                                   _matrix=M_matrix->block(int(n1),int(n2)), _rowstart=int(n1), _colstart=int(n2) );

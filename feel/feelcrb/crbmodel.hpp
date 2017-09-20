@@ -3642,12 +3642,12 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 {
                     backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
                 }
-                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
 
+                iter++;
                 if ( !useAitkenRelaxation )
                 {
                     norm = this->computeNormL2( uold , u );
-                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
                 }
                 else
                 {
@@ -3659,7 +3659,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                         fixPointIsFinished=true;
                 }
 
-                iter++;
+                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
 
         }
@@ -3998,10 +3998,11 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 M_preconditioner_dual->setMatrix( Adu );
                 M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual );
 
+                iter++;
                 if ( !useAitkenRelaxation )
                 {
                     norm = this->computeNormL2( uold , udu );
-                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
                 }
                 else
                 {
@@ -4013,7 +4014,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                         fixPointIsFinished=true;
                 }
 
-                iter++;
+                Feel::cout << "[OFFLINE_DUAL] iteration " << iter << ", increment_norm = " <<  norm << "\n";
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         }
         return udu;
