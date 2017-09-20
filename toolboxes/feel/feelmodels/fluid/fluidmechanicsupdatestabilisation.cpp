@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels/fluid/fluidmecbase.hpp>
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -14,9 +14,9 @@ namespace FeelModels
 #define jumpgrad( u ) ::Feel::vf::leftface(dn(u)) + ::Feel::vf::rightface(dn(u))
 
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
     this->updateLinearPDEStabilisationGLS( data );
 
@@ -190,9 +190,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdate
 //--------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
 {
     this->updateResidualStabilisationGLS( data, U );
 
@@ -368,9 +368,9 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateR
 
 //--------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
 {
     using namespace Feel::vf;
 

@@ -350,7 +350,7 @@ public :
 
     //-----------------------------------------------------------------------------------//
 
-    void init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::appli_ptrtype const& app );
+    void init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::model_ptrtype const& app );
     virtual void solve( bool upVelAcc=true );
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
