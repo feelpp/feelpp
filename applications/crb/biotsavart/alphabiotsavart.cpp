@@ -519,6 +519,6 @@ using alphabiotsavartcrbthermoelectric = AlphaBiotSavartCRB<AlphaThermoelectric>
 
 template class FEELPP_EXPORT AlphaBiotSavartCRB<AlphaThermoelectric>;
 
-FEELPP_CRB_PLUGIN( alphabiotsavartcrbthermoelectric, "alphabiotsavartcrbthermoelectric")
+FEELPP_CRB_PLUGIN( alphabiotsavartcrbthermoelectric, alphabiotsavartcrbthermoelectric )
 
 }
