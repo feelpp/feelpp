@@ -411,6 +411,18 @@ std::string
 MarkerManagementSlipBC::getInfoSlipBC() const
 {
     std::ostringstream _ostr;
+
+    if( M_containerMarkers.size() > 0 )
+    {
+        _ostr << "\n       -- slip : ";
+        int iMark = 0;
+        for ( auto const& markSlip : M_containerMarkers )
+        {
+            if( iMark > 0 ) _ostr << " , ";
+            _ostr << markSlip;
+            ++iMark;
+        }
+    }
     return _ostr.str();
 }
 
