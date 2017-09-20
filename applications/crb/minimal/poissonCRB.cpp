@@ -143,5 +143,5 @@ auto Poisson::computeBetaQ( parameter_type const& mu ) ->
     return boost::make_tuple( M_betaAq, M_betaFq );
 }
 
-FEELPP_CRB_PLUGIN( Poisson, "poisson" )
+FEELPP_CRB_PLUGIN( Poisson, poisson )
 }
