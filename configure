@@ -292,6 +292,11 @@ fi
 if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING ON CACHE PATH \"enable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON ON CACHE PATH \"enable python \" FORCE)" >> cmake.configure
+    echo "set(PYTHON3_EXECUTABLE /home/prudhomm/anaconda3/bin/python FORCE)" >> cmake.configure
+    echo "set(PYTHON_EXECUTABLE /home/prudhomm/anaconda3/bin/python FORCE)" >> cmake.configure
+    echo "set(PYTHON_INCLUDE_DIR /home/prudhomm/anaconda3/include/python3.6m/ FORCE)" >> cmake.configure
+    echo "set(PYTHON3_LIBRARY /home/prudhomm/anaconda3/lib/libpython3.6m.so.1.0 FORCE)" >> cmake.configure
+    echo "set(PYTHON_LIBRARY /home/prudhomm/anaconda3/lib/libpython3.6m.so.1.0 FORCE)" >> cmake.configure
 else
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
@@ -316,4 +321,4 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}
+cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DPYTHON_EXECUTABLE=$HOME/anaconda3/bin/python  -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}
