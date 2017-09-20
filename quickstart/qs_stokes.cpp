@@ -55,38 +55,17 @@ stokes(SpacePtrType Vh)
     tic();
     auto a = form2( _trial=Vh, _test=Vh);
     auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
-    {
-        auto deft = sym(gradt(u));
-        auto sigmat = -idt(p)*Id + 2*mu*deft;
-        tic();
-        a = integrate(_range=elements(mesh),
-                      _expr=inner( deft, grad(v) ) );
-        a = integrate(_range=elements(mesh),
-                      _expr=-idt(p)*div(v) );
-        toc("a1");
-    }
-    {
-        auto deft = gradt(u);
-        auto sigmat = -idt(p)*Id + 2*mu*deft;
-        tic();
-        a = integrate(_range=elements(mesh),
-                      _expr=2*mu*inner( deft, grad(v) ) );
-        a = integrate(_range=elements(mesh),
-                      _expr=-idt(p)*div(v) );
-        toc("a2");
-    }
-    {
-        auto deft = symm_gradt(u);
-        auto sigmat = -idt(p)*Id + 2*mu*deft;
-        tic();
-        a = integrate(_range=elements(mesh),
-                      _expr=2*mu*inner( deft, grad(v) ) );
-        a += integrate(_range=elements(mesh),
-                      _expr=-idt(p)*div(v) );
-        toc("a3");
-    }
+    auto deft = sym(gradt(u));
+    auto sigmat = -idt(p)*Id + 2*mu*deft;
+    tic();
+    a = integrate(_range=elements(mesh),
+                  _expr=inner( deft, grad(v) ) );
+    a += integrate(_range=elements(mesh),
+                   _expr=-idt(p)*div(v) );
     a += integrate(_range=elements(mesh),
                    _expr=id(q)*divt(u) );
+    toc("a");
+
     if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
         a+=on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
     if ( mesh->hasAnyMarker({"wall","letters"}) )
