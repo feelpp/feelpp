@@ -32,6 +32,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateSubmeshInner(true),
     M_advectionToolbox( new advecion_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
     M_doUpdateMarkers(true),
+    M_doUpdateCauchyGreenTensor(true),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
@@ -99,6 +100,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     if( M_useStretchAugmented )
     {
         M_stretchAdvection->init();
+    }
+    // Init backward characteristics advection
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection->init();
     }
 
     // Init iterSinceReinit
@@ -235,6 +241,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     {
         // Initialize stretch modGradPhi
         M_stretchAdvection->fieldSolutionPtr()->setConstant(1.);
+    }
+    if( M_useCauchyAugmented )
+    {
+        // Initialize backward characteristics
+        if( M_hasInitialBackwardCharacteristics )
+        {
+            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
+                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
+                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+                    _expr=M_initialBackwardCharacteristics
+                    );
+        }
+        else
+        {
+            *(M_backwardCharacteristicsAdvection->fieldSolutionPtr()) = vf::project(
+                    _space=M_backwardCharacteristicsAdvection->functionSpace(),
+                    _range=elements(M_backwardCharacteristicsAdvection->mesh()),
+                    _expr=vf::P()
+                    );
+        }
     }
 
     this->log("LevelSet", "initLevelsetValue", "finish");
@@ -373,6 +399,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces( bool buildSpaceMarkersExtend
             _mesh=this->mesh(), _worldscomm=this->worldsComm(),
             _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
             );
+    if( M_useCauchyAugmented )
+        M_spaceTensor2Symm = space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -420,12 +448,30 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
         M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
+                prefixvm(this->prefix(), "backward-characteristics-advection"),
+                this->worldComm()
+                );
+        M_backwardCharacteristicsAdvection->setModelName( "Advection" );
+        M_backwardCharacteristicsAdvection->build( this->functionSpaceVectorial() );
+        M_backwardCharacteristicsAdvection->timeStepBDF()->setOrder( this->timeStepBDF()->bdfOrder() );
+
+        M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
+
+        M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
+        M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
+        M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
+    }
     for( std::string const& bcMarker: this->M_bcMarkersInflow )
     {
         if( M_useGradientAugmented )
             M_modGradPhiAdvection->addMarkerInflowBC( bcMarker );
         if( M_useStretchAugmented )
             M_stretchAdvection->addMarkerInflowBC( bcMarker );
+        if( M_useCauchyAugmented )
+            M_backwardCharacteristicsAdvection->addMarkerInflowBC( bcMarker );
     }
 }
 
@@ -484,6 +530,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 {
     M_projectorL2 = projector(this->functionSpace(), this->functionSpace(), backend(_name=prefixvm(this->prefix(), "projector-l2"), _worldcomm=this->worldComm()) );
     M_projectorL2Vec = projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(), "projector-l2-vec"), _worldcomm=this->worldComm()) );
+    if( M_useCauchyAugmented )
+    {
+        M_projectorL2Tensor2Symm = projector( 
+                this->functionSpaceTensor2Symm() , this->functionSpaceTensor2Symm(), 
+                backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                );
+    }
 
     //if( M_doSmoothCurvature )
     //{
@@ -548,6 +601,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const
     M_levelsetStretch->add(-1.);
 
     return M_levelsetStretch;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_backwardcharacteristics_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::backwardCharacteristics() const
+{
+    if( M_useCauchyAugmented )
+    {
+        return M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+    }
+    else
+    {
+        throw std::logic_error( this->prefix()+".use-cauchy-augmented option must be true to use backward characteristics" );
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -646,6 +713,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_useStretchAugmented = boption( _name="use-stretch-augmented", _prefix=this->prefix() );
     M_reinitStretchAugmented = boption( _name="reinit-stretch-augmented", _prefix=this->prefix() );
+
+    M_useCauchyAugmented = boption( _name="use-cauchy-augmented", _prefix=this->prefix() );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"initial-backward-characteristics").c_str()) )
+    {
+        M_initialBackwardCharacteristics = expr<nDim,1>( soption(_name="initial-backward-characteristics", _prefix=this->prefix()) );
+        M_hasInitialBackwardCharacteristics = true;
+    }
+    else
+    {
+        M_hasInitialBackwardCharacteristics = false;
+    }
 
     //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
 }
@@ -768,6 +846,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::GradPhi );
             if( o == "modgradphi" || o == "all" )
                 this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+            if( o == "backwardcharacteristics" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
+            if( o == "cauchygreeninvariant1" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+            if( o == "cauchygreeninvariant2" )
+                this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
         }
     }
     // Overwrite with options from CFG
@@ -777,6 +861,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
     if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_modgradphi").c_str()) )
         if ( boption(_name="do_export_modgradphi",_prefix=this->prefix()) )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::ModGradPhi );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
+        if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
+        if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant2").c_str()) )
+        if ( boption(_name="do_export_cauchygreeninvariant2",_prefix=this->prefix()) )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1025,6 +1118,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::smoother() const
@@ -1346,6 +1440,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
                 //);
         M_stretchAdvection->solve();
     }
+    if( M_useCauchyAugmented )
+    {
+        auto u = this->fieldAdvectionVelocityPtr();
+        M_backwardCharacteristicsAdvection->updateAdvectionVelocity( idv(u) );
+        M_backwardCharacteristicsAdvection->solve();
+    }
+
     // Update interface-related quantities
     this->updateInterfaceQuantities();
 
@@ -1377,6 +1478,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_modGradPhiAdvection->updateTimeStep();
     if( M_useStretchAugmented )
         M_stretchAdvection->updateTimeStep();
+    if( M_useCauchyAugmented )
+        M_backwardCharacteristicsAdvection->updateTimeStep();
 
     this->updateTime( M_advectionToolbox->currentTime() );
 
@@ -1387,10 +1490,109 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
             M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
         if( M_useStretchAugmented )
             M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
-        //this->timeStepBDF()->setTimeInitial( current_time ); 
-        //this->timeStepBDF()->restart();
-        //this->timeStepBDF()->setTimeInitial( this->timeInitial() );
+        if( M_useCauchyAugmented )
+            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
     }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_tensor2symm_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensor() const
+{
+    if( M_useCauchyAugmented )
+    {
+        if( M_doUpdateCauchyGreenTensor )
+        {
+            auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+            auto gradY = this->projectorL2Tensor2Symm()->project(
+                    _expr=gradv(Y)
+                    );
+            auto invGradY = vf::project(
+                    _space=this->functionSpaceTensor2Symm(),
+                    //_expr=inv(gradv(Y))
+                    _expr=inv(idv(gradY))
+                    );
+            auto Id = vf::Id<nDim, nDim>();
+            auto N0 = this->projectorL2Vectorial()->project(
+                    _expr=idv(invGradY)*idv(this->N()) / norm2(idv(invGradY)*idv(this->N()))
+                    );
+            auto N0xN0 = idv(N0)*trans(idv(N0));
+
+            *M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+                    _expr=trans(idv(invGradY))*(Id-N0xN0)*idv(invGradY)
+                    );
+            //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+                    //_expr=idv(invGradY)*(Id-N0xN0)*trans(idv(invGradY))
+                    //);
+
+            M_doUpdateCauchyGreenTensor = false;
+        }
+    }
+    else
+    {
+        throw std::logic_error( this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor" );
+    }
+    
+    return M_leftCauchyGreenTensor;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
+{
+    if( M_useCauchyAugmented )
+    {
+        //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        //auto Id = vf::Id<nDim, nDim>();
+        //auto N0 = vf::project(
+                //_space=this->functionSpaceVectorial(),
+                //_expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
+                //);
+        //auto N0xN0 = idv(N0)*trans(idv(N0));
+        //*M_cauchyGreenInvariant1 = vf::project(
+                //_space=M_cauchyGreenInvariant1->functionSpace(),
+                //_expr=trace( inv(gradv(Y))*(Id-N0xN0)*trans(inv(gradv(Y))) )
+                //);
+        *M_cauchyGreenInvariant1 = vf::project(
+                _space=M_cauchyGreenInvariant1->functionSpace(),
+                _expr=trace(idv(this->leftCauchyGreenTensor()))
+                );
+    }
+    else
+    {
+        throw std::logic_error( this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+    }
+
+    return M_cauchyGreenInvariant1;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
+{
+    if( M_useCauchyAugmented )
+    {
+        //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        //auto Id = vf::Id<nDim, nDim>();
+        //auto N0 = vf::project(
+                //_space=this->functionSpaceVectorial(),
+                //_expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
+                //);
+        //auto N0xN0 = idv(N0)*trans(idv(N0));
+        auto A = idv(this->leftCauchyGreenTensor());
+        auto trA = trace(A);
+        // 3D: TrCofA = 1/2 (Tr2(A)-TrA2)
+        *M_cauchyGreenInvariant2 = vf::project(
+                _space=M_cauchyGreenInvariant2->functionSpace(),
+                _expr=0.5*( trA*trA-trace(A*A) )
+                );
+    }
+    else
+    {
+        throw std::logic_error( "use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+    }
+
+    return M_cauchyGreenInvariant2;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1407,6 +1609,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateSubmeshDirac = true;
     M_doUpdateSubmeshOuter = true;
     M_doUpdateSubmeshInner = true;
+    M_doUpdateCauchyGreenTensor = true;
 }
 
 //----------------------------------------------------------------------------//
@@ -1844,8 +2047,30 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Stretch")),
                                        *this->stretch() );
     }
-    M_exporter->save();
-//M_advectionToolbox->exportResultsImpl( time );
+    if( M_useCauchyAugmented )
+    {
+        M_backwardCharacteristicsAdvection->exportResults( time );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::BackwardCharacteristics ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"BackwardCharacteristics"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"BackwardCharacteristics")),
+                                       M_backwardCharacteristicsAdvection->fieldSolution() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant1 ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant1(TrC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant1(TrC)")),
+                                       *this->cauchyGreenInvariant1() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant2 ) )
+    {
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrCofC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrCofC)")),
+                                       *this->cauchyGreenInvariant2() );
+    }
+
+    super_type::exportResultsImpl( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");

@@ -89,9 +89,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 _space=M_globalLevelset->functionSpace(),
                 _space_vectorial=M_globalLevelset->functionSpaceVectorial(),
                 _space_markers=M_globalLevelset->functionSpaceMarkers(),
+                _space_tensor2symm=M_globalLevelset->functionSpaceTensor2Symm(),
                 _reinitializer=M_globalLevelset->reinitializer(),
                 _projectorL2=M_globalLevelset->projectorL2(),
                 _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
+                _projectorL2_tensor2symm=M_globalLevelset->projectorL2Tensor2Symm(),
                 _smoother=M_globalLevelset->smoother(),
                 _smoother_vectorial=M_globalLevelset->smootherVectorial()
                 );

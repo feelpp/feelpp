@@ -1,10 +1,10 @@
-h = 0.16;
-xmin = -4.;
-xmax = 4.;
-ymin = -4.;
-ymax = 4.;
-zmin = -4.;
-zmax = 4.;
+h = 0.1;
+xmin = -1.;
+xmax = 1.;
+ymin = -1.;
+ymax = 1.;
+zmin = -1.;
+zmax = 1.;
 
 Point(1) = {xmin,ymin,zmin,h};
 Point(2) = {xmax,ymin,zmin,h};
@@ -24,16 +24,16 @@ out[] = Extrude{0,0,zmax-zmin}{ Surface{1}; };
 
 Surface Loop(301) = {201, 202, 203, 204, 205, 206};
 
-Field[1] = Box;
-Field[1].VIn = h/4;
-Field[1].VOut = h;
-Field[1].XMin = -1;
-Field[1].XMax = 1;
-Field[1].YMin = -3;
-Field[1].YMax = 3;
-Field[1].ZMin = -3;
-Field[1].ZMax = 3;
-Background Field = 1;
+/*Field[1] = Box;*/
+/*Field[1].VIn = h/5;*/
+/*Field[1].VOut = h;*/
+/*Field[1].XMin = -0.7;*/
+/*Field[1].XMax = 0.7;*/
+/*Field[1].YMin = -2.3;*/
+/*Field[1].YMax = 2.3;*/
+/*Field[1].ZMin = -2.3;*/
+/*Field[1].ZMax = 2.3;*/
+/*Background Field = 1;*/
 
 Physical Surface("Left") = {13};
 Physical Surface("Bottom") = {1};
