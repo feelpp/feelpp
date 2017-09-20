@@ -195,7 +195,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
             catch( CheckerExactFailed const& ex )
             {
                 cout << tc::red
-                     << "Checker exact verification failed for " << metric << e.first
+                     << "Checker exact verification failed for " << metric << e.first << std::endl
                      << " Computed error " << ex.computedError() << std::endl
                      << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
             }
