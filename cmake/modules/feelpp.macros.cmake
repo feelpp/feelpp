@@ -153,9 +153,9 @@ macro(feelpp_add_application)
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
   if ( FEELPP_APP_NO_FEELPP_LIBRARY )
-      target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} PUBLIC ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} PRIVATE pybind11::embed)
   else()
-      target_link_libraries( ${execname} ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+      target_link_libraries( ${execname} PUBLIC ${FEELPP_LIBRARY} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES} PRIVATE pybind11::embed)
   endif()
 
   # Use feel++ lib precompiled headers.
