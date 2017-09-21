@@ -112,7 +112,7 @@ public :
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( s,
-                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::COUPLED:pattern),
+                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:pattern),
                                                              std::forward<BackendT>(b),
                                                              (s==solve::strategy::static_condensation)?false:true )  )
         {}
