@@ -261,6 +261,35 @@ public:
 
     }
 
+    void initBetaQm( int M )
+    {
+        if( M_use_newton )
+        {
+            this->M_betaJqm.resize( 3 );
+            this->M_betaJqm[0].resize( 1 );
+            this->M_betaJqm[1].resize( M );
+            this->M_betaJqm[2].resize( 1 );
+            this->M_betaRqm.resize( 2 );
+            this->M_betaRqm[0].resize( 3 );
+            this->M_betaRqm[0][0].resize( 1 );
+            this->M_betaRqm[0][1].resize( M );
+            this->M_betaRqm[0][2].resize( 1 );
+            this->M_betaRqm[1].resize( 1 );
+            this->M_betaRqm[1][0].resize( 1 );
+        }
+        if( !M_use_newton || M_useSerErrorEstimation )
+        {
+            this->M_betaAqm.resize( 1 );
+            this->M_betaAqm[0].resize( 1 );
+            this->M_betaFqm.resize(2);
+            this->M_betaFqm[0].resize( 2 );
+            this->M_betaFqm[0][0].resize( M );
+            this->M_betaFqm[0][1].resize( 1 );
+            this->M_betaFqm[1].resize( 1 );
+            this->M_betaFqm[1][0].resize( 1 );
+        }
+    }
+
     void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
     {
         auto eim_g = this->scalarContinuousEim()[0];
@@ -270,8 +299,16 @@ public:
 
         if( M_use_newton )
         {
+            if ( this->M_betaJqm.empty() )
+                this->initBetaQm( M );
+            else
+            {
+                //needed if cobuild
+                this->M_betaJqm[1].resize( M );
+                this->M_betaRqm[0][1].resize( M );
+            }
+
             this->M_betaJqm[0][0] = 1;
-            this->M_betaJqm[1].resize(M); //needed if cobuild
             for(int m=0; m<M; m++)
             {
                 this->M_betaJqm[1][m] = mu(1)*beta_g(m);
@@ -279,7 +316,6 @@ public:
             this->M_betaJqm[2][0] = mu(0);
 
             this->M_betaRqm[0][0][0] = this->computeBetaInitialGuess( mu )[0][0];
-            this->M_betaRqm[0][1].resize(M);
             for(int m=0; m<M; m++)
             {
                 this->M_betaRqm[0][1][m] = beta_g(m);
@@ -291,8 +327,12 @@ public:
         //else
         if( !M_use_newton || M_useSerErrorEstimation )
         {
+            if ( this->M_betaAq.empty() )
+                this->initBetaQm( M );
+            else
+                this->M_betaFqm[0][0].resize( M ); //needed if cobuild
+
             this->M_betaAqm[0][0]=1;
-            this->M_betaFqm[0][0].resize(M);
             for(int m=0; m<M; m++)
             {
                 this->M_betaFqm[0][0][m]=-beta_g(m) ;
