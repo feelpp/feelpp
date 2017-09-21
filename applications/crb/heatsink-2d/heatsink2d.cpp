@@ -555,7 +555,7 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, element_t
 }
 
 
-FEELPP_CRB_PLUGIN( HeatSink2D, "heatsink2d" )
+FEELPP_CRB_PLUGIN( HeatSink2D, heatsink2d )
 } // Feel
 
 

@@ -665,5 +665,5 @@ void AlphaThermoelectric::computeTruthCurrentDensity( current_element_type& j, p
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
 }
 
-FEELPP_CRB_PLUGIN( AlphaThermoelectric, "thermoelectric")
+FEELPP_CRB_PLUGIN( AlphaThermoelectric, thermoelectric )
 }
