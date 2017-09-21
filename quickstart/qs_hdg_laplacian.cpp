@@ -79,13 +79,13 @@ int hdg_laplacian()
     ostr <<  "from sympy2ginac import *\n"
          << "s=syms(" << Dim << ");\n"
          << "ns=nsyms(" << Dim << ");\n"
-         << "p="<< soption("solution.p") << ";\n"
-         << "k="<< soption("k") << ";\n"
+         << "p=sympify("<< soption("solution.p") << ");\n"
+         << "k=sympify("<< soption("k") << ");\n"
          << "grad_p=grad(p,s);\n"
-         << "minus_kgradp=-k*grad(p,s);\n"
-         << "u=minus_kgradp;\n"
-         << "un=n(minus_kgradp,1,ns);\n"
-         << "f=div(-k*grad(p,s),s);\n";
+         << "flux=-k*grad(p,s);\n"
+         << "u=flux;\n"
+         << "un=n(flux,1,ns);\n"
+         << "f=div(flux,s);\n";
     cout << ostr.str() << std::endl;
 
     auto m = Feel::pyexpr( ostr.str().c_str(), {"p", "grad_p", "u", "un", "f"} );
@@ -148,7 +148,7 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=f_exact*id(w));
+                          _expr=-f_exact*id(w));
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                           _expr=id(l)*un_exact );
@@ -170,11 +170,11 @@ int hdg_laplacian()
 
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( idt(phat)*(leftface(normal(v))+
-                                               rightface(normal(v)))), _verbose=true );
+                            _expr=( idt(phat)*(leftface(trans(id(v))*N())+
+                                               rightface(trans(id(v))*N()))), _verbose=true );
 
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=idt(phat)*normal(v));
+                            _expr=idt(phat)*(trans(id(v))*N()));
     toc("a(0,2)",FLAGS_v>0);
 
     //
@@ -208,7 +208,7 @@ int hdg_laplacian()
     // 
     tic();
     a(2_c,0_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u)))),
+                            _expr=( id(l)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N()))),
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
                             _verbose=true);
         
@@ -217,7 +217,7 @@ int hdg_laplacian()
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=( id(l)*(normalt(u))));
+                            _expr=( id(l)*(trans(idt(u))*N())));
     toc("a(2,0).3",FLAGS_v>0);
 
     tic();

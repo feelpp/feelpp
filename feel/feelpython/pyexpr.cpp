@@ -39,7 +39,7 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& locals )
     std::map<std::string,std::string> r;
     for( auto l : locals )
     {
-        std::string cmd = l + "= toginac(" + l + ",Array(" + l + ".free_symbols) );";
+        std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
         cout << "cmd : " << cmd << std::endl;
         py::exec(cmd, py::globals(), _locals );
         r[l] = _locals[l.c_str()].cast<std::string>();

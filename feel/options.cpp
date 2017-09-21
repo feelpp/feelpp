@@ -418,6 +418,7 @@ po::options_description sc_options( std::string const& prefix )
     po::options_description _options("Options for static condensation");
     _options.add_options()
         ( prefixvm( prefix, "sc.condense" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable static condensation" )
+        //( prefixvm( prefix, "sc.backend" ).c_str(), po::value<std::string>()->default_value( "petsc" ), "enable/disable static condensation" )
         ( prefixvm( prefix, "sc.condense.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel condense in static condensation" )
         ( prefixvm( prefix, "sc.condense.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
         ( prefixvm( prefix, "sc.condense.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
@@ -426,7 +427,7 @@ po::options_description sc_options( std::string const& prefix )
         ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 100 ), "number of tasks for parallel local solve in static condensation" )
         ;
 
-    return _options;
+    return _options.add( backend_options( prefixvm(prefix,"sc") ) );
 }
 
 
