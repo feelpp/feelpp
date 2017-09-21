@@ -44,6 +44,7 @@ int main( int argc, char** argv )
     {
         Feel::cout << "properties for " << matPair.first << std::endl;
         auto mat = matPair.second;
+        auto physics = mat.physics();
         auto name = mat.getString("name");
         auto rhoInt = mat.getInt("rho");
         auto etaDouble = mat.getDouble("eta");
@@ -65,6 +66,9 @@ int main( int argc, char** argv )
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
 
         Feel::cout << "\t" << name << std::endl;
+        Feel::cout << "\thas " << physics.size() << " physics:" << std::endl;
+        for( auto const& p : physics )
+            Feel::cout << "\t\t" << p << std::endl;
         Feel::cout << "\t" << rhoInt << std::endl;
         Feel::cout << "\t" << etaDouble << std::endl;
         Feel::cout << "\t" << rho << std::endl;
