@@ -116,13 +116,13 @@ public:
     // Periodicity
     typedef PeriodicityType periodicity_type;
     // advection toolbox
-    typedef Advection< ConvexType, BasisType, PeriodicityType > advecion_toolbox_type;
-    typedef boost::shared_ptr<advecion_toolbox_type> advecion_toolbox_ptrtype;
-    static_assert( advecion_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
+    typedef Advection< ConvexType, BasisType, PeriodicityType > advection_toolbox_type;
+    typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
+    static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
     //--------------------------------------------------------------------//
     // Space levelset
-    typedef typename advecion_toolbox_type::basis_advection_type basis_levelset_type;
-    typedef typename advecion_toolbox_type::space_advection_type space_levelset_type;
+    typedef typename advection_toolbox_type::basis_advection_type basis_levelset_type;
+    typedef typename advection_toolbox_type::space_advection_type space_levelset_type;
     typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
     typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
@@ -345,10 +345,10 @@ public:
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
     // advection data
-    typename advecion_toolbox_type::mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
-    typename advecion_toolbox_type::space_advection_ptrtype const& functionSpace() const { return M_advectionToolbox->functionSpace(); }
-    typename advecion_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
-    typename advecion_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
+    typename advection_toolbox_type::mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
+    typename advection_toolbox_type::space_advection_ptrtype const& functionSpace() const { return M_advectionToolbox->functionSpace(); }
+    typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
+    typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     template<typename ExprT>
@@ -591,7 +591,7 @@ private:
     // Periodicity
     periodicity_type M_periodicity;
     // advection toolbox
-    advecion_toolbox_ptrtype M_advectionToolbox;
+    advection_toolbox_ptrtype M_advectionToolbox;
     //--------------------------------------------------------------------//
     // Spaces
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
