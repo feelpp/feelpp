@@ -30,7 +30,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateSubmeshDirac(true),
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
-    M_advectionToolbox( new advecion_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
+    M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
     M_doUpdateMarkers(true),
     M_doUpdateCauchyGreenTensor(true),
     //M_periodicity(periodicityLS),
@@ -1442,7 +1442,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     }
     if( M_useCauchyAugmented )
     {
-        auto u = this->fieldAdvectionVelocityPtr();
+        auto u = M_advectionToolbox->fieldAdvectionVelocityPtr();
         M_backwardCharacteristicsAdvection->updateAdvectionVelocity( idv(u) );
         M_backwardCharacteristicsAdvection->solve();
     }
@@ -2070,7 +2070,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        *this->cauchyGreenInvariant2() );
     }
 
-    super_type::exportResultsImpl( time );
+    this->M_exporter->save();
 
     this->timerTool("PostProcessing").stop("exportResults");
     this->log("LevelSet","exportResults", "finish");
