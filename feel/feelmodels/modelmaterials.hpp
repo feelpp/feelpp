@@ -53,15 +53,14 @@ struct FEELPP_EXPORT ModelMaterial
                    std::string const& directoryLibExpr = "" );
 
     std::string const& name() const { return M_name; }
-    std::vector<std::string> const& physics() const { return M_physics; }
+    std::string const& physics() const { return M_physics; }
     /*! Set Name
      */
     void setName( std::string const& name ) { M_name = name; }
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
-    void setPhysics( std::vector<std::string> const s) { M_physics = s; }
-    void addPhysics( std::string const s) { M_physics.push_back( s ); }
+    void setPhysics( std::string const s) { M_physics = s; }
 
     void setProperty( std::string const& property, pt::ptree const& p );
     void setProperty( std::string const& property, double val );
@@ -161,7 +160,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    std::string getString( std::string const& key ) const {
+    std::string getString( std::string const& key ) {
         try { return M_p.get<std::string>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -172,7 +171,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    int getInt( std::string const& key ) const {
+    int getInt( std::string const& key ) {
         try { return M_p.get<int>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -183,7 +182,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    double getDouble( std::string const& key ) const {
+    double getDouble( std::string const& key ) {
         try { return M_p.get<double>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -193,7 +192,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key ) const {
+    Expr<GinacEx<2> > getScalar( std::string const& key ) {
         try { return expr( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -204,7 +203,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) const {
+    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) {
         try { return expr( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -216,7 +215,7 @@ struct FEELPP_EXPORT ModelMaterial
      *
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
-                                                                std::string const& sym, ExprT e ) const {
+                                                                std::string const& sym, ExprT e ) {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -229,7 +228,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
-                                                                std::initializer_list<ExprT> e ) const {
+                                                                std::initializer_list<ExprT> e ) {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -242,7 +241,7 @@ struct FEELPP_EXPORT ModelMaterial
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::vector<std::string> const& sym,
-                                                                std::vector<ExprT> e ) const {
+                                                                std::vector<ExprT> e ) {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -256,7 +255,7 @@ struct FEELPP_EXPORT ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
                                                                 std::initializer_list<ExprT> e,
-                                                                std::map<std::string, double> params ) const {
+                                                                std::map<std::string, double> params ) {
         try {
             auto ex = expr( M_p.get<std::string>( key ), sym, e );
             ex.setParameterValues( params );
@@ -267,7 +266,7 @@ struct FEELPP_EXPORT ModelMaterial
             exit(1);
         }
     }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) const {
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) {
         try { return expr<T,1>( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -275,7 +274,7 @@ struct FEELPP_EXPORT ModelMaterial
         }
     }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::pair<std::string,double> const& params ) const {
+                                                         std::pair<std::string,double> const& params ) {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -283,7 +282,7 @@ struct FEELPP_EXPORT ModelMaterial
         }
     }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::map<std::string,double> const& params ) const {
+                                                         std::map<std::string,double> const& params ) {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -293,7 +292,7 @@ struct FEELPP_EXPORT ModelMaterial
     // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) const {
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) {
         try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -301,7 +300,7 @@ struct FEELPP_EXPORT ModelMaterial
         }
     }
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::pair<std::string,double> const& params ) const {
+                                                                       std::pair<std::string,double> const& params ) {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -309,7 +308,7 @@ struct FEELPP_EXPORT ModelMaterial
         }
     }
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::map<std::string,double> const& params ) const {
+                                                                       std::map<std::string,double> const& params ) {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -330,7 +329,7 @@ private:
     //! mat propeteries
     std::map<std::string, mat_property_expr_type > M_materialProperties;
     //! material physics
-    std::vector<std::string> M_physics;
+    std::string M_physics;
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
@@ -360,35 +359,6 @@ public:
             return it->second;
 
         }
-
-    // /** return all the materials which physic is physic
-    //  *
-    //  */
-    // std::map<std::string,ModelMaterial> materialWithPhysic(std::string physic) const
-    // {
-    //     std::map<std::string,ModelMaterial> mat;
-    //     std::copy_if(this->begin(),this->end(),std::back_inserter(map),
-    //                  [](ModelMaterial const& m) { return m.physics()==physic; } );
-    //     return mat;
-    // }
-
-    // /** return all the materials which physic is in physics
-    //  *
-    //  */
-    // std::map<std::string,ModelMaterial> materialWithPhysics(std::vector<std::string> physics) const
-    // {
-    //     std::map<std::string,ModelMaterial> mat;
-    //     std::copy_if(this->begin(),this->end(),std::back_inserter(map),
-    //                  [](ModelMaterial const& m)
-    //                  {
-    //                      bool r = false;
-    //                      for(auto const& p : physics)
-    //                          r ||= m.physics()==p;
-    //                      return r;
-    //                  }
-    //                  );
-    //     return mat;
-    // }
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
