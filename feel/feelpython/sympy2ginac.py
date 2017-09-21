@@ -10,9 +10,10 @@ def nsyms(n):
     return Array( [nx] if n==1 else [nx,ny] if n==2 else [nx,ny,nz] )
 
 def toginac(s,symbols):
-    if Array(s).rank() == 0:
-        return str(ccode(s,standard='C99'))+':' + ':'.join(str(e) for e in symbols);
-    return '{' + ','.join(str(ccode(e,standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in symbols)
+    print("s=",sympify(s));
+    if Array(sympify(s)).rank() == 0:
+        return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in symbols);
+    return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in symbols)
 
 def dx(f):
     return derive_by_array(f,[x]);
