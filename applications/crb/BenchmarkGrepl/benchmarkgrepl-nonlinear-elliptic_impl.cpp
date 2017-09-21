@@ -144,21 +144,11 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 
     int M = this->scalarContinuousEim()[0]->mMax();
 
+    this->initBetaQm( M );
+
     //resize data structure
     if( M_use_newton )
     {
-        this->M_betaJqm.resize( 3 );
-        this->M_betaJqm[0].resize( 1 );
-        this->M_betaJqm[1].resize( M );
-        this->M_betaJqm[2].resize( 1 );
-        this->M_betaRqm.resize( 2 );
-        this->M_betaRqm[0].resize( 3 );
-        this->M_betaRqm[0][0].resize( 1 );
-        this->M_betaRqm[0][1].resize( M );
-        this->M_betaRqm[0][2].resize( 1 );
-        this->M_betaRqm[1].resize( 1 );
-        this->M_betaRqm[1][0].resize( 1 );
-
         this->M_Jqm.resize( 3 );
         this->M_Jqm[0].resize( 1 );
         this->M_Jqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
@@ -188,15 +178,6 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 
     if( !M_use_newton || M_useSerErrorEstimation )
     {
-        this->M_betaAqm.resize( 1 );
-        this->M_betaAqm[0].resize( 1 );
-        this->M_betaFqm.resize(2);
-        this->M_betaFqm[0].resize( 2 );
-        this->M_betaFqm[0][0].resize( M );
-        this->M_betaFqm[0][1].resize( 1 );
-        this->M_betaFqm[1].resize( 1 );
-        this->M_betaFqm[1][0].resize( 1 );
-
         this->M_Aqm.resize( 1 );
         this->M_Aqm[0].resize( 1 );
         this->M_Aqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
