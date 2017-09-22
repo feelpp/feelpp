@@ -136,6 +136,6 @@ Heat2D::output( int output_index, parameter_type const& mu , element_type& u, bo
 }
 /// [output]
 
-FEELPP_CRB_PLUGIN(Heat2D, "heat2d")
+FEELPP_CRB_PLUGIN(Heat2D, heat2d )
 
 }

@@ -50,7 +50,7 @@ namespace FeelModels
                     if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
                     auto const& mat = m.second;
-                    std::string matphysics = ( mat.physics().empty() )? "electric" : mat.physics();
+                    std::string matphysics = ( mat.physics().empty() )? "electric" : mat.physic();
                     if ( ( matphysics != "electric" ) && ( matphysics != "thermo-electric" ) )
                         continue;
                     M_markers.insert( matmarker );

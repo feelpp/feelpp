@@ -5,7 +5,7 @@
 
 namespace Feel
 {
-FEELPP_CRB_PLUGIN_TEMPLATE( OpusHeat, OpusHeat<false>, "opusheat" )
+FEELPP_CRB_PLUGIN_TEMPLATE( OpusHeat, OpusHeat<false>, opusheat )
 
 template class OpusHeat<false>;
 }
