@@ -54,6 +54,9 @@ hp::hp( double h, int p )
                 int order = boost::lexical_cast<int>(v.first);
                 
                 M_data[fn.first][order].exact = v.second.get("exact",false);
+                if ( M_data[fn.first][order].exact )
+                    for( auto o : irange( order, 20 ) )
+                        M_data[fn.first][o].exact = true;
                 
                 if ( M_data[fn.first][order].exact == false )
                 {
@@ -106,7 +109,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
     if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {
         hp::data d = M_data.at(solution).at(M_p);
-        
+        Feel::cout << "exact = " << d.exact << std::endl;
         if ( d.exact )
         {
             
@@ -155,12 +158,26 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 } // rate
 
 Checker
-checker( std::string const& p ) { return Checker{}; }
+checker( std::string const& s, std::string const& p )
+{
+    Feel::cout << "s=" << s << std::endl;
+    return Checker{s};
+}
 
 Checker::Checker()
     :
     M_check( boption("checker.check") ),
     M_solution( soption("checker.solution" ) ),
+    M_etol( doption("checker.tolerance.exact" ) ),
+    M_otol( doption("checker.tolerance.order" ) )
+{
+    
+}
+
+Checker::Checker( std::string const& s )
+    :
+    M_check( boption("checker.check") ),
+    M_solution( s ),
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
