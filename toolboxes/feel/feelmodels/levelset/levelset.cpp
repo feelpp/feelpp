@@ -906,15 +906,18 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
+    this->log("LevelSet", "updateGradPhi", "start");
     auto phi = this->phi();
     if( M_doSmoothGradient )
     {
+        this->log("LevelSet", "updateGradPhi", "perform smooth projection");
         //*M_levelsetGradPhi = this->smootherVectorial()->derivate( idv(phi) );
         *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
     }
     else
     {
         //*M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
+        this->log("LevelSet", "updateGradPhi", "perform L2 projection");
         *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
         //*M_levelsetGradPhi = vf::project( 
                 //_space=this->functionSpaceVectorial(),
@@ -924,12 +927,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     }
 
     M_doUpdateGradPhi = false;
+    this->log("LevelSet", "updateGradPhi", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
 {
+    this->log("LevelSet", "updateModGradPhi", "start");
     auto gradPhi = this->gradPhi();
     *M_levelsetModGradPhi = vf::project( 
             _space=this->functionSpace(),
@@ -939,6 +944,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
     //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
 
     M_doUpdateModGradPhi = false;
+    this->log("LevelSet", "updateModGradPhi", "finish");
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1503,29 +1509,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensor() const
     {
         if( M_doUpdateCauchyGreenTensor )
         {
-            auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-            auto gradY = this->projectorL2Tensor2Symm()->project(
-                    _expr=gradv(Y)
-                    );
-            auto invGradY = vf::project(
-                    _space=this->functionSpaceTensor2Symm(),
-                    //_expr=inv(gradv(Y))
-                    _expr=inv(idv(gradY))
-                    );
-            auto Id = vf::Id<nDim, nDim>();
-            auto N0 = this->projectorL2Vectorial()->project(
-                    _expr=idv(invGradY)*idv(this->N()) / norm2(idv(invGradY)*idv(this->N()))
-                    );
-            auto N0xN0 = idv(N0)*trans(idv(N0));
-
-            *M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
-                    _expr=trans(idv(invGradY))*(Id-N0xN0)*idv(invGradY)
-                    );
-            //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
-                    //_expr=idv(invGradY)*(Id-N0xN0)*trans(idv(invGradY))
-                    //);
-
-            M_doUpdateCauchyGreenTensor = false;
+            const_cast<self_type*>(this)->updateLeftCauchyGreenTensor();
         }
     }
     else
@@ -1537,11 +1521,47 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensor() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
+{
+    this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
+
+    DCHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
+
+    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+    auto gradY = this->projectorL2Tensor2Symm()->project(
+            _expr=gradv(Y)
+            );
+    auto invGradY = vf::project(
+            _space=this->functionSpaceTensor2Symm(),
+            //_expr=inv(gradv(Y))
+            _expr=inv(idv(gradY))
+            );
+    auto Id = vf::Id<nDim, nDim>();
+    auto N0 = this->projectorL2Vectorial()->project(
+            _expr=idv(invGradY)*idv(this->N()) / norm2(idv(invGradY)*idv(this->N()))
+            );
+    auto N0xN0 = idv(N0)*trans(idv(N0));
+
+    *M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+            _expr=trans(idv(invGradY))*(Id-N0xN0)*idv(invGradY)
+            );
+    //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+    //_expr=idv(invGradY)*(Id-N0xN0)*trans(idv(invGradY))
+    //);
+
+    M_doUpdateCauchyGreenTensor = false;
+
+    this->log("LevelSet", "updateLeftCauchyGreenTensor", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
 {
     if( M_useCauchyAugmented )
     {
+        this->log("LevelSet", "cauchyGreenInvariant1", "start");
         //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
         //auto Id = vf::Id<nDim, nDim>();
         //auto N0 = vf::project(
@@ -1557,6 +1577,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 _space=M_cauchyGreenInvariant1->functionSpace(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
+        this->log("LevelSet", "cauchyGreenInvariant1", "finish");
     }
     else
     {
@@ -1572,6 +1593,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
 {
     if( M_useCauchyAugmented )
     {
+        this->log("LevelSet", "cauchyGreenInvariant2", "start");
         //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
         //auto Id = vf::Id<nDim, nDim>();
         //auto N0 = vf::project(
@@ -1586,6 +1608,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 _space=M_cauchyGreenInvariant2->functionSpace(),
                 _expr=0.5*( trA*trA-trace(A*A) )
                 );
+        this->log("LevelSet", "cauchyGreenInvariant2", "finish");
     }
     else
     {
