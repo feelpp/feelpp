@@ -296,7 +296,7 @@ HarmonicExtension<MeshType,Order>::solve()
 {
     this->log(this->prefix(),"solve", "start");
     // assemble and solve linear system
-    M_algebraicFactory->linearSolver(M_vectorSolution);
+    M_algebraicFactory->solveLinear(M_vectorSolution);
     // copy algebraic vector into an finite element approximation
     *M_displacement = *M_vectorSolution;
 

@@ -54,6 +54,44 @@ namespace Feel
 {
 
 /**
+ * Comparison structure for 2 parameters mu1 and mu2
+ * The comparison is made component by component :
+ * - we start with i=0
+ * - if mu1[i]<mu2[i] then mu1<mu2
+ * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
+ */
+template <typename ParameterType>
+struct paramCompare
+{
+public :
+    typedef ParameterType parameter_type;
+
+    /**
+     * Compare the component \p i of \p mu1 and \p mu2
+     * \return true if mu1[i]<mu2[i]
+     */
+    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
+    {
+        return compare( mu1, mu2, 0 );
+    }
+private :
+    /**
+     * Compare \p mu1 and \p mu2
+     * \return true if mu1 < mu2
+     */
+    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
+    {
+        if ( i==mu1.size() )
+            return false;
+        else if ( mu1[i]==mu2[i] )
+            return compare( mu1, mu2, i+1 );
+        else
+            return mu1[i]<mu2[i];
+    }
+};
+
+
+/**
  * \brief Base class for DEIM algorithm
  *
  * Considering a parametrized Tensor \f$ T(\mu)\f$, which can be
@@ -110,6 +148,8 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
+    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
+
     //! Default Constructor
     DEIMBase()
     {}
@@ -128,10 +168,12 @@ public :
                 i,
                 worldComm ),
         mesh( Xh->mesh() ),
+        M_prefix( prefix ),
         M_trainset( sampling ),
         M_M(0),
-        M_tol(1e-8),
-        M_prefix( prefix ),
+        M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
+        M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
+        M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
         M_nl_assembly(false)
     {
@@ -207,6 +249,7 @@ public :
         }
 
         double error=0;
+        double r_error=0;
         auto mu = M_trainset->max().template get<0>();
 
         if ( M_M==0 )
@@ -223,12 +266,16 @@ public :
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
             mu = best_fit.template get<0>();
-            cout << "DEIM : Current error : "<< error
-                 <<", tolerance : " << M_tol <<std::endl;
+
+            if ( M_max_value!=0 )
+                r_error = error/M_max_value;
+
+            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
             cout <<"===========================================\n";
         }
 
-        while( M_M<mMax && error>M_tol )
+        while( M_M<mMax && r_error>M_tol && error>M_Atol )
         {
             cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
 
@@ -241,27 +288,29 @@ public :
                 auto best_fit = computeBestFit();
                 error = best_fit.template get<1>();
                 mu = best_fit.template get<0>();
-                cout << "DEIM : Current error : "<< error
-                           <<", tolerance : " << M_tol <<std::endl;
+
+                r_error = error/M_max_value;
+                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
+                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
                 cout <<"===========================================\n";
             }
-
         }
 
+        M_solutions.clear();
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
         toc("DEIM : Total Time");
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
-    vectorN_type beta( parameter_type const& mu )
+    vectorN_type beta( parameter_type const& mu, int M = -1 )
     {
-        return computeCoefficient( mu );
+        return computeCoefficient( mu, M );
     }
 
-    vectorN_type beta( parameter_type const& mu, element_type const& u )
+    vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
-        return computeCoefficient( mu, u );
+        return computeCoefficient( mu, u, M );
     }
 
 
@@ -302,6 +351,8 @@ protected :
         auto i = vec_max.template get<1>();
         double max = vec_max.template get<0>();
 
+        if ( M_max_value==-1 )
+            M_max_value=max;
         M_M++;
 
         Phi->scale( 1./max );
@@ -420,29 +471,32 @@ protected :
     }
 
     //! \return the beta coefficient for parameter \p mu
-    vectorN_type computeCoefficient( parameter_type const& mu )
+    vectorN_type computeCoefficient( parameter_type const& mu, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
-    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u )
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, u, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
 
 
     //! Compute the beta coefficients for a assembled tensor \p T
-    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true )
+    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
-        vectorN_type rhs (M_M);
-        vectorN_type coeff (M_M);
-        if ( M_M>0 )
+        if( (M < 0) || (M > M_M) )
+            M = M_M;
+        vectorN_type rhs (M);
+        vectorN_type coeff (M);
+        if ( M > 0 )
         {
-            for ( int i=0; i<M_M; i++ )
+            for ( int i=0; i<M; i++ )
                 rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
-            coeff = M_B.lu().solve( rhs );
+            coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
+
         return coeff;
     }
 
@@ -464,15 +518,15 @@ protected :
         for ( auto const& mu : *M_trainset )
         {
             tensor_ptrtype T = residual( mu );
+            auto vec_max = vectorMaxAbs(T);
+            auto norm = vec_max.template get<0>();
 
-            double norm = T->linftyNorm();
             if ( norm>max )
             {
                 max = norm;
                 mu_max = mu;
             }
         }
-
         LOG(INFO) << "DEIM : computeBestFit() end";
         toc("DEIM : compute best fit");
 
@@ -490,7 +544,14 @@ protected :
         LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
         tensor_ptrtype T;
 
-        T = this->assemble( mu );
+        if( !boption( prefixvm( M_prefix, "deim.store-tensors") ) || !M_solutions[mu] )
+        {
+            T = this->assemble( mu );
+            if( boption( prefixvm( M_prefix, "deim.store-tensors") ) )
+                M_solutions[mu] = copyTensor(T);
+        }
+        else
+            T = M_solutions[mu];
 
         double norm = T->linftyNorm();
         vectorN_type coeff = computeCoefficient(T, false);
@@ -563,16 +624,20 @@ protected :
 
 protected :
     mesh_ptrtype mesh;
+    std::string M_prefix;
+
     sampling_ptrtype M_trainset;
     int M_M;
-    double M_tol;
+    double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
+
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
     std::vector<ptsset_type> M_ptsset;
     std::set<int> M_elts_ids;
 
-    std::string M_prefix;
+    solutionsmap_type M_solutions;
+
     bool M_rebuild, M_nl_assembly;
 };
 
@@ -630,7 +695,9 @@ public :
     {
         if ( this->M_nl_assembly )
         {
-            CHECK(!online) << "Call of online nl assembly with no solution u\n";
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = M_model->solve(mu);
             return M_model->assembleForDEIMnl(mu,u);
         }
@@ -783,7 +850,9 @@ public :
     {
         if ( this->M_nl_assembly )
         {
-            CHECK(!online) << "Call of online nl assembly with no solution u\n";
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
             auto u = M_model->solve(mu);
             return M_model->assembleForMDEIMnl(mu,u);
         }
@@ -968,7 +1037,6 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::save( Archive & ar, const uns
 {
 #if 0
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
     ar & BOOST_SERIALIZATION_NVP( M_M );
     ar & BOOST_SERIALIZATION_NVP( M_B );
     ar & BOOST_SERIALIZATION_NVP( M_index );

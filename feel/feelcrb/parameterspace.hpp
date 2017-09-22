@@ -159,6 +159,19 @@ public:
                     this->operator()( it - paramNames.begin() ) = value;
             }
 
+        /**
+         * get index of named parameter
+         */
+        int indexOfParameterNamed( std::string name ) const
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                if( it != paramNames.end() )
+                    return it - paramNames.begin();
+                else
+                    return -1;
+            }
+
         void setParameterSpace( parameterspace_ptrtype const& space )
             {
                 M_space = space;
@@ -1436,6 +1449,18 @@ public:
     void setParameterName( uint16_type d, std::string const& name )
         {
             M_parameterNames[d] = name;
+        }
+
+    /**
+     * get index of named parameter
+     */
+    int indexOfParameterNamed( std::string name ) const
+        {
+            auto it = std::find(M_parameterNames.begin(), M_parameterNames.end(), name);
+            if( it != M_parameterNames.end() )
+                return it - M_parameterNames.begin();
+            else
+                return -1;
         }
 
     //@}
