@@ -38,6 +38,12 @@ makeOptions()
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
+        ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
+#if (FEELPP_DIM==2)
+        ( "solution.u", po::value<std::string>()->default_value( "{0,0}" ), "solution u exact" )
+#else
+        ( "solution.u", po::value<std::string>()->default_value( "{0,0,0}" ), "solution u exact" )
+#endif
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ;
@@ -73,13 +79,13 @@ int hdg_laplacian()
     auto K = expr(soption("k"));
     auto lambda = cst(1.)/K;
     
-
+#if defined(FEELPP_HAS_SYMPY )
     // Exact solutions
     std::ostringstream ostr;
     ostr <<  "from sympy2ginac import *\n"
          << "s=syms(" << Dim << ");\n"
          << "ns=nsyms(" << Dim << ");\n"
-         << "p=sympify("<< soption("solution.p") << ");\n"
+         << "p=sympify("<< soption("solution.sympy.p") << ");\n"
          << "k=sympify("<< soption("k") << ");\n"
          << "grad_p=grad(p,s);\n"
          << "flux=-k*grad(p,s);\n"
@@ -97,11 +103,20 @@ int hdg_laplacian()
     cout << "un : " << m.at("un") << std::endl;
     cout << "f : " << m.at("f") << std::endl;
 
-    auto p_exact = expr(m.at("p"));
-    auto u_exact = expr<Dim,1>( m.at("u") );
+    std::string p_exact_str = m.at("p");
+    std::string u_exact_str = m.at("u");
+    auto p_exact = expr( p_exact_str );
+    auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( m.at("un") );
     auto f_exact = expr( m.at("f") );
-
+#else
+    std::string p_exact_str = soption("solution.p");
+    std::string u_exact_str = soption("solution.u");
+    auto p_exact = expr(p_exact_str);
+    auto u_exact = expr<Dim,1>(u_exact_str);
+    auto un_exact = trans(u_exact)*N();
+    auto f_exact = expr( soption( "functions.f") );
+#endif
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
     toc("mesh",true);
@@ -300,8 +315,8 @@ int hdg_laplacian()
     int status = checker().runOnce( {norms_p,norms_u},
                                     { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
 #else
-    int status1 = checker().runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status2 = checker().runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status1 = checker(p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status2 = checker(u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
 #endif
     // end::check[]
 
