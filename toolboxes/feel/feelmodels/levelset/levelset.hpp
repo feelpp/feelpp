@@ -524,6 +524,8 @@ protected:
     void updateMarkerCrossedElements();
     void updateMarkerInterface();
 
+    void updateLeftCauchyGreenTensor();
+
 private:
     void loadParametersFromOptionsVm();
     void loadConfigICFile();
