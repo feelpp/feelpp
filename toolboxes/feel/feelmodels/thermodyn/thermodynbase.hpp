@@ -177,7 +177,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         void createExporters();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
+        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app );
         void updateForUseFunctionSpacesVelocityConvection();
 
         void initPostProcess();

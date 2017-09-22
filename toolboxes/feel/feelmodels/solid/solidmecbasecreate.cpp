@@ -833,7 +833,7 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::appli_ptrtype const& app )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::model_ptrtype const& app )
 {
     if ( M_isUpdatedForUse ) return;
 

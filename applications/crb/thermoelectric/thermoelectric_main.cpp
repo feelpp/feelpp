@@ -49,11 +49,26 @@ int main( int argc, char** argv)
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
     using export_vector_wn_type = typename crb_type::export_vector_wn_type;
+    using mesh_type = rb_model_type::mesh_type;
+    using mesh_ptrtype = rb_model_type::mesh_ptrtype;
+
+    auto mesh = loadMesh( _mesh=new mesh_type,
+                          _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
+    mesh_ptrtype meshC;
+
+    if( Environment::vm().count("thermoelectric.conductor") )
+    {
+        std::vector<std::string> conductor = vsoption("thermoelectric.conductor");
+        std::list<std::string> conductorList(conductor.begin(), conductor.end());
+        meshC = createSubmesh(mesh, markedelements(mesh, conductorList));
+    }
+    else
+        meshC = mesh;
 
     // init
-    rb_model_ptrtype model = boost::make_shared<rb_model_type>();
+    rb_model_ptrtype model = boost::make_shared<rb_model_type>(meshC);
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric", crbModel);
+    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric", crbModel, crb::stage::offline);
 
     // offline
     crb->offline();

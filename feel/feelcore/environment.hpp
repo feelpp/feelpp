@@ -401,9 +401,16 @@ public:
     {
         return *S_commandLineParser;
     }
-    static std::set<std::string> configFileNames()
+
+    static std::vector<std::tuple<std::string,std::ifstream> > & configFiles()
     {
-        return S_configFileNames;
+        for ( auto & configFile : S_configFiles )
+        {
+            std::ifstream & ifs = std::get<1>( configFile );
+            ifs.clear();
+            ifs.seekg(0, std::ios::beg);
+        }
+        return S_configFiles;
     }
 
     /**
@@ -802,7 +809,7 @@ private:
     static int S_argc;
     //! arguments in command line
     static char** S_argv;
-                                                        
+
     static std::vector<fs::path> S_paths;
 
     static fs::path S_appdir;
@@ -811,7 +818,7 @@ private:
     static AboutData S_about;
     static pt::ptree S_summary;
     static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
-    static std::set<std::string> S_configFileNames;
+    static std::vector<std::tuple<std::string,std::ifstream> > S_configFiles;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
