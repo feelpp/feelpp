@@ -117,3 +117,4 @@ ginac.pc
 /research/hpmortar/
 /tools/scripts/buildkite/feelpp_build.sh
 *.cfgbak
+__pycache__
