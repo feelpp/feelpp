@@ -10,7 +10,7 @@ def nsyms(n):
     return Array( [nx] if n==1 else [nx,ny] if n==2 else [nx,ny,nz] )
 
 def toginac(s,symbols):
-    print("s=",sympify(s));
+    #print("s=",sympify(s));
     strsymbols=[]
     for i in symbols:
         strsymbols.append(str(i))
@@ -54,7 +54,7 @@ def mult(a,b):
 
 def n(a,c=1,nsymbols=[nx,ny,nz]):
     axe=0 if Array(a).rank()==1 else 1;
-    print("axe:",axe);
+    #print("axe:",axe);
     print("a:",a);
     return tensorcontraction(tensorproduct(mult(c,a),nsymbols),(axe,axe+1));
 
