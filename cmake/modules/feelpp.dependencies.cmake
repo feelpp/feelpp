@@ -754,7 +754,18 @@ if(FEELPP_ENABLE_PYTHON)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
     set( FEELPP_HAS_PYTHON 1 )
 
+    # Check that sympy is available
+    include(FindPythonModules)
+    find_python_module(sympy 1.1 FEELPP_SYMPY_FOUND)
+    if ( FEELPP_SYMPY_FOUND )
+      set( FEELPP_HAS_SYMPY 1 )
+      message(STATUS "[feelpp] sympy (at least 1.1) has been found")
+    else()
+      message(STATUS "[feelpp] sympy (at least 1.1) has not been  found")
+    endif()
   endif()
+
+  
 endif()
 
 

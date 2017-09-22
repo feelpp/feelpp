@@ -21,29 +21,37 @@
 //! @date 18 Sep 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/map.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
-
 
 namespace Feel {
 std::map<std::string,std::string> 
 pyexpr( std::string const& pycode, std::vector<std::string> const& locals )
 {
     using Feel::cout;
-    py::scoped_interpreter guard{};
 
-    py::dict _locals;
-    py::exec(pycode.c_str(), py::globals(),_locals);
 
     std::map<std::string,std::string> r;
-    for( auto l : locals )
+    
+    if ( Environment::isMasterRank() )
     {
-        std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
-        cout << "cmd : " << cmd << std::endl;
-        py::exec(cmd, py::globals(), _locals );
-        r[l] = _locals[l.c_str()].cast<std::string>();
+        py::scoped_interpreter guard{};
+        py::dict _locals;
+        py::exec(pycode.c_str(), py::globals(),_locals);
+
+        for( auto l : locals )
+        {
+            std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
+            cout << "cmd : " << cmd << std::endl;
+            py::exec(cmd, py::globals(), _locals );
+            r[l] = _locals[l.c_str()].cast<std::string>();
+        }
     }
+    mpi::broadcast( Environment::worldComm(), r, 0 );
+    
     return r;
 }
 
