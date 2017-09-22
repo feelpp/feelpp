@@ -109,7 +109,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
     if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {
         hp::data d = M_data.at(solution).at(M_p);
-        Feel::cout << "exact = " << d.exact << std::endl;
+        
         if ( d.exact )
         {
             
