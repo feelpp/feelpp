@@ -11,9 +11,13 @@ def nsyms(n):
 
 def toginac(s,symbols):
     print("s=",sympify(s));
+    strsymbols=[]
+    for i in symbols:
+        strsymbols.append(str(i))
+    strsymbols=sorted(strsymbols);
     if Array(sympify(s)).rank() == 0:
-        return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in symbols);
-    return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in symbols)
+        return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in strsymbols);
+    return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in strsymbols)
 
 def dx(f):
     return derive_by_array(f,[x]);
