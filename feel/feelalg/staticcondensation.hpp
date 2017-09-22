@@ -371,12 +371,20 @@ public:
     struct CondenseData
     {
         bool parallel = true;
-        int grain = 100;
+        int tasks = 2;
+        int grain( int len ) const
+            {
+                return len/tasks;
+            }
     };
     struct LocalSolveData
     {
         bool parallel = true;
-        int grain = 100;
+        int tasks = 2;
+        int grain( int len ) const
+            {
+                return len/tasks;
+            }
     };
     using block_local_vectors_t = std::unordered_map<size_type,local_vector_t>;
     using block_local_matrices_t = std::unordered_map<block_element_t,local_matrix_t,boost::hash<block_element_t>>;
@@ -621,8 +629,8 @@ struct Condenser
     
     using dk_t = typename sc_t::dk_t;
     
-    template<typename LM_t, typename LV_t>
-    Condenser( LM_t const& lm, LV_t const& lv, E& _e, dk_t& _dkset, ainvb_t& _ainvb, ainvf_t& _ainvf,  M_t& _m, V_t& _v, int _grain = 100 )
+    template<typename LM_t, typename LV_t,typename Data_t>
+    Condenser( LM_t const& lm, LV_t const& lv, E& _e, dk_t& _dkset, ainvb_t& _ainvb, ainvf_t& _ainvf,  M_t& _m, V_t& _v, Data_t const& d )
         :
         A00K( lm.at(std::make_pair(0,0)) ),
         A10K( lm.at(std::make_pair(1,0)) ),
@@ -642,7 +650,7 @@ struct Condenser
         AinvF( _ainvf ),
         S( _m ),
         V( _v ),
-        grain(_grain)
+        grain(d.grain(A00K.size()) )
         {
             auto& e1 = e(0_c);
             auto& e2 = e(1_c);
@@ -837,7 +845,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     if ( M_condense.parallel )
     {
         tic();
-        Condenser<E,T,M_ptrtype,V_ptrtype> c( M_local_matrices, rhs->M_local_vectors, e, M_dK, M_AinvB, M_AinvF, S, V, M_condense.grain );
+        Condenser<E,T,M_ptrtype,V_ptrtype> c( M_local_matrices, rhs->M_local_vectors, e, M_dK, M_AinvB, M_AinvF, S, V, M_condense );
         c( A00K.begin(), A00K.end() );
         toc("sc.condense.parallel",FLAGS_v>0);
     }
@@ -961,8 +969,8 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
 template<typename T>
 StaticCondensation<T>::StaticCondensation()
     :
-    M_condense{ boption("sc.condense.parallel" ), ioption("sc.condense.grain") },
-    M_localsolve{ boption("sc.localsolve.parallel" ), ioption("sc.localsolve.grain") }
+    M_condense{ boption("sc.condense.parallel" ), ioption("sc.condense.parallel.n") },
+    M_localsolve{ boption("sc.localsolve.parallel" ), ioption("sc.localsolve.parallel.n") }
 {}
 template<typename T>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
@@ -1354,8 +1362,9 @@ struct LocalSolver
     using ainvf_t = typename sc_t::ainvf_t;
     
     using dk_t = typename sc_t::dk_t;
-    
-    LocalSolver( int _N0, int _N1, int _N2, E& _e, ainvb_t const& _AinvB, ainvf_t const& _AinvF, dk_t const& _dK, int _grain = 100 )
+
+    template<typename Data_t>
+    LocalSolver( int _N0, int _N1, int _N2, E& _e, ainvb_t const& _AinvB, ainvf_t const& _AinvF, dk_t const& _dK, Data_t const& d )
         :
         N0(_N0),
         N1(_N1),
@@ -1364,7 +1373,7 @@ struct LocalSolver
         AinvB(_AinvB),
         AinvF(_AinvF),
         dK(_dK),
-        grain(_grain)
+        grain(d.grain( AinvB.size() ) )
         {}
     void operator()( ainvb_const_iterator_t beg, ainvb_const_iterator_t end )
         {
@@ -1440,7 +1449,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
     if ( M_localsolve.parallel ) 
     {
         tic();
-        LocalSolver<E,T> ls( N0, N1, N3, e, M_AinvB, M_AinvF, M_dK, M_localsolve.grain );
+        LocalSolver<E,T> ls( N0, N1, N3, e, M_AinvB, M_AinvF, M_dK, M_localsolve );
         ls( M_AinvB.cbegin(), M_AinvB.cend() );
         for( auto & f : ls.futures() )
             f.get();
