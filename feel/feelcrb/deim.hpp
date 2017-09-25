@@ -50,46 +50,9 @@
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
+
 namespace Feel
 {
-
-/**
- * Comparison structure for 2 parameters mu1 and mu2
- * The comparison is made component by component :
- * - we start with i=0
- * - if mu1[i]<mu2[i] then mu1<mu2
- * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
- */
-template <typename ParameterType>
-struct paramCompare
-{
-public :
-    typedef ParameterType parameter_type;
-
-    /**
-     * Compare the component \p i of \p mu1 and \p mu2
-     * \return true if mu1[i]<mu2[i]
-     */
-    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
-    {
-        return compare( mu1, mu2, 0 );
-    }
-private :
-    /**
-     * Compare \p mu1 and \p mu2
-     * \return true if mu1 < mu2
-     */
-    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
-    {
-        if ( i==mu1.size() )
-            return false;
-        else if ( mu1[i]==mu2[i] )
-            return compare( mu1, mu2, i+1 );
-        else
-            return mu1[i]<mu2[i];
-    }
-};
-
 
 /**
  * \brief Base class for DEIM algorithm
@@ -148,7 +111,7 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
+    typedef std::map<int,tensor_ptrtype> solutionsmap_type;
 
     //! Default Constructor
     DEIMBase()
@@ -175,7 +138,8 @@ public :
         M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
         M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
-        M_nl_assembly(false)
+        M_nl_assembly(false),
+        M_store_tensors( false )
     {
         using Feel::cout;
 
@@ -255,7 +219,7 @@ public :
         if ( M_M==0 )
         {
             cout <<"===========================================\n";
-            cout << "DEIM : Start algorithm with mu="<<muString(mu)<<std::endl;
+            cout << "DEIM : Start algorithm with mu="<< mu.toString() <<std::endl;
 
             tic();
             addNewVector(mu);
@@ -277,7 +241,7 @@ public :
 
         while( M_M<mMax && r_error>M_tol && error>M_Atol )
         {
-            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
             tic();
             addNewVector(mu);
@@ -344,7 +308,7 @@ protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
+        LOG(INFO) << "DEIM : addNewVector() start with "<<mu.toString();
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -541,27 +505,42 @@ protected :
      */
     tensor_ptrtype residual( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
+        LOG(INFO) << "DEIM : residual() start with "<< mu.toString();
         tensor_ptrtype T;
 
-        if( !boption( prefixvm( M_prefix, "deim.store-tensors") ) || !M_solutions[mu] )
+        if( !M_store_tensors || !M_solutions[mu.key()] )
         {
             T = this->assemble( mu );
-            if( boption( prefixvm( M_prefix, "deim.store-tensors") ) )
-                M_solutions[mu] = copyTensor(T);
+            T->close();
+            if( M_store_tensors )
+            {
+                LOG(INFO)<< "DEIM : tensor stored in memory for mu="
+                         << mu.toString()<<" / "<<mu.key();
+                M_solutions[mu.key()] = copyTensor(T);
+            }
         }
         else
-            T = M_solutions[mu];
+        {
+            LOG(INFO) << "DEIM : tensor read in memory for mu="
+                      << mu.toString()<<" / "<<mu.key();
+            T = M_solutions[mu.key()];
+        }
 
+#if 0 // produce Deadlock in // with vectors.
         double norm = T->linftyNorm();
+#else
+        auto vec_max = vectorMaxAbs( T );
+        double norm = vec_max.template get<0>();
+#endif
+
         vectorN_type coeff = computeCoefficient(T, false);
 
         auto newT = copyTensor( T );
-
         for ( int i=0; i<M_M; i++ )
             add( newT, -coeff(i), M_bases[i] );
-        LOG(INFO) << "DEIM : residual() end";
         newT->scale( 1./norm );
+
+        LOG(INFO) << "DEIM : residual() end";
         return newT;
     }
 
@@ -580,7 +559,8 @@ protected :
     // \return a shared pointer on a copy of \p V
     vector_ptrtype copyTensor( vector_ptrtype V )
     {
-        vector_ptrtype newV = V->clone();
+        //vector_ptrtype newV = V->clone();
+        vector_ptrtype newV = backend()->newVector( V->mapPtr() );
         *newV = *V;
         return newV;
     }
@@ -593,16 +573,6 @@ protected :
                                                            M->graph() );
         *newM=*M;
         return newM;
-    }
-
-    std::string muString( parameter_type const& mu )
-    {
-        std::ostringstream mu_str;
-        mu_str << "["<<mu[0];
-        for ( int i=1; i<mu.size(); i++ )
-            mu_str <<","<< mu[i];
-        mu_str <<"]";
-        return mu_str.str();
     }
 
 
@@ -638,7 +608,7 @@ protected :
 
     solutionsmap_type M_solutions;
 
-    bool M_rebuild, M_nl_assembly;
+    bool M_rebuild, M_nl_assembly, M_store_tensors;
 };
 
 
@@ -672,6 +642,7 @@ public :
                     prefix ),
         M_model( model )
     {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
         this->M_online_model = model_ptrtype( new model_type() );
         this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
 
@@ -698,6 +669,7 @@ public :
             if ( online )
                 Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
             //CHECK(!online) << "Call of online nl assembly with no solution u\n";
+
             auto u = M_model->solve(mu);
             return M_model->assembleForDEIMnl(mu,u);
         }
@@ -827,6 +799,7 @@ public :
                     prefix ),
         M_model( model )
     {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
         this->M_online_model = model_ptrtype( new model_type() );
         this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
 
