@@ -139,7 +139,9 @@ public :
         M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
         M_nl_assembly(false),
-        M_store_tensors( false )
+        M_store_tensors( false ),
+        M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
+        M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) )
     {
         using Feel::cout;
 
@@ -608,7 +610,8 @@ protected :
 
     solutionsmap_type M_solutions;
 
-    bool M_rebuild, M_nl_assembly, M_store_tensors;
+    bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
+    std::string M_write_nl_directory;
 };
 
 
@@ -670,7 +673,39 @@ public :
                 Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
             //CHECK(!online) << "Call of online nl assembly with no solution u\n";
 
-            auto u = M_model->solve(mu);
+            auto u = M_model->functionSpace()->element();
+            bool need_solve = true;
+
+            if ( M_write_nl_solutions )
+            {
+                need_solve = !u.load( _path=M_write_nl_directory,
+                                      _suffix=std::to_string(mu.key()), _type="hdf5" );
+                if ( need_solve )
+                    LOG(INFO) << "DEIM : Unable to load nl solution in direcotry "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key()<< ". Solve function will be called.";
+                else
+                    LOG(INFO) << "DEIM : NL solution loaded in direcotry "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key();
+            }
+
+            if ( need_solve )
+            {
+                LOG(INFO) << "DEIM : calling solve function for parameter " << mu.toString()
+                          <<" / " << mu.key();
+                u = M_model->solve(mu);
+
+                if ( M_write_nl_solutions )
+                {
+                    LOG(INFO) << "DEIM : Wrting solution on disk in directory "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key();
+                    u.save( _path=M_write_nl_directory,
+                            _suffix=std::to_string(mu.key()), _type="hdf5" );
+                }
+            }
+
             return M_model->assembleForDEIMnl(mu,u);
         }
         if (online)
@@ -765,6 +800,9 @@ private :
 private :
     model_ptrtype M_model, M_online_model;
 
+    using super_type::M_write_nl_solutions;
+    using super_type::M_write_nl_directory;
+
 };
 
 
@@ -826,9 +864,43 @@ public :
             if ( online )
                 Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
             //CHECK(!online) << "Call of online nl assembly with no solution u\n";
-            auto u = M_model->solve(mu);
+
+            auto u = M_model->functionSpace()->element();
+            bool need_solve = true;
+
+            if ( M_write_nl_solutions )
+            {
+                need_solve = !u.load( _path=M_write_nl_directory,
+                                      _suffix=std::to_string(mu.key()), _type="hdf5" );
+                if ( need_solve )
+                    LOG(INFO) << "MDEIM : Unable to load nl solution in direcotry "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key()<< ". Solve function will be called.";
+                else
+                    LOG(INFO) << "MDEIM : NL solution loaded in direcotry "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key();
+            }
+
+            if ( need_solve )
+            {
+                LOG(INFO) << "MDEIM : calling solve function for parameter " << mu.toString()
+                          <<" / " << mu.key();
+                u = M_model->solve(mu);
+
+                if ( M_write_nl_solutions )
+                {
+                    LOG(INFO) << "MDEIM : Wrting solution on disk in directory "
+                              << M_write_nl_directory << ", for parameter : " << mu.toString()
+                              <<" / " << mu.key();
+                    u.save( _path=M_write_nl_directory,
+                            _suffix=std::to_string(mu.key()), _type="hdf5" );
+                }
+            }
+
             return M_model->assembleForMDEIMnl(mu,u);
         }
+
         if (online)
             return this->M_online_model->assembleForMDEIM(mu);
          return M_model->assembleForMDEIM(mu);
@@ -980,7 +1052,8 @@ private :
 private :
     model_ptrtype M_model, M_online_model;
 
-
+    using super_type::M_write_nl_solutions;
+    using super_type::M_write_nl_directory;
 };
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
