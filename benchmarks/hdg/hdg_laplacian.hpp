@@ -199,7 +199,7 @@ Hdg<Dim, OrderP>::convergence()
     auto tau_constant = cst(M_tau_constant);
 
     tic();
-    mesh = loadMesh( new mesh_type);
+    auto mesh = loadMesh( new mesh_type);
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -247,7 +247,7 @@ Hdg<Dim, OrderP>::convergence()
     auto a = blockform2( ps, strategy ,backend() );
     auto rhs = blockform1( ps, strategy, backend() );
     toc("forms",true);
-    auto K = expr(soption("k"));a
+    auto K = expr(soption("k"));
     auto lambda = cst(1.)/K;
     auto tau_constant = cst(M_tau_constant);
     auto f = -K*laplacian(p_exact);
