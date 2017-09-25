@@ -97,7 +97,7 @@ LinearElasticForceModel<LevelSetType>::energyDerivative1Impl() const
 
     *M_energyDerivative1 = vf::project(
         _space=M_energyDerivative1->functionSpace(),
-        _expr=M_elasticShearModulus * (I1-1.)
+        _expr=M_elasticShearModulus * (I1-2.)
         );
     return M_energyDerivative1;
 }
