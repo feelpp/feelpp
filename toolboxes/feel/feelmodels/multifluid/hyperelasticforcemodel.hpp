@@ -140,7 +140,11 @@ HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype
     // Derivative of the energy wrt the second Cauchy-Green invariant (TrCofC)
     auto Ep2 = this->energyDerivative2();
 
-    auto Fe_expr = this->levelset()->projectorL2Tensor2Symm()->project(
+    //auto Fe_expr = this->levelset()->projectorL2Tensor2Symm()->project(
+            //_expr=2.*(idv(Ep1)*A + idv(Ep2)*(A*trace(A)-A*A) )
+            //);
+    auto Fe_expr = vf::project(
+            _space=this->levelset()->functionSpaceTensor2Symm(),
             _expr=2.*(idv(Ep1)*A + idv(Ep2)*(A*trace(A)-A*A) )
             );
     auto Fe = this->levelset()->smootherVectorial()->project(
