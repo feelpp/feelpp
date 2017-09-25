@@ -160,8 +160,9 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 Checker
 checker( std::string const& s, std::string const& p )
 {
-    Feel::cout << "s=" << s << std::endl;
-    return Checker{s};
+    //Feel::cout << "s=" << s << std::endl;
+    auto sol = s.empty()?soption("checker.solution" ):s;
+    return Checker{sol};
 }
 
 Checker::Checker()
