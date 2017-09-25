@@ -49,6 +49,7 @@
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/removecomments.hpp>
 #include <feel/feelcore/utility.hpp>
+#include <feel/feelcore/hashtables.hpp>
 
 namespace Feel
 {
@@ -93,9 +94,9 @@ public:
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
         typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-        //typedef typename Eigen::internal::ref_selector<Element>::type Nested; 
+        //typedef typename Eigen::internal::ref_selector<Element>::type Nested;
         typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
-        
+
         /**
          * default constructor
          */
@@ -220,6 +221,27 @@ public:
                     << "space min : " << M_space->min() << "\n"
                     << "space max : " << M_space->max() << "\n";
             }
+
+
+        size_t key() const
+        {
+            int N = this->size();
+            std::vector<double> x(N);
+            Eigen::VectorXd::Map(x.data(), N) = *this;
+            HashTables::HasherContainers<double> h;
+            return h(x);
+        }
+
+        std::string toString() const
+        {
+            std::ostringstream mu_str;
+            mu_str << "["<<this->operator[](0);
+            for ( int i=1; i<this->size(); i++ )
+                mu_str <<","<< this->operator[](i);
+            mu_str <<"]";
+            return mu_str.str();
+        }
+
     private:
         friend class boost::serialization::access;
         template<class Archive>
@@ -475,7 +497,7 @@ public:
         }
 
         void sampling( size_type N, std::string const& samplingMode ) { return sample( N, samplingMode ); }
-        
+
         /**
          * \brief create a sampling with global number of samples
          * \param N the number of samples
@@ -1170,7 +1192,7 @@ public:
             }
 
     private:
-        
+
         Sampling() {}
 
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
