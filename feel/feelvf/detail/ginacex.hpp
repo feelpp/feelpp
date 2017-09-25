@@ -361,9 +361,22 @@ str( GinacEx<Order> && e )
 }
 template<int Order>
 FEELPP_EXPORT std::string
+str( Expr<GinacEx<Order>> && e )
+{
+    return str( std::forward<GinacEx<Order>>(e).expression().expression() );
+}
+template<int Order>
+FEELPP_EXPORT std::string
 str( GinacEx<Order> const& e )
 {
     return str( e.expression() );
+}
+
+template<int Order>
+FEELPP_EXPORT std::string
+str( Expr<GinacEx<Order>> const& e )
+{
+    return str( e.expression().expression() );
 }
 
 } // vf
