@@ -161,6 +161,8 @@ Checker
 checker( std::string const& s, std::string const& p )
 {
     //Feel::cout << "s=" << s << std::endl;
+    if ( s.empty() && soption("checker.solution" ).empty() )
+        throw std::logic_error("Invalid setup of Checker system, no solution provided");
     auto sol = s.empty()?soption("checker.solution" ):s;
     return Checker{sol};
 }
