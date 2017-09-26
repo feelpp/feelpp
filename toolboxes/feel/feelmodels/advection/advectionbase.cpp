@@ -138,13 +138,19 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
         this->build();
 
 
-    if ( this->hasAdvection() &&
-         ( (this->stabilizationMethod() == AdvectionStabMethod::GALS) ||
-           (this->stabilizationMethod() == AdvectionStabMethod::SUPG)  ) )
+    if ( this->hasAdvection() )
     {
-        typedef StabilizationGLSParameter<mesh_type, nOrder> stab_gls_parameter_impl_type;
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
-        M_stabilizationGLSParameter->init();
+        if( (this->stabilizationMethod() == AdvectionStabMethod::GALS) ||
+                (this->stabilizationMethod() == AdvectionStabMethod::SUPG) )
+        {
+            typedef StabilizationGLSParameter<mesh_type, nOrder> stab_gls_parameter_impl_type;
+            M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+            M_stabilizationGLSParameter->init();
+        }
+        if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
+        {
+            M_stabilizationCIPCoefficient = doption( _name="stabilization-cip.coeff", _prefix=this->prefix() );
+        }
     }
 
     // Vector solution
@@ -223,10 +229,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
     // Stabilization method
-    const std::string stabmeth = soption( _name="advec-stab-method", _prefix=this->prefix() );
+    const std::string stabmeth = soption( _name="stabilization.method", _prefix=this->prefix() );
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
-    M_stabCoeff = doption( _name="advec-stab-coeff", _prefix=this->prefix() );
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
@@ -782,7 +787,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
     auto const& phi = this->fieldSolution();
     auto const& psi = this->fieldSolution();
 
-    double stabCoeff = this->stabilizationCoefficient();
+    //double stabCoeff = this->stabilizationCoefficient();
 
     // Forms
     auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
@@ -964,6 +969,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
             case AdvectionStabMethod::CIP :
             {
+                double stabCoeff = this->M_stabilizationCIPCoefficient;
                 auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
 
                 bilinearForm_PatternExtended += integrate(

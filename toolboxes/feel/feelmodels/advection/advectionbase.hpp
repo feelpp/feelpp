@@ -288,8 +288,8 @@ public :
     //--------------------------------------------------------------------//
     // Stabilization
     AdvectionStabMethod stabilizationMethod() const { return M_stabMethod; }
-    double stabilizationCoefficient() const { return M_stabCoeff; }
-    void setStabilizationCoefficient(double coeff) { M_stabCoeff = coeff; }
+    double stabilizationCIPCoefficient() const { return M_stabilizationCIPCoefficient; }
+    void setStabilizationCIPCoefficient(double coeff) { M_stabilizationCIPCoefficient = coeff; }
 
     //--------------------------------------------------------------------//
     // Algebraic model updates
@@ -431,7 +431,7 @@ protected:
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
     AdvectionStabMethod M_stabMethod;
-    double M_stabCoeff;
+    double M_stabilizationCIPCoefficient;
     double M_gamma1;
     // stabilization
     //bool M_stabilizationGLS;
