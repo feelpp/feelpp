@@ -57,17 +57,19 @@ const size_type CURL                     = ( 1<<16 );
 const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
 const size_type NORMAL_COMPONENT         = ( 1<<22 );
+const size_type LOCAL_BASIS              = ( 1<<23 );
 
 
-
+#if 0
 typedef mpl::vector_c<size_type,
                       JACOBIAN, KB, KB2, FIRST_DERIVATIVE, GRAD, SECOND_DERIVATIVE, HESSIAN, LAPLACIAN,
                       MEASURE, NORMAL, TANGENT, FIRST_DERIVATIVE_NORMAL, POINT,
                       SYMM, UNSYMM,
                       DIV,CURL,
                       MASS, STIFFNESS,
-                      NORMAL_COMPONENT> contexts;
-
+                      NORMAL_COMPONENT,
+                      LOCAL_BASIS> contexts;
+#endif
 template<size_type Context>
 using has_jacobian = has_value<Context, JACOBIAN>;
 
@@ -88,11 +90,15 @@ struct has_second_derivative
 {
     static const bool value = has_value<Context, SECOND_DERIVATIVE>::value;
 };
+
+//!
+//! hessian
+//!
 template<size_type Context>
-struct has_hessian
-{
-    static const bool value = has_value<Context, HESSIAN>::value;
-};
+using has_hessian = has_value<Context, HESSIAN>;
+template<size_type Context>
+constexpr bool has_hessian_v = has_value<Context, HESSIAN>::value;
+
 template<size_type Context>
 struct has_laplacian
 {
@@ -105,10 +111,15 @@ struct has_normal
     static const bool value = has_value<Context, NORMAL>::value;
 };
 template<size_type Context>
+constexpr  bool has_normal_v = has_normal<Context>::value;
+
+template<size_type Context>
 struct has_tangent
 {
     static const bool value = has_value<Context, TANGENT>::value;
 };
+template<size_type Context>
+constexpr  bool has_tangent_v = has_tangent<Context>::value;
 
 template<size_type Context>
 struct has_first_derivative_normal
@@ -161,6 +172,11 @@ struct has_normal_component
 };
 template<size_type Context>
 constexpr  bool has_normal_component_v = has_normal_component<Context>::value;
+
+template<size_type Context>
+using has_local_basis = has_value<Context,LOCAL_BASIS>;
+template<size_type Context>
+constexpr  bool has_local_basis_v = has_local_basis<Context>::value;
 
 } // vm
 
