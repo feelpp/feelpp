@@ -25,6 +25,7 @@ Options:
      --enable-python                 enable python 
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
+     --disable-asan                  disable asan 
  -v, --verbose                       enable verbose output
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
@@ -56,6 +57,7 @@ fi
 BUILDTYPE=Release
 _WANT_PCH=no
 _WANT_PYTHON=yes
+_WANT_ASAN=yes
 _WANT_CLING=yes
 _WANT_VERBOSE=no
 _WANT_DEBUG=no
@@ -166,6 +168,9 @@ while [ -n "$1" ]; do
        ;;         
    --disable-cling)
        _WANT_CLING=no
+       ;;
+   --disable-asan)
+       _WANT_ASAN=no
        ;;
    --max-order=*)
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
@@ -295,6 +300,11 @@ if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
 else
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
+fi
+
+# ASAN
+if [ "X${_WANT_ASAN}" = "Xno" ]; then
+    echo "set(FEELPP_ENABLE_ASAN OFF CACHE PATH \"disable asan \" FORCE)" >> cmake.configure
 fi
 
 # CLING
