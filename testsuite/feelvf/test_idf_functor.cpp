@@ -50,6 +50,10 @@ struct MyFunctor
         {
             return x[coord];
         }
+    double operator()( uint16_type a, uint16_type b, ublas::vector<double> const& x, eigen_vector_type<3,value_type> const& n ) const
+        {
+            return x[coord];
+        }
     int coord = 0;
 };
 }

@@ -72,6 +72,11 @@ struct f_Px
     {
         return x[0];
     }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, eigen_vector_type<Dim,double> const& /*n*/ ) const
+        {
+            return x[0];
+        }
 };
 struct f_Nx
 {
@@ -82,7 +87,8 @@ struct f_Nx
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
     {
         return n[0];
     }
@@ -96,10 +102,12 @@ struct f_Ny
     static const uint16_type rank = 0;
     static const uint16_type imorder = 1;
     static const bool imIsPoly = true;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, ublas::vector<double> const& n ) const
-    {
-        return n[1];
-    }
+
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
+        {
+            return n[1];
+        }
 };
 struct f_sinPx
 {
@@ -110,10 +118,11 @@ struct f_sinPx
     static const uint16_type rank = 0;
     static const uint16_type imorder = 2;
     static const bool imIsPoly = false;
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
-    {
-        return math::sin( x[0] );
-    }
+    template<int Dim>
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
+        {
+            return math::sin( x[0] );
+        }
 };
 
 #if 0
