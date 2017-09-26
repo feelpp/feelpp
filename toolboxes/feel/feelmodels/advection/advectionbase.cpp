@@ -837,6 +837,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
 
                 auto L_op = grad(psi) * beta // advection term
+                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
                     + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
                     + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
                     ;
