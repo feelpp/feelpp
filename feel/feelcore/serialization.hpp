@@ -463,6 +463,103 @@ void serialize( Archive & ar,
     split_free( ar, t, file_version );
 }
 
+//
+// Eigen::Tensor
+//
+template<typename T, int N, class Archive>
+void load( Archive & ar,
+           Eigen::TensorFixedSize<T,Eigen::Sizes<N>> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    t.resize( n0 );
+    ar >> make_array( t.data(), n0 );
+}
+template<typename T, int N0, int N1, class Archive>
+void load( Archive & ar,
+           Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1>> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( n0, n1 );
+    ar >> make_array( t.data(), n1*n0 );
+}
+template<typename T, int N0, int N1, int N2, class Archive>
+void load( Archive & ar,
+           Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1,N2>> & t,
+           const unsigned int file_version )
+{
+    int n0,n1=1,n2=1;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    ar >> BOOST_SERIALIZATION_NVP( n2 );
+    t.resize( n0, n1, n2 );
+    ar >> make_array( t.data(), n1*n2*n0 );
+}
+template<typename T, int N, typename Archive>
+void save( Archive & ar,
+           const Eigen::TensorFixedSize<T,Eigen::Sizes<N>> & t,
+           const unsigned int file_version )
+{
+    int n0 = t.dimension(0);
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
+template<typename T, int N0, int N1, typename Archive>
+void save( Archive & ar,
+           const Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1>> & t,
+           const unsigned int file_version )
+{
+    int n0 = t.dimension(0);
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    int n1 = t.dimension(1);
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
+template<typename T, int N0, int N1, int N2, typename Archive>
+void save( Archive & ar,
+           const Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1,N2>> & t,
+           const unsigned int file_version )
+{
+    int n0 = t.dimension(0);
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    int n1 = t.dimension(1);
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    int n2 = t.dimension(2);
+    ar << BOOST_SERIALIZATION_NVP( n2 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.size() );
+}
+
+template<typename T, int N,  class Archive>
+void serialize( Archive & ar,
+                Eigen::TensorFixedSize<T,Eigen::Sizes<N>>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+template<typename T, int N0, int N1,  class Archive>
+void serialize( Archive & ar,
+                Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1>>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+template<typename T, int N0, int N1, int N2,  class Archive>
+void serialize( Archive & ar,
+                Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1,N2>>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+
 
 //
 // boost::tuple<T1,T2>
