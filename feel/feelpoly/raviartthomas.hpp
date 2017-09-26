@@ -327,7 +327,9 @@ public:
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                node_type dir = M_convex_ref.normal( e )*j[e];
+                node_type dir ( nDim, 1 );
+                em_node_type<value_type> e_n( dir.data().begin(), nDim, 1 );
+                e_n= M_convex_ref.normal( e )*j[e];
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
                 dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
