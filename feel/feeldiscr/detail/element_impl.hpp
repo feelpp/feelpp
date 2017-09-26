@@ -1262,7 +1262,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
+#if 0
                 v[q] += s(ldof)*v_*context.curl( ldof, q );
+#else
+                if ( nRealDim == 3 )
+                {
+                    for ( typename array_type::index i = 0; i < nRealDim; ++i )
+                    {
+                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
+                    }
+                }
+
+                else if ( nRealDim == 2 )
+                {
+                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
+                }
+#endif
             }
         }
     }
