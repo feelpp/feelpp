@@ -551,7 +551,7 @@ public:
             value_type e = M_tensor_expr.evalq( c1, c2, q );
             return e;
         }
-        Eigen::Map<const Eigen::Matrix<value_type, shape::M*shape::N,1>>
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evalq( uint16_type q ) const
         {
             return M_tensor_expr.evalq( q );

@@ -946,7 +946,10 @@ public:
         {
             return M_hessian;
         }
-
+        h_type const& hessian( uint16_type i, uint16_type q ) const
+            {
+                return M_hessian[i][q];
+            }
         // hessian of scalar basis function
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {

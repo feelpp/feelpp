@@ -194,6 +194,8 @@ class GeoMap
 
     using eigen_map_matrix_type = Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
     using eigen_map_vector_type = Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1,Eigen::ColMajor>>;
+
+    using hessian_basis_type = Eigen::Tensor<value_type,3>;
     
     /** default constructor */
     GeoMap()
@@ -417,30 +419,30 @@ class GeoMap
  */
     void gradient( const node_t_type& __pt,
                    matrix_type& __g ) const
-    {
-        namespace lambda = boost::lambda;
-
-        if ( trans == fem::LINEAR )
         {
-            __g = M_g_linear;
-        }
+            namespace lambda = boost::lambda;
 
-        else
-        {
-            FEELPP_ASSERT( __pt.size() == dim() )
-            ( __pt.size() )( dim() ).error( "invalid dimension" );
-
-            matrix_node_t_type __pts( nDim, 1 );
-            ublas::column( __pts, 0 ) = __pt;
-
-            ublas::vector<ublas::matrix<value_type>> m = super::derivate( __pts );
-
-            for ( uint16_type n = 0; n < nDim; ++n )
+            if ( trans == fem::LINEAR )
             {
-                ublas::column( __g, n ) = ublas::column( m( n ), 0 );
+                __g = M_g_linear;
+            }
+
+            else
+            {
+                FEELPP_ASSERT( __pt.size() == dim() )
+                    ( __pt.size() )( dim() ).error( "invalid dimension" );
+
+                matrix_node_t_type __pts( nDim, 1 );
+                ublas::column( __pts, 0 ) = __pt;
+
+                ublas::vector<ublas::matrix<value_type>> m = super::derivate( __pts );
+
+                for ( uint16_type n = 0; n < nDim; ++n )
+                {
+                    ublas::column( __g, n ) = ublas::column( m( n ), 0 );
+                }
             }
         }
-    }
 
     /**
    compute the gradient of the transformation in the reference
@@ -476,6 +478,32 @@ class GeoMap
             }
         }
     }
+
+    /**
+     compute the gradient of the transformation in the reference
+     element
+     
+     Compute the gradient at node \c x, pc is resized to
+     [nbNodes() x dim()] if the transformation is linear, \c x is
+     not used at all
+     */
+    void hessianBasisAtPoint( uint16_type __idref,
+                              hessian_basis_type& _hessian,
+                              precompute_type const* __pc ) const
+        {
+            DCHECK( __pc ) << "a PreCompute must be set first before using this function:"  << __idref;
+            
+            for ( size_type i = 0; i < nNodes; ++i )
+            {
+                for ( uint16_type j = 0; j < nDim; ++j )
+                {
+                    for ( uint16_type k = 0; k < nDim; ++k )
+                    {
+                        _hessian( i, j, k ) = __pc->hessian( i, j, k, __idref );
+                    }
+                }
+            }
+        }
 
     /**
  * get an estimate of the radius of the element defined by G
@@ -723,10 +751,14 @@ class GeoMap
         using eigen_matrix_xp_type = eigen_matrix_type<Eigen::Dynamic,PDim,value_type>;
         
         using eigen_matrix_nn_type = eigen_matrix_type<NDim,NDim,value_type>;
+        using vector_eigen_matrix_pp_type = vector_eigen_matrix_type<PDim,PDim,value_type>;
         using vector_eigen_matrix_nn_type = vector_eigen_matrix_type<NDim,NDim,value_type>;
         using eigen_matrix_np_type = eigen_matrix_type<NDim,PDim,value_type>;
         using eigen_matrix_pp_type = eigen_matrix_type<PDim,PDim,value_type>;
         using vector_eigen_matrix_np_type = vector_eigen_matrix_type<NDim,PDim,value_type>;
+
+        using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
+        
         Context( gm_ptrtype __gm,
                  element_type const& __e,
                  precompute_ptrtype const& __pc = precompute_ptrtype(),
@@ -749,13 +781,17 @@ class GeoMap
               M_tangents( nComputedPoints() ),
               M_unit_tangents( nComputedPoints() ),
               M_tangent_norms( nComputedPoints() ),
+              M_local_basis_real( nComputedPoints() ),
+              M_local_basis_ref( nComputedPoints() ),
               M_xrefq( PDim, nPoints() ),
               M_xrealq( NDim, nPoints() ),
               M_g( M_G.size2(), PDim ),
+              M_hessian_basis_at_pt( M_G.size2(), PDim, PDim ),
               M_K( nComputedPoints() ),
               M_CS(),
               M_CSi(),
               M_B( nComputedPoints() ),
+              M_hessian( nComputedPoints() ),
               M_Ptangent( nComputedPoints() ),
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
@@ -787,9 +823,10 @@ class GeoMap
                  std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
                  uint16_type __f )
             :
-            Context( __gm, __e, __pc[__f][__e.permutation(__f)], __f )
+            Context( __gm, __e, __pc.empty()?precompute_ptrtype{}:__pc[__f][__e.permutation(__f)], __f )
             {
-                M_pc_faces =  __pc;
+                if ( !__pc.empty() )
+                    M_pc_faces =  __pc;
             }
 
         using using_vectices_t = mpl::int_<0>;
@@ -1070,6 +1107,48 @@ class GeoMap
         {
             return M_B[q](c1,c2);
         }
+
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& localBasis( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0];
+            }
+        template<typename GeoMapT=gm_type>
+        eigen_matrix_np_type const& localBasis( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q];
+            }
+        template<typename GeoMapT=gm_type>
+        typename eigen_matrix_np_type::ColXpr const& basisN( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0].col(0);
+            }
+        template<typename GeoMapT=gm_type>
+        typename eigen_matrix_np_type::ColXpr const& basisN( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q].col(0);
+            }
+        
+        template<typename GeoMapT=gm_type>
+        value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0](c1,c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& localBasis( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q](c1,c2);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& basisN( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[0](c1,0);
+            }
+        template<typename GeoMapT=gm_type>
+        value_type const& basisN( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+            {
+                return M_local_basis_real[q](c1,0);
+            }
         template<typename GeoMapT=gm_type>
         eigen_matrix_nn_type const& projectorTangent( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
         {
@@ -1081,12 +1160,12 @@ class GeoMap
             return M_Ptangent[q];
         }
         template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        value_type const& projectorTangent( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
             {
                 return M_Ptangent[0](c1,c2);
             }
         template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        value_type const& projectorTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
             {
                 return M_Ptangent[q](c1,c2);
             }
@@ -1534,6 +1613,7 @@ class GeoMap
         void
         edgeTangent( int edgeId, ublas::vector<value_type>& t, bool scaled = false ) const
         {
+#if 0
             auto const& K = this->K( 0 );
 
             ublas::axpy_prod( K,
@@ -1544,11 +1624,19 @@ class GeoMap
                 t *= this->element().hEdge( edgeId ) / ublas::norm_2( t );
             else
                 t /= ublas::norm_2( t );
+#else
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_t( t.data().begin(), t.size() );
+            e_t=M_K[0] * M_gm->referenceConvex().tangent( edgeId );
+            e_t.normalize();
+            if (scaled)
+                e_t*=this->element().hEdge( edgeId );
+#endif
         }
 
         void
         faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
         {
+#if 0
             auto const& K = this->K( 0 );
             auto const& B = this->B( 0 );
 
@@ -1560,6 +1648,14 @@ class GeoMap
                 n *= this->element().faceMeasure( faceId ) / ublas::norm_2( n );
             else
                 n /= ublas::norm_2( n );
+#else
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_n( n.data().begin(), n.size() );
+            e_n=M_B[0] * M_gm->referenceConvex().normal( faceId );
+            e_n.normalize();
+            if (scaled)
+                e_n*=this->element().faceMeasure( faceId );
+
+#endif
         }
 
         /**
@@ -1738,27 +1834,29 @@ class GeoMap
         {
             if ( vm::has_hessian<CTX>::value || vm::has_laplacian<CTX>::value )
             {
-
+#if 0
                 for ( uint16_type k = 0; k < NDim; ++k )
                     for ( uint16_type l = 0; l < NDim; ++l )
                         for ( uint16_type i = 0; i < PDim; ++i )
                             for ( uint16_type j = 0; j < PDim; ++j )
                                 M_B3[k][l][i][j] = B( k, i ) * B( l, j );
-
+#endif
             }
         }
         //!
         //! update normal in the real element
         //!
+
         template<int CTX=context,typename ConvexType = ElementType>
         void updateNormals( eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm,
-                            std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
+                            std::enable_if_t<!vm::has_normal_v<CTX>>* = nullptr )
             {}
+
         template<int CTX=context,typename ConvexType = ElementType>
         void updateNormals( eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm,
-                            std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
+                            std::enable_if_t<vm::has_normal_v<CTX>>* = nullptr )
         {
             const bool doComputeNormal = ( ( NDim != PDim ) || ( vm::has_normal<CTX>::value ) ) && ( this->isOnFace() );
             if ( doComputeNormal )
@@ -1783,7 +1881,14 @@ class GeoMap
         template<int CTX=context>
         void updateTangents( eigen_matrix_np_type const& K, eigen_vector_n_type const& unitN,
                              eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
-                             eigen_matrix_nn_type& P )
+                             eigen_matrix_nn_type& P,
+                             std::enable_if_t<!vm::has_tangent_v<CTX>>* = nullptr )
+            {}
+        template<int CTX=context>
+        void updateTangents( eigen_matrix_np_type const& K, eigen_vector_n_type const& unitN,
+                             eigen_vector_n_type& Ta, eigen_vector_n_type& unitT, value_type& Tnorm,
+                             eigen_matrix_nn_type& P,
+                             std::enable_if_t<vm::has_tangent_v<CTX>>* = nullptr )
         {
             if ( vm::has_tangent<CTX>::value && ( M_face_id != invalid_uint16_type_value ) )
             {
@@ -1800,7 +1905,51 @@ class GeoMap
                 P.noalias() -= unitN * unitN.transpose();
             }
         }
+        //!
+        //! update normal in the real element
+        //!
+        template<int CTX=context,typename ConvexType = ElementType>
+        void updateLocalBasis( eigen_matrix_np_type const& B,
+                               eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real,
+                               std::enable_if_t<!vm::has_local_basis_v<CTX>>* = nullptr )
+            {}
 
+        template<int CTX=context,typename ConvexType = ElementType>
+        void updateLocalBasis( eigen_matrix_np_type const& B,
+                               eigen_matrix_pp_type& local_basis_ref, eigen_matrix_np_type& local_basis_real,
+                               std::enable_if_t<vm::has_local_basis_v<CTX>>* = nullptr )
+        {
+            const bool doComputeBasis = ( ( NDim != PDim ) || ( vm::has_normal<CTX>::value ) ) && ( this->isOnFace() );
+            if ( doComputeBasis )
+            {
+                local_basis_ref = eigen_matrix_pp_type::Identity();
+                eigen_vector_n_type Np = M_gm->referenceConvex().normal( M_face_id );
+                int max_col;
+                Np.array().abs().maxCoeff( &max_col );
+                if ( max_col != 0 )
+                    local_basis_ref.col( max_col ) = local_basis_ref.col( 0 );
+                local_basis_ref.col(0)=Np;
+                local_basis_real = B*local_basis_ref;
+                // orthogonalize columns using the Gram-Schmidt algorithm
+                
+                for (int col = 0; col < PDim; ++col)
+                {
+                    typename eigen_matrix_np_type::ColXpr colVec = local_basis_real.col(col);
+                    for (int prevCol = 0; prevCol < col; ++prevCol)
+                    {
+                        typename eigen_matrix_np_type::ColXpr prevColVec = local_basis_real.col(prevCol);
+                        colVec -= colVec.dot(prevColVec)*prevColVec;
+                    }
+                    local_basis_real.col(col) = colVec.normalized();
+                }
+                
+                // Ensure basis_real is direct
+                if ( (NDim == PDim) && (NDim>1) && ( local_basis_real.determinant() < 0 ) )
+                {
+                    local_basis_real.col(1) *= -1;
+                }
+            }
+        }
         //!
         //! update various terms associated to the geometric transformation such
         //! as jacobian, jacobian matrix its inverse or the normals
@@ -1808,21 +1957,32 @@ class GeoMap
         template<int CTX=context>
         void updateJKBN()
             {
+                
                 if ( vm::has_jacobian<CTX>::value )
                 {
+                    Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
                     em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
                         if ( !is_linear )
                             M_gm->gradient( q, M_g, M_pc.get() );
                         em_matrix_col_type<value_type> GradPhi( is_linear?M_g_linear.data().begin():M_g.data().begin(),
                                                                 M_G.size2(), PDim );
-
                         M_K[q].noalias() = Pts * GradPhi;
+                        if ( vm::has_hessian_v<CTX> )
+                        {
+                            //M_h.resize( { NDim, NDim } );
+                            M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
+                            M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,{1,0});
+                        }
+
+                        
                         updateJacobian( M_K[q], M_B[q], M_J[q] );
                         updateHessian<CTX>( M_B[q] );
                         updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
                         updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
+                        updateLocalBasis<CTX>(  M_B[q], M_local_basis_ref[q], M_local_basis_real[q] );
                     }
                 }
             }
@@ -1888,18 +2048,23 @@ class GeoMap
         std::vector<value_type> M_normal_norms;
         vector_eigen_vector_n_type M_tangents, M_unit_tangents;
         std::vector<value_type> M_tangent_norms;
+        vector_eigen_matrix_np_type M_local_basis_real;
+        vector_eigen_matrix_pp_type M_local_basis_ref;
 
         matrix_node_t_type M_xrefq;
         matrix_type M_xrealq;
 
         matrix_type M_g_linear;
         matrix_type M_g;
+        hessian_basis_type M_hessian_basis_at_pt;
+        
         vector_eigen_matrix_np_type M_K;
         eigen_matrix_pp_type M_CS;
         eigen_matrix_pp_type M_CSi;
         vector_eigen_matrix_np_type M_B;
+        vector_hessian_type M_hessian;
         vector_eigen_matrix_nn_type M_Ptangent;
-
+        
         boost::multi_array<value_type, 4> M_B3;
 
         size_type M_id;

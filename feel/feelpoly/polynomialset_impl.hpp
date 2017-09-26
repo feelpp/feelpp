@@ -276,21 +276,35 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
         Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
+        Eigen::array<dimpair_t, 1> tracedims = {{dimpair_t(0, 1)}};
         for ( uint16_type q = 0; q < Q; ++q )
         {
             tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim ,value_type> B ( thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
             for ( uint16_type i = 0; i < I; ++i )
             {
                 //M_hessian[i][q] = B.contract( __pc->hessian(i,q).contract(B,dims1), dims2);
-                auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                M_hessian[i][q].reshape( tensorHessShapeAfterContract ) = B.contract( H1, dims2 );
+
+                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                {
+                    auto H1 = __pc->hessian(i,q) - thegmc->hessian(i,q).contract( M_grad[i][q], {0,0} );
+                    M_hessian[i][q] = B.contract( H1.contract( B, dims1 ), dims2 );
+                }
+                else
+                {
+                    auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                    M_hessian[i][q] = B.contract( H1, dims2 );
+                }
 
                 if ( vm::has_laplacian<context>::value  )
                 {
+#if 0
+                    M_laplacian[i][q] = M_hessian[i][q].trace(tracedims);
+#else
                     M_laplacian[i][q].setZero();
                     for( int c = 0; c < nRealDim; ++c )
                         M_laplacian[i][q](0,0) += M_hessian[i][q]( c, c, 0 );
                         //M_laplacian[i][q](0,0) = M_hessian[i][q].trace();
+#endif
                 }
             } // q
         } // i
