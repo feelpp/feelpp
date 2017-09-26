@@ -834,11 +834,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     {
         if (M_pdeSolver=="LinearSystem")
         {
-            M_algebraicFactory->linearSolver( M_blockVectorSolution.vectorMonolithic() );
+            M_algebraicFactory->solveLinear( M_blockVectorSolution.vectorMonolithic() );
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vectorMonolithic() );
+            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
@@ -849,7 +849,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vectorMonolithic() );
+            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if (M_pdeType=="Generalised-String")
@@ -859,7 +859,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         //Uvec->close();
         if (M_pdeSolver=="LinearSystem")
         {
-            M_algebraicFactory_1dReduced->linearSolver(Uvec);
+            M_algebraicFactory_1dReduced->solveLinear(Uvec);
         }
         else if (M_pdeSolver == "Newton")
         {
