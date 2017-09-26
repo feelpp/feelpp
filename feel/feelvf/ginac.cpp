@@ -85,19 +85,19 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     }
 #endif
     std::vector<symbol> total_syms;
-    boost::for_each( syms, [&table, &total_syms]( symbol const& param )
-                     {
-                         total_syms.push_back(symbol(param));
-                         table[param.get_name()] = param;
-                     } );
+    for( auto const& param : syms )
+    {
+        total_syms.push_back(symbol(param));
+        table[param.get_name()] = param;
+    }
 
     LOG(INFO) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
 
-    boost::for_each( params, [&table, &total_syms]( symbol const& param )
-                     {
-                         total_syms.push_back(symbol(param));
-                         table[param.get_name()] = param;
-                     } );
+    for( auto const& param : params )
+    {
+        total_syms.push_back(symbol(param));
+        table[param.get_name()] = param;
+    }
     LOG(INFO) << " . table : " << table;
     LOG(INFO) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
