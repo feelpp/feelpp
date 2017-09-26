@@ -486,15 +486,15 @@ SET(BOOST_MIN_VERSION "1.61.0")
 
 # First we try to find boost with the python components
 if(FEELPP_ENABLE_PYTHON_WRAPPING)
-    FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
-    if(Boost_PYTHON_FOUND)
-        set(FEELPP_HAS_BOOST_PYTHON 1)
-        set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
+    # FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
+    # if(Boost_PYTHON_FOUND)
+    #     set(FEELPP_HAS_BOOST_PYTHON 1)
+    #     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+    #     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
 
-    else()
-        message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-      endif()
+    # else()
+    #     message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
+    #   endif()
 endif()
 
 # Then we try to find rest of the Boost components
