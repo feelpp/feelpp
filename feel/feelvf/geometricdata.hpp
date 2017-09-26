@@ -66,6 +66,7 @@ namespace Feel { namespace vf {
 
 const size_type jn = vm::JACOBIAN|vm::NORMAL;
 const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
+const size_type jkbl = vm::JACOBIAN|vm::KB|vm::LOCAL_BASIS;
 const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
 const size_type jp = vm::JACOBIAN|vm::POINT;
 const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
@@ -75,7 +76,7 @@ const size_type mctx = vm::MEASURE;
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-       22,                                                              \
+       27,                                                              \
       (                                                                 \
        ( N       , GDN       , 0, jkbn, Vectorial, M_gmc->unitNormal( q )[ c1 ] , 0), \
        ( Nx      , GDNx      , 0, jkbn, Scalar   , M_gmc->unitNormal( q )[ 0 ]  , 0), \
@@ -98,7 +99,12 @@ const size_type mctx = vm::MEASURE;
        ( C       , GDC       , 0, jp, Vectorial, M_gmc->barycenterReal()[c1]  , 0), \
        ( Cx      , GDCx      , 0, jp, Scalar   , M_gmc->barycenterReal()[0]   , 0), \
        ( Cy      , GDCy      , 1, jp, Scalar   , M_gmc->barycenterReal()[1]   , 0), \
-       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0) \
+       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0), \
+       ( localBasis, LocalBasis, 0, jkbl, Tensor2, M_gmc->localBasis(c1,c2,q)       , 0), \
+       ( basisN, BasisN, 0, jkbl, Vectorial, M_gmc->basisN(c1,0, q)      , 0), \
+       ( basisT, BasisT, 0, jkbl, Vectorial, M_gmc->localBasis(c1,1, q)      , 0), \
+       ( basisT1, BasisT1, 0, jkbl, Vectorial, M_gmc->localBasis(c1,1, q)      , 0), \
+       ( basisT2, BasisT2, 0, jkbl, Vectorial, M_gmc->localBasis(c1,2, q)      , 0) \
           )                                                             \
        )
 /**/

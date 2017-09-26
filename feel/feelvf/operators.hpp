@@ -88,20 +88,20 @@ void convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<Sha
 
 
 template <typename ValueType, long ShapeM,long ShapeN>
-Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeN,1>> convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN>> const& input )
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM,ShapeN>> convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN>> const& input )
 {
-    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM*ShapeN,1> >( input.data() );
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
 }
 template <typename ValueType, long ShapeM,long ShapeN>
-Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeN,1>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,1>> const& input )
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM,ShapeN>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,1>> const& input )
 {
-    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM*ShapeN,1> >( input.data() );
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
 }
 
 template <typename ValueType, long ShapeM,long ShapeN,long ShapeP>
-Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeN*ShapeP,1>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,ShapeP>> const& input )
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,ShapeP>> const& input )
 {
-    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM*ShapeN*ShapeP,1> >( input.data() );
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN> >( input.data() );
 }
 
 }
@@ -379,7 +379,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef boost::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
                 using loc_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape::M,shape::N>>; \
-                using eigen_matrix_mn_type = eigen_matrix_type<shape::M*shape::N,1,value_type>; \
+                using eigen_matrix_mn_type = eigen_matrix_type<shape::M,shape::N,value_type>; \
                 using ret_type = Eigen::Map<const eigen_matrix_mn_type>; \
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
