@@ -1817,7 +1817,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
 LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    std::string advectionStabilization = soption( _name="advec-stab-method", _prefix=this->prefix() );
+    std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
 
     std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
 
