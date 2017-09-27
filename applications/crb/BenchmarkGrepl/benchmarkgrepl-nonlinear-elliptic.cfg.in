@@ -55,6 +55,7 @@ show-residual=false
 load-elements-database=true
 use-aitken=1
 max-fixedpoint-iterations=50
+use-equidistributed-WNmu=10
 
 [crb.check]
 rb=0

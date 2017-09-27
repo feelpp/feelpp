@@ -490,6 +490,8 @@ public:
         for ( ; __ts_it != __ts_en ; ++__ts_it )
         {
             auto filename = this->path()+"/"+prefix()+".timeset";
+            if ( !fs::exists( filename ) )
+                return;
             ( *__ts_it )->load( filename,__time );
 
             M_cptOfSave = ( *__ts_it )->numberOfTotalSteps()+1;

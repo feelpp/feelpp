@@ -99,17 +99,22 @@ int main(int argc, char *argv[])
     
 	if ( ME -> isStationary() )
     {
+		ME->assembleCst();
+		ME->assembleNonCst();
         ME->solve();
         ME->exportResults( mesh );
         ME->exportTimers(); 
     }
     else
     {
+		//ME->assembleCst();
     	for ( ; !ME->timeStepBase()->isFinished() ; ME->updateTimeStep() )
         {
         	Feel::cout << "============================================================\n";
         	Feel::cout << "time simulation: " << ME->time() << "s \n";
         	Feel::cout << "============================================================\n";
+			ME->assembleCst();
+			ME->assembleNonCst();
         	ME->solve();
         	ME->exportResults( mesh , Idh, Idhv );
         }

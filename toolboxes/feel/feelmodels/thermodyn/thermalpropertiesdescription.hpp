@@ -51,7 +51,7 @@ namespace FeelModels
                     if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
                     auto const& mat = m.second;
-                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physics();
+                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physic();
                     if ( ( matphysics != "heat-transfert" ) && ( matphysics != "aerothermal" ) && ( matphysics != "thermo-electric" ) )
                         continue;
                     M_markers.insert( matmarker );

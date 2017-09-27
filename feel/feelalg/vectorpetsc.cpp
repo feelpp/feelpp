@@ -178,6 +178,7 @@ template <typename T>
 void
 VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
+    std::lock_guard<std::mutex> guard(this->mutex_add_v);
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
 #if PETSC_VERSION_LESS_THAN(3,5,3)
@@ -1388,6 +1389,7 @@ template <typename T>
 void
 VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
+    std::lock_guard<std::mutex> guard(this->mutex_add_v);
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 

@@ -101,7 +101,7 @@ public :
                 if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                     continue;
                 auto const& mat = m.second;
-                std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physics();
+                std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physic();
                 if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
                     continue;
                 M_markers.insert( matmarker );

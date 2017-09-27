@@ -620,6 +620,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             }
         }
     }
+    std::cout << "rep=" << M_rep << std::endl;
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
