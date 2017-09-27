@@ -203,6 +203,8 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 		Feel::cout << "===============================================" << std::endl;
 
 		// Elasticity problem
+		M_ElasticityModel->assembleCst();	
+		M_ElasticityModel->assembleNonCst();	
 		this->assembleF_Elasticity();
 		M_ElasticityModel->solve();	
 		M_ElasticityModel->exportResults( M_ElasticityModel->mesh(), Idh_el, Idhv_el );

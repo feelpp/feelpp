@@ -407,6 +407,12 @@ public:
 
     static std::vector<std::tuple<std::string,std::ifstream> > & configFiles()
     {
+        for ( auto & configFile : S_configFiles )
+        {
+            std::ifstream & ifs = std::get<1>( configFile );
+            ifs.clear();
+            ifs.seekg(0, std::ios::beg);
+        }
         return S_configFiles;
     }
 

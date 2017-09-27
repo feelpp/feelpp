@@ -381,7 +381,7 @@ AdvectionDiffusion::output( int output_index, parameter_type const& mu, element_
     return output;
 }
 
-FEELPP_CRB_PLUGIN( AdvectionDiffusion, "ad" )
+FEELPP_CRB_PLUGIN( AdvectionDiffusion, ad )
 
 }
 

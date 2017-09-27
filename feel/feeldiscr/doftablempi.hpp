@@ -34,7 +34,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
     if ( this->hasMeshSupport() )
         this->meshSupport()->updateParallelData();
 
-    if ( !mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
+    if ( true )//!mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
     {
         this->buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh );
     }
@@ -223,15 +223,17 @@ updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_t
     return boost::make_tuple(procMin,idFaceMin);
 }
 
-template <typename MeshType>
+template <typename DofTableType>
 boost::tuple<rank_type,size_type >
-updateDofOnVertices( MeshType const& mesh, typename MeshType::element_type const& theelt, const uint16_type locDof )
+updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_type::element_type const& theelt, const uint16_type ptIdInElt )
 {
-    auto const& thept = theelt.point(locDof);
+    auto const& thept = theelt.point( ptIdInElt );
     if ( thept.numberOfProcGhost() == 0 )
         return boost::make_tuple(theelt.processId(),theelt.id());
 
-    const size_type theptId = thept.id();
+    auto mesh = doftable.mesh();
+    bool hasMeshSupportPartial = doftable.hasMeshSupport() && doftable.meshSupport()->isPartialSupport();
+    //const size_type theptId = thept.id();
     rank_type procMin = theelt.processId();
     size_type IdEltMin = theelt.id();
     for ( auto const& eltGhostPair : thept.elementsGhost() )
@@ -239,6 +241,28 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::element_type const
         const rank_type theprocGhost = eltGhostPair.first;
         if ( theprocGhost < procMin )
         {
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : eltGhostPair.second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        auto const& eltGhost = mesh->element( _ghostEltId );
+                        procMin = theprocGhost;
+                        IdEltMin = eltGhost.idInOthersPartitions( procMin );
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                DCHECK( eltGhostPair.second.size()>0 ) << "need to have at least one ghost element\n";
+                auto iteltghost = eltGhostPair.second.begin();
+                auto const& eltGhost = mesh->element(*iteltghost);
+                procMin = theprocGhost;
+                IdEltMin = eltGhost.idInOthersPartitions( procMin );
+            }
+#if 0
             bool findDofVertice = false;
             DCHECK( eltGhostPair.second.size()>0 ) << "need to have at least one ghost element\n";
             auto iteltghost = eltGhostPair.second.begin();
@@ -254,6 +278,7 @@ updateDofOnVertices( MeshType const& mesh, typename MeshType::element_type const
                 }
             }
             CHECK( findDofVertice ) << "PROBLEM with parallel dof table construction : not find a vertice in ghost element associated to a dof point at interprocess\n";
+#endif
         }
     }
     return boost::make_tuple(procMin,IdEltMin);
@@ -366,6 +391,58 @@ updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type
     }
 
     return boost::make_tuple(procMin,idFaceMin);
+}
+
+
+template <typename DofTableType>
+boost::tuple<rank_type,size_type >
+updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type::element_type const& theelt, const uint16_type edgeIdInElt,
+                  typename std::enable_if< mpl::not_<is_3d<typename DofTableType::mesh_type>>::value >::type* = nullptr )
+{
+    return boost::make_tuple( invalid_rank_type_value,invalid_size_type_value );
+}
+template <typename DofTableType>
+boost::tuple<rank_type,size_type >
+updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type::element_type const& theelt, const uint16_type edgeIdInElt,
+                  typename std::enable_if< is_3d<typename DofTableType::mesh_type>::value >::type* = nullptr )
+{
+    auto const& theedge = theelt.edge( edgeIdInElt );
+    if ( theedge.numberOfProcGhost() == 0 )
+        return boost::make_tuple(theelt.processId(),theelt.id());
+
+    auto mesh = doftable.mesh();
+    bool hasMeshSupportPartial = doftable.hasMeshSupport() && doftable.meshSupport()->isPartialSupport();
+    rank_type procMin = theelt.processId();
+    size_type IdEltMin = theelt.id();
+    for ( auto const& eltGhostPair : theedge.elementsGhost() )
+    {
+        const rank_type theprocGhost = eltGhostPair.first;
+        if ( theprocGhost < procMin )
+        {
+            if ( hasMeshSupportPartial )
+            {
+                for ( size_type _ghostEltId : eltGhostPair.second )
+                {
+                    if ( doftable.meshSupport()->hasGhostElement( _ghostEltId ) )
+                    {
+                        auto const& eltGhost = mesh->element( _ghostEltId );
+                        procMin = theprocGhost;
+                        IdEltMin = eltGhost.idInOthersPartitions( procMin );
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                DCHECK( eltGhostPair.second.size()>0 ) << "need to have at least one ghost element\n";
+                auto iteltghost = eltGhostPair.second.begin();
+                auto const& eltGhost = mesh->element(*iteltghost);
+                procMin = theprocGhost;
+                IdEltMin = eltGhost.idInOthersPartitions( procMin );
+            }
+        }
+    }
+    return boost::make_tuple(procMin,IdEltMin);
 }
 
 } // namespace detail
@@ -1245,6 +1322,30 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh )
 {
+    static const uint16_type nLocalDofUpToVertices = element_type::numVertices*fe_type::nDofPerVertex;
+    static const uint16_type nLocalDofUpToEdges = element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
+    static const uint16_type nLocalDofUpToFaces =
+        (nDim==1)? element_type::numVertices*fe_type::nDofPerVertex :
+        (nDim==2)? element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge :
+        element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge + element_type::numGeometricFaces*fe_type::nDofPerFace;
+    static const uint16_type nDofPerVertexForDivision = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerVertex>,mpl::int_<0> >,
+                                                                 mpl::int_<1>,
+                                                                 mpl::int_<fe_type::nDofPerVertex> >::type::value;
+
+    static const uint16_type nDofPerEdgeForDivision = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerEdge>,mpl::int_<0> >,
+                                                               mpl::int_<1>,
+                                                               mpl::int_<fe_type::nDofPerEdge> >::type::value;
+    static const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
+        (nDim==1)? 0 :
+        (nDim==2)? element_type::numVertices*fe_type::nDofPerVertex :
+        element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
+
+    static const uint16_type nDofPerTopologicalFace =
+        (nDim==1)?fe_type::nDofPerVertex : (nDim==2)?fe_type::nDofPerEdge : fe_type::nDofPerFace;
+    static const uint16_type nDofPerTopologicalFaceForDivision = mpl::if_<boost::is_same<mpl::int_<nDofPerTopologicalFace>,mpl::int_<0> >,
+                                                                          mpl::int_<1>,
+                                                                          mpl::int_<nDofPerTopologicalFace> >::type::value;
+
     const rank_type myRank = this->worldComm().localRank();
     const rank_type nProc = this->worldComm().localSize();
     const uint16_type ncdof = is_product?nComponents:1;
@@ -1257,24 +1358,49 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     std::vector< std::map<size_type,std::set< std::vector<size_type> > > > listToSend(this->worldComm().localSize());
     typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
-    if (is_continuous)
+    bool hasMeshSupportPartial = this->hasMeshSupport() && this->meshSupport()->isPartialSupport();
+    bool storeRangeActiveEltsTouchInterProcess = this->buildDofTableMPIExtended() && !mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL );
+
+    if ( is_continuous )
     {
-        for ( auto const& activeEltWrap : elements(mesh) )
+        auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(mesh);
+        for ( auto const& activeEltWrap : rangeElements )
         {
             auto const& activeElt = boost::unwrap_ref( activeEltWrap );
             bool findActiveEltTouchInterProcess = false;
             for ( uint16_type n=0; n < activeElt.nVertices(); n++ )
             {
-                if ( activeElt.point(n).numberOfProcGhost() > 0 )
+                if ( hasMeshSupportPartial )
                 {
-                    myActiveEltsTouchInterProcess->push_back(boost::cref(activeElt));
-                    findActiveEltTouchInterProcess = true;
-                    break;
+                    for ( auto const& ghostData : activeElt.point(n).elementsGhost() )
+                    {
+                        if ( findActiveEltTouchInterProcess )
+                            break;
+                        for ( size_type _ghostEltId  : ghostData.second )
+                        {
+                            if ( this->meshSupport()->hasGhostElement( _ghostEltId ) )
+                            {
+                                findActiveEltTouchInterProcess = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if ( activeElt.point(n).numberOfProcGhost() > 0 )
+                    {
+                        findActiveEltTouchInterProcess = true;
+                        break;
+                    }
                 }
             }
 
             if ( !findActiveEltTouchInterProcess )
                 continue;
+
+            if ( storeRangeActiveEltsTouchInterProcess )
+                myActiveEltsTouchInterProcess->push_back(boost::cref(activeElt));
 
             for ( uint16_type locDof = 0; locDof < this->nLocalDof(true); ++locDof )
             {
@@ -1282,29 +1408,49 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 const size_type theglobdoftest = localToGlobal( activeElt.id(),locDof, 0 ).index();
                 CHECK( theglobdoftest < nLocalDofWithGhost ) << "invalid globdof " << theglobdoftest << "\n";
                 if ( dofdone[theglobdoftest] ) continue;
+                dofdone[theglobdoftest]=true;
 
                 rank_type pidDofActive = invalid_rank_type_value;
                 size_type idEltInPartition = invalid_size_type_value;
-                if ( locDof < element_type::numVertices*fe_type::nDofPerVertex)
+                if ( locDof < nLocalDofUpToVertices )
                 {
-                    const int nDofPerVertexTemp = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerVertex>,mpl::int_<0> >,
-                                                           mpl::int_<1>,
-                                                           mpl::int_<fe_type::nDofPerVertex> >::type::value;
-                    int pointGetLocDof = locDof / nDofPerVertexTemp;
-                    boost::tie( pidDofActive, idEltInPartition ) = Feel::detail::updateDofOnVertices<mesh_type>( mesh,activeElt,pointGetLocDof );
+                    uint16_type pointIdInElt = locDof / nDofPerVertexForDivision;
+                    boost::tie( pidDofActive, idEltInPartition ) = Feel::detail::updateDofOnVertices( *this,activeElt,pointIdInElt );
                 }
-                else if ( nDim == 3 && locDof < (element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge) )
+                else if ( nDim == 3 && locDof < nLocalDofUpToEdges )
                 {
-                    int locDofInEgde = locDof - element_type::numVertices*fe_type::nDofPerVertex;
-                    const int nDofPerEdgeTemp = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerEdge>,mpl::int_<0> >,
-                                                         mpl::int_<1>,
-                                                         mpl::int_<fe_type::nDofPerEdge> >::type::value;
-                    int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
-                    CHECK( false ) << "TODO : dof inside edge";
+                    uint16_type locDofInEgdes = locDof - nLocalDofUpToVertices;
+                    uint16_type edgeIdInElt = locDofInEgdes / nDofPerEdgeForDivision;
+                    boost::tie( pidDofActive, idEltInPartition ) = Feel::detail::updateDofOnEdges( *this,activeElt,edgeIdInElt );
+                }
+                else if ( locDof < nLocalDofUpToFaces )
+                {
+                    if ( nDim < 2 && nDim != nRealDim )
+                        continue;
+                    uint16_type locDofInTopologicalFaces = locDof - nLocalDofBeforeDofsOfTopologicalFaces;
+                    uint16_type faceIdInElt = locDofInTopologicalFaces / nDofPerTopologicalFaceForDivision;
+                    auto facePtr = activeElt.facePtr( faceIdInElt );
+                    if ( !facePtr )
+                        continue;
+                    if ( !facePtr->isInterProcessDomain() )
+                        continue;
+                    auto const& elt0 = facePtr->element0();
+                    auto const& elt1 = facePtr->element1();
+                    auto const& eltGhost = ( elt0.isGhostCell() )? elt0 : elt1;
+                    if ( eltGhost.processId() < myRank )
+                    {
+                        if ( hasMeshSupportPartial )
+                        {
+                            if ( !this->meshSupport()->hasGhostElement( eltGhost.id() ) )
+                                continue;
+                        }
+                        pidDofActive = eltGhost.processId();
+                        idEltInPartition = eltGhost.idInOthersPartitions( pidDofActive );
+                    }
                 }
                 else
                 {
-                    CHECK( false ) << "TODO : dof inside faces";
+                    // dof inside the element : do nothing
                 }
 
                 // if dof is ghost -> prepare send/recv
@@ -1321,14 +1467,50 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                     }
                     listToSend[pidDofActive][idEltInPartition].insert( compglobdofs );
                 }
-                dofdone[theglobdoftest]=true;
+
             } // for ( uint16_type locDof ... )
         } // for ( auto const& activeElt : elements(mesh) )
     } // is_continuous
+    else if ( storeRangeActiveEltsTouchInterProcess ) // discontinuous case maybe
+    {
+        auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(mesh);
+        for ( auto const& activeEltWrap : rangeElements )
+        {
+            auto const& activeElt = boost::unwrap_ref( activeEltWrap );
+            bool findActiveEltTouchInterProcess = false;
+            for ( uint16_type n=0; n < activeElt.nVertices(); n++ )
+            {
+                if ( hasMeshSupportPartial )
+                {
+                    for ( auto const& ghostData : activeElt.point(n).elementsGhost() )
+                    {
+                        if ( findActiveEltTouchInterProcess )
+                            break;
+                        for ( size_type _ghostEltId  : ghostData.second )
+                        {
+                            if ( this->meshSupport()->hasGhostElement( _ghostEltId ) )
+                            {
+                                findActiveEltTouchInterProcess = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if ( activeElt.point(n).numberOfProcGhost() > 0 )
+                    {
+                        findActiveEltTouchInterProcess = true;
+                        break;
+                    }
+                }
+            }
 
+            if ( findActiveEltTouchInterProcess )
+                myActiveEltsTouchInterProcess->push_back(boost::cref(activeElt));
+        }
+    }
 
-    auto myrangeActive = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                            myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess );
 
     //------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------//
@@ -1403,59 +1585,52 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     // extended dof table
     if ( this->buildDofTableMPIExtended() )
     {
-        typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
-        auto rangeGhostElement = mesh.ghostElements();
-        auto itGhostElt = std::get<0>( rangeGhostElement );
-        auto enGhostElt = std::get<1>( rangeGhostElement );
-        for ( ; itGhostElt != enGhostElt ; ++itGhostElt )
+        if ( mesh.components().test( MESH_UPDATE_FACES ) || mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
         {
-            auto const& ghostelt = boost::unwrap_ref( *itGhostElt );
+            this->buildGhostDofMapExtended( mesh );
+        }
+        else
+        {
+            CHECK( !hasMeshSupportPartial ) << "TODO";
+            auto myrangeActive = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                                    myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess );
 
-            for ( uint16_type f =0;f < ghostelt.nTopologicalFaces(); ++f )
+            typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
+            auto rangeGhostElement = mesh.ghostElements();
+            auto itGhostElt = std::get<0>( rangeGhostElement );
+            auto enGhostElt = std::get<1>( rangeGhostElement );
+            for ( ; itGhostElt != enGhostElt ; ++itGhostElt )
             {
-#if 1
-                bool allFaceVerticesAreInActiveMeshPart = true;
-                for ( uint16_type p=0;p<mesh_type::element_type::topological_face_type::numVertices;++p )
+                auto const& ghostelt = boost::unwrap_ref( *itGhostElt );
+
+                for ( uint16_type f =0;f < ghostelt.nTopologicalFaces(); ++f )
                 {
-                    //uint16_type ptIdInElt = ghostelt.fToP( f, p );
-                    if ( ghostelt.point( ghostelt.fToP( f, p ) ).isGhostCell() )
+                    bool allFaceVerticesAreInActiveMeshPart = true;
+                    for ( uint16_type p=0;p<mesh_type::element_type::topological_face_type::numVertices;++p )
                     {
-                        allFaceVerticesAreInActiveMeshPart = false;
+                        //uint16_type ptIdInElt = ghostelt.fToP( f, p );
+                        if ( ghostelt.point( ghostelt.fToP( f, p ) ).isGhostCell() )
+                        {
+                            allFaceVerticesAreInActiveMeshPart = false;
+                            break;
+                        }
+                    }
+                    if ( allFaceVerticesAreInActiveMeshPart )
+                    {
+                        myelts->push_back(boost::cref(ghostelt));
                         break;
                     }
                 }
-                if ( allFaceVerticesAreInActiveMeshPart )
-                {
-                    myelts->push_back(boost::cref(ghostelt));
-                    break;
-                }
-#else
-                bool isConnectedToActivePartition = false;
-                for ( uint16_type p=0;p<mesh_type::element_type::topological_face_type::numVertices;++p )
-                {
-                    //uint16_type ptIdInElt = itGhostElt->fToP( f, p );
-                    if ( !ghostelt.point( ghostelt.fToP( f, p ) ).isGhostCell() )
-                    {
-                        isConnectedToActivePartition = true;
-                        break;
-                    }
-                }
-                if ( isConnectedToActivePartition )
-                {
-                    myelts->push_back(boost::cref(ghostelt));
-                    break;
-                }
-#endif
+
             }
 
+            // generate a range object
+            auto myrange = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                              myelts->begin(),myelts->end(),myelts );
+            DVLOG(2) << "ghost element in doftable : nelements(myrange) ["<<mesh.worldComm().rank()<<"] : " << nelements(myrange) << "\n";
+
+            this->buildGhostDofMapExtended( mesh, myrange, myrangeActive );
         }
-
-        // generate a range object
-        auto myrange = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                          myelts->begin(),myelts->end(),myelts );
-        DVLOG(2) << "ghost element in doftable : nelements(myrange) ["<<mesh.worldComm().rank()<<"] : " << nelements(myrange) << "\n";
-
-        this->buildGhostDofMapExtended( mesh, myrange, myrangeActive );
     }
 }
 
