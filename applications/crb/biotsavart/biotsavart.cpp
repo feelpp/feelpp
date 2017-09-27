@@ -587,7 +587,7 @@ using biotsavartcrbthermoelectric = BiotSavartCRB<Thermoelectric>;
 
 template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
 
-FEELPP_CRB_PLUGIN( biotsavartcrbthermoelectric, "biotsavartcrbthermoelectric")
-//FEELPP_CRB_PLUGIN( BiotSavartCRB<NLThermoelectric>, "biotsavartcrbnlthermoelectric")
+FEELPP_CRB_PLUGIN( biotsavartcrbthermoelectric, biotsavartcrbthermoelectric )
+//FEELPP_CRB_PLUGIN( BiotSavartCRB<NLThermoelectric>, biotsavartcrbnlthermoelectric )
 
 }

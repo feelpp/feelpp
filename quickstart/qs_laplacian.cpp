@@ -56,7 +56,9 @@ int main(int argc, char**argv )
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
     auto solution = expr( checker().solution(), "solution" );
     auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
+    // tag::v[]
     auto v = Vh->element( g, "g" );
+    // end::v[]
     toc("Vh");
     // end::mesh_space[]
 
@@ -71,8 +73,10 @@ int main(int argc, char**argv )
 
     tic();
     auto a = form2( _trial=Vh, _test=Vh);
+    tic();
     a = integrate(_range=elements(mesh),
-                  _expr=mu*gradt(u)*trans(grad(v)) );
+                  _expr=mu*inner(gradt(u),grad(v)) );
+    toc("a");
     a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
     a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
@@ -80,14 +84,15 @@ int main(int argc, char**argv )
     if ( !mesh->hasAnyMarker({"Robin", "Neumann","Dirichlet"}) )
         a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
     toc("a");
+    // end::forms[]
 
+    // tag::solve[]
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( !boption( "no-solve" ) )
         a.solve(_rhs=l,_solution=u);
     toc("a.solve");
-
-    // end::forms[]
+    // end::solve[]
 
     // tag::export[]
     tic();
@@ -115,6 +120,7 @@ int main(int argc, char**argv )
             toc("H1 error norm");
             return { { "L2", l2 }, {  "H1", h1 } };
         };
+
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
 

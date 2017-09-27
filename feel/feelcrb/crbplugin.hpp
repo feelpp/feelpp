@@ -287,7 +287,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname>( strname )                                 \
+        CRBPlugin<classname>( BOOST_PP_STRINGIZE( strname ) )           \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -298,9 +298,9 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
-#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                         \
+#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                \
     class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
         public CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>      \
 {                                                                       \
@@ -308,7 +308,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( strname )  \
+        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( BOOST_PP_STRINGIZE( strname ) ) \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -319,8 +319,7 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
-
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
 
 
@@ -342,7 +341,7 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
 
 }

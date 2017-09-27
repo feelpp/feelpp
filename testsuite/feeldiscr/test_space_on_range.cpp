@@ -70,9 +70,11 @@ BOOST_AUTO_TEST_CASE( test_2d )
     double chiPSnorm2 = chiShapePS.l2Norm();
     BOOST_CHECK( chiFSnorm2 > chiPSnorm2 );
 
-    // test a laplacian solve
+    // test a laplacian solve (strong dirichlet)
     auto u = VhPS->element("u");
     auto v = VhPS->element("v");
+    auto g = VhPS->element();
+    g.on(_range=therange,_expr=cst(1.));
     BOOST_CHECK( VhPS->dof()->hasMeshSupport() );
     VhPS->dof()->meshSupport()->updateBoundaryInternalFaces();
     auto myboundaryfaces = VhPS->dof()->meshSupport()->rangeBoundaryFaces();
@@ -82,7 +84,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto a = form2( _trial=VhPS, _test=VhPS);
     a = integrate(_range=therange,
                   _expr=gradt(u)*trans(grad(v)) );
-    a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
+    a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=idv(g) );
     a.solve(_rhs=l,_solution=u);
 
     // export results
@@ -92,6 +94,27 @@ BOOST_AUTO_TEST_CASE( test_2d )
     e->add( "chi-partial-support", chiShapeFS );
     e->add( "chi-full-support", chiShapePS );
     e->save();
+
+    // test a laplacian solve (weak dirichlet)
+    auto u2 = VhPS->element();
+    auto v2 = VhPS->element();
+    auto l2 = form1( _test=VhPS );
+    l2 = integrate(_range=therange,
+                   _expr=id(v2));
+    auto a2 = form2( _trial=VhPS, _test=VhPS);
+    a2 = integrate(_range=therange,
+                   _expr=gradt(u2)*trans(grad(v2)) );
+    double penaldir = 10.;
+    a2 += integrate( _range=myboundaryfaces,
+                     _expr=  ( -( gradt( u2 )*N() )*id( v2 )
+                               -( grad( v2 )*N() )*idt( u2 )
+                              +penaldir*id( v2 )*idt( u2 )/hFace() ) );
+    l2 += integrate( _range=myboundaryfaces,
+                    _expr=idv(g)*( -grad( v2 )*N()
+                                   + penaldir*id( v2 )/hFace() ) );
+    a2.solve(_rhs=l2,_solution=u2);
+    double diffsol = normL2(_range=therange,_expr=idv(u)-idv(u2));
+    BOOST_CHECK_SMALL( diffsol,1e-3 );
 }
 
 BOOST_AUTO_TEST_CASE( test_composite_2d )
@@ -243,6 +266,11 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     a.matrixPtr()->close();
     double int2PS = a.matrixPtr()->energy(uPS,uPS);
     BOOST_CHECK_SMALL( std::abs(int2PS-int1),1e-12 );
+
+    auto submesh = createSubmesh(mesh,myboundaryfaces);
+    double int1b = integrate(_range=elements(submesh),_expr=cst(1.)).evaluate()(0,0);
+    BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
+    BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
 BOOST_AUTO_TEST_SUITE_END()
 
