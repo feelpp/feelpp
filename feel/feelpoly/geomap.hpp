@@ -495,13 +495,7 @@ class GeoMap
             
             for ( size_type i = 0; i < nNodes; ++i )
             {
-                for ( uint16_type j = 0; j < nDim; ++j )
-                {
-                    for ( uint16_type k = 0; k < nDim; ++k )
-                    {
-                        _hessian( i, j, k ) = __pc->hessian( i, j, k, __idref );
-                    }
-                }
+                _hessian.chip( i, 0 ) = __pc->hessian( i, __idref ).chip( 0, 2 );
             }
         }
 
@@ -757,6 +751,7 @@ class GeoMap
         using eigen_matrix_pp_type = eigen_matrix_type<PDim,PDim,value_type>;
         using vector_eigen_matrix_np_type = vector_eigen_matrix_type<NDim,PDim,value_type>;
 
+        using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         
         Context( gm_ptrtype __gm,
@@ -1194,6 +1189,19 @@ class GeoMap
         value_type const& K( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
             {
                 return M_K[q]( c1, c2 );
+            }
+
+
+        template<typename GeoMapT=gm_type>
+        hessian_type const& hessian( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        {
+            return M_hessian[0];
+        }
+
+        template<typename GeoMapT=gm_type>
+        hessian_type const& hessian( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+            {
+                return M_hessian[q];
             }
 
         /**
@@ -1970,11 +1978,12 @@ class GeoMap
                         em_matrix_col_type<value_type> GradPhi( is_linear?M_g_linear.data().begin():M_g.data().begin(),
                                                                 M_G.size2(), PDim );
                         M_K[q].noalias() = Pts * GradPhi;
-                        if ( vm::has_hessian_v<CTX> )
+                        if ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {
                             //M_h.resize( { NDim, NDim } );
                             M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
-                            M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,{1,0});
+                            M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
+                            std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
                         }
 
                         
