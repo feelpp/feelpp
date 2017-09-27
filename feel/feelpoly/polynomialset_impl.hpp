@@ -275,7 +275,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         hess_type L;
         Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
-        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
+        Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(0, 1)}};
+        Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 0)}};
         Eigen::array<dimpair_t, 1> tracedims = {{dimpair_t(0, 1)}};
         for ( uint16_type q = 0; q < Q; ++q )
         {
@@ -286,13 +287,25 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 
                 if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
                 {
-                    auto H1 = __pc->hessian(i,q) - thegmc->hessian(i,q).contract( M_grad[i][q], {0,0} );
-                    M_hessian[i][q] = B.contract( H1.contract( B, dims1 ), dims2 );
+                    // gmc hessian NxPxP
+                    // pc hessian PxP
+                    // grad N
+                    // B NxP
+                    // hessian: N x N
+                    std::cout << "Grad=" << M_grad[i][q].chip(0,0).chip(0,1) << "\n";
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,0).chip(0,1), dimsh );
+                    //std::cout << "H0=" << H0 << std::endl;
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H00 = __pc->hessian(i,q).chip(0,2);
+                    //std::cout << "H00=" << H00 << std::endl;
+                    tensor2_fixed_size_t<PDim,PDim,value_type> H1 = H00 - H0;
+                    //std::cout << "H1=" << H1 << std::endl;
+                    M_hessian[i][q].chip(0,2) = H1.contract( B, dims1 ).contract( B, dims2 );
+                    //std::cout << "H=" << M_hessian[i][q] << std::endl;
                 }
                 else
                 {
                     auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                    M_hessian[i][q] = B.contract( H1, dims2 );
+                    M_hessian[i][q] = H1.contract( B, dims2 );
                 }
 
                 if ( vm::has_laplacian<context>::value  )
@@ -497,9 +510,32 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B ( thegmc->B( q ).data(),gmc_type::NDim, gmc_type::PDim );
                 Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
                 Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 1)}};
-                auto H1 = __pc->hessian(i,q).contract(B,dims1);
-                Eigen::array<int, 3> myperm = {{1, 0, 2}};
-                M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
+                Eigen::array<dimpair_t, 1> dimsh = {{dimpair_t(0, 1)}};
+
+                if ( Geo_t::nOrder > 1 || !convex_type::is_simplex )
+                {
+                    // gmc hessian NxPxP
+                    // pc hessian PxP
+                    // grad N
+                    // B NxP
+                    // hessian: N x N
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H0 = thegmc->hessian(q).contract( M_grad[i][q].chip(0,2), dimsh );
+                    //std::cout << "H0=" << H0 << std::endl;
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H00 = __pc->hessian(i,q);
+                    //std::cout << "H00=" << H00 << std::endl;
+                    tensor3_fixed_size_t<nComponents1,PDim,PDim,value_type> H1 = H00 - H0;
+                    //std::cout << "H1=" << H1 << std::endl;
+                    M_hessian[i][q] = H1.contract( B, dims1 ).contract( B, dims2 );
+                    //std::cout << "H=" << M_hessian[i][q] << std::endl;
+                }
+                else
+                {
+                    auto H1 = __pc->hessian(i,q).contract(B,dims1);
+                    M_hessian[i][q] = H1.contract( B, dims2 );
+                    //M_hessian[i][q] = (B.contract( H1, dims2)).shuffle( myperm );
+                }
+
+                
                 //M_hessian[i][q] = B.contract( H1, dims2);
 
                 M_laplacian[i][q].setZero();

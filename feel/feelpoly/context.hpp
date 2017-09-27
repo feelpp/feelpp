@@ -100,10 +100,9 @@ template<size_type Context>
 constexpr bool has_hessian_v = has_value<Context, HESSIAN>::value;
 
 template<size_type Context>
-struct has_laplacian
-{
-    static const bool value = has_value<Context, LAPLACIAN>::value;
-};
+using has_laplacian = has_value<Context,LAPLACIAN>;
+template<size_type Context>
+constexpr bool has_laplacian_v = has_value<Context,LAPLACIAN>::value;
 
 template<size_type Context>
 struct has_normal
