@@ -457,8 +457,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         uint16_type __face_id = faceForInit.pos_first();
         gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        t_expr_type expr( M_expr, mapgmc );
+        // map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        // t_expr_type expr( M_expr, mapgmc );
 
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"

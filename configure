@@ -22,7 +22,7 @@ Options:
      --root=PATH                     define root path
      --enable-pch                    enable precompiled headers (default)
      --disable-pch                   disable precompiled headers
-     --enable-python                 enable python 
+     --enable-python=<python executable> enable python 
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
      --disable-asan                  disable asan 
@@ -158,6 +158,11 @@ while [ -n "$1" ]; do
        _WANT_PCH=no
        ;;
    --enable-python)
+       _WANT_PYTHON=yes
+       ;;
+   --enable-python=*)
+       PYTHON_EXECUTABLE=`echo $1 | sed "s,^--enable-python=\(.*\),\1,"`
+       export PYTHON_EXECUTABLE
        _WANT_PYTHON=yes
        ;;
    --disable-python)
@@ -325,5 +330,7 @@ fi
 if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
+
+CMAKEFLAGS="${CMAKEFLAGS} -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}"
 
 cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}

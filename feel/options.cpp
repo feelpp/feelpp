@@ -418,9 +418,16 @@ po::options_description sc_options( std::string const& prefix )
     po::options_description _options("Options for static condensation");
     _options.add_options()
         ( prefixvm( prefix, "sc.condense" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable static condensation" )
+        //( prefixvm( prefix, "sc.backend" ).c_str(), po::value<std::string>()->default_value( "petsc" ), "enable/disable static condensation" )
+        ( prefixvm( prefix, "sc.condense.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel condense in static condensation" )
+        ( prefixvm( prefix, "sc.condense.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.condense.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
         ;
 
-    return _options;
+    return _options.add( backend_options( prefixvm(prefix,"sc") ) );
 }
 
 
@@ -911,11 +918,11 @@ checker_options( std::string const& prefix )
     po::options_description _options( "Checker " + prefix + " options" );
     _options.add_options()
         ( prefixvm( prefix,"checker.check" ).c_str(), Feel::po::value<bool>()->default_value(false), "run the check" )
-        ( prefixvm( prefix,"checker.solution" ).c_str(), Feel::po::value<std::string>()->default_value("0"), "solution against which to check" )
+        ( prefixvm( prefix,"checker.solution" ).c_str(), Feel::po::value<std::string>()->default_value(""), "solution against which to check" )
         ( prefixvm( prefix,"checker.tolerance.exact" ).c_str(), Feel::po::value<double>()->default_value(1e-15), "tolerance for numerical exact solution check" )
         ( prefixvm( prefix,"checker.tolerance.order" ).c_str(), Feel::po::value<double>()->default_value(1e-1), "tolerance for order check" )
         ( prefixvm( prefix,"checker.name" ).c_str(), Feel::po::value<std::string>()->default_value("checker"), "name of the test" )
-        ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("checker.json"), "name of the test" )
+        ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("$cfgdir/checker.json"), "name of the test" )
         ;
     return _options;
 }

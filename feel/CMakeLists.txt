@@ -25,7 +25,7 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models)
+SET(DIRS core python math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach() 
@@ -64,7 +64,12 @@ set_property(TARGET feelpp PROPERTY LABELS feel++)
 
 
 #target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-target_link_libraries(feelpp ${FEELPP_LIBRARIES})
+if ( FEELPP_SYMPY_FOUND )
+  
+  target_link_libraries(feelpp PUBLIC ${FEELPP_LIBRARIES} PRIVATE pybind11::embed)
+else()
+  target_link_libraries(feelpp ${FEELPP_LIBRARIES})
+endif()
 if( FEELPP_ENABLE_PCH )
     add_precompiled_header( feelpp )
 endif()

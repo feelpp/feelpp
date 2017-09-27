@@ -134,6 +134,11 @@ public:
     Checker();
     Checker( Checker const& c ) = default;
     Checker( Checker && c ) = default;
+
+    //!
+    //! use @param s as solution to check the numerical results
+    //!
+    explicit Checker( std::string const& s );
     Checker & operator=( Checker const& c ) = default;
     Checker & operator=( Checker && c ) = default;
     ~Checker() = default;
@@ -195,7 +200,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
             catch( CheckerExactFailed const& ex )
             {
                 cout << tc::red
-                     << "Checker exact verification failed for " << metric << e.first
+                     << "Checker exact verification failed for " << metric << e.first << std::endl
                      << " Computed error " << ex.computedError() << std::endl
                      << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
             }
@@ -210,8 +215,9 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 
 //!
 //! check create function
+//! @param s solution to pass to checker and check the numerical results
 //!
-FEELPP_EXPORT Checker checker( std::string const& p  = "" );
+FEELPP_EXPORT Checker checker( std::string const& s  = "", std::string const& prefix = "" );
 
 } // Feel
 

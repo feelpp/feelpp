@@ -30,6 +30,8 @@
 #ifndef __MatrixPetsc_H
 #define __MatrixPetsc_H 1
 
+#include <future>
+
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include <feel/feelconfig.h>
@@ -596,6 +598,7 @@ protected:
     Mat M_mat;
 
 
+    std::mutex mutex_add_m;
 
 private:
 
@@ -612,6 +615,7 @@ private:
     std::vector<PetscInt> M_ia,M_ja;
 
     MatInfo M_info;
+    
 };
 
 

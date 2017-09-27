@@ -165,7 +165,7 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
      * Test bilinear forms for HDG linear elasticity
      */
 
-    auto Wh = Pdhv<1>( mesh );
+    auto Wh = Pdhv<1>( mesh, true );
     auto w = Wh->element();
     auto w1 = Wh->element();
 
