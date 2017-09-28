@@ -833,7 +833,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                 auto kappa = idv(D);
                 auto uconv = beta;
                 //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa, true, false );
+                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa, true, this->hasDiffusion() );
 
 
                 auto L_op = grad(psi) * beta // advection term
@@ -883,7 +883,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                 auto kappa = idv(D);
                 auto uconv = beta;
                 //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa );
+                auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter, uconv, kappa, true, this->hasDiffusion() );
 #endif
                 auto L_op = grad(psi) * val(beta);
                 //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
