@@ -321,7 +321,7 @@ public:
             {}
         tensor( this_type const& expr, Geo_t const& geom )
             {
-                if ( expr.hasConvection() || expr.hasCoeffDiffusion() )
+                if ( expr.hasConvection() && expr.hasCoeffDiffusion() )
                     this->initTensorBase<true,true>( expr, geom );
                 else if ( expr.hasConvection() )
                     this->initTensorBase<true,false>( expr, geom );
