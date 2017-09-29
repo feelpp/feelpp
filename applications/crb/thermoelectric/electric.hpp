@@ -138,26 +138,27 @@ public:
     int mLQF( int l, int q );
     int mCompliantQ( int q );
     int mIntensity( int q );
-    void resizeQm();
+    void resizeQm( bool resizeMatrix = true );
     parameter_type newParameter() { return Dmu->element(); }
     parameter_type paramFromProperties() const;
 
-    void initModel();
+    void initModel() override;
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     void decomposition();
 
-    beta_vector_type computeBetaInitialGuess( parameter_type const& mu );
-    beta_type computeBetaQm( element_type const& T, parameter_type const& mu );
-    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu );
-    beta_type computeBetaQm( parameter_type const& mu );
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 );
+    beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override;
+    beta_type computeBetaQm( element_type const& T, parameter_type const& mu ) override;
+    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override;
+    beta_type computeBetaQm( parameter_type const& mu ) override;
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 ) override;
     void fillBetaQm( parameter_type const& mu );
 
-    affine_decomposition_type computeAffineDecomposition();
-    std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
-    std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition();
+    affine_decomposition_type computeAffineDecomposition() override;
+    std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
+    std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
 
-    element_type solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu ) override;
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
