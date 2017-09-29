@@ -95,32 +95,40 @@ int Electric::mIntensity(int q )
     return 1;
 }
 
-void Electric::resizeQm()
+void Electric::resizeQm( bool resizeMatrix )
 {
-    M_Aqm.resize( Qa());
+    if( resizeMatrix )
+        M_Aqm.resize( Qa());
     M_betaAqm.resize( Qa() );
     for( int q = 0; q < Qa(); ++q )
     {
-        M_Aqm[q].resize(mQA(q), backend()->newMatrix(Xh, Xh ) );
+        if( resizeMatrix )
+            M_Aqm[q].resize(mQA(q), backend()->newMatrix(Xh, Xh ) );
         M_betaAqm[q].resize(mQA(q));
     }
 
-    M_Fqm.resize(Nl());
+    if( resizeMatrix )
+        M_Fqm.resize(Nl());
     M_betaFqm.resize(Nl());
     for( int l = 0; l < Nl(); ++l )
     {
-        M_Fqm[l].resize(Ql(l));
+        if( resizeMatrix )
+            M_Fqm[l].resize(Ql(l));
         M_betaFqm[l].resize(Ql(l));
         for( int q = 0; q < Ql(l); ++q )
         {
-            M_Fqm[l][q].resize(mLQF(l, q), backend()->newVector(Xh) );
+            if( resizeMatrix )
+                M_Fqm[l][q].resize(mLQF(l, q), backend()->newVector(Xh) );
             M_betaFqm[l][q].resize(mLQF(l, q) );
         }
     }
 
-    M_InitialGuess.resize(1);
-    M_InitialGuess[0].resize(1);
-    M_InitialGuess[0][0] = Xh->elementPtr();
+    if( resizeMatrix )
+    {
+        M_InitialGuess.resize(1);
+        M_InitialGuess[0].resize(1);
+        M_InitialGuess[0][0] = Xh->elementPtr();
+    }
 }
 
 Electric::parameter_type
@@ -188,6 +196,44 @@ void Electric::initModel()
 
     this->resizeQm();
     this->decomposition();
+}
+
+void Electric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+{
+    Feel::cout << "setupSpecificityModel" << std::endl;
+
+    std::string propertyPath;
+    if( this->hasModelFile("property-file") )
+        propertyPath = this->additionalModelFiles().find("property-file")->second;
+    else
+        Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
+                   << std::endl;
+    M_modelProps = boost::make_shared<prop_type>(propertyPath);
+
+    auto parameters = M_modelProps->parameters();
+    int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
+                                   {
+                                       return p.second.hasMinMax();
+                                   });
+    Dmu = parameterspace_type::New( nbCrbParameters, Environment::worldComm() );
+
+    auto mu_min = Dmu->element();
+    auto mu_max = Dmu->element();
+    int i = 0;
+    for( auto const& parameterPair : parameters )
+    {
+        if( parameterPair.second.hasMinMax() )
+        {
+            mu_min(i) = parameterPair.second.min();
+            mu_max(i) = parameterPair.second.max();
+            Dmu->setParameterName(i++, parameterPair.first );
+        }
+    }
+    Dmu->setMin(mu_min);
+    Dmu->setMax(mu_max);
+    M_mu = Dmu->element();
+
+    this->resizeQm(false);
 }
 
 void Electric::decomposition()
