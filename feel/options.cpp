@@ -449,6 +449,9 @@ eimOptions( std::string const& prefix )
         ( "eim.show-mu-selection",Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
         ( "eim.show-t-selection",Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
         ( "eim.show-offline-error",Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
+
+        ( "eim.elements.write", Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( "eim.elements.directory", Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
         ;
 
     return eimoptions;
