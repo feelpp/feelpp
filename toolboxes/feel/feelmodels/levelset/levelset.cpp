@@ -1558,7 +1558,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
             _space=this->functionSpaceTensor2Symm(),
             _expr=idv(invGradY)*trans(idv(invGradY))
             );
-    auto const& K = *M_bulkLeftCauchyGreenTensor;
+    auto const& K = *M_leftCauchyGreenTensor_K;
     *M_leftCauchyGreenTensor_KN = vf::project(
             _space=this->functionSpaceVectorial(),
             _expr=idv(K)*idv(this->N())
