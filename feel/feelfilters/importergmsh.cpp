@@ -33,7 +33,7 @@ const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                             auto m = boost::make_shared<GModel>();
                                                             int status = 1;
 #ifdef FEELPP_HAS_GMSH_HAS_MED
-                                                            int status = m->readMED(fname);
+                                                            status = m->readMED(fname);
 #else
                                                             throw std::logic_error("Gmsh MED support is not available. Cannot load MED file");
 #endif
