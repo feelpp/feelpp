@@ -226,10 +226,11 @@ public:
         size_t key() const
         {
             int N = this->size();
-            std::vector<double> x(N);
-            Eigen::VectorXd::Map(x.data(), N) = *this;
-            HashTables::HasherContainers<double> h;
-            return h(x);
+            std::vector<std::string> s;
+            for ( int i=0; i<N; i++ )
+                s.push_back( std::to_string(this->operator[](i)) );
+            HashTables::HasherContainers<std::string> h;
+            return h(s);
         }
 
         std::string toString() const
