@@ -56,6 +56,7 @@
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
@@ -63,7 +64,7 @@
 
 namespace Feel
 {
-class ModelCrbBaseBase {};
+
 class EimFunctionNoSolveBase {};
 
 /**
@@ -1817,7 +1818,9 @@ public:
         M_t(),
         M_B(),
         M_offline_error(),
-        M_eim()
+        M_eim(),
+        M_write_nl_solutions( boption( "eim.elements.write") ),
+        M_write_nl_directory( soption( "eim.elements.directory") )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
@@ -1960,10 +1963,10 @@ public:
     }
 
     //!
-    //! 
+    //!
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
-    
+
     void saveDB() override
     {
         if ( this->worldComm().isMasterRank() )
@@ -2143,7 +2146,7 @@ public:
 
         this->updateRbSpaceContext( rbspacebase, mpl::bool_<use_subspace_element>() );
     }
-    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ ) 
+    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ )
     {
         if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
         {
@@ -2261,7 +2264,40 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return this->model()->solve( mu );
+        model_solution_type u = this->model()->functionSpace()->element();
+        bool need_solve = true;
+
+        if ( M_write_nl_solutions )
+        {
+            need_solve = !u.load( _path=M_write_nl_directory,
+                                  _suffix=std::to_string(mu.key()), _type="hdf5" );
+            if ( need_solve )
+                LOG(INFO) << "EIM : Unable to load nl solution in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key()<< ". Solve function will be called.";
+            else
+                LOG(INFO) << "EIM : NL solution loaded in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+        }
+
+        if ( need_solve )
+        {
+            LOG(INFO) << "EIM : calling solve function for parameter " << mu.toString()
+                      <<" / " << mu.key();
+            u = this->model()->solve(mu);
+
+            if ( M_write_nl_solutions )
+            {
+                LOG(INFO) << "EIM : Wrting solution on disk in directory "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+                u.save( _path=M_write_nl_directory,
+                        _suffix=std::to_string(mu.key()), _type="hdf5" );
+            }
+        }
+
+        return u;
     }
 
     element_type operator()( parameter_type const&  mu ) override
@@ -2275,7 +2311,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
             auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
@@ -2306,7 +2342,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
 
             auto eimexpr = this->expr( mu, sol );
 
@@ -2728,7 +2764,7 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
@@ -2747,7 +2783,7 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<false>)
     {
@@ -2776,7 +2812,7 @@ public:
         if( this->modelBuilt() )
             return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<false> )
     {
@@ -3321,6 +3357,9 @@ private:
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
+
+    bool  M_write_nl_solutions;
+    std::string M_write_nl_directory;
 
     std::vector<int> M_rb_online_iterations;
     std::vector<double> M_rb_online_increments;
