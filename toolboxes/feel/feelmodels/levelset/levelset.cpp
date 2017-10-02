@@ -1524,9 +1524,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 {
-    this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
-
     DCHECK( this->M_useCauchyAugmented ) << this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green tensor";
+
+    this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
+    this->timerTool("UpdateInterfaceData").start();
 
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
     auto gradY = this->projectorL2Tensor2Symm()->project(
@@ -1572,7 +1573,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 
     M_doUpdateCauchyGreenTensor = false;
 
-    this->log("LevelSet", "updateLeftCauchyGreenTensor", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateLeftCauchyGreenTensor", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
