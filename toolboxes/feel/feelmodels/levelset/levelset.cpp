@@ -1570,7 +1570,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
     //auto KN = this->projectorL2Vectorial()->project(
             //_expr=idv(K)*idv(this->N())
             //);
-    *M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+    //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
+            //_expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
+            //);
+    *M_leftCauchyGreenTensor = vf::project(
+            _space=this->functionSpaceTensor2Symm(),
             _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
             );
 #endif
