@@ -54,6 +54,8 @@
 namespace Feel
 {
 
+class ModelCrbBaseBase;
+
 /**
  * \brief Base class for DEIM algorithm
  *
@@ -568,6 +570,7 @@ protected :
     }
 
     // \return a shared pointer on a copy of \p M
+
     sparse_matrix_ptrtype copyTensor( sparse_matrix_ptrtype M )
     {
         sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(),
@@ -615,29 +618,29 @@ protected :
 };
 
 
-template <typename ModelType>
-class DEIM :
+template <typename ModelType,
+          typename TensorType>
+class DEIMModel :
         public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
-                        typename Backend<typename ModelType::value_type>::vector_type>
+                        TensorType>
 {
 public :
-    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::vector_type> super_type;
-
+    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, TensorType> super_type;
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::tensor_ptrtype tensor_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
 
-    DEIM() :
+    DEIMModel() :
         super_type()
     {}
 
-    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+    DEIMModel( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
         super_type( model->functionSpace(),
                     model->parameterSpace(),
                     sampling,
@@ -648,7 +651,13 @@ public :
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
         this->M_online_model = model_ptrtype( new model_type() );
         this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+    }
 
+    virtual ~DEIMModel()
+    {}
+
+    void init()
+    {
         auto mu = this->M_trainset->max().template get<0>();
         auto T = this->assemble(mu);
         if (!T)
@@ -658,14 +667,9 @@ public :
             auto Tnl = this->assemble(mu,u);
             CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
         }
-
-
     }
 
-    ~DEIM()
-    {}
-
-    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
+    tensor_ptrtype assemble( parameter_type const& mu, bool online=false ) override
     {
         if ( this->M_nl_assembly )
         {
@@ -706,25 +710,80 @@ public :
                 }
             }
 
-            return M_model->assembleForDEIMnl(mu,u);
+            return modelAssemble(mu,u);
         }
-        if (online)
-            return M_online_model->assembleForDEIM(mu);
-        return M_model->assembleForDEIM(mu);
-    }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
-    {
-        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
-        if ( online )
-            return M_online_model->assembleForDEIMnl(mu,u);
-        return M_model->assembleForDEIMnl(mu,u);
+        return modelAssemble(mu,online);
     }
 
+    tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
+        return modelAssemble(mu,u,online);
+    }
+
+protected :
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
+
+protected :
+    model_ptrtype M_model, M_online_model;
+
+    using super_type::M_write_nl_solutions;
+    using super_type::M_write_nl_directory;
+};
+
+
+template <typename ModelType>
+class DEIM :
+        public DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>
+{
+public :
+    typedef DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>  super_type;
+
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
+
+    DEIM() :
+        super_type()
+    {
+        this->init();
+    }
+
+    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix )
+    {}
+
+    ~DEIM()
+    {}
+
 private :
-    void updateSubMesh()
+    vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForDEIM(mu);
+       return this->M_model->assembleForDEIM(mu);
+    }
+
+    vector_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForDEIMnl(mu,u);
+        return this->M_model->assembleForDEIMnl(mu,u);
+    }
+
+
+private :
+    virtual void updateSubMesh() override
     {
         // Last added index
-        int index = this->M_index.back();
+        auto index = this->M_index.back();
         auto Xh = this->M_model->functionSpace();
         auto mesh = Xh->mesh();
         int proc_n = Xh->dof()->procOnGlobalCluster(index);
@@ -796,126 +855,57 @@ private :
 
         this->M_online_model->setFunctionSpaces( Rh );
     }
-
-private :
-    model_ptrtype M_model, M_online_model;
-
-    using super_type::M_write_nl_solutions;
-    using super_type::M_write_nl_directory;
-
 };
 
 
 template <typename ModelType>
 class MDEIM :
-        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
-                        typename Backend<typename ModelType::value_type>::sparse_matrix_type>
+        public DEIMModel<ModelType,
+                         typename Backend<typename ModelType::value_type>::sparse_matrix_type>
 {
 public :
-    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
+    typedef DEIMModel<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
 
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::tensor_ptrtype sparse_matrix_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
-
 
     MDEIM() :
         super_type()
     {}
 
     MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model->functionSpace(),
-                    model->parameterSpace(),
-                    sampling,
-                    model->uuid(),
-                    prefix ),
-        M_model( model )
+        super_type( model, sampling, prefix )
     {
-        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
-        this->M_online_model = model_ptrtype( new model_type() );
-        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
-
-        auto mu = this->M_trainset->max().template get<0>();
-        auto T = this->assemble(mu);
-        if (!T)
-        {
-            this->M_nl_assembly=true;
-            auto u = this->M_model->functionSpace()->element();
-            auto Tnl = this->assemble(mu,u);
-            CHECK( Tnl ) << "You want to use MDEIM but you did not implement assmbleForMDEIM functions\n";
-        }
-
-
+        this->init();
     }
 
     ~MDEIM()
     {}
 
-    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
+private :
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
-        if ( this->M_nl_assembly )
-        {
-            if ( online )
-                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
-            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
-
-            auto u = M_model->functionSpace()->element();
-            bool need_solve = true;
-
-            if ( M_write_nl_solutions )
-            {
-                need_solve = !u.load( _path=M_write_nl_directory,
-                                      _suffix=std::to_string(mu.key()), _type="hdf5" );
-                if ( need_solve )
-                    LOG(INFO) << "MDEIM : Unable to load nl solution in direcotry "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key()<< ". Solve function will be called.";
-                else
-                    LOG(INFO) << "MDEIM : NL solution loaded in direcotry "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key();
-            }
-
-            if ( need_solve )
-            {
-                LOG(INFO) << "MDEIM : calling solve function for parameter " << mu.toString()
-                          <<" / " << mu.key();
-                u = M_model->solve(mu);
-
-                if ( M_write_nl_solutions )
-                {
-                    LOG(INFO) << "MDEIM : Wrting solution on disk in directory "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key();
-                    u.save( _path=M_write_nl_directory,
-                            _suffix=std::to_string(mu.key()), _type="hdf5" );
-                }
-            }
-
-            return M_model->assembleForMDEIMnl(mu,u);
-        }
-
-        if (online)
+        if ( online )
             return this->M_online_model->assembleForMDEIM(mu);
-         return M_model->assembleForMDEIM(mu);
+        return this->M_model->assembleForMDEIM(mu);
     }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
+
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
     {
-        CHECK(this->M_nl_assembly) << "You called nl coefficient for MDEIM but you implemented assembleForMDEIM(mu)\n";
         if ( online )
             return this->M_online_model->assembleForMDEIMnl(mu,u);
-        return M_model->assembleForMDEIMnl(mu,u);
+        return this->M_model->assembleForMDEIMnl(mu,u);
     }
 
-
 private :
-    void updateSubMesh()
+    void updateSubMesh() override
     {
         auto index = this->M_index.back();
         int i1 = index.first;
@@ -1049,11 +1039,6 @@ private :
 
     }
 
-private :
-    model_ptrtype M_model, M_online_model;
-
-    using super_type::M_write_nl_solutions;
-    using super_type::M_write_nl_directory;
 };
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
