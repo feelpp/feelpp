@@ -648,7 +648,7 @@ public :
                     prefix ),
         M_model( model )
     {
-        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
+
         this->M_online_model = model_ptrtype( new model_type() );
         this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
     }
@@ -752,13 +752,14 @@ public :
 
     DEIM() :
         super_type()
-    {
-        this->init();
-    }
+    {}
 
     DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
         super_type( model, sampling, prefix )
-    {}
+    {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
+        this->init();
+    }
 
     ~DEIM()
     {}
@@ -883,6 +884,7 @@ public :
     MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
         super_type( model, sampling, prefix )
     {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
         this->init();
     }
 
