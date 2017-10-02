@@ -56,6 +56,7 @@ enum {
     InfSup = 0x4
 };
 
+class ModelCrbBaseBase {};
 
 class ParameterDefinitionBase
 {
