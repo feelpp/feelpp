@@ -657,6 +657,8 @@ private:
     vector_field_expression<nDim> M_initialBackwardCharacteristics;
     bool M_hasInitialBackwardCharacteristics;
     // Cauchy-Green tensor
+    element_tensor2symm_ptrtype M_leftCauchyGreenTensor_K;
+    element_levelset_vectorial_ptrtype M_leftCauchyGreenTensor_KN;
     element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
     mutable bool M_doUpdateCauchyGreenTensor;
     // Cauchy-Green tensor invariants

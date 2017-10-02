@@ -460,6 +460,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
         M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
+        M_leftCauchyGreenTensor_K.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor_K") );
+        M_leftCauchyGreenTensor_KN.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "LeftCauchyGreenTensor_KN") );
         M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
         M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
         M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
@@ -1552,14 +1554,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 #else
     // K = (gradY)^-1 (gradY)^-T
     auto const& N = this->N();
-    auto K = vf::project(
+    *M_leftCauchyGreenTensor_K = vf::project(
             _space=this->functionSpaceTensor2Symm(),
             _expr=idv(invGradY)*trans(idv(invGradY))
             );
-    auto KN = vf::project(
+    auto const& K = *M_bulkLeftCauchyGreenTensor;
+    *M_leftCauchyGreenTensor_KN = vf::project(
             _space=this->functionSpaceVectorial(),
             _expr=idv(K)*idv(this->N())
             );
+    auto const& KN = *M_leftCauchyGreenTensor_KN;
     //auto K = this->projectorL2Tensor2Symm()->project(
             //_expr=idv(invGradY)*trans(idv(invGradY))
             //);
@@ -1584,21 +1588,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
     if( M_useCauchyAugmented )
     {
         this->log("LevelSet", "cauchyGreenInvariant1", "start");
-        //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-        //auto Id = vf::Id<nDim, nDim>();
-        //auto N0 = vf::project(
-                //_space=this->functionSpaceVectorial(),
-                //_expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
-                //);
-        //auto N0xN0 = idv(N0)*trans(idv(N0));
-        //*M_cauchyGreenInvariant1 = vf::project(
-                //_space=M_cauchyGreenInvariant1->functionSpace(),
-                //_expr=trace( inv(gradv(Y))*(Id-N0xN0)*trans(inv(gradv(Y))) )
-                //);
+#if 1
         *M_cauchyGreenInvariant1 = vf::project(
                 _space=M_cauchyGreenInvariant1->functionSpace(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
+#else
+        *M_cauchyGreenInvariant1 = vf::project(
+                _space=M_cauchyGreenInvariant1->functionSpace(),
+                _expr=trace(idv(this->leftCauchyGreenTensor()))
+                );
+
+#endif
         this->log("LevelSet", "cauchyGreenInvariant1", "finish");
     }
     else
@@ -1616,13 +1617,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
     if( M_useCauchyAugmented )
     {
         this->log("LevelSet", "cauchyGreenInvariant2", "start");
-        //auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-        //auto Id = vf::Id<nDim, nDim>();
-        //auto N0 = vf::project(
-                //_space=this->functionSpaceVectorial(),
-                //_expr=trans(inv(gradv(Y)))*idv(this->N()) / norm2(trans(inv(gradv(Y)))*idv(this->N()))
-                //);
-        //auto N0xN0 = idv(N0)*trans(idv(N0));
+#if 0
         auto A = idv(this->leftCauchyGreenTensor());
         auto trA = trace(A);
         // 3D: TrCofA = 1/2 (Tr2(A)-TrA2)
@@ -1630,6 +1625,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 _space=M_cauchyGreenInvariant2->functionSpace(),
                 _expr=0.5*( trA*trA-trace(A*A) )
                 );
+#else
+        auto const& N = this->N();
+        auto const& K = this->M_leftCauchyGreenTensor_K;
+        auto const& KN = this->M_leftCauchyGreenTensor_KN;
+        *M_cauchyGreenInvariant2 = vf::project(
+                _space=M_cauchyGreenInvariant2->functionSpace(),
+                _expr=det(idv(K))/(trans(idv(N))*idv(KN))
+                );
+#endif
         this->log("LevelSet", "cauchyGreenInvariant2", "finish");
     }
     else
