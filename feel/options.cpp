@@ -474,7 +474,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
         ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
 
-
+        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));

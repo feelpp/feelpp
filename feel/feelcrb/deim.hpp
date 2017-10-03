@@ -143,7 +143,8 @@ public :
         M_nl_assembly(false),
         M_store_tensors( false ),
         M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
-        M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) )
+        M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
+        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) )
     {
         using Feel::cout;
 
@@ -336,7 +337,8 @@ protected :
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
-        updateSubMesh();
+        if ( M_optimized_online )
+            updateSubMesh();
         //this->saveDB();
         LOG(INFO) << "DEIM : addNewVector() end";
     }
@@ -347,11 +349,13 @@ protected :
         if ( seq )
             return V->operator()( index );
 
+        V->close();
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
 
         if ( Environment::worldComm().globalRank()==proc_number )
             value = V->operator()( index - V->map().firstDofGlobalCluster() );
+
 
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
         return value;
@@ -366,6 +370,7 @@ protected :
         if ( seq )
             return M->operator() ( i,j );
 
+        M->close();
         double value=0;
         int proc_number = M->mapRow().procOnGlobalCluster(i);
 
@@ -454,6 +459,7 @@ protected :
     //! Compute the beta coefficients for a assembled tensor \p T
     vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
+        bool optimized = online && this->M_optimized_online;
         if( (M < 0) || (M > M_M) )
             M = M_M;
         vectorN_type rhs (M);
@@ -461,7 +467,7 @@ protected :
         if ( M > 0 )
         {
             for ( int i=0; i<M; i++ )
-                rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
+                rhs(i) = evaluate( T, optimized ? M_indexR[i]:M_index[i], optimized );
             coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
 
@@ -615,6 +621,7 @@ protected :
 
     bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
     std::string M_write_nl_directory;
+    bool M_optimized_online;
 };
 
 
@@ -648,9 +655,13 @@ public :
                     prefix ),
         M_model( model )
     {
-
-        this->M_online_model = model_ptrtype( new model_type() );
-        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+        if ( this->M_optimized_online )
+        {
+            this->M_online_model = model_ptrtype( new model_type() );
+            this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+        }
+        else
+            this->M_online_model = M_model;
     }
 
     virtual ~DEIMModel()
@@ -727,6 +738,7 @@ protected :
 
 protected :
     model_ptrtype M_model, M_online_model;
+
 
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
@@ -856,6 +868,7 @@ private :
 
         this->M_online_model->setFunctionSpaces( Rh );
     }
+
 };
 
 
@@ -1040,7 +1053,6 @@ private :
         this->M_online_model->setFunctionSpaces( Rh );
 
     }
-
 };
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
