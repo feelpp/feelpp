@@ -813,29 +813,15 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
             case AdvectionStabMethod::GALS :
             {
-#if 0
-                auto coeff  = val( stabCoeff /
-                        ( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
-
-                //auto L_op = grad(psi)*beta + sigma*id(psi);
-                //auto L_opt = gradt(phi)*beta + sigma*idt(phi);
-                auto L_op = grad(psi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
-                    + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
-                    ;
-                auto L_opt = gradt(phi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
-                    ;
+#if 1
+                auto coeff  = val( 1/( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
 #else
                 auto kappa = idv(D);
                 auto uconv = beta;
                 //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
                 auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa, true, this->hasDiffusion() );
 
-
+#endif
                 auto L_op = grad(psi) * beta // advection term
                     + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
                     + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
@@ -847,7 +833,6 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
                     + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
                     ;
 
-#endif
                 bilinearForm += integrate(
                         _range=elements(mesh),
                         _expr=coeff * inner(L_op, L_opt),
@@ -877,7 +862,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_pt
 
             case AdvectionStabMethod::SUPG :
             {
-#if 0
+#if 1
                 auto coeff = val(vf::h() / (2 * beta_norm + 0.001));
 #else
                 auto kappa = idv(D);
