@@ -452,7 +452,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
-                            cout << "same_mesh=" << M_same_mesh << " has_relation: "<< M_hasRelationMesh << std::endl; \
                             M_mzero.setZero();                          \
                             if(!M_same_mesh)                            \
                                     expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \

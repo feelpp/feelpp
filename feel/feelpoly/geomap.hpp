@@ -873,16 +873,19 @@ class GeoMap
         template<size_type CTX=context>
         void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx = true )
         {
+            M_perm=__perm;
+            const bool updatePc = false;
             if ( __updateJacobianCtx )
-                update( __e, M_pc_faces[__f][M_perm], __f );
+                update( __e, M_pc_faces[__f][M_perm], __f, updatePc );
             else
-                this->update<clear_value_v<context,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f );
+                this->update<clear_value_v<context,vm::JACOBIAN|vm::MEASURE>>( __e, M_pc_faces[__f][M_perm], __f, updatePc );
         }
 
         template<size_type CTX=context>
         void update( element_type const& __e,
                      precompute_ptrtype const& __pc,
-                     uint16_type __f = invalid_uint16_type_value )
+                     uint16_type __f = invalid_uint16_type_value,
+                     bool updatePc = true )
         {
             M_pc = __pc;
 
@@ -902,7 +905,7 @@ class GeoMap
                 }
             }
 
-            update<CTX>( __e, __f );
+            update<CTX>( __e, __f, updatePc );
         }
 
         /**
@@ -918,7 +921,7 @@ class GeoMap
          *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
          */
         template<size_type CTX=context>
-        void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value )
+        void update( element_type const& __e, uint16_type __f = invalid_uint16_type_value, bool updatePC = true )
             {
                 M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
                 //M_G = __e.G();
@@ -928,7 +931,7 @@ class GeoMap
                 M_id = __e.id();
                 M_e_markers = __e.markers();
                 M_face_id = __f;
-                if ( this->isOnFace() )
+                if ( this->isOnFace() && updatePC )
                 {
                     M_perm = __e.permutation( M_face_id );
                     M_pc = M_pc_faces[__f][M_perm];
@@ -1688,12 +1691,16 @@ class GeoMap
                     {
                         // update only xReal in current geomap
                         this->update( elt, face_in_elt, __p, false );
-
+                        
                         bool check = true;
                         for ( uint16_type i = 0; i < gmc->nPoints() && check; ++i )
                         {
-                            for ( uint16_type d = 0; d < NDim; ++d )
+                            
+                            for ( uint16_type d = 0; (d < NDim); ++d )
+                            {
+                                
                                 check = check && ( std::abs( gmcptr->xReal( i )[d] - this->xReal( i )[d] ) < 1e-8 );
+                            }
                         }
                         // if check update full gmc context with the good permutation
                         if ( check )
@@ -1983,7 +1990,7 @@ class GeoMap
                             //M_h.resize( { NDim, NDim } );
                             M_gm->hessianBasisAtPoint( q, M_hessian_basis_at_pt, M_pc.get() );
                             M_hessian[q] = TPts.contract(M_hessian_basis_at_pt,dims);
-                            std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
+                            //std::cout << "M_hessian[" << q << "]=" << M_hessian[q] << std::endl;
                         }
 
                         
