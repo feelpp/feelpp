@@ -513,7 +513,7 @@ public:
             return M_tensor_expr.evalij( i, j );
         }
 
-        Eigen::Map<const Eigen::Matrix<value_type, shape::M*shape::N,1>>
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const
         {
             return M_tensor_expr.evalijq( i, j, q );

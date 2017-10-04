@@ -799,9 +799,9 @@ public:
             :
             M_ref_ele( __ref_ele ),
             M_nodes( __pts ),
-            M_phi(),
-            M_grad(),
-            M_hessian()
+            M_phi(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
+            M_grad(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
+            M_hessian(boost::extents[__ref_ele->nbDof()][__pts.size2()])
         {
             init( M_ref_ele, __pts, rank_t<rank>() );
         }
@@ -986,9 +986,11 @@ public:
               matrix_node_t_type const& __pts,
               rank_t<0> )
         {
+#if 0
             M_phi.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_grad.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
+#endif
             id_type i_phi;
             std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
             g_type i_grad;
