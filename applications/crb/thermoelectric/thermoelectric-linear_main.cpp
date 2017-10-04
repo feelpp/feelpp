@@ -23,9 +23,7 @@
 //!
 //!
 
-#include <feel/feelcrb/crbsaddlepoint.hpp>
-#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
-#include "thermoelectric-simple.hpp"
+#include "thermoelectric-linear.hpp"
 
 using namespace Feel;
 
@@ -36,7 +34,6 @@ int main( int argc, char** argv)
                      _desc=opt.add(makeThermoElectricOptions())
                      .add(crbOptions())
                      .add(crbSEROptions())
-                     .add(crbSaddlePointOptions())
                      .add(eimOptions())
                      .add(podOptions())
                      .add(backend_options("backend-primal"))
@@ -44,13 +41,11 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("ThermoElectricCRB")) );
 
-    using rb_model_type = ThermoElectric;
+    using rb_model_type = Thermoelectric;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
-    // using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
     using crb_type = CRBSaddlePoint<crb_model_type>;
-    // using crb_type = CRB<crb_model_type>;
     using crb_ptrtype = boost::shared_ptr<crb_type>;
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
@@ -78,23 +73,14 @@ int main( int argc, char** argv)
 
     auto e = exporter(mesh, _name="thermoelectric");
 
-    // auto T = crb->expansion(uN,N);
-    // e->add("T",T);
-    // for(auto i =0; i < N; i++)
-    // {
-    //     auto rb=crbModel->rBFunctionSpace()->primalBasisElement(i);
-    //     auto norm = normL2( elements(model->mesh()), idv(rb));
-    //     Feel::cout << "||rb_" << i << "|| = " << norm << std::endl;
-    //     e->add((boost::format("rb_%1%") % i ).str(), rb);
-    // }
-    // e->save();
     auto VTFE = model->solve(mu);
     auto VFE = VTFE.template element<0>();
     auto TFE = VTFE.template element<1>();
     auto normV = normL2( elements(model->mesh()), idv(VFE) );
     auto normT = normL2( elements(model->mesh()), idv(TFE) );
     boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
-    fs::ofstream file( "cvg.dat" );
+    std::string fileName = (boost::format("cvg_%1%.dat") % model->mMaxJoule() ).str();
+    fs::ofstream file( fileName );
     if( file && Environment::isMasterRank() )
     {
         file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
