@@ -184,11 +184,11 @@ int hdg_laplacian()
 
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( idt(phat)*(leftface(trans(id(v))*N())+
-                                               rightface(trans(id(v))*N()))), _verbose=true );
+                            _expr=( idt(phat)*(leftface(normal(v))+
+                                               rightface(normal(v)))), _verbose=true );
 
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=idt(phat)*(trans(id(v))*N()));
+                            _expr=idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
 
     //
@@ -222,7 +222,7 @@ int hdg_laplacian()
     // 
     tic();
     a(2_c,0_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( id(l)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N()))),
+                            _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u)))),
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
                             _verbose=true);
         
@@ -231,7 +231,7 @@ int hdg_laplacian()
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=( id(l)*(trans(idt(u))*N())));
+                            _expr=( id(l)*(normalt(u))));
     toc("a(2,0).3",FLAGS_v>0);
 
     tic();
