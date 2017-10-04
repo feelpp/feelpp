@@ -26,6 +26,7 @@ Options:
      --enable-cling                  enable cling 
      --disable-cling                 disable cling (default)
      --disable-asan                  disable asan 
+     --disable=<module>              space separated list of <module>s to disable : --disable="ipopt nlopt"
  -v, --verbose                       enable verbose output
  -h, --help                          help page
      --<package>-dir=PACKAGE_PATH    define <package> install directory
@@ -68,6 +69,7 @@ _HAS_CONFIG=no
 _WANT_DEV_WARNINGS=
 _WANT_NUMERICS=TRUE
 _WANT_LOCAL_CONFIG=no
+_WANT_DISABLE=""
 CXXFLAGS=
 CMAKEFLAGS=
 ENABLE_NUMA=TRUE
@@ -176,6 +178,10 @@ while [ -n "$1" ]; do
        ;;
    --disable-asan)
        _WANT_ASAN=no
+       ;;
+   --disable=*)
+       _WANT_DISABLE=`echo $1 | sed "s,^--disable=\(.*\),\1,"`
+       export _WANT_DISABLE
        ;;
    --max-order=*)
            PROJECT_MAX_ORDER=`echo $1 | sed "s,^--max-order=\(.*\),\1,"`
@@ -312,6 +318,7 @@ if [ "X${_WANT_ASAN}" = "Xno" ]; then
     echo "set(FEELPP_ENABLE_ASAN OFF CACHE PATH \"disable asan \" FORCE)" >> cmake.configure
 fi
 
+
 # CLING
 if [ "X${_WANT_CLING}" = "Xyes" ]; then
     echo "set(FEELPP_ENABLE_CLING ON CACHE PATH \"enable cling \" FORCE)" >> cmake.configure
@@ -323,6 +330,15 @@ if [ "X${CXXFLAGS}" != "X" ]; then
     echo "set(CMAKE_CXX_FLAGS_RELEASE \"${CXXFLAGS}\" CACHE STRING \"cxx flags\" FORCE)" >> cmake.configure
     echo "set(CMAKE_CXX_FLAGS_DEBUG \"${CXXFLAGS}\" CACHE STRING \"cxxflags \" FORCE)" >> cmake.configure
 fi
+
+# Disable modules
+if [ "X${_WANT_DISABLE}" != "X" ]; then
+    for _feature in ${_WANT_DISABLE}; do
+        feature=$(echo ${_feature} | tr [a-z] [A-Z])
+        echo "set(FEELPP_ENABLE_${feature} OFF CACHE PATH \"disable ${feature} \" FORCE)" >> cmake.configure
+    done
+fi
+
 #if [ "X${_WANT_OG}" != "X" ]; then
 #echo "set( CMAKE_CXX_FLAGS_RELEASE \"-Og -DNDEBUG\" CACHE PATH \"CXX Release Flags \" FORCE)" >> cmake.configure
 #fi
