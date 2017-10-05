@@ -1079,14 +1079,25 @@ public:
             ptree_mMaxLinearDecompositionA.push_back( std::make_pair("", ptree_mMaxLinearDecompositionA_value) );
         }
 
-        boost::property_tree::ptree ptreeAffineDecomposition;
-        ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
-        ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
-        ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
-        ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
 
-        boost::property_tree::ptree ptreeCrbModel;
-        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        auto ptreeAffineDecompositionOptional = ptree.get_child_optional( "affine-decomposition" );
+        if ( ptreeAffineDecompositionOptional )
+        {
+            ptreeAffineDecompositionOptional->add_child( "mMaxA", ptree_mMaxA );
+            ptreeAffineDecompositionOptional->add_child( "mMaxM", ptree_mMaxM );
+            ptreeAffineDecompositionOptional->add_child( "mMaxF", ptree_mMaxF );
+            ptreeAffineDecompositionOptional->add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+        }
+        else
+        {
+            boost::property_tree::ptree ptreeAffineDecomposition;
+            ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
+            ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
+            ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
+            ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+
+            ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        }
     }
 
     /**
