@@ -166,7 +166,7 @@ public:
 
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
+    typedef CRBBase<functionspace_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -341,7 +341,7 @@ public:
             return M_restart;
         }
 
-    void setRB( boost::any crb )
+    void setRB( crb_ptrtype crb )
         {
             M_model->setRB( crb );
         }
@@ -1285,6 +1285,9 @@ public:
     typedef typename geometricspace_type::Context geometricspace_context_type;
     typedef boost::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
 
+    typedef CRBBase<model_functionspace_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
@@ -1437,7 +1440,7 @@ public:
     virtual bool rbCorrection() const = 0;
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
-    virtual void setRB( boost::any rb )=0;
+    virtual void setRB( crb_ptrtype rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
     virtual bool modelBuilt() const = 0;
     virtual bool rbBuilt() const = 0;
@@ -1784,7 +1787,7 @@ public:
 
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
+    typedef CRBBase<typename model_type::functionspace_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
@@ -2978,6 +2981,8 @@ public:
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
+#if 0 // this function is removed for now since it need M_crb
+
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
             M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model(), crb::stage::offline/*M_model*/ ) );
@@ -3030,7 +3035,7 @@ public:
 
         this->model()->computeStatistics( super::onlineTime() , super::name() );
         this->model()->computeStatistics( time_crb , super::name()+" - global crb timing" );
-
+#endif
     }
 
     bool offlineStep() const override { return M_eim->offlineStep(); }
@@ -3042,24 +3047,9 @@ public:
     void offline() override { M_eim->offline(); }
     void setRestart(bool b) override { M_eim->setRestart(b);}
 
-    void setRB( boost::any rb ) override
+    void setRB( crb_ptrtype rb ) override
     {
-        setRB( rb, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
-    }
-    void setRB( boost::any rb, boost::mpl::bool_<false> )
-    {
-        M_crb_built=true; //no need of M_crb for eim_no_solve approx.
-    }
-    void setRB( boost::any rb, boost::mpl::bool_<true> )
-    {
-        try
-        {
-            M_crb = boost::any_cast<crb_ptrtype>(rb);
-        }
-        catch (...)
-        {
-            std::cout << "setRB fails (bad type)" << std::endl;
-        }
+        M_crb = rb;
         M_crb_built=true;
     }
 
