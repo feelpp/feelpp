@@ -1580,7 +1580,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
             );
     auto const projectorL2Tensor2SymmInterface = Feel::projector(
             spaceTensor2SymmInterface, spaceTensor2SymmInterface,
-            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm-interface"), _worldcomm=this->worldComm())
+            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
             );
 
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
