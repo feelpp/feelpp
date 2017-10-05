@@ -651,6 +651,51 @@ public :
         }
         ptree.add_child( "eim", ptreeEim );
 
+
+        boost::property_tree::ptree ptree_betaFq;
+        for (int k=0;k<M_betaFq.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFq_value;
+            ptree_betaFq_value.put( "",M_betaFq[k].size() );
+            ptree_betaFq.push_back( std::make_pair("", ptree_betaFq_value) );
+        }
+        boost::property_tree::ptree ptree_betaAqm;
+        for (int k=0;k<M_betaAqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaAqm_value;
+            ptree_betaAqm_value.put( "",M_betaAqm[k].size() );
+            ptree_betaAqm.push_back( std::make_pair("", ptree_betaAqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaMqm;
+        for (int k=0;k<M_betaMqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaMqm_value;
+            ptree_betaMqm_value.put( "",M_betaMqm[k].size() );
+            ptree_betaMqm.push_back( std::make_pair("", ptree_betaMqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaFqm;
+        for (int k=0;k<M_betaFqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFqm_sub;
+            for (int k2=0;k2<M_betaFqm[k].size();++k2 )
+            {
+                boost::property_tree::ptree ptree_betaFqm_sub_value;
+                ptree_betaFqm_sub_value.put( "",M_betaFqm[k][k2].size() );
+                ptree_betaFqm_sub.push_back( std::make_pair("", ptree_betaFqm_sub_value) );
+            }
+            ptree_betaFqm.push_back( std::make_pair("", ptree_betaFqm_sub) );
+        }
+
+        boost::property_tree::ptree ptreeAffineDecomposition;
+        ptreeAffineDecomposition.add( "betaAq", M_betaAq.size() );
+        ptreeAffineDecomposition.add( "betaMq", M_betaMq.size() );
+        ptreeAffineDecomposition.add_child( "betaFq", ptree_betaFq );
+        ptreeAffineDecomposition.add_child( "betaAqm", ptree_betaAqm );
+        ptreeAffineDecomposition.add_child( "betaMqm", ptree_betaMqm );
+        ptreeAffineDecomposition.add_child( "betaFqm", ptree_betaFqm );
+        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+
+
         boost::property_tree::ptree ptreeSpecificityOfModel;
         this->updateSpecificityModel( ptreeSpecificityOfModel );
         ptree.add_child( "specifity-of-model", ptreeSpecificityOfModel );
@@ -704,6 +749,60 @@ public :
                 // std::cout << "additional-model-files : key=" << key << " filename=" << filenameAddedPath.string() << "\n";
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
+
+        auto ptreeAffineDecomposition = ptree.get_child_optional( "affine-decomposition" );
+        if ( ptreeAffineDecomposition )
+        {
+            int sizeBetaAq = ptreeAffineDecomposition->template get<int>( "betaAq" );
+            M_betaAq.resize( sizeBetaAq );
+            int sizeBetaMq = ptreeAffineDecomposition->template get<int>( "betaMq" );
+            M_betaMq.resize( sizeBetaMq );
+            int sizeBetaFq = ptreeAffineDecomposition->get_child("betaFq").size();
+            M_betaFq.resize( sizeBetaFq );
+            int k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFq") )
+            {
+                int sizeSubBetaFq = item.second.template get_value<int>();
+                M_betaFq[k].resize( sizeSubBetaFq );
+                ++k;
+            }
+            int sizeBetaAqm = ptreeAffineDecomposition->get_child("betaAqm").size();
+            M_betaAqm.resize( sizeBetaAqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaAqm") )
+            {
+                int sizeSubBetaAqm = item.second.template get_value<int>();
+                M_betaAqm[k].resize( sizeSubBetaAqm );
+                ++k;
+            }
+            int sizeBetaMqm = ptreeAffineDecomposition->get_child("betaMqm").size();
+            M_betaMqm.resize( sizeBetaMqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaMqm") )
+            {
+                int sizeSubBetaMqm = item.second.template get_value<int>();
+                M_betaMqm[k].resize( sizeSubBetaMqm );
+                ++k;
+            }
+            int sizeBetaFqm = ptreeAffineDecomposition->get_child("betaFqm").size();
+            M_betaFqm.resize( sizeBetaFqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFqm") )
+            {
+                int sizeSubBetaFqm = ptreeAffineDecomposition->get_child("").size();
+                M_betaFqm[k].resize( sizeSubBetaFqm );
+                int k2=0;
+                for ( auto const& item2 : item.second.get_child("") )
+                {
+                    int thesize = item2.second.template get_value<int>();
+                    M_betaFqm[k][k2].resize( thesize );
+                    ++k2;
+                }
+                ++k;
+            }
+
+        }
+
 
         this->setupSpecificityModel( ptree, dbDir );
 
@@ -1772,6 +1871,8 @@ public :
             std::cout<<"**************************************************"<<std::endl;
         }
     }
+
+    virtual value_type output( int output_index, parameter_type const& mu , element_type &u , bool need_to_solve=false) = 0;
 
 public:
 
