@@ -1231,6 +1231,46 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements() const
     return M_markerCrossedElements;
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
+LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements( double t )
+{
+    mesh_ptrtype const& mesh = this->mesh();
+
+    auto it_elt = mesh->beginOrderedElement();
+    auto en_elt = mesh->endOrderedElement();
+
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    double thickness = (t > 0) ? t : this->thicknessInterface();
+    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        auto const& elt = boost::unwrap_ref( *it_elt );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
+            {
+                mark_elt = true;
+                break; //don't need to do the others dof
+            }
+        }
+        if( mark_elt )
+            interfaceElts->push_back( boost::cref(elt) );
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            interfaceElts->begin(),
+            interfaceElts->end(),
+            interfaceElts
+            );
+}
+
 //----------------------------------------------------------------------------//
 // Utility distances
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1531,13 +1571,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
     this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
     this->timerTool("UpdateInterfaceData").start();
 
+    // Create interface projector L2
+    auto const interfaceElts = this->interfaceElements();
+    auto const spaceTensor2SymmInterface = self_type::space_tensor2symm_type::New( 
+            _mesh=this->mesh(),
+            _range=this->interfaceElements(),
+            _worldscomm=this->worldsComm()
+            );
+    auto const projectorL2Tensor2SymmInterface = Feel::projector(
+            spaceTensor2SymmInterface, spaceTensor2SymmInterface,
+            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm-interface"), _worldcomm=this->worldComm())
+            );
+
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
     auto gradY = this->projectorL2Tensor2Symm()->project(
             //_expr=trans(gradv(Y))
             _expr=gradv(Y)
             );
-    auto invGradY = vf::project(
-            _space=this->functionSpaceTensor2Symm(),
+    auto invGradY = this->functionSpaceTensor2Symm()->element();
+    invGradY.on(
+            _range=interfaceElts,
             //_expr=inv(gradv(Y))
             _expr=inv(idv(gradY))
             );
@@ -1554,13 +1607,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 #else
     // K = (gradY)^-1 (gradY)^-T
     auto const& N = this->N();
-    *M_leftCauchyGreenTensor_K = vf::project(
-            _space=this->functionSpaceTensor2Symm(),
+    M_leftCauchyGreenTensor_K->zero();
+    M_leftCauchyGreenTensor_K->on(
+            _range=interfaceElts,
             _expr=idv(invGradY)*trans(idv(invGradY))
             );
     auto const& K = *M_leftCauchyGreenTensor_K;
-    *M_leftCauchyGreenTensor_KN = vf::project(
-            _space=this->functionSpaceVectorial(),
+    M_leftCauchyGreenTensor_KN->zero();
+    M_leftCauchyGreenTensor_KN->on(
+            _range=interfaceElts,
             _expr=idv(K)*idv(this->N())
             );
     auto const& KN = *M_leftCauchyGreenTensor_KN;
@@ -1573,8 +1628,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
     //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
             //_expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
             //);
-    *M_leftCauchyGreenTensor = vf::project(
-            _space=this->functionSpaceTensor2Symm(),
+    M_leftCauchyGreenTensor->zero();
+    M_leftCauchyGreenTensor->on(
+            _range=interfaceElts,
             _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
             );
 #endif

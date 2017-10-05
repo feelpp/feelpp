@@ -159,6 +159,13 @@ public:
     typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Range types
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    //--------------------------------------------------------------------//
     // Stretch and shear types
     typedef element_levelset_type element_stretch_type;
     typedef element_levelset_ptrtype element_stretch_ptrtype;
@@ -424,6 +431,8 @@ public:
     element_markers_ptrtype const& markerInner( double cut = 1e-3 ) const;
     element_markers_ptrtype const& markerHeaviside( double cut = 0.999 ) const { return this->markerOuter(cut); }
     element_markers_ptrtype const& markerCrossedElements() const;
+
+    range_elements_type interfaceElements( double thickness = -1/* defaults to thicknessInterface */);
 
     //--------------------------------------------------------------------//
     // Utility distances
