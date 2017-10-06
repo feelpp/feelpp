@@ -39,14 +39,13 @@ makeOptions()
 {
     po::options_description options( "Electric" );
     options.add_options()
-        ( "electric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
+        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
           "json file containing application parameters and boundary conditions")
-        ( "electric.gamma", po::value<double>()->default_value( 1e5 ), "penalisation term" )
-        ( "electric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
-        ( "electric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
-        ( "electric.conductor", po::value<std::vector<std::string> >()->multitoken(), "" )
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
+        ( "thermoelectric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
+        ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
         ;
-    options.add(backend_options("feV") ).add(backend_options("feT") );
+    options.add(backend_options("feV") );
     options.add(deimOptions("vec")).add(deimOptions("mat"));
 
     return options;
@@ -141,6 +140,8 @@ public:
 
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using mat_type = ModelMaterial;
+    using map_map_type = std::map<std::string,mat_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
@@ -158,6 +159,10 @@ public:
 private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
+    map_mat_type M_materials;
+    map_mat_type M_materialsWithGeo;
+    map_mat_type M_materialsWithoutGeo;
+
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
     element_ptrtype pT;
@@ -168,6 +173,11 @@ private:
 
     mdeim_ptrtype M_mdeim;
     deim_ptrtype M_deim;
+
+    int M_trainsetDeimSize;
+    int M_trainsetMdeimSize;
+    double M_penalDir;
+    std::string M_propertyPath;
 
 public:
     // Constructors
@@ -186,8 +196,8 @@ public:
     parameter_type paramFromVec( std::vector<double> const& x );
     parameter_type param0();
 
-    std::string alpha( parameter_type const& mu );
-    std::string alphaPrime( parameter_type const& mu );
+    std::string alpha( parameter_type const& mu, ModelMaterial const& mat );
+    std::string alphaPrime( parameter_type const& mu, ModelMaterial const& mat );
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu ) override;
     vector_ptrtype assembleForDEIM( parameter_type const& mu ) override;
     void initModel() override;
