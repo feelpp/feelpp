@@ -23,7 +23,7 @@
 //!
 //!
 
-#include "alphaelectric.hpp"
+#include "electric-alpha.hpp"
 
 using namespace Feel;
 
