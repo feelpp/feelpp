@@ -2507,9 +2507,11 @@ CRB<TruthModelType>::offline()
         // if( proc_number == this->worldComm().masterRank() )
         //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
     }
-    else if ( use_predefined_WNmu )
+
+    if ( use_predefined_WNmu )
     {
-        M_iter_max = this->M_WNmu->size();
+        if ( M_iter_max>this->M_WNmu->size() )
+            M_iter_max = this->M_WNmu->size();
         mu = this->M_WNmu->at( std::min( M_N, this->M_iter_max-1 ) );
         M_current_mu =mu;
     }
