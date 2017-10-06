@@ -34,17 +34,19 @@ namespace Feel
 {
 
 FEELPP_EXPORT po::options_description
-makeOptions()
+makeThermoElectricOptions()
 {
     po::options_description options( "Thermoelectric" );
     options.add_options()
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
-        ( "thermoelectric.gamma", po::value<double>()->default_value( 1e4 ), "penalisation term" )
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e4 ), "penalisation term" )
         ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
         ( "thermoelectric.export-FE", po::value<bool>()->default_value(true), "export FE solution" )
+        ( "thermoelectric.picard.maxit", po::value<int>()->default_value(5), "maximum number of iterations for Picard" )
+        ( "thermoelectric.picard.tol", po::value<double>()->default_value(1e-8), "tolerance for Picard" )
         ;
-    options.add(backend_options("electro") ).add(backend_options("thermo") );
+    options.add(backend_options("thermo-electro") );
     return options;
 }
 
@@ -147,7 +149,7 @@ public:
 private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
-    std::vector< std::vector< element_ptrtype > > M_InitialGuess;
+    std::vector< std::vector< element_ptrtype > > M_initialGuess;
 
     element_ptrtype M_VT;
     V_view_ptrtype M_V;
@@ -156,44 +158,68 @@ private:
 
     J_space_ptrtype M_Jh;
 
+    sparse_matrix_ptrtype M_M;
+
+    std::string M_propertyPath;
+    double M_penalDir;
+    double M_picardTol;
+    int M_picardMaxit;
+    int M_trainsetEimSize;
+    bool M_exportFE;
+
 public:
     // Constructors
     ThermoElectric();
     ThermoElectric( mesh_ptrtype mesh );
 
-    // Helpers
-    int Qa();
-    int Nl();
-    int Ql( int l );
-    int mQA( int q );
-    int mLQF( int l, int q );
-    int mCompliantQ( int q );
-    int mIntensityQ( int q );
-    int mAverageTempQ( int q );
-    void resizeQm();
+    // Size of the decomposition
+    int Qa() const;
+    int Nl() const;
+    int Ql( int l ) const;
+    int mMaxA( int q ) const;
+    int mMaxL( int l, int q ) const;
+    int mMaxCompliant( int q ) const;
+    int mMaxIntensity( int q ) const;
+    int mMaxAverageTemp( int q ) const;
+    int QInitialGuess() const override;
+    int mMaxInitialGuess( int q ) const override;
+    void resizeQm( bool resizeMatrix = true );
+
+    // Parameters
     parameter_type newParameter() { return Dmu->element(); }
     parameter_type paramFromProperties() const;
 
+    // Initialization
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
+    // Decomposition
     void decomposition();
-
-    beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override;
-    beta_type computeBetaQm( element_type const& T, parameter_type const& mu ) override;
-    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override;
-    beta_type computeBetaQm( parameter_type const& mu ) override;
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 ) override;
-    void fillBetaQm( parameter_type const& mu, std::vector<vectorN_type> betaEimsJoule );
-
     affine_decomposition_type computeAffineDecomposition() override;
     std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
     std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
 
+    // Beta coefficients
+    // beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 ) override;
+    beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override;
+    beta_type computeBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false) override;
+    beta_type computeBetaQm( element_type const& T, parameter_type const& mu ) override;
+    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override;
+    beta_type computeBetaQm( parameter_type const& mu ) override;
+    void fillBetaQm( parameter_type const& mu, std::vector<vectorN_type> betaEimsJoule );
+
+    // FE resolution
     element_type solve( parameter_type const& mu ) override;
+
+    // Scalar product
+    double scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y );
+    double scalarProduct( vector_type const& x, vector_type const& y );
+
+    // Output
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
+    // BiotSavart API
     int mMaxJoule();
     int mMaxSigma();
     q_sigma_element_type eimSigmaQ(int m);

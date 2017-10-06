@@ -23,6 +23,9 @@
 //!
 //!
 
+#include <feel/feelcrb/crbsaddlepoint.hpp>
+#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+
 #include "thermoelectric-linear.hpp"
 
 using namespace Feel;
@@ -34,6 +37,7 @@ int main( int argc, char** argv)
                      _desc=opt.add(makeThermoElectricOptions())
                      .add(crbOptions())
                      .add(crbSEROptions())
+                     .add(crbSaddlePointOptions())
                      .add(eimOptions())
                      .add(podOptions())
                      .add(backend_options("backend-primal"))
@@ -41,11 +45,13 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("ThermoElectricCRB")) );
 
-    using rb_model_type = Thermoelectric;
+    using rb_model_type = ThermoElectric;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
-    using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
+    // using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
+    using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
-    using crb_type = CRBSaddlePoint<crb_model_type>;
+    // using crb_type = CRBSaddlePoint<crb_model_type>;
+    using crb_type = CRB<crb_model_type>;
     using crb_ptrtype = boost::shared_ptr<crb_type>;
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
@@ -78,6 +84,7 @@ int main( int argc, char** argv)
     auto TFE = VTFE.template element<1>();
     auto normV = normL2( elements(model->mesh()), idv(VFE) );
     auto normT = normL2( elements(model->mesh()), idv(TFE) );
+
     boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
     std::string fileName = (boost::format("cvg_%1%.dat") % model->mMaxJoule() ).str();
     fs::ofstream file( fileName );
@@ -86,6 +93,7 @@ int main( int argc, char** argv)
         file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
         Feel::cout << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
     }
+
     for(int n = 1; n <= N; ++n)
     {
         crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
@@ -93,13 +101,16 @@ int main( int argc, char** argv)
         auto VTRB = crb->expansion( uN, n );
         auto VRB = VTRB.template element<0>();
         auto TRB = VTRB.template element<1>();
+
         auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
         auto errRelV = errVRB/normV;
         auto errTRB = normL2( elements(model->mesh()), idv(TRB)-idv(TFE) );
         auto errRelT = errTRB/normT;
+
         if( Environment::isMasterRank() )
             file << fmter % n % errVRB % errRelV % errTRB % errRelT;
         Feel::cout << fmter % n % errVRB % errRelV % errTRB % errRelT;
+
         e->step(n)->add("TFE", TFE);
         e->step(n)->add("TRB", TRB);
         e->step(n)->add("VFE", VFE);
