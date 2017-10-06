@@ -986,7 +986,7 @@ public:
               matrix_node_t_type const& __pts,
               rank_t<0> )
         {
-#if 0
+#if 1
             M_phi.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_grad.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
             M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
