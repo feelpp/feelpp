@@ -32,6 +32,14 @@
 namespace Feel {
 
 
+typedef Simplex<Dim,1> convex_type;
+//! mesh type
+    typedef Mesh<convex_type> mesh_type;
+//! the exporter factory type
+typedef Exporter<mesh_type> export_type;
+//! the exporter factory (shared_ptr<> type)
+typedef boost::shared_ptr<export_type> export_ptrtype;
+
 inline
 po::options_description
 makeOptions()
@@ -44,8 +52,6 @@ makeOptions()
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
         ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
         ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
-        ( "u_exact", po::value<std::string>()->default_value("empty"), "u exact" )
-		( "f", po::value<std::string>()->default_value("empty"), "divergence of the stress tensor")
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "use_hypercube", po::value<bool>()->default_value( false ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
@@ -86,7 +92,7 @@ int hdg_elasticity()
     auto Pi = M_PI;
 
     auto K = expr(soption("k"));
-    auto lambda = cst(1.)/K;
+    // auto lambda = cst(1.)/K;
     
 #if defined(FEELPP_HAS_SYMPY )
     // Exact solutions
@@ -119,12 +125,11 @@ int hdg_elasticity()
     auto un_exact = expr( dict.at("un") );
     auto f_exact = expr( dict.at("f") );
 #else
-    std::string p_exact_str = soption("solution.p");
+    std::string	sigma_exact_str = soption("solution.sigma");
     std::string u_exact_str = soption("solution.u");
-    auto p_exact = expr(p_exact_str);
+    auto sigma_exact = expr<Dim,Dim>(sigma_exact_str);
     auto u_exact = expr<Dim,1>(u_exact_str);
-    auto un_exact = trans(u_exact)*N();
-    auto f_exact = expr( soption( "functions.f") );
+    auto f_exact = expr<Dim,1>( soption( "functions.f") );
 #endif
     tic();
     auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
@@ -158,6 +163,15 @@ int hdg_elasticity()
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
 
+	bool condense = 1;
+	double sc_param = 1;
+    if( condense )
+        sc_param = 0.5;
+	
+    auto lambda = expr(soption("lambda"));
+    auto mu     = expr(soption("mu"));
+	auto c1     = cst(0.5)/mu;
+ 	auto c2     = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu));
 
 	tic();
     auto ps = product( Vh, Wh, Mh );
@@ -166,7 +180,7 @@ int hdg_elasticity()
 
 
     // Building the RHS
-    M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
+    auto M0h = Pdh<0>( face_mesh,true );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=cst(mesh->hMax()) );
@@ -177,7 +191,7 @@ int hdg_elasticity()
     else
         H.on( _range=elements(face_mesh), _expr=h() );
 
-    rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(f)*id(w));
+    rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(f_exact)*id(w));
     // rhs(1_c) += integrate(_range=elements(mesh), _expr= divv(sigma_exact)*id(w));
 
     cout << "rhs2 works fine" << std::endl;
@@ -208,30 +222,30 @@ int hdg_elasticity()
                               _expr=(trans(id(w))*divt(sigma)));
     // begin dp: here we need to put the projection of u on the faces
     a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant *
-                              ( leftfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*leftface(id(w)) +
-                                rightfacet( pow(idv(H),M_tau_order)*trans(idt(u)))*rightface(id(w) )));
+                              ( leftfacet( pow(idv(H),tau_order)*trans(idt(u)))*leftface(id(w)) +
+                                rightfacet( pow(idv(H),tau_order)*trans(idt(u)))*rightface(id(w) )));
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
+                              _expr=-(tau_constant * pow(idv(H),tau_order)*trans(idt(u))*id(w)));
 
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh), _expr=tau_constant *
-                              ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
-                                rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+                              ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),tau_order)*id(w))+
+                                rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),tau_order)*id(w) )));
 
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
+                              _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),tau_order)*id(w) );
 
 
     a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
                               _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
                                                     rightfacet(idt(sigma)*N())) ) );
     a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),M_tau_order)*idt(u) )+
-                                                                    rightfacet( pow(idv(H),M_tau_order)*idt(u) )));
+                              _expr=-tau_constant * trans(id(m)) * (leftfacet( pow(idv(H),tau_order)*idt(u) )+
+                                                                    rightfacet( pow(idv(H),tau_order)*idt(u) )));
 
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),M_tau_order) )+
-                                                                                          rightface( pow(idv(H),M_tau_order) )));
+                              _expr=sc_param*tau_constant * trans(idt(uhat)) * id(m) * ( leftface( pow(idv(H),tau_order) )+
+                                                                                          rightface( pow(idv(H),tau_order) )));
 
     a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                               _expr=trans(idt(uhat)) * id(m) );
@@ -241,10 +255,10 @@ int hdg_elasticity()
                               _expr=( trans(id(m))*(idt(sigma)*N()) ));
 
     a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                              _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
+                              _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),tau_order)*idt(u) ) );
 
     a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                              _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),M_tau_order) ) );
+                              _expr=tau_constant * trans(idt(uhat)) * id(m) * ( pow(idv(H),tau_order) ) );
 
     toc("matrices",true);
 
@@ -310,19 +324,19 @@ int hdg_elasticity()
 			return { { "L2", l2 } , {  "H1", h1 } };
 		};
 		
-		status = checker().runOnce( norms, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+		int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
 		
 	}
 
     tic();
-    std::string exportName =  ( boost::format( "%1%" ) % this->about().appName() ).str();
+    std::string exportName =  ( boost::format( "%1%" ) % "hdg_elasticity" ).str();
     std::string sigmaName = "stress";
     std::string sigma_exName = "stress-ex";
     std::string uName = "displacement";
     std::string u_exName = "displacement-ex";
 
-    v.on( _range=elements(mesh), _expr=sigma_exact , _quad=_Q<expr_order>());
-    w.on( _range=elements(mesh), _expr=u_exact , _quad=_Q<expr_order>());
+    v.on( _range=elements(mesh), _expr=sigma_exact );
+    w.on( _range=elements(mesh), _expr=u_exact );
     export_ptrtype exporter_cvg( export_type::New( exportName ) );
 
     exporter_cvg->setMesh( mesh );
