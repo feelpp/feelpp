@@ -374,7 +374,7 @@ public:
         int tasks = 2;
         int grain( int len ) const
             {
-                return len/tasks;
+                return (len > tasks)?len/tasks:len+1;
             }
     };
     struct LocalSolveData
@@ -383,7 +383,7 @@ public:
         int tasks = 2;
         int grain( int len ) const
             {
-                return len/tasks;
+                return (len>tasks)?len/tasks:len+1;
             }
     };
     using block_local_vectors_t = std::unordered_map<size_type,local_vector_t>;
