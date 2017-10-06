@@ -2954,8 +2954,12 @@ ConfigurePCGAMG::run( PC& pc )
         this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
         // Set max number of equations on coarse grids
         this->check( PCGAMGSetCoarseEqLim( pc, M_coarseEqLim ) );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,8,0 )
+        this->check( PCGAMGSetThresholdScale( pc, M_threshold ) );
+#else
         // Relative threshold to use for dropping edges in aggregation graph
         this->check( PCGAMGSetThreshold( pc, M_threshold ) );
+#endif
         // not works!!(seems to be missing PetscObjectComposeFunction with this function)
         //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );
         // Reuse prolongation operator
