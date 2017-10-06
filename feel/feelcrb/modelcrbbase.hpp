@@ -175,9 +175,11 @@ public :
 
     typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
-
     typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
     typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
+
+    typedef std::vector<deim_ptrtype> deim_vector_type;
+    typedef std::vector<mdeim_ptrtype> mdeim_vector_type;
 
     //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
     typedef std::vector< std::vector< double > > beta_vector_type;
@@ -617,11 +619,38 @@ public :
         return M_funs_d;
     }
 
-    bool hasDeim()
+    void addDeim( deim_ptrtype const& deim )
     {
-        return M_deim || M_mdeim;
+        M_deims.push_back( deim );
+    }
+    void addMdeim( mdeim_ptrtype const& mdeim )
+    {
+        M_mdeims.push_back( mdeim);
     }
 
+    deim_ptrtype deim( int const& i=0 ) const
+    {
+        return M_deims[i];
+    }
+
+    mdeim_ptrtype mdeim( int const& i=0 ) const
+    {
+        return M_mdeims[i];
+    }
+
+    bool hasDeim() const
+    {
+        return M_deims.size() || M_mdeims.size();
+    }
+
+    deim_vector_type deimVector() const
+    {
+        return M_deims;
+    }
+    mdeim_vector_type mdeimVector() const
+    {
+        return M_mdeims;
+    }
 
     virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
     {
@@ -1860,8 +1889,8 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
 
-    deim_ptrtype M_deim;
-    mdeim_ptrtype M_mdeim;
+    deim_vector_type M_deims;
+    mdeim_vector_type M_mdeims;
     bool M_is_initialized;
 
     sparse_matrix_ptrtype M;
