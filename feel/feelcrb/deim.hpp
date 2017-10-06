@@ -115,6 +115,9 @@ public :
 
     typedef std::map<int,tensor_ptrtype> solutionsmap_type;
 
+    typedef CRBBase<space_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     //! Default Constructor
     DEIMBase()
     {}
@@ -136,6 +139,7 @@ public :
         M_prefix( prefix ),
         M_trainset( sampling ),
         M_M(0),
+        M_user_max( ioption(  prefixvm( M_prefix, "deim.dimension-max" ) ) ),
         M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
         M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
         M_max_value( -1 ),
@@ -144,7 +148,12 @@ public :
         M_store_tensors( false ),
         M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
         M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
-        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) )
+        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) ),
+        M_crb_built( false ),
+        M_offline_step( true ),
+        M_restart( true ),
+        M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
+        M_ser_use_rb( false )
     {
         using Feel::cout;
 
@@ -180,6 +189,15 @@ public :
         }
         cout << "DEIM sampling size = "<< M_trainset->size()<<std::endl;
 
+        int sampling_size = M_trainset->size();
+        if ( M_user_max>sampling_size )
+        {
+            cout << "DEIM : Sampling size (="<< sampling_size
+                 << ") smaller than deim.dimension-max (=" << M_user_max
+                 << "), dimension max is now " << sampling_size << std::endl;
+            M_user_max = sampling_size;
+        }
+
     }
 
     //! Destructor
@@ -202,73 +220,76 @@ public :
      * reached. This maximum is defined by the option
      * deim.dimension-max
      */
+    void offline() { this->run(); }
     void run()
     {
-
         using Feel::cout;
         tic();
-        int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
-        int sampling_size = M_trainset->size();
-        if ( mMax>sampling_size )
-        {
-            cout << "DEIM : Sampling size (="<< sampling_size
-                 << ") smaller than deim.dimension-max (=" << mMax
-                 << "), dimension max is now " << sampling_size << std::endl;
-            mMax = sampling_size;
-        }
-
+        int mMax = M_user_max;
         double error=0;
         double r_error=0;
-        auto mu = M_trainset->max().template get<0>();
 
-        if ( M_M==0 )
+        if ( M_restart )
         {
-            cout <<"===========================================\n";
-            cout << "DEIM : Start algorithm with mu="<< mu.toString() <<std::endl;
+            if ( M_M==0 )
+            {
+                auto mu = M_trainset->max().template get<0>();
+                cout <<"===========================================\n";
+                cout << "DEIM : Start algorithm with mu="<< mu.toString() <<std::endl;
 
-            tic();
-            addNewVector(mu);
-            toc("Add new vector in DEIM basis");
+                tic();
+                addNewVector(mu);
+                toc("Add new vector in DEIM basis");
+            }
         }
-        if ( M_M<mMax )
+        if ( M_use_ser )
+        {
+            if ( M_restart )
+                mMax=1;
+            else
+            {
+                mMax = M_M + M_ser_frequency;
+                if ( mMax>M_user_max)
+                {
+                    cout << "DEIM : max number of basis reached\n";
+                    this->setOfflineStep(false);
+                }
+            }
+        }
+
+        while( M_M<mMax && offlineStep() )
         {
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
-            mu = best_fit.template get<0>();
+            auto mu = best_fit.template get<0>();
 
             if ( M_max_value!=0 )
                 r_error = error/M_max_value;
 
-            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
+            cout << "DEIM : Current max error="<<error <<", Atol="<< M_Atol
+                 << ", relative max error="<< r_error <<", Rtol="<< M_tol
+                 <<", for mu="<< mu <<std::endl;
             cout <<"===========================================\n";
-        }
 
-        while( M_M<mMax && r_error>M_tol && error>M_Atol )
-        {
+            if ( error<M_Atol || r_error<M_tol )
+            {
+                cout << "DEIM : Tolerance reached !\n";
+                this->setOfflineStep(false);
+                break;
+            }
+
             cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
             tic();
             addNewVector(mu);
             toc("Add new vector in DEIM basis");
-
-            if ( M_M<mMax )
-            {
-                auto best_fit = computeBestFit();
-                error = best_fit.template get<1>();
-                mu = best_fit.template get<0>();
-
-                r_error = error/M_max_value;
-                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
-                cout <<"===========================================\n";
-            }
         }
 
         M_solutions.clear();
+        cout <<"===========================================\n";
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
-        toc("DEIM : Total Time");
+        toc("DEIM : Offline Total Time");
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
@@ -299,6 +320,23 @@ public :
     {
         return M_M;
     }
+
+    void setRB( crb_ptrtype rb )
+    {
+        M_crb = rb;
+        M_crb_built=true;
+    }
+
+    void setOfflineStep( bool b ) { M_offline_step = b; }
+    bool offlineStep() const { return M_offline_step; }
+
+    void setRestart( bool b ) { M_restart = b; }
+    bool restart() const { return M_restart; }
+
+    void setSerFrequency( int freq ) { M_ser_frequency=freq; }
+    int serFrequency() const { return M_ser_frequency; }
+
+    void setSerUseRB( bool use_rb ) { M_ser_use_rb=use_rb; }
 
     //! save the database
     void saveDB() override;
@@ -608,7 +646,7 @@ protected :
     std::string M_prefix;
 
     sampling_ptrtype M_trainset;
-    int M_M;
+    int M_M, M_user_max;
     double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
@@ -622,6 +660,10 @@ protected :
     bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
     std::string M_write_nl_directory;
     bool M_optimized_online;
+
+    crb_ptrtype M_crb;
+    bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
+    int M_ser_frequency;
 };
 
 
@@ -635,13 +677,15 @@ public :
     typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, TensorType> super_type;
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
-    typedef typename super_type::parameter_type parameter_type;
+    typedef typename model_type::parameterspace_type parameterspace_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
     typedef typename super_type::tensor_ptrtype tensor_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
+
 
     DEIMModel() :
         super_type()
@@ -691,35 +735,53 @@ public :
             auto u = M_model->functionSpace()->element();
             bool need_solve = true;
 
-            if ( M_write_nl_solutions )
+            if ( this->M_ser_use_rb && this->M_crb )
             {
-                need_solve = !u.load( _path=M_write_nl_directory,
-                                      _suffix=std::to_string(mu.key()), _type="hdf5" );
-                if ( need_solve )
-                    LOG(INFO) << "DEIM : Unable to load nl solution in direcotry "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key()<< ". Solve function will be called.";
+                std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
+                auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+                int size = uN.size();
+                if ( size!=0 )
+                    u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
                 else
-                    LOG(INFO) << "DEIM : NL solution loaded in direcotry "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key();
+                    Feel::cout <<"DEIM ERROR : crb expansion called with uN.size=0 !\n";
             }
-
-            if ( need_solve )
+            else
             {
-                LOG(INFO) << "DEIM : calling solve function for parameter " << mu.toString()
-                          <<" / " << mu.key();
-                u = M_model->solve(mu);
+                if ( this->M_ser_use_rb && !this->M_crb )
+                    Feel::cout <<"DEIM WARNING : Suppose to use crb expansion with no crb class ! u will be computed using model->solve\n";
 
                 if ( M_write_nl_solutions )
                 {
-                    LOG(INFO) << "DEIM : Wrting solution on disk in directory "
-                              << M_write_nl_directory << ", for parameter : " << mu.toString()
-                              <<" / " << mu.key();
-                    u.save( _path=M_write_nl_directory,
-                            _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    need_solve = !u.load( _path=M_write_nl_directory,
+                                          _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    if ( need_solve )
+                        LOG(INFO) << "DEIM : Unable to load nl solution in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key()<< ". Solve function will be called.";
+                    else
+                        LOG(INFO) << "DEIM : NL solution loaded in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
                 }
+
+                if ( need_solve )
+                {
+                    LOG(INFO) << "DEIM : calling solve function for parameter " << mu.toString()
+                              <<" / " << mu.key();
+                    u = M_model->solve(mu);
+
+                    if ( M_write_nl_solutions )
+                    {
+                        LOG(INFO) << "DEIM : Wrting solution on disk in directory "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
+                        u.save( _path=M_write_nl_directory,
+                                _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    }
+                }
+
             }
+
 
             return modelAssemble(mu,u);
         }
@@ -732,13 +794,13 @@ public :
         return modelAssemble(mu,u,online);
     }
 
+
 protected :
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
 
 protected :
     model_ptrtype M_model, M_online_model;
-
 
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
