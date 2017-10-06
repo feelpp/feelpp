@@ -1219,6 +1219,14 @@ public:
         return M_model->scalarDiscontinuousEim();
     }
 
+    typename model_type::deim_vector_type deimVector() const
+    {
+        return M_model->deimVector();
+    }
+    typename model_type::mdeim_vector_type mdeimVector() const
+    {
+        return M_model->mdeimVector();
+    }
 
     struct ComputeNormL2InCompositeCase
     {
