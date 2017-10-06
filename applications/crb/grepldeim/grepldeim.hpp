@@ -105,12 +105,13 @@ public :
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
     GreplDEIM() :
-        super_type( name() )
+        super_type( name() ),
+        M_use_newton( boption(_name="crb.use-newton") )
     {}
 
     static std::string name()
     {
-        return "grepldeim";
+        return "grepldeim"+std::to_string(Order)+"-D"+std::to_string(Dim);
     }
 
     void initModel();
@@ -128,6 +129,7 @@ public :
 
     beta_type computeBetaQm( element_type const& T,parameter_type const& mu );
     beta_type computeBetaQm( parameter_type const& mu );
+    void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu);
 
     affine_decomposition_type computeAffineDecomposition();
 
@@ -156,6 +158,7 @@ private :
 
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
     using super_type::Xh;
+    bool M_use_newton;
 };
 
 
@@ -163,8 +166,18 @@ template<int Order, int Dim>
 typename GreplDEIM<Order,Dim>::beta_type
 GreplDEIM<Order,Dim>::computeBetaQm( element_type const& T,parameter_type const& mu )
 {
-    auto beta_g = this->M_deim->beta(mu,T);
-    int M = this->M_deim->size();
+    auto beta_g = this->deim()->beta(mu,T);
+
+    std::vector<vectorN_type*> betas;
+    betas.push_back(&beta_g);
+
+    fillBetaQm(betas, mu);
+    if( M_use_newton )
+        return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+    else
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+
+    /*int M = this->deim()->size();
 
     this->M_betaJqm[0][0] = 1;
     this->M_betaJqm[1].resize(M); //needed if cobuild
@@ -179,17 +192,26 @@ GreplDEIM<Order,Dim>::computeBetaQm( element_type const& T,parameter_type const&
         this->M_betaRqm[0][1][m] = beta_g(m);
     this->M_betaRqm[0][2][0] = -100;
     //output
-    this->M_betaRqm[1][0][0] = 1;
+    this->M_betaRqm[1][0][0] = 1;*/
 
-    return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+    //return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
 }
 
 template<int Order, int Dim>
 typename GreplDEIM<Order,Dim>::beta_type
 GreplDEIM<Order,Dim>::computeBetaQm( parameter_type const& mu )
 {
-    auto beta_g = this->M_deim->beta(mu);
-    int M = this->M_deim->size();
+    auto beta_g = this->deim()->beta(mu);
+    std::vector<vectorN_type*> betas;
+    betas.push_back(&beta_g);
+
+    fillBetaQm(betas, mu);
+
+    if( M_use_newton )
+        return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+    else
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+    /*int M = this->deim()->size();
 
     this->M_betaJqm[0][0] = 1;
     this->M_betaJqm[1].resize(M); //needed if cobuild
@@ -206,8 +228,50 @@ GreplDEIM<Order,Dim>::computeBetaQm( parameter_type const& mu )
     //output
     this->M_betaRqm[1][0][0] = 1;
 
-    return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+    return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);*/
 }
+
+template<int Order, int Dim>
+void GreplDEIM<Order,Dim>::fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
+{
+    int M = this->deim()->size();
+
+    auto beta_g=*betas[0];
+
+    if( M_use_newton )
+    {
+        this->M_betaJqm[0][0] = 1;
+        this->M_betaJqm[1].resize(M); //needed if cobuild
+        for(int m=0; m<M; m++)
+        {
+            this->M_betaJqm[1][m] = mu(1)*beta_g(m);
+        }
+        this->M_betaJqm[2][0] = mu(0);
+
+        this->M_betaRqm[0][0][0] = this->computeBetaInitialGuess( mu )[0][0];
+        this->M_betaRqm[0][1].resize(M);
+        for(int m=0; m<M; m++)
+        {
+            this->M_betaRqm[0][1][m] = beta_g(m);
+        }
+        this->M_betaRqm[0][2][0] = -100;
+        //output
+        this->M_betaRqm[1][0][0] = 1;
+    }
+    else
+    {
+        this->M_betaAqm[0][0]=1;
+        this->M_betaFqm[0][0].resize(M);
+        for(int m=0; m<M; m++)
+        {
+            this->M_betaFqm[0][0][m]=-beta_g(m) ;
+        }
+        this->M_betaFqm[0][1][0]=100;
+        this->M_betaFqm[1][0][0]=1;
+    }
+
+}
+
 
 template<int Order, int Dim>
 void GreplDEIM<Order,Dim>::initModel()
@@ -252,44 +316,77 @@ void GreplDEIM<Order,Dim>::initModel()
         Pset->readFromFile(samplingname);
     }
 
-    this->M_deim = deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+    auto d = deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                          _sampling=Pset );
-    this->M_deim->run();
-    int M = this->M_deim->size();
+    this->addDeim( d );
+    this->deim()->run();
+    int M = this->deim()->size();
 
-    this->M_betaJqm.resize( 3 );
-    this->M_betaJqm[0].resize( 1 );
-    this->M_betaJqm[1].resize( M );
-    this->M_betaJqm[2].resize( 1 );
-    this->M_betaRqm.resize( 2 );
-    this->M_betaRqm[0].resize( 3 );
-    this->M_betaRqm[0][0].resize( 1 );
-    this->M_betaRqm[0][1].resize( M );
-    this->M_betaRqm[0][2].resize( 1 );
-    this->M_betaRqm[1].resize( 1 );
-    this->M_betaRqm[1][0].resize( 1 );
+    if ( M_use_newton )
+    {
+        this->M_betaJqm.resize( 3 );
+        this->M_betaJqm[0].resize( 1 );
+        this->M_betaJqm[1].resize( M );
+        this->M_betaJqm[2].resize( 1 );
+        this->M_betaRqm.resize( 2 );
+        this->M_betaRqm[0].resize( 3 );
+        this->M_betaRqm[0][0].resize( 1 );
+        this->M_betaRqm[0][1].resize( M );
+        this->M_betaRqm[0][2].resize( 1 );
+        this->M_betaRqm[1].resize( 1 );
+        this->M_betaRqm[1][0].resize( 1 );
 
-    this->M_Jqm.resize( 3 );
-    this->M_Jqm[0].resize( 1 );
-    this->M_Jqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    this->M_Jqm[1].resize( M );
-    for(int m=0; m<M; m++)
-        this->M_Jqm[1][m] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-    this->M_Jqm[2].resize( 1 );
-    this->M_Jqm[2][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Jqm.resize( 3 );
+        this->M_Jqm[0].resize( 1 );
+        this->M_Jqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Jqm[1].resize( M );
+        for(int m=0; m<M; m++)
+            this->M_Jqm[1][m] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Jqm[2].resize( 1 );
+        this->M_Jqm[2][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
 
-    this->M_Rqm.resize( 2 );
-    this->M_Rqm[0].resize( 3 );
-    this->M_Rqm[1].resize( 1 );
-    this->M_Rqm[0][0].resize(1);
-    this->M_Rqm[0][0][0] = backend()->newVector( this->Xh );
-    this->M_Rqm[0][1].resize( M );
-    for(int m=0; m<M; m++)
-        this->M_Rqm[0][1][m] = backend()->newVector( this->Xh );
-    this->M_Rqm[0][2].resize(1);
-    this->M_Rqm[0][2][0] = backend()->newVector( this->Xh );
-    this->M_Rqm[1][0].resize( 1 );
-    this->M_Rqm[1][0][0]= backend()->newVector( this->Xh );
+        this->M_Rqm.resize( 2 );
+        this->M_Rqm[0].resize( 3 );
+        this->M_Rqm[1].resize( 1 );
+        this->M_Rqm[0][0].resize(1);
+        this->M_Rqm[0][0][0] = backend()->newVector( this->Xh );
+        this->M_Rqm[0][1].resize( M );
+        for(int m=0; m<M; m++)
+            this->M_Rqm[0][1][m] = backend()->newVector( this->Xh );
+        this->M_Rqm[0][2].resize(1);
+        this->M_Rqm[0][2][0] = backend()->newVector( this->Xh );
+        this->M_Rqm[1][0].resize( 1 );
+        this->M_Rqm[1][0][0]= backend()->newVector( this->Xh );
+    }
+    else
+    {
+        this->M_betaAqm.resize( 1 );
+        this->M_betaAqm[0].resize( 1 );
+        this->M_betaFqm.resize(2);
+        this->M_betaFqm[0].resize( 2 );
+        this->M_betaFqm[0][0].resize( M );
+        this->M_betaFqm[0][1].resize( 1 );
+        this->M_betaFqm[1].resize( 1 );
+        this->M_betaFqm[1][0].resize( 1 );
+
+        this->M_Aqm.resize( 1 );
+        this->M_Aqm[0].resize( 1 );
+        this->M_Aqm[0][0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+
+        this->M_Fqm.resize( 2 );
+        this->M_Fqm[0].resize( 2 );
+        this->M_Fqm[0][0].resize( M );
+        for(int m=0; m<M; m++)
+        {
+            this->M_Fqm[0][0][m] = backend()->newVector( this->Xh );
+        }
+        this->M_Fqm[0][1].resize(1);
+        this->M_Fqm[0][1][0]=backend()->newVector( this->Xh );
+        this->M_Fqm[1].resize(1);
+        this->M_Fqm[1][0].resize(1);
+        this->M_Fqm[1][0][0]=backend()->newVector( this->Xh );
+    }
+
 
     M_InitialGuess.resize(1);
     M_InitialGuess[0].resize(1);
@@ -303,9 +400,44 @@ void
 GreplDEIM<Order,Dim>::assemble()
 {
     auto u = Xh->element();
+    double gamma = doption(_name="gamma");
 
-    assembleJacobianWithAffineDecomposition( this->M_Jqm );
-    assembleResidualWithAffineDecomposition( this->M_Rqm );
+    if ( M_use_newton )
+    {
+        assembleJacobianWithAffineDecomposition( this->M_Jqm );
+        assembleResidualWithAffineDecomposition( this->M_Rqm );
+    }
+    else
+    {
+        auto v = Xh->element();
+        int M = this->deim()->size();
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) =
+            integrate( _range= elements( mesh ), _expr = gradt(u)*trans(grad(v)) );
+        form2( _test=Xh, _trial=Xh, _matrix=this->M_Aqm[0][0] ) += integrate( _range = boundaryfaces( mesh ),
+                                                                              _expr = gamma*idt(u)*id(v)/hFace()
+                                                                              - (gradt(u)*vf::N())*id(v)
+                                                                              - (grad(v)*vf::N())*idt(u) );
+
+        this->M_Fqm[0][0].resize( M );
+        for(int m=0; m<M; m++)
+        {
+            this->M_Fqm[0][0][m] = backend()->newVector( this->Xh );
+            v = *(this->deim()->q(m));
+            form1( _test=Xh, _vector=this->M_Fqm[0][0][m] ) =
+                integrate( _range= elements( mesh ), _expr=( idv(v)*id(v) ) );
+            this->M_Fqm[0][0][m]->close();
+        }
+
+        form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
+            integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+
+        this->M_Fqm[0][1][0]->close();
+
+        form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) =
+            integrate( _range= elements( mesh ),
+                       _expr=id(v) );
+        this->M_Fqm[1][0][0]->close();
+    }
 }
 
 template <int Order, int Dim>
@@ -315,7 +447,7 @@ GreplDEIM<Order,Dim>::assembleJacobianWithAffineDecomposition( std::vector< std:
     auto v = Xh->element();
     auto u = Xh->element();
 
-    int M = this->M_deim->size();
+    int M = this->deim()->size();
     double gamma = doption(_name="gamma");
 
     form2( _test=Xh, _trial=Xh, _matrix=Jqm[0][0] ) =
@@ -331,7 +463,7 @@ GreplDEIM<Order,Dim>::assembleJacobianWithAffineDecomposition( std::vector< std:
     for(int m=0; m<M; m++)
     {
         this->M_Jqm[1][m] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
-        v = *(this->M_deim->q(m));
+        v = *(this->deim()->q(m));
         form2( _test=Xh, _trial=Xh, _matrix=Jqm[1][m] ) =
             integrate( _range = elements(mesh),
                        _expr = idv(v)*idt(u)*id(v) );
@@ -351,7 +483,7 @@ GreplDEIM<Order,Dim>::assembleResidualWithAffineDecomposition(std::vector< std::
 
     auto u = Xh->element();
     auto v = Xh->element();
-    int M = this->M_deim->size();
+    int M = this->deim()->size();
 
     u = *this->M_InitialGuess[0][0];
 
@@ -368,7 +500,7 @@ GreplDEIM<Order,Dim>::assembleResidualWithAffineDecomposition(std::vector< std::
     for( int m=0; m<M; m++ )
     {
         this->M_Rqm[0][1][m] = backend()->newVector( this->Xh );
-        v = *(this->M_deim->q(m));
+        v = *(this->deim()->q(m));
         form1( _test=Xh, _vector=Rqm[0][1][m] ) =
             integrate( _range= elements( mesh ), _expr=( idv(v)*id(v) ) );
         Rqm[0][1][m]->close();
@@ -585,7 +717,10 @@ template<int Order, int Dim>
 typename GreplDEIM<Order,Dim>::affine_decomposition_type
 GreplDEIM<Order,Dim>::computeAffineDecomposition()
 {
-    return boost::make_tuple( this->M_Jqm, this->M_Rqm );
+    if( M_use_newton )
+        return boost::make_tuple( this->M_Jqm, this->M_Rqm );
+    else
+        return boost::make_tuple( this->M_Aqm, this->M_Fqm );
 }
 
 template<int Order, int Dim>

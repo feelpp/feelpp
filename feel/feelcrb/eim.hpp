@@ -56,6 +56,7 @@
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
+#include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
@@ -63,7 +64,7 @@
 
 namespace Feel
 {
-class ModelCrbBaseBase {};
+
 class EimFunctionNoSolveBase {};
 
 /**
@@ -165,7 +166,7 @@ public:
 
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
+    typedef CRBBase<functionspace_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -340,7 +341,7 @@ public:
             return M_restart;
         }
 
-    void setRB( boost::any crb )
+    void setRB( crb_ptrtype crb )
         {
             M_model->setRB( crb );
         }
@@ -1284,6 +1285,9 @@ public:
     typedef typename geometricspace_type::Context geometricspace_context_type;
     typedef boost::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
 
+    typedef CRBBase<model_functionspace_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
@@ -1436,7 +1440,7 @@ public:
     virtual bool rbCorrection() const = 0;
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
-    virtual void setRB( boost::any rb )=0;
+    virtual void setRB( crb_ptrtype rb )=0;
     virtual void setModel( boost::any rbmodel )=0;
     virtual bool modelBuilt() const = 0;
     virtual bool rbBuilt() const = 0;
@@ -1783,7 +1787,7 @@ public:
 
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
+    typedef CRBBase<typename model_type::functionspace_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
@@ -1817,7 +1821,9 @@ public:
         M_t(),
         M_B(),
         M_offline_error(),
-        M_eim()
+        M_eim(),
+        M_write_nl_solutions( boption( "eim.elements.write") ),
+        M_write_nl_directory( soption( "eim.elements.directory") )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
@@ -1960,10 +1966,10 @@ public:
     }
 
     //!
-    //! 
+    //!
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
-    
+
     void saveDB() override
     {
         if ( this->worldComm().isMasterRank() )
@@ -2143,7 +2149,7 @@ public:
 
         this->updateRbSpaceContext( rbspacebase, mpl::bool_<use_subspace_element>() );
     }
-    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ ) 
+    void updateRbSpaceContext( boost::any const& rbspacebase, mpl::false_ )
     {
         if ( !boost::any_cast<rbfunctionspace_ptrtype>( &rbspacebase ) )
         {
@@ -2261,7 +2267,40 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return this->model()->solve( mu );
+        model_solution_type u = this->model()->functionSpace()->element();
+        bool need_solve = true;
+
+        if ( M_write_nl_solutions )
+        {
+            need_solve = !u.load( _path=M_write_nl_directory,
+                                  _suffix=std::to_string(mu.key()), _type="hdf5" );
+            if ( need_solve )
+                LOG(INFO) << "EIM : Unable to load nl solution in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key()<< ". Solve function will be called.";
+            else
+                LOG(INFO) << "EIM : NL solution loaded in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+        }
+
+        if ( need_solve )
+        {
+            LOG(INFO) << "EIM : calling solve function for parameter " << mu.toString()
+                      <<" / " << mu.key();
+            u = this->model()->solve(mu);
+
+            if ( M_write_nl_solutions )
+            {
+                LOG(INFO) << "EIM : Wrting solution on disk in directory "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+                u.save( _path=M_write_nl_directory,
+                        _suffix=std::to_string(mu.key()), _type="hdf5" );
+            }
+        }
+
+        return u;
     }
 
     element_type operator()( parameter_type const&  mu ) override
@@ -2275,7 +2314,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
             auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=eimexpr );
@@ -2306,7 +2345,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
 
             auto eimexpr = this->expr( mu, sol );
 
@@ -2728,7 +2767,7 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
@@ -2747,7 +2786,7 @@ public:
         if( this->rbBuilt() )
             return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<false>)
     {
@@ -2776,7 +2815,7 @@ public:
         if( this->modelBuilt() )
             return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<false> )
     {
@@ -2942,6 +2981,8 @@ public:
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
+#if 0 // this function is removed for now since it need M_crb
+
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
             M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model(), crb::stage::offline/*M_model*/ ) );
@@ -2994,7 +3035,7 @@ public:
 
         this->model()->computeStatistics( super::onlineTime() , super::name() );
         this->model()->computeStatistics( time_crb , super::name()+" - global crb timing" );
-
+#endif
     }
 
     bool offlineStep() const override { return M_eim->offlineStep(); }
@@ -3006,24 +3047,9 @@ public:
     void offline() override { M_eim->offline(); }
     void setRestart(bool b) override { M_eim->setRestart(b);}
 
-    void setRB( boost::any rb ) override
+    void setRB( crb_ptrtype rb ) override
     {
-        setRB( rb, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
-    }
-    void setRB( boost::any rb, boost::mpl::bool_<false> )
-    {
-        M_crb_built=true; //no need of M_crb for eim_no_solve approx.
-    }
-    void setRB( boost::any rb, boost::mpl::bool_<true> )
-    {
-        try
-        {
-            M_crb = boost::any_cast<crb_ptrtype>(rb);
-        }
-        catch (...)
-        {
-            std::cout << "setRB fails (bad type)" << std::endl;
-        }
+        M_crb = rb;
         M_crb_built=true;
     }
 
@@ -3321,6 +3347,9 @@ private:
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
+
+    bool  M_write_nl_solutions;
+    std::string M_write_nl_directory;
 
     std::vector<int> M_rb_online_iterations;
     std::vector<double> M_rb_online_increments;
