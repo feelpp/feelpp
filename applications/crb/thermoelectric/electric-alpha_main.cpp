@@ -30,9 +30,6 @@ using namespace Feel;
 int main( int argc, char** argv)
 {
     po::options_description opt("options");
-    opt.add_options()
-        ( "p", po::value<std::vector<double> >()->multitoken(), "control points" )
-        ;
     Environment env( _argc=argc, _argv=argv,
                      _desc=opt.add(makeOptions())
                      .add(crbOptions())
@@ -58,19 +55,9 @@ int main( int argc, char** argv)
 
     auto mesh = loadMesh( _mesh=new mesh_type,
                           _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
-    mesh_ptrtype meshC;
-
-    if( Environment::vm().count("electric.conductor") )
-    {
-        std::vector<std::string> conductor = vsoption("electric.conductor");
-        std::list<std::string> conductorList(conductor.begin(), conductor.end());
-        meshC = createSubmesh(mesh, markedelements(mesh, conductorList));
-    }
-    else
-        meshC = mesh;
 
     // init
-    rb_model_ptrtype model = boost::make_shared<rb_model_type>(meshC);
+    rb_model_ptrtype model = boost::make_shared<rb_model_type>(mesh);
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model);
     crb_ptrtype crb = boost::make_shared<crb_type>("alphaelectric", crbModel, crb::stage::offline);
 
@@ -78,16 +65,13 @@ int main( int argc, char** argv)
     crb->offline();
 
     // online
-    auto x = vdoption("p");
-    auto mu = model->paramFromVec(x);
+    auto mu = model->paramFromProperties();
     int N = crb->dimension();
     int timeSteps = 1;
     std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
     std::vector<double> outputs(timeSteps, 0);
-    crb->fixedPointPrimal(N, mu, uNs, uNolds, outputs);
-    vectorN_type uN = uNs[0];
 
-    auto e = exporter(meshC);
+    auto e = exporter(mesh);
 
     auto VFE = model->solve(mu);
     auto normV = normL2( elements(model->mesh()), idv(VFE) );
@@ -100,6 +84,8 @@ int main( int argc, char** argv)
     }
     for(int n = 1; n <= N; ++n)
     {
+        crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
+        vectorN_type uN = uNs[0];
         auto VRB = crb->expansion( uN, n );
         auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
         auto errRel = errVRB/normV;
