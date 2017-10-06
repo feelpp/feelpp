@@ -218,5 +218,5 @@ LinearElasticity3d::output( int output_index, parameter_type const& mu , element
     return output;
 }
 
-FEELPP_CRB_PLUGIN( LinearElasticity3d, "linearelasticity3d" )
+FEELPP_CRB_PLUGIN( LinearElasticity3d, linearelasticity3d )
 } // namespace Feel

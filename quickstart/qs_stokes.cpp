@@ -22,14 +22,15 @@
 //! @date 03 May 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-
 #include <feel/feel.hpp>
 
 template<typename SpacePtrType>
-void
+int
 stokes(SpacePtrType Vh)
 {
     using namespace Feel;
+        
+    // tag::mesh_space[]
     tic();
     auto mesh = Vh->mesh();
     auto U = Vh->element("U");
@@ -39,9 +40,12 @@ stokes(SpacePtrType Vh)
     auto q = U.template element<1>();
     auto mu = doption(_name="mu");
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
-    auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
+    auto solution = expr<FEELPP_DIM,1>( checker().solution(), "solution" );
+    auto g = checker().check()?solution:expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
     toc("Vh");
-
+    // end::mesh_space[]
+    
+    // tag::forms[]
     tic();
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
@@ -53,12 +57,19 @@ stokes(SpacePtrType Vh)
     auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
     auto deft = sym(gradt(u));
     auto sigmat = -idt(p)*Id + 2*mu*deft;
+    tic();
     a = integrate(_range=elements(mesh),
-                  _expr=inner( sigmat, grad(v) ) );
+                  _expr=inner( deft, grad(v) ) );
+    a += integrate(_range=elements(mesh),
+                   _expr=-idt(p)*div(v) );
     a += integrate(_range=elements(mesh),
                    _expr=id(q)*divt(u) );
-    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u, _expr=g );
-    a+=on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=zero<FEELPP_DIM,1>() );
+    toc("a");
+
+    if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
+        a+=on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
+    if ( mesh->hasAnyMarker({"wall","letters"}) )
+        a+=on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=zero<FEELPP_DIM,1>() );
     toc("a");
 
     tic();
@@ -66,14 +77,40 @@ stokes(SpacePtrType Vh)
     if ( !boption( "no-solve" ) )
         a.solve(_rhs=l,_solution=U);
     toc("a.solve");
-
+    // end::forms[]
+    
+    // tag::export[]
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
-    e->add( "u", u );
-    e->add( "p", p );
+    e->add( "uh", u );
+    e->add( "ph", p );
+    if ( checker().check() )
+    {
+        v.on(_range=elements(mesh), _expr=solution );
+        e->add( "u", v );
+    }
     e->save();
     toc("Exporter");
+    // end::export[]
+    
+    // tag::check[]
+    // compute l2 and h1 norm of u-u_h where u=solution
+    auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+        {
+            tic();
+            auto s = expr<FEELPP_DIM,1>(solution);
+            double l2 = normL2(_range=elements(mesh), _expr=idv(u)-s );
+            toc("L2 error norm");
+            tic();
+            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-s, _grad_expr=gradv(u)-grad(s) );
+            toc("H1 error norm");
+            return { { "L2", l2 }, {  "H1", h1 } };
+        };
+    int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->template functionSpace<0>()->fe()->order() ) );
+    // end::check[]
+
+    return status;
 }
 int main(int argc, char**argv )
 {
@@ -95,14 +132,15 @@ int main(int argc, char**argv )
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
     toc("loadMesh");
 
+    int status;
     if ( soption("space") == "P1P0" )
-        stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
+        status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
     else if ( soption("space") == "P1P1" )
-        stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
+        status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
     else
     {
         // default P2P1: good space
-        stokes( THch<1>( mesh ) );
+        status = stokes( THch<1>( mesh ) );
     }
-    return 0;
+    return !status;
 }
