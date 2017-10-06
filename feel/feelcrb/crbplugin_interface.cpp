@@ -68,7 +68,7 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
 
         Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
             boost::dll::import_alias<crbpluginapi_create_t>(pname,
-                                                            "create_crbplugin",
+                                                            "create_crbplugin_"+pluginname,
                                                             dll::load_mode::append_decorations );
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
         auto plugin = p->second();
