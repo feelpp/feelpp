@@ -210,7 +210,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    std::vector<std::string>getVecString( std::string const& key ) const {
+    std::vector<std::string> getVecString( std::string const& key ) const {
         try {
             std::vector<std::string> res;
             for( auto const& item : M_p.get_child( key ) )
@@ -226,7 +226,7 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
-    std::vector<std::string>getVecDouble( std::string const& key ) const {
+    std::vector<double> getVecDouble( std::string const& key ) const {
         try {
             std::vector<double> res;
             for( auto const& item : M_p.get_child( key ) )

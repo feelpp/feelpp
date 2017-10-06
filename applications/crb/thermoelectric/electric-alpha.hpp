@@ -141,7 +141,7 @@ public:
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
     using mat_type = ModelMaterial;
-    using map_map_type = std::map<std::string,mat_type>;
+    using map_mat_type = std::map<std::string,mat_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
@@ -171,9 +171,6 @@ private:
     double M_sigma;
     double M_potDif;
 
-    mdeim_ptrtype M_mdeim;
-    deim_ptrtype M_deim;
-
     int M_trainsetDeimSize;
     int M_trainsetMdeimSize;
     double M_penalDir;
@@ -194,6 +191,7 @@ public:
     void resizeQm( bool resizeMat = true );
     parameter_type newParameter() { return Dmu->element(); }
     parameter_type paramFromVec( std::vector<double> const& x );
+    parameter_type paramFromProperties() const;
     parameter_type param0();
 
     std::string alpha( parameter_type const& mu, ModelMaterial const& mat );
