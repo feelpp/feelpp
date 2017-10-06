@@ -22,13 +22,25 @@
 #
 #
 
-crb_add_library( thermoelectric SRCS thermoelectric.cpp EXEC CRB_LIB_THERMOELECTRIC)
-set(FEELPP_CRB_THERMOELECTRIC_LIBRARIES ${CRB_LIB_THERMOELECTRIC} PARENT_SCOPE)
-set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+crb_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
+set(FEELPP_CRB_ELECTRIC_LIBRARIES ${CRB_LIB_ELECTRIC} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
-set(FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} PARENT_SCOPE)
-set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+crb_add_library( thermic SRCS thermic.cpp EXEC CRB_LIB_THERMIC)
+set(FEELPP_CRB_THERMIC_LIBRARIES ${CRB_LIB_THERMIC} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMIC_LIBRARIES PARENT_SCOPE)
+
+crb_add_library( thermoelectric-simple SRCS thermoelectric-simple.cpp EXEC CRB_LIB_THERMOELECTRIC_SIMPLE)
+set(FEELPP_CRB_THERMOELECTRIC_SIMPLE_LIBRARIES ${CRB_LIB_THERMOELECTRIC_SIMPLE} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_SIMPLE_LIBRARIES PARENT_SCOPE)
+
+# crb_add_library( thermoelectric SRCS thermoelectric.cpp EXEC CRB_LIB_THERMOELECTRIC)
+# set(FEELPP_CRB_THERMOELECTRIC_LIBRARIES ${CRB_LIB_THERMOELECTRIC} PARENT_SCOPE)
+# set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+
+# crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
+# set(FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} PARENT_SCOPE)
+# set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
 
 # need DEIM for composite space
 # crb_add_library( alphathermoelectric SRCS alphathermoelectric.cpp EXEC CRB_LIB_ALPHATHERMOELECTRIC)
@@ -39,27 +51,36 @@ crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_AL
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
-install( FILES thermoelectric.hpp nlthermoelectric.hpp electric-alpha.hpp # alphathermoelectric.hpp
+
+# feelpp_add_application( alpha-thermoelectricCRB
+#                         SRCS alphathermoelectric.hpp alphathermoelectric_main.cpp
+#                         LINK_LIBRARIES ${CRB_LIB_ALPHATHERMOELECTRIC} INSTALL
+#                         )
+
+install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp electric-alpha.hpp # thermoelectric.hpp nlthermoelectric.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 
 
-feelpp_add_application( thermoelectricCRB
-                        SRCS thermoelectric.hpp thermoelectric_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC} INSTALL
-                        )
-feelpp_add_application( nl-thermoelectricCRB
-                        SRCS nlthermoelectric.hpp nlthermoelectric_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} INSTALL
-                        )
+feelpp_add_application( electric-app
+                        SRCS electric.hpp electric_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_ELECTRIC} INSTALL )
+feelpp_add_application( thermic-app
+                        SRCS thermic.hpp thermic_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMIC} INSTALL )
+feelpp_add_application( thermoelectric-simple-app
+                        SRCS thermoelectric-simple.hpp thermoelectric-simple_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_SIMPLE} INSTALL )
+# feelpp_add_application( thermoelectricCRB
+#                         SRCS thermoelectric.hpp thermoelectric_main.cpp
+#                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC} INSTALL )
+# feelpp_add_application( nl-thermoelectricCRB
+#                         SRCS nlthermoelectric.hpp nlthermoelectric_main.cpp
+#                         LINK_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} INSTALL )
 feelpp_add_application( electric-alpha-app
                         SRCS electric-alpha_main.cpp electric-alpha.hpp
                         LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA}
                         EXEC ELECTRIC_ALPHA_APP
                         )
-# feelpp_add_application( alpha-thermoelectricCRB
-#                         SRCS alphathermoelectric.hpp alphathermoelectric_main.cpp
-#                         LINK_LIBRARIES ${CRB_LIB_ALPHATHERMOELECTRIC} INSTALL
-#                         )
 
 feelpp_add_application( alphaElectricFE SRCS alphaelectricFE_main.cpp )
 # feelpp_add_application( testthCRB SRCS test.cpp )
@@ -70,6 +91,8 @@ feelpp_add_application( alphaElectricFE SRCS alphaelectricFE_main.cpp )
 #                         SRCS thermoelectric_geo_FE.cpp DEFS FEELPP_DIM=3 )
 
 feelpp_add_testcase( th-crb-quarterturn CATEGORY CRB)
-feelpp_add_testcase( th-crb-alpha-hel CATEGORY CRB)
 feelpp_add_testcase( te-bancmesure CATEGORY CRB)
 feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
+feelpp_add_testcase( crb-electric CATEGORY CRB)
+feelpp_add_testcase( crb-thermic CATEGORY CRB)
+feelpp_add_testcase( crb-thermoelectric-simple CATEGORY CRB)
