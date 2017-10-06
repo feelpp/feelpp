@@ -1573,18 +1573,18 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 
     // Create interface projector L2
     auto const interfaceElts = this->interfaceElements();
-    //auto const spaceTensor2SymmInterface = self_type::space_tensor2symm_type::New( 
-            //_mesh=this->mesh(),
-            //_range=interfaceElts,
-            //_worldscomm=this->worldsComm()
-            //);
-    //auto const projectorL2Tensor2SymmInterface = Feel::projector(
-            //spaceTensor2SymmInterface, spaceTensor2SymmInterface,
-            //backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
-            //);
+    auto const spaceTensor2SymmInterface = self_type::space_tensor2symm_type::New( 
+            _mesh=this->mesh(),
+            _range=interfaceElts,
+            _worldscomm=this->worldsComm()
+            );
+    auto const projectorL2Tensor2SymmInterface = Feel::projector(
+            spaceTensor2SymmInterface, spaceTensor2SymmInterface,
+            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+            );
 
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
-    auto gradY = this->projectorL2Tensor2Symm()->project(
+    auto gradY = projectorL2Tensor2SymmInterface->project(
             //_expr=trans(gradv(Y))
             _expr=gradv(Y)
             );
