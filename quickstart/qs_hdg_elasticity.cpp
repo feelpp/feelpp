@@ -32,13 +32,7 @@
 namespace Feel {
 
 
-typedef Simplex<Dim,1> convex_type;
-//! mesh type
-    typedef Mesh<convex_type> mesh_type;
-//! the exporter factory type
-typedef Exporter<mesh_type> export_type;
-//! the exporter factory (shared_ptr<> type)
-typedef boost::shared_ptr<export_type> export_ptrtype;
+
 
 inline
 po::options_description
@@ -83,7 +77,15 @@ template<int Dim, int OrderP, int OrderG=1>
 int hdg_elasticity()
 {
 
-        using Feel::cout;
+	typedef Simplex<Dim,OrderG> convex_type;
+	//! mesh type
+    typedef Mesh<convex_type> mesh_type;
+	//! the exporter factory type
+	typedef Exporter<mesh_type> export_type;
+	//! the exporter factory (shared_ptr<> type)
+	typedef boost::shared_ptr<export_type> export_ptrtype;
+
+    using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
