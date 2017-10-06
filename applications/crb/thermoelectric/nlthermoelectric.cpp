@@ -651,6 +651,6 @@ void NLThermoelectric::computeTruthCurrentDensity( current_element_type& j, para
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
 }
 
-FEELPP_CRB_PLUGIN( NLThermoelectric, "nlthermoelectric")
+FEELPP_CRB_PLUGIN( NLThermoelectric, nlthermoelectric )
 }
 
