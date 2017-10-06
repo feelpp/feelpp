@@ -38,11 +38,11 @@ crb_add_library( thermoelectric-linear SRCS thermoelectric-linear.cpp EXEC CRB_L
 set(FEELPP_CRB_THERMOELECTRIC_LINEAR_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_LINEAR_LIBRARIES PARENT_SCOPE)
 
-# crb_add_library( nlthermoelectric SRCS nlthermoelectric.cpp EXEC CRB_LIB_NLTHERMOELECTRIC)
-# set(FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} PARENT_SCOPE)
-# set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_NLTHERMOELECTRIC_LIBRARIES PARENT_SCOPE)
+crb_add_library( thermoelectric-nonlinear SRCS thermoelectric-nonlinear.cpp EXEC CRB_LIB_THERMOELECTRIC_NONLINEAR)
+set(FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES PARENT_SCOPE)
 
-install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp # nlthermoelectric.hpp
+install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 
 
@@ -58,9 +58,9 @@ feelpp_add_application( thermoelectric-simple-app
 feelpp_add_application( thermoelectric-linear-app
                         SRCS thermoelectric-linear.hpp thermoelectric-linear_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} INSTALL )
-# feelpp_add_application( nl-thermoelectricCRB
-#                         SRCS nlthermoelectric.hpp nlthermoelectric_main.cpp
-#                         LINK_LIBRARIES ${CRB_LIB_NLTHERMOELECTRIC} INSTALL )
+feelpp_add_application( thermoelectric-nonlinear-app
+                        SRCS thermoelectric-nonlinear.hpp thermoelectric-nonlinear_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 
 
 # feelpp_add_testcase( th-crb-quarterturn CATEGORY CRB)
@@ -69,3 +69,4 @@ feelpp_add_testcase( crb-electric CATEGORY CRB)
 feelpp_add_testcase( crb-thermic CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-simple CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-linear CATEGORY CRB)
+feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
