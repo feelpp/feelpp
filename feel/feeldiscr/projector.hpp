@@ -87,6 +87,7 @@ class Projector : public OperatorLinear<typename mpl::if_<is_shared_ptr<DomainSp
                                         
 {
     typedef Projector<DomainSpace,DualImageSpace> super;
+    typedef Projector<DomainSpace, DualImageSpace> self_type;
 
 public :
 
@@ -115,6 +116,8 @@ public :
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
+
+    typedef elements_reference_wrapper_t<typename domain_space_type::mesh_type> range_elements_type;
 
     //@}
     /** @name Constructors, destructor
@@ -153,6 +156,9 @@ public :
 
         M_ie = this->backend()->newVector( this->dualImageSpace() );
 
+        // Init elements range
+        M_rangeElements = self_type::rangeElements( this->domainSpace(), this->dualImageSpace() );
+
         initMatrix<domain_element_type>();
     }
 
@@ -173,6 +179,26 @@ public :
         typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
         typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
     };
+
+    static range_elements_type rangeElements( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace )
+    {
+        range_elements_type rangeElts;
+
+        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport() 
+            && domainSpace->dof()->meshSupport()->isPartialSupport();
+        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport() 
+            && imageSpace->dof()->meshSupport()->isPartialSupport();
+        if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+            rangeElts = intersect( domainSpace->dof()->meshSupport()->rangeElements(), imageSpace->dof()->meshSupport()->rangeElements() );
+        else if ( hasMeshSupportPartialDomain )
+            rangeElts = domainSpace->dof()->meshSupport()->rangeElements();
+        else if ( hasMeshSupportPartialImage )
+            rangeElts = imageSpace->dof()->meshSupport()->rangeElements();
+        else
+            rangeElts = elements( imageSpace->mesh() );
+
+        return rangeElts;
+    }
 
     template<typename Range, typename Expr, typename Elem>
     void applyOn( Range range, Expr const& expr, Elem const& de )
@@ -206,7 +232,7 @@ public :
                                        ( expr,   * )
                                      )
                                      ( optional
-                                       ( range,   *, elements( this->dualImageSpace()->mesh() )  )
+                                       ( range,   *, self_type::rangeElements(this->domainSpace(), this->dualImageSpace())  )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, (integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::geoOrder > 1 )?
@@ -318,11 +344,12 @@ private :
         auto uDomain = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
 
+
         auto a = form2 ( _trial=this->domainSpace(),
                          _test=this->dualImageSpace(),
                          _matrix=M_matrixCst );
 
-        a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
+        a = integrate( _range=this->M_rangeElements,
                        _expr=inner( idt( uDomain ), id( uImage ) ) );
     }
     template<typename T>
@@ -338,7 +365,7 @@ private :
 
         if ( M_proj_type != LIFT )
         {
-            a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a = integrate( _range=this->M_rangeElements,
                            _expr=inner( idt( uDomain ), id( uImage ) ) );
         }
         switch ( M_proj_type )
@@ -350,14 +377,14 @@ private :
 
         case H1:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeElements,
                             _expr=inner( gradt( uDomain ), grad( uImage ) ) );
         }
         break;
 
         case DIFF:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeElements,
                             _expr=M_epsilon*inner( gradt( uDomain ), grad( uImage ) ) );
 
             //weak boundary conditions
@@ -374,14 +401,14 @@ private :
 
         case HDIV:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeElements,
                             _expr=divt( uDomain )*div( uImage ) );
         }
         break;
 
         case HCURL:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeElements,
                            // only for 2D, need to specialize this for 3D
                            _expr=curlzt( uDomain )*curlz( uImage ) );
         }
@@ -389,7 +416,7 @@ private :
 
         case LIFT:
         {
-            a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a = integrate( _range=this->M_rangeElements,
                            _expr= inner( gradt( uDomain ), grad( uImage ) ) );
         }
         break;
@@ -609,6 +636,7 @@ private :
     matrix_ptrtype M_matrixFull;
     //domain_element_type M_de;
     vector_ptrtype M_ie;
+    range_elements_type M_rangeElements;
 
 };//Projector
 
