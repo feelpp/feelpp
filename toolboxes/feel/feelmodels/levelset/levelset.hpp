@@ -574,6 +574,7 @@ protected:
     // Interface quantities update flags
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
+    mutable bool M_doUpdateInterfaceElements;
     mutable bool M_doUpdateNormal;
     mutable bool M_doUpdateCurvature;
     mutable bool M_doUpdateGradPhi;
@@ -636,6 +637,7 @@ private:
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
     mutable element_levelset_ptrtype M_dirac;
+    mutable range_elements_type M_interfaceElements;
     //--------------------------------------------------------------------//
     // Normal, curvature
     mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
