@@ -295,6 +295,7 @@ public:
 #else
                 auto const& ltensor = M_l_tensor_expr.evalijq( i,j,q );
                 auto const& rtensor = M_r_tensor_expr.evalijq( i,j,q );
+                //auto flatl = Eigen::Map<Matrix<value_type,left_shape::M*left_shape::N,1>>( M_l_tensor_expr, M_l_tensor_expr );
 #if 0
                 for ( uint16_type c2 = 0; c2 < left_shape::N; ++ c2 )
                     for ( uint16_type c1 = 0; c1 < left_shape::M; ++ c1 )
@@ -302,7 +303,8 @@ public:
                         res += ltensor(c1,c2)*rtensor(c1,c2);
                     }
 #else
-                res=ltensor.dot(rtensor);
+                res = ltensor.cwiseProduct(rtensor).sum();
+                //res=ltensor.dot(rtensor);
 #endif
 #endif
             }
