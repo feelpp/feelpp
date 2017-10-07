@@ -1234,7 +1234,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
-LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements( double t )
+LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
 {
     if( this->M_doUpdateInterfaceElements )
     {
@@ -1246,7 +1246,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements( double t )
         const rank_type pid = mesh->worldCommElements().localRank();
         const int ndofv = space_levelset_type::fe_type::nDof;
 
-        double thickness = (t > 0) ? t : this->thicknessInterface();
+        double thickness = this->thicknessInterface();
         elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
 
         for (; it_elt!=en_elt; it_elt++)
