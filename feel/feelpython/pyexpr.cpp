@@ -21,6 +21,8 @@
 //! @date 18 Sep 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <iostream>
+
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/map.hpp>
 #include <feel/feelpython/pyexpr.hpp>
@@ -28,6 +30,39 @@
 #include <feel/feelcore/feelio.hpp>
 
 namespace Feel {
+std::map<std::string,std::string> 
+pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& locals )
+{
+    using Feel::cout;
+
+
+    std::map<std::string,std::string> r;
+    
+    if ( Environment::isMasterRank() )
+    {
+        py::scoped_interpreter guard{};
+        py::dict _locals;
+        py::module sys = py::module::import( "sys" );
+        auto sys_path = py::reinterpret_borrow<py::list>(py::module::import("sys").attr("path"));
+        sys_path.append( Environment::expand("${top_srcdir}/feel/feelpython") );
+        sys_path.append( Environment::expand("${top_srcdir}/quickstart") );
+        
+        py::module m = py::module::import( pyfilename.c_str() );
+
+        for( auto l : locals )
+        {
+            //cout << "l=" << l << std::endl;
+            py::object result = m.attr("sympytoginac")(m.attr(l.c_str()));
+            r[l] = result.cast<std::string>();
+            cout << l << ":" << r[l] << std::endl;
+        }
+    }
+    mpi::broadcast( Environment::worldComm(), r, 0 );
+    
+    return r;
+    
+}
+
 std::map<std::string,std::string> 
 pyexpr( std::string const& pycode, std::vector<std::string> const& locals )
 {

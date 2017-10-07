@@ -41,4 +41,11 @@ using namespace py::literals;
 std::map<std::string,std::string> 
 pyexpr( std::string const& pycode, std::vector<std::string> const& locals );
 
+//!
+//! evaluate python code \p pycode from file and retrieve dictionary of Feel++ expressions
+//! expressions are of the form : \c f(x,y,z):x:y:z
+//!
+std::map<std::string,std::string> 
+pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& locals );
+
 }
