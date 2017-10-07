@@ -152,7 +152,8 @@ public:
         typedef typename tensor_expr_type::shape expr_shape;
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
         typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
-
+        static const bool expr_is_terminal = expression_type::is_terminal;
+        
 
         template <class Args> struct sig
         {
@@ -272,7 +273,7 @@ private:
 template<typename ExprT>
 inline
 Expr< Trace<ExprT> >
-trace( ExprT v )
+trace( ExprT v, std::enable_if_t<std::is_base_of<ExprBase,ExprT>::value>* = nullptr )
 {
     typedef Trace<ExprT> trace_t;
     return Expr< trace_t >(  trace_t( v ) );

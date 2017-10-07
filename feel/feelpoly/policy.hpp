@@ -555,10 +555,32 @@ struct RankUp2
 };
 
 template<typename T>
+struct RankDown2
+{
+    static const uint16_type nDim = T::nDim;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+
+    typedef typename mpl::find<types, T>::type iter;
+    typedef typename mpl::deref<typename mpl::prior<typename mpl::prior<iter>::type>::type>::type type;
+};
+
+template<typename T>
 struct RankSame
 {
     static const uint16_type nDim = T::nDim;
     typedef T type;
+};
+template<typename T>
+struct Rank0
+{
+    static const uint16_type nDim = T::nDim;
+    typedef Scalar<nDim> type;
+};
+template<typename T>
+struct Rank1
+{
+    static const uint16_type nDim = T::nDim;
+    typedef Vectorial<nDim> type;
 };
 
 template<typename T>
