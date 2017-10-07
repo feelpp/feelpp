@@ -1,6 +1,6 @@
 from sympy2ginac import *
 
-parameters={'dim':'2','mu':'1','lambda':'1','displ':'Array([x*y,y^2])'};
+parameters={'dim':'2','mu':'1','lambda':'1','displ':'Array([0,y])'};
 #parameters={'dim':'2','mu':'1','lambda':'1','displ':'[(1/(2*pi*pi))*sin(pi*x)*cos(pi*y),(1/(2*pi*pi))*cos(pi*x)*sin(pi*y)]'}
 #parameters={'dim':'3','mu':'1','lambda':'1','displ':'[cos(Pi*x)*cos(Pi*y)*cos(Pi*z), cos(Pi*y)*sin(Pi*x)*sin(Pi*z), cos(Pi*x)*cos(Pi*z)*sin(Pi*y) ]'}
 
