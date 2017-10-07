@@ -119,7 +119,7 @@ struct f_sinPx
     static const uint16_type imorder = 2;
     static const bool imIsPoly = false;
     template<int Dim>
-    double operator()( uint16_type, uint16_type, ublas::vector<double> const& /*x*/, eigen_vector_type<Dim,double> const& n ) const
+    double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, eigen_vector_type<Dim,double> const& n ) const
         {
             return math::sin( x[0] );
         }

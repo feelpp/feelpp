@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/gmsh.hpp>
