@@ -432,7 +432,7 @@ public:
     element_markers_ptrtype const& markerHeaviside( double cut = 0.999 ) const { return this->markerOuter(cut); }
     element_markers_ptrtype const& markerCrossedElements() const;
 
-    range_elements_type interfaceElements( double thickness = -1/* defaults to thicknessInterface */);
+    range_elements_type interfaceElements() const;
 
     //--------------------------------------------------------------------//
     // Utility distances
