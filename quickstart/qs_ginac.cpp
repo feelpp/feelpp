@@ -24,27 +24,35 @@
 #if 1
 #include <iostream>
 
-#include <pybind11/embed.h>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelio.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+
 namespace py = pybind11;
 
-int main() {
-    
+int main(int argc, char** argv)
+{
+
+    // tag::env[]
+    using namespace Feel;
+    using Feel::cout;
+
+	Environment env( _argc=argc, _argv=argv,
+                     _about=about(_name="qs_ginac",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+    // end::env[]
     using namespace py::literals;
+    using Feel::cout;
+    auto dict = Feel::pyexprFromFile( "elasticity", {"displ", "strain", "stress", "stressn", "f", "c1", "c2"}  );
+    cout << "displ : " << dict.at("displ") << std::endl;
+    cout << "strain : " << dict.at("strain") << std::endl;
+    cout << "stress : " << dict.at("stress") << std::endl;
+    cout << "f : " << dict.at("f") << std::endl;
+    cout << "c1 : " << dict.at("c1") << std::endl;
+    cout << "c2 : " << dict.at("c2") << std::endl;
     
-    py::scoped_interpreter guard{};
-    py::module sys = py::module::import("sys");
-    py::print(sys.attr("path"));
-    //py::module sympy = py::module::import("sympy");
-    auto locals = py::dict("name"_a="World", "number"_a=42);
-    py::exec(R"(
-        from sympy import *;
-        x, y, z, t = symbols('x y z t');
-        int_cos=integrate(cos(x), x);
-        print('print:',int_cos);
-        E=ccode(int_cos);
-    )", py::globals(), locals);
-    auto message = locals["E"].cast<std::string>();
-    std::cout << message;
 }
 #else
 

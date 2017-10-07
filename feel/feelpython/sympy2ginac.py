@@ -19,6 +19,9 @@ def toginac(s,symbols):
         return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in strsymbols);
     return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in strsymbols)
 
+def sympytoginac(e):
+    return toginac(sympify( e ), [x] if len( e.free_symbols)==0 else e.free_symbols );
+
 def dx(f):
     return derive_by_array(f,[x]);
 
