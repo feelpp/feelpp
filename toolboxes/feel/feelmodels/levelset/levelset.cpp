@@ -23,6 +23,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     super_type( prefix, worldComm, subPrefix, rootRepository ),
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
+    M_doUpdateInterfaceElements(true),
     M_doUpdateNormal(true),
     M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
@@ -1235,40 +1236,47 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
 LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements( double t )
 {
-    mesh_ptrtype const& mesh = this->mesh();
-
-    auto it_elt = mesh->beginOrderedElement();
-    auto en_elt = mesh->endOrderedElement();
-
-    const rank_type pid = mesh->worldCommElements().localRank();
-    const int ndofv = space_levelset_type::fe_type::nDof;
-
-    double thickness = (t > 0) ? t : this->thicknessInterface();
-    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
-
-    for (; it_elt!=en_elt; it_elt++)
+    if( this->M_doUpdateInterfaceElements )
     {
-        auto const& elt = boost::unwrap_ref( *it_elt );
-        if ( elt.processId() != pid )
-            continue;
-        bool mark_elt = false;
-        for (int j=0; j<ndofv; j++)
+        mesh_ptrtype const& mesh = this->mesh();
+
+        auto it_elt = mesh->beginOrderedElement();
+        auto en_elt = mesh->endOrderedElement();
+
+        const rank_type pid = mesh->worldCommElements().localRank();
+        const int ndofv = space_levelset_type::fe_type::nDof;
+
+        double thickness = (t > 0) ? t : this->thicknessInterface();
+        elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+
+        for (; it_elt!=en_elt; it_elt++)
         {
-            if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
+            auto const& elt = boost::unwrap_ref( *it_elt );
+            if ( elt.processId() != pid )
+                continue;
+            bool mark_elt = false;
+            for (int j=0; j<ndofv; j++)
             {
-                mark_elt = true;
-                break; //don't need to do the others dof
+                if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
+                {
+                    mark_elt = true;
+                    break; //don't need to do the others dof
+                }
             }
+            if( mark_elt )
+                interfaceElts->push_back( boost::cref(elt) );
         }
-        if( mark_elt )
-            interfaceElts->push_back( boost::cref(elt) );
+
+        M_interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                interfaceElts->begin(),
+                interfaceElts->end(),
+                interfaceElts
+                );
+
+        M_doUpdateInterfaceElements = false;
     }
 
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-            interfaceElts->begin(),
-            interfaceElts->end(),
-            interfaceElts
-            );
+    return M_interfaceElements;
 }
 
 //----------------------------------------------------------------------------//
@@ -1649,8 +1657,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
     {
         this->log("LevelSet", "cauchyGreenInvariant1", "start");
 #if 1
-        *M_cauchyGreenInvariant1 = vf::project(
-                _space=M_cauchyGreenInvariant1->functionSpace(),
+        M_cauchyGreenInvariant1->zero();
+        M_cauchyGreenInvariant1->on(
+                _range=this->interfaceElements(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
 #else
@@ -1689,8 +1698,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
         auto const& N = this->N();
         auto const& K = this->M_leftCauchyGreenTensor_K;
         auto const& KN = this->M_leftCauchyGreenTensor_KN;
-        *M_cauchyGreenInvariant2 = vf::project(
-                _space=M_cauchyGreenInvariant2->functionSpace(),
+        M_cauchyGreenInvariant2->zero();
+        M_cauchyGreenInvariant2->on(
+                _range=this->interfaceElements(),
                 _expr=det(idv(K))/(trans(idv(N))*idv(KN))
                 );
 #endif
@@ -1710,6 +1720,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
     M_doUpdateDirac = true;
     M_doUpdateHeaviside = true;
+    M_doUpdateInterfaceElements = true;
     M_doUpdateNormal = true;
     M_doUpdateCurvature = true;
     M_doUpdateMarkers = true;
