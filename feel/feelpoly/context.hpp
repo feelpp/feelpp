@@ -58,6 +58,7 @@ const size_type MASS                     = ( 1<<20 );
 const size_type STIFFNESS                = ( 1<<21 );
 const size_type NORMAL_COMPONENT         = ( 1<<22 );
 const size_type LOCAL_BASIS              = ( 1<<23 );
+const size_type TRACE                    = ( 1<<24 );
 
 
 #if 0
@@ -165,12 +166,14 @@ struct has_measure
 };
 
 template<size_type Context>
-struct has_normal_component
-{
-    static const bool value = has_value<Context, NORMAL_COMPONENT>::value;
-};
+using has_normal_component= has_value<Context, NORMAL_COMPONENT>;
 template<size_type Context>
 constexpr  bool has_normal_component_v = has_normal_component<Context>::value;
+
+template<size_type Context>
+using has_trace= has_value<Context, TRACE>;
+template<size_type Context>
+constexpr  bool has_trace_v = has_trace<Context>::value;
 
 template<size_type Context>
 using has_local_basis = has_value<Context,LOCAL_BASIS>;

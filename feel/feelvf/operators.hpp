@@ -126,7 +126,7 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
 # /* List of applicative operators. */
 # define VF_OPERATORS \
    BOOST_PP_TUPLE_TO_LIST( \
-      15, \
+      16, \
       (                                                                 \
           ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
           ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::JACOBIAN|vm::NORMAL_COMPONENT|vm::NORMAL , RankDown,false, 0, 1 ), \
@@ -142,7 +142,8 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
           ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ) \
+          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
+          ( OpTrace  , trace, trace,  0, 0, 0, vm::JACOBIAN|vm::TRACE , Rank0,false,0,1 ) \
       ) \
    ) \
    /**/
@@ -855,7 +856,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(expr,useInterpWithConfLoc) ); \
@@ -865,7 +866,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( boost::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \

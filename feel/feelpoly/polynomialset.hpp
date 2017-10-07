@@ -1430,6 +1430,7 @@ public:
             M_phi( __pc->phi() ),
             M_gradphi( __pc->gradPtr() ),
             M_normal_component(),
+            M_trace(),
             M_dn(),
             M_grad(),
             M_symm_grad(),
@@ -1445,6 +1446,11 @@ public:
                 int n_components = (rank==2)?nComponents1:1;
                 Eigen::Tensor<value_type,2> i_n( n_components,1 );
                 std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
+            }
+            if ( vm::has_trace_v<context> )
+            {
+                M_trace.resize( boost::extents[ntdof][M_npoints] );
+                std::fill( M_trace.data(), M_trace.data()+M_trace.num_elements(), 0. );
             }
                     
 
@@ -1513,6 +1519,8 @@ public:
             M_dofs( c.M_dofs ),
             M_phi( c.M_phi ),
             M_gradphi( c.M_gradphi ),
+            M_normal_component( c.M_normal_component ),
+            M_trace( c.M_trace ),
             M_dn( c.M_dn ),
             M_grad( c.M_grad ),
             M_symm_grad( c.M_symm_grad ),
@@ -1690,6 +1698,13 @@ public:
                                            uint32_type q ) const
             {
                 return M_normal_component[i][q]( c1,c2 );
+            }
+        value_type const& trace( uint32_type i,
+                                 uint16_type c1,
+                                 uint16_type c2,
+                                 uint32_type q ) const
+            {
+                return M_trace[i][q];
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
@@ -2154,6 +2169,7 @@ public:
 #endif
         boost::multi_array<hess_type,2> M_hessphi;
         boost::multi_array<id_type,2> M_normal_component;
+        boost::multi_array<value_type,2> M_trace;
         boost::multi_array<dn_type,2> M_dn;
         boost::multi_array<grad_type,2> M_grad;
         boost::multi_array<symm_grad_type,2> M_symm_grad;
