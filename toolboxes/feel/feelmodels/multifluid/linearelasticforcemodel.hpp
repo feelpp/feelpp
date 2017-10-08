@@ -95,10 +95,17 @@ LinearElasticForceModel<LevelSetType>::energyDerivative1Impl() const
 
     auto I1 = idv(this->levelset()->cauchyGreenInvariant1());
 
+#if 0
     *M_energyDerivative1 = vf::project(
         _space=M_energyDerivative1->functionSpace(),
         _expr=M_elasticShearModulus * (I1-2.)
         );
+#else // New implementation
+    *M_energyDerivative1 = vf::project(
+        _space=M_energyDerivative1->functionSpace(),
+        _expr=M_elasticStretchModulus * (I1-1.)
+        );
+#endif
     return M_energyDerivative1;
 }
 
@@ -111,10 +118,17 @@ LinearElasticForceModel<LevelSetType>::energyDerivative2Impl() const
 
     auto I2 = idv(this->levelset()->cauchyGreenInvariant2());
 
+#if 0
     *M_energyDerivative2 = vf::project(
         _space=M_energyDerivative2->functionSpace(),
         _expr=M_elasticStretchModulus * (I2-1.)
         );
+#else // New implementation
+    *M_energyDerivative2 = vf::project(
+        _space=M_energyDerivative2->functionSpace(),
+        _expr=M_elasticShearModulus * (I2-1.)
+        );
+#endif
     return M_energyDerivative2;
 }
 
