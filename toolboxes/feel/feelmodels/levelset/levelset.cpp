@@ -1588,7 +1588,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
             );
     auto const projectorL2Tensor2SymmInterface = Feel::projector(
             spaceTensor2SymmInterface, spaceTensor2SymmInterface,
-            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+            backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm(), _rebuild=true )
             );
 
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
@@ -1656,18 +1656,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
     if( M_useCauchyAugmented )
     {
         this->log("LevelSet", "cauchyGreenInvariant1", "start");
-#if 1
+#if 0
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
                 _range=this->interfaceElements(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
-#else
+#elif 0
         *M_cauchyGreenInvariant1 = vf::project(
                 _space=M_cauchyGreenInvariant1->functionSpace(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
-
+#elif 1 // New implementation sqrt(tr(cof A))
+        auto A = idv(this->leftCauchyGreenTensor());
+        auto trA = trace(A);
+        M_cauchyGreenInvariant1->zero();
+        M_cauchyGreenInvariant1->on(
+                _range=this->interfaceElements(),
+                _expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
+                );
 #endif
         this->log("LevelSet", "cauchyGreenInvariant1", "finish");
     }
@@ -1694,7 +1701,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 _space=M_cauchyGreenInvariant2->functionSpace(),
                 _expr=0.5*( trA*trA-trace(A*A) )
                 );
-#else
+#elif 0
         auto const& N = this->N();
         auto const& K = this->M_leftCauchyGreenTensor_K;
         auto const& KN = this->M_leftCauchyGreenTensor_KN;
@@ -1702,6 +1709,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
         M_cauchyGreenInvariant2->on(
                 _range=this->interfaceElements(),
                 _expr=det(idv(K))/(trans(idv(N))*idv(KN))
+                );
+#elif 1 // New implementation TrA / (2 sqrt(cofA))
+        auto A = idv(this->leftCauchyGreenTensor());
+        auto trA = trace(A);
+        M_cauchyGreenInvariant2->zero();
+        M_cauchyGreenInvariant2->on(
+                _range=this->interfaceElements(),
+                _expr=0.5 * trA / idv(this->cauchyGreenInvariant1())
                 );
 #endif
         this->log("LevelSet", "cauchyGreenInvariant2", "finish");
