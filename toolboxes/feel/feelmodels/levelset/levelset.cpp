@@ -34,6 +34,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, rootRepository ) ),
     M_doUpdateMarkers(true),
     M_doUpdateCauchyGreenTensor(true),
+    M_doUpdateCauchyGreenInvariant1(true),
+    M_doUpdateCauchyGreenInvariant2(true),
     //M_periodicity(periodicityLS),
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
@@ -1653,7 +1655,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
 {
-    if( M_useCauchyAugmented )
+    if( !M_useCauchyAugmented )
+        throw std::logic_error( "use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+
+    if( this->M_doUpdateCauchyGreenInvariant1 )
     {
         this->log("LevelSet", "cauchyGreenInvariant1", "start");
 #if 0
@@ -1676,11 +1681,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 _expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
                 );
 #endif
+        M_doUpdateCauchyGreenInvariant1 = false;
         this->log("LevelSet", "cauchyGreenInvariant1", "finish");
-    }
-    else
-    {
-        throw std::logic_error( this->prefix()+".use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
     }
 
     return M_cauchyGreenInvariant1;
@@ -1690,7 +1692,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_cauchygreen_invariant_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
 {
-    if( M_useCauchyAugmented )
+    if( !M_useCauchyAugmented )
+        throw std::logic_error( "use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
+
+    if( this->M_doUpdateCauchyGreenInvariant2 )
     {
         this->log("LevelSet", "cauchyGreenInvariant2", "start");
 #if 0
@@ -1719,11 +1724,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 _expr=0.5 * trA / idv(this->cauchyGreenInvariant1())
                 );
 #endif
+        M_doUpdateCauchyGreenInvariant2 = false;
         this->log("LevelSet", "cauchyGreenInvariant2", "finish");
-    }
-    else
-    {
-        throw std::logic_error( "use-cauchy-augmented option must be true to use Cauchy-Green invariants" );
     }
 
     return M_cauchyGreenInvariant2;
@@ -1745,6 +1747,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateSubmeshOuter = true;
     M_doUpdateSubmeshInner = true;
     M_doUpdateCauchyGreenTensor = true;
+    M_doUpdateCauchyGreenInvariant1 = true;
+    M_doUpdateCauchyGreenInvariant2 = true;
 }
 
 //----------------------------------------------------------------------------//

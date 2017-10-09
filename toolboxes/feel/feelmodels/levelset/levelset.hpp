@@ -673,8 +673,10 @@ private:
     element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
     mutable bool M_doUpdateCauchyGreenTensor;
     // Cauchy-Green tensor invariants
-    element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant1;
-    element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant2;
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant1;
+    mutable bool M_doUpdateCauchyGreenInvariant1;
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant2;
+    mutable bool M_doUpdateCauchyGreenInvariant2;
 
     //--------------------------------------------------------------------//
     // Reinitialization
