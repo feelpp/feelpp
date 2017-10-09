@@ -30,6 +30,7 @@
 #define ModelCrbBase_H 1
 
 //#include <feel/feel.hpp>
+#include <feel/feelcrb/crbmodeldb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -279,34 +280,91 @@ public :
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
-        M_uuid( uid ),
-        M_name( algorithm::to_lower_copy(name) ),
+        M_crbModelDb( name, uid ),
         M_is_initialized( false )
-    {}
+    {
+
+        bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
+        if ( !rebuilddb )
+        {
+            int loadmode = ioption( _name="crb.db.load" );
+            switch ( loadmode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            }
+        }
+        else
+        {
+            int updatemode = ioption( _name="crb.db.update" );
+            switch ( updatemode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            default:
+                // don't do anything and let the system pick up a new unique id
+                break;
+            }
+        }
+
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::path modeldir = M_crbModelDb.dbRepository();
+            if ( !fs::exists( modeldir ) )
+                fs::create_directories( modeldir );
+            boost::property_tree::ptree ptree;
+            ptree.add( "name", this->modelName() );
+            ptree.add( "uuid", uuids::to_string(this->uuid()) );
+            std::string jsonpath = (modeldir / M_crbModelDb.jsonFilename()).string();
+            write_json( jsonpath, ptree );
+        }
+        this->worldComm().barrier();
+
+    }
 
     virtual ~ModelCrbBase() {}
 
     /**
      * \return the name of the model
      */
-    std::string const& modelName() const { return M_name; }
+    std::string const& modelName() const { return M_crbModelDb.name(); }
 
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+    void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
     //!
     //! unique id for CRB Model
     //!
-    uuids::uuid  uuid() const { return M_uuid; }
+    uuids::uuid  uuid() const { return M_crbModelDb.uuid(); }
 
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
     //! CRB type object is created because they use the id
     //!
-    void setId( uuids::uuid const& i ) { M_uuid = i; }
+    void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
 
     /**
      * \return the mpi communicators
@@ -1919,9 +1977,7 @@ public:
 protected :
 
 
-    uuids::uuid M_uuid;
-
-    std::string M_name;
+    CRBModelDB M_crbModelDb;
 
     funs_type M_funs;
     funsd_type M_funs_d;
