@@ -154,8 +154,9 @@ HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype
     auto C1 = vf::Id<Dim, Dim>() - idv(N)*trans(idv(N));
     auto Z2 = idv( this->levelset()->cauchyGreenInvariant2() );
     auto C2 = 2.*A/trace(A) - C1;
-    auto Fe_expr = vf::project(
-            _space=this->levelset()->functionSpaceTensor2Symm(),
+    auto Fe_expr = this->levelset()->functionSpaceTensor2Symm()->element();
+    Fe_expr.on(
+            _range=this->levelset()->interfaceElements(),
             _expr=idv(Ep1)*Z1*C1 + idv(Ep2)*Z2*C2
             );
 #endif
