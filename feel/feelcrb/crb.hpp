@@ -344,39 +344,17 @@ public:
             this->setTruthModel( model );
             if ( stage == crb::stage::offline )
             {
+                if ( !M_rebuild && !fs::exists(this->dbLocalPath()/fs::path(this->jsonFilename()) ) )
+                {
+                    M_rebuild = true;
+                    this->worldComm().barrier();
+                }
                 if ( !M_rebuild )
                 {
                     this->setupOfflineFromDB();
                 }
                 else
                 {
-                    try
-                    {
-                        int updatemode = ioption( _name="crb.db.update" );
-                        switch ( updatemode )
-                        {
-                        case 0 :
-                            this->setId( this->id( db(soption(_name="crb.db.filename")) ) );
-                            break;
-                        case 1:
-                        case 2:
-                            this->setId( this->id( dbLast(static_cast<crb::last>(updatemode)) ) );
-                            break;
-                        case 3:
-                            this->setId( this->id( dbFromId(soption(_name="crb.db.id")) ) );
-                            break;
-                        default:
-                            // don't do anything and let the system pick up a new unique id
-                            break;
-                        }
-                    }
-                    catch ( std::invalid_argument const& e )
-                    {
-                        if ( Environment::isMasterRank() )
-                            std::cout << e.what() << std::endl
-                                      << "Using new unique id :" << this->id() << "\n";
-                    }
-                    
                     M_scmM->setId( this->id() );
                     M_scmA->setId( this->id() );
                     M_elements_database.setId( this->id() );
@@ -11548,20 +11526,8 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::setupOfflineFromDB()
 {
-    int loadmode = ioption( _name="crb.db.load" );
-    switch ( loadmode )
-    {
-    case 0 :
-        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
-        break;
-    case 1:
-    case 2:
-        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
-        break;
-    case 3:
-        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
-        break;
-    }
+    this->loadDB( (this->dbLocalPath()/fs::path(this->jsonFilename())).string(), crb::load::all );
+
     if( this->worldComm().isMasterRank() )
         std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
     LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
