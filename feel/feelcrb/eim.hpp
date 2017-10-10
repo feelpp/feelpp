@@ -648,6 +648,13 @@ EIM<ModelType>::offline()
 {
     using namespace vf;
 
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( M_model->dbLocalPath() ) )
+            fs::create_directories( M_model->dbLocalPath() );
+    }
+    this->worldComm().barrier();
+
     bool expression_expansion = M_model->computeExpansionOfExpression();
 
     int max_z=0;
@@ -1842,12 +1849,6 @@ public:
                 //this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
                 //this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
                 this->addDBSubDirectory( "eim" );
-                if ( this->worldComm().isMasterRank() )
-                {
-                    if ( !fs::exists( this->dbLocalPath() ) )
-                        fs::create_directories( this->dbLocalPath() );
-                }
-                this->worldComm().barrier();
             }
             else
             {
