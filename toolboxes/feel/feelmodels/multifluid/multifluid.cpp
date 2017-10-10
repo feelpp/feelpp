@@ -236,9 +236,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     this->log("MultiFluid", "init", "start");
 
     // Initialize LevelSets
-    M_globalLevelset->init();
     if( (M_nFluids - 1) < 2 )
         M_globalLevelset->getExporter()->setDoExport( false );
+    M_globalLevelset->init();
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         M_levelsets[i]->init();

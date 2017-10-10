@@ -93,7 +93,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     if (this->doRestart())
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
 
-
     // Init modGradPhi advection
     if( M_useGradientAugmented )
     {
@@ -141,13 +140,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     // Init post-process
     this->initPostProcess();
 
-
     if ( M_doSmoothGradient )
         auto smootherbuild = this->smootherVectorial();
     if ( M_doSmoothCurvature )
         auto smootherbuild = this->smoother();
-
-
 
     this->log("LevelSet", "init", "finish");
 }
@@ -340,19 +336,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    if ( !M_exporter )
-    {
-        std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
-        M_exporter = exporter( _mesh=this->mesh(),
-                               _name="ExportLS",
-                               _geo=geoExportType,
-                               _path=this->exporterPath() );
-    }
     if (this->doRestart() && this->restartPath().empty() )
     {
         if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
     }
-
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -555,6 +542,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
+{
+    std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
+    M_exporter = exporter( 
+            _mesh=this->mesh(),
+            _name="ExportLS",
+            _geo=geoExportType,
+            _path=this->exporterPath() 
+            );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
 {
@@ -730,7 +730,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         M_hasInitialBackwardCharacteristics = false;
     }
 
-    //M_doExportAdvection = boption(_name="export-advection", _prefix=this->prefix());
+    M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2128,7 +2128,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->exportResultsImpl( time );
-    //this->exportMeasures( time );
+    this->exportMeasuresImpl( time );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2137,6 +2137,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 {
     this->log("LevelSet","exportResults", "start");
     this->timerTool("PostProcessing").start();
+
+    if( this->M_doExportAdvection )
+        this->M_advectionToolbox->exportResults( time );
 
     if ( !this->M_exporter->doExport() ) return;
 
