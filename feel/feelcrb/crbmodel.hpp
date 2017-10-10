@@ -3609,7 +3609,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
     int max_fixedpoint_iterations = ioption(_name="crb.fixedpoint.maxit");
     double increment_fixedpoint_tol = doption(_name="crb.fixedpoint.increment-tol");
-
+    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
     double norm=0;
     int iter=0;
 
@@ -3659,18 +3659,19 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 {
                     norm = this->computeNormL2( uold , u );
                     fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        std::cout << "[solveFemUsingAffineDecompositionFixedPoint] iteration " << iter << ", increment_norm = " <<  norm << "\n";
                 }
                 else
                 {
                     residual = u-uold;
                     aitkenRelax.apply2(_newElt=u,_residual=residual, _currentElt=u );
-                    aitkenRelax.printInfo();
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        aitkenRelax.printInfo();
                     ++aitkenRelax;
                     if ( aitkenRelax.isFinished() )
                         fixPointIsFinished=true;
                 }
-
-                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
 
         }
@@ -3966,6 +3967,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
 
     int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
     double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
 
     double norm=0;
     int iter=0;
@@ -4014,18 +4016,19 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 {
                     norm = this->computeNormL2( uold , udu );
                     fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        std::cout << "[solveFemDualUsingAffineDecompositionFixedPoint] iteration " << iter << ", increment_norm = " <<  norm << "\n";
                 }
                 else
                 {
                     residual = udu-uold;
                     aitkenRelax.apply2(_newElt=udu,_residual=residual, _currentElt=udu );
-                    aitkenRelax.printInfo();
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        aitkenRelax.printInfo();
                     ++aitkenRelax;
                     if ( aitkenRelax.isFinished() )
                         fixPointIsFinished=true;
                 }
-
-                Feel::cout << "[OFFLINE_DUAL] iteration " << iter << ", increment_norm = " <<  norm << "\n";
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         }
         return udu;
