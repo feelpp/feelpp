@@ -291,11 +291,12 @@ public:
     //! constructor from command line options
     CRB( std::string const& name,
          truth_model_ptrtype const & model,
-         crb::stage stage = crb::stage::online )
+         crb::stage stage = crb::stage::online,
+         std::string const& prefixExt = "" )
         :
-        super( name, "crb", model->worldComm()),
+        super( name, prefixvm(prefixExt, "crb"), model->worldComm()),
         M_elements_database( name,
-                             "elements",
+                             prefixvm(prefixExt,"elements"),
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model( model ),
@@ -310,8 +311,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
