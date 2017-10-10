@@ -392,8 +392,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createExporters()
                            _geo=geoExportType,
                            _path=this->exporterPath() );
 
-    double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+    double tElapsed = this->timerTool("Constructor").stop("createExporters");
+    this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//

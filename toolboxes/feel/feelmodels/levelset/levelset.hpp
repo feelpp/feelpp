@@ -264,10 +264,12 @@ public:
     {
         this->log("LevelSet", "build", "start");
         M_advectionToolbox->build();
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         this->createFunctionSpaces( true );
         this->createInterfaceQuantities();
         this->createReinitialization();
         this->createOthers();
+        this->createExporters();
         this->log("LevelSet", "build", "finish");
     }
 
@@ -284,10 +286,12 @@ public:
     {
         this->log("LevelSet", "build (from mesh)", "start");
         M_advectionToolbox->build( mesh );
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         this->createFunctionSpaces( true );
         this->createInterfaceQuantities();
         this->createReinitialization();
         this->createOthers();
+        this->createExporters();
         this->log("LevelSet", "build (from mesh)", "finish");
     }
 
@@ -310,6 +314,7 @@ public:
             )
     {
         M_advectionToolbox->build( space );
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         // createFunctionSpaces
         M_spaceLevelSetVec = space_vectorial;
         M_spaceMarkers = space_markers;
@@ -341,6 +346,9 @@ public:
         }
         M_smoother = smoother;
         M_smootherVectorial = smoother_vectorial;
+
+        // Create exporters
+        this->createExporters();
     }
 
     //--------------------------------------------------------------------//
@@ -545,6 +553,7 @@ private:
     void createInterfaceQuantities();
     void createReinitialization();
     void createOthers();
+    void createExporters();
 
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);
@@ -602,8 +611,9 @@ private:
     //--------------------------------------------------------------------//
     // Periodicity
     periodicity_type M_periodicity;
-    // advection toolbox
+    // Advection toolbox
     advection_toolbox_ptrtype M_advectionToolbox;
+    bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
