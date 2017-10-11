@@ -70,6 +70,7 @@ public:
     static const uint16_type Order = 1;
     using convex_type =  Simplex<3>;
     using mesh_type = Mesh<convex_type>;
+
     using fct_base_type = Lagrange<Order,Scalar>;
     using basis_type = bases<fct_base_type, fct_base_type>;
     using space_type = FunctionSpace<mesh_type, basis_type, value_type>;
