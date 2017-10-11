@@ -9,7 +9,7 @@
             "name": "copper",
             "physics": "thermoelectric",
             "sigmaKey": "sigma",
-            "kKey": "k"
+            "alphaKey": "alpha"
         }
     },
     "Parameters":
@@ -20,17 +20,23 @@
             "min":48e+3,
             "max":52e+3
         },
+        "alpha":
+        {
+            "value":3.4e-3,
+            "min":3.3e-3,
+            "max":3.5e-3
+        },
+        "L":
+        {
+            "value":2.7e-8,
+            "min":2.5e-8,
+            "max":2.9e-8
+        },
         "current":
         {
             "value":-0.14,
             "min":-0.25,
             "max":-0.1
-        },
-        "k":
-        {
-            "value":0.38,
-            "min":0.35,
-            "max":0.4
         },
         "h":
         {
