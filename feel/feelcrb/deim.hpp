@@ -47,49 +47,14 @@
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 
 namespace Feel
 {
 
-/**
- * Comparison structure for 2 parameters mu1 and mu2
- * The comparison is made component by component :
- * - we start with i=0
- * - if mu1[i]<mu2[i] then mu1<mu2
- * - if mu1[i]==mu2[i] then we compare mu1[i+1] and mu2[i+1]
- */
-template <typename ParameterType>
-struct paramCompare
-{
-public :
-    typedef ParameterType parameter_type;
-
-    /**
-     * Compare the component \p i of \p mu1 and \p mu2
-     * \return true if mu1[i]<mu2[i]
-     */
-    bool operator() ( parameter_type const& mu1, parameter_type const& mu2 ) const
-    {
-        return compare( mu1, mu2, 0 );
-    }
-private :
-    /**
-     * Compare \p mu1 and \p mu2
-     * \return true if mu1 < mu2
-     */
-    bool compare( parameter_type const& mu1, parameter_type const& mu2, int i ) const
-    {
-        if ( i==mu1.size() )
-            return false;
-        else if ( mu1[i]==mu2[i] )
-            return compare( mu1, mu2, i+1 );
-        else
-            return mu1[i]<mu2[i];
-    }
-};
-
+class ModelCrbBaseBase;
 
 /**
  * \brief Base class for DEIM algorithm
@@ -102,26 +67,17 @@ private :
  * exists for the tensor \f$ T(\mu)\f$, the approximation returned by
  * DEIM will be exact, provided that \f$ M\f$ is large enough.
  */
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 class DEIMBase : public CRBDB
 {
 public :
     typedef  CRBDB super;
 
-    typedef ModelType model_type;
-    typedef boost::shared_ptr<model_type> model_ptrtype;
-    typedef typename model_type::value_type value_type;
+    typedef typename TensorType::value_type value_type;
 
-    typedef CRBModelType<model_type> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRBType<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
-
-
-    typedef typename ModelType::parameterspace_type parameterspace_type;
-    typedef typename ModelType::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename ModelType::parameter_type parameter_type;
+    typedef ParameterSpaceType parameterspace_type;
+    typedef typename boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
@@ -145,39 +101,59 @@ public :
     static const bool is_matrix = std::is_same<tensor_type,sparse_matrix_type>::value;
     typedef typename mpl::if_< mpl::bool_<is_matrix>,
                                std::pair<int,int>, int >::type indice_type;
+    typedef typename mpl::if_< mpl::bool_<is_matrix>,
+                               std::pair<std::set<int>,std::set<int>>, std::set<int> >::type ptsset_type;
 
     typedef boost::tuple<double,int> vectormax_type;
     typedef boost::tuple<double,std::pair<int,int>> matrixmax_type;
 
-    typedef std::map<parameter_type,tensor_ptrtype,paramCompare<parameter_type>> solutionsmap_type;
+    typedef SpaceType space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef std::map<int,tensor_ptrtype> solutionsmap_type;
+
+    typedef CRBBase<space_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     //! Default Constructor
     DEIMBase()
     {}
 
     /**
-     * \brief Constructor of DEIM class \p Dmu a pointer to the
-     * considered parameter space \p sampling the sampling on which
-     * the greedy algorithm will iterate. Can be null and so a default
-     * sampling will be build, considering the options : (int)
-     * deim.default-sampling-size and (string)
-     * deim.default-sampling-mode
+     * \brief Constructor of DEIM class
      */
-    DEIMBase( model_ptrtype model, sampling_ptrtype sampling, std::string prefix="",
-              WorldComm const& worldComm = Environment::worldComm() ) :
+    DEIMBase(  space_ptrtype Xh,
+               parameterspace_ptrtype Dmu,
+               sampling_ptrtype sampling,
+               uuids::uuid const& i,
+               std::string prefix="",
+               WorldComm const& worldComm = Environment::worldComm() ) :
         super ( ( boost::format( "%1%DEIM-%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
                 "deim",
-                model->uuid(),
+                i,
                 worldComm ),
-        M_model( model ),
+        mesh( Xh->mesh() ),
         M_prefix( prefix ),
-        M_parameter_space( model->parameterSpace() ),
         M_trainset( sampling ),
         M_M(0),
+        M_user_max( ioption(  prefixvm( M_prefix, "deim.dimension-max" ) ) ),
         M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
         M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
         M_max_value( -1 ),
-        M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) )
+        M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
+        M_nl_assembly(false),
+        M_store_tensors( false ),
+        M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
+        M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
+        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) ),
+        M_crb_built( false ),
+        M_offline_step( true ),
+        M_restart( true ),
+        M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
+        M_ser_use_rb( false )
     {
         using Feel::cout;
 
@@ -192,9 +168,8 @@ public :
             cout << "DEIM : option deim.rebuild-db=true : start greedy algorithm from beginning\n";
 
 
-
         if ( !M_trainset )
-            M_trainset = M_parameter_space->sampling();
+            M_trainset = Dmu->sampling();
         if ( M_trainset->empty() )
         {
             int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
@@ -210,8 +185,19 @@ public :
                 M_trainset->clear();
                 M_trainset->readFromFile(file_name);
             }
-            cout << "DEIM sampling created with " << sampling_size << " points.\n";
+            cout << "DEIM sampling created\n";
         }
+        cout << "DEIM sampling size = "<< M_trainset->size()<<std::endl;
+
+        int sampling_size = M_trainset->size();
+        if ( M_user_max>sampling_size )
+        {
+            cout << "DEIM : Sampling size (="<< sampling_size
+                 << ") smaller than deim.dimension-max (=" << M_user_max
+                 << "), dimension max is now " << sampling_size << std::endl;
+            M_user_max = sampling_size;
+        }
+
     }
 
     //! Destructor
@@ -224,7 +210,8 @@ public :
      * \p mu the considered parameter
      * \return the tensor \f$ T(\mu) \f$ as vector_ptrtype
      */
-    assemble_function_type assemble;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
 
     /**
      * Run the greedy algotithm and build the affine decomposition.
@@ -233,88 +220,87 @@ public :
      * reached. This maximum is defined by the option
      * deim.dimension-max
      */
+    void offline() { this->run(); }
     void run()
     {
-
         using Feel::cout;
         tic();
-        int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
-        int sampling_size = M_trainset->size();
-        if ( mMax>sampling_size )
-        {
-            cout << "DEIM : Sampling size (="<< sampling_size
-                 << ") smaller than deim.dimension-max (=" << mMax
-                 << "), dimension max is now " << sampling_size << std::endl;
-            mMax = sampling_size;
-        }
-
+        int mMax = M_user_max;
         double error=0;
         double r_error=0;
-        auto mu = M_trainset->max().template get<0>();
 
-        if ( M_M==0 )
+        if ( M_restart )
         {
-            cout <<"===========================================\n";
-            cout << "DEIM : Start algorithm with mu="<<muString(mu)<<std::endl;
+            if ( M_M==0 )
+            {
+                auto mu = M_trainset->max().template get<0>();
+                cout <<"===========================================\n";
+                cout << "DEIM : Start algorithm with mu="<< mu.toString() <<std::endl;
 
-            tic();
-            addNewVector(mu);
-            toc("Add new vector in DEIM basis");
+                tic();
+                addNewVector(mu);
+                toc("Add new vector in DEIM basis");
+            }
         }
-        if ( M_M<mMax )
+        if ( M_use_ser )
+        {
+            if ( M_restart )
+                mMax=1;
+            else
+            {
+                mMax = M_M + M_ser_frequency;
+                if ( mMax>M_user_max)
+                {
+                    cout << "DEIM : max number of basis reached\n";
+                    this->setOfflineStep(false);
+                }
+            }
+        }
+
+        while( M_M<mMax && offlineStep() )
         {
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
-            mu = best_fit.template get<0>();
+            auto mu = best_fit.template get<0>();
 
             if ( M_max_value!=0 )
                 r_error = error/M_max_value;
 
-            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
+            cout << "DEIM : Current max error="<<error <<", Atol="<< M_Atol
+                 << ", relative max error="<< r_error <<", Rtol="<< M_tol
+                 <<", for mu="<< mu <<std::endl;
             cout <<"===========================================\n";
-        }
 
-        while( M_M<mMax && r_error>M_tol && error>M_Atol )
-        {
-            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
+            if ( error<M_Atol || r_error<M_tol )
+            {
+                cout << "DEIM : Tolerance reached !\n";
+                this->setOfflineStep(false);
+                break;
+            }
+
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
             tic();
             addNewVector(mu);
             toc("Add new vector in DEIM basis");
-
-            if ( M_M<mMax )
-            {
-                auto best_fit = computeBestFit();
-                error = best_fit.template get<1>();
-                mu = best_fit.template get<0>();
-
-                r_error = error/M_max_value;
-                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
-                cout <<"===========================================\n";
-            }
         }
 
         M_solutions.clear();
+        cout <<"===========================================\n";
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
-        toc("DEIM : Total Time");
+        toc("DEIM : Offline Total Time");
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
-    vectorN_type beta( parameter_type const& mu )
+    vectorN_type beta( parameter_type const& mu, int M = -1 )
     {
-        return computeCoefficient( mu );
+        return computeCoefficient( mu, M );
     }
 
-    /**
-     * \return the \f$ \beta^m(\mu)\f$ evaluated from an already
-     * assembled tensor (for non-linear problem)
-     */
-    vectorN_type beta( tensor_ptrtype T )
+    vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
-        return computeCoefficient( T );
+        return computeCoefficient( mu, u, M );
     }
 
 
@@ -335,6 +321,23 @@ public :
         return M_M;
     }
 
+    void setRB( crb_ptrtype rb )
+    {
+        M_crb = rb;
+        M_crb_built=true;
+    }
+
+    void setOfflineStep( bool b ) { M_offline_step = b; }
+    bool offlineStep() const { return M_offline_step; }
+
+    void setRestart( bool b ) { M_restart = b; }
+    bool restart() const { return M_restart; }
+
+    void setSerFrequency( int freq ) { M_ser_frequency=freq; }
+    int serFrequency() const { return M_ser_frequency; }
+
+    void setSerUseRB( bool use_rb ) { M_ser_use_rb=use_rb; }
+
     //! save the database
     void saveDB() override;
     //! load the database
@@ -348,7 +351,7 @@ protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
+        LOG(INFO) << "DEIM : addNewVector() start with "<<mu.toString();
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -372,29 +375,40 @@ protected :
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
+        if ( M_optimized_online )
+            updateSubMesh();
         //this->saveDB();
         LOG(INFO) << "DEIM : addNewVector() end";
     }
 
     //! \return the value of the component \p index of the vector \p V
-    double evaluate( vector_ptrtype V, int const& index )
+    double evaluate( vector_ptrtype V, int const& index, bool seq=false )
     {
+        if ( seq )
+            return V->operator()( index );
+
+        V->close();
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
 
         if ( Environment::worldComm().globalRank()==proc_number )
             value = V->operator()( index - V->map().firstDofGlobalCluster() );
 
+
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
         return value;
     }
 
     //! \return the value of the entry \p idx of the matrix \p M
-    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const&  idx )
+    double evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const& idx, bool seq=false )
     {
         int i = idx.first;
         int j =idx.second;
 
+        if ( seq )
+            return M->operator() ( i,j );
+
+        M->close();
         double value=0;
         int proc_number = M->mapRow().procOnGlobalCluster(i);
 
@@ -468,22 +482,31 @@ protected :
     }
 
     //! \return the beta coefficient for parameter \p mu
-    vectorN_type computeCoefficient( parameter_type const& mu )
+    vectorN_type computeCoefficient( parameter_type const& mu, int M = -1 )
     {
-        tensor_ptrtype T = assemble( mu );
-        return computeCoefficient( T );
+        tensor_ptrtype T = assemble( mu, true );
+        return computeCoefficient( T, true, M );
+    }
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, int M = -1 )
+    {
+        tensor_ptrtype T = assemble( mu, u, true );
+        return computeCoefficient( T, true, M );
     }
 
+
     //! Compute the beta coefficients for a assembled tensor \p T
-    vectorN_type computeCoefficient( tensor_ptrtype T )
+    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
-        vectorN_type rhs (M_M);
-        vectorN_type coeff (M_M);
-        if ( M_M>0 )
+        bool optimized = online && this->M_optimized_online;
+        if( (M < 0) || (M > M_M) )
+            M = M_M;
+        vectorN_type rhs (M);
+        vectorN_type coeff (M);
+        if ( M > 0 )
         {
-            for ( int i=0; i<M_M; i++ )
-                rhs(i) = evaluate( T, M_index[i] );
-            coeff = M_B.fullPivLu().solve( rhs );
+            for ( int i=0; i<M; i++ )
+                rhs(i) = evaluate( T, optimized ? M_indexR[i]:M_index[i], optimized );
+            coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
 
         return coeff;
@@ -530,22 +553,41 @@ protected :
      */
     tensor_ptrtype residual( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
+        LOG(INFO) << "DEIM : residual() start with "<< mu.toString();
         tensor_ptrtype T;
-        if ( !M_solutions[mu] )
+
+        if( !M_store_tensors || !M_solutions[mu.key()] )
         {
             T = this->assemble( mu );
-            M_solutions[mu] = copyTensor(T);
+            T->close();
+            if( M_store_tensors )
+            {
+                LOG(INFO)<< "DEIM : tensor stored in memory for mu="
+                         << mu.toString()<<" / "<<mu.key();
+                M_solutions[mu.key()] = copyTensor(T);
+            }
         }
         else
-            T = M_solutions[mu];
+        {
+            LOG(INFO) << "DEIM : tensor read in memory for mu="
+                      << mu.toString()<<" / "<<mu.key();
+            T = M_solutions[mu.key()];
+        }
 
-        vectorN_type coeff = computeCoefficient( T );
+#if 0 // produce Deadlock in // with vectors.
+        double norm = T->linftyNorm();
+#else
+        auto vec_max = vectorMaxAbs( T );
+        double norm = vec_max.template get<0>();
+#endif
+
+        vectorN_type coeff = computeCoefficient(T, false);
 
         auto newT = copyTensor( T );
-
         for ( int i=0; i<M_M; i++ )
             add( newT, -coeff(i), M_bases[i] );
+        newT->scale( 1./norm );
+
         LOG(INFO) << "DEIM : residual() end";
         return newT;
     }
@@ -565,12 +607,14 @@ protected :
     // \return a shared pointer on a copy of \p V
     vector_ptrtype copyTensor( vector_ptrtype V )
     {
-        vector_ptrtype newV = V->clone();
+        //vector_ptrtype newV = V->clone();
+        vector_ptrtype newV = backend()->newVector( V->mapPtr() );
         *newV = *V;
         return newV;
     }
 
     // \return a shared pointer on a copy of \p M
+
     sparse_matrix_ptrtype copyTensor( sparse_matrix_ptrtype M )
     {
         sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(),
@@ -580,15 +624,9 @@ protected :
         return newM;
     }
 
-    std::string muString( parameter_type const& mu )
-    {
-        std::ostringstream mu_str;
-        mu_str << "["<<mu[0];
-        for ( int i=1; i<mu.size(); i++ )
-            mu_str <<","<< mu[i];
-        mu_str <<"]";
-        return mu_str.str();
-    }
+
+    virtual void updateSubMesh()=0;
+
 
     friend class boost::serialization::access;
 
@@ -604,27 +642,488 @@ protected :
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 protected :
-    model_ptrtype M_model;
+    mesh_ptrtype mesh;
     std::string M_prefix;
-    parameterspace_ptrtype M_parameter_space;
+
     sampling_ptrtype M_trainset;
-    int M_M;
+    int M_M, M_user_max;
     double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
-    std::vector<indice_type> M_index;
+
+    std::vector<indice_type> M_index, M_indexR, M_ldofs;
+    std::vector<ptsset_type> M_ptsset;
+    std::set<int> M_elts_ids;
+
     solutionsmap_type M_solutions;
-    bool M_rebuild;
+
+    bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
+    std::string M_write_nl_directory;
+    bool M_optimized_online;
+
+    crb_ptrtype M_crb;
+    bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
+    int M_ser_frequency;
 };
 
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+
+template <typename ModelType,
+          typename TensorType>
+class DEIMModel :
+        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
+                        TensorType>
+{
+public :
+    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, TensorType> super_type;
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename model_type::parameterspace_type parameterspace_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::tensor_ptrtype tensor_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
+
+
+    DEIMModel() :
+        super_type()
+    {}
+
+    DEIMModel( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model->functionSpace(),
+                    model->parameterSpace(),
+                    sampling,
+                    model->uuid(),
+                    prefix ),
+        M_model( model )
+    {
+        if ( this->M_optimized_online )
+        {
+            this->M_online_model = model_ptrtype( new model_type() );
+            this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+        }
+        else
+            this->M_online_model = M_model;
+    }
+
+    virtual ~DEIMModel()
+    {}
+
+    void init()
+    {
+        auto mu = this->M_trainset->max().template get<0>();
+        auto T = this->assemble(mu);
+        if (!T)
+        {
+            this->M_nl_assembly=true;
+            auto u = M_model->functionSpace()->element();
+            auto Tnl = this->assemble(mu,u);
+            CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
+        }
+    }
+
+    tensor_ptrtype assemble( parameter_type const& mu, bool online=false ) override
+    {
+        if ( this->M_nl_assembly )
+        {
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
+
+            auto u = M_model->functionSpace()->element();
+            bool need_solve = true;
+
+            if ( this->M_ser_use_rb && this->M_crb )
+            {
+                std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
+                auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+                int size = uN.size();
+                if ( size!=0 )
+                    u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
+                else
+                    Feel::cout <<"DEIM ERROR : crb expansion called with uN.size=0 !\n";
+            }
+            else
+            {
+                if ( this->M_ser_use_rb && !this->M_crb )
+                    Feel::cout <<"DEIM WARNING : Suppose to use crb expansion with no crb class ! u will be computed using model->solve\n";
+
+                if ( M_write_nl_solutions )
+                {
+                    need_solve = !u.load( _path=M_write_nl_directory,
+                                          _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    if ( need_solve )
+                        LOG(INFO) << "DEIM : Unable to load nl solution in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key()<< ". Solve function will be called.";
+                    else
+                        LOG(INFO) << "DEIM : NL solution loaded in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
+                }
+
+                if ( need_solve )
+                {
+                    LOG(INFO) << "DEIM : calling solve function for parameter " << mu.toString()
+                              <<" / " << mu.key();
+                    u = M_model->solve(mu);
+
+                    if ( M_write_nl_solutions )
+                    {
+                        LOG(INFO) << "DEIM : Wrting solution on disk in directory "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
+                        u.save( _path=M_write_nl_directory,
+                                _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    }
+                }
+
+            }
+
+
+            return modelAssemble(mu,u);
+        }
+        return modelAssemble(mu,online);
+    }
+
+    tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
+        return modelAssemble(mu,u,online);
+    }
+
+
+protected :
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
+
+protected :
+    model_ptrtype M_model, M_online_model;
+
+    using super_type::M_write_nl_solutions;
+    using super_type::M_write_nl_directory;
+};
+
+
+template <typename ModelType>
+class DEIM :
+        public DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>
+{
+public :
+    typedef DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>  super_type;
+
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
+
+    DEIM() :
+        super_type()
+    {}
+
+    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix )
+    {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
+        this->init();
+    }
+
+    ~DEIM()
+    {}
+
+private :
+    vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForDEIM(mu);
+       return this->M_model->assembleForDEIM(mu);
+    }
+
+    vector_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForDEIMnl(mu,u);
+        return this->M_model->assembleForDEIMnl(mu,u);
+    }
+
+
+private :
+    virtual void updateSubMesh() override
+    {
+        // Last added index
+        auto index = this->M_index.back();
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
+        int proc_n = Xh->dof()->procOnGlobalCluster(index);
+
+        // recover the elements which share this index
+        std::set<int> pts_ids;
+        int ldof=-1;
+
+        if ( Environment::worldComm().globalRank()==proc_n )
+        {
+            for ( auto const& dof : Xh->dof()->globalDof(index-Xh->dof()->firstDofGlobalCluster()) )
+            {
+                this->M_elts_ids.insert( dof.second.elementId() );
+                if (ldof==-1)
+                {
+                    ldof = dof.second.localDof();
+                    auto elt = mesh->element( dof.second.elementId() );
+                    for ( int p=0; p<elt.nPoints(); p++ )
+                        pts_ids.insert( elt.point(p).id()+1 );
+                }
+            }
+        }
+        else
+        {
+            auto e = Xh->dof()->searchGlobalProcessDof( index );
+            if ( e.template get<0>() )
+            {
+                auto process_dof = e.template get<1>();
+                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                    this->M_elts_ids.insert( dof.second.elementId() );
+            }
+        }
+
+        // store the information in all proc !
+        boost::mpi::broadcast( Environment::worldComm(), pts_ids, proc_n );
+        boost::mpi::broadcast( Environment::worldComm(), ldof, proc_n );
+        this->M_ldofs.push_back( ldof );
+        this->M_ptsset.push_back( pts_ids );
+
+        // create new submesh with the new elements and reread it in sequential
+        auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+        saveGMSHMesh( _mesh=submesh, _filename="deim-submesh.msh" );
+        auto seqmesh = loadMesh( _mesh=new mesh_type,
+                                 _filename="deim-submesh.msh", _worldcomm= Environment::worldCommSeq() );
+        auto Rh = space_type::New( seqmesh,
+                                   _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+
+        // create map between points id and elements id
+        std::map<std::set<int>,int> elts_map;
+        for ( auto const& eltWrap : elements(seqmesh) )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            std::set<int> pts_id;
+            for ( int p=0; p<elt.nPoints(); p++ )
+                pts_id.insert( elt.point(p).id() );
+            elts_map[pts_id] = elt.id();
+        }
+
+        // on each proc : store the new indexR corresponding to the reduced space
+        this->M_indexR.clear();
+        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        {
+            auto map_it = elts_map.find( this->M_ptsset[i] );
+            CHECK( map_it!=elts_map.end() ) <<"DEIM : elt id not found in map, on proc : "
+                                            <<Environment::worldComm().globalRank() << std::endl;
+            int elt_idR = map_it->second;
+            this->M_indexR.push_back( Rh->dof()->localToGlobalId( elt_idR, this->M_ldofs[i] ) );
+        }
+
+        this->M_online_model->setFunctionSpaces( Rh );
+    }
+
+};
+
+
+template <typename ModelType>
+class MDEIM :
+        public DEIMModel<ModelType,
+                         typename Backend<typename ModelType::value_type>::sparse_matrix_type>
+{
+public :
+    typedef DEIMModel<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
+
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::tensor_ptrtype sparse_matrix_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
+
+    MDEIM() :
+        super_type()
+    {}
+
+    MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix )
+    {
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
+        this->init();
+    }
+
+    ~MDEIM()
+    {}
+
+private :
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForMDEIM(mu);
+        return this->M_model->assembleForMDEIM(mu);
+    }
+
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForMDEIMnl(mu,u);
+        return this->M_model->assembleForMDEIMnl(mu,u);
+    }
+
+private :
+    void updateSubMesh() override
+    {
+        auto index = this->M_index.back();
+        int i1 = index.first;
+        int i2 = index.second;
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
+        bool is_same = (i1==i2);
+
+        int proc_n1 = Xh->dof()->procOnGlobalCluster(i1);
+        int proc_n2 = Xh->dof()->procOnGlobalCluster(i2);
+
+        std::set<int> pts_ids1, pts_ids2;
+        int ldof1=-1;
+        int ldof2=-1;
+
+
+        if ( Environment::worldComm().globalRank()==proc_n1 )
+        {
+            for ( auto const& dof : Xh->dof()->globalDof(i1-Xh->dof()->firstDofGlobalCluster()) )
+            {
+                this->M_elts_ids.insert( dof.second.elementId() );
+                if ( ldof1==-1 )
+                {
+                    ldof1 = dof.second.localDof();
+                    auto elt = mesh->element(dof.second.elementId() );
+                    for ( int p=0; p<elt.nPoints(); p++ )
+                        pts_ids1.insert( elt.point(p).id()+1 );
+                }
+            }
+        }
+        else
+        {
+            auto e = Xh->dof()->searchGlobalProcessDof( i1 );
+            if ( e.template get<0>() )
+            {
+                auto process_dof = e.template get<1>();
+                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                    this->M_elts_ids.insert( dof.second.elementId() );
+            }
+        }
+
+        boost::mpi::broadcast( Environment::worldComm(), pts_ids1, proc_n1 );
+        boost::mpi::broadcast( Environment::worldComm(), ldof1, proc_n1 );
+
+        if ( is_same )
+        {
+            pts_ids2 = pts_ids1;
+            ldof2 = ldof1;
+        }
+        else
+        {
+            if ( Environment::worldComm().globalRank()==proc_n2 )
+            {
+                for ( auto const& dof : Xh->dof()->globalDof(i2-Xh->dof()->firstDofGlobalCluster()) )
+                {
+                    this->M_elts_ids.insert( dof.second.elementId() );
+                    if ( ldof2==-1 )
+                    {
+                        ldof2 = dof.second.localDof();
+                        auto elt = mesh->element(dof.second.elementId() );
+                        for ( int p=0; p<elt.nPoints(); p++ )
+                            pts_ids2.insert( elt.point(p).id()+1 );
+                    }
+                }
+            }
+            else
+            {
+                auto e = Xh->dof()->searchGlobalProcessDof( i2 );
+                if ( e.template get<0>() )
+                {
+                    auto process_dof = e.template get<1>();
+                    for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                        this->M_elts_ids.insert( dof.second.elementId() );
+                }
+            }
+            boost::mpi::broadcast( Environment::worldComm(), pts_ids2, proc_n2 );
+            boost::mpi::broadcast( Environment::worldComm(), ldof2, proc_n2 );
+        }
+
+        this->M_ldofs.push_back( std::make_pair(ldof1,ldof2) );
+        this->M_ptsset.push_back( std::make_pair(pts_ids1,pts_ids2) );
+
+        // create new submesh with the new elements and reread it in sequential
+        auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
+        saveGMSHMesh( _mesh=submesh, _filename="mdeim-submesh.msh" );
+        auto seqmesh = loadMesh( _mesh=new mesh_type,
+                                 _filename="mdeim-submesh.msh", _worldcomm= Environment::worldCommSeq() );
+        auto Rh = space_type::New( seqmesh,
+                                   _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+
+        // create map between points id and elements id
+        std::map<std::set<int>,int> elts_map;
+        for ( auto const& eltWrap : elements(seqmesh) )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            std::set<int> pts_id;
+            for ( int p=0; p<elt.nPoints(); p++ )
+                pts_id.insert( elt.point(p).id() );
+            elts_map[pts_id] = elt.id();
+        }
+
+
+        // on each proc : store the new indexR corresponding to the reduced space
+        this->M_indexR.clear();
+        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        {
+            auto ptsset1 = this->M_ptsset[i].first;
+            auto ptsset2 = this->M_ptsset[i].second;
+
+            auto map_it = elts_map.find( ptsset1 );
+            CHECK( map_it!=elts_map.end() ) << "MDEIM : elt id not found in map, on proc : "
+                                            << Environment::worldComm().globalRank() << std::endl;
+
+            int elt_idR1 = map_it->second;
+            int elt_idR2 = elt_idR1;
+            if ( ptsset1!=ptsset2 )
+            {
+                map_it = elts_map.find( ptsset2 );
+                CHECK( map_it!=elts_map.end() ) << "MDEIM : elt id not found in map, on proc : "
+                                                << Environment::worldComm().globalRank() << std::endl;
+                elt_idR2 = map_it->second;
+            }
+
+            auto indexR1 = Rh->dof()->localToGlobalId( elt_idR1, this->M_ldofs[i].first );
+            auto indexR2 = Rh->dof()->localToGlobalId( elt_idR2, this->M_ldofs[i].second );
+
+            this->M_indexR.push_back( std::make_pair(indexR1, indexR2) );
+        }
+
+        this->M_online_model->setFunctionSpaces( Rh );
+
+    }
+};
+
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 template<class Archive>
 void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::load( Archive & ar, const unsigned int version )
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::load( Archive & ar, const unsigned int version )
 {
+#if 0
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
     ar & BOOST_SERIALIZATION_NVP( M_M );
     ar & BOOST_SERIALIZATION_NVP( M_B );
     ar & BOOST_SERIALIZATION_NVP( M_index );
@@ -635,17 +1134,16 @@ DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::load( Archive & ar, const u
     DCHECK( M_bases.size()==M_M )<<"Wrong size : M_bases.size()="<< M_bases.size() <<", M_M=" <<M_M<<std::endl;
     for ( int i=0; i<M_M; i++)
         DCHECK( M_bases[i] )<<"Null ptr at i="<<i<<std::endl;
+#endif
 }
 
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 template<class Archive>
 void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::save( Archive & ar, const unsigned int version ) const
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::save( Archive & ar, const unsigned int version ) const
 {
 #if 0
     ar & boost::serialization::base_object<super>( *this );
-    ar & BOOST_SERIALIZATION_NVP( M_parameter_space );
     ar & BOOST_SERIALIZATION_NVP( M_M );
     ar & BOOST_SERIALIZATION_NVP( M_B );
     ar & BOOST_SERIALIZATION_NVP( M_index );
@@ -655,10 +1153,9 @@ DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::save( Archive & ar, const u
 }
 
 
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 void
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::saveDB()
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::saveDB()
 {
 #if 0
     Feel::cout<< "DEIM : saving DB\n";
@@ -675,11 +1172,11 @@ DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::saveDB()
 }
 
 
-template <typename ModelType, typename TensorType,
-          template <class T> class CRBType, template <class T> class CRBModelType>
+template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 bool
-DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::loadDB()
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
 {
+#if 0
     return false;
     if( this->isDBLoaded() )
     {
@@ -703,73 +1200,68 @@ DEIMBase<ModelType,TensorType,CRBType,CRBModelType>::loadDB()
         this->setIsLoaded( true );
         return true;
     }
-
+#endif
     return false;
 }
 
-
-
-template <typename ModelType,
-          template <class T> class CRBType=CRB,
-          template <class T> class CRBModelType=CRBModel>
-class DEIM :
-        public DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,
-                        CRBType, CRBModelType>
+namespace detail
 {
-public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::vector_type,CRBType,CRBModelType> super_type;
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::model_ptrtype model_ptrtype;
+template <typename Args>
+struct compute_deim_return
+{
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
+    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
 
-    DEIM() :
-        super_type()
-    {}
-
-    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
-    {}
-
-    ~DEIM()
-    {}
-
-
-private :
+    typedef DEIM<model_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
 };
 
-
-template <typename ModelType,
-          template <class T> class CRBType=CRB,
-          template <class T> class CRBModelType=CRBModel>
-class MDEIM :
-        public DEIMBase<ModelType,
-                        typename Backend<typename ModelType::value_type>::sparse_matrix_type,
-                        CRBType, CRBModelType>
+template <typename Args>
+struct compute_mdeim_return
 {
-public :
-    typedef DEIMBase<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type,CRBType,CRBModelType> super_type;
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
+    typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
 
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
-    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::model_ptrtype model_ptrtype;
-
-    MDEIM() :
-        super_type()
-    {}
-
-    MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
-    {}
-
-    ~MDEIM()
-    {}
-
-private :
-
+    typedef MDEIM<model_type> type;
+    typedef boost::shared_ptr<type> ptrtype;
 };
 
+}
+
+BOOST_PARAMETER_FUNCTION(
+                         ( typename Feel::detail::compute_deim_return<Args>::ptrtype ), // 1. return type
+                         deim,                        // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         ( required
+                           ( in_out(model),          * )
+                           ) // required
+                         ( optional
+                           ( sampling, *, nullptr )
+                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ) // optionnal
+                         )
+{
+    typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
+    return boost::make_shared<deim_type>( model, sampling, prefix );
+}
+
+
+BOOST_PARAMETER_FUNCTION(
+                         ( typename Feel::detail::compute_mdeim_return<Args>::ptrtype ), // 1. return type
+                         mdeim,                        // 2. name of the function template
+                         tag,                                        // 3. namespace of tag types
+                         ( required
+                           ( in_out(model),          * )
+                           ) // required
+                         ( optional
+                           ( sampling, *, nullptr )
+                           ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ) // optionnal
+                         )
+{
+    typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
+    return boost::make_shared<mdeim_type>( model, sampling, prefix );
+}
 
 po::options_description deimOptions( std::string const& prefix ="");
 

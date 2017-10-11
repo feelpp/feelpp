@@ -92,6 +92,13 @@ SER<CRBType>::run()
         for( auto eim_sd : eim_sd_vector )
             do_offline_eim = do_offline_eim || eim_sd->offlineStep();
 
+        auto deim_vector = model->deimVector();
+        auto mdeim_vector = model->mdeimVector();
+        for ( auto deim : deim_vector )
+            do_offline_eim = do_offline_eim || deim->offlineStep();
+        for ( auto mdeim : mdeim_vector )
+            do_offline_eim = do_offline_eim || mdeim->offlineStep();
+
         do
         {
             //Begin with rb since first eim has already been built in initModel
@@ -166,6 +173,46 @@ tic();
                     } while( eim_sd->adaptationSER() );
 
                     do_offline_eim = do_offline_eim || eim_sd->offlineStep();
+                }
+
+                for ( auto deim : deim_vector )
+                {
+                    deim->setRestart( false );
+                    deim->setSerFrequency( ioption(_name="ser.eim-frequency") );
+                    deim->setSerUseRB( use_rb );
+
+                    if ( use_rb )
+                    {
+                        if ( M_crbs.size() > 1 )
+                            deim->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
+                        else
+                            deim->setRB( crb ); //update rb model member to be used in eim offline
+                    }
+
+                    if ( deim->offlineStep() )
+                        deim->offline();
+
+                    do_offline_eim = do_offline_eim || deim->offlineStep();
+                }
+
+                for ( auto mdeim : mdeim_vector )
+                {
+                    mdeim->setRestart( false );
+                    mdeim->setSerFrequency( ioption(_name="ser.eim-frequency") );
+                    mdeim->setSerUseRB( use_rb );
+
+                    if ( use_rb )
+                    {
+                        if ( M_crbs.size() > 1 )
+                            mdeim->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
+                        else
+                            mdeim->setRB( crb ); //update rb model member to be used in eim offline
+                    }
+
+                    if ( mdeim->offlineStep() )
+                        mdeim->offline();
+
+                    do_offline_eim = do_offline_eim || mdeim->offlineStep();
                 }
 
                 model->assemble(); //Affine decomposition has changed since eim has changed

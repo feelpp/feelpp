@@ -54,28 +54,30 @@ public :
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
-    typedef DEIM<self_type> deim_type;
-    typedef boost::shared_ptr<deim_type> deim_ptrtype;
+    typedef Pch_type<mesh_type,1> space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
 
     DeimTest() :
+        M_backend( backend() ),
         Dmu( parameterspace_type::New(2) )
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
-        auto Xh = Pch<1>( mesh );
-        auto u = Xh->element();
-        V = backend()->newVector( Xh );
-        V1 = backend()->newVector( Xh );
-        V2 = backend()->newVector( Xh );
-        V3 = backend()->newVector( Xh );
+        Xh = Pch<1>( mesh );
 
-        auto f1 = form1( _test=Xh, _vector=V1 );
-        f1 = integrate( markedelements(mesh,"Omega1"), id(u) );
+        setFunctionSpaces(Xh);
+    }
 
-        auto f2 = form1( _test=Xh, _vector=V2 );
-        f2 = integrate( markedelements(mesh,"Omega2"), id(u) );
+    void setModelOnlineDeim( std::string name )
+    {
+        M_backend = backend( _name=name, _kind="eigen_dense", _worldcomm=Environment::worldCommSeq() );
+    }
 
-        auto f3 = form1( _test=Xh, _vector=V3 );
-        f3 = integrate( markedfaces(mesh,"Gamma1"), id(u) );
+    void setFunctionSpaces( space_ptrtype Rh )
+    {
+        Xh = Rh;
+        V = M_backend->newVector(Xh);
     }
 
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
@@ -96,8 +98,8 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        deim_ptrtype M_deim ( new deim_type( this->shared_from_this(), Pset ) );
-        M_deim->assemble = boost::bind( &DeimTest::assemble, boost::ref(*this), _1  );
+        auto M_deim = deim( _model=this->shared_from_this(),
+                            _sampling=Pset );
 
         M_deim->run();
         int m = M_deim->size();
@@ -106,17 +108,14 @@ public :
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
         BOOST_CHECK( m==3 );
 
-
-        Ne[0] = 100;
-        Ne[1] = 100;
-        Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
+        Pset->randomize( 100 , true , "deim_test_sampling" );
 
         auto base = M_deim->q();
         for ( auto const& mu : *Pset )
         {
             auto coeff = M_deim->beta(mu);
 
-            assemble(mu);
+            assembleForDEIM(mu);
 
             for ( int i=0; i<m; i++ )
                 V->add( -coeff(i), base[i] );
@@ -127,18 +126,40 @@ public :
 
     }
 
-    vector_ptrtype assemble( parameter_type mu)
+    vector_ptrtype assembleForDEIM( parameter_type const& mu)
     {
-        V->zero();
-        V->add( mu[0], V1 );
-        V->add( mu[1], V2 );
-        V->add( mu[1]*mu[0], V3 );
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+
+        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
+        f = integrate( markedelements(mesh,"Omega1"), mu[0]*id(u) );
+        f += integrate( markedelements(mesh,"Omega2"), mu[1]*id(u) );
+        f += integrate( markedfaces(mesh,"Gamma1"), mu[0]*mu[1]*id(u) );
+
         return V;
     }
 
+    // These 3 functions are only needed for compilation
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    {
+        return V;
+    }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
+    element_type solve( parameter_type const& mu )
+    {
+        return Xh->element();
+    }
+
+
+
 private :
-    vector_ptrtype V, V1, V2, V3;
+    space_ptrtype Xh;
+    backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
+    vector_ptrtype V;
 
 };
 
