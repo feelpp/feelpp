@@ -156,8 +156,8 @@ public :
                                                                     bool computeOutput = true ) const =0;
 
 
-    virtual double computeRieszResidualNorm( parameter_type const& mu ) const;
-    virtual double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
+    virtual double computeRieszResidualNorm( parameter_type const& mu ) const=0;
+    virtual double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const=0;
     virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
     virtual int dimension() const=0;
     virtual std::pair<int,double> online_iterations()=0;
