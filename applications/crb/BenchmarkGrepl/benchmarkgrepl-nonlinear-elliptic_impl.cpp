@@ -104,26 +104,26 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
     M_mu = this->Dmu->element();
 
     auto Pset = this->Dmu->sampling();
-    //specify how many elements we take in each direction
-    std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
     std::ifstream file ( supersamplingname );
-
-    //40 elements in each direction
-    N[0]=Ne; N[1]=Ne;
-
-    //interpolation points are located on different proc
-    //so we can't distribute parameters on different proc as in crb case
-    //else for a given mu we are not able to evaluate g at a node wich
-    //is not on the same proc than mu (so it leads to wrong results !)
-    bool all_proc_same_sampling=true;
-
-    if( ! file )
+    if( !file )
     {
-        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
-        Pset->writeOnFile( supersamplingname );
+        //specify how many elements we take in each direction
+        std::vector<size_type> N(2);
+        //40 elements in each direction
+        N[0]=Ne; N[1]=Ne;
+
+        //interpolation points are located on different proc
+        //so we can't distribute parameters on different proc as in crb case
+        //else for a given mu we are not able to evaluate g at a node wich
+        //is not on the same proc than mu (so it leads to wrong results !)
+        bool all_proc_same_sampling=true;
+        std::string samplingMode = "equidistribute";
+        Pset->sample( N, samplingMode, all_proc_same_sampling , supersamplingname );
+        //Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        //Pset->writeOnFile( supersamplingname );
     }
     else
     {
