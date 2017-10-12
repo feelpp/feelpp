@@ -244,7 +244,8 @@ CRBElementsDB<ModelType>::saveDB()
     /* save in boost format by default */
     {
         auto p = this->dbLocalPath() / this->dbFilename();
-        std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
+        if( this->worldComm().isMasterRank() )
+            std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
         fs::ofstream ofs( p );
 
         if ( ofs )

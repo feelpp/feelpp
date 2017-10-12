@@ -399,8 +399,10 @@ public:
                     M_scmM->setId( this->id() );
                     M_scmA->setId( this->id() );
                     M_elements_database.setId( this->id() );
-                    std::cout << "Use DB id " << this->id() << std::endl;
                 }
+                if( this->worldComm().isMasterRank() )
+                    std::cout << "Use DB id " << this->id() << std::endl;
+
                 if ( M_N == 0 )
                 {
                     if( this->worldComm().isMasterRank() )
@@ -2412,7 +2414,8 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
-            std::cout << "save Mesh : " << meshFilename << std::endl;
+            if( this->worldComm().isMasterRank() )
+                std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
