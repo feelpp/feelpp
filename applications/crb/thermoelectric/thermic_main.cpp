@@ -23,18 +23,15 @@
 //!
 //!
 
-#include "alphaelectric.hpp"
+#include "thermic.hpp"
 
 using namespace Feel;
 
 int main( int argc, char** argv)
 {
     po::options_description opt("options");
-    opt.add_options()
-        ( "p", po::value<std::vector<double> >()->multitoken(), "control points" )
-        ;
     Environment env( _argc=argc, _argv=argv,
-                     _desc=opt.add(makeOptions())
+                     _desc=opt.add(makeThermoElectricOptions())
                      .add(crbOptions())
                      .add(crbSEROptions())
                      .add(eimOptions())
@@ -44,7 +41,7 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("ThermoElectricCRB")) );
 
-    using rb_model_type = AlphaElectric;
+    using rb_model_type = Thermic;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
@@ -58,58 +55,57 @@ int main( int argc, char** argv)
 
     auto mesh = loadMesh( _mesh=new mesh_type,
                           _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
-    mesh_ptrtype meshC;
-
-    if( Environment::vm().count("electric.conductor") )
-    {
-        std::vector<std::string> conductor = vsoption("electric.conductor");
-        std::list<std::string> conductorList(conductor.begin(), conductor.end());
-        meshC = createSubmesh(mesh, markedelements(mesh, conductorList));
-    }
-    else
-        meshC = mesh;
 
     // init
-    rb_model_ptrtype model = boost::make_shared<rb_model_type>(meshC);
+    rb_model_ptrtype model = boost::make_shared<rb_model_type>(mesh);
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = boost::make_shared<crb_type>("alphaelectric", crbModel, crb::stage::offline);
+    crb_ptrtype crb = boost::make_shared<crb_type>("thermic", crbModel, crb::stage::offline);
 
     // offline
     crb->offline();
 
     // online
-    auto x = vdoption("p");
-    auto mu = model->paramFromVec(x);
+    auto mu = model->paramFromProperties();
     int N = crb->dimension();
     int timeSteps = 1;
     std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
     std::vector<double> outputs(timeSteps, 0);
-    crb->fixedPointPrimal(N, mu, uNs, uNolds, outputs);
-    vectorN_type uN = uNs[0];
 
-    auto e = exporter(meshC);
+    auto e = exporter(mesh, _name="thermic");
 
-    auto VFE = model->solve(mu);
-    auto normV = normL2( elements(model->mesh()), idv(VFE) );
+    // auto T = crb->expansion(uN,N);
+    // e->add("T",T);
+    // for(auto i =0; i < N; i++)
+    // {
+    //     auto rb=crbModel->rBFunctionSpace()->primalBasisElement(i);
+    //     auto norm = normL2( elements(model->mesh()), idv(rb));
+    //     Feel::cout << "||rb_" << i << "|| = " << norm << std::endl;
+    //     e->add((boost::format("rb_%1%") % i ).str(), rb);
+    // }
+    // e->save();
+    auto TFE = model->solve(mu);
+    auto normT = normL2( elements(model->mesh()), idv(TFE) );
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
     fs::ofstream file( "cvg.dat" );
     if( file && Environment::isMasterRank() )
     {
-        file << fmter % "N" % "errV" % "relErrV";
-        Feel::cout << fmter % "N" % "errV" % "relErrV";
+        file << fmter % "N" % "errT" % "relErrT";
+        Feel::cout << fmter % "N" % "errT" % "relErrT";
     }
     for(int n = 1; n <= N; ++n)
     {
-        auto VRB = crb->expansion( uN, n );
-        auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
-        auto errRel = errVRB/normV;
+        crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
+        vectorN_type uN = uNs[0];
+        auto TRB = crb->expansion( uN, n );
+        auto errTRB = normL2( elements(model->mesh()), idv(TRB)-idv(TFE) );
+        auto errRel = errTRB/normT;
         if( Environment::isMasterRank() )
-            file << fmter % n % errVRB % errRel;
-        Feel::cout << fmter % n % errVRB % errRel;
-        e->step(n)->add("VFE", VFE);
-        e->step(n)->add("VRB", VRB);
+            file << fmter % n % errTRB % errRel;
+        Feel::cout << fmter % n % errTRB % errRel;
+        e->step(n)->add("TFE", TFE);
+        e->step(n)->add("TRB", TRB);
+        e->save();
     }
-    e->save();
     file.close();
 
     return 0;
