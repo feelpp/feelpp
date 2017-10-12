@@ -56,7 +56,6 @@
 
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-#include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 
@@ -64,7 +63,7 @@
 
 namespace Feel
 {
-
+class ModelCrbBaseBase;
 class EimFunctionNoSolveBase {};
 
 /**
