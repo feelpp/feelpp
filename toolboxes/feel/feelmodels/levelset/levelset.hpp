@@ -190,7 +190,9 @@ public:
     typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
     typedef boost::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
-    enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
+    enum class FastMarchingInitializationMethod { 
+        NONE=0, ILP, SMOOTHED_ILP, HJ_EQ, IL_HJ_EQ
+    };
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -464,8 +466,8 @@ public:
     // Reinitialization
     void reinitialize( bool useSmoothReinit = false );
 
-    void setStrategyBeforeFm( int strat = 1 );
-    strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
+    void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
+    FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
@@ -698,7 +700,8 @@ private:
     boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
 
     LevelSetReinitMethod M_reinitMethod;
-    strategy_before_FM_type M_strategyBeforeFM;
+    FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
+    static const std::map<std::string, FastMarchingInitializationMethod> FastMarchingInitializationMethodIdMap;
     bool M_useMarkerDiracAsMarkerDoneFM;
 
     bool M_reinitInitialValue;
