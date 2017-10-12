@@ -161,6 +161,9 @@ public :
     virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
     virtual int dimension() const=0;
     virtual std::pair<int,double> online_iterations()=0;
+
+    virtual element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const=0;
+
 };
 
 /**
@@ -945,6 +948,20 @@ public:
      */
     virtual matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                                 std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
+
+
+    /**
+     * solve fem model using the affine decomposition
+     * \param mu :current parameter
+     */
+    element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const override
+        {
+            if ( M_use_newton )
+                return M_model->solveFemUsingAffineDecompositionNewton( mu );
+            else
+                return M_model->solveFemUsingAffineDecompositionFixedPoint( mu );
+        }
+
 
     /*
      * Dump data array into a file
