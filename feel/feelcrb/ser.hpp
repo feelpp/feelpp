@@ -116,28 +116,19 @@ SER<CRBType>::run()
             crb->setRebuild( false ); //do not rebuild since co-build is not finished
             int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
 
-tic();
+            tic();
             if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
             {
                 do_offline_eim = false; //re-init
                 for( auto eim_sc : eim_sc_vector )
                 {
-                    eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
+                    if ( ser_level > 0 )
+                        eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
                     eim_sc->setRestart( false ); //do not restart since co-build is not finished
 
                     if( use_rb )
                     {
-                        if ( M_crbs.size() > 1 )
-                        {
-                            CHECK( M_crbs.size() == M_models.size() );
-                            eim_sc->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sc->setModel( M_models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sc->setRB( crb ); // current crb (first level)
-                            eim_sc->setModel( model );
-                        }
+                        eim_sc->setRB( crb ); // update rb model member to be used in eim offline
                     }
                     do //r-adaptation for EIM
                     {
@@ -149,22 +140,13 @@ tic();
                 }
                 for( auto eim_sd : eim_sd_vector )
                 {
-                    eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
+                    if ( ser_level > 0 )
+                        eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
                     eim_sd->setRestart( false ); //do not restart since co-build is not finished
 
                     if( use_rb )
                     {
-                        if ( M_crbs.size() > 1 )
-                        {
-                            CHECK( M_crbs.size() == M_models.size() );
-                            eim_sd->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( M_models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( model );
-                        }
+                        eim_sd->setRB( crb ); // update rb model member to be used in eim offline
                     }
                     do //r-adaptation for EIM
                     {
@@ -183,10 +165,7 @@ tic();
 
                     if ( use_rb )
                     {
-                        if ( M_crbs.size() > 1 )
-                            deim->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                        else
-                            deim->setRB( crb ); //update rb model member to be used in eim offline
+                        deim->setRB( crb ); //update rb model member to be used in eim offline
                     }
 
                     if ( deim->offlineStep() )
@@ -203,10 +182,7 @@ tic();
 
                     if ( use_rb )
                     {
-                        if ( M_crbs.size() > 1 )
-                            mdeim->setRB( M_crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                        else
-                            mdeim->setRB( crb ); //update rb model member to be used in eim offline
+                        mdeim->setRB( crb ); //update rb model member to be used in eim offline
                     }
 
                     if ( mdeim->offlineStep() )
