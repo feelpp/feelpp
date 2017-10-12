@@ -1843,7 +1843,11 @@ public:
      * Set the finite element space to \p Vh and then build the reduced basis
      * space from the finite element space.
      */
-    void setFunctionSpaces( functionspace_ptrtype const& Vh );
+    virtual void setFunctionSpaces( functionspace_ptrtype const& Vh )
+    {
+        Xh = Vh;
+        XN->setModel( this->shared_from_this() );
+    }
 
     /**
      * \brief Returns the function space
@@ -1950,19 +1954,6 @@ protected :
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };
-template <typename ParameterDefinition,
-          typename FunctionSpaceDefinition,
-          int _Options,
-          typename EimDefinition
-          >
-void
-ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype const& Vh )
-{
-    Xh = Vh;
-    //XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
-    //XN->setFunctionSpace( Vh );
-    XN->setModel( this->shared_from_this() );
-}
 
 
 
