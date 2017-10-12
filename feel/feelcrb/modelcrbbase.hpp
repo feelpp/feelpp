@@ -289,8 +289,8 @@ public :
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
-        M_crbModelDb( name, uid ),
         M_backend( backend() ),
+        M_crbModelDb( name, uid ),
         M_is_initialized( false )
     {
 
