@@ -14,7 +14,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
 };
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethod>
+const std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethod>
 LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = {
     {"none", FastMarchingInitializationMethod::NONE},
     {"ilp", FastMarchingInitializationMethod::ILP},
@@ -1774,7 +1774,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
 
         switch (M_fastMarchingInitializationMethod)
         {
-            case ILP :
+            case FastMarchingInitializationMethod::ILP :
             {
                 auto const gradPhi = idv(this->gradPhi());
                 
@@ -1786,7 +1786,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
             }
             break;
 
-            case SMOOTHED_ILP :
+            case FastMarchingInitializationMethod::SMOOTHED_ILP :
             {
                 // save the smoothed gradient magnitude of phi
                 //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
@@ -1803,22 +1803,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
             }
             break;
 
-            case HJ_EQ :
+            case FastMarchingInitializationMethod::HJ_EQ :
             {
                 CHECK(false) << "TODO\n";
                 //*phi = *explicitHJ(max_iter, dtau, tol);
             }
             break;
-            case NONE :
+            case FastMarchingInitializationMethod::NONE :
             {
                 *phiReinit = *phi;
-            }
-            break;
-
-            default:
-            {
-                CHECK(false)<<"no strategy chosen to initialize first elements before fast marching\n"
-                            <<"please, consider setting the option fm-initialization-method\n";
             }
             break;
         } // switch M_fastMarchingInitializationMethod
