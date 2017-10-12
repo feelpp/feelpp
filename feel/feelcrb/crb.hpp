@@ -861,7 +861,15 @@ public:
      * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
-    virtual void exportBasisFunctions(){}
+    virtual void exportBasisFunctions()
+    {
+        wn_type WN = this->wn();
+        std::vector<wn_type> WN_vec = std::vector<wn_type>();
+        WN_vec.push_back(WN);
+        std::vector<std::string> name_vec = std::vector<std::string>(1, "primal");
+        export_vector_wn_type exportWn = boost::make_tuple(WN_vec, name_vec);
+        this->exportBasisFunctions(exportWn);
+    }
 
     /**
      * Returns the lower bound of the output
@@ -6373,13 +6381,11 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no wn_type to export" );
     }
 
-
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
     if ( !M_exporter )
-        M_exporter = Exporter<mesh_type>::New( "BasisFunction" );
-    M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
-    M_exporter->addRegions();
+        M_exporter = exporter( _mesh=first_element.functionSpace()->mesh(), _name="BasisFunctions");
+
     int basis_number=0;
     for( auto wn : vect_wn )
     {
