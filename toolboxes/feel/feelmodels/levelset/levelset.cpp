@@ -14,6 +14,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
 };
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethod>
+LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = {
+    {"none", FastMarchingInitializationMethod::NONE},
+    {"ilp", FastMarchingInitializationMethod::ILP},
+    {"smoothed_ilp", FastMarchingInitializationMethod::SMOOTHED_ILP},
+    {"hj", FastMarchingInitializationMethod::HJ_EQ},
+    {"il-hj", FastMarchingInitializationMethod::IL_HJ_EQ}
+};
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
         std::string const& prefix,
         WorldComm const& worldComm,
@@ -478,7 +488,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             if( !M_reinitializer )
                 M_reinitializer = this->reinitializerFM();
 
-            if( M_strategyBeforeFM == ILP )
+            if( M_fastMarchingInitializationMethod == ILP )
             {
                 M_backend_smooth = backend(
                         _name=prefixvm(this->prefix(), "smoother-fm"),
@@ -676,11 +686,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::curvature() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::setStrategyBeforeFm( int strat )
+LEVELSET_CLASS_TEMPLATE_TYPE::setFastMarchingInitializationMethod( FastMarchingInitializationMethod m )
 {
     if (M_reinitializerIsUpdatedForUse)
-        LOG(INFO)<<" !!!  WARNING !!! : setStrategyBeforeFm set after the fast marching has been actually initialized ! \n";
-    M_strategyBeforeFM = (strategy_before_FM_type) strat;
+        LOG(INFO)<<" !!!  WARNING !!! : fastMarchingInitializationMethod set after the fast marching has been actually initialized ! \n";
+    M_fastMarchingInitializationMethod = m;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -702,7 +712,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
-    M_strategyBeforeFM = (strategy_before_FM_type) ioption(prefixvm(this->prefix(),"fm-init-first-elts-strategy"));
+    const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
+    CHECK(FastMarchingInitializationMethodIdMap.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
+    M_fastMarchingInitializationMethod = FastMarchingInitializationMethodIdMap.at(fm_init_method);
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
@@ -1773,18 +1785,34 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
             this->mesh()->updateMarker2( *this->markerDirac() );
         }
 
-        switch (M_strategyBeforeFM)
+        switch (M_fastMarchingInitializationMethod)
         {
             case ILP :
+            {
+                auto const gradPhi = idv(this->gradPhi());
+                
+                *phiReinit = vf::project(
+                        this->functionSpace(), 
+                        elements(this->mesh()), 
+                        idv(phi)/ sqrt( trans(gradPhi) * gradPhi )
+                        );
+            }
+            break;
+
+            case SMOOTHED_ILP :
             {
                 // save the smoothed gradient magnitude of phi
                 //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
                 //auto gradPhi = idv(this->gradPhi());
                 auto gradPhi = trans(gradv(phi));
-                auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
+                //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
+                auto modgradphi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
                 
-                //*phi = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
-                *phiReinit = vf::project(this->functionSpace(), elements(this->mesh()), idv(phi)/idv(modgradphi) );
+                *phiReinit = vf::project(
+                        this->functionSpace(), 
+                        elements(this->mesh()), 
+                        idv(phi)/idv(modgradphi) 
+                        );
             }
             break;
 
@@ -1803,10 +1831,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
             default:
             {
                 CHECK(false)<<"no strategy chosen to initialize first elements before fast marching\n"
-                            <<"please, consider setting the option fm-init-first-elts-strategy\n";
+                            <<"please, consider setting the option fm-initialization-method\n";
             }
             break;
-        } // switch M_strategyBeforeFM
+        } // switch M_fastMarchingInitializationMethod
 
         // Fast Marching Method
         boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
