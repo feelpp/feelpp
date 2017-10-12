@@ -697,8 +697,6 @@ private:
     reinitializerHJ_ptrtype M_reinitializerHJ;
     bool M_reinitializerIsUpdatedForUse;
 
-    boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
-
     LevelSetReinitMethod M_reinitMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
     static const std::map<std::string, FastMarchingInitializationMethod> FastMarchingInitializationMethodIdMap;
@@ -713,10 +711,6 @@ private:
     std::vector<int> M_vecIterSinceReinit;
     //bool M_useSmoothReinitialization;
     
-    //--------------------------------------------------------------------//
-    // Backends
-    backend_ptrtype M_backend_smooth;
-
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;

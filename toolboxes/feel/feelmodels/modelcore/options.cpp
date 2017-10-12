@@ -431,7 +431,6 @@ levelset_options(std::string const& prefix)
     Feel::po::options_description levelsetOptions("Levelset options");
     levelsetOptions.add_options()
         //(prefixvm(prefix,"fm-use-markerdirac").c_str(), Feel::po::value<bool>()->default_value( false ), "use markerDirac to mark initially done elements in fast-marching")
-        (prefixvm(prefix,"fm-smooth-coeff").c_str(), Feel::po::value<double>()->default_value(-1.), "smoothing coefficient for interface local projection, if <0 nodal projection is done instead")
         (prefixvm(prefix,"use-regularized-phi").c_str(), Feel::po::value<bool>()->default_value( false ), "use grad(phi)/|grad(phi)| to evaluate Dirac and Heaviside functions")
         (prefixvm(prefix,"h-d-nodal-proj").c_str(), Feel::po::value<bool>()->default_value( true ), "use nodal projection to compute dirac and heaviside functions (if false, use L2 projection)")
         (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Dirac and Heaviside functions)")

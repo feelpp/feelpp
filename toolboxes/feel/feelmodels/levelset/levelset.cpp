@@ -206,11 +206,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
         {
             // ILP on phi_init
             auto gradPhiInit = this->projectorL2Vectorial()->derivate( idv(phi_init) );
-            auto modGradPhiInit = M_smootherFM->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
+            //auto modGradPhiInit = this->smoother()->project( sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) ) );
+                
             phi_init = vf::project( 
                 _space=this->functionSpace(),
                 _range=elements(this->mesh()),
-                _expr=idv(phi_init) / idv(modGradPhiInit)
+                //_expr=idv(phi_init) / idv(modGradPhiInit)
+                _expr=idv(phi_init) / sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) )
                 );
             // Reinitialize phi_init
             phi_init = this->reinitializerFM()->run( phi_init );
@@ -487,21 +489,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         {
             if( !M_reinitializer )
                 M_reinitializer = this->reinitializerFM();
-
-            if( M_fastMarchingInitializationMethod == ILP )
-            {
-                M_backend_smooth = backend(
-                        _name=prefixvm(this->prefix(), "smoother-fm"),
-                        _worldcomm=this->worldComm()
-                        );
-                M_smootherFM = projector(
-                        this->functionSpace(),/*domainSpace*/
-                        this->functionSpace(),/*imageSpace*/
-                        M_backend_smooth,
-                        DIFF,
-                        doption(_name="fm-smooth-coeff", _prefix=this->prefix())
-                        );
-            }
         }
         break;
         case LevelSetReinitMethod::HJ :
