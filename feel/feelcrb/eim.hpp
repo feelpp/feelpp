@@ -1811,7 +1811,7 @@ public:
         M_u2( &u2 ),
         M_mu( mu ),
         M_crb_built( false ),
-        M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
+        M_mu_sampling( new sampling_type ( model->parameterSpace() , 0 , sampling ) ),
         M_t(),
         M_B(),
         M_offline_error(),
