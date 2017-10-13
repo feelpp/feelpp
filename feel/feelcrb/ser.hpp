@@ -84,6 +84,7 @@ SER<CRBType>::run()
 
         auto model = M_models.back();
         auto crb = M_crbs.back();
+        auto crbInEIM = ( ser_level > 0 )? M_crbs[ser_level-1] : crb;
 
         auto eim_sc_vector = model->scalarContinuousEim();
         auto eim_sd_vector = model->scalarDiscontinuousEim();
@@ -128,7 +129,7 @@ SER<CRBType>::run()
 
                     if( use_rb )
                     {
-                        eim_sc->setRB( crb ); // update rb model member to be used in eim offline
+                        eim_sc->setRB( crbInEIM ); // update rb model member to be used in eim offline
                     }
                     do //r-adaptation for EIM
                     {
@@ -146,7 +147,7 @@ SER<CRBType>::run()
 
                     if( use_rb )
                     {
-                        eim_sd->setRB( crb ); // update rb model member to be used in eim offline
+                        eim_sd->setRB( crbInEIM ); // update rb model member to be used in eim offline
                     }
                     do //r-adaptation for EIM
                     {
@@ -165,7 +166,7 @@ SER<CRBType>::run()
 
                     if ( use_rb )
                     {
-                        deim->setRB( crb ); //update rb model member to be used in eim offline
+                        deim->setRB( crbInEIM ); //update rb model member to be used in eim offline
                     }
 
                     if ( deim->offlineStep() )
@@ -182,7 +183,7 @@ SER<CRBType>::run()
 
                     if ( use_rb )
                     {
-                        mdeim->setRB( crb ); //update rb model member to be used in eim offline
+                        mdeim->setRB( crbInEIM ); //update rb model member to be used in eim offline
                     }
 
                     if ( mdeim->offlineStep() )
