@@ -127,6 +127,42 @@
 
 namespace Feel
 {
+
+template <typename SpaceType, typename ParameterSpaceType>
+class CRBBase
+{
+public :
+    typedef SpaceType space_type;
+    typedef ParameterSpaceType parameterspace_type;
+
+    typedef typename space_type::element_type element_type;
+    typedef typename parameterspace_type::element_type parameter_type;
+
+    typedef typename space_type::value_type value_type;
+    typedef Backend<value_type> backend_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    using vectorN_type = Feel::vectorN_type;
+    typedef boost::tuple< double,double > matrix_info_tuple;
+
+
+    virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N,
+                                                                    parameter_type const& mu,
+                                                                    std::vector< vectorN_type >& uN,
+                                                                    std::vector< vectorN_type >& uNdu ,
+                                                                    std::vector<vectorN_type> & uNold,
+                                                                    std::vector<vectorN_type> & uNduold,
+                                                                    bool print_rb_matrix=false, int K=0,
+                                                                    bool computeOutput = true ) const =0;
+
+
+    virtual double computeRieszResidualNorm( parameter_type const& mu ) const=0;
+    virtual double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const=0;
+    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
+    virtual int dimension() const=0;
+    virtual std::pair<int,double> online_iterations()=0;
+};
+
 /**
  * \brief Certifed Reduced Basis class
  *
@@ -136,7 +172,8 @@ namespace Feel
  * @see
  */
 template<typename TruthModelType>
-class CRB : public CRBDB
+class CRB : public CRBDB,
+            public CRBBase<typename TruthModelType::functionspace_type, typename TruthModelType::parameterspace_type>
 {
     typedef  CRBDB super;
 public:
@@ -376,7 +413,7 @@ public:
                             std::cout << e.what() << std::endl
                                       << "Using new unique id :" << this->id() << "\n";
                     }
-                    
+
                     M_scmM->setId( this->id() );
                     M_scmA->setId( this->id() );
                     M_elements_database.setId( this->id() );
@@ -524,7 +561,7 @@ public:
         }
 
     //! \return the dimension of the reduced basis space
-    int dimension() const
+    int dimension() const override
         {
             return M_N;
         }
@@ -824,7 +861,15 @@ public:
      * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
-    virtual void exportBasisFunctions(){}
+    virtual void exportBasisFunctions()
+    {
+        wn_type WN = this->wn();
+        std::vector<wn_type> WN_vec = std::vector<wn_type>();
+        WN_vec.push_back(WN);
+        std::vector<std::string> name_vec = std::vector<std::string>(1, "primal");
+        export_vector_wn_type exportWn = boost::make_tuple(WN_vec, name_vec);
+        this->exportBasisFunctions(exportWn);
+    }
 
     /**
      * Returns the lower bound of the output
@@ -844,7 +889,7 @@ public:
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
     virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
                                                                     std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0,
-                                                                    bool computeOutput = true ) const;
+                                                                    bool computeOutput = true ) const override;
 
 
     /*
@@ -1070,8 +1115,8 @@ public:
 
 
     vector_ptrtype computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
-    double computeRieszResidualNorm( parameter_type const& mu ) const;
-    double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
+    double computeRieszResidualNorm( parameter_type const& mu ) const override;
+    double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const override;
 
     /**
      * Offline computation
@@ -1144,10 +1189,10 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const;
+    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const override;
 
     // Summary of number of iterations (at the current step)
-    std::pair<int,double> online_iterations(){return online_iterations_summary;}
+    std::pair<int,double> online_iterations() override {return online_iterations_summary;}
     std::pair<int,double> offline_iterations(){return offline_iterations_summary;}
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
@@ -1240,8 +1285,8 @@ public:
     //! @param l loading strategy (reduced basis, finite element, all)
     //!
     virtual void loadDB( std::string const& filename, crb::load l ) override;
-    
-    
+
+
     /**
      * \brief load Crb from json
      * \param filename : input json filename
@@ -2470,9 +2515,11 @@ CRB<TruthModelType>::offline()
         // if( proc_number == this->worldComm().masterRank() )
         //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
     }
-    else if ( use_predefined_WNmu )
+
+    if ( use_predefined_WNmu )
     {
-        M_iter_max = this->M_WNmu->size();
+        if ( M_iter_max>this->M_WNmu->size() )
+            M_iter_max = this->M_WNmu->size();
         mu = this->M_WNmu->at( std::min( M_N, this->M_iter_max-1 ) );
         M_current_mu =mu;
     }
@@ -6334,13 +6381,11 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no wn_type to export" );
     }
 
-
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
     if ( !M_exporter )
-        M_exporter = Exporter<mesh_type>::New( "BasisFunction" );
-    M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
-    M_exporter->addRegions();
+        M_exporter = exporter( _mesh=first_element.functionSpace()->mesh(), _name="BasisFunctions");
+
     int basis_number=0;
     for( auto wn : vect_wn )
     {
@@ -9241,7 +9286,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
     FEELPP_ASSERT( Nwn <= WN.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and WN ) ");
     FEELPP_ASSERT( Nwn <= u.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and u ) ");
     //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( WN, u, N );
+    return Feel::expansion( WN, u, Nwn );
 }
 
 
@@ -11340,16 +11385,16 @@ CRB<TruthModelType>::showMuSelection()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l ) 
+CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l )
 {
     auto fname = this->db( filename );
-    
+
     if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
         this->setLoadBasisFromDB( true );
     else
         this->setLoadBasisFromDB( false );
     this->loadJson( fname.string() );
-    
+
     LOG(INFO) << "Loaded DB CRB " << fname;
 }
 
@@ -11392,11 +11437,11 @@ CRB<TruthModelType>::saveJson()
         boost::property_tree::ptree ptree;
 
         ptree.add( "uuid", this->idStr() );
-        
+
         boost::property_tree::ptree ptreeCrbModel;
         M_model->updatePropertyTree( ptreeCrbModel );
         ptree.add_child( "crbmodel", ptreeCrbModel );
-        
+
         boost::property_tree::ptree ptreeReducedBasisSpace;
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );

@@ -292,5 +292,5 @@ ThermalBuilding::output( int output_index, parameter_type const& mu , element_ty
     return output;
 
 }
-FEELPP_CRB_PLUGIN( ThermalBuilding, "thermalbuilding" )
+FEELPP_CRB_PLUGIN( ThermalBuilding, thermalbuilding )
 } // namespace Feel

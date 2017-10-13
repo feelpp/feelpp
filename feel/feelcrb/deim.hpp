@@ -50,8 +50,11 @@
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
+
 namespace Feel
 {
+
+class ModelCrbBaseBase;
 
 /**
  * \brief Base class for DEIM algorithm
@@ -110,6 +113,11 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
+    typedef std::map<int,tensor_ptrtype> solutionsmap_type;
+
+    typedef CRBBase<space_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     //! Default Constructor
     DEIMBase()
     {}
@@ -131,11 +139,21 @@ public :
         M_prefix( prefix ),
         M_trainset( sampling ),
         M_M(0),
+        M_user_max( ioption(  prefixvm( M_prefix, "deim.dimension-max" ) ) ),
         M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
         M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
         M_max_value( -1 ),
         M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
-        M_nl_assembly(false)
+        M_nl_assembly(false),
+        M_store_tensors( false ),
+        M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
+        M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
+        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) ),
+        M_crb_built( false ),
+        M_offline_step( true ),
+        M_restart( true ),
+        M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
+        M_ser_use_rb( false )
     {
         using Feel::cout;
 
@@ -171,6 +189,15 @@ public :
         }
         cout << "DEIM sampling size = "<< M_trainset->size()<<std::endl;
 
+        int sampling_size = M_trainset->size();
+        if ( M_user_max>sampling_size )
+        {
+            cout << "DEIM : Sampling size (="<< sampling_size
+                 << ") smaller than deim.dimension-max (=" << M_user_max
+                 << "), dimension max is now " << sampling_size << std::endl;
+            M_user_max = sampling_size;
+        }
+
     }
 
     //! Destructor
@@ -193,83 +220,87 @@ public :
      * reached. This maximum is defined by the option
      * deim.dimension-max
      */
+    void offline() { this->run(); }
     void run()
     {
-
         using Feel::cout;
         tic();
-        int mMax = ioption(  prefixvm( M_prefix, "deim.dimension-max" ) );
-        int sampling_size = M_trainset->size();
-        if ( mMax>sampling_size )
-        {
-            cout << "DEIM : Sampling size (="<< sampling_size
-                 << ") smaller than deim.dimension-max (=" << mMax
-                 << "), dimension max is now " << sampling_size << std::endl;
-            mMax = sampling_size;
-        }
-
+        int mMax = M_user_max;
         double error=0;
         double r_error=0;
-        auto mu = M_trainset->max().template get<0>();
 
-        if ( M_M==0 )
+        if ( M_restart )
         {
-            cout <<"===========================================\n";
-            cout << "DEIM : Start algorithm with mu="<<muString(mu)<<std::endl;
+            if ( M_M==0 )
+            {
+                auto mu = M_trainset->max().template get<0>();
+                cout <<"===========================================\n";
+                cout << "DEIM : Start algorithm with mu="<< mu.toString() <<std::endl;
 
-            tic();
-            addNewVector(mu);
-            toc("Add new vector in DEIM basis");
+                tic();
+                addNewVector(mu);
+                toc("Add new vector in DEIM basis");
+            }
         }
-        if ( M_M<mMax )
+        if ( M_use_ser )
+        {
+            if ( M_restart )
+                mMax=1;
+            else
+            {
+                mMax = M_M + M_ser_frequency;
+                if ( mMax>M_user_max)
+                {
+                    cout << "DEIM : max number of basis reached\n";
+                    this->setOfflineStep(false);
+                }
+            }
+        }
+
+        while( M_M<mMax && offlineStep() )
         {
             auto best_fit = computeBestFit();
             error = best_fit.template get<1>();
-            mu = best_fit.template get<0>();
+            auto mu = best_fit.template get<0>();
 
             if ( M_max_value!=0 )
                 r_error = error/M_max_value;
 
-            cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                 << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
+            cout << "DEIM : Current max error="<<error <<", Atol="<< M_Atol
+                 << ", relative max error="<< r_error <<", Rtol="<< M_tol
+                 <<", for mu="<< mu <<std::endl;
             cout <<"===========================================\n";
-        }
 
-        while( M_M<mMax && r_error>M_tol && error>M_Atol )
-        {
-            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<muString(mu)<<std::endl;
+            if ( error<M_Atol || r_error<M_tol )
+            {
+                cout << "DEIM : Tolerance reached !\n";
+                this->setOfflineStep(false);
+                break;
+            }
+
+            cout << "DEIM : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
             tic();
             addNewVector(mu);
             toc("Add new vector in DEIM basis");
-
-            if ( M_M<mMax )
-            {
-                auto best_fit = computeBestFit();
-                error = best_fit.template get<1>();
-                mu = best_fit.template get<0>();
-
-                r_error = error/M_max_value;
-                cout << "DEIM : Current error="<<error <<", Atol="<< M_Atol
-                     << ", relative error="<< r_error <<", Rtol="<< M_tol <<std::endl;
-                cout <<"===========================================\n";
-            }
         }
 
+        M_solutions.clear();
+        cout <<"===========================================\n";
         cout << "DEIM : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
-        toc("DEIM : Total Time");
+        toc("DEIM : Offline Total Time");
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
-    vectorN_type beta( parameter_type const& mu )
+    vectorN_type beta( parameter_type const& mu, int M = -1 )
     {
-        return computeCoefficient( mu );
+        return computeCoefficient( mu, M );
     }
 
-    vectorN_type beta( parameter_type const& mu, element_type const& u )
+    vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
-        return computeCoefficient( mu, u );
+        return computeCoefficient( mu, u, M );
     }
 
 
@@ -290,6 +321,23 @@ public :
         return M_M;
     }
 
+    void setRB( crb_ptrtype rb )
+    {
+        M_crb = rb;
+        M_crb_built=true;
+    }
+
+    void setOfflineStep( bool b ) { M_offline_step = b; }
+    bool offlineStep() const { return M_offline_step; }
+
+    void setRestart( bool b ) { M_restart = b; }
+    bool restart() const { return M_restart; }
+
+    void setSerFrequency( int freq ) { M_ser_frequency=freq; }
+    int serFrequency() const { return M_ser_frequency; }
+
+    void setSerUseRB( bool use_rb ) { M_ser_use_rb=use_rb; }
+
     //! save the database
     void saveDB() override;
     //! load the database
@@ -303,7 +351,7 @@ protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : addNewVector() start with "<<muString(mu);
+        LOG(INFO) << "DEIM : addNewVector() start with "<<mu.toString();
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -327,7 +375,8 @@ protected :
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
-        updateSubMesh();
+        if ( M_optimized_online )
+            updateSubMesh();
         //this->saveDB();
         LOG(INFO) << "DEIM : addNewVector() end";
     }
@@ -338,11 +387,13 @@ protected :
         if ( seq )
             return V->operator()( index );
 
+        V->close();
         double value=0;
         int proc_number = V->map().procOnGlobalCluster(index);
 
         if ( Environment::worldComm().globalRank()==proc_number )
             value = V->operator()( index - V->map().firstDofGlobalCluster() );
+
 
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
         return value;
@@ -357,6 +408,7 @@ protected :
         if ( seq )
             return M->operator() ( i,j );
 
+        M->close();
         double value=0;
         int proc_number = M->mapRow().procOnGlobalCluster(i);
 
@@ -430,28 +482,31 @@ protected :
     }
 
     //! \return the beta coefficient for parameter \p mu
-    vectorN_type computeCoefficient( parameter_type const& mu )
+    vectorN_type computeCoefficient( parameter_type const& mu, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
-    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u )
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, int M = -1 )
     {
         tensor_ptrtype T = assemble( mu, u, true );
-        return computeCoefficient( T );
+        return computeCoefficient( T, true, M );
     }
 
 
     //! Compute the beta coefficients for a assembled tensor \p T
-    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true )
+    vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
-        vectorN_type rhs (M_M);
-        vectorN_type coeff (M_M);
-        if ( M_M>0 )
+        bool optimized = online && this->M_optimized_online;
+        if( (M < 0) || (M > M_M) )
+            M = M_M;
+        vectorN_type rhs (M);
+        vectorN_type coeff (M);
+        if ( M > 0 )
         {
-            for ( int i=0; i<M_M; i++ )
-                rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
-            coeff = M_B.fullPivLu().solve( rhs );
+            for ( int i=0; i<M; i++ )
+                rhs(i) = evaluate( T, optimized ? M_indexR[i]:M_index[i], optimized );
+            coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
 
         return coeff;
@@ -498,20 +553,42 @@ protected :
      */
     tensor_ptrtype residual( parameter_type const& mu )
     {
-        LOG(INFO) << "DEIM : residual() start with "<< muString(mu);
+        LOG(INFO) << "DEIM : residual() start with "<< mu.toString();
         tensor_ptrtype T;
 
-        T = this->assemble( mu );
+        if( !M_store_tensors || !M_solutions[mu.key()] )
+        {
+            T = this->assemble( mu );
+            T->close();
+            if( M_store_tensors )
+            {
+                LOG(INFO)<< "DEIM : tensor stored in memory for mu="
+                         << mu.toString()<<" / "<<mu.key();
+                M_solutions[mu.key()] = copyTensor(T);
+            }
+        }
+        else
+        {
+            LOG(INFO) << "DEIM : tensor read in memory for mu="
+                      << mu.toString()<<" / "<<mu.key();
+            T = M_solutions[mu.key()];
+        }
 
+#if 0 // produce Deadlock in // with vectors.
         double norm = T->linftyNorm();
+#else
+        auto vec_max = vectorMaxAbs( T );
+        double norm = vec_max.template get<0>();
+#endif
+
         vectorN_type coeff = computeCoefficient(T, false);
 
         auto newT = copyTensor( T );
-
         for ( int i=0; i<M_M; i++ )
             add( newT, -coeff(i), M_bases[i] );
-        LOG(INFO) << "DEIM : residual() end";
         newT->scale( 1./norm );
+
+        LOG(INFO) << "DEIM : residual() end";
         return newT;
     }
 
@@ -530,12 +607,14 @@ protected :
     // \return a shared pointer on a copy of \p V
     vector_ptrtype copyTensor( vector_ptrtype V )
     {
-        vector_ptrtype newV = V->clone();
+        //vector_ptrtype newV = V->clone();
+        vector_ptrtype newV = backend()->newVector( V->mapPtr() );
         *newV = *V;
         return newV;
     }
 
     // \return a shared pointer on a copy of \p M
+
     sparse_matrix_ptrtype copyTensor( sparse_matrix_ptrtype M )
     {
         sparse_matrix_ptrtype newM = backend()->newMatrix( M->mapColPtr(),
@@ -543,16 +622,6 @@ protected :
                                                            M->graph() );
         *newM=*M;
         return newM;
-    }
-
-    std::string muString( parameter_type const& mu )
-    {
-        std::ostringstream mu_str;
-        mu_str << "["<<mu[0];
-        for ( int i=1; i<mu.size(); i++ )
-            mu_str <<","<< mu[i];
-        mu_str <<"]";
-        return mu_str.str();
     }
 
 
@@ -577,7 +646,7 @@ protected :
     std::string M_prefix;
 
     sampling_ptrtype M_trainset;
-    int M_M;
+    int M_M, M_user_max;
     double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
     std::vector< tensor_ptrtype > M_bases;
@@ -586,17 +655,164 @@ protected :
     std::vector<ptsset_type> M_ptsset;
     std::set<int> M_elts_ids;
 
-    bool M_rebuild, M_nl_assembly;
+    solutionsmap_type M_solutions;
+
+    bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
+    std::string M_write_nl_directory;
+    bool M_optimized_online;
+
+    crb_ptrtype M_crb;
+    bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
+    int M_ser_frequency;
+};
+
+
+template <typename ModelType,
+          typename TensorType>
+class DEIMModel :
+        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
+                        TensorType>
+{
+public :
+    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, TensorType> super_type;
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
+    typedef typename model_type::parameterspace_type parameterspace_type;
+    typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
+    typedef typename super_type::parameter_type parameter_type;
+    typedef typename super_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename super_type::tensor_ptrtype tensor_ptrtype;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::mesh_type mesh_type;
+    typedef typename super_type::space_type space_type;
+
+
+    DEIMModel() :
+        super_type()
+    {}
+
+    DEIMModel( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model->functionSpace(),
+                    model->parameterSpace(),
+                    sampling,
+                    model->uuid(),
+                    prefix ),
+        M_model( model )
+    {
+        if ( this->M_optimized_online )
+        {
+            this->M_online_model = model_ptrtype( new model_type() );
+            this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
+        }
+        else
+            this->M_online_model = M_model;
+    }
+
+    virtual ~DEIMModel()
+    {}
+
+    void init()
+    {
+        auto mu = this->M_trainset->max().template get<0>();
+        auto T = this->assemble(mu);
+        if (!T)
+        {
+            this->M_nl_assembly=true;
+            auto u = M_model->functionSpace()->element();
+            auto Tnl = this->assemble(mu,u);
+            CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
+        }
+    }
+
+    tensor_ptrtype assemble( parameter_type const& mu, bool online=false ) override
+    {
+        if ( this->M_nl_assembly )
+        {
+            if ( online )
+                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
+            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
+
+            auto u = M_model->functionSpace()->element();
+            bool need_solve = true;
+
+            if ( this->M_ser_use_rb && this->M_crb )
+            {
+                std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
+                auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
+                int size = uN.size();
+                if ( size!=0 )
+                    u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
+                else
+                    Feel::cout <<"DEIM ERROR : crb expansion called with uN.size=0 !\n";
+            }
+            else
+            {
+                if ( this->M_ser_use_rb && !this->M_crb )
+                    Feel::cout <<"DEIM WARNING : Suppose to use crb expansion with no crb class ! u will be computed using model->solve\n";
+
+                if ( M_write_nl_solutions )
+                {
+                    need_solve = !u.load( _path=M_write_nl_directory,
+                                          _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    if ( need_solve )
+                        LOG(INFO) << "DEIM : Unable to load nl solution in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key()<< ". Solve function will be called.";
+                    else
+                        LOG(INFO) << "DEIM : NL solution loaded in direcotry "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
+                }
+
+                if ( need_solve )
+                {
+                    LOG(INFO) << "DEIM : calling solve function for parameter " << mu.toString()
+                              <<" / " << mu.key();
+                    u = M_model->solve(mu);
+
+                    if ( M_write_nl_solutions )
+                    {
+                        LOG(INFO) << "DEIM : Wrting solution on disk in directory "
+                                  << M_write_nl_directory << ", for parameter : " << mu.toString()
+                                  <<" / " << mu.key();
+                        u.save( _path=M_write_nl_directory,
+                                _suffix=std::to_string(mu.key()), _type="hdf5" );
+                    }
+                }
+
+            }
+
+
+            return modelAssemble(mu,u);
+        }
+        return modelAssemble(mu,online);
+    }
+
+    tensor_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
+        return modelAssemble(mu,u,online);
+    }
+
+
+protected :
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
+    virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
+
+protected :
+    model_ptrtype M_model, M_online_model;
+
+    using super_type::M_write_nl_solutions;
+    using super_type::M_write_nl_directory;
 };
 
 
 template <typename ModelType>
 class DEIM :
-        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
-                        typename Backend<typename ModelType::value_type>::vector_type>
+        public DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>
 {
 public :
-    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::vector_type> super_type;
+    typedef DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>  super_type;
 
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
@@ -613,59 +829,36 @@ public :
     {}
 
     DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model->functionSpace(),
-                    model->parameterSpace(),
-                    sampling,
-                    model->uuid(),
-                    prefix ),
-        M_model( model )
+        super_type( model, sampling, prefix )
     {
-        this->M_online_model = model_ptrtype( new model_type() );
-        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
-
-        auto mu = this->M_trainset->max().template get<0>();
-        auto T = this->assemble(mu);
-        if (!T)
-        {
-            this->M_nl_assembly=true;
-            auto u = M_model->functionSpace()->element();
-            auto Tnl = this->assemble(mu,u);
-            CHECK( Tnl ) << "You want to use DEIM but you did not implement assmbleForDEIM functions\n";
-        }
-
-
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
+        this->init();
     }
 
     ~DEIM()
     {}
 
-    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
+private :
+    vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
-        if ( this->M_nl_assembly )
-        {
-            if ( online )
-                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
-            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
-            auto u = M_model->solve(mu);
-            return M_model->assembleForDEIMnl(mu,u);
-        }
-        if (online)
-            return M_online_model->assembleForDEIM(mu);
-        return M_model->assembleForDEIM(mu);
-    }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
-    {
-        CHECK(this->M_nl_assembly) << "You called nl coefficient for DEIM but you implemented assembleForDEIM(mu)\n";
         if ( online )
-            return M_online_model->assembleForDEIMnl(mu,u);
-        return M_model->assembleForDEIMnl(mu,u);
+            return this->M_online_model->assembleForDEIM(mu);
+       return this->M_model->assembleForDEIM(mu);
     }
 
+    vector_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
+    {
+        if ( online )
+            return this->M_online_model->assembleForDEIMnl(mu,u);
+        return this->M_model->assembleForDEIMnl(mu,u);
+    }
+
+
 private :
-    void updateSubMesh()
+    virtual void updateSubMesh() override
     {
         // Last added index
-        int index = this->M_index.back();
+        auto index = this->M_index.back();
         auto Xh = this->M_model->functionSpace();
         auto mesh = Xh->mesh();
         int proc_n = Xh->dof()->procOnGlobalCluster(index);
@@ -738,87 +931,58 @@ private :
         this->M_online_model->setFunctionSpaces( Rh );
     }
 
-private :
-    model_ptrtype M_model, M_online_model;
-
 };
 
 
 template <typename ModelType>
 class MDEIM :
-        public DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type,
-                        typename Backend<typename ModelType::value_type>::sparse_matrix_type>
+        public DEIMModel<ModelType,
+                         typename Backend<typename ModelType::value_type>::sparse_matrix_type>
 {
 public :
-    typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
+    typedef DEIMModel<ModelType, typename Backend<typename ModelType::value_type>::sparse_matrix_type> super_type;
 
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::parameterspace_ptrtype parameterspace_ptrtype;
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
-    typedef typename super_type::tensor_ptrtype vector_ptrtype;
+    typedef typename super_type::tensor_ptrtype sparse_matrix_ptrtype;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
-
 
     MDEIM() :
         super_type()
     {}
 
     MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model->functionSpace(),
-                    model->parameterSpace(),
-                    sampling,
-                    model->uuid(),
-                    prefix ),
-        M_model( model )
+        super_type( model, sampling, prefix )
     {
-        this->M_online_model = model_ptrtype( new model_type() );
-        this->M_online_model->setModelOnlineDeim( prefixvm( prefix, "deim-online" ) );
-
-        auto mu = this->M_trainset->max().template get<0>();
-        auto T = this->assemble(mu);
-        if (!T)
-        {
-            this->M_nl_assembly=true;
-            auto u = this->M_model->functionSpace()->element();
-            auto Tnl = this->assemble(mu,u);
-            CHECK( Tnl ) << "You want to use MDEIM but you did not implement assmbleForMDEIM functions\n";
-        }
-
-
+        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
+        this->init();
     }
 
     ~MDEIM()
     {}
 
-    vector_ptrtype assemble( parameter_type const& mu, bool online=false )
+private :
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
-        if ( this->M_nl_assembly )
-        {
-            if ( online )
-                Feel::cout << "WARNING : Call of online nl assembly with no solution u\n";
-            //CHECK(!online) << "Call of online nl assembly with no solution u\n";
-            auto u = M_model->solve(mu);
-            return M_model->assembleForMDEIMnl(mu,u);
-        }
-        if (online)
+        if ( online )
             return this->M_online_model->assembleForMDEIM(mu);
-         return M_model->assembleForMDEIM(mu);
+        return this->M_model->assembleForMDEIM(mu);
     }
-    vector_ptrtype assemble( parameter_type const& mu, element_type const& u, bool online=false )
+
+    sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
     {
-        CHECK(this->M_nl_assembly) << "You called nl coefficient for MDEIM but you implemented assembleForMDEIM(mu)\n";
         if ( online )
             return this->M_online_model->assembleForMDEIMnl(mu,u);
-        return M_model->assembleForMDEIMnl(mu,u);
+        return this->M_model->assembleForMDEIMnl(mu,u);
     }
 
-
 private :
-    void updateSubMesh()
+    void updateSubMesh() override
     {
         auto index = this->M_index.back();
         int i1 = index.first;
@@ -951,11 +1115,6 @@ private :
         this->M_online_model->setFunctionSpaces( Rh );
 
     }
-
-private :
-    model_ptrtype M_model, M_online_model;
-
-
 };
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
