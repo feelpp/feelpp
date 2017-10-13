@@ -546,7 +546,7 @@ protected :
     }
 
     /**
-     * Evavaluate the residual \f$ R_M(\mu)=T(\mu)-\hat T_M(\mu) \f$
+     * Evaluate the residual \f$ R_M(\mu)=T(\mu)-\hat T_M(\mu) \f$
      * where \f$ \hat T_M(\mu) \f$ is the DEIM approximation of size
      * \f$ M\f$.
      * \return a shared pointer on the Residual.
