@@ -1110,14 +1110,14 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     M_exporter->save();
 
-    this->timerTool("PostProcessing").stop("exportResults");
+    double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
         if ( !this->isStationary() )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("Advection","exportResults", "finish");
+    this->log("Advection","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 } // namespace FeelModels

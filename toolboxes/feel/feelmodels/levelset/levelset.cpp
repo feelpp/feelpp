@@ -1809,6 +1809,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
                 //*phi = *explicitHJ(max_iter, dtau, tol);
             }
             break;
+            case FastMarchingInitializationMethod::IL_HJ_EQ :
+            {
+                CHECK(false) << "TODO\n";
+                //*phi = *explicitHJ(max_iter, dtau, tol);
+            }
+            break;
             case FastMarchingInitializationMethod::NONE :
             {
                 *phiReinit = *phi;
@@ -2222,8 +2228,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
 
     this->M_exporter->save();
 
-    this->timerTool("PostProcessing").stop("exportResults");
-    this->log("LevelSet","exportResults", "finish");
+    double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
+    this->log("LevelSet","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
