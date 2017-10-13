@@ -123,8 +123,8 @@ SER<CRBType>::run()
                 do_offline_eim = false; //re-init
                 for( auto eim_sc : eim_sc_vector )
                 {
-                    if ( ser_level > 0 )
-                        eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
+                    //if ( ser_level > 0 )
+                    eim_sc->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
                     eim_sc->setRestart( false ); //do not restart since co-build is not finished
 
                     if( use_rb )
@@ -141,8 +141,8 @@ SER<CRBType>::run()
                 }
                 for( auto eim_sd : eim_sd_vector )
                 {
-                    if ( ser_level > 0 )
-                        eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
+                    //if ( ser_level > 0 )
+                    eim_sd->setDBSubDirectory( (boost::format("eim_ser%1%")%ser_level).str() );
                     eim_sd->setRestart( false ); //do not restart since co-build is not finished
 
                     if( use_rb )
