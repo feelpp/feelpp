@@ -32,7 +32,7 @@ makeOpusHeatAbout( std::string const& str )
 template<bool IsStationary>
 OpusHeat<IsStationary>::OpusHeat()
     :
-    super_type((IsStationary)?"OpusHeat-stationary":"OpusHeat")
+    super_type((IsStationary)?"OpusHeat_stationary":"OpusHeat")
 {}
 
 template<bool IsStationary>

@@ -56,6 +56,7 @@ enum {
     InfSup = 0x4
 };
 
+class ModelCrbBaseBase {};
 
 class ParameterDefinitionBase
 {
@@ -174,9 +175,11 @@ public :
 
     typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
-
     typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
     typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
+
+    typedef std::vector<deim_ptrtype> deim_vector_type;
+    typedef std::vector<mdeim_ptrtype> mdeim_vector_type;
 
     //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
     typedef std::vector< std::vector< double > > beta_vector_type;
@@ -616,11 +619,38 @@ public :
         return M_funs_d;
     }
 
-    bool hasDeim()
+    void addDeim( deim_ptrtype const& deim )
     {
-        return M_deim || M_mdeim;
+        M_deims.push_back( deim );
+    }
+    void addMdeim( mdeim_ptrtype const& mdeim )
+    {
+        M_mdeims.push_back( mdeim);
     }
 
+    deim_ptrtype deim( int const& i=0 ) const
+    {
+        return M_deims[i];
+    }
+
+    mdeim_ptrtype mdeim( int const& i=0 ) const
+    {
+        return M_mdeims[i];
+    }
+
+    bool hasDeim() const
+    {
+        return M_deims.size() || M_mdeims.size();
+    }
+
+    deim_vector_type deimVector() const
+    {
+        return M_deims;
+    }
+    mdeim_vector_type mdeimVector() const
+    {
+        return M_mdeims;
+    }
 
     virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
     {
@@ -1813,7 +1843,11 @@ public:
      * Set the finite element space to \p Vh and then build the reduced basis
      * space from the finite element space.
      */
-    void setFunctionSpaces( functionspace_ptrtype const& Vh );
+    virtual void setFunctionSpaces( functionspace_ptrtype const& Vh )
+    {
+        Xh = Vh;
+        XN->setModel( this->shared_from_this() );
+    }
 
     /**
      * \brief Returns the function space
@@ -1859,8 +1893,8 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
 
-    deim_ptrtype M_deim;
-    mdeim_ptrtype M_mdeim;
+    deim_vector_type M_deims;
+    mdeim_vector_type M_mdeims;
     bool M_is_initialized;
 
     sparse_matrix_ptrtype M;
@@ -1920,19 +1954,6 @@ protected :
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };
-template <typename ParameterDefinition,
-          typename FunctionSpaceDefinition,
-          int _Options,
-          typename EimDefinition
-          >
-void
-ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype const& Vh )
-{
-    Xh = Vh;
-    //XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
-    //XN->setFunctionSpace( Vh );
-    XN->setModel( this->shared_from_this() );
-}
 
 
 

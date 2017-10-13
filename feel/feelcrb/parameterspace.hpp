@@ -49,6 +49,7 @@
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/removecomments.hpp>
 #include <feel/feelcore/utility.hpp>
+#include <feel/feelcore/hashtables.hpp>
 
 namespace Feel
 {
@@ -93,9 +94,9 @@ public:
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
         typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-        //typedef typename Eigen::internal::ref_selector<Element>::type Nested; 
+        //typedef typename Eigen::internal::ref_selector<Element>::type Nested;
         typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
-        
+
         /**
          * default constructor
          */
@@ -188,6 +189,7 @@ public:
 
         void check() const
             {
+#if !defined(NDEBUG)
                 if ( !M_space->check() )
                 {
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
@@ -219,21 +221,42 @@ public:
                     << "sum parameter " << std::setprecision(15) << sum << "\n"
                     << "space min : " << M_space->min() << "\n"
                     << "space max : " << M_space->max() << "\n";
+#endif
             }
+
+
+        size_t key() const
+        {
+            int N = this->size();
+            std::vector<std::string> s;
+            for ( int i=0; i<N; i++ )
+                s.push_back( std::to_string(this->operator[](i)) );
+            HashTables::HasherContainers<std::string> h;
+            return h(s);
+        }
+
+        std::string toString() const
+        {
+            std::ostringstream mu_str;
+            mu_str << "["<<this->operator[](0);
+            for ( int i=1; i<this->size(); i++ )
+                mu_str <<","<< this->operator[](i);
+            mu_str <<"]";
+            return mu_str.str();
+        }
+
     private:
         friend class boost::serialization::access;
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
             }
 
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -335,6 +358,7 @@ public:
          */
         void setElements( std::vector< element_type > const& V )
         {
+#if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
             // first empty the set
@@ -347,7 +371,9 @@ public:
             }
 
             boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
-
+#else
+            super::operator=( V );
+#endif
         }
 
         /**
@@ -356,13 +382,16 @@ public:
          */
         void addElement( element_type const mu )
         {
+#if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
             if( M_space->worldComm().isMasterRank() )
             {
                 super::push_back( mu );
             }
-
             boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+#else
+            super::push_back( mu );
+#endif
         }
 
         void distributeOnAllProcessors( int N , std::string const& file_name )
@@ -475,7 +504,7 @@ public:
         }
 
         void sampling( size_type N, std::string const& samplingMode ) { return sample( N, samplingMode ); }
-        
+
         /**
          * \brief create a sampling with global number of samples
          * \param N the number of samples
@@ -1170,7 +1199,7 @@ public:
             }
 
     private:
-        
+
         Sampling() {}
 
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
@@ -1236,18 +1265,26 @@ public:
         void save( Archive & ar, const unsigned int version ) const
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
-                ar & M_supersampling;
-                ar & M_superindices;
+                ar & BOOST_SERIALIZATION_NVP( M_space );
+                bool hasSupersampling = ( M_supersampling )? true : false;
+                ar & hasSupersampling;
+                if ( hasSupersampling )
+                    ar & BOOST_SERIALIZATION_NVP( M_supersampling );
+                ar & BOOST_SERIALIZATION_NVP( M_superindices );
             }
 
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
-                ar & M_supersampling;
-                ar & M_superindices;
+                ar & BOOST_SERIALIZATION_NVP( M_space );
+                bool hasSupersampling = false;
+                ar & hasSupersampling;
+                if ( hasSupersampling )
+                    ar & BOOST_SERIALIZATION_NVP( M_supersampling );
+                else
+                    M_supersampling.reset();
+                ar & BOOST_SERIALIZATION_NVP( M_superindices );
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
         private:

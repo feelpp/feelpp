@@ -42,7 +42,7 @@ int main( int argc, char** argv )
                            _about=makeAbout( GreplDEIM<2,2>::name() ) );
 
 
-    Feel::OpusApp< GreplDEIM<2,2>, CRB, CRBModel > bench ;
+    Feel::OpusApp< GreplDEIM<1,2>, CRB, CRBModel > bench ;
     bench.run();
 
 
