@@ -54,6 +54,9 @@ cvg-study=false
 show-residual=false
 load-elements-database=true
 
+use-equidistributed-WNmu=10
+#use-random-WNmu=10
+
 [crb.check]
 rb=0
 residual=false

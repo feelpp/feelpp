@@ -23,8 +23,8 @@
 //!
 //!
 
-#ifndef FEELPP_THERMOELECTRIC_HPP
-#define FEELPP_THERMOELECTRIC_HPP
+#ifndef FEELPP_ELECTRIC_HPP
+#define FEELPP_ELECTRIC_HPP
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/options.hpp>
@@ -34,24 +34,16 @@ namespace Feel
 {
 
 FEELPP_EXPORT po::options_description
-makeOptions()
+makeThermoElectricOptions()
 {
     po::options_description options( "Thermoelectric" );
     options.add_options()
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
         ( "thermoelectric.gamma", po::value<double>()->default_value( 1e4 ), "penalisation term" )
-        ( "thermoelectric.sigma", po::value<double>()->default_value(1), "electric conductivity" )
-        ( "thermoelectric.current", po::value<double>()->default_value(1), "current intensity" )
-        ( "thermoelectric.k", po::value<double>()->default_value(1), "thermal conductivity" )
-        ( "thermoelectric.h", po::value<double>()->default_value(1), "transfer coefficient" )
-        ( "thermoelectric.Tw", po::value<double>()->default_value(1), "water's temperatur" )
-        ( "thermoelectric.N", po::value<int>()->default_value(100), "number of basis function to use" )
-        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
-        ( "thermoelectric.conductor", po::value<std::vector<std::string> >()->multitoken(), "marker for the conductor" )
         ( "thermoelectric.export-FE", po::value<bool>()->default_value(true), "export FE solution" )
         ;
-    options.add(backend_options("electro") ).add(backend_options("thermo") );
+    options.add(backend_options("electro") );
     return options;
 }
 
@@ -76,49 +68,22 @@ public:
     using convex_type =  Simplex<3>;
     using mesh_type = Mesh<convex_type>;
     using fct_base_type = Lagrange<Order,Scalar>;
-    using basis_type = bases<fct_base_type, fct_base_type>;
+    using basis_type = bases<fct_base_type>;
     using space_type = FunctionSpace<mesh_type, basis_type, value_type>;
     using element_type = typename space_type::element_type;
-
-    using V_basis_type = bases<fct_base_type>;
-    using V_space_type = FunctionSpace<mesh_type, V_basis_type, value_type>;
 
     using J_basis_type = bases<Lagrange<Order+2, Scalar,Discontinuous> >;
     using J_space_type = FunctionSpace<mesh_type, J_basis_type, Discontinuous, value_type>;
 };
 
-template <typename ParameterDefinition, typename FunctionSpaceDefinition >
-class EimDefinition
-{
-public :
-    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    typedef typename FunctionSpaceDefinition::space_type space_type;
-    typedef typename FunctionSpaceDefinition::J_space_type J_space_type;
-    using V_space_type = typename FunctionSpaceDefinition::V_space_type;
-
-    /* EIM */
-    // Scalar continuous //
-    typedef EIMFunctionBase<V_space_type, space_type , parameterspace_type> fun_type;
-    // Scalar Discontinuous //
-    typedef EIMFunctionBase<J_space_type, space_type , parameterspace_type> fund_type;
-
-};
-
-class FEELPP_EXPORT Thermoelectric : public ModelCrbBase<ParameterDefinition,
-                                                         FunctionSpaceDefinition,
-                                                         NonLinear,
-                                                         EimDefinition<ParameterDefinition,
-                                                                       FunctionSpaceDefinition> >
+class FEELPP_EXPORT Electric : public ModelCrbBase<ParameterDefinition,
+                                                   FunctionSpaceDefinition>
 {
 public:
     using super_type = ModelCrbBase<ParameterDefinition,
-                                    FunctionSpaceDefinition,
-                                    NonLinear,
-                                    EimDefinition<ParameterDefinition,
-                                                  FunctionSpaceDefinition> >;
+                                    FunctionSpaceDefinition>;
     using parameter_space_type = ParameterDefinition;
     using function_space_type = FunctionSpaceDefinition;
-    using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition>;
 
     using value_type = double;
 
@@ -133,11 +98,8 @@ public:
     using J_space_ptrtype = boost::shared_ptr<J_space_type>;
     // using V_space_type = FunctionSpaceDefinition::V_space_type;
     // using Vh_element_type = typename V_space_type::element_type;
-    using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
+    using q_sigma_space_type = space_type;
     using q_sigma_element_type = q_sigma_space_type::element_type;
-    using V_view_type = typename element_type::template sub_element_type<0>;
-    using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
-    using T_view_ptrtype = typename element_type::template sub_element_ptrtype<1>;
 
     using current_space_type = FunctionSpace<mesh_type, bases<Lagrange<1, Vectorial> > >;
     using current_element_type = typename current_space_type::element_type;
@@ -158,17 +120,15 @@ private:
     prop_ptrtype M_modelProps;
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
-    element_ptrtype pT;
-    V_view_ptrtype M_V;
-    T_view_ptrtype M_T;
+    element_ptrtype M_V;
     parameter_type M_mu;
 
     J_space_ptrtype Jh;
 
 public:
     // Constructors
-    Thermoelectric();
-    Thermoelectric( mesh_ptrtype mesh );
+    Electric();
+    Electric( mesh_ptrtype mesh );
 
     // Helpers
     int Qa();
@@ -178,26 +138,27 @@ public:
     int mLQF( int l, int q );
     int mCompliantQ( int q );
     int mIntensity( int q );
-    int mAvgTemp( int q );
-    void resizeQm();
+    void resizeQm( bool resizeMatrix = true );
     parameter_type newParameter() { return Dmu->element(); }
+    parameter_type paramFromProperties() const;
 
-    void initModel();
+    void initModel() override;
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     void decomposition();
 
-    beta_vector_type computeBetaInitialGuess( parameter_type const& mu );
-    beta_type computeBetaQm( element_type const& T, parameter_type const& mu );
-    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu );
-    beta_type computeBetaQm( parameter_type const& mu );
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 );
-    void fillBetaQm( parameter_type const& mu, vectorN_type betaEimGradGrad );
+    beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override;
+    beta_type computeBetaQm( element_type const& T, parameter_type const& mu ) override;
+    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override;
+    beta_type computeBetaQm( parameter_type const& mu ) override;
+    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=1e30 ) override;
+    void fillBetaQm( parameter_type const& mu );
 
-    affine_decomposition_type computeAffineDecomposition();
-    std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA();
-    std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition();
+    affine_decomposition_type computeAffineDecomposition() override;
+    std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
+    std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
 
-    element_type solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu ) override;
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
@@ -205,7 +166,7 @@ public:
     q_sigma_element_type eimSigmaQ(int m);
     vectorN_type eimSigmaBeta( parameter_type const& mu );
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
-    void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu, element_type& VT );
+    void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu, element_type& T );
 }; // Thermoelectric class
 
 } // namespace Feel
