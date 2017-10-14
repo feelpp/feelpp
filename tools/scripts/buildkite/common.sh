@@ -2,6 +2,7 @@
 
 set -eo pipefail
 
+FEELPP_DIR=${FEELPP_DIR:-/usr/local}
 if [ -d ${FEELPP_DIR}/share/feelpp/feel/cmake/modules/ ]; then 
     FEELPP_CMAKE_DIR=${FEELPP_DIR}/share/feelpp/feel/cmake/modules;
 else
