@@ -476,6 +476,36 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
+# Python libs
+option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if(FEELPP_ENABLE_PYTHON)
+  #
+  # Python interp
+  #
+  FIND_PACKAGE(PythonInterp 3  REQUIRED)
+  if(PYTHONINTERP_FOUND)
+    execute_process(COMMAND
+      ${PYTHON_EXECUTABLE}
+      -c "import sys; print(sys.version[0:3])"
+      OUTPUT_VARIABLE PYTHON_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${PYTHON_VERSION}" )
+  endif()
+
+  FIND_PACKAGE(PythonLibs 3 REQUIRED)
+  if ( PYTHONLIBS_FOUND )
+    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
+    set( FEELPP_HAS_PYTHON 1 )
+
+  endif()
+
+endif()
+
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
@@ -728,34 +758,6 @@ if(FEELPP_ENABLE_LIBXML2)
   endif()
 endif()
 
-# Python libs
-option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if(FEELPP_ENABLE_PYTHON)
-  #
-  # Python interp
-  #
-  FIND_PACKAGE(PythonInterp 3.5  REQUIRED)
-  if(PYTHONINTERP_FOUND)
-    execute_process(COMMAND
-      ${PYTHON_EXECUTABLE}
-      -c "import sys; print(sys.version[0:3])"
-      OUTPUT_VARIABLE PYTHON_VERSION
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
-  endif()
-
-  FIND_PACKAGE(PythonLibs 3 REQUIRED)
-  if ( PYTHONLIBS_FOUND )
-    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
-    set( FEELPP_HAS_PYTHON 1 )
-
-  endif()
-
-endif()
 
 
 #
