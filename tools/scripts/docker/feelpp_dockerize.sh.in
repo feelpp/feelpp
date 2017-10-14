@@ -3,7 +3,6 @@
 set -eo pipefail
 #set -x
 
-source $(dirname $0)/common.sh
 
 # default values
 TARGET=ubuntu:16.10
@@ -83,6 +82,10 @@ echo "BUILD_JOBS=${BUILD_JOBS}"
 echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
 echo "FEELPP_DIR=${FEELPP_DIR}"
 echo "FEELPP_VERSION=${FEELPP_VERSION}"
+
+export FEELPP_DIR
+source $(dirname $0)/../share/feelpp/scripts/common.sh
+
 
 tag=$(tag_from_target $TARGET $BRANCH $PROJECT_VERSION)
 echo "tag: $tag"
