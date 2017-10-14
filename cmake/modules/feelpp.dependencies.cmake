@@ -734,7 +734,7 @@ if(FEELPP_ENABLE_PYTHON)
   #
   # Python interp
   #
-  FIND_PACKAGE(PythonInterp 3  REQUIRED)
+  FIND_PACKAGE(PythonInterp 3.5  REQUIRED)
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
