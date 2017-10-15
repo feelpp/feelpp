@@ -48,7 +48,7 @@ extratags_from_target() {
     
     ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
-        extratags=${tokens[@]:5}
+        extratags=${tokens[@]:1:3}
         printf "%s" "${extratags}" 
     done
 }
