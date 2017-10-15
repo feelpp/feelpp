@@ -2890,6 +2890,11 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
+        if ( M_model->hasDeim() )
+        {
+            M_model->updateRbInDeim( this->wn() );
+        }
+
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -5733,6 +5738,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
+    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N=N"<<N;
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5830,6 +5836,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
+    LOG(INFO)<<"CBR : end of lb()";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5844,6 +5851,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
+    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -6612,11 +6620,24 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-
+    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
+
 
     residual_error_type steady_residual_contribution = steadyPrimalResidual( Ncur, mu, Un, time );
     std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
@@ -6818,7 +6839,19 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
 
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
