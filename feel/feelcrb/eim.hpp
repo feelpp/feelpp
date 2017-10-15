@@ -1891,6 +1891,24 @@ public:
             if ( this->functionSpace() )
                 M_eim.reset( new eim_type( this, sampling , 1e-8, hasLoadedDb ) );
 
+            if ( M_write_nl_solutions )
+            {
+                if ( this->worldComm().isMasterRank() )
+                {
+                    boost::filesystem::path dir( M_write_nl_directory );
+                    if ( boost::filesystem::exists(dir) && boption( "eim.elements.clean-directory" ) )
+                    {
+                        boost::filesystem::remove_all(dir);
+                        boost::filesystem::create_directory(dir);
+                    }
+                    else if ( !boost::filesystem::exists(dir) )
+                    {
+                        boost::filesystem::create_directory(dir);
+                    }
+                }
+            }
+            this->worldComm().barrier();
+
         }
 
     /**

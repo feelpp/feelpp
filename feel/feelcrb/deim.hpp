@@ -198,6 +198,24 @@ public :
             M_user_max = sampling_size;
         }
 
+        if ( M_write_nl_solutions )
+        {
+            if ( this->worldComm().isMasterRank() )
+            {
+                boost::filesystem::path dir( M_write_nl_directory );
+                if ( boost::filesystem::exists(dir) && boption( prefixvm( M_prefix, "deim.elements.clean-directory") ) )
+                {
+                    boost::filesystem::remove_all(dir);
+                    boost::filesystem::create_directory(dir);
+                }
+                else if ( !boost::filesystem::exists(dir) )
+                {
+                    boost::filesystem::create_directory(dir);
+                }
+            }
+        }
+        this->worldComm().barrier();
+
     }
 
     //! Destructor
@@ -268,7 +286,7 @@ public :
 
             cout << "DEIM : Current max error="<<error <<", Atol="<< M_Atol
                  << ", relative max error="<< r_error <<", Rtol="<< M_tol
-                 <<", for mu="<< mu <<std::endl;
+                 <<", for mu="<< mu.toString() <<std::endl;
             cout <<"===========================================\n";
 
             if ( error<M_Atol || r_error<M_tol )
