@@ -861,7 +861,15 @@ public:
      * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
-    virtual void exportBasisFunctions(){}
+    virtual void exportBasisFunctions()
+    {
+        wn_type WN = this->wn();
+        std::vector<wn_type> WN_vec = std::vector<wn_type>();
+        WN_vec.push_back(WN);
+        std::vector<std::string> name_vec = std::vector<std::string>(1, "primal");
+        export_vector_wn_type exportWn = boost::make_tuple(WN_vec, name_vec);
+        this->exportBasisFunctions(exportWn);
+    }
 
     /**
      * Returns the lower bound of the output
@@ -2882,6 +2890,11 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
+        if ( M_model->hasDeim() )
+        {
+            M_model->updateRbInDeim( this->wn() );
+        }
+
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -4743,7 +4756,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         else // nonlinear
         {
-            vectorN_type previous_uN( M_N );
+            vectorN_type previous_uN( N );
             //uN[0].setZero( N );
             computeProjectionInitialGuess( mu , N , uN[0] );
             int fi=0;
@@ -4784,7 +4797,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     }
                 }
                 // solve rb system
-                uN[0] = A.lu().solve( F );
+                if ( true )
+                    uN[0] = A.fullPivLu().solve( F );
+                else
+                    uN[0] = A.lu().solve( F );
 
                 if ( useAitkenRelaxation )
                 {
@@ -4806,7 +4822,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                             rbaitkenAux = rbresidual- rbPreviousResidual;
                             double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
                             rbaitkenAux *= ( 1.0/scalar );
-                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux);
                             if ( scalar > 1 || scalar < 1e-4 )
                                 scalar = 1.;
 
@@ -5725,6 +5741,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
+    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5822,6 +5839,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
+    LOG(INFO)<<"CBR : end of lb()";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5836,6 +5854,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
+    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -6373,13 +6392,11 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no wn_type to export" );
     }
 
-
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
     if ( !M_exporter )
-        M_exporter = Exporter<mesh_type>::New( "BasisFunction" );
-    M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
-    M_exporter->addRegions();
+        M_exporter = exporter( _mesh=first_element.functionSpace()->mesh(), _name="BasisFunctions");
+
     int basis_number=0;
     for( auto wn : vect_wn )
     {
@@ -6606,11 +6623,24 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-
+    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
+
 
     residual_error_type steady_residual_contribution = steadyPrimalResidual( Ncur, mu, Un, time );
     std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
@@ -6812,7 +6842,19 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
 
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
