@@ -299,14 +299,14 @@ void ThermoElectric::initModel()
                               _sampling=Pset );
         this->addEim( eim_sigma );
 
-        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
-                          _element=M_VT->template element<1>(),
-                          _parameter=M_mu,
-                          _expr=k,
-                          _space=M_Th,
-                          _name=(boost::format("eim_k_%1%") % mat.first ).str(),
-                          _sampling=Pset );
-        this->addEim( eim_k );
+        // auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+        //                   _element=M_VT->template element<1>(),
+        //                   _parameter=M_mu,
+        //                   _expr=k,
+        //                   _space=M_Th,
+        //                   _name=(boost::format("eim_k_%1%") % mat.first ).str(),
+        //                   _sampling=Pset );
+        // this->addEim( eim_k );
 
         auto eim_joule = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
@@ -320,7 +320,7 @@ void ThermoElectric::initModel()
     }
 
     this->resizeQm();
-    this->decomposition();
+    this->assemble();
 }
 
 void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -362,7 +362,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
 }
 
 /******************************* Decomposition ***********************/
-void ThermoElectric::decomposition()
+void ThermoElectric::assemble()
 {
     auto VT = Xh->element();
     auto V = VT.template element<0>();
@@ -930,6 +930,12 @@ double
 ThermoElectric::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M_M->energy( x, y );
+}
+
+ThermoElectric::sparse_matrix_ptrtype
+ThermoElectric::energyMatrix()
+{
+    return M_M;
 }
 
 
