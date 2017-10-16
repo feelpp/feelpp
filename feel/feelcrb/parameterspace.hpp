@@ -133,7 +133,17 @@ public:
         /**
          * copy constructor
          */
-        Element& operator=( Element const& e ) = default;
+        Element& operator=( Element const& e )
+            {
+                if ( this == &e )
+                    return *this;
+
+                this->resize( e.size() );
+                super::operator=( e );
+                M_space = e.M_space;
+                
+                return *this;
+            }
 
         template<typename OtherDerived>
         super& operator=( const Eigen::MatrixBase<OtherDerived>& other )
