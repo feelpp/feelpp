@@ -4,7 +4,7 @@
 #include <feel/feelcrb/opusapp.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
-
+#include <feel/feelcrb/cvgstudy.hpp>
 
 inline po::options_description makeOptions()
 {
@@ -12,6 +12,8 @@ inline po::options_description makeOptions()
     grepldeimoptions.add_options()
         ( "trainset-deim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
         ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "cvg-study", Feel::po::value<int>()->default_value( 0 ), "size of the sampling for the convergence study. If 0 : no cvg study" )
+
         ;
    return grepldeimoptions.add( feel_options());
 }
@@ -41,9 +43,16 @@ int main( int argc, char** argv )
                            .add(bdf_options( GreplDEIM<2,2>::name() )),
                            _about=makeAbout( GreplDEIM<2,2>::name() ) );
 
-
-    Feel::OpusApp< GreplDEIM<1,2>, CRB, CRBModel > bench ;
-    bench.run();
+    if ( ioption("cvg-study") )
+    {
+        Feel::CvgStudy< GreplDEIM<2,2>, CRB, CRBModel > bench;
+        bench.run( ioption("cvg-study") );
+    }
+    else
+    {
+        Feel::OpusApp< GreplDEIM<2,2>, CRB, CRBModel > bench ;
+        bench.run();
+    }
 
 
 }
