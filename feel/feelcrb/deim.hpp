@@ -198,6 +198,24 @@ public :
             M_user_max = sampling_size;
         }
 
+        if ( M_write_nl_solutions )
+        {
+            if ( this->worldComm().isMasterRank() )
+            {
+                boost::filesystem::path dir( M_write_nl_directory );
+                if ( boost::filesystem::exists(dir) && boption( prefixvm( M_prefix, "deim.elements.clean-directory") ) )
+                {
+                    boost::filesystem::remove_all(dir);
+                    boost::filesystem::create_directory(dir);
+                }
+                else if ( !boost::filesystem::exists(dir) )
+                {
+                    boost::filesystem::create_directory(dir);
+                }
+            }
+        }
+        this->worldComm().barrier();
+
     }
 
     //! Destructor
@@ -268,7 +286,7 @@ public :
 
             cout << "DEIM : Current max error="<<error <<", Atol="<< M_Atol
                  << ", relative max error="<< r_error <<", Rtol="<< M_tol
-                 <<", for mu="<< mu <<std::endl;
+                 <<", for mu="<< mu.toString() <<std::endl;
             cout <<"===========================================\n";
 
             if ( error<M_Atol || r_error<M_tol )
@@ -302,9 +320,12 @@ public :
     {
         return computeCoefficient( mu, u, M );
     }
+    vectorN_type beta( parameter_type const& mu, vectorN_type urb, int M=-1 )
+    {
+        return computeCoefficient( mu, deimExpansion(urb), M );
+    }
 
-
-    //! \return the tensors \f$ T^m\f$ of the affine decomposition
+    //! \Return the tensors \f$ T^m\f$ of the affine decomposition
     std::vector<tensor_ptrtype> q() const
     {
         return M_bases;
@@ -327,6 +348,8 @@ public :
         M_crb_built=true;
     }
 
+    virtual void updateRb( std::vector<element_type> const& wn )=0;
+
     void setOfflineStep( bool b ) { M_offline_step = b; }
     bool offlineStep() const { return M_offline_step; }
 
@@ -346,6 +369,7 @@ public :
     //! loadDB from \p filename with load strately \p l
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
+
 
 protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
@@ -628,6 +652,8 @@ protected :
     virtual void updateSubMesh()=0;
 
 
+    virtual element_type deimExpansion( vectorN_type const& urb )=0;
+
     friend class boost::serialization::access;
 
     // When the class Archive corresponds to an output archive, the
@@ -659,11 +685,12 @@ protected :
 
     bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
     std::string M_write_nl_directory;
-    bool M_optimized_online;
+    bool M_optimized_online; // to be removed when optimized is ok
 
     crb_ptrtype M_crb;
     bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
     int M_ser_frequency;
+
 };
 
 
@@ -697,7 +724,8 @@ public :
                     sampling,
                     model->uuid(),
                     prefix ),
-        M_model( model )
+        M_model( model ),
+        M_online_model_updated( false )
     {
         if ( this->M_optimized_online )
         {
@@ -741,7 +769,7 @@ public :
                 auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
                 int size = uN.size();
                 if ( size!=0 )
-                    u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
+                    u = deimExpansion(uN[size-1]);//this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
                 else
                     Feel::cout <<"DEIM ERROR : crb expansion called with uN.size=0 !\n";
             }
@@ -794,6 +822,33 @@ public :
         return modelAssemble(mu,u,online);
     }
 
+    void updateRb( std::vector<element_type> const& wn ) override
+    {
+        if ( this->M_optimized_online )
+        {
+            auto Rh = M_online_model->functionSpace();
+
+            // if the interpolation space has been updated we have to reproject
+            // all the rb basis vectors on the new interpolation space
+            if ( M_online_model_updated )
+                for ( int i=0; i<M_rb_basis.size(); i++ )
+                    M_rb_basis[i]=vf::project( _space=Rh, _expr=idv(wn[i]) );
+
+            // we now project the new basis vector on the interpolation space and we stock them.
+            for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
+                M_rb_basis.push_back( vf::project( _space=Rh, _expr=idv(wn[i]) ) );
+        }
+        else // to be removed when optimized is fixed
+            for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
+                M_rb_basis.push_back( wn[i] );
+    }
+
+    element_type deimExpansion( vectorN_type const& urb ) override
+    {
+        int N = urb.size();
+        FEELPP_ASSERT( N <= M_rb_basis.size() )( N )( M_rb_basis.size() ).error( "invalid expansion size ( N and M_rb_basis ) ");
+        return Feel::expansion( M_rb_basis, urb, N );
+    }
 
 protected :
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
@@ -801,6 +856,8 @@ protected :
 
 protected :
     model_ptrtype M_model, M_online_model;
+    std::vector<element_type> M_rb_basis;
+    bool M_online_model_updated;
 
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
@@ -929,6 +986,8 @@ private :
         }
 
         this->M_online_model->setFunctionSpaces( Rh );
+
+        this->M_online_model_updated = true;
     }
 
 };
@@ -1114,6 +1173,7 @@ private :
 
         this->M_online_model->setFunctionSpaces( Rh );
 
+        this->M_online_model_updated = true;
     }
 };
 
