@@ -2523,8 +2523,6 @@ CRB<TruthModelType>::offline()
         mu = this->M_WNmu->at( std::min( M_N, this->M_iter_max-1 ) );
         M_current_mu =mu;
     }
-    else
-        M_iter_max = user_max;
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
@@ -7872,6 +7870,10 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
+    bool use_ser = ioption(_name="ser.rb-frequency");
+    int added_elements = use_ser ? __N:number_of_added_elements;
+
+
     if( this->worldComm().isMasterRank() )
         std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
                   << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
@@ -7908,9 +7910,10 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
 #endif
 
+
     // Primal
     // no need to recompute this term each time
-    if ( Ncur == M_Nm )
+    if ( Ncur == M_Nm || use_ser )
     {
         ti.restart();
         LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
@@ -7991,7 +7994,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     //
     LOG(INFO) << "[offlineResidual] Lambda_pr, Gamma_pr\n";
 
-    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    for ( int elem=__N-added_elements; elem<__N; elem++ )
     {
         *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
 
@@ -8025,7 +8028,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
     ti.restart();
 
-    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    for ( int elem=__N-added_elements; elem<__N; elem++ )
     {
         *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
         for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
@@ -8099,7 +8102,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
                 //column N-1
                 //int __l = __N-1;
-                for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                for ( int elem=__N-added_elements; elem<__N; elem++ )
                 {
                     *__Y=M_model->rBFunctionSpace()->primalBasisElement(elem);
 
@@ -8192,7 +8195,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
         LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
 
-        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        for ( int elem=__N-added_elements; elem<__N; elem++ )
         {
             *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
 
@@ -8235,7 +8238,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
-        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        for ( int elem=__N-added_elements; elem<__N; elem++ )
         {
             //int __j = __N-1;
             *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
@@ -8332,7 +8335,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                     M_model->l2solve( __Z1, __W );
 
                     //int __l = __N-1;
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                    for ( int elem=__N-added_elements; elem<__N; elem++ )
                     {
                         *__Y=M_model->rBFunctionSpace()->dualBasisElement(elem);
 
