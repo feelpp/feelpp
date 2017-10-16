@@ -1261,7 +1261,7 @@ public:
 
             auto u1 = M_composite_u1.template element< T::value >();
             auto u2 = M_composite_u2.template element< T::value >();
-            double norm  = normL2(_range=u1.functionSpace()->rangeElements(),
+            double norm  = normL2(_range=u1.functionSpace()->rangeElements< T::value >(),
                                   _expr=( idv(u1)-idv(u2) ) );
             M_vec(i)= norm ;
         }
@@ -1284,7 +1284,7 @@ public:
     }
     double computeNormL2( element_type u1 , element_type u2 , mpl::bool_<false>)
     {
-        double norm = normL2(_range=u2.functionSpace()->rangeElements(),
+        double norm = normL2(_range=u2.functionSpace()->rangeElements<0>(),
                              _expr=( idv(u1)-idv(u2) ) );
         return norm;
     }
@@ -2965,7 +2965,8 @@ struct PreAssembleMassMatrixInCompositeCase
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_u.functionSpace();
 
-        auto expr = integrate( _range=u.functionSpace()->rangeElements(), _expr=trans( idt( u ) )*vf::id( v ) ) ;
+        auto expr = integrate( _range=u.functionSpace()->rangeElements< T::value >(),
+                               _expr=trans( idt( u ) )*vf::id( v ) ) ;
         auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
 
         //each composant of the affine decomposition
@@ -3032,7 +3033,8 @@ struct AssembleMassMatrixInCompositeCase
         auto Xh = u.functionSpace();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=Xh->rangeElements(), _expr=trans( idt( u ) )*vf::id( v ) );
+            integrate( _range=Xh->rangeElements< T::value >(),
+                       _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
 
@@ -3081,6 +3083,7 @@ struct AssembleInitialGuessVInCompositeCase
 
         auto v = M_composite_v.template element< T::value >();
         auto Xh = v.functionSpace();
+        auto range = Xh->rangeElements< T::value >();
         int q_max = M_crb_model->QInitialGuess();
         for(int q = 0; q < q_max; q++)
         {
@@ -3089,7 +3092,7 @@ struct AssembleInitialGuessVInCompositeCase
             {
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
-                    integrate ( _range=Xh->rangeElements(), _expr=trans( idv( view ) )*vf::id( v ) );
+                    integrate ( _range=range, _expr=trans( idv( view ) )*vf::id( v ) );
             }
         }
     }
@@ -3122,7 +3125,7 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
 
     auto Xh = M_model->functionSpace();
 
-    auto expr = integrate( _range=Xh->rangeElements() , _expr=inner( idt( M_u ),vf::id( M_v ) ) );
+    auto expr = integrate( _range=Xh->rangeElements<0>() , _expr=inner( idt( M_u ),vf::id( M_v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -3176,7 +3179,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0].resize( 1 );
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=Xh->rangeElements(), _expr=inner(idt( M_u ),vf::id( M_v ) )  );
+        integrate( _range=Xh->rangeElements<0>(), _expr=inner(idt( M_u ),vf::id( M_v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -3250,6 +3253,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
 {
     using namespace Feel::vf;
     auto Xh = M_model->functionSpace();
+    auto range = Xh->rangeElements<0>();
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
@@ -3264,7 +3268,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=Xh->rangeElements(), _expr=inner( idv( initial_guess[q][m] ),vf::id( M_v ) )  );
+                integrate( _range=range, _expr=inner( idv( initial_guess[q][m] ),vf::id( M_v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }
