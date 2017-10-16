@@ -4756,7 +4756,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         else // nonlinear
         {
-            vectorN_type previous_uN( M_N );
+            vectorN_type previous_uN( N );
             //uN[0].setZero( N );
             computeProjectionInitialGuess( mu , N , uN[0] );
             int fi=0;
@@ -4797,7 +4797,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     }
                 }
                 // solve rb system
-                uN[0] = A.lu().solve( F );
+                if ( true )
+                    uN[0] = A.fullPivLu().solve( F );
+                else
+                    uN[0] = A.lu().solve( F );
 
                 if ( useAitkenRelaxation )
                 {
@@ -4819,7 +4822,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                             rbaitkenAux = rbresidual- rbPreviousResidual;
                             double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
                             rbaitkenAux *= ( 1.0/scalar );
-                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux);
                             if ( scalar > 1 || scalar < 1e-4 )
                                 scalar = 1.;
 
@@ -5738,7 +5741,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
-    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N=N"<<N;
+    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
