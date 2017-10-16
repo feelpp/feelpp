@@ -184,9 +184,10 @@ public:
         }
     CRBTrilinear( std::string const& name,
                   truth_model_ptrtype const & model,
-                  crb::stage stage = crb::stage::online )
+                  crb::stage stage = crb::stage::online,
+                  std::string const& prefixExt = "" )
         :
-        super_crb( name, model, stage )
+        super_crb( name, model, stage, prefixExt )
         {}
     //! default constructor
     FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
