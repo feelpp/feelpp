@@ -1871,10 +1871,6 @@ public:
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
     typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
-    typedef MeshSupport<mesh_type> mesh_support_type;
-    typedef std::shared_ptr<mesh_support_type> mesh_support_ptrtype;
-    typedef typename mesh_support_type::range_elements_type range_elements_type;
-
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
 
