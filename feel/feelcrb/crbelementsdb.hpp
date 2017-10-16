@@ -125,6 +125,9 @@ public :
             size_type rbdim = ptree.template get<int>( "dimension" );
             this->setMN( rbdim );
             std::string dbname = ptree.template get<std::string>( "database-filename" );
+            if ( this->worldComm().globalSize() > 1 && M_fileFormat != "hdf5" )
+                dbname.replace(dbname.end()-std::string("_p0.crbdb").size(), dbname.end(),
+                               (boost::format("_p%1%.crbdb")%this->worldComm().globalRank()).str() );
             fs::path dbnamePath = fs::path( dbname );
             this->setDBFilename( dbnamePath.filename().string() );
             if ( dbnamePath.is_absolute() )
