@@ -36,7 +36,7 @@
 #include<feel/feelcore/environment.hpp>
 
 namespace py = pybind11;
-PYBIND11_MODULE(_core, m )
+PYBIND11_MODULE(core, m )
 {
     using namespace Feel;
 
