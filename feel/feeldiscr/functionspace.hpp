@@ -1863,6 +1863,10 @@ public:
     typedef boost::shared_ptr<DataMap> datamap_ptrtype;
     typedef boost::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
+    typedef MeshSupport<mesh_type> mesh_support_type;
+    typedef std::shared_ptr<mesh_support_type> mesh_support_ptrtype;
+    typedef typename mesh_support_type::range_elements_type range_elements_type;
+
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
 
@@ -4688,6 +4692,27 @@ public:
     mesh( mpl::bool_<false> ) const
     {
         return fusion::at_c<i>(M_mesh);
+    }
+
+    /**
+     * \return the mesh support if it exists, if not create one
+     */
+    template<int i = 0>
+    mesh_support_ptrtype meshSupport() const
+    {
+        auto meshSupportVector = Feel::detail::FunctionSpaceMeshSupport<functionspace_type>( *this ).M_meshSupportVector;
+        auto & meshSupport = boost::fusion::at_c<i>( meshSupportVector );
+        if( !meshSupport )
+            meshSupport = std::make_shared<mesh_support_type>(mesh<i>());
+        return meshSupport;
+    }
+
+    /**
+     * \return the range of elements on which the space is defined
+     */
+    range_elements_type rangeElements() const
+    {
+        return meshSupport()->rangeElements();
     }
 
     /**
