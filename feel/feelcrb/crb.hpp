@@ -11552,14 +11552,19 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
             M_scmM->setup( *ptreeOptionalScmM, dbDir );
     }
 
+    auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
     if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
     {
-        auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
         // M_model->rBFunctionSpace()->setModel( M_model->model() );
         // //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
         // M_elements_database.setModel( M_model );
         M_elements_database.setup( ptreeReducedBasisSpace, dbDir );
         M_loadElementsDb = true;
+    }
+    else
+    {
+        int rbdim = ptreeReducedBasisSpace.template get<size_type>( "dimension" );
+        M_model->rBFunctionSpace()->setDimension( rbdim );
     }
 
 }
