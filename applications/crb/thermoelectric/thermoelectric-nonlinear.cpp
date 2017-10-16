@@ -299,14 +299,14 @@ void ThermoElectric::initModel()
                               _sampling=Pset );
         this->addEim( eim_sigma );
 
-        // auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
-        //                   _element=M_VT->template element<1>(),
-        //                   _parameter=M_mu,
-        //                   _expr=k,
-        //                   _space=M_Th,
-        //                   _name=(boost::format("eim_k_%1%") % mat.first ).str(),
-        //                   _sampling=Pset );
-        // this->addEim( eim_k );
+        auto eim_k = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+                          _element=M_VT->template element<1>(),
+                          _parameter=M_mu,
+                          _expr=k,
+                          _space=M_Th,
+                          _name=(boost::format("eim_k_%1%") % mat.first ).str(),
+                          _sampling=Pset );
+        this->addEim( eim_k );
 
         auto eim_joule = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
                               _element=M_VT->template element<1>(),
