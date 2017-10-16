@@ -72,6 +72,11 @@ feelpp_add_application( electric-alpha-app
                         EXEC ELECTRIC_ALPHA_APP
                         )
 
+crb_add_model(thermoelectric-nonlinear ThermoElectric
+	HDRS thermoelectric-nonlinear.hpp
+	LINK_LIBRARIES ${FEELPP_LIBRARIES} ${CRB_LIB_THERMOELECTRIC_NONLINEAR}
+    )
+
 feelpp_add_testcase( crb-electric CATEGORY CRB)
 feelpp_add_testcase( crb-thermic CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-simple CATEGORY CRB)

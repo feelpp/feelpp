@@ -51,7 +51,7 @@ makeThermoElectricOptions()
 }
 
 FEELPP_EXPORT AboutData
-makeAbout( std::string const& str = "thermoelectriccrbmodel" )
+makeThermoElectricAbout( std::string const& str = "thermoelectriccrbmodel" )
 {
     AboutData about( str.c_str() );
     return about;
@@ -205,7 +205,7 @@ public:
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     // Decomposition
-    void decomposition();
+    void assemble() override;
     affine_decomposition_type computeAffineDecomposition() override;
     std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
     std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
@@ -225,6 +225,7 @@ public:
     // Scalar product
     double scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y );
     double scalarProduct( vector_type const& x, vector_type const& y );
+    sparse_matrix_ptrtype energyMatrix() override;
 
     // Output
     value_type
