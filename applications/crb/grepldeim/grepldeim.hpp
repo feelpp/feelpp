@@ -129,6 +129,7 @@ public :
 
     beta_type computeBetaQm( element_type const& T,parameter_type const& mu );
     beta_type computeBetaQm( parameter_type const& mu );
+    beta_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu );
     void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu);
 
     affine_decomposition_type computeAffineDecomposition();
@@ -162,6 +163,20 @@ private :
 };
 
 
+template<int Order, int Dim>
+typename GreplDEIM<Order,Dim>::beta_type
+GreplDEIM<Order,Dim>::computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
+{
+    auto beta_g = this->deim()->beta(mu,urb);
+    std::vector<vectorN_type*> betas;
+    betas.push_back(&beta_g);
+
+    fillBetaQm(betas, mu);
+    if( M_use_newton )
+        return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
+    else
+        return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
+}
 template<int Order, int Dim>
 typename GreplDEIM<Order,Dim>::beta_type
 GreplDEIM<Order,Dim>::computeBetaQm( element_type const& T,parameter_type const& mu )
