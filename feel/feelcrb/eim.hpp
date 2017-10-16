@@ -2375,7 +2375,9 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto eimexpr = this->expr( mu,urbelt );
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
@@ -2384,9 +2386,13 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, rbfunctionspace_context2_type const& ctx2, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto urbelt2 = ctx2.rbFunctionSpace()->element();
-            urbelt2.container() = urb;
+            int dimRb2 = std::min((int)urbelt2.size(),(int)urb.size());
+            for ( int k=0; k<dimRb2; ++k )
+                urbelt2(k) = urb(k);
             auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
             return evaluateFromContext( _context=ctx, _context2=ctx2, _expr=eimexpr2 , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
