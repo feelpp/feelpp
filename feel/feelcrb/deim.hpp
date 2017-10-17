@@ -780,7 +780,7 @@ public :
         if ( this->M_optimized_online )
         {
             this->M_online_model = model_ptrtype( new model_type() );
-            this->M_online_model->setModelOnlineDeim( this->name(true)+"-online" );
+            this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
         }
         else
             this->M_online_model = M_model;
