@@ -24,7 +24,7 @@
 //!
 
 #include "biotsavart.hpp"
-#include "thermoelectric.hpp"
+#include "thermoelectric-linear.hpp"
 
 using namespace Feel;
 
