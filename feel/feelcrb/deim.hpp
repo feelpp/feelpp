@@ -911,6 +911,11 @@ public :
         return Feel::expansion( M_rb_basis, urb, N );
     }
 
+    model_ptrtype & onlineModel()
+    {
+        return M_online_model;
+    }
+
 protected :
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
