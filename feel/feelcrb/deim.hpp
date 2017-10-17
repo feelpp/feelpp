@@ -911,7 +911,8 @@ protected :
 };
 
 
-template <typename ModelType>
+template <typename ModelType,
+          typename TestSpace=typename ModelType::space_type>
 class DEIM :
         public DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>
 {
@@ -927,13 +928,17 @@ public :
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
+    typedef TestSpace testspace_type;
+    typedef boost::shared_ptr<testspace_type> testspace_ptrtype;
 
     DEIM() :
         super_type()
     {}
 
-    DEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
+    DEIM( model_ptrtype model, testspace_ptrtype test_space,
+          sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
+        super_type( model, sampling, prefix ),
+        Teh( test_space )
     {
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
         this->init();
@@ -963,9 +968,9 @@ private :
     {
         // Last added index
         auto index = this->M_index.back();
-        auto Xh = this->M_model->functionSpace();
-        auto mesh = Xh->mesh();
-        int proc_n = Xh->dof()->procOnGlobalCluster(index);
+        //auto Xh = this->M_model->functionSpace();
+        auto mesh = Teh->mesh();
+        int proc_n = Teh->dof()->procOnGlobalCluster(index);
 
         // recover the elements which share this index
         std::set<int> pts_ids;
@@ -973,7 +978,7 @@ private :
 
         if ( Environment::worldComm().globalRank()==proc_n )
         {
-            for ( auto const& dof : Xh->dof()->globalDof(index-Xh->dof()->firstDofGlobalCluster()) )
+            for ( auto const& dof : Teh->dof()->globalDof(index-Teh->dof()->firstDofGlobalCluster()))
             {
                 this->M_elts_ids.insert( dof.second.elementId() );
                 if (ldof==-1)
@@ -987,11 +992,11 @@ private :
         }
         else
         {
-            auto e = Xh->dof()->searchGlobalProcessDof( index );
+            auto e = Teh->dof()->searchGlobalProcessDof( index );
             if ( e.template get<0>() )
             {
                 auto process_dof = e.template get<1>();
-                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
+                for ( auto const& dof : Teh->dof()->globalDof( process_dof) )
                     this->M_elts_ids.insert( dof.second.elementId() );
             }
         }
@@ -1010,6 +1015,8 @@ private :
                                  _worldcomm= Environment::worldCommSeq() );
         Rh = space_type::New( seqmesh,
                               _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+        testspace_ptrtype RTeh = testspace_type::New( seqmesh,
+                                                      _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
 
         // create map between points id and elements id
         std::map<std::set<int>,int> elts_map;
@@ -1030,7 +1037,7 @@ private :
             CHECK( map_it!=elts_map.end() ) <<this->name() + " : elt id not found in map, on proc : "
                                             <<Environment::worldComm().globalRank() << std::endl;
             int elt_idR = map_it->second;
-            this->M_indexR.push_back( Rh->dof()->localToGlobalId( elt_idR, this->M_ldofs[i] ) );
+            this->M_indexR.push_back( RTeh->dof()->localToGlobalId( elt_idR, this->M_ldofs[i] ) );
         }
 
         this->M_online_model->setFunctionSpaces( Rh );
@@ -1039,11 +1046,12 @@ private :
     }
 
 private :
+    testspace_ptrtype Teh;
     using super_type::Rh;
 };
 
 
-template <typename ModelType>
+    template <typename ModelType>
 class MDEIM :
         public DEIMModel<ModelType,
                          typename Backend<typename ModelType::value_type>::sparse_matrix_type>
@@ -1335,6 +1343,7 @@ struct compute_deim_return
 {
     typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test, typename model_type::space_ptrtype>::type>::type::element_type test_type;
 
     typedef DEIM<model_type> type;
     typedef boost::shared_ptr<type> ptrtype;
@@ -1362,11 +1371,12 @@ BOOST_PARAMETER_FUNCTION(
                          ( optional
                            ( sampling, *, nullptr )
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( test, *, model->functionSpace() )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
-    return boost::make_shared<deim_type>( model, sampling, prefix );
+    return boost::make_shared<deim_type>( model,test, sampling, prefix );
 }
 
 
