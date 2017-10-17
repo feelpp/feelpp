@@ -67,6 +67,7 @@ feelpp_add_application( biotsavart-alpha-electric-app
                         )
 target_include_directories(${BIOTSAVART_ALPHA_ELECTRIC_APP} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
 
+
 feelpp_add_testcase( bs-crb-quarterturn )
 feelpp_add_testcase( bs-bancmesure )
 feelpp_add_testcase( bs-alpha-hel )
