@@ -23,8 +23,8 @@
 //!
 //!
 
-#ifndef FEELPP_BIOTSAVARTALPHAELECTRO_HPP
-#define FEELPP_BIOTSAVARTALPHAELECTRO_HPP
+#ifndef FEELPP_BIOTSAVART_ALPHA_ELECTRIC_HPP
+#define FEELPP_BIOTSAVART_ALPHA_ELECTRIC_HPP
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
@@ -33,7 +33,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <alphaelectric.hpp>
+#include <electric-alpha.hpp>
 
 namespace Feel
 {
@@ -42,16 +42,10 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
 {
     po::options_description opt("BiotSavart options");
     opt.add_options()
-        ( "biotsavart.conductor", po::value<std::vector<std::string> >()->multitoken(),
-          "marker for the conductor" )
-        ( "biotsavart.mgn", po::value<std::vector<std::string> >()->multitoken(),
-          "marker for the magnetic part" )
+        ( "biotsavart.filename", po::value<std::string>()->default_value("biotsavart.json"),
+          "json file")
         ( "biotsavart.repart", po::value<bool>()->default_value( false ),
           "repartition the mesh" )
-        ( "biotsavart.run-mode", po::value<int>()->default_value( 2 ),
-          "execution mode: pfem=0, scm=1, crb=2, scm_online=3, crb_online=4" )
-        ( "biotsavart.param", po::value<std::vector<double> >()->multitoken(),
-          "parameter to evaluate" )
         ( "biotsavart.compute-fe", po::value<bool>()->default_value(false),
           "compute the finite element version of Biot Savart" )
         ( "biotsavart.compute-offline", po::value<bool>()->default_value(true),
@@ -64,12 +58,16 @@ FEELPP_EXPORT po::options_description biotsavartOptions()
           "path to the database" )
         ( "biotsavart.trainset-deim-size", po::value<int>()->default_value(10),
           "size of the trainset for DEIM of BiotSavart" )
-        ( "biotsavart.do-opt", po::value<bool>()->default_value(false),
-          "do or not the optimization" )
         ;
     opt.add(deimOptions("bs"));
     return opt;
 }
+
+class BSParameterDefinition
+{
+public:
+    using parameterspace_type = ParameterSpaceX;
+};
 
 class BSFunctionSpaceDefinition
 {
@@ -85,16 +83,37 @@ public:
     using element_type = typename space_type::element_type;
 };
 
+template <typename ParameterDefinition, typename FunctionSpaceDefinition >
+class BSEimDefinition
+{
+public :
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+    // typedef typename FunctionSpaceDefinition::J_space_type J_space_type;
+
+    /* EIM */
+    // Scalar continuous //
+    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fun_type;
+    // Scalar Discontinuous //
+    typedef EIMFunctionBase<space_type, space_type , parameterspace_type> fund_type;
+
+};
+
 template<typename te_rb_model_type>
-class FEELPP_EXPORT BiotSavartAlphaElectroCRB
-    : public ModelCrbBase<typename te_rb_model_type::parameterspace_type,
-                          BSFunctionSpaceDefinition >
+class FEELPP_EXPORT BiotSavartAlphaElectricCRB
+    : public ModelCrbBase<BSParameterDefinition,
+                          BSFunctionSpaceDefinition,
+                          Linear,
+                          BSEimDefinition<BSParameterDefinition,BSFunctionSpaceDefinition> >
 {
   public:
-    using super_type = ModelCrbBase<typename te_rb_model_type::parameterspace_type,
-                                    BSFunctionSpaceDefinition >;
+    using super_type = ModelCrbBase<BSParameterDefinition,
+                                    BSFunctionSpaceDefinition,
+                                    Linear,
+                                    BSEimDefinition<BSParameterDefinition,
+                                                    BSFunctionSpaceDefinition> >;
 
-    using self_type = BiotSavartAlphaElectroCRB<te_rb_model_type>;
+    using self_type = BiotSavartAlphaElectricCRB<te_rb_model_type>;
     using self_ptrtype = boost::shared_ptr<self_type>;
 
     using te_rb_model_ptrtype = boost::shared_ptr<te_rb_model_type>;
@@ -135,9 +154,14 @@ class FEELPP_EXPORT BiotSavartAlphaElectroCRB
     using deim_ptrtype = boost::shared_ptr<deim_type>;
     using vector_ptrtype = typename super_type::vector_ptrtype;
 
-public:
+    using prop_type = ModelProperties;
+    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using mat_type = ModelMaterial;
+    using map_mat_type = std::map<std::string,mat_type>;
+
+  public:
     static self_ptrtype New(crb::stage stage = crb::stage::online) { return boost::make_shared<self_type>(stage); }
-    BiotSavartAlphaElectroCRB(crb::stage stage = crb::stage::online);
+    BiotSavartAlphaElectricCRB(crb::stage stage = crb::stage::online);
 
     void initModel();
     // setupSpecificityModel
@@ -150,6 +174,7 @@ public:
 
     parameter_type paramFromOption();
     parameter_type param0();
+    parameter_type paramFromProperties() const;
     void runBS();
     void setupCommunicatorsBS();
     vector_ptrtype assembleForDEIM( parameter_type const& mu );
@@ -162,7 +187,7 @@ public:
     void exportResults( parameter_type const& mu );
     double homogeneity( element_type& B );
 
-    parameter_type newParameter() { return M_teCrbModel->newParameter(); }
+    parameter_type newParameter() const { return M_teCrbModel->newParameter(); }
     void setParameter( parameter_type& mu ) { M_mu = mu; }
     int nbParameters() const { return M_crbModel->parameterSpace()->dimension();  }
     auto parameterSpace() const { return M_crbModel->parameterSpace(); }
@@ -172,11 +197,9 @@ public:
     cond_element_type potentialFE() const { return M_VFe; }
     element_type magneticFlux() const { return M_B; }
     element_type magneticFluxFE() const { return M_BFe; }
-    mesh_ptrtype meshCond() const { return M_meshCond; }
-    mesh_ptrtype meshMgn() const { return M_meshMgn; }
+    mesh_ptrtype mesh() const { return M_mesh; }
     cond_space_ptrtype spaceCond() const { return M_XhCond; }
     space_ptrtype spaceMgn() const { return this->Xh; }
-    std::string alphaString( parameter_type const& mu ) { return M_teCrbModel->alpha(mu); }
     cond_element_type alpha( parameter_type const& mu );
 
 protected:
@@ -185,10 +208,13 @@ protected:
     crb_ptrtype M_crb;
 
     deim_ptrtype M_deim;
+
     std::vector<Eigen::MatrixXd> M_intMND;
 
-    mesh_ptrtype M_meshCond;
-    mesh_ptrtype M_meshMgn;
+    prop_ptrtype M_modelProps;
+    map_mat_type M_materials;
+
+    mesh_ptrtype M_mesh;
     cond_space_ptrtype M_XhCond;
     cond_element_type M_V;
     cond_element_type M_VFe;
@@ -204,10 +230,18 @@ protected:
     std::vector< mpi::communicator > M_commsC1M;
     std::map<int, dof_points_type> M_dofMgn;
 
+    std::string M_propertyPath;
+    bool M_repart;
+    bool M_computeFe;
+    bool M_computeOffline;
+    bool M_computeOnline;
+    bool M_rebuildDb;
+    std::string M_pathToDb;
+    int M_trainsetDeimSize;
 }; // class BiotSavartAlphaElectroCRB
 
-#if !defined(FEELPP_INSTANTIATE_BIOTSAVARTALPHAELECTRO_ELECTRIC)
-extern template class FEELPP_EXPORT BiotSavartAlphaElectroCRB<AlphaElectric>;
+#if !defined(FEELPP_INSTANTIATE_BIOTSAVARTALPHAELECTRIC_ELECTRIC)
+extern template class FEELPP_EXPORT BiotSavartAlphaElectricCRB<AlphaElectric>;
 #endif
 } // namespace Feel
 
