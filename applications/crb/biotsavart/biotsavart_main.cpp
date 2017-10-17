@@ -40,9 +40,9 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-dual"))
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("ThermoElectricCRB"))
-                     .add(makeOptions()) );
+                     .add(makeThermoElectricOptions()) );
 
-    BiotSavartCRB<Thermoelectric> bs = BiotSavartCRB<Thermoelectric>();
+    BiotSavartCRB<ThermoElectric> bs = BiotSavartCRB<ThermoElectric>();
     //bs.runBS();
 
     auto mu = bs.paramFromOption();
