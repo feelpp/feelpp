@@ -17,7 +17,8 @@ po::options_description makeOptions()
     po::options_description options( "Test DEIM Options" );
 
     options.add( feel_options() )
-        .add(deimOptions());
+        .add(deimOptions())
+        .add(crbSEROptions());
     return options;
 }
 
@@ -152,7 +153,10 @@ public :
     {
         return Xh->element();
     }
-
+    std::string modelName()
+    {
+        return "test_deim";
+    }
 
 
 private :
