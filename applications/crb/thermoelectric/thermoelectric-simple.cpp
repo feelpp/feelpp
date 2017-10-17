@@ -41,11 +41,10 @@ ThermoElectric::ThermoElectric( mesh_ptrtype mesh )
 int ThermoElectric::Qa()
 {
     auto bc = M_modelProps->boundaryConditions();
-    auto electroMaterials = M_modelProps->materials().materialWithPhysic("electric");
-    auto thermoMaterials = M_modelProps->materials().materialWithPhysic("thermic");
+    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
     int dirSize = bc["potential"]["Dirichlet"].size();
     int robSize = bc["temperature"]["Robin"].size();
-    return electroMaterials.size() + thermoMaterials.size() + dirSize + robSize;
+    return 2*materials.size() + dirSize + robSize;
 }
 
 int ThermoElectric::mQA( int q )
@@ -262,8 +261,8 @@ void ThermoElectric::decomposition()
     auto gamma = doption("thermoelectric.gamma");
 
     /************** Left hand side **************/
-    // thermo
     int idx = 0;
+    // electro
     for( auto const& mat : materials )
     {
         auto a0 = form2(_test=Xh, _trial=Xh);
@@ -271,6 +270,7 @@ void ThermoElectric::decomposition()
                         inner(gradt(V),grad(phiV)) );
         M_Aqm[idx++][0] = a0.matrixPtr();
     }
+    // thermo
     for( auto const& mat : materials )
     {
         auto a1 = form2(_test=Xh, _trial=Xh);
@@ -475,12 +475,12 @@ ThermoElectric::element_type
 ThermoElectric::solve( parameter_type const& mu )
 {
     Feel::cout << "solve for parameter:" << std::endl << mu << std::endl;
-    auto VT = Xh->element();
-    auto V = VT.template element<0>();
-    auto T = VT.template element<1>();
-    auto phi = Xh->element();
-    auto phiV = phi.template element<0>();
-    auto phiT = phi.template element<1>();
+    auto Vh = Xh->template functionSpace<0>();
+    auto Th = Xh->template functionSpace<1>();
+    auto V = Vh->element();
+    auto phiV = Vh->element();
+    auto T = Th->element();
+    auto phiT = Th->element();
 
     auto bc = M_modelProps->boundaryConditions();
     auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
@@ -488,7 +488,7 @@ ThermoElectric::solve( parameter_type const& mu )
 
     /***************************** Electro *****************************/
     tic();
-    auto aV = form2(_test=Xh, _trial=Xh);
+    auto aV = form2(_test=Vh, _trial=Vh);
     // V
     for( auto const& mat : materials )
     {
@@ -507,7 +507,7 @@ ThermoElectric::solve( parameter_type const& mu )
                                 -inner(grad(phiV)*N(),idt(V)) ) );
     }
 
-    auto fV = form1(_test=Xh);
+    auto fV = form1(_test=Vh);
     for( auto const& exAtM : bc["potential"]["SourceTerm"] )
     {
         auto e1 = expr(exAtM.expression1());
@@ -536,7 +536,7 @@ ThermoElectric::solve( parameter_type const& mu )
 
     /***************************** Thermo *****************************/
     tic();
-    auto aT = form2(_test=Xh, _trial=Xh);
+    auto aT = form2(_test=Th, _trial=Th);
     // T
     for( auto const& mat : materials )
     {
@@ -557,7 +557,7 @@ ThermoElectric::solve( parameter_type const& mu )
                          e.evaluate()*inner(idt(T), id(phiT)) );
     }
 
-    auto fT = form1(_test=Xh);
+    auto fT = form1(_test=Th);
     for( auto const& exAtM : bc["temperature"]["SourceTerm"] )
     {
         auto e1 = expr(exAtM.expression1());
