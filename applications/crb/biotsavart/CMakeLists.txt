@@ -60,7 +60,7 @@ target_include_directories(${BIOTSAVARTOPT_APP} PRIVATE ${PROJECT_SOURCE_DIR}/th
 #                         )
 # target_include_directories(${ALPHABIOTSAVART_APP} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
 
-feelpp_add_application( biotsavartCRBAlphaElectric
+feelpp_add_application( biotsavart-alpha-electric-app
                         SRCS biotsavart-alpha-electric_main.cpp biotsavart-alpha-electric.hpp
                         LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ALPHA_ELECTRIC}
                         EXEC BIOTSAVART_ALPHA_ELECTRIC_APP
@@ -70,3 +70,5 @@ target_include_directories(${BIOTSAVART_ALPHA_ELECTRIC_APP} PRIVATE ${PROJECT_SO
 feelpp_add_testcase( bs-crb-quarterturn )
 feelpp_add_testcase( bs-bancmesure )
 feelpp_add_testcase( bs-alpha-hel )
+feelpp_add_testcase( crb-bs-alpha-electric )
+

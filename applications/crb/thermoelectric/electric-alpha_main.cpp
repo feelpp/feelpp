@@ -94,8 +94,8 @@ int main( int argc, char** argv)
         Feel::cout << fmter % n % errVRB % errRel;
         e->step(n)->add("VFE", VFE);
         e->step(n)->add("VRB", VRB);
+        e->save();
     }
-    e->save();
     file.close();
 
     return 0;

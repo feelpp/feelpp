@@ -152,7 +152,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     }
     else
     {
-        LOG(WARNING) << "Model does not have any materials\n";
+        LOG(WARNING) << "Model does not have any postprocess\n";
     }
 }
 
