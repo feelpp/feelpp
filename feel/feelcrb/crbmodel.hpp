@@ -1227,6 +1227,16 @@ public:
     {
         return M_model->mdeimVector();
     }
+    void updateRbInDeim( std::vector<element_type> const& wn )
+    {
+        auto deim_vector = this->deimVector();
+        auto mdeim_vector = this->mdeimVector();
+
+        for ( auto deim : deim_vector )
+            deim->updateRb(wn);
+        for ( auto mdeim : mdeim_vector )
+            mdeim->updateRb(wn);
+    }
 
     struct ComputeNormL2InCompositeCase
     {
@@ -1755,6 +1765,11 @@ public:
     bool hasEim()
     {
         return M_has_eim;
+    }
+
+    bool hasDeim()
+    {
+        return M_model->hasDeim();
     }
     /*
      * return true if the model uses SER
