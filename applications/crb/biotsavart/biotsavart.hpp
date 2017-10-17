@@ -32,7 +32,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <thermoelectric.hpp>
+#include <thermoelectric-linear.hpp>
 
 namespace Feel
 {
@@ -216,7 +216,7 @@ protected:
 }; // class BiotSavartCRB
 
 #if !defined(FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC)
-extern template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
+extern template class FEELPP_EXPORT BiotSavartCRB<ThermoElectric>;
 #endif
 } // namespace Feel
 

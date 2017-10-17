@@ -22,7 +22,7 @@
 #
 #
 
-crb_add_library( biotsavart SRCS biotsavart.hpp biotsavart.cpp LINK_LIBRARIES ${FEELPP_CRB_THERMOELECTRIC_LIBRARIES} EXEC CRB_LIB_BIOTSAVART )
+crb_add_library( biotsavart SRCS biotsavart.hpp biotsavart.cpp LINK_LIBRARIES ${FEELPP_CRB_THERMOELECTRIC_LINEAR_LIBRARIES} EXEC CRB_LIB_BIOTSAVART )
 target_include_directories(${CRB_LIB_BIOTSAVART} PRIVATE ${PROJECT_SOURCE_DIR}/thermoelectric)
 set(FEELPP_CRB_BIOTSAVART_LIBRARIES ${CRB_LIB_BIOTSAVART} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_LIBRARIES PARENT_SCOPE)
@@ -70,3 +70,6 @@ target_include_directories(${BIOTSAVART_ALPHA_ELECTRIC_APP} PRIVATE ${PROJECT_SO
 
 feelpp_add_testcase( bs-crb-quarterturn )
 feelpp_add_testcase( bs-bancmesure )
+feelpp_add_testcase( bs-alpha-hel )
+feelpp_add_testcase( crb-bs-alpha-electric )
+
