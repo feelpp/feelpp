@@ -152,7 +152,10 @@ public :
     {
         return Xh->element();
     }
-
+    std::string modelName()
+    {
+        return "test_deim";
+    }
 
 
 private :
