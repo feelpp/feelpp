@@ -338,13 +338,27 @@ public :
 
     void reAssembleFromDb()
     {
+        tic();
         Feel::cout << name() +" : Start reassambling "<<M_M<<" basis vectors\n";
+        M_M=0;
         for ( auto const& mu : M_mus )
         {
-            Feel::cout << name()+" : reassable for mu=" << mu.toString();
-            addNewVector(mu);
+            Feel::cout << name()+" : reassemble for mu=" << mu.toString()<<std::endl;
+            tensor_ptrtype Phi = residual( mu );
+
+            auto vec_max = vectorMaxAbs( Phi );
+            auto i = vec_max.template get<1>();
+            double max = vec_max.template get<0>();
+            if ( M_max_value==-1 )
+                M_max_value=max;
+            Phi->scale( 1./max );
+            M_bases.push_back( Phi );
+            M_M++;
         }
         M_solutions.clear();
+        cout <<"===========================================\n";
+        cout << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
+        toc( name() + " : Reassemble "+std::to_string(M_M)+" basis" );
     }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
@@ -420,7 +434,6 @@ protected :
         auto i = vec_max.template get<1>();
         double max = vec_max.template get<0>();
 
-        M_mus.push_back(mu);
 
         if ( M_max_value==-1 )
             M_max_value=max;
@@ -429,6 +442,7 @@ protected :
         Phi->scale( 1./max );
         M_bases.push_back( Phi );
         M_index.push_back(i);
+        M_mus.push_back(mu);
 
         M_B.conservativeResize(M_M,M_M);
         // update last row of M_B
@@ -1254,6 +1268,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
     DVLOG(2) << "M_nl_assembly saved/loaded\n";
     __ar & BOOST_SERIALIZATION_NVP( M_indexR );
     DVLOG(2) << "M_indexR saved/loaded\n";
+    __ar & BOOST_SERIALIZATION_NVP( M_index );
+    DVLOG(2) << "M_index saved/loaded\n";
     __ar & BOOST_SERIALIZATION_NVP( M_n_rb );
     DVLOG(2) << "M_n_rb saved/loaded\n";
     __ar & BOOST_SERIALIZATION_NVP( M_mus );
@@ -1331,6 +1347,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
         boost::archive::binary_iarchive ia( ifs );
         ia >> *this;
         this->setIsLoaded( true );
+
+        return true;
     }
 
     return false;
