@@ -84,6 +84,15 @@ struct ChangeBasisPolySet<NewPolySetType, BasisType<Order, PolySetType, Continui
 
 enum class AdvectionStabMethod { NONE=0, GALS, CIP, SUPG, SGS };
 
+namespace ADRTypes {
+    using Advection = hana::integral_constant< int, (1 << 0) >;
+    using Diffusion = hana::integral_constant< int, (1 << 1) >;
+    using Reaction  = hana::integral_constant< int, (1 << 2) >;
+    using AdvectionDiffusion = hana::integral_constant< int, (1 << 0) | (1 << 1) >;
+    using AdvectionReaction = hana::integral_constant< int, (1 << 0) | (1 << 2) >;
+    using AdvectionDiffusionReaction = hana::integral_constant< int, (1 << 0) | (1 << 1) | (1 << 2) >;
+};
+
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType = NoPeriodicity,
@@ -102,6 +111,17 @@ public :
     typedef AdvectionBase< ConvexType, BasisAdvectionType, PeriodicityType, 
             BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
+
+    // ADR types
+    enum ADREnum: uint16_type {
+        Advection = (1 << 0),
+        Diffusion = (1 << 1),
+        Reaction  = (1 << 2),
+        AdvectionDiffusion = Advection | Diffusion,
+        AdvectionReaction = Advection | Reaction,
+        DiffusionReaction = Diffusion | Reaction,
+        AdvectionDiffusionReaction = Advection | Diffusion | Reaction
+    };
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -296,7 +316,7 @@ public :
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const;
     virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
-    virtual void updateLinearPDEStabilization( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
+    virtual void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const {};
     virtual bool hasSourceTerm() const =0;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const =0;
@@ -309,10 +329,14 @@ public :
     template<typename ExprT>
     void updateAdvectionVelocity(vf::Expr<ExprT> const& expr);
     //--------------------------------------------------------------------//
+    // Volumic sources
+    bc_map_field_type const& volumicSources() const { return M_sources; }
+    //--------------------------------------------------------------------//
     // Source update
     template<typename ExprT>
     void updateSourceAdded(vf::Expr<ExprT> const& expr);
     bool hasSourceAdded() const { return M_hasSourceAdded; }
+    element_advection_ptrtype const& sourceAdded() const { return M_fieldSource; }
     //--------------------------------------------------------------------//
     // Diffusion-reaction parameters update
     diffusionreaction_model_ptrtype & diffusionReactionModel() { return M_diffusionReactionModel; }
