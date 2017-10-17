@@ -2991,8 +2991,6 @@ CRB<TruthModelType>::offline()
     if( this->worldComm().isMasterRank() )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
 
-    if (boption("crb.visualize-basis"))
-        this->exportBasisFunctions();
 
     if ( boption("crb.check.residual") )
         this->testResidual();
@@ -3000,6 +2998,8 @@ CRB<TruthModelType>::offline()
     if( M_maxerror <= M_tolerance || M_N >= user_max  )
     {
         this->setOfflineStep( false );
+        if (boption("crb.visualize-basis"))
+            this->exportBasisFunctions();
     }
     return M_rbconv;
 }
