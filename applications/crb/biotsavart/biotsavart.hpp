@@ -32,7 +32,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <thermoelectric.hpp>
+#include <thermoelectric-linear.hpp>
 
 namespace Feel
 {
