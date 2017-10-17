@@ -674,7 +674,6 @@ public :
     }
 
 
-
     /**
      * \brief update model description in property_tree
      * \param ptree to update
@@ -714,6 +713,21 @@ public :
             ptreeEim.add_child( eimObject->name(), ptreeEimObject );
         }
         ptree.add_child( "eim", ptreeEim );
+
+        boost::property_tree::ptree ptreeDeim;
+        for ( auto const& deimObject : this->deimVector() )
+        {
+            boost::property_tree::ptree ptreeDeimObject;
+            ptreeDeimObject.add("database-filename", deimObject->dbRelativePath() );
+            ptreeDeim.add_child( deimObject->name(), ptreeDeimObject );
+        }
+        for ( auto const& mdeimObject : this->mdeimVector() )
+        {
+            boost::property_tree::ptree ptreeMdeimObject;
+            ptreeMdeimObject.add("database-filename", mdeimObject->dbRelativePath() );
+            ptreeDeim.add_child( mdeimObject->name(), ptreeMdeimObject );
+        }
+        ptree.add_child( "deim", ptreeDeim );
 
         boost::property_tree::ptree ptreeSpecificityOfModel;
         this->updateSpecificityModel( ptreeSpecificityOfModel );
