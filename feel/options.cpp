@@ -628,9 +628,9 @@ crbOptions( std::string const& prefix )
         ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
         ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
-        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
+        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( true ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
 
-        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
+        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 20 ), "nb iteration max for the fixed point (online part)" )
         ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
         ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
         ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
