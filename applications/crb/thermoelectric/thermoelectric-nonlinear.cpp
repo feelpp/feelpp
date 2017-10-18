@@ -320,7 +320,7 @@ void ThermoElectric::initModel()
     }
 
     this->resizeQm();
-    this->decomposition();
+    this->assemble();
 }
 
 void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -362,7 +362,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
 }
 
 /******************************* Decomposition ***********************/
-void ThermoElectric::decomposition()
+void ThermoElectric::assemble()
 {
     auto VT = Xh->element();
     auto V = VT.template element<0>();
@@ -930,6 +930,12 @@ double
 ThermoElectric::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M_M->energy( x, y );
+}
+
+ThermoElectric::sparse_matrix_ptrtype
+ThermoElectric::energyMatrix()
+{
+    return M_M;
 }
 
 
