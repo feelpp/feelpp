@@ -1271,7 +1271,7 @@ public:
 
             auto u1 = M_composite_u1.template element< T::value >();
             auto u2 = M_composite_u2.template element< T::value >();
-            double norm  = normL2(_range=u1.functionSpace()->template rangeElements< T::value >(),
+            double norm  = normL2(_range=u1.functionSpace()->template rangeElements< 0 >(),
                                   _expr=( idv(u1)-idv(u2) ) );
             M_vec(i)= norm ;
         }
@@ -2980,7 +2980,7 @@ struct PreAssembleMassMatrixInCompositeCase
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_u.functionSpace();
 
-        auto expr = integrate( _range=u.functionSpace()->template rangeElements< T::value >(),
+        auto expr = integrate( _range=u.functionSpace()->template rangeElements< 0 >(),
                                _expr=trans( idt( u ) )*vf::id( v ) ) ;
         auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
 
@@ -3048,7 +3048,7 @@ struct AssembleMassMatrixInCompositeCase
         auto Xh = u.functionSpace();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=Xh->template rangeElements< T::value >(),
+            integrate( _range=Xh->template rangeElements< 0 >(),
                        _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
@@ -3098,7 +3098,7 @@ struct AssembleInitialGuessVInCompositeCase
 
         auto v = M_composite_v.template element< T::value >();
         auto Xh = v.functionSpace();
-        auto range = Xh->template rangeElements< T::value >();
+        auto range = Xh->template rangeElements< 0 >();
         int q_max = M_crb_model->QInitialGuess();
         for(int q = 0; q < q_max; q++)
         {
