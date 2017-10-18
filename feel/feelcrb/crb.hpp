@@ -1186,7 +1186,10 @@ public:
             std::vector<CRBResults> res;
             res.reserve( S.size() );
             for( auto const& mu : S )
-                res.push_back( this->run( mu, eps, N, print_rb_matrix ) );
+            {
+                auto r = this->run( mu, eps, N, print_rb_matrix );
+                res.push_back( r );
+            }
             return res;
         }
 
@@ -11343,7 +11346,7 @@ void
 CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l ) 
 {
     auto fname = this->db( filename );
-    
+
     if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
         this->setLoadBasisFromDB( true );
     else

@@ -58,7 +58,19 @@ PYBIND11_MODULE(core, m )
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
         .def_static("expand",&Feel::Environment::expand,"expand variable in string",py::return_value_policy::move)
         ;
-    
+
+    py::class_<Info>(m,"Info")
+        //.def( py::init<py::list,po::options_description>(),"Get Information about Feel++")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
+        //.def( py::init<py::list>(),"Get Information about Feel++")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
+        .def_static("prefix",&Feel::Info::prefix,"prefix directory where Feel++ is installed",py::return_value_policy::copy)
+        .def_static("libdir",&Feel::Info::libdir,"directory where libraries and plugins are installed",py::return_value_policy::copy)
+        .def_static("datadir",&Feel::Info::datadir,"directory where arch-independent files are installed",py::return_value_policy::copy)
+        .def_static("versionMajor",&Feel::Info::versionMajor,"Feel++ major version number",py::return_value_policy::copy)
+        .def_static("versionMinor",&Feel::Info::versionMinor,"Feel++ minor version number",py::return_value_policy::copy)
+        .def_static("versionMicro",&Feel::Info::versionMicro,"Feel++ micro version number",py::return_value_policy::copy)
+        .def_static("version",&Feel::Info::versionString,"Feel++ version string",py::return_value_policy::copy)
+
+        ;
     py::class_<WorldComm>(m,"WorldComm")
         .def(py::init<>());
     
