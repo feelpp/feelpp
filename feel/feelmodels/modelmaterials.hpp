@@ -67,6 +67,7 @@ struct FEELPP_EXPORT ModelMaterial
     void setProperty( std::string const& property, pt::ptree const& p );
     void setProperty( std::string const& property, double val );
 
+    bool hasProperty( std::string const& prop ) const;
     bool hasPropertyConstant( std::string const& prop ) const;
     bool hasPropertyExprScalar( std::string const& prop ) const;
     bool hasPropertyExprVectorial2( std::string const& prop ) const;
@@ -165,6 +166,17 @@ struct FEELPP_EXPORT ModelMaterial
     /**
      *
      */
+    pt::ptree getNode( std::string const& key ) const {
+        try { return M_p.get_child( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
     std::string getString( std::string const& key ) const {
         try { return M_p.get<std::string>( key ); }
         catch( pt::ptree_error e ) {
@@ -194,6 +206,39 @@ struct FEELPP_EXPORT ModelMaterial
             exit(1);
         }
     }
+
+    /**
+     *
+     */
+    std::vector<std::string> getVecString( std::string const& key ) const {
+        try {
+            std::vector<std::string> res;
+            for( auto const& item : M_p.get_child( key ) )
+                res.push_back(item.second.template get_value<std::string>());
+            return res;
+        }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    std::vector<double> getVecDouble( std::string const& key ) const {
+        try {
+            std::vector<double> res;
+            for( auto const& item : M_p.get_child( key ) )
+                res.push_back(item.second.template get_value<double>());
+            return res;
+        }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
     /**
      *
      */
