@@ -102,7 +102,7 @@ public :
 
 class FEELPP_EXPORT AlphaElectric : public ModelCrbBase<ParameterDefinition,
                                                         FunctionSpaceDefinition,
-                                                        Linear,
+                                                        Linear ,
                                                         EimDefinition<ParameterDefinition,
                                                                       FunctionSpaceDefinition> >
 {
@@ -218,8 +218,11 @@ public:
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
-    double sigma();
+    double sigma(std::string mat);
     void computeTruthCurrentDensity( current_element_type& j, parameter_type const& mu );
+    map_mat_type const& materials() const { return M_materials; }
+    map_mat_type const& materialsWithGeo() const { return M_materialsWithGeo; }
+    map_mat_type const& materialsWithoutGeo() const { return M_materialsWithoutGeo; }
 }; // AlphaElectric class
 
 } // namespace Feel

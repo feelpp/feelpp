@@ -26,8 +26,8 @@
 #include <feel/feel.hpp>
 #include <feel/feelopt/nlopt.hpp>
 
-#include "biotsavartalphaelectric.hpp"
-#include <alphaelectric.hpp>
+#include "biotsavart-alpha-electric.hpp"
+#include <electric-alpha.hpp>
 
 int iter=0;
 
@@ -39,6 +39,8 @@ int main(int argc, char**argv )
     po::options_description nloptoptions( "NLOpt options" );
     nloptoptions.add_options()
         ( "nlopt.algo", po::value<std::string>()->default_value( "LN_NEWUOA" ), "NLOPT algorithm [LN_NEWUOA,LD_LBFGS]" )
+        ( "biotsavart.do-opt", po::value<bool>()->default_value(false),
+          "do or not the optimization" )
         ;
 
     nloptoptions.add(biotsavartOptions());
@@ -68,7 +70,7 @@ int main(int argc, char**argv )
         ("LD_MMA", ::nlopt::LD_MMA )
         ("LD_SLSQP", ::nlopt::LD_SLSQP );
 
-    auto BS = BiotSavartAlphaElectroCRB<AlphaElectric>::New(crb::stage::offline);
+    auto BS = BiotSavartAlphaElectricCRB<AlphaElectric>::New(crb::stage::offline);
     BS->initModel();
     if( !boption("biotsavart.do-opt") )
     {
@@ -177,9 +179,9 @@ int main(int argc, char**argv )
         // export
 
         auto eC = Exporter<Mesh<Simplex<3> > >::New( "conductor");
-        eC->setMesh(BS->meshCond());
+        eC->setMesh(BS->mesh());
         auto eM = Exporter<Mesh<Simplex<3> > >::New( "magneto");
-        eM->setMesh(BS->meshMgn());
+        eM->setMesh(BS->mesh());
 
         auto VFe = BS->potentialFE();
         auto BFe = BS->magneticFluxFE();
