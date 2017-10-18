@@ -26,6 +26,7 @@
 #include <Eigen/Core>
 #include <boost/shared_ptr.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 //#include <pybind11/eigen.h>
 //#include <pybind11/numpy.h>
 
@@ -266,6 +267,10 @@ PYBIND11_MODULE( crb, m )
         .def("loadDB",&CRBPluginAPI::loadDB,"load a database from filename",py::arg("filename"),py::arg("load")=crb::load::rb )
         .def("loadDBFromId",&CRBPluginAPI::loadDBFromId, "load a database from its id", py::arg(
                  "id"), py::arg("load")=crb::load::rb, py::arg("root")=Environment::rootRepository())
+        .def("isReducedBasisModelDBLoaded",&CRBPluginAPI::isReducedBasisModelDBLoaded, "returns true if Reduced Basis Model DB is loaded, false otherwise")
+        .def("isFiniteElementModelDBLoaded",&CRBPluginAPI::isFiniteElementModelDBLoaded, "returns true if Finite Element Model DB is loaded, false otherwise")
+        .def("isAllLoaded",&CRBPluginAPI::isAllLoaded, "returns true if all DB is loaded, false otherwise")
+        .def("isDBLoaded",&CRBPluginAPI::isDBLoaded, "returns true if some data from the model DB is loaded, false otherwise")
         // finite element data
         .def("meshes",&CRBPluginAPI::meshes)
         .def("doftables",&CRBPluginAPI::doftables)
