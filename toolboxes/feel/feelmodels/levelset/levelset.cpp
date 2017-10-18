@@ -1691,7 +1691,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 );
 #elif 1 // New implementation sqrt(tr(cof A))
         auto A = idv(this->leftCauchyGreenTensor());
-        auto trA = trace(A);
+        //auto trA = trace(A);
         M_cauchyGreenInvariant1->zero();
         //M_cauchyGreenInvariant1->on(
                 //_range=this->interfaceElements(),
@@ -2241,14 +2241,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant1 ) )
     {
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant1(TrC)"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant1(TrC)")),
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant1(SqrtTrCofC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant1(SqrtTrCofC)")),
                                        *this->cauchyGreenInvariant1() );
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant2 ) )
     {
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrCofC)"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrCofC)")),
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrC/2SqrtTrCofC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrC/2SqrtTrCofC)")),
                                        *this->cauchyGreenInvariant2() );
     }
 
