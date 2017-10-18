@@ -913,6 +913,8 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
 {
     this->log("LevelSet", "updateGradPhi", "start");
+    this->timerTool("UpdateInterfaceData").start();
+
     auto phi = this->phi();
     if( M_doSmoothGradient )
     {
@@ -933,7 +935,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     }
 
     M_doUpdateGradPhi = false;
-    this->log("LevelSet", "updateGradPhi", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -941,6 +944,8 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
 {
     this->log("LevelSet", "updateModGradPhi", "start");
+    this->timerTool("UpdateInterfaceData").start();
+
     auto gradPhi = this->gradPhi();
     *M_levelsetModGradPhi = vf::project( 
             _space=this->functionSpace(),
@@ -950,7 +955,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateModGradPhi()
     //*M_levelsetModGradPhi = this->projectorL2()->project( _expr=sqrt( trans(idv(gradPhi))*idv(gradPhi) ) );
 
     M_doUpdateModGradPhi = false;
-    this->log("LevelSet", "updateModGradPhi", "finish");
+
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateModGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -958,6 +965,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 {
     this->log("LevelSet", "updateDirac", "start");
+    this->timerTool("UpdateInterfaceData").start();
 
     // derivative of Heaviside function
     auto eps0 = this->thicknessInterface();
@@ -1034,7 +1042,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
     M_doUpdateDirac = false;
 
-    this->log("LevelSet", "updateDirac", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateDirac", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1042,6 +1051,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 { 
     this->log("LevelSet", "updateHeaviside", "start");
+    this->timerTool("UpdateInterfaceData").start();
 
     auto eps = this->thicknessInterface();
 
@@ -1078,7 +1088,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 
     M_doUpdateHeaviside = false;
 
-    this->log("LevelSet", "updateHeaviside", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateHeaviside", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1086,6 +1097,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
 {
     this->log("LevelSet", "updateNormal", "start");
+    this->timerTool("UpdateInterfaceData").start();
 
     auto phi = this->phi();
     //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
@@ -1099,7 +1111,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
 
     M_doUpdateNormal = false;
 
-    this->log("LevelSet", "updateNormal", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1107,6 +1120,7 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 {
     this->log("LevelSet", "updateCurvature", "start");
+    this->timerTool("UpdateInterfaceData").start();
 
     if( M_doSmoothCurvature )
     {
@@ -1124,7 +1138,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     M_doUpdateCurvature = false;
 
-    this->log("LevelSet", "updateCurvature", "finish");
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updateCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
@@ -1662,6 +1677,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
     if( this->M_doUpdateCauchyGreenInvariant1 )
     {
         this->log("LevelSet", "cauchyGreenInvariant1", "start");
+        this->timerTool("UpdateInterfaceData").start();
 #if 0
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
@@ -1687,7 +1703,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 );
 #endif
         M_doUpdateCauchyGreenInvariant1 = false;
-        this->log("LevelSet", "cauchyGreenInvariant1", "finish");
+
+        double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+        this->log("LevelSet", "cauchyGreenInvariant1", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
     }
 
     return M_cauchyGreenInvariant1;
@@ -1703,6 +1721,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
     if( this->M_doUpdateCauchyGreenInvariant2 )
     {
         this->log("LevelSet", "cauchyGreenInvariant2", "start");
+        this->timerTool("UpdateInterfaceData").start();
 #if 0
         auto A = idv(this->leftCauchyGreenTensor());
         auto trA = trace(A);
@@ -1730,7 +1749,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 );
 #endif
         M_doUpdateCauchyGreenInvariant2 = false;
-        this->log("LevelSet", "cauchyGreenInvariant2", "finish");
+        double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+        this->log("LevelSet", "cauchyGreenInvariant2", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
     }
 
     return M_cauchyGreenInvariant2;
