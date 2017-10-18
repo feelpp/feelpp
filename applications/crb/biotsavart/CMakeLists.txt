@@ -37,7 +37,7 @@ target_include_directories(${CRB_LIB_BIOTSAVART_ALPHA_ELECTRIC} PRIVATE ${PROJEC
 set(FEELPP_CRB_BIOTSAVART_ALPHA_ELECTRIC_LIBRARIES ${CRB_LIB_BIOTSAVART_ALPHA_ELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ALPHA_ELECTRIC_LIBRARIES PARENT_SCOPE)
 
-install( FILES biotsavart.hpp alphabiotsavart.hpp biotsavart-alpha-electric.hpp
+install( FILES biotsavart.hpp biotsavart-alpha-electric.hpp
          DESTINATION include/feelpp/crb/biotsavart COMPONENT Devel)
 
 feelpp_add_application( biotsavartCRB
