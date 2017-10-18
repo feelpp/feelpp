@@ -3,6 +3,8 @@
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
+#include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -1675,9 +1677,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
         auto A = idv(this->leftCauchyGreenTensor());
         auto trA = trace(A);
         M_cauchyGreenInvariant1->zero();
+        //M_cauchyGreenInvariant1->on(
+                //_range=this->interfaceElements(),
+                //_expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
+                //);
         M_cauchyGreenInvariant1->on(
                 _range=this->interfaceElements(),
-                _expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
+                _expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
                 );
 #endif
         M_doUpdateCauchyGreenInvariant1 = false;
