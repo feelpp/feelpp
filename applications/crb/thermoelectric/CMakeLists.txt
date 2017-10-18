@@ -42,7 +42,12 @@ crb_add_library( thermoelectric-nonlinear SRCS thermoelectric-nonlinear.cpp EXEC
 set(FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMOELECTRIC_NONLINEAR_LIBRARIES PARENT_SCOPE)
 
-install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp
+crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_ALPHA)
+set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
+
+
+install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp electric-alpha.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 
 
@@ -61,12 +66,20 @@ feelpp_add_application( thermoelectric-linear-app
 feelpp_add_application( thermoelectric-nonlinear-app
                         SRCS thermoelectric-nonlinear.hpp thermoelectric-nonlinear_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+feelpp_add_application( electric-alpha-app
+                        SRCS electric-alpha_main.cpp electric-alpha.hpp
+                        LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA}
+                        EXEC ELECTRIC_ALPHA_APP
+                        )
 
+crb_add_model(thermoelectric-nonlinear ThermoElectric
+	HDRS thermoelectric-nonlinear.hpp
+	LINK_LIBRARIES ${FEELPP_LIBRARIES} ${CRB_LIB_THERMOELECTRIC_NONLINEAR}
+    )
 
-# feelpp_add_testcase( th-crb-quarterturn CATEGORY CRB)
-# feelpp_add_testcase( te-bancmesure CATEGORY CRB)
 feelpp_add_testcase( crb-electric CATEGORY CRB)
 feelpp_add_testcase( crb-thermic CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-simple CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-linear CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
+feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
