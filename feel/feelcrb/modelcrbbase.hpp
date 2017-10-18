@@ -30,6 +30,7 @@
 #define ModelCrbBase_H 1
 
 //#include <feel/feel.hpp>
+#include <feel/feelcrb/crbmodeldb.hpp>
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/deim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
@@ -289,22 +290,79 @@ public :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
-        M_uuid( uid ),
-        M_name( algorithm::to_lower_copy(name) ),
+        M_crbModelDb( name, uid ),
         M_is_initialized( false )
-    {}
+    {
+
+        bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
+        if ( !rebuilddb )
+        {
+            int loadmode = ioption( _name="crb.db.load" );
+            switch ( loadmode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            }
+        }
+        else
+        {
+            int updatemode = ioption( _name="crb.db.update" );
+            switch ( updatemode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            default:
+                // don't do anything and let the system pick up a new unique id
+                break;
+            }
+        }
+
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::path modeldir = M_crbModelDb.dbRepository();
+            if ( !fs::exists( modeldir ) )
+                fs::create_directories( modeldir );
+            boost::property_tree::ptree ptree;
+            ptree.add( "name", this->modelName() );
+            ptree.add( "uuid", uuids::to_string(this->uuid()) );
+            std::string jsonpath = (modeldir / M_crbModelDb.jsonFilename()).string();
+            write_json( jsonpath, ptree );
+        }
+        this->worldComm().barrier();
+
+    }
 
     virtual ~ModelCrbBase() {}
 
     /**
      * \return the name of the model
      */
-    std::string const& modelName() const { return M_name; }
+    std::string const& modelName() const { return M_crbModelDb.name(); }
 
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+    void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
 
     /**
@@ -319,14 +377,14 @@ public :
     //!
     //! unique id for CRB Model
     //!
-    uuids::uuid  uuid() const { return M_uuid; }
+    uuids::uuid  uuid() const { return M_crbModelDb.uuid(); }
 
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
     //! CRB type object is created because they use the id
     //!
-    void setId( uuids::uuid const& i ) { M_uuid = i; }
+    void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
 
     /**
      * \return the mpi communicators
@@ -729,6 +787,50 @@ public :
         }
         ptree.add_child( "deim", ptreeDeim );
 
+
+        boost::property_tree::ptree ptree_betaFq;
+        for (int k=0;k<M_betaFq.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFq_value;
+            ptree_betaFq_value.put( "",M_betaFq[k].size() );
+            ptree_betaFq.push_back( std::make_pair("", ptree_betaFq_value) );
+        }
+        boost::property_tree::ptree ptree_betaAqm;
+        for (int k=0;k<M_betaAqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaAqm_value;
+            ptree_betaAqm_value.put( "",M_betaAqm[k].size() );
+            ptree_betaAqm.push_back( std::make_pair("", ptree_betaAqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaMqm;
+        for (int k=0;k<M_betaMqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaMqm_value;
+            ptree_betaMqm_value.put( "",M_betaMqm[k].size() );
+            ptree_betaMqm.push_back( std::make_pair("", ptree_betaMqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaFqm;
+        for (int k=0;k<M_betaFqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFqm_sub;
+            for (int k2=0;k2<M_betaFqm[k].size();++k2 )
+            {
+                boost::property_tree::ptree ptree_betaFqm_sub_value;
+                ptree_betaFqm_sub_value.put( "",M_betaFqm[k][k2].size() );
+                ptree_betaFqm_sub.push_back( std::make_pair("", ptree_betaFqm_sub_value) );
+            }
+            ptree_betaFqm.push_back( std::make_pair("", ptree_betaFqm_sub) );
+        }
+
+        boost::property_tree::ptree ptreeAffineDecomposition;
+        ptreeAffineDecomposition.add( "betaAq", M_betaAq.size() );
+        ptreeAffineDecomposition.add( "betaMq", M_betaMq.size() );
+        ptreeAffineDecomposition.add_child( "betaFq", ptree_betaFq );
+        ptreeAffineDecomposition.add_child( "betaAqm", ptree_betaAqm );
+        ptreeAffineDecomposition.add_child( "betaMqm", ptree_betaMqm );
+        ptreeAffineDecomposition.add_child( "betaFqm", ptree_betaFqm );
+        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+
         boost::property_tree::ptree ptreeSpecificityOfModel;
         this->updateSpecificityModel( ptreeSpecificityOfModel );
         ptree.add_child( "specifity-of-model", ptreeSpecificityOfModel );
@@ -782,6 +884,60 @@ public :
                 // std::cout << "additional-model-files : key=" << key << " filename=" << filenameAddedPath.string() << "\n";
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
+
+        auto ptreeAffineDecomposition = ptree.get_child_optional( "affine-decomposition" );
+        if ( ptreeAffineDecomposition )
+        {
+            int sizeBetaAq = ptreeAffineDecomposition->template get<int>( "betaAq" );
+            M_betaAq.resize( sizeBetaAq );
+            int sizeBetaMq = ptreeAffineDecomposition->template get<int>( "betaMq" );
+            M_betaMq.resize( sizeBetaMq );
+            int sizeBetaFq = ptreeAffineDecomposition->get_child("betaFq").size();
+            M_betaFq.resize( sizeBetaFq );
+            int k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFq") )
+            {
+                int sizeSubBetaFq = item.second.template get_value<int>();
+                M_betaFq[k].resize( sizeSubBetaFq );
+                ++k;
+            }
+            int sizeBetaAqm = ptreeAffineDecomposition->get_child("betaAqm").size();
+            M_betaAqm.resize( sizeBetaAqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaAqm") )
+            {
+                int sizeSubBetaAqm = item.second.template get_value<int>();
+                M_betaAqm[k].resize( sizeSubBetaAqm );
+                ++k;
+            }
+            int sizeBetaMqm = ptreeAffineDecomposition->get_child("betaMqm").size();
+            M_betaMqm.resize( sizeBetaMqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaMqm") )
+            {
+                int sizeSubBetaMqm = item.second.template get_value<int>();
+                M_betaMqm[k].resize( sizeSubBetaMqm );
+                ++k;
+            }
+            int sizeBetaFqm = ptreeAffineDecomposition->get_child("betaFqm").size();
+            M_betaFqm.resize( sizeBetaFqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFqm") )
+            {
+                int sizeSubBetaFqm = ptreeAffineDecomposition->get_child("").size();
+                M_betaFqm[k].resize( sizeSubBetaFqm );
+                int k2=0;
+                for ( auto const& item2 : item.second.get_child("") )
+                {
+                    int thesize = item2.second.template get_value<int>();
+                    M_betaFqm[k][k2].resize( thesize );
+                    ++k2;
+                }
+                ++k;
+            }
+
+        }
+
 
         this->setupSpecificityModel( ptree, dbDir );
 
@@ -1851,6 +2007,8 @@ public :
         }
     }
 
+    virtual value_type output( int output_index, parameter_type const& mu , element_type &u , bool need_to_solve=false) = 0;
+
 public:
 
     /**
@@ -1900,9 +2058,7 @@ public:
 protected :
     backend_ptrtype M_backend;
 
-    uuids::uuid M_uuid;
-
-    std::string M_name;
+    CRBModelDB M_crbModelDb;
 
     funs_type M_funs;
     funsd_type M_funs_d;
