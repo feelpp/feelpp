@@ -81,7 +81,7 @@ public :
         V = M_backend->newVector(Xh);
     }
 
-    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    uuids::uuid uuid() const { return Environment::randomUUID( true ); }
     parameterspace_ptrtype parameterSpace() { return Dmu;}
 
     void run()
