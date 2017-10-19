@@ -161,6 +161,9 @@ public :
     virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
     virtual int dimension() const=0;
     virtual std::pair<int,double> online_iterations()=0;
+
+    virtual element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const=0;
+
 };
 
 /**
@@ -328,11 +331,12 @@ public:
     //! constructor from command line options
     CRB( std::string const& name,
          truth_model_ptrtype const & model,
-         crb::stage stage = crb::stage::online )
+         crb::stage stage = crb::stage::online,
+         std::string const& prefixExt = "" )
         :
-        super( name, "crb", model->worldComm()),
+        super( name, prefixvm(prefixExt, "crb"), model->worldComm()),
         M_elements_database( name,
-                             "elements",
+                             prefixvm(prefixExt,"elements"),
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model( model ),
@@ -347,8 +351,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -381,44 +385,24 @@ public:
             this->setTruthModel( model );
             if ( stage == crb::stage::offline )
             {
+                if ( !M_rebuild && !fs::exists(this->dbLocalPath()/fs::path(this->jsonFilename()) ) )
+                {
+                    M_rebuild = true;
+                    this->worldComm().barrier();
+                }
                 if ( !M_rebuild )
                 {
                     this->setupOfflineFromDB();
                 }
                 else
                 {
-                    try
-                    {
-                        int updatemode = ioption( _name="crb.db.update" );
-                        switch ( updatemode )
-                        {
-                        case 0 :
-                            this->setId( this->id( db(soption(_name="crb.db.filename")) ) );
-                            break;
-                        case 1:
-                        case 2:
-                            this->setId( this->id( dbLast(static_cast<crb::last>(updatemode)) ) );
-                            break;
-                        case 3:
-                            this->setId( this->id( dbFromId(soption(_name="crb.db.id")) ) );
-                            break;
-                        default:
-                            // don't do anything and let the system pick up a new unique id
-                            break;
-                        }
-                    }
-                    catch ( std::invalid_argument const& e )
-                    {
-                        if ( Environment::isMasterRank() )
-                            std::cout << e.what() << std::endl
-                                      << "Using new unique id :" << this->id() << "\n";
-                    }
-
                     M_scmM->setId( this->id() );
                     M_scmA->setId( this->id() );
                     M_elements_database.setId( this->id() );
-                    std::cout << "Use DB id " << this->id() << std::endl;
                 }
+                if( this->worldComm().isMasterRank() )
+                    std::cout << "Use DB id " << this->id() << std::endl;
+
                 if ( M_N == 0 )
                 {
                     if( this->worldComm().isMasterRank() )
@@ -974,6 +958,20 @@ public:
      */
     virtual matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                                 std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
+
+
+    /**
+     * solve fem model using the affine decomposition
+     * \param mu :current parameter
+     */
+    element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const override
+        {
+            if ( M_use_newton )
+                return M_model->solveFemUsingAffineDecompositionNewton( mu );
+            else
+                return M_model->solveFemUsingAffineDecompositionFixedPoint( mu );
+        }
+
 
     /*
      * Dump data array into a file
@@ -2419,7 +2417,8 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
-            std::cout << "save Mesh : " << meshFilename << std::endl;
+            if( this->worldComm().isMasterRank() )
+                std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
@@ -11559,14 +11558,19 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
             M_scmM->setup( *ptreeOptionalScmM, dbDir );
     }
 
+    auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
     if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
     {
-        auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
         // M_model->rBFunctionSpace()->setModel( M_model->model() );
         // //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
         // M_elements_database.setModel( M_model );
         M_elements_database.setup( ptreeReducedBasisSpace, dbDir );
         M_loadElementsDb = true;
+    }
+    else
+    {
+        int rbdim = ptreeReducedBasisSpace.template get<size_type>( "dimension" );
+        M_model->rBFunctionSpace()->setDimension( rbdim );
     }
 
 }
@@ -11635,20 +11639,8 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::setupOfflineFromDB()
 {
-    int loadmode = ioption( _name="crb.db.load" );
-    switch ( loadmode )
-    {
-    case 0 :
-        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
-        break;
-    case 1:
-    case 2:
-        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
-        break;
-    case 3:
-        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
-        break;
-    }
+    this->loadDB( (this->dbLocalPath()/fs::path(this->jsonFilename())).string(), crb::load::all );
+
     if( this->worldComm().isMasterRank() )
         std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
     LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";

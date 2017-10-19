@@ -537,10 +537,10 @@ public:
 
             if ( !filename.empty() )
             {
-                //if ( all_procs_have_same_sampling )
-                //    M_space->worldComm().barrier();
                 if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
                     this->writeOnFile(filename);
+                if ( all_procs_have_same_sampling )
+                    M_space->worldComm().barrier();
             }
         }
 
@@ -562,10 +562,10 @@ public:
 
             if ( !filename.empty() )
             {
-                //if ( all_procs_have_same_sampling )
-                //    M_space->worldComm().barrier();
                 if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
                     this->writeOnFile(filename);
+                if ( all_procs_have_same_sampling )
+                    M_space->worldComm().barrier();
             }
 
         }
