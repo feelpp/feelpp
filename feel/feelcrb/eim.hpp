@@ -163,11 +163,6 @@ public:
     typedef boost::tuple<double,Eigen::Matrix<double,nDim,1> > space_residual_type;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
 
-    typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRBBase<functionspace_type,parameterspace_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
-
     typedef Eigen::VectorXd vectorN_type;
 
     //@}
@@ -338,11 +333,6 @@ public:
     bool restart() const
         {
             return M_restart;
-        }
-
-    void setRB( crb_ptrtype crb )
-        {
-            M_model->setRB( crb );
         }
 
     /** @name  Mutators
@@ -647,6 +637,13 @@ void
 EIM<ModelType>::offline()
 {
     using namespace vf;
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( M_model->dbLocalPath() ) )
+            fs::create_directories( M_model->dbLocalPath() );
+    }
+    this->worldComm().barrier();
 
     bool expression_expansion = M_model->computeExpansionOfExpression();
 
@@ -1440,8 +1437,6 @@ public:
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
     virtual void setRB( crb_ptrtype rb )=0;
-    virtual void setModel( boost::any rbmodel )=0;
-    virtual bool modelBuilt() const = 0;
     virtual bool rbBuilt() const = 0;
     virtual void offline()=0;
 
@@ -1815,8 +1810,7 @@ public:
         M_u2( &u2 ),
         M_mu( mu ),
         M_crb_built( false ),
-        M_crbmodel_built( false ),
-        M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
+        M_mu_sampling( new sampling_type ( model->parameterSpace() , 0 , sampling ) ),
         M_t(),
         M_B(),
         M_offline_error(),
@@ -1847,12 +1841,6 @@ public:
                 //this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
                 //this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
                 this->addDBSubDirectory( "eim" );
-                if ( this->worldComm().isMasterRank() )
-                {
-                    if ( !fs::exists( this->dbLocalPath() ) )
-                        fs::create_directories( this->dbLocalPath() );
-                }
-                this->worldComm().barrier();
             }
             else
             {
@@ -2387,7 +2375,9 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto eimexpr = this->expr( mu,urbelt );
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
@@ -2396,9 +2386,13 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, rbfunctionspace_context2_type const& ctx2, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto urbelt2 = ctx2.rbFunctionSpace()->element();
-            urbelt2.container() = urb;
+            int dimRb2 = std::min((int)urbelt2.size(),(int)urb.size());
+            for ( int k=0; k<dimRb2; ++k )
+                urbelt2(k) = urb(k);
             auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
             return evaluateFromContext( _context=ctx, _context2=ctx2, _expr=eimexpr2 , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
@@ -2816,7 +2810,6 @@ public:
         {
             // Compute RB expansion from uN
             model_solution_type sol = M_crb->expansion( uN[size-1], M_crb->dimension(), false );
-            //model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
 
             this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
             this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
@@ -2829,7 +2822,7 @@ public:
     /* computePfem returns PFEM solution (FE with affine decomposition) */
     model_solution_type computePfem( parameter_type const& mu ) override
     {
-        if( this->modelBuilt() )
+        if( M_crb )
             return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
             return this->solve( mu );
@@ -2840,10 +2833,7 @@ public:
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<true> )
     {
-        if( boption(_name="crb.use-newton") )
-            return M_crbmodel->solveFemUsingAffineDecompositionNewton( mu );
-        else
-            return M_crbmodel->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return M_crb->solveFemModelUsingAffineDecomposition( mu );
     }
 
     boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu ) override
@@ -3067,32 +3057,9 @@ public:
     void setRB( crb_ptrtype rb ) override
     {
         M_crb = rb;
-        M_crb_built=true;
+        if ( M_crb )
+            M_crb_built=true;
     }
-
-    void setModel( boost::any rbmodel ) override
-    {
-        setModel( rbmodel, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
-    }
-    void setModel( boost::any rbmodel, boost::mpl::bool_<false> )
-    {
-        M_crbmodel_built=true;
-    }
-    void setModel( boost::any rbmodel, boost::mpl::bool_<true> )
-    {
-        try
-        {
-            M_crbmodel = boost::any_cast<crbmodel_ptrtype>(rbmodel);
-        }
-        catch (...)
-        {
-            std::cout << "setRB fails (bad type)" << std::endl;
-        }
-        //M_crbmodel = rbmodel;
-        M_crbmodel_built = true;
-    }
-
-    bool modelBuilt() const override { return M_crbmodel_built; }
     bool rbBuilt() const override { return M_crb_built; }
 
     void setTrainSet( sampling_ptrtype tset ) override { M_eim->setTrainSet( tset ); }
@@ -3348,10 +3315,8 @@ private:
     model_element_expr_type * M_u;
     model_element2_expr_type * M_u2;
     parameter_type& M_mu;
-    crbmodel_ptrtype M_crbmodel;
     crb_ptrtype M_crb;
     bool M_crb_built;
-    bool M_crbmodel_built;
     sampling_ptrtype M_mu_sampling ;
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     int M_M_max;
