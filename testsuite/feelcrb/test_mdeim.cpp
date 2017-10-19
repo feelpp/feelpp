@@ -83,7 +83,7 @@ public :
          M = M_backend->newMatrix(Xh,Xh);
     }
 
-    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    uuids::uuid uuid() const { return Environment::randomUUID( true ); }
     parameterspace_ptrtype parameterSpace() { return Dmu;}
 
     void run()
@@ -129,7 +129,7 @@ public :
 
     }
 
-    sparse_matrix_ptrtype assembleForMDEIM( parameter_type mu)
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu)
     {
         auto mesh = Xh->mesh();
         auto u = Xh->element();
@@ -145,7 +145,7 @@ public :
     }
 
     // These 3 functions are only needed for compilation
-    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type mu, element_type const& u)
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u)
     {
         return M;
     }
