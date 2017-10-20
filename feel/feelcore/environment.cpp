@@ -419,6 +419,7 @@ Environment::Environment( int argc, char** argv,
                           po::options_description const& desc_lib,
                           AboutData const& about,
                           std::string directory,
+                          logging::level log_level,
                           bool add_subdir_np )
 {
     if ( argc == 0 )
@@ -445,9 +446,12 @@ Environment::Environment( int argc, char** argv,
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
-    cout.attachWorldComm( S_worldcomm );
-    cerr.attachWorldComm( S_worldcomm );
-    clog.attachWorldComm( S_worldcomm );
+    cout.setWorldComm( S_worldcomm );
+    cerr.setWorldComm( S_worldcomm );
+    clog.setWorldComm( S_worldcomm );
+    cout.setLoggingLevel( log_level );
+    cerr.setLoggingLevel( log_level );
+    clog.setLoggingLevel( log_level );
 
     S_desc_app = boost::make_shared<po::options_description>( desc );
     S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
@@ -1828,10 +1832,23 @@ Environment::startLogging( std::string decorate )
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
-        if ( FLAGS_no_log )
+        
+        
+        if ( !FLAGS_disable_log )
         {
-            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
-                FLAGS_no_log = 0;
+            // deprecated
+            if ( FLAGS_no_log )
+            {
+                if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
+                    FLAGS_no_log = 0;
+            }
+            if ( FLAGS_log_level > 0 )
+            {
+                // if not master, then log level = 0 when log_level==1 in other
+                // mpi processes
+                if ( S_worldcomm->rank() > 0 && FLAGS_log_level == 1 )
+                    FLAGS_log_level = 0;
+            }
         }
         google::InitGoogleLogging( S_argv[0] );
     }
