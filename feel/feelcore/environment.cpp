@@ -51,7 +51,7 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-
+#include <pybind11/embed.h>
 #include <gflags/gflags.h>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -114,6 +114,7 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+namespace py = pybind11;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -536,6 +537,14 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    if ( Environment::isMasterRank() )
+    {
+        py::initialize_interpreter();
+        py::module sys = py::module::import( "sys" );
+        auto sys_path = py::reinterpret_borrow<py::list>(py::module::import("sys").attr("path"));
+        sys_path.append( Environment::expand("${top_srcdir}/feel/feelpython") );
+        sys_path.append( Environment::expand("${top_srcdir}/quickstart") );
+    }
 }
 void
 Environment::clearSomeMemory()
@@ -553,6 +562,9 @@ Environment::clearSomeMemory()
 
 Environment::~Environment()
 {
+    if ( Environment::isMasterRank() )
+        py::finalize_interpreter();
+    
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
 
