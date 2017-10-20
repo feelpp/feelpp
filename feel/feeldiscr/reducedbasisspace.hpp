@@ -487,7 +487,7 @@ public :
     void addPrimalBasisElement( vector_ptrtype const & vec )
         {
             space_element_ptrtype e = M_feSpace->elementPtr();
-            e = *vec;
+            *e = *vec;
             this->addPrimalBasisElement( e );
         }
 
@@ -513,7 +513,7 @@ public :
     void addDualBasisElement( vector_ptrtype const & vec )
         {
             space_element_ptrtype e = M_feSpace->elementPtr();
-            e = *vec;
+            *e = *vec;
             this->addDualBasisElement( e );
         }
 
