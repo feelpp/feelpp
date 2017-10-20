@@ -91,7 +91,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
@@ -173,7 +173,7 @@ void HeatShieldMinimalVersion<Order>::initModel()
 
 
 template<int Order>
-double HeatShieldMinimalVersion<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+double HeatShieldMinimalVersion<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     auto mesh = this->Xh->mesh();
     double output=0;

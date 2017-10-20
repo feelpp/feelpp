@@ -56,7 +56,7 @@ public:
     typename super_type::betaq_type
     computeBetaQ( parameter_type const& mu );
 
-    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
 
     bdf_ptrtype bdfModel(){ return M_bdf; }

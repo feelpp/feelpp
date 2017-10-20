@@ -58,6 +58,16 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
 }
 
 bool
+ModelMaterial::hasProperty( std::string const& prop ) const
+{
+    auto p = M_p.get_child_optional( prop );
+    if( !p ) // child is missing
+        return false;
+    else
+        return true;
+}
+
+bool
 ModelMaterial::hasPropertyConstant( std::string const& prop ) const
 {
     auto itFindProp = M_materialProperties.find( prop );
