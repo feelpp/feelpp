@@ -36,6 +36,7 @@ makeOptions()
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "-1" ), "diffusion coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
 #if (FEELPP_DIM==2)
@@ -79,35 +80,19 @@ int hdg_laplacian()
     auto lambda = cst(1.)/K;
     
 #if defined(FEELPP_HAS_SYMPY )
-    // Exact solutions
-    std::ostringstream ostr;
-    ostr <<  "from sympy2ginac import *\n"
-         << "s=syms(" << Dim << ");\n"
-         << "ns=nsyms(" << Dim << ");\n"
-         << "p=sympify("<< soption("solution.sympy.p") << ");\n"
-         << "k=sympify("<< soption("k") << ");\n"
-         << "grad_p=grad(p,s);\n"
-         << "flux=-k*grad(p,s);\n"
-         << "u=flux;\n"
-         << "un=n(flux,1,ns);\n"
-         << "f=div(flux,s);\n";
-    cout << ostr.str() << std::endl;
 
-    auto m = Feel::pyexpr( ostr.str().c_str(), {"p", "grad_p", "u", "un", "f"} );
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}};
+    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
-    cout << "k : " << K /*<< "\tlambda : " << lambda*/ << std::endl;
-    cout << "p : " << m.at("p") << std::endl;
-    cout << "grad_p : " << m.at("grad_p") << std::endl;
-    cout << "u : " << m.at("u") << std::endl;
-    cout << "un : " << m.at("un") << std::endl;
-    cout << "f : " << m.at("f") << std::endl;
+    for( auto d: locals )
+        cout << d.first << ":" << d.second << std::endl;
 
-    std::string p_exact_str = m.at("p");
-    std::string u_exact_str = m.at("u");
+    std::string p_exact_str = locals.at("p");
+    std::string u_exact_str = locals.at("u");
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<Dim,1>( u_exact_str );
-    auto un_exact = expr( m.at("un") );
-    auto f_exact = expr( m.at("f") );
+    auto un_exact = expr( locals.at("un") );
+    auto f_exact = expr( locals.at("f") );
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -133,11 +118,17 @@ int hdg_laplacian()
 
     auto Xh = Pdh<0>(face_mesh);
     auto uf = Xh->element(cst(1.));
-
-    cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
+    auto cgXh = Pch<OrderP>(mesh);
+    
+    cout << "#elts: " << mesh->numGlobalElements() << std::endl
+         << "#faces: " << mesh->numGlobalFaces() << std::endl
+         << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
+         << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
          << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
-
+    cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
+         << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
+         << cgXh->nDof() << std::endl;
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
@@ -201,20 +192,20 @@ int hdg_laplacian()
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
                             _expr=-tau_constant *
-                            ( leftfacet( pow(h(),tau_order)*idt(p))*leftface(id(w)) +
-                              rightfacet( pow(h(),tau_order)*idt(p))*rightface(id(w) )));
+                            ( leftfacet( idt(p))*leftface(id(w)) +
+                              rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-(tau_constant * pow(h(),tau_order)*id(w)*idt(p)));
+                            _expr=-(tau_constant * id(w)*idt(p)));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
                             _expr=tau_constant * idt(phat) *
-                            ( leftface( pow(h(),tau_order)*id(w) )+
-                              rightface( pow(h(),tau_order)*id(w) )));
+                            ( leftface( id(w) )+
+                              rightface( id(w) )));
 
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=tau_constant * idt(phat) * pow(h(),tau_order)*id(w) );
+                            _expr=tau_constant * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     //
@@ -236,18 +227,17 @@ int hdg_laplacian()
 
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * id(l) * ( leftfacet( pow(h(),tau_order)*idt(p) )+
-                                                           rightfacet( pow(h(),tau_order)*idt(p) )),_verbose=true);
+                            _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
+                                                           rightfacet( idt(p) )),_verbose=true);
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=tau_constant * id(l) * ( pow(h(),tau_order)*idt(p) ),_verbose=true );
+                            _expr=tau_constant * id(l) * ( idt(p) ),_verbose=true );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
     a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-0.5*tau_constant * idt(phat) * id(l) * ( leftface( pow(h(),tau_order) )+
-                                                                            rightface( pow(h(),tau_order) )));
+                            _expr=-0.5*tau_constant * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),tau_order) ) );
+                            _expr=-tau_constant * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                             _expr=idt(phat) * id(l) );
     toc("a(2,2)",FLAGS_v>0);

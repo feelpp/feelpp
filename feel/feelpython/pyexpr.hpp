@@ -39,13 +39,35 @@ using namespace py::literals;
 //! expressions are of the form : \c f(x,y,z):x:y:z
 //!
 std::map<std::string,std::string> 
-pyexpr( std::string const& pycode, std::vector<std::string> const& locals );
+pyexpr( std::string const& pycode, std::vector<std::string> const& vars );
 
 //!
-//! evaluate python code \p pycode from file and retrieve dictionary of Feel++ expressions
-//! expressions are of the form : \c f(x,y,z):x:y:z
+//! evaluate python code  from file \p pyfilename using local variables \p locals
+//! and retrieve dictionary of Feel++ expressions expressions are of the form : \c f(x,y,z):x:y:z
 //!
-std::map<std::string,std::string> 
-pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& locals );
+//! @c locals allows to set some input variables for the python code and stores the output variables
+//! that are required by the c++ code.
+//! @note that if the python expression to be retrieved is a sympy expression then the expression is
+//! transformed into an expression that is then compiled and loaded as a plugin.
+//!
+//! we start with ta test without any input variable (eg @p locals is empty)
+//! @code
+//! // no locals
+//! std::map<std::string,string> locals={};
+//! pyexprFromFile( filename, locals );
+//! @endcode
+//! We define now some input data
+//! @code
+//! // no locals
+//! std::map<std::string,string> locals={{"dim","3"}};
+//! pyexprFromFile( filename, locals );
+//! for( auto d : locals ) cout << d.first << ":" << d.second << std::endl;
+//! @endcode
+//!
+void
+pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string> & locals );
+
+void
+pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std::string,std::string>> & locals );
 
 }
