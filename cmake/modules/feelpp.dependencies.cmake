@@ -476,13 +476,16 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
+
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 if(FEELPP_ENABLE_PYTHON)
+  
   #
   # Python interp
   #
-  FIND_PACKAGE(PythonInterp 3  REQUIRED)
+  FIND_PACKAGE(PythonInterp 3 )
   if(PYTHONINTERP_FOUND)
     execute_process(COMMAND
       ${PYTHON_EXECUTABLE}
@@ -491,22 +494,30 @@ if(FEELPP_ENABLE_PYTHON)
       OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${PYTHON_VERSION}" )
   endif()
 
-  FIND_PACKAGE(PythonLibs 3 REQUIRED)
+  FIND_PACKAGE(PythonLibs 3 )
   if ( PYTHONLIBS_FOUND )
     message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
     SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
     set( FEELPP_HAS_PYTHON 1 )
 
+    # Check that sympy is available
+    include(FindPythonModules)
+    find_python_module(sympy 1.1 FEELPP_SYMPY_FOUND)
+    if ( FEELPP_SYMPY_FOUND )
+      set( FEELPP_HAS_SYMPY 1 )
+      message(STATUS "[feelpp] sympy (at least 1.1) has been found")
+    else()
+      message(STATUS "[feelpp] sympy (at least 1.1) has not been  found")
+    endif()
   endif()
 
+  
 endif()
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
 SET(BOOST_MIN_VERSION "1.61.0")
