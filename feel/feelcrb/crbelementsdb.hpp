@@ -659,22 +659,23 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         LOG(INFO) << "[load] get mesh/Xh from model done.\n";
     }
 
-    auto temp = Xh->elementPtr();
 
     LOG( INFO ) << "loading Elements DB (hdf5)";
     for(int i=0; i<M_N; i++)
     {
         std::ostringstream tableName;
         tableName << "WN[" << i << "]";
-        temp->setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        temp->loadHDF5(hdf5File.str(), tableName.str());
-        WN[i] = temp;
+        auto & wni = WN[i];
+        if ( !wni )
+            wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        wni->loadHDF5(hdf5File.str(), tableName.str());
 
         tableName.str("");
         tableName << "WNdu[" << i << "]";
-        temp->setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        temp->loadHDF5(hdf5File.str(), tableName.str());
-        WNdu[i] = temp;
+        auto & wndui = WNdu[i];
+        if ( !wndui )
+            wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        wndui->loadHDF5(hdf5File.str(), tableName.str());
     }
     M_rbSpace->updatePrimalBasisForUse();
     M_rbSpace->updateDualBasisForUse();
