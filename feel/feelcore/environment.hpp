@@ -77,6 +77,23 @@ namespace tc = termcolor;
 namespace pt =  boost::property_tree;
 namespace uuids =  boost::uuids;
 
+namespace logging
+{
+enum class level
+{
+    //! no process log
+    none = 0,
+    //! only MPI master process logs
+    master=1,
+    //! all mpi process log
+    all=2,
+    //! command line dictacts the log level (--log_level=0|1|2 or --disable_log=true|false)
+    cmdline_none = 10,
+    cmdline_master = 11,
+    cmdline_all = 12,
+};
+}
+
 class TimerTable;
 
 //!
@@ -224,6 +241,7 @@ public:
                  po::options_description const& desc_lib,
                  AboutData const& about,
                  std::string directory,
+                 logging::level log_level = logging::level::cmdline_master,
                  bool add_subdir_np = true );
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -244,6 +262,7 @@ public:
                      args[_desc_lib | feel_options()],
                      args[_about| makeAboutDefault( args[_argv][0] )],
                      args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
+                     args[_logging|logging::level::cmdline_master],
                      args[_subdir| true ] )
         {}
 #if BOOST_VERSION >= 105500
@@ -256,6 +275,7 @@ public:
           ( desc,* )
           ( desc_lib,* )
           ( about,* )
+          ( logging, (logging::level) )
           ( threading,(mpi::threading::level) )
           ( directory,( std::string ) )
           ( subdir,*( boost::is_convertible<mpl::_,bool> ) )

@@ -358,6 +358,10 @@ DECLARE_int32(logbufsecs);
 DECLARE_int32(minloglevel);
 
 // Feelpp addition - start
+// disable logging if true
+DECLARE_bool(disable_log);
+// Set logging level: 0 no  log, 1 only master process log, 2 all processes log
+DECLARE_int32(log_level);
 // Set whether log messages go to stderr instead of logfiles
 DECLARE_int32(no_log);
 // Feelpp addition - end
