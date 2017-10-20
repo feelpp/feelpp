@@ -35,3 +35,4 @@ feelpp_add_test( rbspacevector )
 feelpp_add_test( db CFG test_db.cfg GEO test_db.geo CLI "-st_pc_factor_mat_solver_package mumps" )
 
 feelpp_add_test( parameterspace )
+feelpp_add_test( reducedglobaldof )
