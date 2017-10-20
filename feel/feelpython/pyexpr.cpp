@@ -23,15 +23,20 @@
 //!
 #include <iostream>
 
+
+
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/map.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <pybind11/stl.h>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 
 namespace Feel {
-std::map<std::string,std::string> 
-pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& locals )
+
+void
+//pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& vars, std::map<std::string,std::string> const& _locals )
+pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std::string,std::string>> & _locals )
 {
     using Feel::cout;
 
@@ -40,31 +45,55 @@ pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& l
     
     if ( Environment::isMasterRank() )
     {
-        py::scoped_interpreter guard{};
-        py::dict _locals;
-        py::module sys = py::module::import( "sys" );
-        auto sys_path = py::reinterpret_borrow<py::list>(py::module::import("sys").attr("path"));
-        sys_path.append( Environment::expand("${top_srcdir}/feel/feelpython") );
-        sys_path.append( Environment::expand("${top_srcdir}/quickstart") );
-        
-        py::module m = py::module::import( pyfilename.c_str() );
-
-        for( auto l : locals )
+        py::dict locals = py::cast(_locals);
+        py::print(locals);
+        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+#if 0
+        for( auto l : _locals )
         {
-            //cout << "l=" << l << std::endl;
-            py::object result = m.attr("sympytoginac")(m.attr(l.c_str()));
-            r[l] = result.cast<std::string>();
-            cout << l << ":" << r[l] << std::endl;
+            std::string cmd = l.first + "= sympytoginac(" + l.first +" );";
+            std::cout << cmd << std::endl;
+            py::exec(cmd, py::globals(), locals );
+            _locals[l.first] = locals[l.first.c_str()].cast<std::string>();
+        }
+#endif
+    }
+    mpi::broadcast( Environment::worldComm(), _locals, 0 );
+    
+    //return r;
+}
+
+//std::map<std::string,std::string> 
+void
+//pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& vars, std::map<std::string,std::string> const& _locals )
+pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string> & _locals )
+{
+    using Feel::cout;
+
+
+    std::map<std::string,std::string> r;
+    
+    if ( Environment::isMasterRank() )
+    {
+        py::dict locals = py::cast(_locals);
+        py::print(locals);
+        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+
+        for( auto l : _locals )
+        {
+            std::string cmd = l.first + "= sympytoginac(" + l.first +" );";
+            std::cout << cmd << std::endl;
+            py::exec(cmd, py::globals(), locals );
+            _locals[l.first] = locals[l.first.c_str()].cast<std::string>();
         }
     }
-    mpi::broadcast( Environment::worldComm(), r, 0 );
+    mpi::broadcast( Environment::worldComm(), _locals, 0 );
     
-    return r;
-    
+    //return r;
 }
 
 std::map<std::string,std::string> 
-pyexpr( std::string const& pycode, std::vector<std::string> const& locals )
+pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::map<std::string,std::string> const& locals )
 {
     using Feel::cout;
 
@@ -73,14 +102,12 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& locals )
     
     if ( Environment::isMasterRank() )
     {
-        py::scoped_interpreter guard{};
-        py::dict _locals;
+        py::dict _locals=py::cast(locals);
         py::exec(pycode.c_str(), py::globals(),_locals);
 
-        for( auto l : locals )
+        for( auto l : vars )
         {
             std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
-            //cout << "cmd : " << cmd << std::endl;
             py::exec(cmd, py::globals(), _locals );
             r[l] = _locals[l.c_str()].cast<std::string>();
         }
