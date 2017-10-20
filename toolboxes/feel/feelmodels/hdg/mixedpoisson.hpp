@@ -643,12 +643,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( idt(phat)*leftface(trans(id(v))*N())+idt(phat)*rightface(trans(id(v))*N())) );
+                                 _expr=idt(phat)*(leftface(normal(v))+rightface(normal(v))) );
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=idt(phat)*trans(id(v))*N());
+                                 _expr=idt(phat)*normal(v));
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=- (id(w)*divt(u)));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=-(id(w)*divt(u)));
 
 
     // <tau p, w>_Gamma
@@ -671,18 +671,17 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     // <j.n,mu>_Omega/Gamma
     bbf( 2_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=( id(l)*(leftfacet(trans(idt(u))*N())+
-                                                rightfacet(trans(idt(u))*N())) ) );
+                                 _expr=id(l)*(leftfacet(normalt(u)) + rightfacet(normalt(u))) );
 
     // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant * id(l) * ( leftfacet( pow(idv(H),M_tau_order)*idt(p) )+
-                                                                rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
+                                 _expr=tau_constant*id(l)*( leftfacet(pow(idv(H),M_tau_order)*idt(p))
+                                                            + rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
 
     // <-tau phat, mu>_Omega/Gamma
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-sc_param*tau_constant * idt(phat) * id(l) * ( leftface( pow(idv(H),M_tau_order) )+
-                                                                                      rightface( pow(idv(H),M_tau_order) )));
+                                 _expr=-sc_param*tau_constant*idt(phat)*id(l)*( leftface( pow(idv(H),M_tau_order) )
+                                                                                + rightface( pow(idv(H),M_tau_order) )));
 
     this->assembleBoundaryCond();
 }
@@ -1274,7 +1273,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
 
     // <j.n,mu>_Gamma_N
     bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                                 _expr=( id(l)*(normalt(u)) ));
     // <tau p, mu>_Gamma_N
     bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
@@ -1309,7 +1308,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Ex
 
     // <j.n,mu>_Gamma_R
     bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
+                                 _expr=( id(l)*(normalt(u)) ));
     // <tau p, mu>_Gamma_R
     bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
@@ -1369,14 +1368,14 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
  
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr= idt(uI) * (trans(id(u))*N()) );
+                                        _expr= idt(uI) * (normal(u)) );
 
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr=tau_constant * idt(uI) * id(w) * ( pow(idv(H),M_tau_order)) );
 
     // <j.n, m>_Gamma_I
-    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=(trans(idt(u))*N()) * id(nu) );
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=(normalt(u)) * id(nu) );
 
 
     // <tau p, m>_Gamma_I
@@ -1545,7 +1544,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
                         j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                                _expr=trans(idv(M_up))*N()).evaluate()(0,0);
+                                               _expr=normalv(M_up) ).evaluate()(0,0);
                         meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                           _expr=cst(1.0)).evaluate()(0,0);
                         Feel::cout << "Integral flux on " << marker << ": " << j_integral << std::endl;
