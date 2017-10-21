@@ -53,16 +53,21 @@ public :
 
     typedef ParameterSpace<2> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
     typedef Pch_type<mesh_type,1> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
+    typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
+    typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
     DeimTest() :
         M_backend( backend() ),
-        Dmu( parameterspace_type::New(2) )
+        Dmu( parameterspace_type::New(2) ),
+        M_uuid( Environment::randomUUID( true ) )
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         Xh = Pch<1>( mesh );
@@ -81,7 +86,7 @@ public :
         V = M_backend->newVector(Xh);
     }
 
-    uuids::uuid uuid() const { return Environment::randomUUID( true ); }
+    uuids::uuid uuid() const { return M_uuid; }
     parameterspace_ptrtype parameterSpace() { return Dmu;}
 
     void run()
@@ -99,7 +104,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        auto M_deim = deim( _model=this->shared_from_this(),
+        M_deim = deim( _model=this->shared_from_this(),
                             _sampling=Pset );
 
         M_deim->run();
@@ -109,13 +114,17 @@ public :
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
         BOOST_CHECK( m==3 );
 
+
+        Pset = Dmu->sampling();
         Pset->randomize( 100 , true , "deim_test_sampling" );
 
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Compare expansion with monolithic" );
         auto base = M_deim->q();
         for ( auto const& mu : *Pset )
         {
             auto coeff = M_deim->beta(mu);
-
+            betas.push_back( coeff );
             assembleForDEIM(mu);
 
             for ( int i=0; i<m; i++ )
@@ -123,6 +132,40 @@ public :
 
             double norm = V->linftyNorm();
             BOOST_CHECK_SMALL( norm, 1e-9 );
+        }
+
+
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Rebuild and check" );
+        M_deim = deim( _model=this->shared_from_this(),
+                       _sampling=Pset );
+        int i = 0;
+        for ( auto const& mu : *Pset )
+        {
+            auto coeff = M_deim->beta(mu);
+            for ( int k=0; k<coeff.size(); k++)
+                BOOST_CHECK_CLOSE( coeff(k), betas[i](k) , 1e-9 );
+            i++;
+        }
+
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Reassemble and check" );
+        M_deim->run();
+        auto base2 = M_deim->q();
+        for ( int m=0; m<base.size(); m++ )
+        {
+            base[m]->add( -1, base2[m] );
+            double norm = base[m]->linftyNorm();
+            BOOST_CHECK_SMALL( norm, 1e-9 );
+        }
+
+        i = 0;
+        for ( auto const& mu : *Pset )
+        {
+            auto coeff = M_deim->beta(mu);
+            for ( int k=0; k<coeff.size(); k++)
+                BOOST_CHECK_CLOSE( coeff(k), betas[i](k) , 1e-9 );
+            i++;
         }
 
     }
@@ -164,6 +207,10 @@ private :
     backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
     vector_ptrtype V;
+
+    uuids::uuid M_uuid;
+    deim_ptrtype M_deim;
+    std::vector<vectorN_type> betas;
 
 };
 
