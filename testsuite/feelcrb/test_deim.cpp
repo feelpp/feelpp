@@ -4,6 +4,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelcrb/deim.hpp>
@@ -36,15 +37,25 @@ makeAbout()
     return about;
 }
 
+template <int POrder,bool IsVectorial=false>
 class DeimTest :
-    public boost::enable_shared_from_this<DeimTest>
+    public boost::enable_shared_from_this<DeimTest<POrder,IsVectorial>>
 {
 public :
-    typedef DeimTest self_type;
+    typedef DeimTest<POrder,IsVectorial> self_type;
+    static const bool is_vect = IsVectorial;
 
     typedef double value_type;
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef Pch_type<mesh_type,POrder> scalarspace_type;
+    typedef Pchv_type<mesh_type,POrder> vectorialspace_type;
+    typedef typename mpl::if_< mpl::bool_<is_vect>,
+                               vectorialspace_type,
+                               scalarspace_type>::type space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
 
     typedef Backend<double> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -57,12 +68,9 @@ public :
     typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
-    typedef Pch_type<mesh_type,1> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename space_type::element_type element_type;
-
     typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
+
 
     DeimTest() :
         M_backend( backend() ),
@@ -70,7 +78,7 @@ public :
         M_uuid( Environment::randomUUID( true ) )
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
-        Xh = Pch<1>( mesh );
+        Xh = space_type::New( mesh );
 
         setFunctionSpaces(Xh);
     }
@@ -148,6 +156,7 @@ public :
             i++;
         }
 
+
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Reassemble and check" );
         M_deim->run();
@@ -158,7 +167,6 @@ public :
             double norm = base[m]->linftyNorm();
             BOOST_CHECK_SMALL( norm, 1e-9 );
         }
-
         i = 0;
         for ( auto const& mu : *Pset )
         {
@@ -167,18 +175,34 @@ public :
                 BOOST_CHECK_CLOSE( coeff(k), betas[i](k) , 1e-9 );
             i++;
         }
-
     }
 
-    vector_ptrtype assembleForDEIM( parameter_type const& mu)
+    vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    {
+        return assembleForDEIM( mu, mpl::bool_<is_vect>() );
+    }
+
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<false> )
     {
         auto mesh = Xh->mesh();
         auto u = Xh->element();
 
         auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
-        f = integrate( markedelements(mesh,"Omega1"), mu[0]*id(u) );
-        f += integrate( markedelements(mesh,"Omega2"), mu[1]*id(u) );
-        f += integrate( markedfaces(mesh,"Gamma1"), mu[0]*mu[1]*id(u) );
+        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*id(u) );
+        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*id(u) );
+        f += integrate( markedfaces(mesh,"Gamma1"), math::exp(mu[0])*mu[1]*id(u) );
+
+        return V;
+    }
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<true> )
+    {
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+
+        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
+        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*trans(id(u))*oneX() );
+        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*trans(id(u))*oneY() );
+        f += integrate( markedfaces(mesh,"Gamma1"),math::exp( mu[0])*mu[1]*trans(id(u))*N() );
 
         return V;
     }
@@ -217,10 +241,41 @@ private :
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( deim_suite )
 
-BOOST_AUTO_TEST_CASE( test_0 )
+BOOST_AUTO_TEST_CASE( test_1 )
 {
-    boost::shared_ptr<DeimTest> m( new DeimTest );
+    boost::shared_ptr<DeimTest<1>> m( new DeimTest<1> );
     m->run();
 }
 
+
+BOOST_AUTO_TEST_CASE( test_2 )
+{
+    boost::shared_ptr<DeimTest<2>> m( new DeimTest<2> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    boost::shared_ptr<DeimTest<3>> m( new DeimTest<3> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_1v )
+{
+    boost::shared_ptr<DeimTest<1,true>> m( new DeimTest<1,true> );
+    m->run();
+}
+
+
+BOOST_AUTO_TEST_CASE( test_2v )
+{
+    boost::shared_ptr<DeimTest<2,true>> m( new DeimTest<2,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_3v )
+{
+    boost::shared_ptr<DeimTest<3,true>> m( new DeimTest<3,true> );
+    m->run();
+}
 BOOST_AUTO_TEST_SUITE_END()
