@@ -39,6 +39,7 @@
 
 namespace Feel {
 
+extern template class Mesh<Simplex<3>>;
 /**
    Generate the mesh of an hypercube
  */

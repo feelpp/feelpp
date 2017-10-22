@@ -30,11 +30,6 @@
 #define FEELPP_DOF_HPP 1
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/composite_key.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
 
 namespace Feel
 {
@@ -436,34 +431,6 @@ public:
 };
 //@ Alias for FaceDof
 using EntityDof =  FaceDof;
-
-#if 0
-typedef multi_index::multi_index_container<
-    Dof,
-    multi_index::indexed_by<
-
-        // sort by less<int> on index()
-        multi_index::ordered_unique<multi_index::const_mem_fun<Dof,
-                                                               size_type,
-                                                               &Dof::index> >,
-
-        // sort by less<int> on entity()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_entity>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   uint16_type,
-                                                                   &Dof::entity> >,
-        // sort by less<int> on location()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   bool,
-                                                                   &Dof::isOnBoundary> >,
-        // sort by less<int> on marker()
-        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-                                        multi_index::const_mem_fun<Dof,
-                                                                   Marker1,
-                                                                   &Dof::marker> >
-        > > dof_container_type;
-#endif
 
 template<int NC = 1>
 class LocalDof: public std::pair<size_type,uint16_type>
