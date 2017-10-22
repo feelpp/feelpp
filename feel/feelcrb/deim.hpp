@@ -399,7 +399,7 @@ public :
         M_crb_built=true;
     }
 
-    virtual void updateRb( std::vector<element_type> const& wn )=0;
+    virtual void updateRb( std::vector<boost::shared_ptr<element_type>> const& wn )=0;
 
     void setOfflineStep( bool b ) { M_offline_step = b; }
     bool offlineStep() const { return M_offline_step; }
@@ -883,7 +883,7 @@ public :
         return modelAssemble(mu,u,online);
     }
 
-    void updateRb( std::vector<element_type> const& wn ) override
+    void updateRb( std::vector<boost::shared_ptr<element_type>> const& wn ) override
     {
         if ( this->M_optimized_online )
         {
@@ -899,7 +899,7 @@ public :
         }
         else // to be removed when optimized is fixed
             for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
-                M_rb_basis.push_back( wn[i] );
+                M_rb_basis.push_back( *wn[i] );
 
         this->M_n_rb = M_rb_basis.size();
     }
