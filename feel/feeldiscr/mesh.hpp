@@ -1577,22 +1577,26 @@ private:
     /**
      * modify edges on boundary in 3D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<true> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, std::enable_if_t<TheShape::nDim==3>* = nullptr );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<false> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, std::enable_if_t<TheShape::nDim!=3>* = nullptr );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim!=3>* = nullptr );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim==3>* = nullptr );
 
     //!
     //!  update entities on boundary (point, edge, face and element)
