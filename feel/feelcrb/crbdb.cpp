@@ -85,52 +85,13 @@ CRBDB::id( fs::path p ) const
     auto up = p.parent_path().filename();
     return boost::lexical_cast<uuids::uuid>( up.string() );
 }
-fs::path
-CRBDB::dbSystemPath() const
-{
-#if 0
-    std::vector<std::string> sysdir{Feel::Info::prefix(), "/usr", "/usr/local", "/opt/local"};
-    BOOST_FOREACH( auto dir, sysdir )
-    {
-        // generate the local repository db path
-        std::string syspath = ( boost::format( "%1%/share/feel/db/crb/%2%/" )
-                                % dir
-                                % M_prefixdir ).str();
 
-        //std::cout << "Look for " << syspath  << "\n";
-        if ( fs::exists( syspath ) )
-            return syspath;
-    }
-#endif
-    return fs::path();
-}
 fs::path
 CRBDB::dbLocalPath() const
 {
-#if 0
-    int proc_number =  Environment::worldComm().globalRank();
-    int nb_proc = Environment::worldComm().globalSize();
-    std::string suf;
-    if( Environment::vm().count( "crb.results-repo-name" ) )
-        {
-            std::string database_name = soption(_name="crb.results-repo-name");
-            suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
-        }
-    else
-    {
-        std::string database_name = "default_repo";
-        suf = M_name + "_" + database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
-    }
-
-    // generate the local repository db path
-    std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
-                              % Feel::Environment::rootRepository()
-                              % M_prefixdir
-                              % suf ).str();
-    fs::path rep_path = localpath;
-    fs::create_directories( rep_path );
-#endif
     fs::path rep_path = M_dbDirectory;
+    if ( !M_dbSubDirectory.empty() )
+        rep_path /= M_dbSubDirectory;
     return rep_path;
 }
 
@@ -143,13 +104,6 @@ CRBDB::lookForDB() const
     {
         //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
         return this->dbLocalPath() / this->dbFilename();
-    }
-
-    // then look into the system for install databases
-    if ( fs::exists( this->dbSystemPath() / this->dbFilename() ) )
-    {
-        //std::cout << "[CRBDB::lookForDB] found database in " << this->dbSystemPath() << "\n";
-        return this->dbSystemPath() / this->dbFilename();
     }
 
     return fs::path();

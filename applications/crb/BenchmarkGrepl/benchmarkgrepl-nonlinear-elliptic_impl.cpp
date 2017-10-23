@@ -51,47 +51,50 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::p
 template<int Order, int Dim>
 void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 {
-    std::string mshfile_name = option("mshfile").as<std::string>();
 
-    /*
-     * First we create the mesh or load it if already exist
-     */
-
-    if( mshfile_name=="" )
+    if ( !this->Xh )
     {
-        double hsize=doption(_name="hsize");
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=domain( _name = "benchmarkgrepl",
-                                             _shape = "hypercube",
-                                             _dim = Dim,
-                                             _h=hsize,
-                                             _xmin=0,_xmax=1,
-                                             _ymin=0,_ymax=1 ) );
+        /*
+         * First we create the mesh or load it if already exist
+         */
+        static mesh_ptrtype static_mesh;
+        if ( !static_mesh )
+        {
+            std::string mshfile_name = option("mshfile").as<std::string>();
+            if( mshfile_name=="" )
+            {
+                double hsize=doption(_name="hsize");
+                mesh = createGMSHMesh( _mesh=new mesh_type,
+                                       _desc=domain( _name = "benchmarkgrepl",
+                                                     _shape = "hypercube",
+                                                     _dim = Dim,
+                                                     _h=hsize,
+                                                     _xmin=0,_xmax=1,
+                                                     _ymin=0,_ymax=1 ) );
+            }
+            else
+            {
+                mesh = loadMesh( _mesh=new mesh_type,
+                                 _filename=soption("mshfile") );
+            }
+            static_mesh = mesh;
+        }
+        else
+            mesh = static_mesh;
+        /*
+         * The function space and some associate elements are then defined
+         */
+        this->setFunctionSpaces( space_type::New( mesh ) );
+        // allocate an element of Xh
+        pT = element_ptrtype( new element_type( this->Xh ) );
     }
-    else
-    {
-        mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=option("mshfile").as<std::string>(),
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
-    }
-
-
-    /*
-     * The function space and some associate elements are then defined
-     */
-    Xh = space_type::New( mesh );
-    space_ptrtype_eimg Xh_eimg = space_type_eimg::New( mesh );
-    this->setFunctionSpaces( Xh );
 
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "Number of dof " << Xh->nDof() << std::endl;
-        std::cout << "Number of local dof " << Xh->nLocalDof() << std::endl;
+        std::cout << "Number of dof " << this->Xh->nDof() << std::endl;
+        std::cout << "Number of local dof " << this->Xh->nLocalDof() << std::endl;
     }
 
-    // allocate an element of Xh
-    pT = element_ptrtype( new element_type( Xh ) );
-    static auto M_U = *pT;
 
     this->Dmu->setDimension( 2 );
     auto mu_min = this->Dmu->element();
@@ -104,26 +107,26 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
     M_mu = this->Dmu->element();
 
     auto Pset = this->Dmu->sampling();
-    //specify how many elements we take in each direction
-    std::vector<size_type> N(2);
     int Ne = ioption(_name="trainset-eim-size");
     std::string supersamplingname =(boost::format("DmuEim-Ne%1%-generated-by-master-proc") %Ne ).str();
 
     std::ifstream file ( supersamplingname );
-
-    //40 elements in each direction
-    N[0]=Ne; N[1]=Ne;
-
-    //interpolation points are located on different proc
-    //so we can't distribute parameters on different proc as in crb case
-    //else for a given mu we are not able to evaluate g at a node wich
-    //is not on the same proc than mu (so it leads to wrong results !)
-    bool all_proc_same_sampling=true;
-
-    if( ! file )
+    if( !file )
     {
-        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
-        Pset->writeOnFile( supersamplingname );
+        //specify how many elements we take in each direction
+        std::vector<size_type> N(2);
+        //40 elements in each direction
+        N[0]=Ne; N[1]=Ne;
+
+        //interpolation points are located on different proc
+        //so we can't distribute parameters on different proc as in crb case
+        //else for a given mu we are not able to evaluate g at a node wich
+        //is not on the same proc than mu (so it leads to wrong results !)
+        bool all_proc_same_sampling=true;
+        std::string samplingMode = "equidistribute";
+        Pset->sample( N, samplingMode, all_proc_same_sampling , supersamplingname );
+        //Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        //Pset->writeOnFile( supersamplingname );
     }
     else
     {
@@ -131,6 +134,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
+    space_ptrtype_eimg Xh_eimg = space_type_eimg::New( mesh );
     auto eim_g = eim( _model=boost::dynamic_pointer_cast< BenchmarkGreplNonlinearElliptic<Order,Dim> >( this->shared_from_this() ),
                       _element=*pT,
                       _space=Xh_eimg,
@@ -198,7 +202,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 
     M_InitialGuess.resize(1);
     M_InitialGuess[0].resize(1);
-    M_InitialGuess[0][0] = Xh->elementPtr();
+    M_InitialGuess[0][0] = this->Xh->elementPtr();
 
     assemble();
 
