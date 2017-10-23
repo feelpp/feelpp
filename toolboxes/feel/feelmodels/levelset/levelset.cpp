@@ -1264,7 +1264,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
         const rank_type pid = mesh->worldCommElements().localRank();
         const int ndofv = space_levelset_type::fe_type::nDof;
 
-        double thickness = this->thicknessInterface();
+        double thickness = 1.5*this->thicknessInterface();
         elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
 
         for (; it_elt!=en_elt; it_elt++)
