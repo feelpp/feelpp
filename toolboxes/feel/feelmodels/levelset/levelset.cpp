@@ -4,6 +4,7 @@
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
+#include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -1012,32 +1013,34 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
     {
         //auto psi = idv(this->phi()) / sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
         auto psi = idv(this->phi()) / idv(this->modGradPhi());
-        auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            +
-            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
-            +
-            vf::chi(psi>eps)*vf::constant(0.0);
+        //auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            //+
+            //vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            //1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
+            //+
+            //vf::chi(psi>eps)*vf::constant(0.0);
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
+            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                   Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project(D_expr);
+            *M_dirac = M_projectorL2->project( Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
     }
     else
     {
         auto psi = idv(this->phi()) ;
-        auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
-            +
-            vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
-            1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
-            +
-            vf::chi(psi>eps)*vf::constant(0.0);
+        //auto D_expr = vf::chi( psi<-eps )*vf::constant(0.0)
+            //+
+            //vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
+            //1/(2*eps) *( 1 + cos(M_PI*psi/eps) )
+            //+
+            //vf::chi(psi>eps)*vf::constant(0.0);
 
-        if (M_useHeavisideDiracNodalProj)
-            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()), D_expr );
+        if ( M_useHeavisideDiracNodalProj )
+            *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
+                   Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project(D_expr);
+            *M_dirac = M_projectorL2->project( Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
     }
 
     M_doUpdateDirac = false;
@@ -1264,7 +1267,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
         const rank_type pid = mesh->worldCommElements().localRank();
         const int ndofv = space_levelset_type::fe_type::nDof;
 
-        double thickness = 1.5*this->thicknessInterface();
+        double thickness = 2*this->thicknessInterface();
         elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
 
         for (; it_elt!=en_elt; it_elt++)
