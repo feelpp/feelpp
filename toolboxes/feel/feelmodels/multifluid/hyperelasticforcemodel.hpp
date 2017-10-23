@@ -162,10 +162,13 @@ HyperelasticForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype
 #endif
     auto Fe = this->levelset()->smootherVectorial()->project(
     //auto Fe = this->levelset()->projectorL2Vectorial()->project(
-            _expr=divv(Fe_expr)*idv(this->levelset()->D())
+            _expr=divv(Fe_expr)
             );
     
-    *F = Fe;
+    F->on( 
+        _range=elements(this->levelset()->mesh()),
+        _expr=idv(Fe)*idv(this->levelset()->D())
+        );
 
 #ifdef DEBUG_HYPERELASTICFORCEMODEL
     M_exporter->step(this->levelset()->time())->add(
