@@ -49,6 +49,47 @@
 
 namespace Feel
 {
+#if defined( FEELPP_INSTANTIATION_MODE )
+
+# define DIMS1 BOOST_PP_TUPLE_TO_LIST(1,(1))
+# define RDIMS1 BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
+# define ORDERS1 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+
+# define DIMS2 BOOST_PP_TUPLE_TO_LIST(1,(2))
+# define RDIMS2 BOOST_PP_TUPLE_TO_LIST(2,(2,3))
+# define ORDERS2 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
+
+# define DIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
+# define RDIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
+# define ORDERS3 BOOST_PP_TUPLE_TO_LIST(4,(1,2,3,4))
+
+# define FACTORY_SIMPLEX_CODE(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+# define FACTORY_HYPERCUBE_CODE(LDIM,LORDER,RDIM) template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+
+# define FACTORY_SIMPLEX_OP(_, GDO) FACTORY_SIMPLEX_CODE GDO
+# define FACTORY_HYPERCUBE_OP(_, GDO) FACTORY_HYPERCUBE_CODE GDO
+
+
+# define FACTORY_SIMPLEX_E(LDIM,LORDER,RDIM) extern template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
+# define FACTORY_HYPERCUBE_E(LDIM,LORDER,RDIM) extern template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
+
+# define FACTORY_SIMPLEX_OP_E(_, GDO) FACTORY_SIMPLEX_E GDO
+# define FACTORY_HYPERCUBE_OP_E(_, GDO) FACTORY_HYPERCUBE_E GDO
+
+
+#if !defined( FEELPP_MESH_IMPL_NOEXTERN )
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS3, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS3 ), RDIMS3 ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS3, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS3 ), RDIMS3 ) )
+
+#endif // FEELPP_MESH_IMPL_NOEXTERN
+#endif // FEELPP_INSTANTIATION_MODE
 
 namespace meshdetail
 {
@@ -1789,10 +1830,10 @@ Mesh<Shape, T, Tag>::fixPointDuplicationInHOMesh( element_type & elt, face_type 
 
 
 template<typename Shape, typename T, int Tag>
+template<typename TheShape>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & face , mpl::bool_<true> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & face , std::enable_if_t<TheShape::nDim==3>* )
 {
-#if 0
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
     {
@@ -1804,27 +1845,26 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & face , mpl::bool_<true> 
 
     }
     DVLOG(3) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
-#else
-    CHECK( 0 ) << "modifyEdgesOnBoundary not implemented yet";
-#endif
 }
 template<typename Shape, typename T, int Tag>
+template<typename TheShape>
 void
-Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & f, mpl::bool_<false> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_type & f, std::enable_if_t<TheShape::nDim!=3>* )
 {
 }
 
 template<typename Shape, typename T, int Tag>
+template<typename TheShape>
 bool
-Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> )
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim!=3>* )
 {
     return false;
 }
 template<typename Shape, typename T, int Tag>
+template<typename TheShape>
 bool
-Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> )
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim==3>* )
 {
-#if 0
     // in 3D check if the edges of the element touch the boundary
     bool isOnBoundary = false;
     for ( size_type j = 0; j < elt.nEdges(); j++ )
@@ -1840,9 +1880,6 @@ Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bo
         return isOnBoundary;
     }
     return isOnBoundary;
-#else
-    CHECK( 0 ) << "modifyElementOnBoundaryFromEdge not implemented yet";
-#endif
 }
 
 template<typename Shape, typename T, int Tag>
@@ -1858,7 +1895,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
         auto & face = it->second;
         if ( face.isOnBoundary() )
         {
-            modifyEdgesOnBoundary( face, mpl::bool_<(nDim >= 3)>() );
+            modifyEdgesOnBoundary( face );
             // loop over face points
             for ( int f = 0; f < face_type::numPoints; ++f )
             {
@@ -1894,7 +1931,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
             // go to the next element, no need to look further
             continue;
         }
-        bool e_modified = modifyElementOnBoundaryFromEdge( elt, mpl::bool_<(nDim>=3)>() );
+        bool e_modified = modifyElementOnBoundaryFromEdge( elt );
         // go to next element if element is on boundary
         if ( e_modified )
         {
@@ -3407,49 +3444,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
 namespace Feel
 {
-#if 1
-#if defined( FEELPP_INSTANTIATION_MODE )
 
-# define DIMS1 BOOST_PP_TUPLE_TO_LIST(1,(1))
-# define RDIMS1 BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS1 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-# define DIMS2 BOOST_PP_TUPLE_TO_LIST(1,(2))
-# define RDIMS2 BOOST_PP_TUPLE_TO_LIST(2,(2,3))
-# define ORDERS2 BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-# define DIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
-# define RDIMS3 BOOST_PP_TUPLE_TO_LIST(1,(3))
-# define ORDERS3 BOOST_PP_TUPLE_TO_LIST(4,(1,2,3,4))
-
-# define FACTORY_SIMPLEX_CODE(LDIM,LORDER,RDIM) template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
-# define FACTORY_HYPERCUBE_CODE(LDIM,LORDER,RDIM) template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
-
-# define FACTORY_SIMPLEX_OP(_, GDO) FACTORY_SIMPLEX_CODE GDO
-# define FACTORY_HYPERCUBE_OP(_, GDO) FACTORY_HYPERCUBE_CODE GDO
-
-
-# define FACTORY_SIMPLEX_E(LDIM,LORDER,RDIM) extern template class Mesh<Simplex<LDIM, LORDER, RDIM> >;
-# define FACTORY_HYPERCUBE_E(LDIM,LORDER,RDIM) extern template class Mesh<Hypercube<LDIM, LORDER, RDIM> >;
-
-# define FACTORY_SIMPLEX_OP_E(_, GDO) FACTORY_SIMPLEX_E GDO
-# define FACTORY_HYPERCUBE_OP_E(_, GDO) FACTORY_HYPERCUBE_E GDO
-
-
-#if !defined( FEELPP_MESH_IMPL_NOEXTERN )
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS2, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS2 ), RDIMS2 ) )
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP_E, 3, ( DIMS3, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS3 ), RDIMS3 ) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS3, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS3 ), RDIMS3 ) )
-
-#endif // FEELPP_MESH_IMPL_NOEXTERN
-#endif // FEELPP_INSTANTIATION_MODE
-#endif
 } // namespace Feel
 
 
