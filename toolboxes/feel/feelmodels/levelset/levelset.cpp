@@ -2247,8 +2247,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant2 ) )
     {
-        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrC/2SqrtTrCofC)"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrC/2SqrtTrCofC)")),
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrC_2SqrtTrCofC)"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrC_2SqrtTrCofC)")),
                                        *this->cauchyGreenInvariant2() );
     }
 
