@@ -30,11 +30,14 @@ namespace Feel
 const auto med = GmshReaderFactory::instance().emplace( ".med",
                                                         []( std::string fname )
                                                         {
-                                                            auto m = boost::make_shared<GModel>();
                                                             int status = 1;
 #ifdef FEELPP_HAS_GMSH_HAS_MED
-                                                            status = m->readMED(fname);
+                                                            status = GModel::readMED(fname);
+                                                            GModel *gm = new GModel();
+                                                            gm = GModel::current();
+                                                            auto m = boost::make_shared<GModel>( *gm );
 #else
+                                                            auto m = boost::make_shared<GModel>();
                                                             throw std::logic_error("Gmsh MED support is not available. Cannot load MED file");
 #endif
                                                             return std::make_pair( status, m );
@@ -44,7 +47,7 @@ const auto mesh = GmshReaderFactory::instance().emplace( ".mesh",
                                                          []( std::string fname )
                                                          {
                                                              auto m = boost::make_shared<GModel>();
-                                                             
+
                                                              int status = m->readMESH(fname);
                                                              return std::make_pair( status, m );
                                                          });
