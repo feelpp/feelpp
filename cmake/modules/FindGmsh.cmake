@@ -89,17 +89,17 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
 
   if ( GMSH_INCLUDE_PATH )
     set( FEELPP_HAS_GMSH_H 1 )
-    # FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
-    #   Openfile.h Field.h
-    #   PATHS ${GMSH_INCLUDE_PATH}
-    #   DOC "Directory where GMSH header files are stored" )
-    # if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-    #   set( FEELPP_HAS_GMSH_ADAPT_H 1 )
-    # else ( GMSH_ADAPTMESH_INCLUDE_DIR )
-    #   message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
-    #   message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
-    # endif( GMSH_ADAPTMESH_INCLUDE_DIR )
-    set( FEELPP_HAS_GMSH_ADAPT_H 1 )
+    FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
+      Openfile.h Field.h
+      PATHS ${GMSH_INCLUDE_PATH}
+      DOC "Directory where GMSH header files are stored" )
+    if ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      set( FEELPP_HAS_GMSH_ADAPT_H 1 )
+    else ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
+      message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
+    endif( GMSH_ADAPTMESH_INCLUDE_DIR )
+    # set( FEELPP_HAS_GMSH_ADAPT_H 1 )
   endif(GMSH_INCLUDE_PATH)
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
