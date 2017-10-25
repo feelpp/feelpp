@@ -1544,7 +1544,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
                         j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                               _expr=normalv(M_up) ).evaluate()(0,0);
+                                                _expr=trans(idv(M_up))*N()).evaluate()(0,0);
                         meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                           _expr=cst(1.0)).evaluate()(0,0);
                         Feel::cout << "Integral flux on " << marker << ": " << j_integral << std::endl;

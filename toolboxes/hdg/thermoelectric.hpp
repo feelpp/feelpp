@@ -73,11 +73,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::ThermoElectricHDG( std::string prefix,
     M_prefixElectro(prefixElectro)
 {
     tic();
-    M_thermo = thermo_type::New(M_prefixThermo);
     M_electro = electro_type::New(M_prefixElectro);
+    M_thermo = thermo_type::New(M_prefixThermo);
     M_mesh = loadMesh( new mesh_type );
-    M_thermo->init( M_mesh );
     M_electro->init( M_mesh );
+    M_thermo->init( M_mesh );
     toc("init");
 }
 
