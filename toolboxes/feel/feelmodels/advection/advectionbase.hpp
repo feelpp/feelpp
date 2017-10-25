@@ -308,6 +308,7 @@ public :
     //--------------------------------------------------------------------//
     // Stabilization
     AdvectionStabMethod stabilizationMethod() const { return M_stabMethod; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
     double stabilizationCIPCoefficient() const { return M_stabilizationCIPCoefficient; }
     void setStabilizationCIPCoefficient(double coeff) { M_stabilizationCIPCoefficient = coeff; }
 
