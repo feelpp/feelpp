@@ -476,6 +476,36 @@ else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
 
+# Python libs
+option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if(FEELPP_ENABLE_PYTHON)
+  #
+  # Python interp
+  #
+  FIND_PACKAGE(PythonInterp 3  REQUIRED)
+  if(PYTHONINTERP_FOUND)
+    execute_process(COMMAND
+      ${PYTHON_EXECUTABLE}
+      -c "import sys; print(sys.version[0:3])"
+      OUTPUT_VARIABLE PYTHON_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${PYTHON_VERSION}" )
+  endif()
+
+  FIND_PACKAGE(PythonLibs 3 REQUIRED)
+  if ( PYTHONLIBS_FOUND )
+    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
+    set( FEELPP_HAS_PYTHON 1 )
+
+  endif()
+
+endif()
+
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
@@ -486,15 +516,15 @@ SET(BOOST_MIN_VERSION "1.61.0")
 
 # First we try to find boost with the python components
 if(FEELPP_ENABLE_PYTHON_WRAPPING)
-    FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
-    if(Boost_PYTHON_FOUND)
-        set(FEELPP_HAS_BOOST_PYTHON 1)
-        set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
+    # FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
+    # if(Boost_PYTHON_FOUND)
+    #     set(FEELPP_HAS_BOOST_PYTHON 1)
+    #     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+    #     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
 
-    else()
-        message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-      endif()
+    # else()
+    #     message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
+    #   endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -728,33 +758,6 @@ if(FEELPP_ENABLE_LIBXML2)
   endif()
 endif()
 
-# Python libs
-option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if(FEELPP_ENABLE_PYTHON)
-  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
-  if ( PYTHONLIBS_FOUND )
-    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
-    set( FEELPP_HAS_PYTHON 1 )
-
-  endif()
-
-  #
-  # Python interp
-  #
-  FIND_PACKAGE(PythonInterp 2.7  REQUIRED)
-  if(PYTHONINTERP_FOUND)
-    execute_process(COMMAND
-      ${PYTHON_EXECUTABLE}
-      -c "import sys; print sys.version[0:3]"
-      OUTPUT_VARIABLE PYTHON_VERSION
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
-  endif()
-endif()
 
 
 #

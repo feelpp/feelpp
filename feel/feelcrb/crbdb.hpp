@@ -157,8 +157,10 @@ public:
     }
 
     //! \return prefix directory
-    std::string const& dbDirectory() const
+    std::string dbDirectory( bool withSubDir = true ) const
     {
+        if ( withSubDir && !M_dbSubDirectory.empty() )
+            return (fs::path( M_dbDirectory )/ M_dbSubDirectory ).string();
         return M_dbDirectory;
     }
 
@@ -187,9 +189,6 @@ public:
 
     //! \return the db local path
     virtual fs::path dbLocalPath() const;
-
-    //! \return the db system path
-    fs::path dbSystemPath() const;
 
     //! \return path to database, empty path if not found
     virtual fs::path lookForDB() const;
@@ -247,8 +246,14 @@ public:
             M_dbSubDirectory = subdirectory;
         else
             M_dbSubDirectory = (fs::path( M_dbSubDirectory ) / fs::path(subdirectory )).string();
-        M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
+        //M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
     }
+
+    //! set DB sub directory
+    void setDBSubDirectory( std::string const& directory )
+        {
+            M_dbSubDirectory = directory;
+        }
 
     //@}
 

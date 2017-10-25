@@ -122,7 +122,8 @@ public:
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
-        M_crb( boost::make_shared<method_t>(name,crb::stage::online) )
+        M_crb( boost::make_shared<method_t>(name,crb::stage::online) ),
+        M_load( crb::load::none )
         {
         }
 
@@ -132,19 +133,29 @@ public:
         }
     void loadDB( std::string const& filename, crb::load l ) override
         {
+            M_load = l;
             M_crb->loadDB( filename, l );
         }
 
     void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
         {
+            M_load = l;
             M_crb->loadDBFromId( id, l, root );
         }
     
     void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
         {
+            M_load = l;
             M_crb->loadDBLast( last, l, root );
         }
 
+    bool isDBLoaded() const override { return M_load != crb::load::none; }
+    
+    bool isReducedBasisModelDBLoaded() const override { return (M_load == crb::load::rb) || (M_load == crb::load::all); }
+
+    bool isFiniteElementModelDBLoaded() const override { return (M_load == crb::load::fe) || (M_load == crb::load::all); }
+
+    bool isAllLoaded() const override { return M_load == crb::load::all; }
     
     boost::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
@@ -202,9 +213,7 @@ public:
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
-                *u = rbPrimal[k];
-                res[k] = u;
+                res[k] = rbPrimal[k];
             }
             return res;
         }
@@ -216,9 +225,7 @@ public:
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
-                *u = rbDual[k];
-                res[k] = u;
+                res[k] = rbDual[k];;
             }
             return res;
         }
@@ -276,6 +283,7 @@ protected:
     std::string M_name;
     crb_ptrtype M_crb;
     exporter_ptr_t fieldExporter;
+    crb::load M_load;
 };
 
 
@@ -287,7 +295,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname>( strname )                                 \
+        CRBPlugin<classname>( BOOST_PP_STRINGIZE( strname ) )           \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -298,9 +306,9 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
-#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                         \
+#define FEELPP_CRBTRILINEAR_PLUGIN( classname, strname )                \
     class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
         public CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>      \
 {                                                                       \
@@ -308,7 +316,7 @@ public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
-        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( strname )  \
+        CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( BOOST_PP_STRINGIZE( strname ) ) \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \
@@ -319,8 +327,7 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
-
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
 
 
@@ -342,7 +349,7 @@ public:                                                                 \
 };                                                                      \
                                                                         \
                                                                         \
-BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, create_crbplugin )
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
 
 }

@@ -9,7 +9,19 @@ INCLUDE(ParseArguments)
 # define CMAKE_INSTALL_DOCDIR
 include(GNUInstallDirs)
 
-
+# The following function feelpp_expand() replaces all occurrences of "${...}" in
+# INPUT with the current value of the appropriate variable and stores the
+# result in OUTPUT:
+FUNCTION(feelpp_expand OUTPUT INPUT)
+  STRING(REGEX MATCH "\\\${[^}]*}" m "${INPUT}")
+  WHILE(m)
+    STRING(REGEX REPLACE "\\\${(.*)}" "\\1" v "${m}")
+    STRING(REPLACE "\${${v}}" "${${v}}" INPUT "${INPUT}")
+    STRING(REGEX MATCH "\\\${[^}]*}" m "${INPUT}")
+  ENDWHILE()
+  SET("${OUTPUT}" "${INPUT}" PARENT_SCOPE)
+ENDFUNCTION()
+  
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -85,7 +97,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC;MAN"
-    "NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
+    "TESTS;NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -159,48 +171,81 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_INSTALL )
     install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
   endif()
-
-  if ( NOT FEELPP_APP_NO_TEST )
-    IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-      add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
-    ENDIF()
-    IF(NOT FEELPP_APP_NO_SEQ_TEST)
-      add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
-    endif()
+  # clear up list of tests
+  if ( APP_TESTS )
+    foreach(test ${APP_TESTS})
+      list(REMOVE_ITEM APP_TESTS ${test})
+    endforeach()
   endif()
 
+    if ( FEELPP_APP_TESTS )
+      message(STATUS "reading ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME}..." )
+      if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} )
+        #add_custom_target(${execname}.tests DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME})
+        #add_dependencies(${execname} ${execname}.tests)
+        file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} TESTS_${FEELPP_APP_NAME})
+        foreach(TEST ${TESTS_${FEELPP_APP_NAME}})
+          string(STRIP "${TEST}" TEST)
+          feelpp_expand(TEST ${TEST})
+          # separate with ; to create a list
+          separate_arguments(TEST)
+          # get first element which is the name of the test
+          list(GET TEST 0 TEST_NAME)
+          list(REMOVE_AT TEST 0)
+          if ( ${TEST_NAME} MATCHES "#.*" )
+            continue()
+          endif()
+          if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+            message(STATUS "[feelpp] ${execname} adding test ${TEST_NAME} : ${TEST}")
+          endif()
+          
+          # user name of the test in the app test name
+          IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+            add_test(NAME ${execname}-${TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} ${MPIEXEC_POSTFLAGS} )
+            list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-${NProcs2})
+          endif()
+
+          IF(NOT FEELPP_APP_NO_SEQ_TEST)
+            add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST})
+            list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-1)
+          endif()
+    
+        endforeach()
+      else()
+        message(WARNING "${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} does not exist to generate tests. Remove TESTS for ${FEELPP_APP_NAME}")
+
+        IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+          add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
+        
+          list(APPEND APP_TESTS ${execname}-np-${NProcs2})
+        endif()
+
+        IF(NOT FEELPP_APP_NO_SEQ_TEST)
+          add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
+          list(APPEND APP_TESTS ${execname}-np-1)
+        endif()
+    
+      endif()
+    endif(FEELPP_APP_TESTS)
+  
+  foreach(APP_TEST ${APP_TESTS})
+    # disable leak detection for now
+    set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/tools/lsan/suppressions.txt")
+  endforeach()
+  
   #add_dependencies(crb ${execname})
   # add TIMEOUT to test
   if ( FEELPP_APP_TIMEOUT )
-    if ( NOT FEELPP_APP_NO_TEST )
-      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_APP_TIMEOUT})
-      endif()
-      IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT ${FEELPP_APP_TIMEOUT})
-      ENDIF()
-    endif()
-  else()
-    if ( NOT FEELPP_APP_NO_TEST )
-      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2}  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
-      endif()
-      IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        set_property(TEST ${execname}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
-      endif()
-    endif()
+    foreach(APP_TEST ${APP_TESTS})
+      set_property(TEST ${APP_TEST}  PROPERTY TIMEOUT ${FEELPP_APP_TIMEOUT})
+    endforeach()
   endif()
   # Add label if provided
   if ( FEELPP_APP_LABELS )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABELS})
-    if ( NOT FEELPP_APP_NO_TEST )
-      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-        set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABELS})
-      ENDIF()
-      IF(NOT FEELPP_APP_NO_SEQ_TEST)
-        set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABELS})
-      endif()
-    endif()
+    foreach(APP_TEST ${APP_TESTS})
+      set_property(TEST ${APP_TEST} PROPERTY LABELS ${FEELPP_APP_LABELS})
+    endforeach()
     foreach(l ${FEELPP_APP_LABELS})
       if ( TARGET ${l} )
         add_dependencies( ${l} ${execname} )
@@ -296,7 +341,7 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI;PROJECT;EXEC"
-    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY;SKIP_TEST;SKIP_SEQ_TEST;SKIP_MPI_TEST"
     ${ARGN}
     )
 
@@ -343,17 +388,26 @@ macro(feelpp_add_test)
         set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
       endif()
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-        add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+        if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_MPI_TEST )
+           add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND /bin/sh -c "exit 77")
+           set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES SKIP_RETURN_CODE 77 )
+        else()
+          add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+        endif()
         set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
         if(CMAKE_BUILD_TYPE MATCHES Debug)
-          set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/suppressions.txt")
+          set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../tools/lsan/suppressions.txt")
         endif()
       ENDIF()
-      add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+      if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_SEQ_TEST )
+         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND /bin/sh -c "exit 77")
+         set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES SKIP_RETURN_CODE 77 )
+      else()
+         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=message ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+      endif()
       set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES ENVIRONMENT "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/suppressions.txt")
-        message(STATUS "option 1: feelpp_test_${FEELPP_TEST_NAME}-np-1")
       endif()
     endif()
 
@@ -657,9 +711,15 @@ include(feelpp.macros.crb)
 # Clone/Update a contrib submodule hold on feel++ repository /contrib
 macro( feelppContribPrepare contribname )
   set( FEELPP_CONTRIB_PREPARE_SUCCEED FALSE )
+  set( FEELPP_CONTRIB_SUBMODULE_UPDATED FALSE )
   message(STATUS "[feelpp] contrib/${contribname} : ${CMAKE_SOURCE_DIR}/contrib/${contribname}")
+  # Count files number in contrib/<name>.
+  file(GLOB CONTRIB_LIST_FILES "${CMAKE_SOURCE_DIR}/contrib/${contribname}/*")
+  list(LENGTH CONTRIB_LIST_FILES CONTRIB_NFILES)
   if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/${contribname} )
-    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
+    # Update submodule if the contrib/<name> directory is empty. User should run
+    # `git submodule update --init --recursive` in other cases.
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git/ AND CONTRIB_NFILES EQUAL 0 )
       execute_process(
         COMMAND git submodule update --init --recursive contrib/${contribname}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -668,7 +728,7 @@ macro( feelppContribPrepare contribname )
         RESULT_VARIABLE ERROR_CODE
         )
       if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "Git submodule contrib/${contribname} updated.")
+        message( STATUS "[feelpp] contrib/${contribname}: submodule updated!`")
         set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
       else()
         MESSAGE(WARNING "Git submodule contrib/${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
@@ -677,7 +737,49 @@ macro( feelppContribPrepare contribname )
       if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/${contribname})
         message( WARNING "Please make sure that git submodule contrib/${contribname} is available")
         message( WARNING "  run `git submodule update --init --recursive contrib/${contribname}`")
+      else()
+        message( STATUS "[feelpp] contrib/${contribname}: submodule hold!`")
+        set( FEELPP_CONTRIB_PREPARE_SUCCEED TRUE )
+        set( FEELPP_CONTRIB_SUBMODULE_UPDATED TRUE ) # Diplay message info."$Feel++ submodules are not updated automatically. Please be sure to run `git submodule update --init --recurse` in the source directory beforehand!"
       endif()
     endif()
   endif()
 endmacro( feelppContribPrepare )
+
+
+# Colorized cmake message.
+macro( feelpp_message )
+  set(options OPT)
+  set(onearg ARG)
+  set(multargs STATUS INFO WARNING ERROR)
+  # Generate parsed_<tag> variables with their arguments.
+  cmake_parse_arguments( parsed "${options}" "${onearg}" "${multargs}" ${ARGN})
+  if( parsed_STATUS )
+    foreach(msg ${parsed_STATUS})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --green --bold "STATUS: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_INFO )
+    foreach(msg ${parsed_INFO})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1
+        ${CMAKE_COMMAND} -E cmake_echo_color --cyan --bold "INFO: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_WARNING )
+    foreach(msg ${parsed_WARNING})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --yellow --bold "WARNING: ${msg}" )
+    endforeach()
+  endif()
+  if( parsed_ERROR )
+    foreach(msg ${parsed_ERROR})
+      execute_process( COMMAND
+        ${CMAKE_COMMAND} -E env CLICOLOR_FORCE=1;
+        ${CMAKE_COMMAND} -E cmake_echo_color --red --bold "ERROR: ${msg}" )
+    endforeach()
+  endif()
+endmacro()

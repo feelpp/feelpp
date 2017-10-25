@@ -248,7 +248,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app )
 {
     this->log("ThermoDynamics","init", "start" );
     this->timerTool("Constructor").start();
