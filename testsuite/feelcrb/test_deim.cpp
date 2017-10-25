@@ -37,13 +37,14 @@ makeAbout()
     return about;
 }
 
-template <int POrder,bool IsVectorial=false>
+template <int POrder,bool IsVectorial=false,bool IsMatricial=false>
 class DeimTest :
-    public boost::enable_shared_from_this<DeimTest<POrder,IsVectorial>>
+    public boost::enable_shared_from_this<DeimTest<POrder,IsVectorial,IsMatricial>>
 {
 public :
-    typedef DeimTest<POrder,IsVectorial> self_type;
+    typedef DeimTest<POrder,IsVectorial,IsMatricial> self_type;
     static const bool is_vect = IsVectorial;
+    static const bool is_mat = IsMatricial;
 
     typedef double value_type;
     typedef Mesh<Simplex<2> > mesh_type;
@@ -61,6 +62,11 @@ public :
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
+    typedef backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef typename mpl::if_<mpl::bool_<is_mat>,
+                              sparse_matrix_type,
+                              vector_type >::type tensor_type;
+    typedef boost::shared_ptr<tensor_type> tensor_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -68,7 +74,7 @@ public :
     typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
-    typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
+    typedef DEIMBase<parameterspace_type,space_type,tensor_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
 
@@ -79,7 +85,6 @@ public :
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
         Xh = space_type::New( mesh );
-
         setFunctionSpaces(Xh);
     }
 
@@ -91,7 +96,10 @@ public :
     void setFunctionSpaces( space_ptrtype Rh )
     {
         Xh = Rh;
-        V = M_backend->newVector(Xh);
+        if ( is_mat )
+            M = M_backend->newMatrix(Xh,Xh);
+        else
+            V = M_backend->newVector(Xh);
     }
 
     uuids::uuid uuid() const { return M_uuid; }
@@ -112,16 +120,14 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        M_deim = deim( _model=this->shared_from_this(),
-                            _sampling=Pset );
-
+        initDeim( Pset );
         M_deim->run();
         int m = M_deim->size();
+        int real_m = is_mat? 4:3;
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
-        BOOST_CHECK( m==3 );
-
+        BOOST_CHECK( m==real_m );
 
         Pset = Dmu->sampling();
         Pset->randomize( 100 , true , "deim_test_sampling" );
@@ -133,20 +139,33 @@ public :
         {
             auto coeff = M_deim->beta(mu);
             betas.push_back( coeff );
-            assembleForDEIM(mu);
 
-            for ( int i=0; i<m; i++ )
-                V->add( -coeff(i), base[i] );
+            double norm=0;
+            if ( is_mat )
+            {
+                assembleForMDEIM(mu);
+                for ( int i=0; i<m; i++ )
+                    add( -coeff(i), base[i] );
+                norm = M->linftyNorm();
+            }
+            else
+            {
+                assembleForDEIM(mu);
+                for ( int i=0; i<m; i++ )
+                    add( -coeff(i), base[i] );
+                norm = V->linftyNorm();
+            }
 
-            double norm = V->linftyNorm();
             BOOST_CHECK_SMALL( norm, 1e-9 );
         }
 
 
+        // We rebuild a new DEIM object with same uuid so he will reload the db
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Rebuild and check" );
-        M_deim = deim( _model=this->shared_from_this(),
-                       _sampling=Pset );
+        initDeim( Pset );
+
+        // Here we check if the betas are well computed without rebuilding the basis tensors
         int i = 0;
         for ( auto const& mu : *Pset )
         {
@@ -156,14 +175,16 @@ public :
             i++;
         }
 
-
+        // Now we rebuild the basis tensors from the data in the db
+        // and we check if the new basis tensors are the equal to the previous.
+        // We also recheck the coeff after the rebuild
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Reassemble and check" );
         M_deim->run();
         auto base2 = M_deim->q();
         for ( int m=0; m<base.size(); m++ )
         {
-            base[m]->add( -1, base2[m] );
+            add(  -1, base2[m], base[m] );
             double norm = base[m]->linftyNorm();
             BOOST_CHECK_SMALL( norm, 1e-9 );
         }
@@ -177,11 +198,11 @@ public :
         }
     }
 
+
     vector_ptrtype assembleForDEIM( parameter_type const& mu )
     {
         return assembleForDEIM( mu, mpl::bool_<is_vect>() );
     }
-
     vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<false> )
     {
         auto mesh = Xh->mesh();
@@ -207,10 +228,29 @@ public :
         return V;
     }
 
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu)
+    {
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+        auto v = Xh->element();
+
+        auto f = form2( _test=Xh, _trial=Xh, _backend=M_backend, _matrix=M );
+        f = integrate( markedelements(mesh,"Omega1"), mu[0]*inner(id(u),idt(v)) );
+        f += integrate( markedelements(mesh,"Omega2"), mu[1]*inner(grad(u),gradt(v)) );
+        f += integrate( markedfaces(mesh,"Gamma2"), (mu[1]*mu[0] + mu[0]*mu[0])*inner(grad(u)*N(),idt(v)) );
+        f += integrate( markedfaces(mesh,"Gamma1"), (mu[1]*mu[1])*inner(id(u),idt(v)) );
+
+        return M;
+    }
+
     // These 3 functions are only needed for compilation
     vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
     {
         return V;
+    }
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u)
+    {
+        return M;
     }
     space_ptrtype functionSpace()
     {
@@ -225,12 +265,44 @@ public :
         return "test_deim";
     }
 
+ private :
+    void initDeim( sampling_ptrtype Pset )
+    {
+        return initDeim( Pset, mpl::bool_<is_mat>() );
+    }
+    void initDeim( sampling_ptrtype Pset, mpl::bool_<true> )
+    {
+        M_deim = mdeim( _model=this->shared_from_this(),
+                        _sampling=Pset );
+    }
+    void initDeim( sampling_ptrtype Pset, mpl::bool_<false> )
+    {
+        M_deim = deim( _model=this->shared_from_this(),
+                       _sampling=Pset );
+    }
 
+    //! evaluate V= V+a*vec
+    void add( double const& a, vector_ptrtype vec, vector_ptrtype v=nullptr )
+    {
+        if ( !v )
+            V->add( a, vec );
+        else
+            v->add( a, vec );
+    }
+    //! evaluate M= M+a*mat
+    void add(  double const& a, sparse_matrix_ptrtype mat, sparse_matrix_ptrtype m=nullptr )
+    {
+        if ( !m )
+            M->addMatrix( a, mat );
+        else
+            m->addMatrix( a, mat );
+    }
 private :
     space_ptrtype Xh;
     backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
     vector_ptrtype V;
+    sparse_matrix_ptrtype M;
 
     uuids::uuid M_uuid;
     deim_ptrtype M_deim;
@@ -278,4 +350,43 @@ BOOST_AUTO_TEST_CASE( test_3v )
     boost::shared_ptr<DeimTest<3,true>> m( new DeimTest<3,true> );
     m->run();
 }
+
+BOOST_AUTO_TEST_CASE( test_m1 )
+{
+    boost::shared_ptr<DeimTest<1,false,true>> m( new DeimTest<1,false,true> );
+    m->run();
+}
+
+
+BOOST_AUTO_TEST_CASE( test_m2 )
+{
+    boost::shared_ptr<DeimTest<2,false,true>> m( new DeimTest<2,false,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_m3 )
+{
+    boost::shared_ptr<DeimTest<3,false,true>> m( new DeimTest<3,false,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_m1v )
+{
+    boost::shared_ptr<DeimTest<1,true,true>> m( new DeimTest<1,true,true> );
+    m->run();
+}
+
+
+BOOST_AUTO_TEST_CASE( test_m2v )
+{
+    boost::shared_ptr<DeimTest<2,true,true>> m( new DeimTest<2,true,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_m3v )
+{
+    boost::shared_ptr<DeimTest<3,true,true>> m( new DeimTest<3,true,true> );
+    m->run();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
