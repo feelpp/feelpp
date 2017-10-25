@@ -42,7 +42,7 @@ hp::hp( double h, int p )
     {
         std::ifstream f ( path.string().c_str() );
         pt::read_json( f, M_ptree);
-        pt::write_json( std::cout,  M_ptree );
+        //pt::write_json( std::cout,  M_ptree );
         // build data structure
         for( auto itfn = M_ptree.begin(); itfn != M_ptree.end(); ++itfn )
         {
@@ -126,7 +126,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
                 d.errors.at(r.first).values.push_back(r.second);
                 auto c = polyfit( log(d.hs), log(d.errors.at(r.first).values), 1 );
                 LOG(INFO) << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
-                std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
+                //std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
                 if (  c[1]>=d.errors.at(r.first).order - otol )
                     return Checks::CONVERGENCE_ORDER;
                 throw CheckerConvergenceFailed( d.errors.at(r.first).order, c[1], otol );

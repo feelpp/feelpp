@@ -1850,6 +1850,12 @@ Environment::startLogging( std::string decorate )
                     FLAGS_log_level = 0;
             }
         }
+        else
+        {
+            FLAGS_no_log=1;
+            FLAGS_log_level=0; 
+        }
+        cout << "Log: " << FLAGS_log_level << " " << FLAGS_no_log << " " << FLAGS_disable_log << std::endl;
         google::InitGoogleLogging( S_argv[0] );
     }
     google::InstallFailureSignalHandler();
