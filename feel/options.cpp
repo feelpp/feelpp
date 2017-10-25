@@ -427,7 +427,7 @@ po::options_description sc_options( std::string const& prefix )
         ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
         ;
 
-    return _options.add( backend_options( prefixvm(prefix,"sc") ) );
+    return _options.add( backend_options( prefixvm(prefix,"sc") ) ).add( backend_options( prefixvm(prefix,"sc.post") ) );
 }
 
 

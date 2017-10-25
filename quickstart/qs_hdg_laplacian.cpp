@@ -46,6 +46,8 @@ makeOptions()
 #endif
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
+        ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ;
     return hdgoptions;
 }
@@ -115,7 +117,7 @@ int hdg_laplacian()
     auto Mh = Pdh<OrderP>( face_mesh,true );
 
     toc("spaces",true);
-
+    auto P0dh = Pdh<0>(mesh);
     auto Xh = Pdh<0>(face_mesh);
     auto uf = Xh->element(cst(1.));
     auto cgXh = Pch<OrderP>(mesh);
@@ -129,6 +131,46 @@ int hdg_laplacian()
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
          << cgXh->nDof() << std::endl;
+
+    if ( boption( "solvecg" ) == true )
+    {
+        auto u = cgXh->element();
+        tic();
+        tic();
+        auto l = form1( _test=cgXh );
+        l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+        l += integrate(_range=markedfaces(mesh,"Neumann"),
+                       _expr=id(u)*un_exact );
+        toc("cg.assembly.l",FLAGS_v>0);
+        tic();
+        auto a = form2(_trial=cgXh, _test=cgXh );
+        a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a += on(_range=markedfaces(mesh,"Dirichlet"),
+                _rhs=l,
+                _element=u,
+                _expr=p_exact);
+        toc("cg.assembly.a",FLAGS_v>0);
+        toc("cg.assembly",FLAGS_v>0);
+        tic();
+        a.solve( _rhs=l,_solution=u );
+        toc("cg.solve",FLAGS_v>0);
+        auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
+            {
+                tic();
+                double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
+                toc("L2 error norm");
+                tic();
+                double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
+                toc("H1 error norm");
+                tic();
+                double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
+                toc("semi H1 error norm");
+                return { { "L2", l2 }, {  "H1", h1 }, {"L2",semih1} };
+            };
+
+        int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
+
+    }
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
     auto p = Wh->element( "p" );
@@ -176,7 +218,7 @@ int hdg_laplacian()
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
                             _expr=( idt(phat)*(leftface(normal(v))+
-                                               rightface(normal(v)))), _verbose=true );
+                                               rightface(normal(v)))) );
 
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=idt(phat)*(normal(v)));
@@ -213,9 +255,9 @@ int hdg_laplacian()
     // 
     tic();
     a(2_c,0_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u)))),
+                            _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
-                            _verbose=true);
+                            );
         
     toc("a(2,0).1",FLAGS_v>0);
         
@@ -228,9 +270,9 @@ int hdg_laplacian()
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
                             _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
-                                                           rightfacet( idt(p) )),_verbose=true);
+                                                           rightfacet( idt(p) )));
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=tau_constant * id(l) * ( idt(p) ),_verbose=true );
+                            _expr=tau_constant * id(l) * ( idt(p) ) );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
@@ -244,16 +286,42 @@ int hdg_laplacian()
 
     toc("matrices",true);
 
+    
+    
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
 
+    
     // ****** Compute error ******
     auto up = U(0_c);
     auto pp = U(1_c);
 
+    tic();
+    tic();
+    auto Whp = Pdh<OrderP+1>( mesh, true );
+    auto pps = product( Whp );
+    auto PP = pps.element();
+    auto& ppp = PP(0_c);
+    toc("postprocessing.space",FLAGS_v>0);
+    tic();
+    auto b = blockform2( pps, solve::strategy::local, backend() );
+    b( 0_c, 0_c ) = integrate( _range=elements(mesh), _expr=gradt(ppp)*trans(grad(ppp)));
+    auto ell = blockform1( pps, solve::strategy::local, backend() );
+    ell(0_c) = integrate( _range=elements(mesh), _expr=-f_exact*id(ppp));
+    ell(0_c) += integrate( _range=boundaryfaces(mesh), _expr=-(trans(id(up))*N())*id(ppp));
+    toc("postprocessing.assembly",FLAGS_v>0);
+    
+    tic();
+    b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true );
+    auto correctionP = integrate(_range=elements(mesh), _expr=(idv(pp)-idv(ppp))/meas()).broken(P0dh);
+    //ppp+=meanpK;
+    ppp = vf::project( _space=Whp, _range=elements(mesh), _expr=idv(ppp)+idv(correctionP) );
+    toc("postprocessing.solve",FLAGS_v>0);
+    toc("postprocessing",FLAGS_v>0);
 
+    
 
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
@@ -262,6 +330,7 @@ int hdg_laplacian()
     e->setMesh( mesh );
     e->add( "flux", U(0_c) );
     e->add( "potential", U(1_c) );
+    e->add( "potentialpp", PP(0_c) );
     e->add( "flux.exact", v );
     e->add( "potential.exact", q );
     e->save();
@@ -300,16 +369,27 @@ int hdg_laplacian()
             toc("L2 error norm p");
             return { { "L2", l2err_p }};
         };
+    auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
+        {
+            tic();
+            double l2err_p = 1e+30;
+            l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
+            toc("L2 error norm ppp");
+            return { { "L2", l2err_p }};
+        };
 #if 0
     int status = checker().runOnce( {norms_p,norms_u},
                                     { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
 #else
     int status1 = checker(p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     int status2 = checker(u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    int status3 = checker(p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
 #endif
+
+    
     // end::check[]
 
-    return status1 || status2;
+    return status1 || status2 || status3;
 }
 
 
@@ -327,7 +407,16 @@ int main( int argc, char** argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     // end::env[]
-   
-    int status = hdg_laplacian<FEELPP_DIM,2>();
-    return !status;
+    if ( ioption( "order" ) == 1 )
+        return !hdg_laplacian<FEELPP_DIM,1>();
+    if ( ioption( "order" ) == 2 )
+        return !hdg_laplacian<FEELPP_DIM,2>();
+#if 0
+
+    if ( ioption( "order" ) == 3 )
+        return !hdg_laplacian<FEELPP_DIM,3>();
+    if ( ioption( "order" ) == 4 )
+        return !hdg_laplacian<FEELPP_DIM,4>();
+#endif
+    return 1;
 }
