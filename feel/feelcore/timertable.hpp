@@ -124,8 +124,8 @@ public:
                                               boost::accumulators::tag::max> > acc;
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
-                os << std::setw( 2*T.second.level ) << " "
-                   << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.name << " " 
+                os << std::setw( 2 ) << " "
+                   << std::setw( M_max_len ) <<std::left << T.second.name << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " "

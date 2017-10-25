@@ -726,6 +726,8 @@ public:
 
     //! @return the summry tree of the application
     static pt::ptree& summary() { return S_summary; }
+    //! @return the report tree of the application
+    static pt::ptree& report() { return S_summary; }
     
     //! 
     //! generate a summary of the execution of the application
@@ -739,7 +741,18 @@ public:
     //! \endcode
     //!
     static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
-    
+
+    template<typename Observer>
+    static void addReportObserver( Observer const& obs )
+    {
+        S_reportObservers.connect( obs );
+    }
+    template<typename Observer>
+    static void addReportObserver( boost::shared_ptr<Observer> const& obs )
+    {
+        S_reportObservers.connect( boost::bind( &Observer::operator(), obs ) );
+    }
+
     template<typename Observer>
     static void
     addDeleteObserver( Observer const& obs )
@@ -858,6 +871,7 @@ private:
      */
     static std::vector<std::string> olAutoloadFiles;
 
+    static boost::signals2::signal<void()> S_reportObservers;
     static boost::signals2::signal<void()> S_deleteObservers;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
