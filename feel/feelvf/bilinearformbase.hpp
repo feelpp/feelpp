@@ -119,11 +119,11 @@ public:
     virtual void push_back( std::future<void>&& f ) { M_fut_assign.push_back( std::forward<std::future<void>>( f ) ); }
     virtual void get()
         {
-            std::cout << "-- before fut: " << M_fut_assign.size() << std::endl;
+            //std::cout << "-- before fut: " << M_fut_assign.size() << std::endl;
             for( auto& f : M_fut_assign )
                 f.get();
             //M_fut_assign.clear();
-            std::cout << "-- after fut: " << M_fut_assign.size() << std::endl;
+            //std::cout << "-- after fut: " << M_fut_assign.size() << std::endl;
         }
 
     /** @name Accessors

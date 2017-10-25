@@ -129,7 +129,7 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
       16, \
       (                                                                 \
           ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
-          ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::JACOBIAN|vm::NORMAL_COMPONENT|vm::NORMAL , RankDown,false, 0, 1 ), \
+          ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::JACOBIAN|vm::NORMAL_COMPONENT|vm::KB|vm::NORMAL , RankDown,false, 0, 1 ), \
           ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
           ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
           ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \

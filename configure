@@ -308,6 +308,9 @@ fi
 if [ "X${_WANT_PYTHON}" = "Xyes" ]; then
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING ON CACHE PATH \"enable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON ON CACHE PATH \"enable python \" FORCE)" >> cmake.configure
+    if [ "X${PYTHON_EXECUTABLE}" != "X" ]; then
+        CMAKEFLAGS="${CMAKEFLAGS} -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}"
+    fi
 else
     echo "set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE PATH \"disable python wrapping \" FORCE)" >> cmake.configure
     echo "set(FEELPP_ENABLE_PYTHON OFF CACHE PATH \"disable python \" FORCE)" >> cmake.configure
@@ -347,6 +350,6 @@ if [ -f CMakeCache.txt ]; then
   /bin/rm CMakeCache.txt
 fi
 
-CMAKEFLAGS="${CMAKEFLAGS} -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}"
 
+echo "cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}"
 cmake -Ccmake.configure -G "${GENERATOR}" -DCMAKE_VERBOSE_MAKEFILE:BOOL=${_WANT_VERBOSE} -DCMAKE_BUILD_TYPE:STRING=${BUILDTYPE} ${CMAKEFLAGS} TRUE ${PROJECTSRCROOT}

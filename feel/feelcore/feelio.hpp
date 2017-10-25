@@ -49,25 +49,64 @@ public:
      * WorldComm master rank process is in charge of outputting the data from
      * the MasterStream
      */
-    MasterStream(std::ostream& _out, boost::shared_ptr<WorldComm> _wc = Environment::worldCommPtr() )
+    MasterStream(std::ostream& _out, boost::shared_ptr<WorldComm> _wc = Environment::worldCommPtr(), logging::level lvl = logging::level::cmdline_master )
         :
         out(_out),
         wc(_wc)
         {}
 
-    void attachWorldComm( boost::shared_ptr<WorldComm>& _wc )
+    //!
+    //! set the worldcomm of the stream
+    //!
+    void setWorldComm( boost::shared_ptr<WorldComm>& _wc )
+    {
+        wc = _wc;
+    }
+    //! 
+    //! @deprecated
+    //! set the worldcomm of the stream
+    //!
+    FEELPP_DEPRECATED void attachWorldComm( boost::shared_ptr<WorldComm>& _wc )
         {
             wc = _wc;
         }
 
+    //!
+    //! @return worldComm
+    //!
+    boost::shared_ptr<WorldComm> worldCommPtr() { return wc; }
+    
+    //!
+    //! set the logging level 
+    //!
+    void setLoggingLevel( logging::level lvl ) { M_loglevel = lvl; }
+
+    //!
+    //! @return logging level
+    //!
+    logging::level loggingLevel() const { return M_loglevel; }
+    
+    //!
+    //! return true if streaming is enabled, false otherwise
+    //!
+    //! streaming is enabled only in master mode and if the process is the
+    //! master rank process of the worldcomm
+    bool doStream( ) const
+    {
+        return ( (( M_loglevel == logging::level::master ) ||
+                  ( M_loglevel == logging::level::cmdline_master ))  &&
+                 wc->isMasterRank() );
+    }
     /**
      * this overload allows to output stream to the master rank process
      */
     template<typename T>
     const MasterStream& operator<<(const T& v) const
         {
-            if ( wc->isMasterRank() )
+            if ( doStream() )
+            {
                 out << v;
+            }
             return *this;
         }
     /**
@@ -75,7 +114,7 @@ public:
      */
     MasterStream const& operator<<(std::ostream& (*F)(std::ostream&)) const
         {
-            if ( wc->isMasterRank() )
+            if ( doStream() )
                 F(out);
             return *this;
         }
@@ -106,7 +145,7 @@ public:
     void open(Args... args)
         {
             auto* o = dynamic_cast<std::ofstream*>( &out );
-            if ( o && wc->isMasterRank() )
+            if ( doStream() && o )
                 o->open( args... );
         }
 
@@ -116,15 +155,15 @@ public:
     void close()
         {
             auto* o = dynamic_cast<std::ofstream*>( &out );
-            if ( o && wc->isMasterRank() )
+            if ( doStream() && o )
                 o->close();
         }
 
 protected:
     std::ostream& out;
     boost::shared_ptr<WorldComm> wc;
+    logging::level M_loglevel;
 };
-
 
 extern MasterStream cout;
 extern MasterStream cerr;

@@ -1709,6 +1709,14 @@ public:
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
     };
+    template<typename MeshListType,int N>
+    struct GetMeshSupport
+    {
+        typedef typename GetMesh<MeshListType,N>::type mesh_ptrtype;
+        typedef MeshSupport<typename mesh_ptrtype::element_type> type;
+        typedef typename type::range_elements_type range_type;
+        typedef std::shared_ptr<type> ptrtype;
+    };
     // mesh
     typedef meshes_list MeshesListType;
     typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
@@ -4770,6 +4778,30 @@ public:
     mesh( mpl::bool_<false> ) const
     {
         return fusion::at_c<i>(M_mesh);
+    }
+
+    /**
+     * \return the i-th mesh support if it exists, if not create one
+     */
+    template<int i>
+    typename GetMeshSupport<mesh_ptrtype,i>::ptrtype
+    meshSupport() const
+    {
+        auto meshSupportVector = Feel::detail::FunctionSpaceMeshSupport<functionspace_type>( *this ).M_meshSupportVector;
+        auto & meshSupport = boost::fusion::at_c<i>( meshSupportVector );
+        if( !meshSupport )
+            meshSupport = std::make_shared<typename GetMeshSupport<mesh_ptrtype,i>::type>(mesh<i>());
+        return meshSupport;
+    }
+
+    /**
+     * \return the range of elements on which the i-th space is defined
+     */
+    template<int i>
+    typename GetMeshSupport<mesh_ptrtype,i>::range_type
+    rangeElements() const
+    {
+        return meshSupport<i>()->rangeElements();
     }
 
     /**

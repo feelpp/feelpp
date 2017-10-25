@@ -96,6 +96,10 @@ public:
 
     template<typename E>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 1>* = nullptr );
+    
+    template<typename E>
+    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
                      std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
     
     template<typename E>
@@ -1430,6 +1434,53 @@ private:
     std::vector<std::future<void>> handles;
     int grain;
 };
+
+template<typename T>
+template<typename E>
+void
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 1>* )  
+{
+    using Feel::cout;
+    auto& e1 = e(0_c);
+    auto const& A00K = M_local_matrices[std::make_pair(0,0)];
+    auto const& F0K = rhs->M_local_vectors[0];
+    int N = e1.dof()->nLocalDof();
+#if 0    
+    if ( M_localsolve.parallel ) 
+    {
+        tic();
+        LocalSolver<E,T> ls( N0, N1, N3, e, M_AinvB, M_AinvF, M_dK, M_localsolve );
+        ls( M_AinvB.cbegin(), M_AinvB.cend() );
+        for( auto & f : ls.futures() )
+            f.get();
+        toc("sc.localsolve.parallel",FLAGS_v>0);
+    }
+    else
+#endif        
+    {
+        tic();
+        Eigen::VectorXd pK( N );
+
+        for( auto const& elt : A00K )
+        {
+            auto key = elt.first;
+            size_type K = key.first;
+            
+            auto const& A = elt.second;
+            auto const& F = F0K.at( K );
+            
+            Eigen::ColPivHouseholderQR<decay_type<decltype(A)>> dec(A);
+            pK = dec.solve(F);
+            cout << "A=" << A << std::endl;
+            cout << "F=" << F << std::endl;
+            cout << "p=" << pK << std::endl;
+            e1.assignE( K, pK );
+        }
+        e1.printMatlab("p.m");
+        toc("local.localsolve.sequential",FLAGS_v>0);
+    }
+}
+
 template<typename T>
 template<typename E>
 void

@@ -427,7 +427,7 @@ po::options_description sc_options( std::string const& prefix )
         ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
         ;
 
-    return _options.add( backend_options( prefixvm(prefix,"sc") ) );
+    return _options.add( backend_options( prefixvm(prefix,"sc") ) ).add( backend_options( prefixvm(prefix,"sc.post") ) );
 }
 
 
@@ -456,6 +456,10 @@ eimOptions( std::string const& prefix )
         ( "eim.show-mu-selection",Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
         ( "eim.show-t-selection",Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
         ( "eim.show-offline-error",Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
+
+        ( "eim.elements.write", Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( "eim.elements.directory", Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
+        ( "eim.elements.clean-directory", Feel::po::value<bool>()->default_value( false ), ""  )
         ;
 
     return eimoptions;
@@ -472,9 +476,17 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.store-vectors" ).c_str(), Feel::po::value<bool>()->default_value(true ), "Store Vectors for the parameters in the trainset in DEIM"  )
+        ( prefixvm( prefix, "deim.store-matrices" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store Matrices for the parameters in the trainset in MDEIM"  )
+
+        ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( prefixvm( prefix, "deim.elements.clean-directory" ).c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
+        ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
+
+        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
-        return deimoptions;
+    return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
 }
 
 Feel::po::options_description
@@ -623,9 +635,9 @@ crbOptions( std::string const& prefix )
         ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
         ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
-        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
+        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( true ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
 
-        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
+        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 20 ), "nb iteration max for the fixed point (online part)" )
         ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
         ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
         ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )

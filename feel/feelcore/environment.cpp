@@ -51,7 +51,7 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-
+#include <pybind11/embed.h>
 #include <gflags/gflags.h>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -114,6 +114,7 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+namespace py = pybind11;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -418,6 +419,7 @@ Environment::Environment( int argc, char** argv,
                           po::options_description const& desc_lib,
                           AboutData const& about,
                           std::string directory,
+                          logging::level log_level,
                           bool add_subdir_np )
 {
     if ( argc == 0 )
@@ -444,9 +446,12 @@ Environment::Environment( int argc, char** argv,
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
-    cout.attachWorldComm( S_worldcomm );
-    cerr.attachWorldComm( S_worldcomm );
-    clog.attachWorldComm( S_worldcomm );
+    cout.setWorldComm( S_worldcomm );
+    cerr.setWorldComm( S_worldcomm );
+    clog.setWorldComm( S_worldcomm );
+    cout.setLoggingLevel( log_level );
+    cerr.setLoggingLevel( log_level );
+    clog.setLoggingLevel( log_level );
 
     S_desc_app = boost::make_shared<po::options_description>( desc );
     S_desc_lib = boost::make_shared<po::options_description>( desc_lib );
@@ -536,6 +541,14 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+    if ( Environment::isMasterRank() )
+    {
+        py::initialize_interpreter();
+        py::module sys = py::module::import( "sys" );
+        auto sys_path = py::reinterpret_borrow<py::list>(py::module::import("sys").attr("path"));
+        sys_path.append( Environment::expand("${top_srcdir}/feel/feelpython") );
+        sys_path.append( Environment::expand("${top_srcdir}/quickstart") );
+    }
 }
 void
 Environment::clearSomeMemory()
@@ -553,6 +566,9 @@ Environment::clearSomeMemory()
 
 Environment::~Environment()
 {
+    if ( Environment::isMasterRank() )
+        py::finalize_interpreter();
+    
     if ( boption( "display-stats" ) )
         Environment::saveTimers( true );
 
@@ -1816,11 +1832,30 @@ Environment::startLogging( std::string decorate )
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
-        if ( FLAGS_no_log )
+        
+        
+        if ( !FLAGS_disable_log )
         {
-            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
-                FLAGS_no_log = 0;
+            // deprecated
+            if ( FLAGS_no_log )
+            {
+                if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
+                    FLAGS_no_log = 0;
+            }
+            if ( FLAGS_log_level > 0 )
+            {
+                // if not master, then log level = 0 when log_level==1 in other
+                // mpi processes
+                if ( S_worldcomm->rank() > 0 && FLAGS_log_level == 1 )
+                    FLAGS_log_level = 0;
+            }
         }
+        else
+        {
+            FLAGS_no_log=1;
+            FLAGS_log_level=0; 
+        }
+        cout << "Log: " << FLAGS_log_level << " " << FLAGS_no_log << " " << FLAGS_disable_log << std::endl;
         google::InitGoogleLogging( S_argv[0] );
     }
     google::InstallFailureSignalHandler();

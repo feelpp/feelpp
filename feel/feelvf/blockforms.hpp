@@ -112,9 +112,9 @@ public :
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( s,
-                                                             csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
                                                              std::forward<BackendT>(b),
-                                                             (s==solve::strategy::static_condensation)?false:true )  )
+                                                             (s>=solve::strategy::static_condensation)?false:true )  )
         {}
 
     BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype m)
@@ -228,6 +228,7 @@ public :
                                        ( rhs, * ) )
                                      ( optional
                                        ( condense,           ( bool ), false )
+                                       ( local,           ( bool ), false )
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
                                        ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
@@ -238,8 +239,28 @@ public :
             
             if ( condense &&  hana::Foldable<PS>::value )
                 return solveImplCondense( M_ps, solution, rhs, name, kind, rebuild, pre, post );
+            if ( local )
+            {
+                cout << "solve locally!"<< std::endl;
+                return solveImplLocal( M_ps, solution, rhs, name, kind, rebuild, pre, post );
+            }
             return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
                 
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                    bool rebuild, pre_solve_type pre, post_solve_type post,
+                    std::enable_if_t<hana::Foldable<PS_t>::value && !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            auto sc = M_matrix->sc();
+            tic();
+            cout << " . starting local Solve" << std::endl;
+            sc->localSolve ( rhs.vectorPtr()->sc(), solution);
+            cout << " . local Solve done" << std::endl;
+            toc("blockform.local.localsolve",FLAGS_v>0);
+            typename Backend<double>::solve_return_type r;
+            return r;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type

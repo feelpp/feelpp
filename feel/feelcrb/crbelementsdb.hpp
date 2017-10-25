@@ -125,6 +125,9 @@ public :
             size_type rbdim = ptree.template get<int>( "dimension" );
             this->setMN( rbdim );
             std::string dbname = ptree.template get<std::string>( "database-filename" );
+            if ( this->worldComm().globalSize() > 1 && M_fileFormat != "hdf5" )
+                dbname.replace(dbname.end()-std::string("_p0.crbdb").size(), dbname.end(),
+                               (boost::format("_p%1%.crbdb")%this->worldComm().globalRank()).str() );
             fs::path dbnamePath = fs::path( dbname );
             this->setDBFilename( dbnamePath.filename().string() );
             if ( dbnamePath.is_absolute() )
@@ -244,7 +247,8 @@ CRBElementsDB<ModelType>::saveDB()
     /* save in boost format by default */
     {
         auto p = this->dbLocalPath() / this->dbFilename();
-        std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
+        if( this->worldComm().isMasterRank() )
+            std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
         fs::ofstream ofs( p );
 
         if ( ofs )
@@ -609,16 +613,6 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     fs::path p = dbpath / fs::path(this->dbFilename());
     p.replace_extension("");
     hdf5File << p.string() << ".h5";
-    /* If the path does not exist then the db are in the system path */
-    if ( ! fs::exists( hdf5File.str() ) )
-    {
-        dbpath = this->dbSystemPath();
-        p = dbpath / fs::path(this->dbFilename());
-        p.replace_extension("");
-        hdf5File.str("");
-        hdf5File << p.string() << ".h5";
-    }
-
     HDF5 hdf5;
     hsize_t dims[1];
     hsize_t offset[1];
