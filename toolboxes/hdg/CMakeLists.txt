@@ -59,7 +59,7 @@ foreach(D 2 3)
 endforeach()
 
 
-feelpp_add_testcase(bitter CATEGORY hdg)
+feelpp_add_testcase(hdg-thermoelectric CATEGORY hdg)
 feelpp_add_testcase(cylinder CATEGORY hdg )
 feelpp_add_testcase(testDarcy CATEGORY hdg )
 feelpp_add_testcase(mixed-poisson CATEGORY hdg )
