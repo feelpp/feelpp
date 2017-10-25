@@ -97,6 +97,11 @@ public:
     bool staticCondensation() const { return M_strategy == solve::strategy::static_condensation; }
 
     //!
+    //! @return true if strategy is local, false otherwise
+    //!
+    bool localSolve() const { return M_strategy == solve::strategy::local; }
+
+    //!
     //! set the strategy \p s
     //!
     void setStrategy( solve::strategy s ) { M_strategy = s; }
@@ -110,7 +115,7 @@ public:
                              ) override
         {
             tic();
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
             {
                 auto add_v = [&]()
                     {
@@ -129,7 +134,7 @@ public:
     sc_ptrtype const& sc( int row ) const { M_sc->block( row );return M_sc; }
     vector_ptrtype block( int row )
         {
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
                 M_sc->block( row );
             return this->shared_from_this();
         }

@@ -20,7 +20,9 @@ def toginac(s,symbols):
     return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in strsymbols)
 
 def sympytoginac(e):
-    return toginac(sympify( e ), [x] if len( e.free_symbols)==0 else e.free_symbols );
+    if isinstance(e,Expr) or isinstance(e,Array):
+        return toginac(sympify( e ), [x] if len( e.free_symbols)==0 else e.free_symbols );
+    return str(e);
 
 def dx(f):
     return derive_by_array(f,[x]);
@@ -58,7 +60,7 @@ def mult(a,b):
 def n(a,c=1,nsymbols=[nx,ny,nz]):
     axe=0 if Array(a).rank()==1 else 1;
     #print("axe:",axe);
-    print("a:",a);
+    #print("a:",a);
     return tensorcontraction(tensorproduct(mult(c,a),nsymbols),(axe,axe+1));
 
 def dn(a,c=1,symbols=[x,y,z],nsymbols=[nx,ny,nz]):
