@@ -27,7 +27,7 @@
    \date 2016-04-06
  */
 
-#include <vector>
+#define BOOST_TEST_MODULE crb db testsuite
 
 #include <testsuite.hpp>
 
@@ -48,6 +48,15 @@ po::options_description
 makeOptions()
 {
     po::options_description dboptions( "test_db options" );
+    dboptions
+        .add(opusapp_options("feelpp_test_db"))
+        .add(crbOptions())
+        .add(crbSEROptions())
+        .add(eimOptions())
+        .add(podOptions())
+        .add(backend_options("backend-primal"))
+        .add(backend_options("backend-dual"))
+        .add(backend_options("backend-l2"));
     /*
     dboptions.add_options()
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
@@ -60,8 +69,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_db" ,
-                     "test_db" ,
+    AboutData about( "feelpp_test_db" ,
+                     "feelpp_test_db" ,
                      "0.1",
                      "Database tests",
                      Feel::AboutData::License_GPL,
@@ -80,7 +89,9 @@ public:
 
     typedef ModelCrbBase<ParameterSpaceX, decltype(Pch<5>(Mesh<Simplex<1>>::New()))> super_type;
 
-    TestDbHeat1d() : super_type( "TestDbHeat1d" )
+    TestDbHeat1d()
+        :
+        super_type( (boost::format("TestDbHeat1d_%1%_np%2%")%soption(_name="crb.db.format") %Environment::worldComm().size() ).str() )
         {
             this->setId( boost::uuids::nil_uuid() );
         }
@@ -172,49 +183,16 @@ public:
 
 using namespace Feel;
 
-char ** gArgv = NULL;
-int gArgc = 0;
-
-/* cleanup memory */
-void cleanup()
-{
-    if(gArgv)
-    {
-        for(int i = 0; i < gArgc; i++)
-        {
-            free(gArgv[i]);
-        }
-        delete[] gArgv;
-    }
-}
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 /* This test is based on the Heat1d application */
 /* It tests different setup for the databases: */
 /* - Whether we create or load a new db */
 /* - Whether we use the boost or hdf5 backend */
-int main(int argc, char **argv)
+BOOST_AUTO_TEST_SUITE( crb_db )
+
+BOOST_AUTO_TEST_CASE( crd_db_test1 )
 {
-    gArgc = 5;
-    gArgv = new char*[gArgc + 1];
-    gArgv[0] = strdup("feelpp_test_db");
-    // Needed for the moment: see https://github.com/feelpp/feelpp/issues/719
-    gArgv[1] = strdup("-st_pc_factor_mat_solver_package");
-    gArgv[2] = strdup("mumps");
-    gArgv[3] = strdup("--config-file");
-    gArgv[4] = strdup("./test_db.cfg");
-    gArgv[5] = NULL;
-
-    Feel::Environment env( _argc=gArgc, _argv=gArgv,
-                           _desc=opusapp_options("feelpp_test_db")
-                           .add(crbOptions())
-                           .add(crbSEROptions())
-                           .add(eimOptions())
-                           .add(podOptions())
-                           .add(backend_options("backend-primal"))
-                           .add(backend_options("backend-dual"))
-                           .add(backend_options("backend-l2"))
-                           );
-
     std::vector<int> wnSize;
     std::vector<int> wnduSize;
 
@@ -236,10 +214,11 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -254,10 +233,11 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -276,10 +256,11 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -294,10 +275,11 @@ int main(int argc, char **argv)
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     /*
@@ -321,21 +303,13 @@ int main(int argc, char **argv)
     for(int i = 1; i < wnSize.size(); i++)
     {
         std::cout << "WN0:size=" << wnSize[0] << " ; WN" << i << ":size=" << wnSize[i] << std::endl;
-        if(wnSize[0] != wnSize[i])
-        {
-            cleanup();
-            return 1;
-        }
-    }   
+        BOOST_CHECK(wnSize[0] == wnSize[i]);
+    }
     std::cout << "Basis sizes OK" << std::endl;
 
     /* Check that we have the correct amount of samples */
     std::cout << "Checking Number of samples ..." << std::endl;
-    if(wnSample.size() != 4 * sampleSize)
-    {
-        cleanup();
-        return 1;
-    }
+    BOOST_CHECK(wnSample.size() == 4 * sampleSize);
     std::cout << "Number of samples OK" << std::endl;
 
     double tolerance = 1e-5;
@@ -345,26 +319,14 @@ int main(int argc, char **argv)
     {
         std::cout << "wnSample[i]:" << wnSample[i] << " ; " << wnSample[i + sampleSize] << std::endl;
         // std tolerance : std::fabs(a - b) < std::numeric_limits<double>::epsilon();
-        if(std::fabs(wnSample[i] - wnSample[i + sampleSize]) > tolerance)
-        {
-            cleanup();
-            return 1;
-        }
+        //if(std::fabs(wnSample[i] - wnSample[i + sampleSize]) > tolerance)
+        BOOST_CHECK(std::fabs(wnSample[i] - wnSample[i + sampleSize]) < tolerance);
         std::cout << "wnSample[i]:" << wnSample[i] << " ; wnSample[i + 2 * sampleSize]):" << wnSample[i + 2 * sampleSize] << std::endl;
-        if(std::fabs(wnSample[i] - wnSample[i + 2 * sampleSize]) > tolerance)
-        {
-            cleanup();
-            return 1;
-        }
+        BOOST_CHECK(std::fabs(wnSample[i] - wnSample[i + 2 * sampleSize]) < tolerance);
         std::cout << "wnSample[i]:" << wnSample[i] << " ; wnSample[i + 3 * sampleSize]):" << wnSample[i + 3 * sampleSize] << std::endl;
-        if(std::fabs(wnSample[i] - wnSample[i + 3 * sampleSize]) > tolerance)
-        {
-            cleanup();
-            return 1;
-        }
+        BOOST_CHECK(std::fabs(wnSample[i] - wnSample[i + 3 * sampleSize]) < tolerance);
     }
     std::cout << "Samples OK" << std::endl;
 
-    cleanup();
-    return 0;
 }
+BOOST_AUTO_TEST_SUITE_END()

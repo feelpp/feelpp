@@ -154,3 +154,9 @@ include(feelpp.module.ipopt)
 #include(feelpp.module.cereal)
 #include(feelpp.module.paralution)
 include(feelpp.module.jsonlab)
+
+# Add an info message to be displayed at the end of the cmake process.
+if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
+  list( APPEND FEELPP_MESSAGE_INFO_END "Feel++ submodules already initialized!\nPlease make sure submodules are up to date (run `git submodule update --init --recursive` in source directory)" )
+  set( FEELPP_MESSAGE_INFO_END ${FEELPP_MESSAGE_INFO_END} )
+endif()

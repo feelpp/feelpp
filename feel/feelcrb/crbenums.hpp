@@ -44,12 +44,14 @@ enum class stage
 
 enum class load
 {
+    //! load none of the data
+    none=0,
     //! load reduced basis data
-    rb = 0,
+    rb = 1,
     //! load finite element data
-    fe = 1,
+    fe = 2,
     //! load all
-    all = 2
+    all = 3
 };
 
 enum class last

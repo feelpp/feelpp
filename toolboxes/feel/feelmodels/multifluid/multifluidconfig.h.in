@@ -1,5 +1,5 @@
 
-#include <feel/feelmodels/fluid/@FLUID_MODEL_SPECIFIC_NAME_SUFFIX@/fluidmecconfig.h>
+#include <feel/feelmodels/fluid/@FLUID_MODEL_SPECIFIC_NAME_SUFFIX@/fluidmechanicsconfig.h>
 #include <feel/feelmodels/levelset/@LEVELSET_MODEL_SPECIFIC_NAME_SUFFIX@/levelsetconfig.h>
 
 #define MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS \

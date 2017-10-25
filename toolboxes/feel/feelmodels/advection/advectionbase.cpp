@@ -129,7 +129,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( space_advection_ptrtype const& space)
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app )
 {
     //if ( M_isUpdatedForUse ) return;
 
