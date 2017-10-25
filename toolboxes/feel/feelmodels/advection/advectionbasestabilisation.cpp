@@ -163,13 +163,11 @@ updateLinearPDEStabilizationGLS( AdvectionType const& adv, ModelAlgebraic::DataU
     auto D = idv(adv.diffusionReactionModel()->fieldDiffusionCoeff());
     auto R = idv(adv.diffusionReactionModel()->fieldReactionCoeff());
     auto uNorm = vf::sqrt(trans(u)*u);
-#if 1
+#if 0
     auto coeff  = val( 1/( 2*uNorm*AdvectionType::nOrder/h() + std::abs(sigma) ));
 #else
-    auto kappa = idv(D);
-    auto uconv = beta;
     //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter,uconv, kappa, true, adv.hasDiffusion() );
+    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
 #endif
 
     if( adv.isStationary() )
@@ -257,13 +255,11 @@ updateLinearPDEStabilizationSUPG( AdvectionType const& adv, ModelAlgebraic::Data
     auto D = idv(adv.diffusionReactionModel()->fieldDiffusionCoeff());
     auto R = idv(adv.diffusionReactionModel()->fieldReactionCoeff());
     auto uNorm = vf::sqrt(trans(u)*u);
-#if 1
+#if 0
     auto coeff = val(vf::h() / (2 * uNorm + 0.001));
 #else
-    auto kappa = idv(D);
-    auto uconv = beta;
     //auto coeff/*tau*/ = M_stabilizationGLSParameter->tau( uconv, kappa, mpl::int_<0/*StabParamType*/>() );
-    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *M_stabilizationGLSParameter, uconv, kappa, true, adv.hasDiffusion() );
+    auto coeff = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *(adv.stabilizationGLSParameter()), u, D, true, adv.hasDiffusion() );
 #endif
 
     if( adv.isStationary() )
