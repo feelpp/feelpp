@@ -159,14 +159,8 @@ public :
         M_online_model_updated( false )
     {
         using Feel::cout;
-
         this->setDBDirectory( modelname,uid );
         this->addDBSubDirectory( "deim"+M_prefix );
-        if ( this->worldComm().isMasterRank() )
-        {
-            if ( !fs::exists( this->dbLocalPath() ) )
-                fs::create_directories( this->dbLocalPath() );
-        }
 
         if ( !M_rebuild )
         {
@@ -217,6 +211,34 @@ public :
         using Feel::cout;
         tic();
 
+        if ( M_write_nl_solutions )
+        {
+            if ( this->worldComm().isMasterRank() )
+            {
+                boost::filesystem::path dir( M_write_nl_directory );
+                if ( boost::filesystem::exists(dir) && boption( prefixvm( M_prefix, "deim.elements.clean-directory") ) )
+                {
+                    boost::filesystem::remove_all(dir);
+                    boost::filesystem::create_directory(dir);
+                }
+                else if ( !boost::filesystem::exists(dir) )
+                {
+                    boost::filesystem::create_directory(dir);
+                }
+            }
+        }
+        this->worldComm().barrier();
+
+        if ( !M_rebuild )
+            return reAssembleFromDb();
+
+        if ( this->worldComm().isMasterRank() )
+        {
+            if ( !fs::exists( this->dbLocalPath() ) )
+                fs::create_directories( this->dbLocalPath() );
+        }
+
+
         if ( !M_trainset )
             M_trainset = M_Dmu->sampling();
         if ( M_trainset->empty() )
@@ -247,27 +269,6 @@ public :
             M_user_max = sampling_size;
         }
 
-        if ( M_write_nl_solutions )
-        {
-            if ( this->worldComm().isMasterRank() )
-            {
-                boost::filesystem::path dir( M_write_nl_directory );
-                if ( boost::filesystem::exists(dir) && boption( prefixvm( M_prefix, "deim.elements.clean-directory") ) )
-                {
-                    boost::filesystem::remove_all(dir);
-                    boost::filesystem::create_directory(dir);
-                }
-                else if ( !boost::filesystem::exists(dir) )
-                {
-                    boost::filesystem::create_directory(dir);
-                }
-            }
-        }
-        this->worldComm().barrier();
-
-
-        if ( !M_rebuild )
-            return reAssembleFromDb();
 
         int mMax = M_user_max;
         double error=0;
@@ -369,11 +370,11 @@ public :
 
     vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
-        return computeCoefficient( mu, u, M );
+        return computeCoefficient( mu, u, false, M );
     }
     vectorN_type beta( parameter_type const& mu, vectorN_type urb, int M=-1 )
     {
-        return computeCoefficient( mu, deimExpansion(urb), M );
+        return computeCoefficient( mu, deimExpansion(urb), true, M );
     }
 
     //! \Return the tensors \f$ T^m\f$ of the affine decomposition
@@ -566,10 +567,10 @@ protected :
         tensor_ptrtype T = assemble( mu, true );
         return computeCoefficient( T, true, M );
     }
-    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, int M = -1 )
+    vectorN_type computeCoefficient( parameter_type const& mu, element_type const& u, bool online=true, int M = -1 )
     {
-        tensor_ptrtype T = assemble( mu, u, true );
-        return computeCoefficient( T, true, M );
+        tensor_ptrtype T = assemble( mu, u, online );
+        return computeCoefficient( T, online, M );
     }
 
 
@@ -819,21 +820,13 @@ public :
             auto u = M_model->functionSpace()->element();
             bool need_solve = true;
 
-            if ( this->M_ser_use_rb && this->M_crb )
+            if ( this->M_ser_use_rb && this->M_crb && !online )
             {
                 std::vector<vectorN_type> uN, uNdu, uNold, uNduold;
                 auto o = this->M_crb->lb( this->M_crb->dimension(), mu, uN, uNdu , uNold, uNduold );
                 int size = uN.size();
 
-                if ( online )
-                {
-                    if ( size!=0 )
-                        u = deimExpansion(uN[size-1]);//this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
-                    else
-                        Feel::cout <<this->name() + " ERROR : crb expansion called with uN.size=0 !\n";
-                }
-                else
-                    u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
+                u = this->M_crb->expansion( uN[size-1], this->M_crb->dimension(), false );
             }
             else
             {
