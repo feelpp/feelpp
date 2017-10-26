@@ -209,7 +209,6 @@ public :
     void run()
     {
         using Feel::cout;
-        tic();
 
         if ( M_write_nl_solutions )
         {
@@ -231,6 +230,8 @@ public :
 
         if ( !M_rebuild )
             return reAssembleFromDb();
+
+        tic();
 
         if ( this->worldComm().isMasterRank() )
         {
@@ -370,6 +371,9 @@ public :
 
     vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
     {
+        // in this case the given element_type u is //
+        // so we cannot use the online model to assemble
+        // this function should not be called online !
         return computeCoefficient( mu, u, false, M );
     }
     vectorN_type beta( parameter_type const& mu, vectorN_type urb, int M=-1 )
@@ -883,18 +887,33 @@ public :
             // if the interpolation space has been updated we have to reproject
             // all the rb basis vectors on the new interpolation space
             if ( this->M_online_model_updated )
+            {
                 for ( int i=0; i<M_rb_basis.size(); i++ )
-                    M_rb_basis[i]=vf::project( _space=Rh, _expr=idv(wn[i]) );
+                {
+                    M_rb_basis[i] = Rh->element();
+                    M_rb_basis[i].on( elements(Rh->mesh()), idv(wn[i]) );
+                }
+
+                this->M_online_model_updated=false;
+            }
 
             // we now project the new basis vector on the interpolation space and we stock them.
             for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
-                M_rb_basis.push_back( vf::project( _space=Rh, _expr=idv(wn[i]) ) );
+            {
+                M_rb_basis.push_back( Rh->element() );
+                M_rb_basis[i].on( elements(Rh->mesh()), idv(wn[i]) );
+            }
         }
         else // to be removed when optimized is fixed
             for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
                 M_rb_basis.push_back( wn[i] );
 
         this->M_n_rb = M_rb_basis.size();
+    }
+
+    void gatherContributions( element_type& u )
+    {
+
     }
 
     element_type deimExpansion( vectorN_type const& urb ) override
