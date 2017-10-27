@@ -61,6 +61,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
+    super_type::init();
 
     M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
@@ -245,8 +246,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
     }
     this->updateGlobalLevelset();
 
-    // Initialize FluidMechanics
-    super_type::init();
     this->updateFluidDensityViscosity();
 
     M_doRebuildMatrixVector = false;
