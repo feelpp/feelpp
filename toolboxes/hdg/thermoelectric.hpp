@@ -99,6 +99,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     M_electro->copyCstPart();
     M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
+    M_electro->assembleRHS();
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
@@ -140,6 +141,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
 
         tic();
         M_electro->copyCstPart();
+        M_electro->assembleRHS();
         for( auto const& pairMat : electroMat )
         {
             std::string marker = pairMat.first;
