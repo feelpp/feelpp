@@ -1768,9 +1768,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 size_type
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 2;// velocity and pressure before
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
@@ -1802,17 +1802,17 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     return currentStartIndex;
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockVector()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
     M_blockVectorSolution.buildVector( this->backend() );
 }
 
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 int
-FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initBlockVector()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
 {
     int nBlock = this->nBlockMatrixGraph();
     M_blockVectorSolution.resize( nBlock );
