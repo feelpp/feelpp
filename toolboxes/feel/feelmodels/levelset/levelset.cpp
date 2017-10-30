@@ -37,6 +37,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),
+    M_doUpdateSmootherInterface(true),
+    M_doUpdateSmootherInterfaceVectorial(true),
     M_doUpdateNormal(true),
     M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
@@ -1178,6 +1180,50 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherVectorial() const
                 30);
     return M_smootherVectorial; 
 }
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterface() const
+{
+    if( !M_smootherInterface || M_doUpdateSmootherInterface )
+    {
+        auto const spaceInterface = self_type::space_levelset_type::New( 
+                _mesh=this->mesh(),
+                _range=this->interfaceElements(),
+                _worldscomm=this->worldsComm()
+                );
+        M_smootherInterface = Feel::projector( 
+                spaceInterface, spaceInterface,
+                backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldComm(), _rebuild=true), 
+                DIFF,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
+                30);
+        M_doUpdateSmootherInterface = false;
+    }
+    return M_smootherInterface;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::projector_levelset_vectorial_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
+{
+    if( !M_smootherInterfaceVectorial || M_doUpdateSmootherInterfaceVectorial )
+    {
+        auto const spaceInterfaceVectorial = self_type::space_levelset_vectorial_type::New( 
+                _mesh=this->mesh(),
+                _range=this->interfaceElements(),
+                _worldscomm=this->worldsComm()
+                );
+        M_smootherInterfaceVectorial = Feel::projector(
+                spaceInterfaceVectorial, spaceInterfaceVectorial,
+                backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldComm(), _rebuild=true),
+                DIFF, 
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
+                30);
+        M_doUpdateSmootherInterfaceVectorial = false;
+    }
+    return M_smootherInterfaceVectorial;
+}
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -1695,15 +1741,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
 #elif 1 // New implementation sqrt(tr(cof A))
         auto A = idv(this->leftCauchyGreenTensor());
         //auto trA = trace(A);
-        M_cauchyGreenInvariant1->zero();
         //M_cauchyGreenInvariant1->on(
                 //_range=this->interfaceElements(),
                 //_expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
                 //);
-        M_cauchyGreenInvariant1->on(
-                _range=this->interfaceElements(),
+        auto const cginv1 = this->smootherInterface()->project(
                 _expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
                 );
+        M_cauchyGreenInvariant1->zero();
+        M_cauchyGreenInvariant1->on(
+                _range=this->interfaceElements(),
+                //_expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
+                _expr=idv(cginv1)
+                );
+        //*M_cauchyGreenInvariant1 = this->smoother()->project(
+                //_expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
+                //);
 #endif
         M_doUpdateCauchyGreenInvariant1 = false;
 
@@ -1766,6 +1819,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateDirac = true;
     M_doUpdateHeaviside = true;
     M_doUpdateInterfaceElements = true;
+    M_doUpdateSmootherInterface = true;
+    M_doUpdateSmootherInterfaceVectorial = true;
     M_doUpdateNormal = true;
     M_doUpdateCurvature = true;
     M_doUpdateMarkers = true;
