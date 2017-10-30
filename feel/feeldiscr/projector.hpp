@@ -118,6 +118,7 @@ public :
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
     typedef elements_reference_wrapper_t<typename domain_space_type::mesh_type> range_elements_type;
+    typedef faces_reference_wrapper_t<typename domain_space_type::mesh_type> range_faces_type;
 
     //@}
     /** @name Constructors, destructor
@@ -156,8 +157,9 @@ public :
 
         M_ie = this->backend()->newVector( this->dualImageSpace() );
 
-        // Init elements range
+        // Init ranges
         M_rangeElements = self_type::rangeElements( this->domainSpace(), this->dualImageSpace() );
+        M_rangeBoundaryFaces = self_type::rangeBoundaryFaces( this->domainSpace(), this->dualImageSpace() );
 
         initMatrix<domain_element_type>();
     }
@@ -198,6 +200,26 @@ public :
             rangeElts = elements( imageSpace->mesh() );
 
         return rangeElts;
+    }
+
+    static range_faces_type rangeBoundaryFaces( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace )
+    {
+        range_faces_type rangeFaces;
+
+        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport() 
+            && domainSpace->dof()->meshSupport()->isPartialSupport();
+        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport() 
+            && imageSpace->dof()->meshSupport()->isPartialSupport();
+        if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+            rangeFaces = intersect( domainSpace->dof()->meshSupport()->rangeBoundaryFaces(), imageSpace->dof()->meshSupport()->rangeBoundaryFaces() );
+        else if ( hasMeshSupportPartialDomain )
+            rangeFaces = domainSpace->dof()->meshSupport()->rangeBoundaryFaces();
+        else if ( hasMeshSupportPartialImage )
+            rangeFaces = imageSpace->dof()->meshSupport()->rangeBoundaryFaces();
+        else
+            rangeFaces = boundaryfaces( imageSpace->mesh() );
+
+        return rangeFaces;
     }
 
     template<typename Range, typename Expr, typename Elem>
@@ -388,11 +410,11 @@ private :
                             _expr=M_epsilon*inner( gradt( uDomain ), grad( uImage ) ) );
 
             //weak boundary conditions
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeBoundaryFaces,
                             _expr= M_epsilon*( -trans( id( uImage ) )*gradt( uDomain )*vf::N() ) );
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeBoundaryFaces,
                             _expr= M_epsilon*( -trans( idt( uDomain ) )* grad( uImage )*vf::N() ) );
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeBoundaryFaces,
                             _expr= M_gamma * trans( idt( uDomain ) ) /*trial*/
                                         *id( uImage ) / vf::hFace()   /*test*/
                             );
@@ -556,7 +578,7 @@ private :
         if ( M_proj_type == DIFF )
         {
             form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
+                integrate( _range=this->M_rangeBoundaryFaces,
                            _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
                                                           M_gamma / vf::hFace() *id( uImage ) ),
                            _quad=_Q<quadOrder+quadOrderId>(),
@@ -637,6 +659,7 @@ private :
     //domain_element_type M_de;
     vector_ptrtype M_ie;
     range_elements_type M_rangeElements;
+    range_faces_type M_rangeBoundaryFaces;
 
 };//Projector
 
