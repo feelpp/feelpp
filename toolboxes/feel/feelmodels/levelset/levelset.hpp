@@ -424,6 +424,8 @@ public:
 
     projector_levelset_ptrtype const& smoother() const;
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
+    projector_levelset_ptrtype const& smootherInterface() const;
+    projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
 
     void updateInterfaceQuantities();
 
@@ -586,6 +588,8 @@ protected:
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
+    mutable bool M_doUpdateSmootherInterface;
+    mutable bool M_doUpdateSmootherInterfaceVectorial;
     mutable bool M_doUpdateNormal;
     mutable bool M_doUpdateCurvature;
     mutable bool M_doUpdateGradPhi;
@@ -643,6 +647,8 @@ private:
 
     mutable projector_levelset_ptrtype M_smoother;
     mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
+    mutable projector_levelset_ptrtype M_smootherInterface;
+    mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
     mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
