@@ -73,11 +73,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::ThermoElectricHDG( std::string prefix,
     M_prefixElectro(prefixElectro)
 {
     tic();
-    M_thermo = thermo_type::New(M_prefixThermo);
     M_electro = electro_type::New(M_prefixElectro);
+    M_thermo = thermo_type::New(M_prefixThermo);
     M_mesh = loadMesh( new mesh_type );
-    M_thermo->init( M_mesh );
     M_electro->init( M_mesh );
+    M_thermo->init( M_mesh );
     toc("init");
 }
 
@@ -99,6 +99,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     M_electro->copyCstPart();
     M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
+    M_electro->assembleRHS();
     M_electro->solve();
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
@@ -140,6 +141,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
 
         tic();
         M_electro->copyCstPart();
+        M_electro->assembleRHS();
         for( auto const& pairMat : electroMat )
         {
             std::string marker = pairMat.first;

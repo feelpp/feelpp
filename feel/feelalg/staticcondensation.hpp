@@ -100,6 +100,10 @@ public:
     
     template<typename E>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
+                     std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 2>* = nullptr );
+
+    template<typename E>
+    void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
                      std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 3>* = nullptr );
     
     template<typename E>
@@ -1474,6 +1478,16 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         }
         toc("local.localsolve.sequential",FLAGS_v>0);
     }
+}
+
+template<typename T>
+template<typename E>
+void
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 2>* )
+{
+    using Feel::cout;
+    cout << tc::red << "WARNING!! localSolve with function space of size 2 is not implemented yet!"
+         << tc::reset << std::endl;
 }
 
 template<typename T>
