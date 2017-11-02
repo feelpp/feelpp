@@ -933,6 +933,17 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
+siminfo_options( std::string const& prefix )
+{
+    po::options_description _options( "SimInfo " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"siminfo.enable" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable simulation info" )
+        ( prefixvm( prefix,"siminfo.filename" ).c_str(), Feel::po::value<std::string>()->default_value("simulation.info.json"), "name of the json file" )
+        ;
+    return _options;
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -1016,6 +1027,7 @@ feel_options( std::string const& prefix  )
         .add (msi_options(prefix))
         .add (fit_options(prefix))
         .add (checker_options(prefix))
+        .add( siminfo_options(prefix) )
         ;
 
     return opt;
