@@ -39,7 +39,6 @@ namespace Functor
 {
 namespace pt = boost::property_tree;
 
-
 template<typename T, typename C>
 static inline void AvgMinMax(const T* const in, T* const inout, const int* const len, C* type)
 {
@@ -49,28 +48,6 @@ static inline void AvgMinMax(const T* const in, T* const inout, const int* const
         inout[2 + 3 * i] = std::max(in[2 + 3 * i], inout[2 + 3 * i]);
     }
 }
-
-//! Functor that process observer data from environment signal to generate
-//! a metadata.
-template<typename Container>
-struct SimulationObserverProcess
-{
-        using result_type = Container;
-        result_type p;
-
-        template<typename InputIterator>
-            result_type operator()(InputIterator first, InputIterator last) const
-            {
-                while(first != last)
-                {
-                    //               std::string jsonfname = Feel::Environment::about().appName()+"_simdb.json";
-                    //std::cout << *first << std::endl;
-                    //               pt::write_json(jsonfname, *first);
-                    ++first;
-                }
-                return p;
-            }
-};
 
 } // Functor
 } // Feel
