@@ -1461,6 +1461,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
         tic();
         Eigen::VectorXd pK( N );
 
+        
         for( auto const& elt : A00K )
         {
             auto key = elt.first;
@@ -1468,15 +1469,9 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
             
             auto const& A = elt.second;
             auto const& F = F0K.at( K );
-            
-            Eigen::ColPivHouseholderQR<decay_type<decltype(A)>> dec(A);
-            pK = dec.solve(F);
-            cout << "A=" << A << std::endl;
-            cout << "F=" << F << std::endl;
-            cout << "p=" << pK << std::endl;
+            pK = A.ldlt().solve(F);
             e1.assignE( K, pK );
         }
-        e1.printMatlab("p.m");
         toc("local.localsolve.sequential",FLAGS_v>0);
     }
 }
