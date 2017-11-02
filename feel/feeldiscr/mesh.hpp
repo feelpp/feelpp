@@ -47,7 +47,7 @@
 
 #include <feel/feelcore/context.hpp>
 
-#include <feel/feelcore/observer.hpp>
+#include <feel/feelobserver/observer.hpp>
 #include <feel/feelcore/functors.hpp>
 
 #include <feel/feelmesh/mesh0d.hpp>
@@ -157,7 +157,8 @@ class Mesh
                                                             mpl::identity<Mesh2D<GeoShape,T> >,
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
-        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >
+        public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
+        public Observer::SimInfoWatcher
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -1195,7 +1196,9 @@ public:
      //!
     void decode();
 
-    virtual pt::ptree& simulationNotify() const;
+    //! Send a notification to the simulation info manager.
+    //! \see SimInfoWatcher SimInfoManager
+    const pt::ptree simInfoNotify() const override;
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      save,
@@ -2678,22 +2681,25 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 }
 #endif // FEELPP_HAS_VTK
 
-//! Mesh observer watch mesh properties.
+//! Notification send to the simulation manager
+//! \return property tree with mesh properties
 template<typename Shape, typename T, int Tag>
-pt::ptree&
-Mesh<Shape, T, Tag>::simulationNotify() const
+const pt::ptree
+Mesh<Shape, T, Tag>::simInfoNotify() const
 {
     pt::ptree p;
-    p.put("mesh.shape", Shape::name() );
-    p.put("mesh.dim", dimension() );
-    p.put("mesh.order", nOrder );
-    p.put("mesh.h_min", hMin() );
-    p.put("mesh.h_max", hMax() );
-    p.put("mesh.h_average", hAverage() );
-    p.put("mesh.n_points", numGlobalPoints() );
-    p.put("mesh.n_edges", numGlobalEdges() );
-    p.put("mesh.n_faces", numGlobalFaces() );
-    p.put("mesh.n_vertices", numGlobalVertices() );
+    p.put("typename", "Mesh" );
+    p.put("name", "Mesh1"); // TODO add a specific name per instance
+    p.put(".shape", Shape::name() );
+    p.put(".dim", dimension() );
+    p.put(".order", nOrder );
+    p.put(".h_min", hMin() );
+    p.put(".h_max", hMax() );
+    p.put(".h_average", hAverage() );
+    p.put(".n_points", numGlobalPoints() );
+    p.put(".n_edges", numGlobalEdges() );
+    p.put(".n_faces", numGlobalFaces() );
+    p.put(".n_vertices", numGlobalVertices() );
     return p;
 }
 

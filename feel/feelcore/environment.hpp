@@ -62,7 +62,7 @@
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/feelcore/functors.hpp>
-#include <feel/feelcore/observer.hpp>
+#include <feel/feelobserver/siminfomanager.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -173,9 +173,9 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! @author Christophe Prud'homme
 //! @see Application
 //! 
-class FEELPP_EXPORT Environment : boost::noncopyable
-    Observer::SignalManager,
-    Observer::SlotManager
+class FEELPP_EXPORT Environment
+:   boost::noncopyable,
+    public Observer::SimInfoManager
 {
 public:
     //!
