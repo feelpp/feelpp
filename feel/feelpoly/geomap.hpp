@@ -537,16 +537,15 @@ class GeoMap
     }
 
     std::vector<bool> M_cached;
-    std::vector<double> M_J;
+    std::unordered_map<uint32_type,double> M_J;
     using element_face_pair_t = std::pair<uint32_type,uint16_type>;
     std::unordered_map<element_face_pair_t,double,boost::hash<element_face_pair_t>> M_JFace, M_n_norm;
     using allocator_vector_n_t = Eigen::aligned_allocator<std::pair<const element_face_pair_t, eigen_vector_n_type> >;
     std::unordered_map<element_face_pair_t,eigen_vector_n_type,boost::hash<element_face_pair_t>, std::equal_to<element_face_pair_t>, allocator_vector_n_t> M_un_real;
     std::unordered_map<element_face_pair_t,int,boost::hash<element_face_pair_t>> M_permutation_element_face_neighbor;
-    //boost::multi_array<double,3> M_K;
-    //boost::multi_array<double,3> M_B;
-    vector_eigen_matrix_type<nDim,nRealDim,value_type> M_K;
-    vector_eigen_matrix_type<nDim,nRealDim,value_type> M_B;
+    unordered_map_eigen_matrix_type<uint32_type,nDim,nRealDim,value_type> M_K;
+    unordered_map_eigen_matrix_type<uint32_type,nDim,nRealDim,value_type> M_B;
+
 
     template <typename MeshType>
     void initCache( MeshType const* mesh )
@@ -556,9 +555,9 @@ class GeoMap
         M_cached.resize( nelts );
         std::fill( M_cached.begin(), M_cached.end(), false );
 
-        M_J.resize( nelts );
-        M_K.resize( nelts );
-        M_B.resize( nelts );
+        M_J.reserve( nelts );
+        M_K.reserve( nelts );
+        M_B.reserve( nelts );
         M_JFace.reserve( nelts*mesh->numLocalTopologicalFaces() );
         M_n_norm.reserve( nelts*mesh->numLocalTopologicalFaces() );
         M_un_real.reserve( nelts*mesh->numLocalTopologicalFaces() );
@@ -592,29 +591,32 @@ class GeoMap
     }
     double J( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_J[e];
+        return M_J.at(e);
     }
+    void setJacobian( int e, double v ) 
+        {
+            M_J[e]=v;
+        }
+    bool hasJacobian( int e ) const
+        {
+            return M_J.count(e);
+        }
     double jacobianAtFace( int e, int f ) const
         {
             return M_JFace.at({e,f});
         }
     eigen_matrix_type<nDim,nRealDim,value_type> const& B( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_B[e];
+        return M_B.at(e);
     }
     eigen_matrix_type<nDim,nRealDim,value_type> const& K( int e ) const
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
-        return M_K[e];
+        return M_K.at(e);
     }
+    void setK( int e, eigen_matrix_type<nDim,nRealDim,value_type> const& K ) 
+        {
+            M_K[e]=K;
+        }
     void addJ( int e, double v )
     {
         FEELPP_ASSERT( this->isCacheValid() )
@@ -667,20 +669,8 @@ class GeoMap
             M_permutation_element_face_neighbor[{e,f}] = v;
         }
     template <typename Derived>
-    void addK( int e, const Eigen::MatrixBase<Derived>& K )
+    void setB( int e, const Eigen::MatrixBase<Derived>& B )
     {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
-        
-        M_K[e].noalias() = K;
-    }
-    template <typename Derived>
-    void addB( int e, const Eigen::MatrixBase<Derived>& B )
-    {
-        FEELPP_ASSERT( this->isCacheValid() )
-        ( e ).error( "invalid cache" );
-        DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
         M_B[e].noalias() = B;
     }
 
@@ -1787,7 +1777,6 @@ class GeoMap
         void updateJacobian( eigen_matrix_np_type const & K, eigen_matrix_np_type& B, value_type& J,
                              std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
         {
-            
             J = math::abs( K.determinant() );
             M_CS = K.inverse();
             B.noalias() = M_CS.transpose();
@@ -1980,11 +1969,31 @@ class GeoMap
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
-                        if ( !is_linear )
-                            M_gm->gradient( q, M_g, M_pc.get() );
-                        em_matrix_col_type<value_type> GradPhi( is_linear?M_g_linear.data().begin():M_g.data().begin(),
-                                                                M_G.size2(), PDim );
-                        M_K[q].noalias() = Pts * GradPhi;
+                        if ( 0 ) // (nComputedPoints() ==1) && M_gm->hasJacobian( M_id ) )
+                        {
+#if 0
+                            M_K[q] = M_gm->K(M_id);
+                            M_B[q] = M_gm->B(M_id);
+                            M_J[q] = M_gm->J(M_id);
+#endif
+                        }
+                        else
+                        {
+                            if ( !is_linear )
+                                M_gm->gradient( q, M_g, M_pc.get() );
+                            em_matrix_col_type<value_type> GradPhi( is_linear?M_g_linear.data().begin():M_g.data().begin(),
+                                                                    M_G.size2(), PDim );
+                            M_K[q].noalias() = Pts * GradPhi;
+                            updateJacobian( M_K[q], M_B[q], M_J[q] );
+                            if ( 0 ) ///* (nComputedPoints() ==1)*/ )
+                            {
+#if 0
+                                M_gm->setK( M_id, M_K[q] );
+                                M_gm->setB( M_id, M_B[q] );
+                                M_gm->setJacobian( M_id, M_J[q] );
+#endif
+                            }
+                        }
                         if ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {
                             //M_h.resize( { NDim, NDim } );
@@ -1994,7 +2003,7 @@ class GeoMap
                         }
 
                         
-                        updateJacobian( M_K[q], M_B[q], M_J[q] );
+                        
                         updateHessian<CTX>( M_B[q] );
                         updateNormals<CTX>( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
                         updateTangents<CTX>( M_K[q], M_unit_normals[q], M_tangents[q], M_unit_tangents[q], M_tangent_norms[q], M_Ptangent[q] );
