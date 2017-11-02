@@ -165,7 +165,7 @@ int hdg_laplacian()
                 tic();
                 double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-grad<2>(expr(solution)) );
                 toc("semi H1 error norm");
-                return { { "L2", l2 }, {  "H1", h1 }, {"L2",semih1} };
+                return { { "L2", l2 }, {  "H1", h1 }, {"semih1",semih1} };
             };
 
         int status = checker(p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
@@ -303,21 +303,32 @@ int hdg_laplacian()
     auto Whp = Pdh<OrderP+1>( mesh, true );
     auto pps = product( Whp );
     auto PP = pps.element();
-    auto& ppp = PP(0_c);
+    auto ppp = PP(0_c);
     toc("postprocessing.space",FLAGS_v>0);
     tic();
+    tic();
     auto b = blockform2( pps, solve::strategy::local, backend() );
-    b( 0_c, 0_c ) = integrate( _range=elements(mesh), _expr=gradt(ppp)*trans(grad(ppp)));
+    b( 0_c, 0_c ) = integrate( _range=elements(mesh), _expr=inner(gradt(ppp),grad(ppp)));
+    toc("postprocessing.assembly.a",FLAGS_v>0);
+    tic();
     auto ell = blockform1( pps, solve::strategy::local, backend() );
-    ell(0_c) = integrate( _range=elements(mesh), _expr=-f_exact*id(ppp));
-    ell(0_c) += integrate( _range=boundaryfaces(mesh), _expr=-(trans(id(up))*N())*id(ppp));
+    ell(0_c) = integrate( _range=elements(mesh), _expr=-lambda*grad(ppp)*idv(up));
+    toc("postprocessing.assembly.l",FLAGS_v>0);
     toc("postprocessing.assembly",FLAGS_v>0);
     
     tic();
-    b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true );
-    auto correctionP = integrate(_range=elements(mesh), _expr=(idv(pp)-idv(ppp))/meas()).broken(P0dh);
-    //ppp+=meanpK;
-    ppp = vf::project( _space=Whp, _range=elements(mesh), _expr=idv(ppp)+idv(correctionP) );
+    tic();
+    b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
+    toc("postprocessing.solve.local",FLAGS_v>0);
+    ppp=PP(0_c);
+    tic();
+    tic();
+    ppp -= ppp.ewiseMean(P0dh);
+    toc("postprocessing.solve.correction.ppp",FLAGS_v>0);
+    tic();
+    ppp += pp.ewiseMean(P0dh);
+    toc("postprocessing.solve.correction.pp",FLAGS_v>0);
+    toc("postprocessing.solve.correction",FLAGS_v>0);
     toc("postprocessing.solve",FLAGS_v>0);
     toc("postprocessing",FLAGS_v>0);
 

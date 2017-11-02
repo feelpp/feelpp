@@ -748,6 +748,23 @@ public:
 
     }
 
+    //!
+    //! compute the first moment value or first-moment of the polynomial set.
+    //! @note the values are not divided by the measure of the domain.
+    //! @return a column matrix containing the first moment value of the basis functions
+    //!
+    matrix_type firstMoments()
+        {
+            matrix_type _m( M_coeff.size1(), 1 );
+            points_type p(nDim,1);
+            // we want to retrieve the constant polynomial value, we do not care
+            // about the point at which we evaluate the basis
+            auto b = M_basis( p );
+            // the first column is the mean value when rescaled by the value of
+            // the first polynomial (constant) in the primal basis
+            ublas::column(_m,0)=ublas::column( M_coeff, 0 )/b(0,0);
+            return _m;
+        }
 
     //@}
 
@@ -784,6 +801,7 @@ public:
         static constexpr int h_comp2=(rank==2)?nComponents2:(rank==1)?nDim:nDim;
         static constexpr int h_comp3=(rank==2)?nDim:(rank==1)?nDim:1;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<h_comp1,h_comp2,h_comp3>> h_type;
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> mean_value_type;
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
         typedef boost::multi_array<h_type,2> hessian_type;
@@ -799,10 +817,16 @@ public:
             :
             M_ref_ele( __ref_ele ),
             M_nodes( __pts ),
+            M_mean(__ref_ele->nbDof()),
             M_phi(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
             M_grad(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
             M_hessian(boost::extents[__ref_ele->nbDof()][__pts.size2()])
         {
+            auto fm = __ref_ele->firstMoments();
+            for( int i = 0; i < __ref_ele->nbDof(); ++i )
+            {
+                M_mean[i] = fm(i,0);
+            }
             init( M_ref_ele, __pts, rank_t<rank>() );
         }
 
@@ -872,6 +896,20 @@ public:
             return ublas::column( M_nodes, __i );
         }
 
+        //!
+        //! @return the first moment values of the basis functions
+        //!
+        mean_value_type const& firstMoments() const
+            {
+                return M_mean;
+            }
+        //!
+        //! @return the first moment value of the i-th basis function
+        //!
+        value_type  firstMoment( int i ) const
+            {
+                return M_mean[i];
+            }
         /**
          *  Return the matrix evaluation the basis functions (rows) at
          *  a set of points (columns). The matrix is column oriented,
@@ -1239,6 +1277,7 @@ public:
 
         reference_element_ptrtype M_ref_ele;
         matrix_node_t_type M_nodes;
+        mean_value_type M_mean;
         functionvalue_type M_phi;
         grad_type M_grad;
         hessian_type M_hessian;
