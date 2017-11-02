@@ -19,6 +19,13 @@
     {
         "potential":
         {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr":"0"
+                }
+            },
             "Dirichlet":
             {
                 "V0":
