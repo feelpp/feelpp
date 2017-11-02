@@ -49,7 +49,7 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit)
+foreach( testdir core math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit observer event)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 
