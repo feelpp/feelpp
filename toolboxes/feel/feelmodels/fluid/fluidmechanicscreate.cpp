@@ -476,6 +476,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     CHECK( M_definePressureCstMethod == "lagrange-multiplier" || M_definePressureCstMethod == "penalisation" ||
            M_definePressureCstMethod == "algebraic" ) << "lagrange-multiplier or penalisation or algebraic";
     M_definePressureCstPenalisationBeta = doption(_name="define-pressure-cst.penalisation-beta",_prefix=this->prefix());
+    M_definePressureCstMarkers.clear();
+    if ( Environment::vm().count( prefixvm(this->prefix(),"define-pressure-cst.markers").c_str() ) )
+    {
+        std::vector<std::string> inputMarkers = Environment::vm()[ prefixvm(this->prefix(),"define-pressure-cst.markers").c_str() ].template as<std::vector<std::string> >();
+        std::string inputMarkersAsString;
+        for ( std::string const& marker : inputMarkers )
+            inputMarkersAsString += marker;
+
+        boost::char_separator<char> sep(",");
+        boost::char_separator<char> sep2(":");
+        boost::tokenizer< boost::char_separator<char> > kvlist( inputMarkersAsString, sep );
+        for( const auto& ikvl : kvlist )
+        {
+            boost::tokenizer< boost::char_separator<char> > kvlist2( ikvl, sep2);
+            std::set<std::string> markerList;
+            for( const auto& ikvl2 : kvlist2 )
+                markerList.insert( ikvl2 );
+
+            if ( !markerList.empty() )
+                M_definePressureCstMarkers.push_back( markerList );
+        }
+    }
 
     //--------------------------------------------------------------//
     // gravity
