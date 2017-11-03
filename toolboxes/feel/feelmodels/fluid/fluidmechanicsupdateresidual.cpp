@@ -266,10 +266,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         if ( this->definePressureCstMethod() == "penalisation" && !BuildCstPart && !UseJacobianLinearTerms )
         {
             double beta = this->definePressureCstPenalisationBeta();
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr=beta*idv(p)*id(q),
-                           _geomap=this->geomap() );
+            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
+                linearForm_PatternCoupled +=
+                    integrate( _range=rangeElt,
+                               _expr=beta*idv(p)*id(q),
+                               _geomap=this->geomap() );
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
@@ -287,7 +288,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
                 form1( _test=M_XhMeanPressureLM,_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=M_definePressureCstMeshRanges[0],
                                _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -297,7 +298,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 auto lambda = M_XhMeanPressureLM->element();
                 form1( _test=M_XhMeanPressureLM,_vector=R,
                        _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=M_definePressureCstMeshRanges[0],
                                _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
                                _geomap=this->geomap() );
             }

@@ -163,10 +163,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart  )
         {
             double beta = this->definePressureCstPenalisationBeta();
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr=beta*idt(p)*id(q),
-                           _geomap=this->geomap() );
+            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr=beta*idt(p)*id(q),
+                               _geomap=this->geomap() );
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
@@ -180,14 +181,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=A,
                        _rowstart=this->rowStartInMatrix(),
                        _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=M_definePressureCstMeshRanges[0],
                                _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                                _geomap=this->geomap() );
 
                 form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=A,
                        _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM,
                        _colstart=this->colStartInMatrix() ) +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=M_definePressureCstMeshRanges[0],
                                _expr= + idt(p)*id(lambda),
                                _geomap=this->geomap() );
             }
@@ -198,7 +199,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 this->log("FluidMechanics","updateLinearPDE", "also add nonzero MEANPRESSURE" );
                 form1( _test=M_XhMeanPressureLM, _vector=F,
                        _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=M_definePressureCstMeshRanges[0],
                                _expr= FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this())*id(lambda),
                                _geomap=this->geomap() );
             }
