@@ -1109,13 +1109,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 
 
 
-    if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+    if ( this->definePressureCstMethod() == "lagrange-multiplier" )
     {
+        M_XhMeanPressureLM.resize( M_definePressureCstMeshRanges.size() );
         if ( M_definePressureCstOnlyOneZoneAppliedOnWholeMesh )
-            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+            M_XhMeanPressureLM[0] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
         else
-            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-                                                                 _range=M_definePressureCstMeshRanges[0] );
+        {
+            for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
+                M_XhMeanPressureLM[k] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                                                                        _range=M_definePressureCstMeshRanges[k] );
+        }
     }
     else if ( this->definePressureCstMethod() == "algebraic" )
     {
@@ -1977,7 +1981,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-        ++nBlock;
+        nBlock+=M_XhMeanPressureLM.size();
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
     if ( this->hasMarkerPressureBC() )
@@ -2017,13 +2021,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingLM(0,1) = size_type(Pattern::COUPLED);
 
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM,_trial=this->functionSpace(),
-                                             _pattern_block=patCouplingLM,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_XhMeanPressureLM,
-                                             _pattern_block=patCouplingLM.transpose(),
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+        {
+            myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM[k],_trial=this->functionSpace(),
+                                                 _pattern_block=patCouplingLM,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_XhMeanPressureLM[k],
+                                                 _pattern_block=patCouplingLM.transpose(),
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            ++indexBlock;
+        }
     }
 
     if (this->hasMarkerDirichletBClm())
@@ -2198,7 +2205,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-        res += M_XhMeanPressureLM->nLocalDofWithGhost();
+    {
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+            res += M_XhMeanPressureLM[k]->nLocalDofWithGhost();
+    }
     if (this->hasMarkerDirichletBClm())
         res += this->XhDirichletLM()->nLocalDofWithGhost();
     if ( this->hasFluidOutletWindkesselImplicit() )
