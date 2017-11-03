@@ -181,7 +181,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- stabilisation   : " << stabAll_str;
     if ( this->definePressureCst() )
     {
-        *_ostr << "\n     -- define cst pressure  : " << this->definePressureCstMethod();
+        if ( !M_definePressureCstMarkers.empty() )
+        {
+            *_ostr << "\n     -- define cst pressure on markers  : ";
+            for ( auto const& markers : M_definePressureCstMarkers )
+            {
+                if ( markers.empty() ) continue;
+                *_ostr << "[ ";
+                for( auto it=markers.begin(),en=(--markers.end());it!=en;++it )
+                    *_ostr << *it << " : ";
+                *_ostr << *markers.rbegin() << " ]";
+            }
+        }
+        *_ostr << "\n     -- define cst pressure with method  : " << this->definePressureCstMethod();
         if ( this->definePressureCstMethod() == "penalisation" )
             *_ostr << " ( beta=" << this->definePressureCstPenalisationBeta() << ")";
     }
@@ -977,9 +989,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_
     {
         auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
         auto pSol = upSol.template element<1>();
-        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
-        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
-        pSol.add( -meanPressureCurrent );
+        CHECK( !M_definePressureCstAlgebraicOperatorMeanPressure.empty() ) << "mean pressure operator does not init";
+        for ( int k=0;k<M_definePressureCstAlgebraicOperatorMeanPressure.size();++k )
+        {
+            double meanPressureImposed = 0;
+            double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure[k].first, pSol );
+            for ( size_type dofId : M_definePressureCstAlgebraicOperatorMeanPressure[k].second )
+                pSol(dofId) += (meanPressureImposed - meanPressureCurrent);
+        }
+        sync( pSol, "=" );
     }
 }
 
@@ -1076,21 +1094,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
+    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = M_densityViscosityModel->isDefinedOnWholeMesh();
+    M_definePressureCstMeshRanges.clear();
+    for ( auto const& markers : M_definePressureCstMarkers )
+    {
+        for ( std::string const& marker : markers )
+            CHECK( M_mesh->hasElementMarker( marker ) ) << "marker " << marker << "does not found in mesh";
+        M_definePressureCstMeshRanges.push_back( markedelements(M_mesh,markers) );
+    }
+    if ( M_definePressureCstMeshRanges.empty() )
+        M_definePressureCstMeshRanges.push_back( M_rangeMeshElements );
+    else
+        M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = false;
+
+
+
     if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
     {
-        if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+        if ( M_definePressureCstOnlyOneZoneAppliedOnWholeMesh )
             M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
         else
             M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-                                                                 _range=M_rangeMeshElements );
+                                                                 _range=M_definePressureCstMeshRanges[0] );
     }
     else if ( this->definePressureCstMethod() == "algebraic" )
     {
         auto p = this->functionSpacePressure()->element();
-        M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
-                                                                      _range=M_rangeMeshElements,
-                                                                      _expr=id(p) ).vectorPtr();
-        M_definePressureCstAlgebraicOperatorMeanPressure->close();
+
+        M_definePressureCstAlgebraicOperatorMeanPressure.resize(M_definePressureCstMeshRanges.size());
+        auto dofTablePressure = this->functionSpacePressure()->dof();
+        for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
+        {
+            auto const& rangeElt = M_definePressureCstMeshRanges[k];
+            M_definePressureCstAlgebraicOperatorMeanPressure[k].first = form1_mean(_test=this->functionSpacePressure(),
+                                                                                   _range=rangeElt,
+                                                                                   _expr=id(p) ).vectorPtr();
+            M_definePressureCstAlgebraicOperatorMeanPressure[k].first->close();
+            auto & dofsOnRange = M_definePressureCstAlgebraicOperatorMeanPressure[k].second;
+            for ( auto const& elt : rangeElt )
+            {
+                for( auto const& ldof : dofTablePressure->localDof( unwrap_ref( elt ).id() ) )
+                    dofsOnRange.insert( ldof.second.index() );
+            }
+        }
     }
 }
 

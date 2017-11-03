@@ -531,10 +531,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
     {
         auto upSol = this->functionSpace()->element( U, this->rowStartInVector() );
         auto pSol = upSol.template element<1>();
-        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
-        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
-        double meanPressureImposed = 0;
-        pSol.add( meanPressureImposed - meanPressureCurrent );
+        CHECK( !M_definePressureCstAlgebraicOperatorMeanPressure.empty() ) << "mean pressure operator does not init";
+
+        for ( int k=0;k<M_definePressureCstAlgebraicOperatorMeanPressure.size();++k )
+        {
+            double meanPressureImposed = 0;
+            double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure[k].first, pSol );
+            for ( size_type dofId : M_definePressureCstAlgebraicOperatorMeanPressure[k].second )
+                pSol(dofId) += (meanPressureImposed - meanPressureCurrent);
+        }
+        sync( pSol, "=" );
     }
 
     if ( M_useThermodynModel && M_useGravityForce )
