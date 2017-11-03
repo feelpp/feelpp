@@ -687,7 +687,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
-
+#if 0
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
@@ -696,7 +696,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
             M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
                                                                  _range=M_rangeMeshElements );
     }
-
+#endif
 
     if (this->hasMarkerDirichletBClm())
     {
@@ -1227,7 +1227,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     size_type currentStartIndex = 2;// velocity and pressure before
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex++;
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
+        currentStartIndex += M_XhMeanPressureLM.size();
     }
     if (this->hasMarkerDirichletBClm())
     {
@@ -1259,8 +1260,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // impose mean pressure by lagrange multiplier
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_XhMeanPressureLM );
-        ++cptBlock;
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+            M_blockVectorSolution(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
     }
     // lagrange multiplier for Dirichlet BC
     if (this->hasMarkerDirichletBClm())

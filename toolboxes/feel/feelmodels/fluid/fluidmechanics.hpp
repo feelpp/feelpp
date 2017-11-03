@@ -651,7 +651,7 @@ public :
     space_dirichletlm_velocity_ptrtype const& XhDirichletLM() const { return M_XhDirichletLM; }
     //___________________________________________________________________________________//
     // impose mean pressure with P0 Lagrange multiplier
-    space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
+    space_meanpressurelm_ptrtype const& XhMeanPressureLM( int k ) const { return M_XhMeanPressureLM[k]; }
     //___________________________________________________________________________________//
     // fluid inlet bc
     bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
@@ -880,7 +880,7 @@ protected:
     space_fluid_ptrtype M_Xh;
     element_fluid_ptrtype M_Solution;
     // lagrange multiplier space for mean pressure
-    space_meanpressurelm_ptrtype M_XhMeanPressureLM;
+    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
     trace_mesh_ptrtype M_meshDirichletLM;
     space_dirichletlm_velocity_ptrtype M_XhDirichletLM;

@@ -280,27 +280,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
-                auto lambda = M_XhMeanPressureLM->element();
-                M_blockVectorSolution.setSubVector( lambda, *XVec, rowStartInVector+startBlockIndexDefinePressureCstLM );
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element(XVec,rowStartInVector+startBlockIndexDefinePressureCstLM+k);
+                    //M_blockVectorSolution.setSubVector( lambda, *XVec, rowStartInVector+startBlockIndexDefinePressureCstLM+k );
+                    //for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
+                    //    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
 
-                //for ( size_type k=0;k<M_XhMeanPressureLM->nLocalDofWithGhost();++k )
-                //    lambda( k ) = XVec->operator()( startDofIndexDefinePressureCstLM + k);
-
-                form1( _test=M_XhMeanPressureLM,_vector=R,
-                       _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_definePressureCstMeshRanges[0],
-                               _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
-                               _geomap=this->geomap() );
+                    form1( _test=M_XhMeanPressureLM[k],_vector=R,
+                           _rowstart=rowStartInVector+startBlockIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= id(p)*idv(lambda) + idv(p)*id(lambda),
+                                   _geomap=this->geomap() );
+                }
             }
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
-            if (BuildCstPart)
+            if ( BuildCstPart )
             {
-                auto lambda = M_XhMeanPressureLM->element();
-                form1( _test=M_XhMeanPressureLM,_vector=R,
-                       _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM ) +=
-                    integrate( _range=M_definePressureCstMeshRanges[0],
-                               _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
-                               _geomap=this->geomap() );
+                for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+                {
+                    auto lambda = M_XhMeanPressureLM[k]->element();
+                    form1( _test=M_XhMeanPressureLM[k],_vector=R,
+                           _rowstart=rowStartInVector+startDofIndexDefinePressureCstLM+k ) +=
+                        integrate( _range=M_definePressureCstMeshRanges[k],
+                                   _expr= -(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE(this->shared_from_this()))*id(lambda),
+                                   _geomap=this->geomap() );
+                }
             }
 #endif
         }
