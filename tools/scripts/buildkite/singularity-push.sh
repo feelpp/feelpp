@@ -1,18 +1,22 @@
 #!/bin/bash
+# Script to push generated singularity images into the laboratory
+# gitlab server. Gitlab LFS is used to store images (binaries)
+# Script arguments must be a list of docker container names, for example:
+# ./singularity-push.sh feelpp/feelpp-crb:latest feelpp/feelpp-toolboxes:latest
 
 set -euo pipefail
 
 source $(dirname $0)/common.sh
 
 ROOT_DIR=`pwd`
-IMAGES_ROOT=./docker/singularity/images
+IMAGES_ROOT=./singularity/images
 REPO_NAME=feelpp-singularity-images.git
 REPO=git@gitlab.math.unistra.fr:feelpp/feelpp-singularity-images.git
 REPO_MAX_IMAGES=20 #( x10 GB )
 
 # Remove old local images (NOT LFS).
 if [ ! -d ${IMAGES_ROOT} ]; then
-    echo "./docker.git/singularity/images does not exist"
+    echo "${IMAGES_ROOT} does not exist"
     pwd
     exit 1
 fi
