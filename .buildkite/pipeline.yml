@@ -51,8 +51,6 @@ steps:
      ubuntu: "16.10"
    env:
      TARGET: ubuntu:16.10
- - wait: ~
-   continue_on_failure: true
  - trigger: "feelpp-singularity"
    label: ":singularity: generate images"
    branches: "develop"
@@ -61,6 +59,8 @@ steps:
      branch: "develop"
      env:
        TARGET: ubuntu:16.10
+ - wait: ~
+   continue_on_failure: true
 ## Require buildkite agent >= 3
 # - trigger: "feelpp-singularity"
 #   label: ":singularity: generate images"
