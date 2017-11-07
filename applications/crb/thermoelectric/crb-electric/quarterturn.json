@@ -1,0 +1,63 @@
+{
+    "Name": "Thermoelectric",
+    "ShortName": "Thermoelectric",
+    "Model": "thermoelectric-crb",
+    "Materials":
+    {
+        "omega":
+        {
+            "name": "copper",
+            "physics": "electric",
+            "sigmaKey": "sigma"
+        }
+    },
+    "Parameters":
+    {
+        "sigma":
+        {
+            "value":50e+3,
+            "min":48e+3,
+            "max":52e+3
+        },
+        "current":
+        {
+            "value":-0.14,
+            "min":-0.25,
+            "max":-0.1
+        },
+        "W":
+        {
+            "value":40,
+            "min":0,
+            "max":50
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr1":"W:W",
+                    "expr2":"2*x:x",
+                    "material":"omega"
+                }
+            },
+            "Dirichlet":
+            {
+                "in":
+                {
+                    "expr":"current:current",
+                    "material":"omega"
+                },
+                "out":
+                {
+                    "expr":"0",
+                    "material":"omega"
+                }
+            }
+        }
+    }
+}

@@ -550,7 +550,7 @@ public:
      * the DenseVector<T> V
      */
     void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices ) 
+                     const std::vector<size_type>& dof_indices )
     {
         FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
 
@@ -754,8 +754,6 @@ public:
     void load( std::string filename="default_archive_name", std::string format="binary" ) override;
 
     //@}
-
-    
 
 
 private:

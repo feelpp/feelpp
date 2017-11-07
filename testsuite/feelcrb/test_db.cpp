@@ -214,10 +214,11 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -232,10 +233,11 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -254,10 +256,11 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     delete app;
@@ -272,10 +275,11 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     wnSize.push_back(WN.size());
     wnduSize.push_back(WNdu.size());
 
-    if(WN.size() > 0 && WN[0].size() > sampleSize)
+    if(WN.size() > 0 && WN[0]->size() > sampleSize)
     {
+        auto const& wn0 = unwrap_ptr(WN[0]);
         for(int i = 0; i < sampleSize; i++)
-        { wnSample.push_back(WN[0][i]); }
+        { wnSample.push_back(wn0[i]); }
     }
 
     /*
