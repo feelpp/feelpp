@@ -390,7 +390,6 @@ private:
 
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
-    space_ptrtype Xh;
     element_ptrtype pT;
     parameter_type M_mu;
 

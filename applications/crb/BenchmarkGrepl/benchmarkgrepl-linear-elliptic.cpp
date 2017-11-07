@@ -136,8 +136,18 @@ void BenchmarkGreplLinearElliptic<Order>::initModel()
         std::cout<<" eim g mMax : "<<eim_g->mMax(error)<<" error : "<<error<<std::endl;
     }
 #endif
-
     //checkEimExpansion();
+
+    this->M_betaAqm.resize( 2 );
+    this->M_betaAqm[0].resize( 1 );
+    int eim_g_size = eim_g->mMax();
+    this->M_betaAqm[1].resize( eim_g_size );
+    this->M_betaFqm.resize( 2 );
+    this->M_betaFqm[0].resize( 1 );
+    this->M_betaFqm[0][0].resize( eim_g_size );
+    this->M_betaFqm[1].resize( 1 );
+    this->M_betaFqm[1][0].resize( 1 );
+
 
     assemble();
 
@@ -363,7 +373,7 @@ BenchmarkGreplLinearElliptic<Order>::computeAffineDecomposition()
 
 
 template<int Order>
-double BenchmarkGreplLinearElliptic<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve , bool export_outputs )
+double BenchmarkGreplLinearElliptic<Order>::output( int output_index, parameter_type const& mu, element_type &solution, bool need_to_solve )
 {
 
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
