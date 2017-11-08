@@ -730,6 +730,9 @@ private:
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
+    bool M_fixVolume;
+    double M_initialVolume;
+
     //LevelSetTimeDiscretization M_discrMethod;
 
 }; //class LevelSet
