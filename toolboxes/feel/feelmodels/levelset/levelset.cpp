@@ -101,6 +101,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 
     // Set levelset initial value
     this->initLevelsetValue();
+    M_initialVolume = this->volume();
     // Init levelset advection
     M_advectionToolbox->init();
     M_timeOrder = this->timeStepBDF()->timeOrder();
@@ -735,6 +736,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     }
 
     M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
+
+    M_fixVolume = boption( _name="fix-volume", _prefix=this->prefix() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1573,6 +1576,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
     // Update interface-related quantities
     this->updateInterfaceQuantities();
 
+    // Correct volume if requested
+    if( this->M_fixVolume )
+    {
+        auto const& phi = this->phi();
+        double lambda = ( this->volume() - this->M_initialVolume ) / this->perimeter();
+        phi->add( lambda );
+    }
+
     // Reset hasReinitialized
     M_hasReinitialized = false;
     M_hasReinitializedSmooth = false;
@@ -2370,7 +2381,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::volume() const
             _range=elements(this->mesh()),
             _expr=(1-idv(this->heaviside())) 
             ).evaluate()(0,0);
-            //_expr=vf::chi( idv(this->phi())<0.0) ).evaluate()(0,0); // gives very noisy results
 
     return volume;
 }

@@ -456,6 +456,8 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"use-cauchy-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect additional backward characteristics to compute Cauchy tensor")
         (prefixvm(prefix,"initial-backward-characteristics").c_str(), Feel::po::value<std::string>(), "Initial  backward characteristics value (default for material at rest is {x,y(,z)})")
 
+        (prefixvm(prefix,"fix-volume").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset volume after each iteration (using phi->phi+(V-Vi)/L)")
+
         (prefixvm(prefix,"do_export_advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportAdvection")
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
