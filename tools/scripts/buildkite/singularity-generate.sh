@@ -18,9 +18,8 @@ if [ -d singularity ]; then
     cd singularity; git pull
 else
     git clone --depth=1 https://github.com/feelpp/singularity;
+    cd singularity
 fi
-
-cd ./singularity
 
 for cont in ${containers}
 do
