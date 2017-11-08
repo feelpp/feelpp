@@ -72,6 +72,11 @@ public:
                 INVALID_TENSOR_SHOULD_BE_RANK_0, ( mpl::int_<tensor_expr_shape::M>, mpl::int_<tensor_expr_shape::N> ) );
         typedef Shape<tensor_expr_shape::nDim, Scalar, false,false> shape;
 
+        struct is_zero
+        {
+            static const bool value = tensor_expr_type::is_zero::value;
+        };
+
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             : M_phiExpr( expr.levelsetPhiExpr(), geom, fev, feu )
