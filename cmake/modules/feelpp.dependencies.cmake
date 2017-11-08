@@ -1270,7 +1270,7 @@ include( contrib.dependencies )
 
 #
 # Acusim
-# 
+#
 include(feelpp.module.altair)
 
 # Asciidoctor
@@ -1295,6 +1295,12 @@ option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTA
 if( FEELPP_ENABLE_CLING_INTERPRETER )
   include(feelpp.module.cling.interpreter)
 endif()
+
+option( FEELPP_ENABLE_OMC "Enable OpemModelica in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_OMC )
+  include( feelpp.module.omc )
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
@@ -1405,7 +1411,7 @@ set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
 foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
   string(TOUPPER ${_c} _BOOST_LIB)
-  set(FEELPP_BOOST_TEXT 
+  set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}
     set(Boost_${_BOOST_LIB}_FOUND \"${Boost_${_BOOST_LIB}_FOUND}\")
     set(Boost_${_BOOST_LIB}_LIBRARY \"${Boost_${_BOOST_LIB}_LIBRARY}\")
