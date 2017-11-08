@@ -14,7 +14,11 @@ BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
 FEELPP_DOCKER_TAG=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 
 echo '--- clone/pull feelpp/singularity'
-if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/singularity; fi
+if [ -d singularity ]; then
+    cd singularity; git pull
+else
+    git clone --depth=1 https://github.com/feelpp/singularity;
+fi
 
 cd ./singularity
 
