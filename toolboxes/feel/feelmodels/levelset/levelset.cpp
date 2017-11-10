@@ -1582,6 +1582,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         auto const& phi = this->phi();
         double lambda = ( this->volume() - this->M_initialVolume ) / this->perimeter();
         phi->add( lambda );
+        // Request update interface-related quantities again since phi has changed
+        // Note that updateInterfaceQuantities has lazy evaluation
+        this->updateInterfaceQuantities();
     }
 
     // Reset hasReinitialized
