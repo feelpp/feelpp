@@ -38,14 +38,14 @@
         },
         "PostProcess":
         {
-            "Fields":["displacement"], //,"Von-Mises","tresca","principal-stresses","sigma_xx"],
+            "Fields":["displacement","Von-Mises","tresca","principal-stresses"], //"sigma_xx"
             "Measures":
             {
                 "Maximum":
                 {
                     "beam":
                     {
-			"markers": "",
+			            "markers":"",
                         "fields":["displacement"]
                     }
                 }
