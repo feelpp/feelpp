@@ -21,7 +21,7 @@ if [ "${component}" = "base" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-libs:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 elif [ "${component}" = "crb" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-base:${tag}" > docker/feelpp-${component}/dockerfile.tmp
-else [ "${component}" = "toolboxes" ] ; then
+else
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-crb:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 fi    
 docker build \
