@@ -357,18 +357,21 @@ CRBSaddlePoint<TruthModelType>::orthonormalize( size_type N, WNType& wn, int Nm,
 
     for ( size_type i =N-Nm; i < N; ++i )
     {
+        auto & wni = unwrap_ptr( wn[i] );
         for ( size_type j = 0; j < i; ++j )
         {
-            value_type __rij_pr = this->M_model->scalarProduct(  wn[i], wn[ j ], n_space );
-            wn[i].add( -__rij_pr, wn[j] );
+            auto & wnj = unwrap_ptr( wn[j] );
+            value_type __rij_pr = this->M_model->scalarProduct(  wni, wnj, n_space );
+            wni.add( -__rij_pr, wnj );
         }
     }
 
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
-        value_type __rii_pr = math::sqrt( this->M_model->scalarProduct(  wn[i], wn[i], n_space ) );
-        wn[i].scale( 1./__rii_pr );
+        auto & wni = unwrap_ptr( wn[i] );
+        value_type __rii_pr = math::sqrt( this->M_model->scalarProduct(  wni, wni, n_space ) );
+        wni.scale( 1./__rii_pr );
     }
 
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
@@ -1696,17 +1699,17 @@ CRBSaddlePoint<TruthModelType>::exportBasisFunctions()
         std::string basis_name = ( boost::format( "u_pr_%1%.0_param") %index  ).str();
         std::string name = basis_name + mu_str;
         int index0 = boption("crb.saddlepoint.add-supremizer") ? 2*index:index;
-        e->step(0)->add( name, u_vec[index0] );
+        e->step(0)->add( name, unwrap_ptr( u_vec[index0] ) );
 
         basis_name = ( boost::format( "p_pr_%1%_param") %index ).str();
         name = basis_name + mu_str;
-        e->step(0)->add( name, p_vec[index] );
+        e->step(0)->add( name, unwrap_ptr( p_vec[index] ) );
 
         if (boption("crb.saddlepoint.add-supremizer"))
         {
             basis_name = ( boost::format( "u_pr_%1%.1_param") %index  ).str();
             name = basis_name + mu_str;
-            e->step(0)->add( name, u_vec[index0+1] );
+            e->step(0)->add( name, unwrap_ptr( u_vec[index0+1] ) );
         }
     }
     e->save();
