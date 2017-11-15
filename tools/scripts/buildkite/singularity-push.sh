@@ -1,51 +1,29 @@
 #!/bin/bash
+# Script to push generated singularity images into the laboratory
+# gitlab server. Gitlab LFS is used to store images (binaries)
+# Script arguments must be a list of docker container names, for example:
+# ./singularity-push.sh feelpp/feelpp-crb:latest feelpp/feelpp-toolboxes:latest
+
+containers="$@"
 
 set -euo pipefail
 
 source $(dirname $0)/common.sh
 
-ROOT_DIR=`pwd`
-IMAGES_ROOT=./docker/singularity/images
-REPO_NAME=feelpp-singularity-images.git
-REPO=git@gitlab.math.unistra.fr:feelpp/feelpp-singularity-images.git
-REPO_MAX_IMAGES=20 #( x10 GB )
+BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
+FEELPP_DOCKER_TAG=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 
-# Remove old local images (NOT LFS).
-if [ ! -d ${IMAGES_ROOT} ]; then
-    echo "./docker.git/singularity/images does not exist"
-    pwd
-    exit 1
-fi
-
-# Clone/update gitlab repository.
-echo "-- Clone Feel++ singularity images repository"
-if [ -d ${REPO_NAME} ]; then
-    cd ${REPO_NAME}
-    git lfs pull
-    cd ${ROOT_DIR}
+echo '--- clone/pull feelpp/singularity'
+if [ -d singularity ]; then
+    cd singularity; git pull
 else
-    git lfs clone --depth=1 ${REPO} ${REPO_NAME}
+    git clone --depth=1 https://github.com/feelpp/singularity;
+    cd singularity
 fi
 
-# Copy (overide) generated images in the repository.
-echo "-- Prepare Feel++ singularity images"
-find ${IMAGES_ROOT} -name "*.img" \
--exec echo "- image:" {} \; \
--exec cp -r {} ${REPO_NAME} \;
-
-cd ${REPO_NAME}
-echo "-- Push Feel++ singularity images"
-git add *.img
-git commit -am "[buildkite] Deploy new singularity images"
-git lfs push origin master
-git push
-cd ${ROOT_DIR}
-
-echo "-- Remove temporary Feel++ singularity images"
-find ${IMAGES_ROOT} -name "*.img" -exec  rm -r {} \;
-
-if [ `ls -l ${REPO_NAME}/*.img | wc -l` -ge ${REPO_MAX_IMAGES} ]; then
-    echo "WARNING: Maximum images limit reached ! => ${REPO}"
-    echo "INFO: You should remove some images or increase this 
-    REPO_MAX_IMAGES number in the script."
-fi
+for cont in ${containers}
+do
+    echo "--- generate singularity image for ${cont} docker container using tag: ${FEELPP_DOCKER_TAG}"
+    ./push_image_ftp_server.sh "${cont}:${FEELPP_DOCKER_TAG}"
+    #./push_image_lfs_server.sh "${cont}:${FEELPP_DOCKER_TAG}"
+done

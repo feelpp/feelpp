@@ -72,10 +72,19 @@ struct InitializeRbSubSpace
     {
         typedef typename T::first_type key_type;
         typedef typename T::second_type::element_type rbsubspace_type;
-        auto rbSubSpace = boost::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
-        rbSubSpace->setModel( M_rbSpaceType.model(), false );
-        rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
-        x = std::make_pair(key_type(), rbSubSpace);
+        if ( x.second && x.first == key_type() )
+        {
+            auto rbSubSpace = x.second;
+            rbSubSpace->setModel( M_rbSpaceType.model(), false );
+            rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
+        }
+        else
+        {
+            auto rbSubSpace = boost::shared_ptr<rbsubspace_type>( new rbsubspace_type( M_rbSpaceType.worldComm() ) );
+            rbSubSpace->setModel( M_rbSpaceType.model(), false );
+            rbSubSpace->setFunctionSpace( M_rbSpaceType.template subFeFunctionSpace<key_type::value>() );
+            x = std::make_pair(key_type(), rbSubSpace);
+        }
     }
 private :
     RbSpaceType const& M_rbSpaceType;
@@ -186,6 +195,24 @@ struct ClearBasisElementsRbSubSpace
         }
 };
 
+
+struct SetDimensionRbSubSpace
+{
+    SetDimensionRbSubSpace( int dim )
+        :
+        M_dim( dim )
+        {}
+
+    template <typename T>
+    void operator()( T & x ) const
+        {
+            x.second->primalRB().resize( M_dim );
+            x.second->dualRB().resize( M_dim );
+        }
+
+    int M_dim;
+};
+
 }
 
 /**
@@ -223,7 +250,7 @@ public :
     typedef typename fespace_type /*model_type*/::element_type space_element_type;
     typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
 
-    typedef std::vector< space_element_type > rb_basis_type;
+    typedef std::vector< space_element_ptrtype > rb_basis_type;
     typedef boost::shared_ptr<rb_basis_type> rb_basis_ptrtype;
 
     typedef ReducedBasisSpace<ModelType,FeSpaceType> this_type;
@@ -330,7 +357,7 @@ public :
 #else
     ReducedBasisSpace( WorldComm const& worldcomm = Environment::worldComm() )
         :
-        M_dimension( 0 )
+        super( worldcomm )
         {
             this->init( mpl::bool_<fespace_type::is_composite>() );
         }
@@ -338,7 +365,6 @@ public :
     ReducedBasisSpace( model_ptrtype const& model, WorldComm const& worldcomm = Environment::worldComm() )
         :
         super( worldcomm ),
-        M_dimension( 0 ),
         M_mesh(),
         M_model( model )
         {
@@ -382,7 +408,6 @@ public :
     ReducedBasisSpace( ReducedBasisSpace const& rb )
         :
         super ( rb ),
-        M_dimension( rb.M_dimension ),
         M_primal_rb_basis( rb.M_primal_rb_basis ),
         M_dual_rb_basis( rb.M_dual_rb_basis ),
         M_mesh( rb.M_mesh )
@@ -391,7 +416,6 @@ public :
     ReducedBasisSpace( this_ptrtype const& rb )
         :
         super ( *rb ),
-        M_dimension( rb->M_dimension ),
         M_primal_rb_basis( rb->M_primal_rb_basis ),
         M_dual_rb_basis( rb->M_dual_rb_basis ),
         M_mesh( rb->M_mesh )
@@ -411,7 +435,8 @@ public :
         {
             tic();
             // WorldComm const& worldcomm = (M_model)? M_model->worldComm() : Environment::worldComm();
-            M_dimension = ptree.template get<size_type>( "dimension" );
+            int rbdim = ptree.template get<size_type>( "dimension" );
+            this->setDimension( rbdim );
             WorldComm const& worldcomm = this->worldComm();
             std::string meshFilename = ptree.template get<std::string>( "mesh-filename" );
             if ( !dbDir.empty() && !fs::path(meshFilename).is_absolute() )
@@ -448,19 +473,21 @@ public :
      */
     void addPrimalBasisElement( space_element_type const & e )
         {
-            M_primal_rb_basis.push_back( e );
-            this->addPrimalBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_primal_rb_basis.size() );
+            space_element_ptrtype basis = M_feSpace->elementPtr();
+            *basis = e;
+            this->addPrimalBasisElement( basis );
         }
 
     void addPrimalBasisElement( space_element_ptrtype const & e )
         {
-            this->addPrimalBasisElement( *e );
+            M_primal_rb_basis.push_back( e );
+            this->addPrimalBasisElementInSubSpace( *e, mpl::bool_<fespace_type::is_composite>() );
+
         }
     void addPrimalBasisElement( vector_ptrtype const & vec )
         {
-            space_element_type e = M_feSpace->element();
-            e = *vec;
+            space_element_ptrtype e = M_feSpace->elementPtr();
+            *e = *vec;
             this->addPrimalBasisElement( e );
         }
 
@@ -468,23 +495,25 @@ public :
         {
             int size = M_primal_rb_basis.size();
             CHECK( index < size ) << "bad index value, size of the RB "<<size<<" and index given : "<<index;
-            return M_primal_rb_basis[index];
+            return *M_primal_rb_basis[index];
         }
     void addDualBasisElement( space_element_type const & e )
         {
-            M_dual_rb_basis.push_back( e );
-            this->addDualBasisElementInSubSpace( e, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_dual_rb_basis.size() );
+            space_element_ptrtype basis = M_feSpace->elementPtr();
+            *basis = e;
+            this->addDualBasisElement( basis );
+
         }
 
     void addDualBasisElement( space_element_ptrtype const & e )
         {
-            this->addDualBasisElement( *e );
+            M_dual_rb_basis.push_back( e );
+            this->addDualBasisElementInSubSpace( *e, mpl::bool_<fespace_type::is_composite>() );
         }
     void addDualBasisElement( vector_ptrtype const & vec )
         {
-            space_element_type e = M_feSpace->element();
-            e = *vec;
+            space_element_ptrtype e = M_feSpace->elementPtr();
+            *e = *vec;
             this->addDualBasisElement( e );
         }
 
@@ -493,7 +522,7 @@ public :
         {
             int size = M_dual_rb_basis.size();
             CHECK( index < size ) << "bad index value, size of the RB "<<size<<" and index given : "<<index;
-            return M_dual_rb_basis[index];
+            return *M_dual_rb_basis[index];
         }
 
     void deleteLastPrimalBasisElements( int number )
@@ -505,7 +534,6 @@ public :
                 M_primal_rb_basis.pop_back();
             }
             this->deleteLastPrimalBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_primal_rb_basis.size() );
         }
 
     void deleteLastDualBasisElements( int number )
@@ -517,7 +545,6 @@ public :
                 M_dual_rb_basis.pop_back();
             }
             this->deleteLastDualBasisElementsInSubSpace( number, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_dual_rb_basis.size() );
         }
 
     /*
@@ -557,13 +584,11 @@ public :
         {
             M_primal_rb_basis = rb;
             this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_primal_rb_basis.size() );
         }
     void setDualBasis( rb_basis_type const& rb)
         {
             M_dual_rb_basis = rb;
             this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_dual_rb_basis.size() );
         }
 
     /**
@@ -572,7 +597,6 @@ public :
     void updatePrimalBasisForUse()
         {
             this->setPrimalBasisInSubSpace( M_primal_rb_basis, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_primal_rb_basis.size() );
         }
     /**
      * update dual basis in subrbspace (do nothing if not composite)
@@ -580,7 +604,6 @@ public :
     void updateDualBasisForUse()
         {
             this->setDualBasisInSubSpace( M_dual_rb_basis, mpl::bool_<fespace_type::is_composite>() );
-            M_dimension = std::max( M_dimension, M_dual_rb_basis.size() );
         }
 
     //basis of RB space are elements of FEM function space
@@ -588,7 +611,7 @@ public :
     //idx is the global dof ( fem )
     double basisValue(int N, int idx) const
         {
-            return M_primal_rb_basis[N].globalValue( idx );
+            return M_primal_rb_basis[N]->globalValue( idx );
         }
 
     /*
@@ -601,20 +624,28 @@ public :
     /*
      * size of the reduced basis space
      */
-    int size() const
+    size_type size() const
         {
-            return M_dimension;
+            return this->dimension();
         }
 
     /*
      * dimension of the reduced basis space
      */
-    size_type dimension() const { return M_dimension; }
+    size_type dimension() const
+        {
+            return M_primal_rb_basis.size();
+        }
 
     /*
      * set dimension of the reduced basis space
      */
-    void setDimension( size_type dim ) { M_dimension = dim; }
+    void setDimension( size_type dim )
+        {
+            M_primal_rb_basis.resize( dim );
+            M_dual_rb_basis.resize( dim );
+            this->setDimensionInSubSpace( dim, mpl::bool_<fespace_type::is_composite>() );
+        }
 
     /*
      * visualize basis of rb space
@@ -1864,7 +1895,7 @@ private :
             fusion::for_each( M_rbfunctionspaces,
                               Feel::detail::ClearBasisElementsRbSubSpace<0>() );
             for (auto const& thebasis : rb )
-                this->addPrimalBasisElementInSubSpace( thebasis, mpl::true_() );
+                this->addPrimalBasisElementInSubSpace( *thebasis, mpl::true_() );
         }
 
     void addDualBasisElementInSubSpace( space_element_type const & e, mpl::false_ ) {}
@@ -1885,11 +1916,17 @@ private :
             fusion::for_each( M_rbfunctionspaces,
                               Feel::detail::ClearBasisElementsRbSubSpace<1>() );
             for (auto const& thebasis : rb )
-                this->addDualBasisElementInSubSpace( thebasis, mpl::true_() );
+                this->addDualBasisElementInSubSpace( *thebasis, mpl::true_() );
+        }
+    void setDimensionInSubSpace( size_type rbdim, mpl::false_ ) {}
+    void setDimensionInSubSpace( size_type rbdim, mpl::true_ )
+        {
+            fusion::for_each( M_rbfunctionspaces,
+                              Feel::detail::SetDimensionRbSubSpace( rbdim ) );
         }
 
 private :
-    size_type M_dimension;
+
     fespace_ptrtype M_feSpace;
     rbfunctionspace_vector_type M_rbfunctionspaces;
     rb_basis_type M_primal_rb_basis;
