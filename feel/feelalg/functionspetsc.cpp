@@ -202,6 +202,7 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
         /* converged */
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
     case KSP_CONVERGED_RTOL_NORMAL     : return "CONVERGED_RTOL_NORMAL";
+    case KSP_CONVERGED_ATOL_NORMAL     : return "CONVERGED_ATOL_NORMAL";
 #endif
     case KSP_CONVERGED_RTOL            : return "CONVERGED_RTOL";
     case KSP_CONVERGED_ATOL            : return "CONVERGED_ATOL";
@@ -210,9 +211,6 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
     case KSP_CONVERGED_STEP_LENGTH     : return "CONVERGED_STEP_LENGTH";
     case KSP_CONVERGED_HAPPY_BREAKDOWN : return "CONVERGED_HAPPY_BREAKDOWN";
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
-    case KSP_CONVERGED_ATOL_NORMAL     : return "CONVERGED_ATOL_NORMAL";
-#endif
 
         /* diverged */
     case KSP_DIVERGED_NULL           : return "DIVERGED_NULL";
@@ -224,9 +222,13 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_DIVERGED_INDEFINITE_PC  : return "DIVERGED_INDEFINITE_PC";
 #if PETSC_VERSION_LESS_THAN(3,4,0)
     case KSP_DIVERGED_NAN            : return "DIVERGED_NAN";
+#else
+    case KSP_DIVERGED_NANORINF       : return "DIVERGED_NANORINF";
 #endif
     case KSP_DIVERGED_INDEFINITE_MAT : return "DIVERGED_INDEFINITE_MAT";
-
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 6, 0 )
+    case KSP_DIVERGED_PCSETUP_FAILED : return "DIVERGED_PCSETUP_FAILED";
+#endif
     case KSP_CONVERGED_ITERATING : return "CONVERGED_ITERATING";
 
     default: return "INDEFINE_KSP_REASON";

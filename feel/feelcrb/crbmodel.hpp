@@ -1238,7 +1238,7 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim( std::vector<element_type> const& wn )
+    void updateRbInDeim( typename rbfunctionspace_type::rb_basis_type const& wn )
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();

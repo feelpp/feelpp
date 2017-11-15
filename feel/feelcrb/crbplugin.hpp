@@ -213,9 +213,7 @@ public:
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
-                *u = rbPrimal[k];
-                res[k] = u;
+                res[k] = rbPrimal[k];
             }
             return res;
         }
@@ -227,9 +225,7 @@ public:
             std::vector<boost::shared_ptr<Vector<double>>> res( nBasis );
             for ( int k=0;k<nBasis;++k )
             {
-                auto u = M_crb->model()->rBFunctionSpace()->functionSpace()->elementPtr();
-                *u = rbDual[k];
-                res[k] = u;
+                res[k] = rbDual[k];;
             }
             return res;
         }
