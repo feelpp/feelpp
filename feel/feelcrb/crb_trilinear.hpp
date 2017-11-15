@@ -131,7 +131,7 @@ public:
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef Eigen::VectorXd vectorN_type;

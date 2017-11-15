@@ -651,7 +651,7 @@ public :
     space_dirichletlm_velocity_ptrtype const& XhDirichletLM() const { return M_XhDirichletLM; }
     //___________________________________________________________________________________//
     // impose mean pressure with P0 Lagrange multiplier
-    space_meanpressurelm_ptrtype const& XhMeanPressureLM() const { return M_XhMeanPressureLM; }
+    space_meanpressurelm_ptrtype const& XhMeanPressureLM( int k ) const { return M_XhMeanPressureLM[k]; }
     //___________________________________________________________________________________//
     // fluid inlet bc
     bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
@@ -880,7 +880,7 @@ protected:
     space_fluid_ptrtype M_Xh;
     element_fluid_ptrtype M_Solution;
     // lagrange multiplier space for mean pressure
-    space_meanpressurelm_ptrtype M_XhMeanPressureLM;
+    std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
     trace_mesh_ptrtype M_meshDirichletLM;
     space_dirichletlm_velocity_ptrtype M_XhDirichletLM;
@@ -966,9 +966,12 @@ protected:
     bool M_doStabConvectionEnergy; // see Nobile thesis
     //----------------------------------------------------
     bool M_definePressureCst;
+    bool M_definePressureCstOnlyOneZoneAppliedOnWholeMesh;
+    std::vector<std::set<std::string> > M_definePressureCstMarkers;
+    std::vector<range_elements_type> M_definePressureCstMeshRanges;
     std::string M_definePressureCstMethod;
     double M_definePressureCstPenalisationBeta;
-    vector_ptrtype M_definePressureCstAlgebraicOperatorMeanPressure;
+    std::vector<std::pair<vector_ptrtype,std::set<size_type> > > M_definePressureCstAlgebraicOperatorMeanPressure;
     //----------------------------------------------------
     // fluid inlet bc
     std::vector< std::tuple<std::string,std::string, scalar_field_expression<2> > > M_fluidInletDesc; // (marker,type,vmax expr)
