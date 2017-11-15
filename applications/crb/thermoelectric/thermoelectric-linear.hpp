@@ -138,6 +138,8 @@ public:
 
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using mat_type = ModelMaterial;
+    using map_mat_type = std::map<std::string, mat_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
@@ -150,6 +152,7 @@ public:
 private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
+    map_mat_type M_materials;
     std::vector< std::vector< element_ptrtype > > M_initialGuess;
 
     element_ptrtype M_VT;
@@ -173,6 +176,7 @@ public:
     ThermoElectric();
     ThermoElectric( mesh_ptrtype mesh );
 
+    int indexOfMat(std::string mat ) const { return std::distance(M_materials.begin(),M_materials.find(mat)); }
     // Size of the decomposition
     int Qa() const;
     int Nl() const;
@@ -218,7 +222,7 @@ public:
 
     // Output
     value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
 
     // BiotSavart API
     int mMaxJoule();
