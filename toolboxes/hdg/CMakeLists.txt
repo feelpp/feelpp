@@ -34,9 +34,9 @@ foreach(D 3)
   endforeach()
 endforeach()
 
-foreach(D 2 3)
+foreach(D 3)
   foreach(P  RANGE 0 4 0) #3 
-	foreach (N RANGE 1 2 1)
+	foreach (N 1)
 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
 							SRCS mixedelasticity_main.cpp 
 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
