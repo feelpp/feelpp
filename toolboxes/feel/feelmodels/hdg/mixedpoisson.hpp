@@ -238,6 +238,7 @@ public:
     virtual void assembleAll();
 	virtual void assembleCstPart();
     virtual void assembleNonCstPart();
+    void setFZero();
     void copyCstPart();
 
     void assembleRHS();
@@ -251,11 +252,12 @@ public:
     void assembleRhsBoundaryCond();
     void assembleDirichlet( std::string marker);
     void assembleNeumann( std::string marker);
+    template<typename ExprT> void assembleRobin( Expr<ExprT> expr1, std::string marker);
     template<typename ExprT> void assembleRhsDirichlet( Expr<ExprT> expr, std::string marker);
     template<typename ExprT> void assembleRhsNeumann( Expr<ExprT> expr, std::string marker);
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
-    // u.n + g1.p = g2
-    template<typename ExprT> void assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker);
+    template<typename ExprT> void assembleRhsRobin( Expr<ExprT> expr2, std::string marker);
+
     void assembleIBC(int i, std::string marker = "");
 	void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
@@ -584,11 +586,20 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
+void MixedPoisson<Dim, Order, G_Order, E_Order>::setFZero()
 {
     M_F->zero();
+}
 
-#ifndef USE_SAME_MAT
+template<int Dim, int Order, int G_Order, int E_Order>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::copyCstPart()
+{
+    this->setFZero();
+
+#ifdef USE_SAME_MAT
+    M_A_cst->zero();
+    this->assembleCstPart();
+#else
 	M_A_cst->close();
     //M_A->zero();
     M_A->close();
@@ -893,25 +904,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
             }
         }
 
-        // Need to be moved or at least check if the expression depend on t
-        itType = mapField.find( "Robin" );
-        if ( itType != mapField.end() )
-        {
-            for ( auto const& exAtMarker : (*itType).second )
-            {
-                std::string marker = exAtMarker.marker();
-                auto g1 = expr<expr_order>(exAtMarker.expression1());
-                auto g2 = expr<expr_order>(exAtMarker.expression2());
-
-				if ( !this->isStationary() )
-                {
-                    g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-                    g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-                }
-
-                this->assembleRobin(g1, g2, marker);
-            }
-        }
+        // Robin depends on expression, so it is in Rhs
     }
 
     for ( int i = 0; i < M_integralCondition; i++ )
@@ -1018,7 +1011,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                 }
             }
         }
-		/*
+
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
@@ -1034,10 +1027,11 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                     g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 }
 
-                this->assembleRhsRobin(g1, g2, marker);
+                // both depend on expression
+                this->assembleRobin(g1, marker);
+                this->assembleRhsRobin(g2, marker);
             }
         }
-		*/
 
     }
 
@@ -1108,50 +1102,17 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
                           _expr=id(l)*expr);
 }
 
-/*
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
-void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
+void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> expr2, std::string marker)
 {
-#ifdef USE_SAME_MAT
-    auto bbf = blockform2( *M_ps, M_A_cst);
-#else
-    auto bbf = blockform2( *M_ps, M_A);
-#endif
+    Feel::cout << "assemble RHS Robin" << std::endl;
     auto blf = blockform1( *M_ps, M_F );
-    auto u = M_Vh->element( "u" );
-    auto p = M_Wh->element( "p" );
-    auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
-    // stabilisation parameter
-    auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
-
-    // <j.n,mu>_Gamma_R
-    bbf( 2_c, 0_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=( id(l)*(trans(idt(u))*N()) ));
-    // <tau p, mu>_Gamma_R
-    bbf( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
-    // <-tau phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
-    // <g_R^1 phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=expr1*idt(phat) * id(l) );
-    // <g_R^2,mu>_Gamma_R
+    // <g_R2,mu>_Gamma_R
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr2);
 }
-*/
 
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::string markerOpt, double intjn )
@@ -1285,11 +1246,16 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
 void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, std::string marker)
 {
+    Feel::cout << "assemble Robin" << std::endl;
+#ifdef USE_SAME_MAT
     auto bbf = blockform2( *M_ps, M_A_cst);
+#else
+    auto bbf = blockform2( *M_ps, M_A);
+#endif
 
-    auto blf = blockform1( *M_ps, M_F );
+    // auto blf = blockform1( *M_ps, M_F );
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
@@ -1318,9 +1284,6 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Ex
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
-    // <g_R^2,mu>_Gamma_R
-    blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
-                          _expr=id(l)*expr2);
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
