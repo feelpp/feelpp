@@ -2663,6 +2663,40 @@ public:
 
             return *this;
         }
+
+        using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
+        using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
+        
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
+            {
+                if ( this->mesh()  != _e.mesh() )
+                    throw std::logic_error("Invalid mesh, they should be the same");
+                for ( auto const& rangeElt : elements( this->mesh() ) )
+                {
+                    auto const& meshElt = boost::unwrap_ref( rangeElt );
+                    size_type e = meshElt.id();
+                    auto p0_eid = _e.functionSpace()->dof()->localDof( e ).first->second.index();
+                    auto _v = _e.operator[](p0_eid);
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    {
+                        size_type index = ldof.second.index();
+                        super::operator[]( index ) += sign*_v;
+                    }
+                }
+                return *this;
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator+=( elt_t const& _e )
+            {
+                return plusAssign( _e );
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator-=( elt_t const& _e )
+            {
+                return plusAssign( _e, -1. );
+            }
+        
         Element& operator-=( Element const& _e )
         {
             for ( size_type i=0; i < _e.nLocalDof(); ++i )
@@ -4147,22 +4181,66 @@ public:
                 m.printMatlab( fname );
             }
 
+        //!
+        //! compute the element wise mean value of an element
+        //!
+        p0dh_element_t ewiseMean( boost::shared_ptr<p0dh_t> & P0dh ) const
+            {
+                p0dh_element_t v = P0dh->element();
+                v.zero();
+                typename basis_type::points_type p(mesh_type::nDim,1);
+                auto basispc = this->functionSpace()->basis()->preCompute( this->functionSpace()->basis(), p );
+                auto gmpc = this->mesh()->gm()->preCompute( this->mesh()->gm(), p );
+                auto range_elts = elements( this->mesh() );
+                auto elt_beg = begin( range_elts );
+                auto gmc = this->mesh()->gm()->template context<vm::JACOBIAN>( boost::unwrap_ref(*elt_beg), gmpc );
+                for ( auto const& rangeElt : elements( this->mesh() ) )
+                {
+                    auto const& meshElt = boost::unwrap_ref( rangeElt );
+                    size_type e = meshElt.id();
+                    gmc->update( meshElt );
+                    auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    {
+                        size_type index = ldof.second.index();
+                        v.operator[](p0_eid) += basispc->firstMoment(ldof.first.localDof())*super::operator[]( index );
+                    }
+                    v.operator[](p0_eid) *= gmc->J(0)/meshElt.measure();
+                }
+                return v;
+            }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                          on,
                                          tag,
                                          ( required
-                                           ( range, *  )
                                            ( expr,   * )
                                              ) // 4. one required parameter, and
 
                                          ( optional
+                                           ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
                 return onImpl( range, expr, prefix, geomap, accumulate, verbose );
+            }
+
+        BOOST_PARAMETER_MEMBER_FUNCTION( (void),
+                                         plus,
+                                         tag,
+                                         ( required
+                                           ( expr,   * )
+                                           ) // 4. one required parameter, and
+
+                                         ( optional
+                                           ( range, *, elements(this->mesh())  )
+                                           ( prefix,   ( std::string ), "" )
+                                           ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
+            {
+                return onImpl( range, expr, prefix, geomap, true, verbose );
             }
 
 

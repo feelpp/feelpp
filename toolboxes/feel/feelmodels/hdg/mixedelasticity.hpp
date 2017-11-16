@@ -685,12 +685,14 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::assembleMatrixIBC( int i , s
     
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(id(v)*N()) );
+    // bbf( 0_c, 3_c, 0, i) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh, marker), _expr=-trans(idt(uI))*(normal(v)) );
     
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= tau_constant * trans(idt(uI)) * pow(idv(H),M_tau_order)*id(w) );
     
     // <sigma.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= inner(idt(v)*N(),id(nu)) );
+    // bbf( 3_c, 0_c, i, 0 ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr= inner(normalt(v),id(nu)) );
      
 
     // <tau u, m>_Gamma_I
@@ -888,18 +890,26 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 
 		bbf( 0_c, 0_c ) +=  integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c1*inner(idt(sigma),id(v))) );
     	bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*trace(idt(sigma))*trace(id(v))) );
+    	// bbf( 0_c, 0_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(c2*tracet(sigma)*trace(v)) );
     }
 
 
     bbf( 0_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),_expr=(trans(idt(u))*div(v)));
 
+	
     bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 							    _expr=-( trans(idt(uhat))*leftface(id(v)*N())+
 			    						 trans(idt(uhat))*rightface(id(v)*N())) );
     bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
 		    					_expr=-trans(idt(uhat))*(id(v)*N()) );
-
-    bbf( 1_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
+	/*
+    bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
+							    _expr=-( trans(idt(uhat))*leftface(normal(v))+
+			    						 trans(idt(uhat))*rightface(normal(v))) );
+    bbf( 0_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
+		    					_expr=-trans(idt(uhat))*(normal(v)) );
+   	*/ 
+	bbf( 1_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
 								_expr=(trans(id(w))*divt(sigma)));
 
     // ( d^2u/dt^2, w)_Omega  [only if it is not stationary]
@@ -924,18 +934,29 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
     bbf( 1_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=boundaryfaces(M_mesh),
 		    _expr=-(tau_constant * pow(idv(H),M_tau_order)*trans(idt(u))*id(w)));
 
+	/*
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 		    _expr=tau_constant *
 		    ( leftfacet(trans(idt(uhat)))*leftface( pow(idv(H),M_tau_order)*id(w))+
 		      rightfacet(trans(idt(uhat)))*rightface( pow(idv(H),M_tau_order)*id(w) )));
+    */
+	bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
+		    _expr=tau_constant *
+		    ( trans(idt(uhat))* ( leftface( pow(idv(H),M_tau_order)*id(w))+
+		      					  rightface( pow(idv(H),M_tau_order)*id(w)) )) );
 
     bbf( 1_c, 2_c) += integrate(_quad=_Q<expr_order>(),_range=gammaMinusIntegral,
 		    _expr=tau_constant * trans(idt(uhat)) * pow(idv(H),M_tau_order)*id(w) );
 
-
+	
     bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
 		    _expr=( trans(id(m))*(leftfacet(idt(sigma)*N())+
 				    rightfacet(idt(sigma)*N())) ) );
+    /*
+	bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=internalfaces(M_mesh),
+		    _expr=( trans(id(m))*(leftfacet(normalt(sigma))+
+				    			  rightfacet(normalt(sigma))) ) );
+	*/
 
 
     // BC
@@ -976,8 +997,10 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    {
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
-			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+			     bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+			    // bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+				//	    _expr=( trans(id(m))*(normalt(sigma)) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
@@ -993,8 +1016,10 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    {
 			    std::string marker = exAtMarker.marker();
 		    	cout << "Neumann on " << marker << std::endl;
-			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+			     bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+			    //bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+				//	    _expr=( trans(id(m))*(normalt(sigma)) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
@@ -1012,6 +1037,8 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
 		    	cout << "Neumann on " << marker << std::endl;
 			    bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
 					    _expr=( trans(id(m))*(idt(sigma)*N()) ));
+			    // bbf( 2_c, 0_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker ),
+				//	    _expr=( trans(id(m))*(normalt(sigma)) ));
 
 			    bbf( 2_c, 1_c) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
 					    _expr=-tau_constant * trans(id(m)) * ( pow(idv(H),M_tau_order)*idt(u) ) );
