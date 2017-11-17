@@ -54,10 +54,10 @@ ThermoElectric::ThermoElectric( mesh_ptrtype mesh )
 int ThermoElectric::Qa() const
 {
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
-    int dirSize = bc["potential"]["Dirichlet"].size();
-    int robSize = bc["temperature"]["Robin"].size();
-    return 2*materials.size() + dirSize + robSize;
+    int dirVSize = bc["potential"]["Dirichlet"].size();
+    int dirTSize = bc["temperature"]["Dirichlet"].size();
+    int robTSize = bc["temperature"]["Robin"].size();
+    return 2*M_materials.size() + dirVSize + dirTSize + robTSize;
 }
 
 int ThermoElectric::mMaxA( int q ) const
@@ -73,13 +73,16 @@ int ThermoElectric::Nl() const
 int ThermoElectric::Ql( int l) const
 {
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
-    int sourceSize = materials.size();
-    int dirSize = bc["potential"]["Dirichlet"].size();
-    int robSize = bc["temperature"]["Robin"].size();
+    int jouleSize = M_materials.size();
+    int sourceVSize = bc["potential"]["SourceTerm"].size();
+    int sourceTSize = bc["temperature"]["SourceTerm"].size();
+    int dirVSize = bc["potential"]["Dirichlet"].size();
+    int neuVSize = bc["potential"]["Neumann"].size();
+    int dirTSize = bc["temperature"]["Dirichlet"].size();
+    int robTSize = bc["temperature"]["Robin"].size();
     switch(l) {
     case 0:
-        return sourceSize + dirSize + robSize;
+        return jouleSize + sourceVSize + sourceTSize + dirVSize + neuVSize + dirTSize + robTSize;
     case 1:
         return 1;
     case 2:
@@ -107,15 +110,27 @@ int ThermoElectric::mMaxL( int l, int q ) const
 int ThermoElectric::mMaxCompliant(int q ) const
 {
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
-    int sourceSize = materials.size();
-    int dirSize = bc["potential"]["Dirichlet"].size();
-    int robSize = bc["temperature"]["Robin"].size();
-    if( q < sourceSize )
+    int jouleSize = M_materials.size();
+    int sourceVSize = bc["potential"]["SourceTerm"].size();
+    int sourceTSize = bc["temperature"]["SourceTerm"].size();
+    int dirVSize = bc["potential"]["Dirichlet"].size();
+    int neuVSize = bc["potential"]["Neumann"].size();
+    int dirTSize = bc["temperature"]["Dirichlet"].size();
+    int robTSize = bc["temperature"]["Robin"].size();
+    int index = 0;
+    if( q < (index += jouleSize) )
         return this->scalarDiscontinuousEim()[q]->mMax();
-    else if( q < sourceSize + dirSize )
+    else if( q < (index += sourceVSize) )
         return 1;
-    else if( q < sourceSize + dirSize + robSize )
+    else if( q < (index += sourceTSize) )
+        return 1;
+    else if( q < (index += dirVSize)  )
+        return 1;
+    else if( q < (index += neuVSize)  )
+        return 1;
+    else if( q < (index += dirTSize)  )
+        return 1;
+    else if( q < (index += robTSize)  )
         return 1;
     else
         return 0;
@@ -229,8 +244,8 @@ void ThermoElectric::initModel()
     if( !M_mesh )
         M_mesh = loadMesh( new mesh_type );
     std::vector<std::string> range;
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
-    for( auto const& mat : materials )
+    M_materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
+    for( auto const& mat : M_materials )
         range.push_back(mat.first);
 
     auto domain = markedelements(M_mesh, range);
@@ -267,7 +282,7 @@ void ThermoElectric::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         auto sigma = cst_ref(M_mu.parameterNamed(mat.second.getString("sigmaKey")));
         auto eim_joule = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
@@ -334,12 +349,11 @@ void ThermoElectric::decomposition()
     auto phiT = phi.template element<1>();
 
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
 
     /************** Left hand side **************/
     int idx = 0;
     // electro
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         auto a0 = form2(_test=Xh, _trial=Xh);
         a0 = integrate( markedelements(M_mesh, mat.first),
@@ -347,7 +361,7 @@ void ThermoElectric::decomposition()
         M_Aqm[idx++][0] = a0.matrixPtr();
     }
     // thermo
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         auto a1 = form2(_test=Xh, _trial=Xh);
         a1 = integrate( markedelements(M_mesh, mat.first),
@@ -364,6 +378,15 @@ void ThermoElectric::decomposition()
                           -inner(grad(phiV)*N(),idt(V)) );
         M_Aqm[idx++][0] = aVD.matrixPtr();
     }
+    for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+    {
+        auto aTD = form2(_test=Xh, _trial=Xh);
+        aTD += integrate( markedfaces(M_mesh, exAtM.marker() ),
+                          M_penalDir/hFace()*inner(idt(T),id(phiT))
+                          -inner(gradt(T)*N(),id(phiT))
+                          -inner(grad(phiT)*N(),idt(T)) );
+        M_Aqm[idx++][0] = aTD.matrixPtr();
+    }
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
         auto aTR = form2(_test=Xh, _trial=Xh);
@@ -375,7 +398,7 @@ void ThermoElectric::decomposition()
     /************** Right hand side **************/
     int output = 0;
     idx = 0;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         auto eimJoule = this->scalarDiscontinuousEim()[idx];
         for( int m = 0; m < eimJoule->mMax(); ++m )
@@ -387,6 +410,22 @@ void ThermoElectric::decomposition()
         }
         idx++;
     }
+    for( auto const& exAtM : bc["potential"]["SourceTerm"] )
+    {
+        auto e = expr(exAtM.expression2());
+        auto fVST = form1(_test=Xh);
+        fVST = integrate( markedelements(M_mesh, exAtM.marker() ),
+                          e*id(phiV) );
+        M_Fqm[output][idx++][0] = fVST.vectorPtr();
+    }
+    for( auto const& exAtM : bc["temperature"]["SourceTerm"] )
+    {
+        auto e = expr(exAtM.expression2());
+        auto fTST = form1(_test=Xh);
+        fTST = integrate( markedelements(M_mesh, exAtM.marker() ),
+                          e*id(phiT) );
+        M_Fqm[output][idx++][0] = fTST.vectorPtr();
+    }
 
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
@@ -394,6 +433,20 @@ void ThermoElectric::decomposition()
         fVD = integrate( markedfaces(M_mesh, exAtM.marker() ),
                          M_penalDir/hFace()*id(phiV) -  grad(phiV)*N() );
         M_Fqm[output][idx++][0] = fVD.vectorPtr();
+    }
+    for( auto const& exAtM : bc["potential"]["Neumann"] )
+    {
+        auto fVN = form1(_test=Xh);
+        fVN = integrate( markedfaces(M_mesh, exAtM.marker() ),
+                         id(phiV) );
+        M_Fqm[output][idx++][0] = fVN.vectorPtr();
+    }
+    for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+    {
+        auto fTD = form1(_test=Xh);
+        fTD = integrate( markedfaces(M_mesh, exAtM.marker() ),
+                         M_penalDir/hFace()*id(phiT) -  grad(phiT)*N() );
+        M_Fqm[output][idx++][0] = fTD.vectorPtr();
     }
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
@@ -406,7 +459,7 @@ void ThermoElectric::decomposition()
 
     // Average temperature output
     auto fAvgT = form1(_test=Xh);
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         double area = integrate( markedelements(M_mesh, mat.first), cst(1.0) ).evaluate()(0,0) ;
         fAvgT += integrate( markedelements(M_mesh, mat.first ),
@@ -447,6 +500,7 @@ ThermoElectric::computeAffineDecomposition()
 std::vector<std::vector<ThermoElectric::sparse_matrix_ptrtype> >
 ThermoElectric::computeLinearDecompositionA()
 {
+    Feel::cout << "computeLinearDecompositionA()" << std::endl;
     return this->M_Aqm;//M_linearAqm;
 }
 
@@ -514,9 +568,8 @@ void ThermoElectric::fillBetaQm( parameter_type const& mu, std::vector<vectorN_t
     //     Feel::cout << "betas for mu:\n" << mu << " =\n" << betaEim << std::endl;
 
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
     double sigmaMax = 0;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         double sigma = mu.parameterNamed(mat.second.getString("sigmaKey"));
         if( sigma > sigmaMax )
@@ -525,15 +578,20 @@ void ThermoElectric::fillBetaQm( parameter_type const& mu, std::vector<vectorN_t
 
     // Left Hand Side
     int idx = 0;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
         M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("sigmaKey"))/sigmaMax;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
         M_betaAqm[idx++][0] = mu.parameterNamed(mat.second.getString("kKey"));
 
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = mu.parameterNamed(materials[exAtM.material()].getString("sigmaKey"));
+        auto sigma = mu.parameterNamed(M_materials[exAtM.material()].getString("sigmaKey"));
         M_betaAqm[idx++][0] = sigma/sigmaMax;
+    }
+    for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+    {
+        auto k = mu.parameterNamed(M_materials[exAtM.material()].getString("kKey"));
+        M_betaAqm[idx++][0] = k;
     }
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
@@ -548,7 +606,7 @@ void ThermoElectric::fillBetaQm( parameter_type const& mu, std::vector<vectorN_t
     // Right Hand Side
     int output = 0;
     idx = 0;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         auto betaEimJoule = betaEimsJoule[idx];
         for( int m = 0; m < betaEimJoule.size(); ++m )
@@ -557,15 +615,52 @@ void ThermoElectric::fillBetaQm( parameter_type const& mu, std::vector<vectorN_t
         }
         idx++;
     }
+    for( auto const& exAtM : bc["potential"]["SourceTerm"] )
+    {
+        auto e = expr(exAtM.expression1());
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
+        M_betaFqm[output][idx++][0] = e.evaluate();
+    }
+    for( auto const& exAtM : bc["temperature"]["SourceTerm"] )
+    {
+        auto e = expr(exAtM.expression1());
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
+        M_betaFqm[output][idx++][0] = e.evaluate();
+    }
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression());
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-        auto sigma = mu.parameterNamed(materials[exAtM.material()].getString("sigmaKey"));
+        auto sigma = mu.parameterNamed(M_materials[exAtM.material()].getString("sigmaKey"));
 
         M_betaFqm[output][idx++][0] = sigma/sigmaMax*e.evaluate();
+    }
+    for( auto const& exAtM : bc["potential"]["Neumann"] )
+    {
+        auto e = expr(exAtM.expression());
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
+        M_betaFqm[output][idx++][0] = e.evaluate();
+    }
+    for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+    {
+        auto e = expr(exAtM.expression());
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+        auto k = mu.parameterNamed(M_materials[exAtM.material()].getString("kKey"));
+
+        M_betaFqm[output][idx++][0] = k*e.evaluate();
     }
     for( auto const& exAtM : bc["temperature"]["Robin"] )
     {
@@ -585,7 +680,7 @@ void ThermoElectric::fillBetaQm( parameter_type const& mu, std::vector<vectorN_t
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         if( exAtM.expression() != "0" )
-            M_betaFqm[output++][0][0] = mu.parameterNamed(materials[exAtM.material()].getString("sigmaKey"));
+            M_betaFqm[output++][0][0] = mu.parameterNamed(M_materials[exAtM.material()].getString("sigmaKey"));
     }
 }
 
@@ -605,9 +700,8 @@ ThermoElectric::solve( parameter_type const& mu )
     auto oldT = oldVT.template element<1>();
 
     auto bc = M_modelProps->boundaryConditions();
-    auto materials = M_modelProps->materials().materialWithPhysic("thermoelectric");
     double sigmaMax = 0;
-    for( auto const& mat : materials )
+    for( auto const& mat : M_materials )
     {
         double sigma = mu.parameterNamed(mat.second.getString("sigmaKey"));
         if( sigma > sigmaMax )
@@ -628,14 +722,14 @@ ThermoElectric::solve( parameter_type const& mu )
 
         auto a = form2(_test=Xh, _trial=Xh);
         // V
-        for( auto const& mat : materials )
+        for( auto const& mat : M_materials )
         {
             auto sigma = mu.parameterNamed(mat.second.getString("sigmaKey"));
             a += integrate( markedelements(M_mesh, mat.first),
                             sigma/sigmaMax*inner(gradt(V),grad(phiV)) );
         }
         // T
-        for( auto const& mat : materials )
+        for( auto const& mat : M_materials )
         {
             auto k = mu.parameterNamed(mat.second.getString("kKey"));
             a += integrate( markedelements(M_mesh, mat.first),
@@ -644,11 +738,20 @@ ThermoElectric::solve( parameter_type const& mu )
         // V Dirichlet condition
         for( auto const& exAtM : bc["potential"]["Dirichlet"] )
         {
-            auto sigma = mu.parameterNamed(materials[exAtM.material()].getString("sigmaKey"));
+            auto sigma = mu.parameterNamed(M_materials[exAtM.material()].getString("sigmaKey"));
             a += integrate( markedfaces(M_mesh, exAtM.marker() ),
                             sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
                                             -inner(gradt(V)*N(),id(phiV))
                                             -inner(grad(phiV)*N(),idt(V)) ) );
+        }
+        // T Dirichlet condition
+        for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+        {
+            auto k = mu.parameterNamed(M_materials[exAtM.material()].getString("kKey"));
+            a += integrate( markedfaces(M_mesh, exAtM.marker() ),
+                            k*(M_penalDir/hFace()*inner(idt(T),id(phiT))
+                               -inner(gradt(T)*N(),id(phiT))
+                               -inner(grad(phiT)*N(),idt(T)) ) );
         }
         // T Robin condition
         for( auto const& exAtM : bc["temperature"]["Robin"] )
@@ -664,11 +767,37 @@ ThermoElectric::solve( parameter_type const& mu )
 
         auto f = form1(_test=Xh);
         // T right hand side
-        for( auto const& mat : materials )
+        for( auto const& mat : M_materials )
         {
             auto sigma = mu.parameterNamed(mat.second.getString("sigmaKey"));
-            f = integrate(markedelements(M_mesh, mat.first),
+            f += integrate(markedelements(M_mesh, mat.first),
                           id(phiT)*sigma*inner(gradv(oldV), gradv(oldV)) );
+        }
+        // V source term
+        for( auto const& exAtM : bc["potential"]["SourceTerm"] )
+        {
+            auto e1 = expr(exAtM.expression1());
+            for( auto const& param : M_modelProps->parameters() )
+                if( e1.expression().hasSymbol(param.first) )
+                    e1.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            auto e2 = expr(exAtM.expression2());
+
+            f += integrate( markedelements(M_mesh, exAtM.marker() ),
+                            e2*e1.evaluate()*id(phiV) );
+
+        }
+        // T source term
+        for( auto const& exAtM : bc["temperature"]["SourceTerm"] )
+        {
+            auto e1 = expr(exAtM.expression1());
+            for( auto const& param : M_modelProps->parameters() )
+                if( e1.expression().hasSymbol(param.first) )
+                    e1.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            auto e2 = expr(exAtM.expression2());
+
+            f += integrate( markedelements(M_mesh, exAtM.marker() ),
+                            e2*e1.evaluate()*id(phiT) );
+
         }
         // V Dirichlet condition
         for( auto const& exAtM : bc["potential"]["Dirichlet"] )
@@ -677,10 +806,33 @@ ThermoElectric::solve( parameter_type const& mu )
             for( auto const& param : M_modelProps->parameters() )
                 if( e.expression().hasSymbol(param.first) )
                     e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-            auto sigma = mu.parameterNamed(materials[exAtM.material()].getString("sigmaKey"));
+            auto sigma = mu.parameterNamed(M_materials[exAtM.material()].getString("sigmaKey"));
 
             f += integrate( markedfaces(M_mesh, exAtM.marker() ),
                             sigma/sigmaMax*e.evaluate()*(M_penalDir/hFace()*id(phiV) -  grad(phiV)*N()) );
+        }
+        // V Neumann condition
+        for( auto const& exAtM : bc["potential"]["Neumann"] )
+        {
+            auto e = expr(exAtM.expression());
+            for( auto const& param : M_modelProps->parameters() )
+                if( e.expression().hasSymbol(param.first) )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
+            f += integrate( markedfaces(M_mesh, exAtM.marker() ),
+                            e.evaluate()*id(phiV) );
+        }
+        // T Dirichlet condition
+        for( auto const& exAtM : bc["temperature"]["Dirichlet"] )
+        {
+            auto e = expr(exAtM.expression());
+            for( auto const& param : M_modelProps->parameters() )
+                if( e.expression().hasSymbol(param.first) )
+                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+            auto k = mu.parameterNamed(M_materials[exAtM.material()].getString("kKey"));
+
+            f += integrate( markedfaces(M_mesh, exAtM.marker() ),
+                            k*e.evaluate()*(M_penalDir/hFace()*id(phiT) -  grad(phiT)*N()) );
         }
         // T Robin condition
         for( auto const& exAtM : bc["temperature"]["Robin"] )
@@ -713,7 +865,7 @@ ThermoElectric::solve( parameter_type const& mu )
     {
         auto e = exporter(M_mesh);
         auto j = M_Jh->element();
-        for( auto const& mat : materials )
+        for( auto const& mat : M_materials )
         {
             auto sigma = mu.parameterNamed(mat.second.getString("sigmaKey"));
             j.on( markedelements(M_mesh, mat.first), _expr=sigma*inner(gradv(M_V),gradv(M_V)) );
