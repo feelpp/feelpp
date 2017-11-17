@@ -27,7 +27,7 @@ set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelcore )
 endif()
-INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT Libs)
+INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)
 
