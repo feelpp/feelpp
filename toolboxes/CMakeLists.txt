@@ -30,7 +30,7 @@ set(PROJECT_SHORTNAME "toolbox")
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
       message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
@@ -55,24 +55,11 @@ option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
 option(FEELPP_MODELS_ENABLE_HDG "Enable/Disable MultiFluid" ON)
 #option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
 
-# if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-#   cmake_minimum_required(VERSION 2.8)
-#   FIND_PATH(FEELPP_CMAKE_MODULES FindFeel++.cmake PATH $ENV{FEELPP_DIR}/share/feel/cmake/modules /usr/share/feel/cmake/modules/ /usr/local/share/feel/cmake/modules/ )
-#   if ( FEELPP_CMAKE_MODULES )
-#     set(CMAKE_MODULE_PATH ${FEELPP_CMAKE_MODULES})
-#   else()
-#     message(FATAL_ERROR "Feel++ does not seem to have been installed on this platform")
-#   endif()
-#   #OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" ON)
-#   Find_Package(Feel++)
-#   include(feelpp.macros)
-# endif()
 set(FEELPP_TOOLBOXES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_TOOLBOXES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
+include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
+include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 
 add_subdirectory( feel/feelmodels )
 
