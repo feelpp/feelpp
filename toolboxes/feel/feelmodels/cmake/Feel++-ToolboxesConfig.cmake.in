@@ -1,0 +1,17 @@
+
+#set(FEELPP_TOOLBOXES_LIBRARIES_CMAKE_VARIABLES @FEELPP_TOOLBOXES_LIBRARIES@)
+
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.toolboxes.includes.config.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/feelpp.toolboxes.libraries.config.cmake)
+
+set(FEELPP_TOOLBOXES_INSTALL_DIR @CMAKE_INSTALL_PREFIX@)
+
+set(FEELPP_TOOLBOXES_FOUND 1)
+set(Feel++-Toolboxes_FOUND 1)
+
+if (NOT FEELPP_TOOLBOXES_DONT_SETUP_CMAKE)
+  include_directories(${FEELPP_TOOLBOXES_INSTALL_DIR}/include/feelpp/toolboxes)
+  if ( EXISTS ${CMAKE_CURRENT_LIST_DIR}/feelpp-toolboxes-targets.cmake )
+    include( ${CMAKE_CURRENT_LIST_DIR}/feelpp-toolboxes-targets.cmake )
+  endif()
+endif()
