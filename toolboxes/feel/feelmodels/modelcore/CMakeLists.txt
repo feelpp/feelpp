@@ -1,16 +1,13 @@
 #############################################################################
 
-SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_PARAMETERS "10" CACHE STRING "number of parameters" )
-SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_GEOPARAMETERS "10" CACHE STRING "number of geometric parameters" )
-SET(FEELPP_MODELS_OPTIONS_NUMBER_OF_GINACEXPR "10" CACHE STRING "number of ginac expr" )
-
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/feelmodelscoreconstconfig.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp )
 INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)
 
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake/modules COMPONENT Devel)
 
 set(FEELPP_MODELS_LIBBASE_CHECK_DIR "${CMAKE_CURRENT_BINARY_DIR}/checkmodelsbuilt" CACHE STRING "FEELPP_MODELS_LIBBASE_CHECK_DIR")
 file(REMOVE_RECURSE ${FEELPP_MODELS_LIBBASE_CHECK_DIR})
+include(feelpp.models.macros.cmake)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake/modules COMPONENT Devel)
 
 
 #############################################################################
@@ -30,5 +27,3 @@ endif()
 INSTALL(TARGETS feelpp_modelcore DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)
-
-include(feelpp.models.macros.cmake)
