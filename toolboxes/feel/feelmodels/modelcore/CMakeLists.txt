@@ -7,7 +7,7 @@ INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINA
 set(FEELPP_MODELS_LIBBASE_CHECK_DIR "${CMAKE_CURRENT_BINARY_DIR}/checkmodelsbuilt" CACHE STRING "FEELPP_MODELS_LIBBASE_CHECK_DIR")
 file(REMOVE_RECURSE ${FEELPP_MODELS_LIBBASE_CHECK_DIR})
 include(feelpp.models.macros.cmake)
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
 
 
 #############################################################################
