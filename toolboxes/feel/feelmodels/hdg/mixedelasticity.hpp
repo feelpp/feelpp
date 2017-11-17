@@ -1213,7 +1213,6 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         std::vector<double> force_integral(Dim);
-                        std::string stringForce = "integralForce_";
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
@@ -1223,7 +1222,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
-                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
                             force_integral[i] = j_integral.evaluate()(i,0);
                             Feel::cout << force_integral[i] << std::endl;
                             M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
@@ -1242,11 +1241,10 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                             _expr=trans(idv(M_up))*N());
                     
-                std::string stringForce = "integralForce_";
                 Feel::cout << "Force computed: " << std::endl;
                 for( auto i=0;i < Dim;i++ )
                 {
-                    auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                    std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
                     force_integral[i] = j_integral.evaluate()(i,0);
                     Feel::cout << force_integral[i] << std::endl;
                     M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
@@ -1311,7 +1309,6 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         std::vector<double> force_integral(Dim);
-                        std::string stringForce = "scaled_integralForce_";
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting scaled integral flux at time "
                                   << time << " on marker " << marker;
@@ -1320,7 +1317,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
-                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            std::string stringForce_help = (boost::format("scaled_integralForce_%1%")%i).str();
                             force_integral[i] = j_integral.evaluate()(i,0);
                             Feel::cout << force_integral[i] << std::endl;
                             M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
