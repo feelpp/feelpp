@@ -144,21 +144,6 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   if ( FEELPP_HAS_PYBIND11 )
     include(pybind11Tools)
   endif()
-  find_package(libfeelpp_bsoncxx PATHS ${CMAKE_CURRENT_LIST_DIR})
-  find_package(libfeelpp_mongocxx PATHS ${CMAKE_CURRENT_LIST_DIR})
-
-  find_library(FEELPP_GFLAGS NAMES feelpp_gflags_nothreads feelpp_gflags PATHS ${FEELPP_INSTALL_DIR}/lib)
-  message(STATUS "[feelpp/gflags]: ${FEELPP_GFLAGS}")
-  set(FEELPP_LIBRARIES ${FEELPP_GFLAGS} ${FEELPP_LIBRARIES})
-  foreach( _l  glog ginac nlopt metis bsoncxx mongocxx ipopt ipoptfort )
-    string(TOUPPER ${_l} _FEELPP_LIB)
-    if ( FEELPP_HAS_${_FEELPP_LIB} )
-      find_library(FEELPP_${_FEELPP_LIB} feelpp_${_l} PATHS ${FEELPP_INSTALL_DIR}/lib)
-      set(FEELPP_LIBRARIES ${FEELPP_${_FEELPP_LIB}} ${FEELPP_LIBRARIES})
-      message(STATUS "[feelpp/${_l}]: ${FEELPP_${_FEELPP_LIB}}")
-    endif()
-  endforeach()
-
 
   # import targets of dependencies
   if ( FEELPP_HAS_PARAVIEW )
@@ -169,6 +154,12 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   endif()
   include(${FEELPP_DIR}/share/feelpp/feel/cmake/modules/feelpp-contrib-export-targets.cmake)
   include(${FEELPP_DIR}/share/feelpp/feel/cmake/modules/feelpp-export-targets.cmake)
+
+  # define FEELPP_LIBRARY and FEELPP_LIBRARIES
+  get_property( FEELPP_LIBRARY TARGET feelpp PROPERTY LOCATION)
+  feelpp_get_link_libraries( FEELPP_LIBRARIES feelpp )
+  set(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
+  string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIES "${FEELPP_LIBRARIES}")
   
   MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
