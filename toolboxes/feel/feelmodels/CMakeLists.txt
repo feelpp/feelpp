@@ -26,11 +26,6 @@
 
 SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
 SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
-#set(FEELPP_TOOLBOXES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-#set(FEELPP_TOOLBOXES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-message(FEELPP_TOOLBOXES_SOURCE_DIR=${FEELPP_TOOLBOXES_SOURCE_DIR})
-
-
 
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
@@ -81,7 +76,9 @@ endif()
 if ( FEELPP_MODELS_ENABLE_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
-
+if ( FEELPP_MODELS_ENABLE_HDG )
+  add_subdirectory(hdg)
+endif()
 
 set( FEELPP_TOOLBOXES_CONFIG_FILE  ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake)
 configure_file(${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake.in ${FEELPP_TOOLBOXES_CONFIG_FILE} @ONLY)
