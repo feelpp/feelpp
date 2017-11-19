@@ -554,6 +554,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
                                    this->fieldTemperature() );
+    M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+
     if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
