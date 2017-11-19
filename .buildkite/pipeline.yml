@@ -24,8 +24,8 @@ steps:
      CC: clang-4.0
      TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
+ - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
      ubuntu: "16.04"
@@ -34,8 +34,8 @@ steps:
      CC: clang-4.0
      TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+ - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
      docker: true
      ubuntu: "16.04"
