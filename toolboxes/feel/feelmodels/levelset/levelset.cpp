@@ -1349,6 +1349,54 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
     return M_interfaceElements;
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
+LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
+{
+    mesh_ptrtype const& mesh = this->mesh();
+
+    element_levelset_type phi = this->functionSpace()->element();
+    if( this->M_useRegularPhi )
+        phi.on( _range=elements(this->mesh()), _expr=idv(this->phi()) / idv(this->modGradPhi()) );
+    else
+        phi = *(this->phi());
+
+    auto it_elt = mesh->beginOrderedElement();
+    auto en_elt = mesh->endOrderedElement();
+
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const int ndofv = space_levelset_type::fe_type::nDof;
+
+    elements_reference_wrapper_ptrtype outerElts( new elements_reference_wrapper_type );
+
+    for (; it_elt!=en_elt; it_elt++)
+    {
+        auto const& elt = boost::unwrap_ref( *it_elt );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        for (int j=0; j<ndofv; j++)
+        {
+            if ( phi.localToGlobal(elt.id(), j, 0) > cut )
+            {
+                mark_elt = true;
+                break; //don't need to do the others dof
+            }
+        }
+        if( mark_elt )
+            outerElts->push_back( boost::cref(elt) );
+    }
+
+    range_elements_type outerElements = boost::make_tuple( 
+            mpl::size_t<MESH_ELEMENTS>(),
+            outerElts->begin(),
+            outerElts->end(),
+            outerElts
+            );
+
+    return outerElements;
+}
+
 //----------------------------------------------------------------------------//
 // Utility distances
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
