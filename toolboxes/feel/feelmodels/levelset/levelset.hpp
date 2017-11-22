@@ -445,6 +445,8 @@ public:
     element_markers_ptrtype const& markerCrossedElements() const;
 
     range_elements_type interfaceElements() const;
+    range_elements_type outerElementsRange( double cut );
+    range_elements_type outerElementsRange() { return outerElementsRange( -this->thicknessInterface() ); }
 
     //--------------------------------------------------------------------//
     // Utility distances
