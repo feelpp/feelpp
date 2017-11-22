@@ -40,11 +40,11 @@ makeThermoElectricOptions()
     options.add_options()
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
-        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e4 ), "penalisation term" )
-        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
+        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(10), "size of the eim trainset" )
         ( "thermoelectric.export-FE", po::value<bool>()->default_value(true), "export FE solution" )
-        ( "thermoelectric.picard.maxit", po::value<int>()->default_value(5), "maximum number of iterations for Picard" )
-        ( "thermoelectric.picard.tol", po::value<double>()->default_value(1e-8), "tolerance for Picard" )
+        ( "thermoelectric.picard.maxit", po::value<int>()->default_value(15), "maximum number of iterations for Picard" )
+        ( "thermoelectric.picard.tol", po::value<double>()->default_value(1e-5), "tolerance for Picard" )
         ;
     options.add(backend_options("thermo-electro") );
     return options;
@@ -153,6 +153,9 @@ private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
     map_mat_type M_materials;
+    map_mat_type M_elecMaterials;
+    map_mat_type M_therMaterials;
+
     std::vector< std::vector< element_ptrtype > > M_initialGuess;
 
     element_ptrtype M_VT;
@@ -199,7 +202,7 @@ public:
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     // Decomposition
-    void decomposition();
+    void assemble() override;
     affine_decomposition_type computeAffineDecomposition() override;
     std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
     std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
@@ -219,6 +222,7 @@ public:
     // Scalar product
     double scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y );
     double scalarProduct( vector_type const& x, vector_type const& y );
+    sparse_matrix_ptrtype energyMatrix() override;
 
     // Output
     value_type
