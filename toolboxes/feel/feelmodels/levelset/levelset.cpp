@@ -1374,12 +1374,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
         auto const& elt = boost::unwrap_ref( *it_elt );
         if ( elt.processId() != pid )
             continue;
-        bool mark_elt = false;
+        bool mark_elt = true;
         for (int j=0; j<ndofv; j++)
         {
-            if ( phi.localToGlobal(elt.id(), j, 0) > cut )
+            if ( phi.localToGlobal(elt.id(), j, 0) < cut )
             {
-                mark_elt = true;
+                mark_elt = false;
                 break; //don't need to do the others dof
             }
         }
