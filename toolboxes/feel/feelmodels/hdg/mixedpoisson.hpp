@@ -581,15 +581,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
@@ -624,19 +616,19 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
     // <tau p, w>_Gamma
     M_a( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=-tau_constant *
-                                 ( leftfacet( pow(idv(H),M_tau_order)*idt(p))*leftface(id(w)) +
-                                   rightfacet( pow(idv(H),M_tau_order)*idt(p))*rightface(id(w) )));
+                                 ( leftfacet(idt(p))*leftface(id(w)) +
+                                   rightfacet(idt(p))*rightface(id(w) )));
     M_a( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=-(tau_constant * pow(idv(H),M_tau_order)*id(w)*idt(p)));
+                                 _expr=-(tau_constant * id(w)*idt(p)));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
     M_a( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
                                  _expr=tau_constant * idt(phat) *
-                                 ( leftface( pow(idv(H),M_tau_order)*id(w) )+
-                                   rightface( pow(idv(H),M_tau_order)*id(w) )));
+                                 ( leftface( id(w) )+
+                                   rightface( id(w) )));
     M_a( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=tau_constant * idt(phat) * pow(idv(H),M_tau_order)*id(w) );
+                                 _expr=tau_constant * idt(phat) * id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -645,13 +637,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleCstPart()
 
     // <tau p, mu>_Omega/Gamma
     M_a( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant*id(l)*( leftfacet(pow(idv(H),M_tau_order)*idt(p))
-                                                            + rightfacet( pow(idv(H),M_tau_order)*idt(p) )));
+                                 _expr=tau_constant*id(l)*( leftfacet(idt(p))
+                                                            + rightfacet( idt(p) )));
 
     // <-tau phat, mu>_Omega/Gamma
     M_a( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-sc_param*tau_constant*idt(phat)*id(l)*( leftface( pow(idv(H),M_tau_order) )
-                                                                                + rightface( pow(idv(H),M_tau_order) )));
+                                 _expr=-sc_param*tau_constant*idt(phat)*id(l) );
 
     this->assembleBoundaryCond();
 }
@@ -1150,16 +1141,6 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
@@ -1169,10 +1150,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
                                  _expr=( id(l)*(normalt(u)) ));
     // <tau p, mu>_Gamma_N
     M_a( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+                                 _expr=tau_constant * id(l) *idt(p)  );
     // <-tau phat, mu>_Gamma_N
     M_a( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+                                 _expr=-tau_constant * idt(phat) * id(l) );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -1184,15 +1165,6 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, st
     auto p = M_Wh->element( "p" );
     auto phat = M_Mh->element( "phat" );
     auto l = M_Mh->element( "lambda" );
-    auto H = M_M0h->element( "H" );
-    if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
@@ -1201,10 +1173,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, st
                                  _expr=( id(l)*(normalt(u)) ));
     // <tau p, mu>_Gamma_R
     M_a( 2_c, 1_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
+                                 _expr=tau_constant * id(l) *idt(p) );
     // <-tau phat, mu>_Gamma_R
     M_a( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
+                                 _expr=-tau_constant * idt(phat) * id(l) );
     // <g_R^1 phat, mu>_Gamma_R
     M_a( 2_c, 2_c ) += integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
@@ -1219,18 +1191,6 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
     auto w = M_Wh->element( "w" );
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
-
-    auto H = M_M0h->element( "H" );
-
-
-    if ( ioption(prefixvm(this->prefix(), "hface") ) == 0 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
-    else if ( ioption(prefixvm(this->prefix(), "hface") ) == 1 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
-    else if ( ioption(prefixvm(this->prefix(), "hface") ) == 2 )
-        H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
-    else
-        H.on( _range=elements(M_M0h->mesh()), _expr=h() );
 
     // stabilisation parameter
     auto tau_constant = cst(doption(prefixvm(this->prefix(), "tau_constant")));
@@ -1256,7 +1216,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
 
     // <lambda, tau w>_Gamma_I
     M_a( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * idt(uI) * id(w) * ( pow(idv(H),M_tau_order)) );
+                                        _expr=tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
     M_a( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=(normalt(u)) * id(nu) );
@@ -1264,12 +1224,11 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
 
     // <tau p, m>_Gamma_I
     M_a( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant *idt(p)  * id(nu)* ( pow(idv(H),M_tau_order)) );
+                                        _expr=tau_constant *idt(p)  * id(nu) );
 
     // -<lambda2, m>_Gamma_I
     M_a( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=-tau_constant * id(nu) *idt(uI)* (pow(idv(H),M_tau_order)) );
-
+                                        _expr=-tau_constant * id(nu) *idt(uI) );
 
 }
 
