@@ -1065,7 +1065,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 
     if (M_useRegularPhi)
     {
-        auto psi = idv(this->phi()) / vf::sqrt( gradv(this->phi()) * trans(gradv(this->phi())) );
+        auto psi = idv(this->phi()) / idv(this->modGradPhi());
         auto H_expr = vf::chi( psi<-eps )*vf::constant(0.0)
             +
             vf::chi( psi>=-eps )*vf::chi( psi<=eps )*
