@@ -22,7 +22,7 @@
 #
 #
 
-add_library(feelpp_model_hdg SHARED options.cpp  mixedelasticity.cpp  poroelastic.cpp )
+add_library(feelpp_model_hdg SHARED options.cpp  mixedelasticity.cpp mixedpoisson.cpp ) #  poroelastic.cpp )
 target_link_libraries(feelpp_model_hdg feelpp_modelcore)
 set_property(TARGET feelpp_model_hdg PROPERTY MACOSX_RPATH ON)
 install(TARGETS feelpp_model_hdg DESTINATION lib/ COMPONENT Libs)
