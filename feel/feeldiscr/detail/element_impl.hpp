@@ -566,12 +566,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename Context_t>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
 
     size_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
@@ -582,43 +579,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         return;
 
     const uint16_type nq = context.xRefs().size2();
-
-    //double vsum=0;
     auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+
+    for( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents:1;
-
-        for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        auto v_ = super::operator[]( index )*s(local_dof);
+        for ( uint16_type q = 0; q < nq; ++q )
         {
-            typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
-            //std::cout << "ldof = " << ldof << "\n";
-            //std::cout << "gdof = " << gdof << "\n";
-
-            DLOG_IF(WARNING, !( gdof < this->size() ) ) << "FunctionSpace::Element invalid access index "
-                                                        << context.eId()
-                                                        << "    l=" << l
-                                                        << "   c1=" << c1
-                                                        << " ldof=" << ldof
-                                                        << " gdof=" << gdof
-                                                        << " size=" << this->size()
-                                                        << " localSize=" << this->localSize();
-
-            value_type v_ = this->globalValue( gdof );
-
-            //std::cout << "v_ =" << v_ << "\n";
-            //for( typename array_type::index c2 = 0; c2 < nComponents2; ++c2 )
-            for ( uint16_type q = 0; q < nq; ++q )
-            {
-                v[q] += context.id(ldof,q)*(s(ldof)*v_);
-            }
+            v[q] += context.id(local_dof,q)*v_;
         }
     }
-
-    //LOG( INFO ) << "vsum : "<<vsum;
-    //return v;
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
