@@ -1238,7 +1238,7 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim( std::vector<element_type> const& wn )
+    void updateRbInDeim( typename rbfunctionspace_type::rb_basis_type const& wn )
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();
@@ -3045,10 +3045,11 @@ struct AssembleMassMatrixInCompositeCase
 
         auto u = this->M_composite_u.template element< T::value >();
         auto v = this->M_composite_v.template element< T::value >();
-        auto Xh = u.functionSpace();
+        auto Xh = M_composite_u.functionSpace();
+        auto Vh = u.functionSpace();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=Xh->template rangeElements< 0 >(),
+            integrate( _range=Vh->template rangeElements< 0 >(),
                        _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
@@ -3097,8 +3098,9 @@ struct AssembleInitialGuessVInCompositeCase
         using namespace Feel::vf;
 
         auto v = M_composite_v.template element< T::value >();
-        auto Xh = v.functionSpace();
-        auto range = Xh->template rangeElements< 0 >();
+        auto Xh = M_composite_v.functionSpace();
+        auto Vh = v.functionSpace();
+        auto range = Vh->template rangeElements< 0 >();
         int q_max = M_crb_model->QInitialGuess();
         for(int q = 0; q < q_max; q++)
         {

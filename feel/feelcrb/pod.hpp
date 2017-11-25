@@ -126,9 +126,9 @@ public :
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
 
-    typedef std::vector<element_type> mode_set_type;
+    typedef std::vector<element_ptrtype> mode_set_type;
 
 
     typedef Eigen::VectorXd vectorN_type;
@@ -225,14 +225,14 @@ public :
     }
 
     //! fill the matrix which will be used to perform the POD
-    void fillPodMatrix( const wn_type&  elements_set );
+    void fillPodMatrix( wn_type const&  elements_set );
 
     /**
      * input/output : MpdeSet (set of modes to add in the reduced basis)
      * input : is_primal ( bool which indicates if the problem is the primal one or not )
      * optional input : elements set to perform POD
      */
-    int pod( mode_set_type& ModeSet, bool is_primal, const wn_type& elements_set=std::vector<element_type>(), bool use_solutions=true );
+    int pod( mode_set_type& ModeSet, bool is_primal, wn_type const& elements_set=wn_type(), bool use_solutions=true );
 
     void exportMode( double time, element_ptrtype& mode );
 
@@ -316,7 +316,7 @@ void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )
 }
 
 template<typename TruthModelType>
-void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
+void POD<TruthModelType>::fillPodMatrix( wn_type const& elements_set)
 {
     if( M_use_solutions )
     {
@@ -373,10 +373,10 @@ void POD<TruthModelType>::fillPodMatrix( const wn_type& elements_set)
         {
             for(int j=i+1; j<size; j++)
             {
-                M_pod_matrix( i,j ) = M_model->scalarProductForPod( elements_set[i], elements_set[j] );
+                M_pod_matrix( i,j ) = M_model->scalarProductForPod( unwrap_ptr( elements_set[i] ), unwrap_ptr( elements_set[j] ) );
                 M_pod_matrix( j,i ) = M_pod_matrix( i,j );
             }
-            M_pod_matrix( i,i ) = M_model->scalarProductForPod( elements_set[i] , elements_set[i] );
+            M_pod_matrix( i,i ) = M_model->scalarProductForPod( unwrap_ptr( elements_set[i] ) , unwrap_ptr( elements_set[i] ) );
         }
     }
 }//fillPodMatrix
@@ -536,7 +536,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
             for(int j=0; j<size; j++)
             {
                 double psi_k = real( eigen_solver.eigenvectors().col( position_of_largest_eigenvalue )[index] );
-                mode->add( psi_k , elements_set[j] );
+                mode->add( psi_k , unwrap_ptr( elements_set[j] ) );
                 index++;
             }
         }//if use elements set
@@ -555,7 +555,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
 
         if( (i+1) < max_idx.size() )
             position_of_largest_eigenvalue=max_idx[i+1];
-        ModeSet.push_back( *mode );
+        ModeSet.push_back( mode );
     }// loop on number of modes
 
 
@@ -565,10 +565,10 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
         position_of_largest_eigenvalue=max_idx[0];
         for(int i=1; i<M_Nm; i++)
         {
-            auto modei = ModeSet[i-1];
+            auto const& modei = unwrap_ptr( ModeSet[i-1] );
             for(int j=i+1; j<M_Nm; j++)
             {
-                auto modej = ModeSet[j-1];
+                auto const& modej = unwrap_ptr( ModeSet[j-1] );
                 double prod = M_model->scalarProductForPod( modei , modej );
                 CHECK( prod < 1e-10 )<<"scalar product between mode "<<i<<" and mode "<<j<<" is not null and is "<<prod<<"\n";
             }
@@ -618,7 +618,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
         for ( int i=0; i<M_Nm; i++ )
         {
             std::ofstream mode_file( ( boost::format( "mode_%1%" ) %i ).str().c_str() );
-            element_type e = ModeSet[i];
+            element_type const& e = unwrap_ptr( ModeSet[i] );
 
             for ( size_type j=0; j<e.size(); j++ ) mode_file<<std::setprecision( 16 )<<e( j )<<"\n";
 
