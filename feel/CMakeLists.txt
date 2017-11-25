@@ -75,7 +75,8 @@ if( FEELPP_ENABLE_PCH )
 endif()
 
 # Install feelpp
-INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)
