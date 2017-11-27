@@ -21,7 +21,7 @@ FUNCTION(feelpp_expand OUTPUT INPUT)
   ENDWHILE()
   SET("${OUTPUT}" "${INPUT}" PARENT_SCOPE)
 ENDFUNCTION()
-  
+
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -84,7 +84,7 @@ macro(feelpp_add_testcase )
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
       DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc 
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
         DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     endif()
     #add_dependencies(install-testcase ${target})
@@ -198,7 +198,7 @@ macro(feelpp_add_application)
           if ( FEELPP_ENABLE_VERBOSE_CMAKE )
             message(STATUS "[feelpp] ${execname} adding test ${TEST_NAME} : ${TEST}")
           endif()
-          
+
           # user name of the test in the app test name
           IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
             add_test(NAME ${execname}-${TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} ${MPIEXEC_POSTFLAGS} )
@@ -209,14 +209,14 @@ macro(feelpp_add_application)
             add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST})
             list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-1)
           endif()
-    
+
         endforeach()
       else()
         message(WARNING "${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} does not exist to generate tests. Remove TESTS for ${FEELPP_APP_NAME}")
 
         IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
           add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
-        
+
           list(APPEND APP_TESTS ${execname}-np-${NProcs2})
         endif()
 
@@ -224,15 +224,15 @@ macro(feelpp_add_application)
           add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
           list(APPEND APP_TESTS ${execname}-np-1)
         endif()
-    
+
       endif()
     endif(FEELPP_APP_TESTS)
-  
+
   foreach(APP_TEST ${APP_TESTS})
     # disable leak detection for now
     set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/tools/lsan/suppressions.txt")
   endforeach()
-  
+
   #add_dependencies(crb ${execname})
   # add TIMEOUT to test
   if ( FEELPP_APP_TIMEOUT )
@@ -257,7 +257,7 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_MAN )
     feelpp_add_man( ${execname} ${FEELPP_APP_MAN} 1 )
   endif( FEELPP_APP_MAN )
-  
+
   # include schedulers
   include( feelpp.schedulers )
 
@@ -668,7 +668,7 @@ macro (feelpp_add_man NAME MAN SECT)
         add_dependencies(${NAME} ${NAME}.${SECT})
       endif()
       install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
-      
+
 
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
@@ -693,7 +693,7 @@ macro (feelpp_add_man NAME MAN SECT)
         add_dependencies(${NAME} ${NAME}.${SECT}.html)
 
       endif()
-      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)      
+      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
         DESTINATION ${CMAKE_INSTALL_DOCDIR}
@@ -705,6 +705,31 @@ endmacro (feelpp_add_man)
 
 # CRB cmake macros
 include(feelpp.macros.crb)
+
+# OM cmake macros
+macro ( om_add_model )
+
+  PARSE_ARGUMENTS( OM_MODEL
+    "NAME;SRCS" "" ${ARGN} )
+
+  #car( OM_NAME ${OM_MODEL_DEFAULT_ARGS} )
+  set( OM_NAME test_om )
+  set( OMLIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OM_NAME} )
+  set( OM_MODEL_SRCS_FULLPATH ${CMAKE_CURRENT_SOURCE_DIR}/${OM_MODEL_SRCS} )
+
+  message( "om name = ${OM_NAME}" )
+
+  add_custom_target( feelpp_om_add_${OM_NAME}  ALL COMMENT "Copying modified files"  )
+  find_path( OM_MACRO_DIR feelpp.macros.om.cmake
+    PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
+
+  add_custom_command(TARGET feelpp_om_add_${OM_NAME}
+    COMMAND ${CMAKE_COMMAND} -P ${OM_MACRO_DIR}/feelpp.macros.om.cmake
+    -DOM_NAME=${OM_NAME} -DOMLIB_DIR=${OMLIB_DIR} -DOM_SRCS=${OM_MODEL_SRCS_FULLPATH}
+     )
+
+endmacro( om_add_model )
+
 
 
 # feelppContribPrepare( submodulename )
