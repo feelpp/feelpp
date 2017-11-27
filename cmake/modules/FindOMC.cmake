@@ -21,15 +21,15 @@ find_library( OMCGC_LIBRARY omcgc
   PATH_SUFFIXES omc x86_64-linux-gnu/omc
   )
 
-find_library( SIMULATIONRUNTIMEC_LIBRARY OpenModelicaRuntimeC
+find_library( SIMULATIONRUNTIMEC_LIBRARY SimulationRuntimeC
   PATHS ${OMC_DIR}/lib /usr/lib/
   PATH_SUFFIXES omc x86_64-linux-gnu/omc
   )
 
 set( OMC_LIBRARIES ${SIMULATIONRUNTIMEC_LIBRARY} ${OMCGC_LIBRARY} )
 
+
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS( OMC REQUIRED_VARS
   OMC_INCLUDE_DIR
-  OMC_DIR
   OMC_LIBRARIES )
