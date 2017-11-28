@@ -40,7 +40,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_mat( world ),
     M_bc( world, false ),
     M_ic( world, false ),
-    M_postproc( world )
+    M_postproc( world ),
+    M_outputs( world )
 {
     if ( !fs::exists( filename ) ) 
     {
@@ -153,6 +154,18 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     else
     {
         LOG(WARNING) << "Model does not have any postprocess\n";
+    }
+    auto out = M_p.get_child_optional("Outputs");
+    if ( out )
+    {
+        LOG(INFO) << "Model with outputs\n";
+        if ( !directoryLibExpr.empty() )
+            M_outputs.setDirectoryLibExpr( directoryLibExpr );
+        M_outputs.setPTree( *out );
+    }
+    else
+    {
+        LOG(WARNING) << "Model does not have any outputs\n";
     }
 }
 
