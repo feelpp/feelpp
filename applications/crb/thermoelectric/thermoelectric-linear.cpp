@@ -374,7 +374,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
     M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
-
+#if 0
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                    {
@@ -396,6 +396,7 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     }
     Dmu->setMin(mu_min);
     Dmu->setMax(mu_max);
+#endif
     M_mu = Dmu->element();
 
     if( !M_VT )
