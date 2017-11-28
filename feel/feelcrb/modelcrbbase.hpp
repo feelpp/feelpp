@@ -2036,6 +2036,13 @@ public:
         return Xh;
     }
 
+    virtual
+    typename functionspace_type::mesh_support_vector_type
+    functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+        {
+            return typename functionspace_type::mesh_support_vector_type();
+        }
+
     /**
      * \brief Returns the reduced basis function space
      */
