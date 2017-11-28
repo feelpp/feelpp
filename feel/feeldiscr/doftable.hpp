@@ -382,7 +382,7 @@ public:
                  fe_type::nDofPerVertex * element_type::numVertices);
         }
 
-    DofTableInfos infos() const
+    DofTableInfos infos() const override
         {
             DofTableInfos infos;
             infos.nOrder = nOrder;
@@ -866,7 +866,7 @@ public:
 
     global_dof_type const& localToGlobal( const size_type ElId,
                                           const uint16_type localNode,
-                                          const uint16_type c = 0 ) const
+                                          const uint16_type c = 0 ) const override
         {
             auto it = M_el_l2g.left.find( localdof_type(ElId,fe_type::nLocalDof * c  + localNode ) );
             DCHECK( it != M_el_l2g.left.end() ) << "Invalid dof entry ( " << ElId << ", " << fe_type::nLocalDof * c  + localNode << ")";
@@ -885,7 +885,7 @@ public:
 
     global_dof_fromface_type const& faceLocalToGlobal( const size_type ElId,
                                                        const uint16_type localNode,
-                                                       const uint16_type c = 0 ) const
+                                                       const uint16_type c = 0 ) const override
         {
             const size_type nDofF = nLocalDofOnFace( true );
             return M_face_l2g.find( ElId )->second[ nDofF*c+localNode ];
