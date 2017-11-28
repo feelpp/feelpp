@@ -164,6 +164,7 @@ public:
 
     typedef MeshSupport<mesh_type> mesh_support_type;
     typedef std::shared_ptr<mesh_support_type> mesh_support_ptrtype;
+    typedef typename super::mesh_support_base_ptrtype mesh_support_base_ptrtype;
 
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
@@ -463,6 +464,11 @@ public:
      * \return mesh support
      */
     mesh_support_ptrtype meshSupport() const
+        {
+            return M_meshSupport;
+        }
+
+    mesh_support_base_ptrtype meshSupportBase() const override
         {
             return M_meshSupport;
         }
