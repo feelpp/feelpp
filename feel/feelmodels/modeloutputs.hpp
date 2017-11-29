@@ -31,6 +31,17 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
+/** \class ModelOutput
+ * \brief class containing an output
+ *
+ * an output is a name, a type, a range and a dimension
+ * "myoutput":
+ * {
+ *   "type": "mytype",
+ *   "range": ["marker1","marker2"],
+ *   "topodim": 2
+ * }
+ */
 class FEELPP_EXPORT ModelOutput
 {
   public:
@@ -47,6 +58,7 @@ class FEELPP_EXPORT ModelOutput
     std::string type() const { return M_type; }
     std::set<std::string> range() const { return M_range; }
     int dim() const { return M_dim; }
+    std::string getString( std::string const& key ) const;
 
   private:
     WorldComm const * M_worldComm;
@@ -61,6 +73,17 @@ class FEELPP_EXPORT ModelOutput
 
 std::ostream& operator<<( std::ostream& os, ModelOutput const& o );
 
+/** \class ModelOutputs
+ * \brief class containing all outputs in the model
+ *
+ * key: name of the output
+ * value: ModelOutput
+ * "Outputs":
+ * {
+ *   "myoutput1":{...},
+ *   "myoutput2":{...}
+ * }
+ */
 class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>
 {
   public:
@@ -69,8 +92,8 @@ class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>
     ModelOutputs( pt::ptree const& p, WorldComm const& worldComm = Environment::worldComm() );
     virtual ~ModelOutputs() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
-    ModelOutput loadOutput( std::string const&, std::string );
-    ModelOutput getOutput( pt::ptree const&, std::string );
+    ModelOutput loadOutput( std::string const&, std::string const& );
+    ModelOutput getOutput( pt::ptree const&, std::string const& );
 
     ModelOutput const& output( std::string const& o ) const
     {
