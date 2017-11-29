@@ -272,6 +272,10 @@ public:
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
 
     ProductSpaces2() = default;
+    ProductSpaces2( ProductSpaces2 const& ) = default;
+    ProductSpaces2( ProductSpaces2 && ) = default;
+    ProductSpaces2& operator=( ProductSpaces2 const& ) = default;
+    ProductSpaces2& operator=( ProductSpaces2 && ) = default;
     ProductSpaces2( boost::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : super( l..., p) {}
     
     int numberOfSpaces() const { return int(hana::size( *this ))+hana::back(*this)->numberOfSpaces()-1; }
