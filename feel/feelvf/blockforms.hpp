@@ -53,9 +53,14 @@ BlockBilinearForm<PS>
 blockform2( PS&& ps, solve::strategy s, BackendT&& b,
             size_type pattern = Pattern::COUPLED );
 
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b,
+            size_type pattern = Pattern::COUPLED );
+
 template<typename PS,typename T>
 BlockBilinearForm<PS>
-blockform2( PS&& ps, condensed_matrix_ptr_t<T> m );
+blockform2( PS&& ps, condensed_matrix_ptr_t<T> & m );
 
 //!
 //! forward declarations of @c BlockLinearForm and @c blockform1()
@@ -88,27 +93,33 @@ template<typename PS>
 class BlockBilinearForm
 {
 public :
-    using value_type = typename std::decay_t<PS>::value_type;
+    using value_type = typename Feel::decay_type<PS>::value_type;
     using condensed_matrix_type = MatrixCondensed<value_type>;
     using condensed_matrix_ptrtype = boost::shared_ptr<condensed_matrix_type>;
-    using product_space_t = PS;
+    using product_space_t = decay_type<PS>;
 
+    BlockBilinearForm() = default;
+    BlockBilinearForm( BlockBilinearForm const& ) = default;
+    BlockBilinearForm( BlockBilinearForm && ) = default;
+    
     template<typename T>
-    BlockBilinearForm( T&& ps )
+    BlockBilinearForm( T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}
     
     template<typename T,typename BackendT>
-    BlockBilinearForm( T&& ps, BackendT&& b )
+    BlockBilinearForm( T&& ps, BackendT&& b,
+                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
         {}
 
     template<typename T, typename BackendT>
-    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED )
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED,
+                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( boost::make_shared<condensed_matrix_type>( s,
@@ -117,11 +128,19 @@ public :
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
 
-    BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype m)
+    BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype & m)
         :
         M_ps(ps),
         M_matrix(m)
         {}
+
+    BlockBilinearForm(product_space_t const& ps, condensed_matrix_ptrtype & m)
+        :
+        M_ps(ps),
+        M_matrix(m)
+        {}
+    BlockBilinearForm& operator=( BlockBilinearForm const& a ) = default;
+    BlockBilinearForm& operator=( BlockBilinearForm && a ) = default;
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
             if ( this == &a )
@@ -189,6 +208,25 @@ public :
             return form2(_test=M_ps[n1],_trial=M_ps[n2], _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
         }
 
+    template<typename T>
+    void setFunctionSpace( T&& ps )
+        {
+            M_ps = std::forward<T>(ps);
+        }
+    template<typename BackendT>
+    void setStrategy( BackendT&& b )
+        {
+            
+            M_matrix = boost::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false );
+        }
+    template<typename BackendT>
+    void setStrategy( solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED )
+        {
+            M_matrix =  boost::make_shared<condensed_matrix_type>( s,
+                                                                   csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                                   std::forward<BackendT>(b),
+                                                                   (s>=solve::strategy::static_condensation)?false:true );
+        }
     void close()
         {
             M_matrix->close();
@@ -447,9 +485,16 @@ blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern )
     return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern );
 }
 
+template<typename PS, typename BackendT>
+BlockBilinearForm<PS>
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern )
+{
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern );
+}
+
 template<typename PS,typename T>
 BlockBilinearForm<PS>
-blockform2( PS&& ps, condensed_matrix_ptr_t<T> m )
+blockform2( PS&& ps, condensed_matrix_ptr_t<T> & m )
 {
     return BlockBilinearForm<PS>( std::forward<PS>(ps), m );
 }
@@ -460,27 +505,28 @@ template<typename PS>
 class BlockLinearForm
 {
 public :
-    using value_type = typename std::decay_t<PS>::value_type;
-    using product_space_t = PS;
+    using value_type = typename decay_type<PS>::value_type;
+    using product_space_t = decay_type<PS>;
     using condensed_vector_type = VectorCondensed<value_type>;
     using condensed_vector_ptrtype = boost::shared_ptr<condensed_vector_type>;
 
     BlockLinearForm() = default;
+    BlockLinearForm( BlockLinearForm const& ) = default;
 
     template<typename T, typename BackendT>
-    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
+    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_vector(boost::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
-    BlockLinearForm(T&& ps)
+    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
         :
         M_ps(std::forward<T>(ps)),
         M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T, typename BackendT>
-    BlockLinearForm(T&& ps, BackendT&& b )
+    BlockLinearForm(T&& ps, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_vector(boost::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
@@ -492,7 +538,6 @@ public :
         M_vector(v)
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
-    BlockLinearForm( BlockLinearForm& ) = default;
     BlockLinearForm& operator=( BlockLinearForm && lf ) = default;
     BlockLinearForm& operator=( BlockLinearForm const& lf ) = default;
 
@@ -528,6 +573,23 @@ public :
         {
             VLOG(2) << "filling out vector block (" << n1 << ") condense=" << M_vector->staticCondensation() << "\n";
             return form1(_test=M_ps[n1],_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
+        }
+    template<typename T>
+    void setFunctionSpace( T&& ps )
+        {
+            M_ps = std::forward<T>(ps);
+        }
+    template<typename BackendT>
+    void setStrategy( BackendT&& b )
+        {
+            M_vector = boost::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false);
+            
+            
+        }
+    template<typename BackendT>
+    void setStrategy( solve::strategy s, BackendT&& b )
+        {
+            M_vector = boost::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false);
         }
     void close()
         {
