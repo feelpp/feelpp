@@ -558,6 +558,60 @@ void serialize( Archive & ar,
 {
     split_free( ar, t, file_version );
 }
+//
+// boost::multi_array<Eigen::TensorFixedSize>
+//
+template<typename T, class Archive>
+void load( Archive & ar,
+           boost::multi_array<T,2>& t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<T,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0;
+    ar >> BOOST_SERIALIZATION_NVP( n0 );
+    size_ n1;
+    ar >> BOOST_SERIALIZATION_NVP( n1 );
+    t.resize( boost::extents[n0][n1] );
+    ar >> make_array( t.data(), t.num_elements() );
+}
+template<typename T, typename Archive>
+void save( Archive & ar,
+           const boost::multi_array<T,2> & t,
+           const unsigned int file_version )
+{
+    typedef boost::multi_array<T,2> multi_array_;
+    typedef typename multi_array_::size_type size_;
+    size_ n0 = ( t.shape()[0] );
+    ar << BOOST_SERIALIZATION_NVP( n0 );
+    size_ n1 = ( t.shape()[1] );
+    ar << BOOST_SERIALIZATION_NVP( n1 );
+    ar << boost::serialization::make_array( t.data(),
+                                            t.num_elements() );
+}
+
+template<typename T, int N,  class Archive>
+void serialize( Archive & ar,
+                boost::multi_array<Eigen::TensorFixedSize<T,Eigen::Sizes<N>>,2>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+template<typename T, int N0, int N1,  class Archive>
+void serialize( Archive & ar,
+                boost::multi_array<Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1>>,2>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
+
+template<typename T, int N0, int N1, int N2,  class Archive>
+void serialize( Archive & ar,
+                boost::multi_array<Eigen::TensorFixedSize<T,Eigen::Sizes<N0,N1,N2>>,2>& t,
+                const unsigned int file_version )
+{
+    split_free( ar, t, file_version );
+}
 
 
 
