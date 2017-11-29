@@ -31,19 +31,42 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+using namespace Feel;
+
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description modelopt( "test model properties options" );
+    modelopt.add_options()
+        ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/test.feelpp" ),
+         "json file" )
+        ;
+    return  modelopt.add( Feel::feel_options() ) ;
+}
+
+inline
+AboutData
+makeAbout()
+{
+    AboutData about( "test_modelproperties",
+                     "test_modelproperties" );
+    return about;
+
+}
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( modelproperties )
 
 BOOST_AUTO_TEST_CASE( test_materials )
 {
-    using namespace Feel;
     auto mesh = loadMesh(new Mesh<Simplex<3> >);
     auto Xh = Pch<1>(mesh);
     auto g = Xh->element();
     auto d = Xh->element();
 
-    ModelProperties model_props( Environment::expand("$testsuite_srcdir/feelmodels/test.feelpp" ) );
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto mats = model_props.materials();
     for ( auto matPair : mats )
     {
@@ -98,8 +121,7 @@ BOOST_AUTO_TEST_CASE( test_materials )
 
 BOOST_AUTO_TEST_CASE( test_parameters )
 {
-    using namespace Feel;
-    ModelProperties model_props( Environment::expand("$testsuite_srcdir/feelmodels/test.feelpp" ) );
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto param = model_props.parameters();
     for ( auto const& pp : param )
     {
@@ -127,8 +149,7 @@ BOOST_AUTO_TEST_CASE( test_parameters )
 
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
-    using namespace Feel;
-    ModelProperties model_props( Environment::expand("$testsuite_srcdir/feelmodels/test.feelpp" ) );
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto outputs = model_props.outputs();
     for( auto const& out : outputs )
     {

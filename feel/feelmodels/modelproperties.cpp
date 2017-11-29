@@ -115,10 +115,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any boundary conditions\n";
-    }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
     {
@@ -126,10 +122,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
-    }
-    else
-    {
-        LOG(WARNING) << "Model does not have any initial conditions\n";
     }
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )
@@ -139,10 +131,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_mat.setDirectoryLibExpr( directoryLibExpr );
         M_mat.setPTree( *mat );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any materials\n";
-    }
     auto pp = M_p.get_child_optional("PostProcess");
     if ( pp )
     {
@@ -151,10 +139,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any postprocess\n";
-    }
     auto out = M_p.get_child_optional("Outputs");
     if ( out )
     {
@@ -162,10 +146,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_outputs.setDirectoryLibExpr( directoryLibExpr );
         M_outputs.setPTree( *out );
-    }
-    else
-    {
-        LOG(WARNING) << "Model does not have any outputs\n";
     }
 }
 
