@@ -2211,7 +2211,6 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
     boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
-    boost::replace_all( res, "${testsuite_srcdir}", topSrcDir + "/testsuite/" );
 
     boost::replace_all( res, "$feelpp_srcdir", topSrcDir );
     boost::replace_all( res, "$feelpp_builddir", topBuildDir );
@@ -2225,7 +2224,6 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-    boost::replace_all( res, "$testsuite_srcdir", topSrcDir + "/testsuite/" );
 
 
     typedef std::vector< std::string > split_vector_type;

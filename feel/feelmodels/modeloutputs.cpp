@@ -45,8 +45,7 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
     }
     catch ( pt::ptree_bad_path& e )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing type entry in output " << M_name << "\n";
+        LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
     }
     if( auto range = p.get_child_optional("range") )
     {
@@ -58,7 +57,6 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
     else
     {
         LOG(WARNING) << "Output " << M_name << " does not have any range\n";
-        std::cout << "Output " << M_name << " does not have any range\n";
     }
     if( auto t = p.get_optional<int>("topodim") )
     {
