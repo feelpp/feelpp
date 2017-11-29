@@ -68,6 +68,15 @@ ModelOutput::ModelOutput( std::string name, pt::ptree const& p, WorldComm const&
     }
 }
 
+std::string ModelOutput::getString( std::string const& key ) const
+{
+    try { return M_p.get<std::string>( key ); }
+    catch( pt::ptree_error e ) {
+        LOG(ERROR) << "output " << M_name << ": key " << key << ": " << e.what() << std::endl;
+        exit(1);
+    }
+}
+
 std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
 {
     os << "Output " << o.name()
@@ -96,7 +105,7 @@ ModelOutputs::ModelOutputs( pt::ptree const& p, WorldComm const& worldComm )
 }
 
 ModelOutput
-ModelOutputs::loadOutput( std::string const& s, std::string name )
+ModelOutputs::loadOutput( std::string const& s, std::string const& name )
 {
     pt::ptree p;
     pt::read_json( s, p );
@@ -122,7 +131,7 @@ ModelOutputs::setup()
 }
 
 ModelOutput
-ModelOutputs::getOutput( pt::ptree const& v, std::string name )
+ModelOutputs::getOutput( pt::ptree const& v, std::string const& name )
 {
     ModelOutput o( name, v, *M_worldComm, M_directoryLibExpr );
     LOG(INFO) << "adding output " << o;
