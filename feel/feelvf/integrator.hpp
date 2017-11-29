@@ -6384,25 +6384,30 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
          eval_expr_type expr( expression(), mapgmc );
          typedef typename eval_expr_type::shape shape;
 
+         tic();
          //value_type res1 = 0;
          for ( ; it != en; ++it )
          {
              auto const& eltCur = boost::unwrap_ref( *it );
+             tic();
              __c->update( eltCur );
              map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
              expr.update( mapgmc );
              const gmc_type& gmc = *__c;
 
              M_im.update( gmc );
+             toc( "broken.range.update", FLAGS_v > 0);
 
-
+             tic();
              for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
              {
                  size_type i= P0h->dof()->localToGlobal( eltCur.id(), 0, c1 ).index();
                  double v = M_im( expr, c1, 0 );
                  p0.set( i, v );
              }
+             toc( "broken.range.evaluate", FLAGS_v > 0);
          }
+         toc( "broken.range", FLAGS_v > 0);
      }
      //std::cout << "res=" << res << "\n";
      //std::cout << "res1=" << res1 << "\n";
