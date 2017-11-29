@@ -97,6 +97,7 @@ class MixedPoisson : public ModelNumerical
     using model_prop_type = ModelProperties;
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
+    //using product_space_t = boost::shared_ptr<ProductSpace<Ch_ptr_t,true>>;
     using product2_space_type = ProductSpaces2<Ch_ptr_t, Vh_ptr_t, Wh_ptr_t, Mh_ptr_t>;
     using product2_space_ptrtype = boost::shared_ptr<product2_space_type>;
     using block_bilinear_type = BlockBilinearForm<product2_space_type>;
@@ -128,7 +129,7 @@ class MixedPoisson : public ModelNumerical
     Mh_ptr_t M_Mh; // potential trace
     Ch_ptr_t M_Ch; // Lagrange multiplier
     M0h_ptr_t M_M0h;
-    product2_space_ptrtype M_ps;
+    product2_space_type M_ps;
 
     backend_ptrtype M_backend;
     block_bilinear_type M_a;
@@ -178,7 +179,7 @@ class MixedPoisson : public ModelNumerical
     void setIBCList( std::vector<std::string> markersIbc );
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    product2_space_ptrtype getPS() const { return M_ps; }
+    product2_space_type getPS() const { return M_ps; }
 
     // time step scheme
     virtual void createTimeDiscretization();
@@ -501,7 +502,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
         Feel::cout << "Ch<" << 0 << "> : " << M_Ch->nDof() << std::endl;
 
     auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t, true>>( M_integralCondition, M_Ch );
-    M_ps = boost::make_shared<product2_space_type>( product2( ibcSpaces, M_Vh, M_Wh, M_Mh ) );
+    M_ps = product2( ibcSpaces, M_Vh, M_Wh, M_Mh );
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
@@ -511,8 +512,12 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
 
     solve::strategy s = boption( prefixvm( prefix(), "use-sc" ) ) ? solve::strategy::static_condensation : solve::strategy::monolithic;
 
-    M_a = blockform2( M_ps, s, M_backend );
-    M_rhs = blockform1( M_ps, s, M_backend );
+    M_a.setFunctionSpace( M_ps );
+    M_a.setStrategy( s, M_backend );
+    M_rhs.setFunctionSpace( M_ps );
+    M_rhs.setStrategy( s, M_backend );
+    //M_a = blockform2( M_ps, s, M_backend );
+    //M_rhs = blockform1( M_ps, s, M_backend );
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
@@ -530,7 +535,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 {
     tic();
 
-    auto U = M_ps->element();
+    auto U = M_ps.element();
 
     tic();
     Feel::cout << "Start solving" << std::endl;
