@@ -47,7 +47,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-    mpOptions.add ( backend_options( "sc" ) );
+    mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
 
