@@ -1291,7 +1291,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
 
         for ( uint16_type l =0; l < fe_type::nLocalDof; ++l )
         {
-            int ncdof  = is_product?nComponents:1;
+            int ncdof  = is_product?nRealComponents/*nComponents*/:1;
 
             for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
             {
@@ -1322,6 +1322,8 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh )
 {
+    DVLOG(2) << "[buildGlobalProcessToGlobalClusterDofMapOthersMesh] start\n";
+
     static const uint16_type nLocalDofUpToVertices = element_type::numVertices*fe_type::nDofPerVertex;
     static const uint16_type nLocalDofUpToEdges = element_type::numVertices*fe_type::nDofPerVertex + element_type::numEdges*fe_type::nDofPerEdge;
     static const uint16_type nLocalDofUpToFaces =
@@ -1348,14 +1350,25 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
     const rank_type myRank = this->worldComm().localRank();
     const rank_type nProc = this->worldComm().localSize();
-    const uint16_type ncdof = is_product?nComponents:1;
-    DVLOG(2) << "[buildGlobalProcessToGlobalClusterDofMapOthersMesh] ncdof " << ncdof << "\n";
+
+    std::set<uint16_type> localDofUsedForTensor2symm;
+    if ( is_tensor2symm )
+    {
+        for ( uint16_type d : this->M_unsymm2symm )
+            localDofUsedForTensor2symm.insert( d );
+        if (this->worldComm().isMasterRank() )
+        {
+            std::cout<<"this->M_unsymm2symm.size()"<<this->M_unsymm2symm.size()<<"\n";
+            std::cout<<"dofUsed="<<localDofUsedForTensor2symm<<"\n";
+        }
+    }
 
     size_type nLocalDofWithGhost = this->M_n_localWithGhost_df[myRank];
     std::vector<bool> dofdone( nLocalDofWithGhost,false);
     std::vector<bool> dofIsGhost( nLocalDofWithGhost,false);
     size_type nDofNotPresent=0;
-    std::vector< std::map<size_type,std::set< std::vector<size_type> > > > listToSend(this->worldComm().localSize());
+    std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > listToSend(this->worldComm().localSize());
+
     typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     bool hasMeshSupportPartial = this->hasMeshSupport() && this->meshSupport()->isPartialSupport();
@@ -1402,12 +1415,33 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
             if ( storeRangeActiveEltsTouchInterProcess )
                 myActiveEltsTouchInterProcess->push_back(boost::cref(activeElt));
 
-            for ( uint16_type locDof = 0; locDof < this->nLocalDof(true); ++locDof )
+            // prepare local dofs to analyse
+            std::map<uint16_type,std::map<uint16_type,std::tuple<uint16_type,size_type> > > mapLocalDofByCompToLocalDofAllComp;
+            for ( auto const& ldof : this->localDof( activeElt.id() ) )
             {
-                // check only component 0
-                const size_type theglobdoftest = localToGlobal( activeElt.id(),locDof, 0 ).index();
-                CHECK( theglobdoftest < nLocalDofWithGhost ) << "invalid globdof " << theglobdoftest << "\n";
-                if ( dofdone[theglobdoftest] ) continue;
+                uint16_type ldofId = ldof.first.localDof();
+                if ( is_tensor2symm )
+                    if ( localDofUsedForTensor2symm.find( ldofId ) == localDofUsedForTensor2symm.end() )
+                        continue;
+
+                uint16_type ldofParentId = this->fe().dofParent( ldofId );
+                size_type gdofId = ldof.second.index();
+                uint16_type comp = this->fe().component(ldofId);
+                mapLocalDofByCompToLocalDofAllComp[ldofParentId][comp] = std::make_tuple( ldofId,gdofId );
+            }
+
+            // loop over local dof for the detection of ghost dofs
+            for (auto const& localDofDatas : mapLocalDofByCompToLocalDofAllComp )
+            {
+                CHECK( !localDofDatas.second.empty() ) << "no localdof data is empty";
+                auto const& localDofDataFirstComponent = *localDofDatas.second.begin();
+                const uint16_type locDof = localDofDatas.first;
+                //const uint16_type locDof = std::get<0>( localDofDataFirstComponent.second );
+                const size_type theglobdoftest = std::get<1>( localDofDataFirstComponent.second );
+                DCHECK( theglobdoftest < nLocalDofWithGhost ) << "invalid globdof " << theglobdoftest << "\n";
+
+                if ( dofdone[theglobdoftest] )
+                    continue;
                 dofdone[theglobdoftest]=true;
 
                 rank_type pidDofActive = invalid_rank_type_value;
@@ -1456,19 +1490,20 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                 // if dof is ghost -> prepare send/recv
                 if ( pidDofActive != invalid_rank_type_value && pidDofActive < myRank )
                 {
-                    std::vector<size_type> compglobdofs( ncdof );
-                    for ( uint16_type c = 0; c < ncdof; ++c )
+                    std::vector<std::pair<uint16_type,size_type> > compglobdofs;
+                    for ( auto const& localDofAllComp : localDofDatas.second )
                     {
-                        // add dof in subcontainer
-                        const size_type theglobdof = localToGlobal( activeElt.id(),locDof,c ).index();
+                        const size_type theglobdof = std::get<1>( localDofAllComp.second );
+                        const uint16_type thelocdof = std::get<0>( localDofAllComp.second );
                         dofIsGhost[theglobdof] = true;
-                        compglobdofs[c]=theglobdof;
+                        compglobdofs.push_back( std::make_pair(thelocdof,theglobdof) );
                         ++nDofNotPresent;
                     }
-                    listToSend[pidDofActive][idEltInPartition].insert( compglobdofs );
+
+                    listToSend[pidDofActive][idEltInPartition].push_back( compglobdofs );
                 }
 
-            } // for ( uint16_type locDof ... )
+            } // loop over local dof
         } // for ( auto const& activeElt : elements(mesh) )
     } // is_continuous
     else if ( storeRangeActiveEltsTouchInterProcess ) // discontinuous case maybe
@@ -1637,17 +1672,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 template<typename MeshType, typename FEType, typename PeriodicityType,typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
-                                                                  std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend )
+                                                                                                                          std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend )
 {
-    typedef std::vector< boost::tuple<uint16_type, ublas::vector<double> > > mpidofs_subcontainer_type;
+    typedef std::vector< boost::tuple<std::vector<uint16_type>, ublas::vector<double> > > mpidofs_subcontainer_type; // tuple : ldof of each component + node
     typedef boost::tuple<size_type, mpidofs_subcontainer_type > mpidofs_container_type;
     typedef std::vector< mpidofs_container_type > dofs_container_to_send_type;
 
-    const int myRank = this->worldComm().localRank();
-    const int nProc = this->worldComm().localSize();
+    const rank_type myRank = this->worldComm().localRank();
+    const rank_type nProc = this->worldComm().localSize();
 
-    const uint16_type ncdof = is_product?nComponents:1;
-    const bool componentsAreSamePoint=true;
     //--------------------------------------------------------------------------------------------------------//
     std::map< rank_type,  dofs_container_to_send_type> dataToSend;
     for ( const rank_type procNeigborId : mesh.neighborSubdomains() )
@@ -1659,7 +1692,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     }
     //--------------------------------------------------------------------------------------------------------//
     // prepare container to send
-    std::map< rank_type, std::vector< std::vector<size_type> > > memoryInitialRequest;
+    std::map< rank_type, std::vector< std::vector<std::vector<size_type> > > > memoryInitialRequest;
     std::map< rank_type, int > nDataInVecToSendBis;
     for ( rank_type proc=0; proc<this->worldComm().size(); ++proc )
     {
@@ -1674,25 +1707,25 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         {
             auto itDof = itElements->second.begin();
             auto const enDof = itElements->second.end();
-            const int nDofsInElt = std::distance(itDof,enDof)*ncdof;
-            const int nDofsInEltForComm = (componentsAreSamePoint)?std::distance(itDof,enDof) : nDofsInElt;
+            const int nDofsInEltToSearch = std::distance(itDof,enDof);
 
-            CHECK( nDofsInElt>0 ) << "error in data to send : nDofsInElt=" << nDofsInElt<<" must be > 0 \n";
-
-            mpidofs_subcontainer_type dofsInEltContainer(nDofsInEltForComm);
-            memoryInitialRequest[proc][cptElt].resize(nDofsInElt);
-            for (int cptDof=0, cptDof2=0 ; itDof!=enDof ; ++itDof,++cptDof2)
+            mpidofs_subcontainer_type dofsInEltContainer(nDofsInEltToSearch);
+            memoryInitialRequest[proc][cptElt].resize(nDofsInEltToSearch);
+            for (int cptDof=0; itDof!=enDof ; ++itDof,++cptDof)
             {
-                for (uint16_type comp=0; comp<ncdof ; ++comp,++cptDof)
+                uint16_type nCompOfLocalDof = itDof->size();
+                memoryInitialRequest[proc][cptElt][cptDof].resize(nCompOfLocalDof);
+                for (uint16_type comp=0; comp<itDof->size() ; ++comp )
                 {
-                    const size_type theglobdof = itDof->operator[](comp);
+                    const uint16_type thelocdof = itDof->operator[](comp).first;
+                    const size_type theglobdof = itDof->operator[](comp).second;
                     // save the tag of mpi send
-                    const int indexDof = (componentsAreSamePoint)? comp*nDofsInEltForComm + cptDof2 : cptDof;
-                    memoryInitialRequest[proc][cptElt][indexDof/*cptDof*/] = theglobdof;
+                    memoryInitialRequest[proc][cptElt][cptDof][comp] = theglobdof;
                     //------------------------------------------------------------------------------//
-                    if (!componentsAreSamePoint)
+                    boost::get<0>( dofsInEltContainer[cptDof] ).push_back( thelocdof );
+                    if (comp==0)
                     {
-                        // get info to send
+                        // get the dof node
                         ublas::vector<double> nodeDofToSend( nRealDim );
                         auto itFindDofPoint = M_dof_points.find( theglobdof );
                         CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built";
@@ -1701,25 +1734,8 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                             nodeDofToSend[1]=itFindDofPoint->second.template get<0>()[1];
                         if ( nRealDim>2 )
                             nodeDofToSend[2]=itFindDofPoint->second.template get<0>()[2];
-                        // up container
-                        dofsInEltContainer[cptDof] = boost::make_tuple(comp,nodeDofToSend);
+                        boost::get<1>( dofsInEltContainer[cptDof] ) = nodeDofToSend;
                     }
-                    else if (comp==0)
-                    {
-                        // get info to send
-                        ublas::vector<double> nodeDofToSend( nRealDim );
-                        auto itFindDofPoint = M_dof_points.find( theglobdof );
-                        CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built";
-                        nodeDofToSend[0]=itFindDofPoint->second.template get<0>()[0];
-                        if ( nRealDim>1 )
-                            nodeDofToSend[1]=itFindDofPoint->second.template get<0>()[1];
-                        if ( nRealDim>2 )
-                            nodeDofToSend[2]=itFindDofPoint->second.template get<0>()[2];
-                        // up container
-                        dofsInEltContainer[cptDof2] = boost::make_tuple(0,nodeDofToSend);
-                    }
-
-                    //------------------------------------------------------------------------------//
                 }
             }
 
@@ -1751,7 +1767,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     mpi::wait_all(reqs, reqs + nbRequest);
     //--------------------------------------------------------------------------------------------------------//
     // build the container to ReSend
-    std::map<rank_type, std::vector< std::vector<size_type> > > dataToReSend;
+    std::map<rank_type, std::vector< std::vector< std::vector<size_type> > > > dataToReSend;
     auto itDataRecv = dataToRecv.begin();
     auto const enDataRecv = dataToRecv.end();
     for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
@@ -1761,34 +1777,59 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         auto const enEltRecv = itDataRecv->second.end();
         const int nEltRecv=  itDataRecv->second.size();
         dataToReSend[idProc].resize( nEltRecv );
-        for ( int cptFace=0 ; itEltRecv!=enEltRecv ; ++itEltRecv,++cptFace )
+        for ( int cptElt=0 ; itEltRecv!=enEltRecv ; ++itEltRecv,++cptElt )
         {
             auto const idEltInMyPartition = itEltRecv->template get<0>();
             DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
                     << "idEltInMyPartition: " << idEltInMyPartition << "\n";
+#if 1
+            std::map<uint16_type,std::tuple<node_type, std::map<uint16_type,std::tuple<uint16_type,size_type> > > > mapLocalDofByCompToLocalDofAllCompWithNode;
+            for ( auto const& ldof : this->localDof( idEltInMyPartition ) )
+            {
+                uint16_type ldofId = ldof.first.localDof();
+                uint16_type ldofParentId = this->fe().dofParent( ldofId );
+                size_type gdofId = ldof.second.index();
+                uint16_type comp = this->fe().component(ldofId);
+
+                if ( mapLocalDofByCompToLocalDofAllCompWithNode.find( ldofParentId ) == mapLocalDofByCompToLocalDofAllCompWithNode.end() )// comp == 0 )
+                {
+                    auto itFindDofPoint = M_dof_points.find( gdofId  );
+                    CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built :" << gdofId;
+                    auto const& thedofPtInElt = itFindDofPoint->second.template get<0>();
+                    std::get<0>( mapLocalDofByCompToLocalDofAllCompWithNode[ldofParentId] ) = thedofPtInElt;
+                }
+                std::get<1>( mapLocalDofByCompToLocalDofAllCompWithNode[ldofParentId] )[comp] = std::make_tuple( ldofId,gdofId );
+            }
+#endif
+
 
             auto itDofInElt = itEltRecv->template get<1>().begin();
             auto const enDofInElt = itEltRecv->template get<1>().end();
             const int nDofInElt = distance(itDofInElt,enDofInElt);
-            const int nDofInEltOpt = (componentsAreSamePoint)? nDofInElt*ncdof : nDofInElt;
-            dataToReSend[idProc][cptFace].resize( nDofInEltOpt,invalid_size_type_value );
+            dataToReSend[idProc][cptElt].resize( nDofInElt );
             for ( int cptDofInElt=0 ; itDofInElt != enDofInElt ; ++itDofInElt,++cptDofInElt )
             {
-                auto const comp = itDofInElt->template get<0>();
-                auto const nodeDofRecv = itDofInElt->template get<1>();
+                std::vector<uint16_type> const& locDofToSearch = boost::get<0>( *itDofInElt );
+                CHECK( !locDofToSearch.empty() ) << "wrong data ";
+                uint16_type locDofToSearchType = this->fe().dofType( locDofToSearch.front() );
+                std::map<uint16_type,uint16_type> mapComponentToCommContainerId;
+                for ( uint16_type k=0;k<locDofToSearch.size();++k)
+                    mapComponentToCommContainerId[ this->fe().component( locDofToSearch[k] ) ] = k;
+
+                auto const& nodeDofRecv = boost::get<1>( *itDofInElt );
                 //------------------------------------------------------------------------------//
                 // search dof on elt id recv
-                int locDof = this->nLocalDof(true);
-                bool find=false;
-                for ( uint16_type l = 0 ; l < this->nLocalDof(true) && !find ; ++l )
+                uint16_type locDofFound = invalid_uint16_type_value;
+                for ( auto const& localDofDatas : mapLocalDofByCompToLocalDofAllCompWithNode )
                 {
+                    uint16_type l = localDofDatas.first;
+                    // ignore local dof with different type
+                    if ( locDofToSearchType != this->fe().dofType( l ) )
+                         continue;
                     // dof point in element
-                    const size_type dofIdElt = localToGlobal( idEltInMyPartition, l, comp ).index();
-                    auto itFindDofPoint = M_dof_points.find( dofIdElt  );
-                    CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built :" << dofIdElt;
-                    auto const& thedofPtInElt = itFindDofPoint->second.template get<0>();
+                    auto const& thedofPtInElt = std::get<0>( localDofDatas.second );
                     DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
-                            << "thedofPtInElt: " << thedofPtInElt << "nodeDofRecv: " << nodeDofRecv << "\n";
+                             << "thedofPtInElt: " << thedofPtInElt << "nodeDofRecv: " << nodeDofRecv << "\n";
                     // test equatlity of dofs point
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
@@ -1798,44 +1839,39 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     // if find else save local dof
                     if (find2)
                     {
-                        locDof = l;
-                        find=true;
+                        locDofFound = l;
+                        break;
                     }
-                } // for ( uint16_type l = 0 ; l < this->nLocalDof(true) && !find ; ++l )
+                }
                 //------------------------------------------------------------------------------//
                 // check
-                CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
+                CHECK( locDofFound != invalid_uint16_type_value ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
                 //------------------------------------------------------------------------------//
-                if (!componentsAreSamePoint)
+                auto const& locDofAllComp = std::get<1>( mapLocalDofByCompToLocalDofAllCompWithNode.find( locDofFound )->second );
+                //CHECK( locDofAllComp.size() == nCompOfLocalDof ) << "invalid component size";
+                dataToReSend[idProc][cptElt][cptDofInElt].resize( mapComponentToCommContainerId.size()/*nCompOfLocalDof*/ );
+                for ( auto const& locDofByComp : locDofAllComp )
                 {
-                    // get global dof
-                    const auto thedof = localToGlobal( idEltInMyPartition, locDof, comp );
-                    const size_type dofGlobAsked = thedof.index();
+                    uint16_type compAsked = locDofByComp.first;
+                    auto itFindCompAsked = mapComponentToCommContainerId.find( compAsked );
+                    if ( itFindCompAsked == mapComponentToCommContainerId.end() )
+                        continue;
+                    uint16_type compContainerId = itFindCompAsked->second;
+                    uint16_type ldofIdAsked = std::get<0>( locDofByComp.second );
+                    const size_type dofGlobAsked = std::get<1>( locDofByComp.second );
                     // save response
-                    dataToReSend[idProc][cptFace][cptDofInElt] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                    dataToReSend[idProc][cptElt][cptDofInElt][compContainerId] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
                     this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
-                }
-                else
-                {
-                    for (uint16_type comp2=0; comp2<ncdof ; ++comp2)
-                    {
-                        const auto thedof = localToGlobal( idEltInMyPartition, locDof, comp2 );
-                        const size_type dofGlobAsked = thedof.index();
-                        const int indexDofInElt = comp2*nDofInElt + cptDofInElt;
-                        // save response
-                        dataToReSend[idProc][cptFace][indexDofInElt] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
-                        this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
-                    }
                 }
                 //------------------------------------------------------------------------------//
             }
-        } // for ( int cptFace=0 ... )
+        } // for ( int cptElt=0 ... )
     } // for ( ; itDataRecv ... )
 
     //--------------------------------------------------------------------------------------------------------//
     // send/recv respond to the request
     cptRequest=0;
-    std::map<rank_type, std::vector<std::vector<size_type> > > finalDataToRecv;
+    std::map<rank_type, std::vector<std::vector<std::vector<size_type> > > > finalDataToRecv;
     for ( const rank_type procNeigborId : mesh.neighborSubdomains() )
     {
         reqs[cptRequest++] = this->worldComm().localComm().isend( procNeigborId, 0, dataToReSend[procNeigborId] );
@@ -1848,38 +1884,23 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     delete [] reqs;
     //--------------------------------------------------------------------------------------------------------//
     // update datamap for ghost dof
-    auto itFinalDataToRecv = finalDataToRecv.begin();
-    auto const enFinalDataToRecv = finalDataToRecv.end();
-    for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    //auto itFinalDataToRecv = finalDataToRecv.begin();
+    //auto const enFinalDataToRecv = finalDataToRecv.end();
+    //for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    for ( auto const& finalDataByProc : finalDataToRecv )
     {
-        const rank_type idProc = itFinalDataToRecv->first;
-        auto itEltRecv = itFinalDataToRecv->second.begin();
-        auto const enEltRecv = itFinalDataToRecv->second.end();
-        for ( int cptFace=0 ; itEltRecv!=enEltRecv ; ++itEltRecv,++cptFace )
+        const rank_type idProc = finalDataByProc.first;//itFinalDataToRecv->first;
+        auto itEltRecv = finalDataByProc./*itFinalDataToRecv->*/second.begin();
+        auto const enEltRecv = finalDataByProc./*itFinalDataToRecv->*/second.end();
+        for ( int cptElt=0 ; itEltRecv!=enEltRecv ; ++itEltRecv,++cptElt )
         {
-            if (componentsAreSamePoint)
+            for ( uint16_type ll=0;ll<itEltRecv->size();++ll )
             {
-                const int nDofsInElt = itEltRecv->size()/ncdof;
-                for ( int cptDof=0 ; cptDof< nDofsInElt ; ++cptDof )
+                auto const& gdofRecvAllComp = itEltRecv->operator[](ll);
+                for ( uint16_type cc=0;cc<gdofRecvAllComp.size();++cc)
                 {
-                    for (uint16_type comp2=0; comp2<ncdof ; ++comp2)
-                    {
-                        const int myindexDof = comp2*nDofsInElt + cptDof;
-                        const size_type myGlobProcessDof = memoryInitialRequest[idProc][cptFace][myindexDof];
-                        const size_type dofGlobRecv = itEltRecv->operator[](myindexDof);
-                        //update data map
-                        this->M_mapGlobalProcessToGlobalCluster[myGlobProcessDof] = dofGlobRecv;
-                    }
-                }
-            }
-            else
-            {
-                auto itDofInElt=itEltRecv->begin();
-                auto const enDofInElt=itEltRecv->end();
-                for ( int cptDof=0 ; itDofInElt!=enDofInElt ; ++itDofInElt,++cptDof )
-                {
-                    const size_type myGlobProcessDof = memoryInitialRequest[idProc][cptFace][cptDof];
-                    const size_type dofGlobRecv = *itDofInElt;
+                    const size_type myGlobProcessDof = memoryInitialRequest[idProc][cptElt][ll][cc];
+                    const size_type dofGlobRecv = gdofRecvAllComp[cc];
                     //update data map
                     this->M_mapGlobalProcessToGlobalCluster[myGlobProcessDof] = dofGlobRecv;
                 }
@@ -1951,7 +1972,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 
     const rank_type myRank = this->worldComm().localRank();
     const rank_type nProc = this->worldComm().localSize();
-    const int ncdof = is_product?nComponents:1;
+    //const int ncdof = is_product?nComponents:1;
+    const uint16_type ncdof = is_product?nRealComponents:1;
     const bool componentsAreSamePoint=true;
 
     size_type start_next_free_dof = this->M_last_df[myRank]+1;
@@ -2268,7 +2290,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                 size_type gcdof = boost::get<1>( newDofNeigbor );
                 CHECK( this->dofGlobalClusterIsOnProc( gcdof ) ) << "must be an active dof";
                 auto itFindGpDof = mapGlobalClusterToGlobalProcessAroundInterProcess.find( gcdof );
-                CHECK( itFindGpDof != mapGlobalClusterToGlobalProcessAroundInterProcess.end() ) << "gcdof not register";
+                CHECK( itFindGpDof != mapGlobalClusterToGlobalProcessAroundInterProcess.end() ) << "gcdof not register : " << gcdof;
                 size_type gpdof = itFindGpDof->second;
                 this->M_activeDofSharedOnCluster[gpdof].insert(idProcGhost);
                 this->addNeighborSubdomain( idProcGhost );
