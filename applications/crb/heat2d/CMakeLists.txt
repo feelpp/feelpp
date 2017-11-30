@@ -27,7 +27,6 @@ install(FILES heat2d.hpp DESTINATION include/feelpp/crb/heat2d COMPONENT Devel)
 set(FEELPP_CRB_HEAT2D_LIBRARIES ${CRB_LIB_HEAT2D} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEAT2D_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(heat2d Heat2D HDRS heat2d.hpp
-  LINK_LIBRARIES ${CRB_LIB_HEAT2D}
-  CFG heat2d.cfg 
-  GEO heat2d.geo )
+crb_add_model(heat2d Heat2D HDRS heat2d.hpp LINK_LIBRARIES ${CRB_LIB_HEAT2D} )
+
+feelpp_add_testcase(heat2d PREFIX feelpp_crb CATEGORY CRB)

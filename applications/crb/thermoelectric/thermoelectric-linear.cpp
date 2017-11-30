@@ -29,17 +29,11 @@
 namespace Feel {
 
 ThermoElectric::ThermoElectric()
-    : super_type( "thermoelectric-linear" ),
-      M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
-      M_penalDir( doption("thermoelectric.penal-dir") ),
-      M_picardTol( doption("thermoelectric.picard.tol") ),
-      M_picardMaxit( ioption("thermoelectric.picard.maxit") ),
-      M_trainsetEimSize( ioption("thermoelectric.trainset-eim-size") ),
-      M_exportFE( boption("thermoelectric.export-FE") )
+    : super_type( "thermoelectric_linear" )
 {}
 
 ThermoElectric::ThermoElectric( mesh_ptrtype mesh )
-    : super_type( "thermoelectric-linear" ),
+    : super_type( "thermoelectric_linear" ),
       M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
       M_penalDir( doption("thermoelectric.penal-dir") ),
       M_picardTol( doption("thermoelectric.picard.tol") ),
@@ -214,10 +208,34 @@ ThermoElectric::paramFromProperties() const
     return mu;
 }
 
+/*************************** mesh support of functionspace **********************/
+ThermoElectric::functionspace_type::mesh_support_vector_type
+ThermoElectric::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+{
+    std::vector<std::string> elecRange, therRange;
+    for( auto const& mat : M_elecMaterials )
+        elecRange.push_back(mat.first);
+    for( auto const& mat : M_therMaterials )
+        therRange.push_back(mat.first);
+
+    auto elecDomain = markedelements(mesh, elecRange);
+    auto therDomain = markedelements(mesh, therRange);
+    auto suppElec = std::make_shared<MeshSupport<mesh_type>>(mesh,elecDomain);
+    auto suppTher = std::make_shared<MeshSupport<mesh_type>>(mesh,therDomain);
+    return fusion::make_vector(suppElec,suppTher);
+}
+
 /*************************** Initialization of the model **********************/
 void ThermoElectric::initModel()
 {
     Feel::cout << "initModel" << std::endl;
+    M_propertyPath = Environment::expand( soption("thermoelectric.filename"));
+    M_penalDir = doption("thermoelectric.penal-dir");
+    M_picardTol = doption("thermoelectric.picard.tol");
+    M_picardMaxit = ioption("thermoelectric.picard.maxit");
+    M_trainsetEimSize = ioption("thermoelectric.trainset-eim-size");
+    M_exportFE = boption("thermoelectric.export-FE");
+
     M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
     this->addModelFile("property-file", M_propertyPath);
 
@@ -271,41 +289,40 @@ void ThermoElectric::initModel()
     M_Jh = J_space_type::New( _mesh=M_mesh, _range=elecDomain );
 
     auto Pset = this->Dmu->sampling();
-    int Ne = M_trainsetEimSize;
-    std::vector<size_type> N(parameterSpace()->dimension(), 1);
+    std::vector<bool> Nd(parameterSpace()->dimension(), false);
     // we search only for the parameters involved in the electric problem
     auto bc = M_modelProps->boundaryConditions();
     for( auto const& mat : M_elecMaterials )
-        N[Dmu->indexOfParameterNamed(mat.second.getString("sigmaKey"))] = Ne;
+        Nd[Dmu->indexOfParameterNamed(mat.second.getString("sigmaKey"))] = true;
     for( auto const& exAtM : bc["potential"]["SourceTerm"] )
     {
         auto e = expr(exAtM.expression1());
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
-                N[Dmu->indexOfParameterNamed(param.first)] = Ne;
+                Nd[Dmu->indexOfParameterNamed(param.first)] = true;
     }
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
         auto e = expr(exAtM.expression1());
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
-                N[Dmu->indexOfParameterNamed(param.first)] = Ne;
+                Nd[Dmu->indexOfParameterNamed(param.first)] = true;
     }
     for( auto const& exAtM : bc["potential"]["Neumann"] )
     {
         auto e = expr(exAtM.expression1());
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
-                N[Dmu->indexOfParameterNamed(param.first)] = Ne;
+                Nd[Dmu->indexOfParameterNamed(param.first)] = true;
     }
 
     std::string supersamplingname = (boost::format("DmuEim-Ne%1%-D%2%-generated-by-master-proc")
-                                     % Ne % nbCrbParameters ).str();
+                                     % M_trainsetEimSize % nbCrbParameters ).str();
     std::ifstream file ( supersamplingname );
     bool all_proc_same_sampling=true;
     if( ! file )
     {
-        Pset->equidistributeProduct( N , all_proc_same_sampling , supersamplingname );
+        Pset->randomInDirections( M_trainsetEimSize, Nd , all_proc_same_sampling , supersamplingname );
         Pset->writeOnFile( supersamplingname );
     }
     else
@@ -316,13 +333,14 @@ void ThermoElectric::initModel()
 
     auto gradgrad = _e2v*trans(_e2v);
     auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
-                          _element=M_VT->template element<1>(),
-                          _element2=M_VT->template element<0>(),
-                          _parameter=M_mu,
-                          _expr=gradgrad,
-                          _space=M_Jh,
-                          _name="eim_gradgrad",
-                          _sampling=Pset );
+                             _element=M_VT->template element<0>(),
+                             //_element2=M_VT->template element<0>(),
+                             _parameter=M_mu,
+                             _expr=gradgrad,
+                             _space=M_Jh,
+                             _name="eim_gradgrad",
+                             _sampling=Pset
+                             );
     this->addEimDiscontinuous( eim_gradgrad );
     // for( auto const& mat : M_materials )
     // {
@@ -353,7 +371,10 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
         Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
                    << std::endl;
     M_modelProps = boost::make_shared<prop_type>(propertyPath);
-
+    M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
+    M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
+    M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
+#if 0
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                    {
@@ -375,7 +396,27 @@ void ThermoElectric::setupSpecificityModel( boost::property_tree::ptree const& p
     }
     Dmu->setMin(mu_min);
     Dmu->setMax(mu_max);
+#endif
     M_mu = Dmu->element();
+
+    if( !M_VT )
+        M_VT.reset( new element_type );
+
+    auto const& ptreeEim = ptree.get_child( "eim" );
+    auto const& ptreeEimg = ptreeEim.get_child( "eim_gradgrad" );
+    std::string dbnameEimg = ptreeEimg.template get<std::string>( "database-filename" );
+
+    auto gradgrad = _e2v*trans(_e2v);
+    auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<ThermoElectric>(this->shared_from_this() ),
+                             _element=M_VT->template element<0>(),
+                             //_element2=M_VT->template element<0>(),
+                             _parameter=M_mu,
+                             _expr=gradgrad,
+                             _space=M_Jh,
+                             _name="eim_gradgrad",
+                             _filename=dbnameEimg,
+                             _directory=dbDir );
+    this->addEimDiscontinuous( eim_gradgrad );
 
     this->resizeQm(false);
 }
@@ -1049,5 +1090,5 @@ void ThermoElectric::computeTruthCurrentDensity( current_element_type& j, parame
     }
 }
 
-FEELPP_CRB_PLUGIN( ThermoElectric, thermoelectric )
+FEELPP_CRB_PLUGIN( ThermoElectric, thermoelectric_linear )
 }
