@@ -1354,8 +1354,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     std::set<uint16_type> localDofUsedForTensor2symm;
     if ( is_tensor2symm )
     {
-        for ( uint16_type d : this->M_unsymm2symm )
-            localDofUsedForTensor2symm.insert( d );
+        std::map<uint16_type,std::vector<uint16_type> > symm2unsymm;
+        for ( uint16_type k=0;k<this->M_unsymm2symm.size();++k )
+            symm2unsymm[this->M_unsymm2symm[k]].push_back( k );
+        for ( auto const& symmdof : symm2unsymm )
+        {
+            if ( symmdof.second.empty() )
+                continue;
+            localDofUsedForTensor2symm.insert( symmdof.second.front() );
+        }
         if (this->worldComm().isMasterRank() )
         {
             std::cout<<"this->M_unsymm2symm.size()"<<this->M_unsymm2symm.size()<<"\n";
@@ -1420,6 +1427,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
             for ( auto const& ldof : this->localDof( activeElt.id() ) )
             {
                 uint16_type ldofId = ldof.first.localDof();
+
                 if ( is_tensor2symm )
                     if ( localDofUsedForTensor2symm.find( ldofId ) == localDofUsedForTensor2symm.end() )
                         continue;
@@ -1675,7 +1683,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                                                                                           std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend )
 {
     typedef std::vector< boost::tuple<std::vector<uint16_type>, ublas::vector<double> > > mpidofs_subcontainer_type; // tuple : ldof of each component + node
-    typedef boost::tuple<size_type, mpidofs_subcontainer_type > mpidofs_container_type;
+    typedef boost::tuple<size_type, mpidofs_subcontainer_type > mpidofs_container_type; // tuple : eltId + localDofs
     typedef std::vector< mpidofs_container_type > dofs_container_to_send_type;
 
     const rank_type myRank = this->worldComm().localRank();
@@ -1683,14 +1691,6 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
 
     //--------------------------------------------------------------------------------------------------------//
     std::map< rank_type,  dofs_container_to_send_type> dataToSend;
-    for ( const rank_type procNeigborId : mesh.neighborSubdomains() )
-    {
-        dataToSend[procNeigborId].clear();
-        const int nEltToSend = listToSend[procNeigborId].size();
-        if ( nEltToSend > 0 )
-            dataToSend[procNeigborId].resize( nEltToSend );
-    }
-    //--------------------------------------------------------------------------------------------------------//
     // prepare container to send
     std::map< rank_type, std::vector< std::vector<std::vector<size_type> > > > memoryInitialRequest;
     std::map< rank_type, int > nDataInVecToSendBis;
@@ -1703,6 +1703,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         const int nEltToSend = std::distance(itElements,enElements);
         memoryInitialRequest[proc].resize(nEltToSend);
 
+        dataToSend[proc].resize(nEltToSend);
         for ( int cptElt=0 ; itElements!=enElements ; ++itElements, ++cptElt)
         {
             auto itDof = itElements->second.begin();
@@ -1738,13 +1739,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     }
                 }
             }
-
-            if ( nDataInVecToSendBis.find(proc) == nDataInVecToSendBis.end() )
-                nDataInVecToSendBis[proc]=0;
-            // update container
-            dataToSend[proc][nDataInVecToSendBis[proc]] = boost::make_tuple(itElements->first,dofsInEltContainer);
-            // update counter
-            nDataInVecToSendBis[proc]++;
+            dataToSend[proc][cptElt] = boost::make_tuple(itElements->first,dofsInEltContainer);
         } // for ( int cptElt=0 ; itElements!=enElements ; ++itElements, ++cptElt)
     }
 
@@ -1782,7 +1777,8 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
             auto const idEltInMyPartition = itEltRecv->template get<0>();
             DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
                     << "idEltInMyPartition: " << idEltInMyPartition << "\n";
-#if 1
+
+            // prepare local dofs in element for localization process
             std::map<uint16_type,std::tuple<node_type, std::map<uint16_type,std::tuple<uint16_type,size_type> > > > mapLocalDofByCompToLocalDofAllCompWithNode;
             for ( auto const& ldof : this->localDof( idEltInMyPartition ) )
             {
@@ -1791,7 +1787,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 size_type gdofId = ldof.second.index();
                 uint16_type comp = this->fe().component(ldofId);
 
-                if ( mapLocalDofByCompToLocalDofAllCompWithNode.find( ldofParentId ) == mapLocalDofByCompToLocalDofAllCompWithNode.end() )// comp == 0 )
+                if ( mapLocalDofByCompToLocalDofAllCompWithNode.find( ldofParentId ) == mapLocalDofByCompToLocalDofAllCompWithNode.end() )
                 {
                     auto itFindDofPoint = M_dof_points.find( gdofId  );
                     CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built :" << gdofId;
@@ -1800,9 +1796,8 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 }
                 std::get<1>( mapLocalDofByCompToLocalDofAllCompWithNode[ldofParentId] )[comp] = std::make_tuple( ldofId,gdofId );
             }
-#endif
 
-
+            // loop over each dof in the mesh element
             auto itDofInElt = itEltRecv->template get<1>().begin();
             auto const enDofInElt = itEltRecv->template get<1>().end();
             const int nDofInElt = distance(itDofInElt,enDofInElt);
@@ -1847,23 +1842,21 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 // check
                 CHECK( locDofFound != invalid_uint16_type_value ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
                 //------------------------------------------------------------------------------//
-                auto const& locDofAllComp = std::get<1>( mapLocalDofByCompToLocalDofAllCompWithNode.find( locDofFound )->second );
-                //CHECK( locDofAllComp.size() == nCompOfLocalDof ) << "invalid component size";
-                dataToReSend[idProc][cptElt][cptDofInElt].resize( mapComponentToCommContainerId.size()/*nCompOfLocalDof*/ );
-                for ( auto const& locDofByComp : locDofAllComp )
+                auto const& locDofFoundAllComp = std::get<1>( mapLocalDofByCompToLocalDofAllCompWithNode.find( locDofFound )->second );
+                dataToReSend[idProc][cptElt][cptDofInElt].resize( mapComponentToCommContainerId.size(),invalid_size_type_value );
+                for ( auto const& locDofByComp : locDofFoundAllComp )
                 {
-                    uint16_type compAsked = locDofByComp.first;
-                    auto itFindCompAsked = mapComponentToCommContainerId.find( compAsked );
-                    if ( itFindCompAsked == mapComponentToCommContainerId.end() )
+                    uint16_type thecomp = locDofByComp.first;
+                    auto itFindComp = mapComponentToCommContainerId.find( thecomp );
+                    if ( itFindComp == mapComponentToCommContainerId.end() )
                         continue;
-                    uint16_type compContainerId = itFindCompAsked->second;
-                    uint16_type ldofIdAsked = std::get<0>( locDofByComp.second );
-                    const size_type dofGlobAsked = std::get<1>( locDofByComp.second );
+                    uint16_type compContainerId = itFindComp->second;
+                    //uint16_type ldofIdAsked = std::get<0>( locDofByComp.second );
+                    const size_type dofGlobFound = std::get<1>( locDofByComp.second );
                     // save response
-                    dataToReSend[idProc][cptElt][cptDofInElt][compContainerId] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
-                    this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
+                    dataToReSend[idProc][cptElt][cptDofInElt][compContainerId] = this->M_mapGlobalProcessToGlobalCluster[dofGlobFound];
+                    this->M_activeDofSharedOnCluster[dofGlobFound].insert(idProc);
                 }
-                //------------------------------------------------------------------------------//
             }
         } // for ( int cptElt=0 ... )
     } // for ( ; itDataRecv ... )
@@ -1884,14 +1877,11 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     delete [] reqs;
     //--------------------------------------------------------------------------------------------------------//
     // update datamap for ghost dof
-    //auto itFinalDataToRecv = finalDataToRecv.begin();
-    //auto const enFinalDataToRecv = finalDataToRecv.end();
-    //for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     for ( auto const& finalDataByProc : finalDataToRecv )
     {
-        const rank_type idProc = finalDataByProc.first;//itFinalDataToRecv->first;
-        auto itEltRecv = finalDataByProc./*itFinalDataToRecv->*/second.begin();
-        auto const enEltRecv = finalDataByProc./*itFinalDataToRecv->*/second.end();
+        const rank_type idProc = finalDataByProc.first;
+        auto itEltRecv = finalDataByProc.second.begin();
+        auto const enEltRecv = finalDataByProc.second.end();
         for ( int cptElt=0 ; itEltRecv!=enEltRecv ; ++itEltRecv,++cptElt )
         {
             for ( uint16_type ll=0;ll<itEltRecv->size();++ll )
@@ -1901,6 +1891,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 {
                     const size_type myGlobProcessDof = memoryInitialRequest[idProc][cptElt][ll][cc];
                     const size_type dofGlobRecv = gdofRecvAllComp[cc];
+                    DCHECK( dofGlobRecv != invalid_size_type_value ) << "a gdof is missing from mpi recv";
                     //update data map
                     this->M_mapGlobalProcessToGlobalCluster[myGlobProcessDof] = dofGlobRecv;
                 }
