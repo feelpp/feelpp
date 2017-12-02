@@ -153,6 +153,14 @@ public:
             }
 
         /**
+         * return name of parameter at index d
+         */
+        std::string parameterName( int d ) const
+            {
+                return M_space->parameterName(d);
+            }
+
+        /**
          * access element by name
          */
         double const& parameterNamed( std::string name ) const
