@@ -165,6 +165,27 @@ public:
         return "dubiner";
     }
 
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const
+        {
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const
+        {
+            uint16_type ldofParent = localDofId % nLocalDof;
+            return ldofParent;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const
+        {
+            return 1;
+        }
+
 
     points_type points() const
     {
@@ -279,6 +300,28 @@ public:
     {
         return "legendre";
     }
+
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const
+        {
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const
+        {
+            uint16_type ldofParent = localDofId % nLocalDof;
+            return ldofParent;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const
+        {
+            return 1;
+        }
+
     points_type points() const
     {
         return points_type();
