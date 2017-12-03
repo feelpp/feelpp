@@ -470,7 +470,7 @@ public:
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "lagrange";
     }
