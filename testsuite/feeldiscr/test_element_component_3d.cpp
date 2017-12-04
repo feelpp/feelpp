@@ -1,7 +1,11 @@
 #define BOOST_TEST_MODULE test_element_component_3d
 #include <testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pchm.hpp>
+#include <feel/feeldiscr/pdhm.hpp>
+#include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
 
@@ -41,11 +45,11 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
     BOOST_CHECK_SMALL( sfull(2,0)-szRef, 1e-12 );
 }
 
-BOOST_AUTO_TEST_CASE( element_component_tensor2 )
+template <typename SpaceType>
+void
+test_tensor2( boost::shared_ptr<SpaceType> const& Xh )
 {
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
-
-    auto Xh = Pchm<2>( mesh );
+    auto mesh = Xh->mesh();
     auto u = Xh->element( mat<3,3>( cst( 1. ),cst( 2. ),cst( 3. ),
                                     cst( 4. ),cst( 5. ),cst( 6. ),
                                     cst( 7. ),cst( 8. ),cst( 9. ) ) );
@@ -118,12 +122,13 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2 )
     BOOST_CHECK_SMALL( sfull(2,0)-szxRef, 1e-12 );
     BOOST_CHECK_SMALL( sfull(2,1)-szyRef, 1e-12 );
     BOOST_CHECK_SMALL( sfull(2,2)-szzRef, 1e-12 );
-}
 
-BOOST_AUTO_TEST_CASE( element_component_tensor2symm )
+}
+template <typename SpaceType>
+void
+test_tensor2symm( boost::shared_ptr<SpaceType> const& Xh )
 {
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
-    auto Xh = Pchms<2>( mesh );
+    auto mesh = Xh->mesh();
     auto u = Xh->element();
 
     auto uxx = u.comp( Component::X,Component::X );
@@ -169,6 +174,27 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm )
     BOOST_CHECK_CLOSE( uxy.min(), 7., 1e-12 );
     BOOST_CHECK_CLOSE( uxz.min(), 8., 1e-12 );
     BOOST_CHECK_CLOSE( uyz.min(), 9., 1e-12 );
+    BOOST_CHECK_CLOSE( uxy.max(), 7., 1e-12 );
+    BOOST_CHECK_CLOSE( uxz.max(), 8., 1e-12 );
+    BOOST_CHECK_CLOSE( uyz.max(), 9., 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( element_component_tensor2 )
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
+    test_tensor2( Pchm<2>( mesh ) );
+    test_tensor2( Pchm<2>( mesh, true ) );
+    test_tensor2( Pdhm<2>( mesh ) );
+    test_tensor2( Pdhm<2>( mesh, true ) );
+}
+
+BOOST_AUTO_TEST_CASE( element_component_tensor2symm )
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
+    test_tensor2symm( Pchms<2>( mesh ) );
+    test_tensor2symm( Pchms<2>( mesh, true ) );
+    test_tensor2symm( Pdhms<2>( mesh ) );
+    test_tensor2symm( Pdhms<2>( mesh, true ) );
 }
 
 
