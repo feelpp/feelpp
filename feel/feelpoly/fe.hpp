@@ -311,7 +311,11 @@ public:
 
     //! \return the type of a local dof
     virtual uint16_type dofType( uint16_type localDofId ) const = 0;
-//@}
+
+    //! give an unsymmetric dof index i, provide the symmetric one
+    virtual uint16_type unsymmToSymm( uint16_type i ) const { return i; }
+
+    //@}
 
 
 private:
