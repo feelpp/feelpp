@@ -1352,21 +1352,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     if ( is_tensor2symm )
     {
         std::map<uint16_type,std::vector<uint16_type> > symm2unsymm;
-        for ( uint16_type k=0;k<this->M_unsymm2symm.size();++k )
-            symm2unsymm[this->M_unsymm2symm[k]].push_back( k );
+        for ( uint16_type k=0;k<this->nLocalDof();++k )
+            symm2unsymm[this->fe().unsymmToSymm(k)].push_back( k );
         for ( auto const& symmdof : symm2unsymm )
         {
             if ( symmdof.second.empty() )
                 continue;
             localDofUsedForTensor2symm.insert( symmdof.second.front() );
         }
-#if 0
-        if (this->worldComm().isMasterRank() )
-        {
-            std::cout<<"this->M_unsymm2symm.size()"<<this->M_unsymm2symm.size()<<"\n";
-            std::cout<<"dofUsed="<<localDofUsedForTensor2symm<<"\n";
-        }
-#endif
     }
 
     size_type nLocalDofWithGhost = this->M_n_localWithGhost_df[myRank];
@@ -2022,8 +2015,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
     if ( is_tensor2symm )
     {
         std::map<uint16_type,std::vector<uint16_type> > symm2unsymm;
-        for ( uint16_type k=0;k<this->M_unsymm2symm.size();++k )
-            symm2unsymm[this->M_unsymm2symm[k]].push_back( k );
+        for ( uint16_type k=0;k<this->nLocalDof();++k )
+            symm2unsymm[this->fe().unsymmToSymm(k)].push_back( k );
         for ( auto const& symmdof : symm2unsymm )
         {
             if ( symmdof.second.empty() )
