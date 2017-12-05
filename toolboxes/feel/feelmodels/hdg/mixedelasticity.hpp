@@ -788,6 +788,7 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assembleNonCst()
 {
     tic();
+	M_F->zero();
     this->assembleF( );
 
     for ( int i = 0; i < M_IBCList.size(); i++ )
@@ -1029,7 +1030,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void
 MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 {
-    M_F->zero();
+
     auto blf = blockform1( *M_ps, M_F );
 
     auto w     = M_Wh->element( "w" ); 
