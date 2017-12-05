@@ -77,6 +77,8 @@ public:
     static const bool is_continuous = false;
     static const bool is_modal = true;
     static const uint16_type nComponents = polyset_type::nComponents;
+    static const uint16_type nComponents1 = polyset_type::nComponents1;
+    static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
     static const bool isContinuous = false;
     typedef Discontinuous continuity_type;
@@ -150,6 +152,26 @@ public:
                                               m ) < 1e-10 )( m ).warn ( "invalid transformation" );
 #endif
         this->setCoefficient( polyset_type::toType( m ), true );
+
+        if ( is_tensor2symm )
+        {
+            M_unsymm2symm.resize( nComponents*nLocalDof );
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+            {
+                for ( int c1 = 0; c1 < nComponents1; ++c1)
+                {
+                    for ( int c2 = c1+1; c2 < nComponents2; ++c2 )
+                    {
+                        const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
+                        M_unsymm2symm[ nLocalDof*(nComponents1*c1+c2) + l ] = nLocalDof*k+l;
+                        M_unsymm2symm[ nLocalDof*(nComponents1*c2+c1) + l ] = nLocalDof*k+l;
+                    }
+                    const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
+                    M_unsymm2symm[ nLocalDof*(nComponents1*c1+c1) + l ] = nLocalDof*k+l;
+                }
+            }
+        }
+
     }
 
     OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex > toScalar() const
@@ -165,6 +187,35 @@ public:
         return "dubiner";
     }
 
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const
+        {
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const
+        {
+            uint16_type ldofParent = localDofId % nLocalDof;
+            return ldofParent;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const
+        {
+            return 1;
+        }
+
+    //! give an unsymmetric dof index i, provide the symmetric one
+    uint16_type unsymmToSymm( uint16_type i ) const
+        {
+            if ( !is_tensor2symm )
+                return i;
+            DCHECK( M_unsymm2symm.size() > i ) << "invalid size of unsymm2symm container";
+            return M_unsymm2symm[i];
+        }
 
     points_type points() const
     {
@@ -174,6 +225,9 @@ public:
     {
         return points_type();
     }
+
+private :
+    std::vector<uint16_type> M_unsymm2symm;
 };
 
 template<uint16_type Dim,
@@ -279,6 +333,28 @@ public:
     {
         return "legendre";
     }
+
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const
+        {
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const
+        {
+            uint16_type ldofParent = localDofId % nLocalDof;
+            return ldofParent;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const
+        {
+            return 1;
+        }
+
     points_type points() const
     {
         return points_type();
