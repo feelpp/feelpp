@@ -164,6 +164,7 @@ public:
 
     typedef MeshSupport<mesh_type> mesh_support_type;
     typedef std::shared_ptr<mesh_support_type> mesh_support_ptrtype;
+    typedef typename super::mesh_support_base_ptrtype mesh_support_base_ptrtype;
 
     typedef typename mesh_type::element_const_iterator element_const_iterator;
     typedef typename mesh_type::element_type element_type;
@@ -381,7 +382,7 @@ public:
                  fe_type::nDofPerVertex * element_type::numVertices);
         }
 
-    DofTableInfos infos() const
+    DofTableInfos infos() const override
         {
             DofTableInfos infos;
             infos.nOrder = nOrder;
@@ -463,6 +464,11 @@ public:
      * \return mesh support
      */
     mesh_support_ptrtype meshSupport() const
+        {
+            return M_meshSupport;
+        }
+
+    mesh_support_base_ptrtype meshSupportBase() const override
         {
             return M_meshSupport;
         }
@@ -860,7 +866,7 @@ public:
 
     global_dof_type const& localToGlobal( const size_type ElId,
                                           const uint16_type localNode,
-                                          const uint16_type c = 0 ) const
+                                          const uint16_type c = 0 ) const override
         {
             auto it = M_el_l2g.left.find( localdof_type(ElId,fe_type::nLocalDof * c  + localNode ) );
             DCHECK( it != M_el_l2g.left.end() ) << "Invalid dof entry ( " << ElId << ", " << fe_type::nLocalDof * c  + localNode << ")";
@@ -879,7 +885,7 @@ public:
 
     global_dof_fromface_type const& faceLocalToGlobal( const size_type ElId,
                                                        const uint16_type localNode,
-                                                       const uint16_type c = 0 ) const
+                                                       const uint16_type c = 0 ) const override
         {
             const size_type nDofF = nLocalDofOnFace( true );
             return M_face_l2g.find( ElId )->second[ nDofF*c+localNode ];
