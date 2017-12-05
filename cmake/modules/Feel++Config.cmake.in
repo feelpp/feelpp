@@ -148,6 +148,8 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   # import targets of dependencies
   if ( FEELPP_HAS_PARAVIEW )
     find_package(ParaView PATHS ${FEELPP_PARAVIEW_DIR} NO_DEFAULT_PATH )
+  elseif ( FEELPP_HAS_VTK )
+    find_package(VTK PATHS ${FEELPP_VTK_DIR} NO_DEFAULT_PATH )
   endif()
   if ( FEELPP_HAS_NLOPT )
     include(${FEELPP_DIR}/share/feelpp/nlopt/cmake/NLoptLibraryDepends.cmake)
