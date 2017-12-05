@@ -694,20 +694,6 @@ public:
             this->M_last_df_globalcluster[processor]=this->M_last_df[processor];
         }
 
-    //!
-    //! give an unsymmetric dof index i, provide the symmetric one
-    //!
-    void setUnsymmToSymm( uint16_type i, uint16_type j )
-        {
-            M_unsymm2symm[i] = j;
-        }
-    //!
-    //! give an unsymmetric dof index i, provide the symmetric one
-    //!
-    uint16_type unsymmToSymm( uint16_type i ) const
-        {
-            return M_unsymm2symm[i];
-        }
     /**
      * \return the dof index
      */
@@ -1546,7 +1532,6 @@ private:
     dof_map_type map_gdof;
     localdof_type M_ldof;
     Dof M_gdof;
-    std::vector<uint16_type> M_unsymm2symm;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
 
@@ -2882,10 +2867,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     // geometric mapping and reference finite element
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M.gm(), this->fe().points() ) );
     gm_context_ptrtype __c( new gm_context_type( M.gm(), boost::unwrap_ref( *it_elt ), __geopc ) );
-
-    // uint16_type ncdof  = is_product?nComponents:1;
-    // if ( buildMinimalParallel )
-    //     ncdof = 1;
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
