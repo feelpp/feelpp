@@ -197,6 +197,10 @@ public :
         {
             M_matrix->zero();
         }
+    void zero(int n1, int n2 )
+        {
+            M_matrix->zero( n1, n2 );
+        }
     void syncLocalMatrix()
         {
             int s = M_ps.numberOfSpaces();
