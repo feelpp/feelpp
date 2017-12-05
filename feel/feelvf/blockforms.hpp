@@ -524,6 +524,8 @@ public :
      */
     void zero() { M_vector->zero(); }
 
+    void zero( int n1 ) { M_vector->zero( n1 ); }
+
     BlockLinearForm& operator+=( BlockLinearForm const& l )
         {
             if ( this == &l )
