@@ -579,7 +579,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-    this->assembleCstPart();
+	M_A_cst->zero();
+	M_F->zero(); 
+	this->assembleCstPart();
     this->assembleNonCstPart();
 }
 
