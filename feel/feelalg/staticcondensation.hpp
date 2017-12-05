@@ -338,7 +338,67 @@ public:
         {
             M_block_row = row;
         }
-
+    //!
+    //! zero out the local vectors and matrices
+    //! @note the allocated memory is preserved
+    //!
+    void zero()
+        {
+            this->zeroMatrix();
+            this->zeroVector();
+        }
+    //!
+    //! zero out the set of local matrices
+    //! @note the allocated memory is preserved    
+    //!
+    void zeroMatrix()
+        {
+            std::for_each( M_local_matrices.begin(), M_local_matrices.end(),
+                           []( auto& m )
+                           {
+                               for( auto& e : m.second )
+                               {
+                                   e.second.setZero();
+                               }
+                           } );
+                           
+        }
+    //!
+    //! zero out the block matrix @arg n1,n2
+    //! @note the allocated memory is preserved    
+    //!
+    void zero( int n1, int n2 )
+        {
+            for( auto& e: M_local_matrices[std::make_pair(n1,n2)] )
+            {
+                e.second.setZero();
+            }
+        }
+    //!
+    //! zero out the set of local vectors
+    //! @note the allocated memory is preserved    
+    //!
+    void zeroVector()
+        {
+            std::for_each( M_local_vectors.begin(), M_local_vectors.end(),
+                           []( auto& m )
+                           {
+                               for( auto& e : m.second )
+                               {
+                                   e.second.setZero();
+                               }
+                           } );
+        }
+    //!
+    //! zero out the block vector @arg n1
+    //!
+    void zero( int n1 )
+        {
+            for( auto& e: M_local_vectors[n1] )
+            {
+                e.second.setZero();
+            }
+        }
     void setDim4( int dim4 ) { M_dim4 = dim4; }
     
     using local_vector_t = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
