@@ -1303,6 +1303,11 @@ if( FEELPP_ENABLE_OMC )
   include( feelpp.module.omc )
 endif()
 
+option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_FMILIB )
+  include( feelpp.module.fmilib )
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
