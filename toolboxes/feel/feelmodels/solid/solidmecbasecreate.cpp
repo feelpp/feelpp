@@ -499,9 +499,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTens
         M_fieldVonMisesCriterions.reset( new element_stress_scal_type( M_XhStressTensor->compSpace() ) );
     if ( !M_fieldTrescaCriterions )
         M_fieldTrescaCriterions.reset( new element_stress_scal_type( M_XhStressTensor->compSpace() ) );
-    if ( M_fieldsPrincipalStresses.size() != nDim )
-        M_fieldsPrincipalStresses.resize( nDim );
-    for (int d=0;d<nDim;++d)
+    if ( M_fieldsPrincipalStresses.size() != 3 )
+        M_fieldsPrincipalStresses.resize( 3 );
+    for (int d=0;d<M_fieldsPrincipalStresses.size();++d)
         if( !M_fieldsPrincipalStresses[d] )
             M_fieldsPrincipalStresses[d].reset( new element_stress_scal_type( M_XhStressTensor->compSpace() ) );
 }

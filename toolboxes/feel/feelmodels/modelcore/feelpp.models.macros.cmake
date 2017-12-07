@@ -74,7 +74,7 @@ macro(genLibBase)
 
   # install process
   if ( FEELMODELS_GENLIB_BASE_ADD_CMAKE_INSTALL )
-    INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT Libs)
+    INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
   endif()
 
 endmacro(genLibBase)

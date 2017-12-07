@@ -422,6 +422,23 @@ public:
         return mat;
     }
 
+    /** return all the materials which physic is one of physics
+     *
+     */
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> physics) const
+    {
+        std::map<std::string,ModelMaterial> mat;
+        std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                     [physics](std::pair<std::string,ModelMaterial> const& mp)
+                     {
+                         bool b = false;
+                         for( auto const& p : physics )
+                             b = b || mp.second.hasPhysics(p);
+                         return b;
+                     });
+        return mat;
+    }
+
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
     void setParameterValues( std::map<std::string,double> const& mp );
