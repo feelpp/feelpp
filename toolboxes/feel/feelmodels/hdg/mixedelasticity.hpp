@@ -31,6 +31,32 @@
 
 namespace Feel {
 
+
+template <typename SpaceType>
+NullSpace<double> hdgNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( vec(Py(),-Px()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+    return userNullSpace;
+}
+
+template <typename SpaceType>
+NullSpace<double> hdgNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( oneZ() );
+    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+    return userNullSpace;
+}
+
+
+
 namespace FeelModels {
 
 inline
@@ -48,6 +74,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
+        ( prefixvm( prefix, "nullspace").c_str(), po::value<bool>()->default_value( false ), "add null space" )
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
 	mpOptions.add ( backend_options( prefix+".sc" ) );
@@ -788,6 +815,7 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assembleNonCst()
 {
     tic();
+	M_F->zero();
     this->assembleF( );
 
     for ( int i = 0; i < M_IBCList.size(); i++ )
@@ -807,6 +835,12 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 	auto bbf = blockform2(*M_ps, M_A_cst);
     
 	auto blf = blockform1(*M_ps, M_F);
+
+    boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(M_backend,hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
+    M_backend->attachNearNullSpace( myNullSpace );
+    if ( boption(_name=prefixvm( prefix(), "nullspace").c_str()) )
+	    M_backend->attachNearNullSpace( myNullSpace );
+
 
     std::string solver_string = "MixedElasticity : ";
     if( boption(prefixvm(prefix(), "use-sc")) )
@@ -1029,7 +1063,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void
 MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 {
-    M_F->zero();
+
     auto blf = blockform1( *M_ps, M_F );
 
     auto w     = M_Wh->element( "w" ); 
