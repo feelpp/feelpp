@@ -23,7 +23,7 @@
 #
 
 foreach(D 3)
-    foreach(P RANGE 0 FEELPP_INSTANTIATION_ORDER_MAX ) #3 
+    foreach(P RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
         feelpp_add_application( mixed-poisson-model_${D}DP${P}
                                 SRCS mixedpoisson_main.cpp
                                 LINK_LIBRARIES feelpp_modelcore
@@ -33,7 +33,7 @@ foreach(D 3)
 endforeach()
 
 foreach(D 3)
-  foreach(P  RANGE 0 FEELPP_INSTANTIATION_ORDER_MAX ) #3 
+  foreach(P  RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
 	foreach (N 1)
 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
 							SRCS mixedelasticity_main.cpp 
@@ -46,7 +46,7 @@ foreach(D 3)
 endforeach()
 
 foreach(D 2 3)
-  foreach(P RANGE 0 FEELPP_INSTANTIATION_ORDER_MAX ) #3 
+  foreach(P RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
     feelpp_add_application( thermoelectricHDG_${D}DP${P}
                             SRCS thermoelectric.hpp thermoelectric_main.cpp
                             DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
