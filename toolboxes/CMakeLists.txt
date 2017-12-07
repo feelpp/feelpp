@@ -74,11 +74,15 @@ if ( FEELPP_MODELS_ENABLE_FSI )
 endif()
 if ( FEELPP_MODELS_ENABLE_HDG )
   add_subdirectory( hdg )
-
+if ( FEELPP_MODELS_ENABLE_ADVECTION )
   add_subdirectory( advection )
+endif()
+if( FEELPP_MODELS_ENABLE_LEVELSET )
   add_subdirectory( levelset )
-  add_subdirectory( multifluid )
-
+endif()
+if ( FEELPP_MODELS_ENABLE_MULTIFLUID )
+add_subdirectory( multifluid )
+endif()
   # Heat Toolbox
 if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )
   add_subdirectory( thermodyn )
