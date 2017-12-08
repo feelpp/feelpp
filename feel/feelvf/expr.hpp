@@ -539,7 +539,7 @@ public:
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
-        Eigen::Map<const Eigen::Matrix<value_type, shape::M*shape::N,1>>
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
         evaliq( uint16_type i, uint16_type q ) const
         {
             return M_tensor_expr.evaliq( i, q );
