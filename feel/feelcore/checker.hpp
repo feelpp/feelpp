@@ -187,6 +187,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
                     cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
                     break;
                 }
+                return 1;
             }
             catch( CheckerConvergenceFailed const& ex )
             {
