@@ -22,12 +22,14 @@
 #
 #
 
+set(FEELPP_HDG_PATH ${CMAKE_SOURCE_DIR}/toolboxes/feel/feelmodels/hdg )
+
 foreach(D 3)
     foreach(P RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
         feelpp_add_application( mixed-poisson-model_${D}DP${P}
-                                SRCS mixedpoisson_main.cpp
+                                SRCS mixedpoisson_main.cpp ${FEELPP_HDG_PATH}/options.cpp
                                 LINK_LIBRARIES feelpp_modelcore
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_MODELS_HDG_NOEXTERN
                                 INSTALL )
   endforeach()
 endforeach()
@@ -36,8 +38,8 @@ foreach(D 3)
   foreach(P  RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
 	foreach (N 1)
 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
-							SRCS mixedelasticity_main.cpp 
-							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
+							SRCS mixedelasticity_main.cpp ${FEELPP_HDG_PATH}/options.cpp
+							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N} FEELPP_MODELS_HDG_NOEXTERN
 							INCLUDE_IN_ALL
 							LINK_LIBRARIES feelpp_modelcore
                             INSTALL )
@@ -48,8 +50,8 @@ endforeach()
 foreach(D 2 3)
   foreach(P RANGE 0 ${FEELPP_INSTANTIATION_ORDER_MAX} ) #3
     feelpp_add_application( thermoelectricHDG_${D}DP${P}
-                            SRCS thermoelectric.hpp thermoelectric_main.cpp
-                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                            SRCS thermoelectric.hpp thermoelectric_main.cpp ${FEELPP_HDG_PATH}/options.cpp
+                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_MODELS_HDG_NOEXTERN
                             LINK_LIBRARIES feelpp_modelcore
                             INSTALL
                             )
