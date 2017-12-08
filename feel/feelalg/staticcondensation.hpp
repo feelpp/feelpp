@@ -40,8 +40,55 @@
 
 namespace Feel {
 
+
+//!
+//! describe the state of local matrix/vector in static condensation
+//!
+enum class scstate
+{
+    none=0, //! no initialized 
+    updated,  
+    modified, 
+};
+
 namespace detail {
 
+
+template<typename block_element_t, typename local_matrices_t>
+class LocalMatrix: public std::unordered_map<block_element_t,local_matrices_t,boost::hash<block_element_t>>
+{
+public:
+    using super = std::unordered_map<block_element_t,local_matrices_t,boost::hash<block_element_t>>;
+
+    LocalMatrix() : super(), M_state( scstate::none ) {}
+    LocalMatrix( LocalMatrix const& lm ) : super(lm), M_state( lm.M_state )  {}
+    LocalMatrix( LocalMatrix && lm ) : super(lm), M_state( lm.M_state ) {}
+
+    bool isUpdated() const { return M_state == scstate::updated; }
+    bool isModified() const { return M_state == scstate::modified; }
+    scstate state() const { return M_state; }
+    void setState( scstate s ) { M_state = s; }
+private:
+    scstate M_state;
+};
+
+template<typename local_vector_t>
+class LocalVector: public std::unordered_map<size_type,local_vector_t>
+{
+public:
+    using super = std::unordered_map<size_type,local_vector_t>;
+
+    LocalVector() : super(), M_state( scstate::none ) {}
+    LocalVector( LocalVector const& lm ) : super(lm), M_state( lm.M_state )  {}
+    LocalVector( LocalVector && lm ) : super(lm), M_state( lm.M_state ) {}
+
+    bool isUpdated() const { return M_state == scstate::updated; }
+    bool isModified() const { return M_state == scstate::modified; }
+    scstate state() const { return M_state; }
+    void setState( scstate s ) { M_state = s; }
+private:
+    scstate M_state;
+};
 //! this data structure stores element faces ids which can possibly split onto
 //! two sets of face ids depending on the type of approximation used on the faces
 class ElementFaces
@@ -394,8 +441,8 @@ public:
                 return (len>tasks)?len/tasks:len+1;
             }
     };
-    using block_local_vectors_t = std::unordered_map<size_type,local_vector_t>;
-    using block_local_matrices_t = std::unordered_map<block_element_t,local_matrix_t,boost::hash<block_element_t>>;
+    using block_local_vectors_t = Feel::detail::LocalVector<local_vector_t>;
+    using block_local_matrices_t = Feel::detail::LocalMatrix<block_element_t,local_matrix_t>;
 private:
     /**
      * unassembled view of the matrix
@@ -416,7 +463,13 @@ private:
     
     std::unordered_map<int,local_matrix_t> M_AinvB;
     std::unordered_map<int,local_vector_t> M_AinvF;
-
+    std::unordered_map<int,local_matrix_t> M_AK;
+    std::unordered_map<int,local_matrix_t> M_BK;
+    std::unordered_map<int,local_matrix_t> M_CK;
+    std::unordered_map<int,local_vector_t> M_FK;
+    std::unordered_map<int,local_vector_t> M_F3;
+    
+    
     using dK_iterator_type = std::unordered_map<int,Feel::detail::ElementFaces>::iterator;
     std::unordered_map<int,Feel::detail::ElementFaces> M_dK;
     block_index_t M_block_rowcol;
