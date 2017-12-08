@@ -4193,19 +4193,23 @@ public:
                 auto gmpc = this->mesh()->gm()->preCompute( this->mesh()->gm(), p );
                 auto range_elts = elements( this->mesh() );
                 auto elt_beg = begin( range_elts );
-                auto gmc = this->mesh()->gm()->template context<vm::JACOBIAN>( boost::unwrap_ref(*elt_beg), gmpc );
-                for ( auto const& rangeElt : elements( this->mesh() ) )
+                auto elt_end = end( range_elts );
+                if ( elt_beg != elt_end )
                 {
-                    auto const& meshElt = boost::unwrap_ref( rangeElt );
-                    size_type e = meshElt.id();
-                    gmc->update( meshElt );
-                    auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
-                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    auto gmc = this->mesh()->gm()->template context<vm::JACOBIAN>( boost::unwrap_ref(*elt_beg), gmpc );
+                    for ( auto const& rangeElt : elements( this->mesh() ) )
                     {
-                        size_type index = ldof.second.index();
-                        v.operator[](p0_eid) += basispc->firstMoment(ldof.first.localDof())*super::operator[]( index );
+                        auto const& meshElt = boost::unwrap_ref( rangeElt );
+                        size_type e = meshElt.id();
+                        gmc->update( meshElt );
+                        auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
+                        for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                        {
+                            size_type index = ldof.second.index();
+                            v.operator[](p0_eid) += basispc->firstMoment(ldof.first.localDof())*super::operator[]( index );
+                        }
+                        v.operator[](p0_eid) *= gmc->J(0)/meshElt.measure();
                     }
-                    v.operator[](p0_eid) *= gmc->J(0)/meshElt.measure();
                 }
                 return v;
             }
