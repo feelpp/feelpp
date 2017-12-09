@@ -201,6 +201,9 @@ public:
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
+    // mesh support of functionspace
+    functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
+
     // Decomposition
     void assemble() override;
     affine_decomposition_type computeAffineDecomposition() override;
