@@ -15,36 +15,7 @@ using namespace Feel;
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( element_component )
-#if 0
-BOOST_AUTO_TEST_CASE( element_component_vectorial )
-{
-    typedef Mesh<Simplex<2,1,2> > mesh_type;
-    GeoTool::Node x1( 0,0 );
-    GeoTool::Node x2( 4,1 );
-    GeoTool::Rectangle R( doption(_name="gmsh.hsize"),"OMEGA",x1,x2 );
-    auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
 
-    auto Xh = Pchv<2>( mesh );
-    auto u = Xh->element( vec( cst( 1. ),cst( 2. ) ) );
-    auto ux = u[Component::X];
-    auto uy = u[Component::Y];
-
-    double sxRef = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate()( 0,0 );
-    double sx1 = integrate( _range=elements( mesh ), _expr=trans( idv( u ) )*oneX() ).evaluate()( 0,0 );
-    double sx2 = integrate( _range=elements( mesh ), _expr=idv( ux ) ).evaluate()( 0,0 );
-    BOOST_CHECK_SMALL( sx1-sxRef,1e-12 );
-    BOOST_CHECK_SMALL( sx2-sxRef,1e-12 );
-    double syRef = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate()( 0,0 );
-    double sy1 = integrate( _range=elements( mesh ), _expr=trans( idv( u ) )*oneY() ).evaluate()( 0,0 );
-    double sy2 = integrate( _range=elements( mesh ), _expr=idv( uy ) ).evaluate()( 0,0 );
-    BOOST_CHECK_SMALL( sy1-syRef,1e-12 );
-    BOOST_CHECK_SMALL( sy2-syRef,1e-12 );
-
-    auto sfull = integrate( _range=elements( mesh ), _expr=idv(u) ).evaluate();
-    BOOST_CHECK_SMALL( sfull(0,0)-sxRef, 1e-12 );
-    BOOST_CHECK_SMALL( sfull(1,0)-syRef, 1e-12 );
-}
-#endif
 template<int O=1>
 boost::shared_ptr<Mesh<Simplex<2,O,2>>>
 getReferenceTriangleMesh()
@@ -73,6 +44,69 @@ getTriangleMesh()
     return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>,_name= "domain" );
 }
 
+BOOST_AUTO_TEST_CASE( element_component_vectorial )
+{
+    auto mesh = getTriangleMesh();
+
+    auto Xh = Pchv<2>( mesh );
+    auto u = Xh->element( vec( cst( 1. ),cst( 2. ) ) );
+    auto ux = u[Component::X];
+    auto uy = u[Component::Y];
+
+    double sxRef = integrate( _range=elements( mesh ), _expr=cst(1.) ).evaluate()( 0,0 );
+    double sx1 = integrate( _range=elements( mesh ), _expr=trans( idv( u ) )*oneX() ).evaluate()( 0,0 );
+    double sx2 = integrate( _range=elements( mesh ), _expr=idv( ux ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( sx1-sxRef,1e-12 );
+    BOOST_CHECK_SMALL( sx2-sxRef,1e-12 );
+    double syRef = integrate( _range=elements( mesh ), _expr=cst(2.) ).evaluate()( 0,0 );
+    double sy1 = integrate( _range=elements( mesh ), _expr=trans( idv( u ) )*oneY() ).evaluate()( 0,0 );
+    double sy2 = integrate( _range=elements( mesh ), _expr=idv( uy ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( sy1-syRef,1e-12 );
+    BOOST_CHECK_SMALL( sy2-syRef,1e-12 );
+
+    auto sfull = integrate( _range=elements( mesh ), _expr=idv(u) ).evaluate();
+    BOOST_CHECK_SMALL( sfull(0,0)-sxRef, 1e-12 );
+    BOOST_CHECK_SMALL( sfull(1,0)-syRef, 1e-12 );
+}
+
+template<typename SpaceT>
+void
+test_tensor2symm_basic(std::string const& name, boost::shared_ptr<SpaceT> const& Vh )
+{
+    auto mesh = Vh->mesh();
+    auto uTensor2 = Vh->element();
+    auto uxx = uTensor2.comp( Component::X,Component::X );
+    auto uxy = uTensor2.comp( Component::X,Component::Y );
+    auto uyx = uTensor2.comp( Component::Y,Component::X );
+    auto uyy = uTensor2.comp( Component::Y,Component::Y );
+    uxx.on(_range=elements(mesh),_expr=cst(1.));
+    uxy.on(_range=elements(mesh),_expr=cst(2.));
+    uyy.on(_range=elements(mesh),_expr=cst(3.));
+
+    BOOST_CHECK_CLOSE( uxx.max(), 1., 1e-12 );
+    BOOST_CHECK_CLOSE( uxx.min(), 1., 1e-12 );
+    BOOST_CHECK_CLOSE( uxy.max(), 2., 1e-12 );
+    BOOST_CHECK_CLOSE( uxy.min(), 2., 1e-12 );
+    BOOST_CHECK_CLOSE( uyx.max(), 2., 1e-12 );
+    BOOST_CHECK_CLOSE( uyx.min(), 2., 1e-12 );
+    BOOST_CHECK_CLOSE( uyy.max(), 3., 1e-12 );
+    BOOST_CHECK_CLOSE( uyy.min(), 3., 1e-12 );
+
+    uyx.on(_range=elements(mesh),_expr=cst(5.));
+    BOOST_CHECK_CLOSE( uxy.max(), 5., 1e-12 );
+    BOOST_CHECK_CLOSE( uxy.min(), 5., 1e-12 );
+    BOOST_CHECK_CLOSE( uyx.max(), 5., 1e-12 );
+    BOOST_CHECK_CLOSE( uyx.min(), 5., 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous_basic )
+{
+    auto m1 = getReferenceTriangleMesh();
+    test_tensor2symm_basic( "tensor2_cs_basic", Pchms<2>(  m1 ) );
+    auto m2 = getTriangleMesh();
+    test_tensor2symm_basic( "tensor2_cs_basic", Pchms<2>(  m2, false ) );
+    test_tensor2symm_basic( "tensor2_cs_basic_edt", Pchms<2>(  m2, true ) );
+}
 
 template</*typename MeshT,*/ typename SpaceT>
 void
@@ -430,23 +464,23 @@ test_tensor2(std::string const& name, boost::shared_ptr<typename SpaceT::mesh_ty
     cout << "a33 works fine" << std::endl;
 #endif
 }
+
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous_ref )
 {
     BOOST_TEST_MESSAGE( "element_component_tensor2_continuous_ref starts" );
     auto m1 = getReferenceTriangleMesh();
-    test_tensor2</*Mesh<Simplex<2>>,*/Pchm_type<Mesh<Simplex<2>>,1>>("tensor2_c_ref",m1);
+    test_tensor2<Pchm_type<Mesh<Simplex<2>>,1>>("tensor2_c_ref",m1);
     BOOST_TEST_MESSAGE( "element_component_tensor2_continuous_ref ends" );
 }
-#if 1
+
 BOOST_AUTO_TEST_CASE( element_component_tensor2_continuous )
 {
     BOOST_TEST_MESSAGE( "element_component_tensor2_continuous starts" );
     auto m2 = getTriangleMesh();
-    test_tensor2</*Mesh<Simplex<2>>,*/Pchm_type<Mesh<Simplex<2>>,1>>("tensor2_c",m2);
+    test_tensor2<Pchm_type<Mesh<Simplex<2>>,1>>("tensor2_c",m2);
     BOOST_TEST_MESSAGE( "element_component_tensor2_continuous ends" );
 }
-#endif
-#if 0
+
 BOOST_AUTO_TEST_CASE( element_component_tensor2_discontinuous )
 {
     auto m1 = getReferenceTriangleMesh();
@@ -463,15 +497,12 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous )
     test_tensor2<Pchms_type<Mesh<Simplex<2>>,2>>("tensor2_cs",m2);
 }
 
-#endif
-
-#if 1
 BOOST_AUTO_TEST_CASE( element_component_tensor2symm_discontinuous )
 {
     auto m1 = getReferenceTriangleMesh();
-    test_tensor2</*Mesh<Simplex<2>>,*/Pdhms_type<Mesh<Simplex<2>>,2>>("tensor2_ds",m1);
-    //auto m2 = getTriangleMesh();
-    //test_tensor2<Pdhms_type<Mesh<Simplex<2>>,2>>("tensor2_ds",m2);
+    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,2>>("tensor2_ds",m1);
+    auto m2 = getTriangleMesh();
+    test_tensor2<Pdhms_type<Mesh<Simplex<2>>,2>>("tensor2_ds",m2);
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()

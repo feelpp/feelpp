@@ -2819,7 +2819,7 @@ public:
                         size_type index = ldof.second.index();
                         if ( is_tensor2symm )
                         {
-                            int i = M_functionspace->dof()->unsymmToSymm(ldof.first.localDof());
+                            int i = M_functionspace->dof()->fe().unsymmToSymm(ldof.first.localDof());
                             super::operator[]( index ) = s(i)*loc(i);
                         }
                         else
