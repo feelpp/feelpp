@@ -210,7 +210,6 @@ class MixedPoisson : public ModelNumerical
     virtual void assembleCstPart();
     virtual void assembleNonCstPart();
     void setFZero();
-    void copyCstPart();
 
     void assembleRHS();
     template <typename ExprT>
