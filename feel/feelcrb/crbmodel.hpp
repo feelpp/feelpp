@@ -1776,7 +1776,7 @@ public:
      */
     bool hasEim()
     {
-        return M_has_eim;
+        return M_has_eim || hasDeim();
     }
 
     bool hasDeim()
@@ -2832,6 +2832,8 @@ public:
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
 
 
+    typename model_type::warp_element_type fieldForWarp( parameter_type const& mu ) { return M_model->fieldForWarp(mu); }
+    bool hasWarpField() const { return M_model->hasWarpField(); }
     //@}
 
 
