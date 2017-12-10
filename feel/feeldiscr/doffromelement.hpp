@@ -554,32 +554,13 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
                                           size_type shift )
 {
 
-    size_type tndof = M_doftable->nLocalDof(  );
+    //size_type tndof = M_doftable->nLocalDof(  );
     size_type nldof = M_doftable->nLocalDof( true );
 
     DVLOG(3) << "adding dof from element " << __elt.id() << "\n";
     size_type gdofcount = shift;
     DVLOG(3) << "next_free_dof " << next_free_dof  << "\n";
     DVLOG(3) << "current dof " << M_doftable->dofIndex( next_free_dof ) << "\n";
-
-    M_doftable->M_unsymm2symm.resize( tndof );
-    for ( uint16_type l = 0; l < nldof; ++l )
-    {
-        if ( is_tensor2symm )
-        {
-            for ( int c1 = 0; c1 < nComponents1; ++c1)
-            {
-                for ( int c2 = c1+1; c2 < nComponents1; ++c2 )
-                {
-                    const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
-                    M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c1+c2) + l, nldof*k+l );
-                    M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c2+c1) + l, nldof*k+l );
-                }
-                const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
-                M_doftable->setUnsymmToSymm( fe_type::nLocalDof*(nComponents1*c1+c1) + l, nldof*k+l );
-            }
-        }
-    }
 
     /*
      * Only in the continuous , we need to have the ordering [vertex,edge,face,volume]
