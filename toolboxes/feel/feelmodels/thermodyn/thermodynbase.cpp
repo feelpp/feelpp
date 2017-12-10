@@ -111,6 +111,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("ThermoDynamics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
 
@@ -551,18 +553,47 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoDynamics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                   this->fieldTemperature() );
-    M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-
-    if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
+    bool hasFieldToExport = false;
+    if ( this->hasPostProcessFieldExported( "temperature" ) )
     {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                       this->fieldVelocityConvection() );
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
+                                       this->fieldTemperature() );
+        hasFieldToExport = true;
     }
-    M_exporter->save();
+    if ( this->hasPostProcessFieldExported( "pid" ) )
+    {
+        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+
+    if ( this->hasPostProcessFieldExported( "velocity-convection" ) )
+    {
+        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                           this->fieldVelocityConvection() );
+            hasFieldToExport = true;
+        }
+    }
+    if ( this->hasPostProcessFieldExported( "thermal-conductivity" ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
+                                       this->thermalProperties()->fieldThermalConductivity() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "density" ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"density"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
+                                       this->thermalProperties()->fieldRho() );
+        hasFieldToExport = true;
+    }
+
+    if ( hasFieldToExport )
+        M_exporter->save();
 
     this->exportMeasures( time );
 

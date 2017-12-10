@@ -930,7 +930,7 @@ public :
             k=0;
             for( auto const& item : ptreeAffineDecomposition->get_child("betaFqm") )
             {
-                int sizeSubBetaFqm = ptreeAffineDecomposition->get_child("").size();
+                int sizeSubBetaFqm = item.second.get_child("").size();
                 M_betaFqm[k].resize( sizeSubBetaFqm );
                 int k2=0;
                 for ( auto const& item2 : item.second.get_child("") )
@@ -2041,6 +2041,13 @@ public:
     {
         return Xh;
     }
+
+    virtual
+    typename functionspace_type::mesh_support_vector_type
+    functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+        {
+            return typename functionspace_type::mesh_support_vector_type();
+        }
 
     /**
      * \brief Returns the reduced basis function space
