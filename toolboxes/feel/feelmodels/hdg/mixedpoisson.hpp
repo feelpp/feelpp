@@ -47,7 +47,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-    mpOptions.add ( backend_options( "sc" ) );
+    mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
 
@@ -579,7 +579,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-    this->assembleCstPart();
+	M_A_cst->zero();
+	M_F->zero(); 
+	this->assembleCstPart();
     this->assembleNonCstPart();
 }
 
@@ -1532,8 +1534,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
             {
                 LOG(INFO) << "exporting flux at time " << time;
             
-                M_exporter->step( time )->add(prefixvm(prefix(), "flux"),
-                                              Idhv?(*Idhv)( M_up):M_up );
+                M_exporter->step( time )->add(prefixvm(prefix(), "flux"), Idhv?(*Idhv)( M_up):M_up );
                 if (M_integralCondition)
                 {
                     double meas = 0.0;
@@ -1588,11 +1589,11 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
 
-                    auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-                    auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
 
-                    Feel::cout << "Integral value of potential(from pp) on "
-                      		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
+                    // auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                    // auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                    //Feel::cout << "Integral value of potential(from pp) on " << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
+
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
@@ -1624,9 +1625,11 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
 								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
-								
-                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= u_exact - idv(M_up) );
-                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+
+                                // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
+                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
+								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
 								
@@ -1668,20 +1671,20 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
 					
-                    auto scaled_ibc = M_mup[i];
+                    auto scaled_ibc = M_mup[i].max();
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
                         auto kk_ibc = expr(material.getScalar( "scale_potential" ) ).evaluate();
-                        scaled_ibc.scale(kk_ibc);
+                        scaled_ibc = scaled_ibc * kk_ibc;
                     }                    
                     
                     LOG(INFO) << "exporting IBC scaled potential " << i << " at time "
-                              << time << " value " << scaled_ibc[0];
+                              << time << " value " << scaled_ibc;
                     M_exporter->step( time )->add(prefixvm(prefix(), "scaled_cstPotential_1"),
-                                                  scaled_ibc[0] );
-                    Feel::cout << "Integral value of potential(mup) on "
-                               << M_IBCList[i].marker() << " : \t " << scaled_ibc[0] << std::endl;
+                                                  scaled_ibc );
+                    Feel::cout << "Integral scaled value of potential(mup) on "
+                               << M_IBCList[i].marker() << " : \t " << scaled_ibc << std::endl;
                     
                 }
             }

@@ -54,6 +54,7 @@ feelpp_add_test( makemesh )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( element_component )
+feelpp_add_test( element_component_3d )
 feelpp_add_test( matrixfield )
 
 if ( FEELPP_HAS_FFTW )
