@@ -32,17 +32,6 @@
 
 namespace Feel {
 
-namespace detail {
-
-inline constexpr uint16_type
-symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
-{
-    return  j + n*i - i*(i+1) /2.;
-};
-
-
-}
-
 /**
  * \addtogroup Traits
  * @{

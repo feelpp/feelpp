@@ -231,6 +231,7 @@ public:
     //! POD
     typedef POD<truth_model_type> pod_type;
     typedef boost::shared_ptr<pod_type> pod_ptrtype;
+    typedef typename pod_type::mode_set_type mode_set_type;
 
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
@@ -252,7 +253,7 @@ public:
     typedef std::vector<y_type> y_set_type;
     typedef std::vector<boost::tuple<double,double> > y_bounds_type;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef std::vector<double> vector_double_type;
@@ -267,9 +268,6 @@ public:
     typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
     typedef boost::tuple< std::vector<double>,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
     typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
-
-    typedef std::vector<element_type> mode_set_type;
-    typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
 
     typedef boost::multi_array<value_type, 2> array_2_type;
     typedef boost::multi_array<vectorN_type, 2> array_3_type;
@@ -6317,18 +6315,21 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 #else
     for ( size_type i =N-Nm; i < N; ++i )
     {
+        auto & wni = unwrap_ptr( wn[i] );
         for ( size_type j = 0; j < i; ++j )
         {
-            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
-            wn[i].add( -__rij_pr, wn[j] );
+            auto const& wnj = unwrap_ptr( wn[j] );
+            value_type __rij_pr = M_model->scalarProduct( wni, wnj );
+            wni.add( -__rij_pr, wnj );
         }
     }
 #endif
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
-        value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i] ) );
-        wn[i].scale( 1./__rii_pr );
+        auto & wni = unwrap_ptr( wn[i] );
+        value_type __rii_pr = math::sqrt( M_model->scalarProduct( wni, wni ) );
+        wni.scale( 1./__rii_pr );
     }
 
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
@@ -6395,10 +6396,10 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
     if ( !M_exporter )
-        M_exporter = exporter( _mesh=first_element.functionSpace()->mesh(), _name="BasisFunctions");
+        M_exporter = exporter( _mesh=unwrap_ptr(first_element).functionSpace()->mesh(), _name="BasisFunctions");
 
     int basis_number=0;
-    for( auto wn : vect_wn )
+    for( auto const& wn : vect_wn )
     {
 
         if ( wn.size()==0 )
@@ -6409,7 +6410,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         int element_number=0;
         parameter_type mu;
 
-        for( auto element : wn )
+        for( auto const& element : wn )
         {
 
             std::string basis_name = vect_names[basis_number];
@@ -6423,7 +6424,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
             }
 
             std::string name =   basis_name + number + mu_str;
-            M_exporter->step( 0 )->add( name, element );
+            M_exporter->step( 0 )->add( name, unwrap_ptr( element ) );
             element_number++;
         }
         basis_number++;
@@ -9606,10 +9607,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
         if ( M_orthonormalize_dual )
             //in this case we can simplify because elements of reduced basis are orthonormalized
         {
-            for( auto du : M_model->rBFunctionSpace()->dualRB() )
+            for( auto const& du : M_model->rBFunctionSpace()->dualRB() )
             {
-                element_type e = du.functionSpace()->element();
-                e = du;
+                element_type e = unwrap_ptr( du ).functionSpace()->element();
+                e = unwrap_ptr( du );
                 double k =  M_model->scalarProduct( u, e );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9636,10 +9637,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            for( auto du : M_model->rBFunctionSpace()->dualRB() )
+            for( auto const& du : M_model->rBFunctionSpace()->dualRB() )
             {
-                element_type e = du.functionSpace()->element();
-                e = du;
+                element_type e = unwrap_ptr( du ).functionSpace()->element();
+                e = unwrap_ptr( du );
                 double k =  projectionN( index );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9652,10 +9653,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
     {
         if ( M_orthonormalize_primal )
         {
-            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
+            for( auto const& pr : M_model->rBFunctionSpace()->primalRB() )
             {
-                auto e = pr.functionSpace()->element();
-                e = pr;
+                auto e = unwrap_ptr( pr ).functionSpace()->element();
+                e = unwrap_ptr( pr );
                 double k =  M_model->scalarProduct( u, e );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9682,10 +9683,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
+            for( auto const& pr : M_model->rBFunctionSpace()->primalRB() )
             {
-                element_type e = pr.functionSpace()->element();
-                e = pr;
+                element_type e = unwrap_ptr( pr ).functionSpace()->element();
+                e = unwrap_ptr( pr );
                 double k =  projectionN( index );
                 e.scale( k );
                 projection->add( 1 , e );
