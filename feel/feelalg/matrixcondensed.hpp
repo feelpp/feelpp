@@ -140,7 +140,7 @@ public:
     std::size_t nnz() const override
         {
             if ( staticCondensation() )
-                M_sc->nnz();
+                return M_sc->nnz();
             else
                 return super::nnz();
         }
