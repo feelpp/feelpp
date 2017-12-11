@@ -48,13 +48,20 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
         py::dict locals = py::cast(_locals);
         py::print(locals);
         py::eval_file( pyfilename.c_str(), py::globals(), locals );
-#if 0
+        
+#if 1
         for( auto l : _locals )
         {
-            std::string cmd = l.first + "= sympytoginac(" + l.first +" );";
-            std::cout << cmd << std::endl;
-            py::exec(cmd, py::globals(), locals );
-            _locals[l.first] = locals[l.first.c_str()].cast<std::string>();
+            std::cout << "l: " << l.first << std::endl;
+            for( auto n : l.second )
+            {
+                std::cout << "n: " << n.first << std::endl;
+                std::string v = l.first+"['"+n.first+"']";
+                std::string cmd =  v + "= sympytoginac(" + v +" );";
+                std::cout << cmd << std::endl;
+                py::exec(cmd, py::globals(), locals );
+                _locals[l.first][n.first] = locals[l.first.c_str()][n.first.c_str()].cast<std::string>();
+            }
         }
 #endif
     }
