@@ -2832,8 +2832,11 @@ public:
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
 
 
-    typename model_type::warp_element_type fieldForWarp( parameter_type const& mu ) { return M_model->fieldForWarp(mu); }
-    bool hasWarpField() const { return M_model->hasWarpField(); }
+    typename model_type::displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
+    {
+        return M_model->meshDisplacementField(mu);
+    }
+    bool hasDisplacementField() const { return M_model->hasDisplacementField(); }
     //@}
 
 

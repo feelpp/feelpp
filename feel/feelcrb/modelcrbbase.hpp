@@ -189,10 +189,10 @@ public :
     typedef vf::detail::BilinearForm<functionspace_type, functionspace_type,VectorUblas<value_type>> form2_type;
     typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
 
-    typedef Pchv_type<mesh_type,1> warp_space_type;
-    typedef boost::shared_ptr<warp_space_type> warp_space_ptrtype;
-    typedef typename warp_space_type::element_type warp_element_type;
-
+    typedef Pchv_type<mesh_type,1> displacement_space_type;
+    typedef boost::shared_ptr<displacement_space_type> displacement_space_ptrtype;
+    typedef typename displacement_space_type::element_type displacement_field_type;
+    typedef typename boost::shared_ptr<displacement_field_type> displacement_field_ptrtype;
 
 #if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
@@ -297,7 +297,7 @@ public :
         M_backend( backend() ),
         M_crbModelDb( name, uid ),
         M_is_initialized( false ),
-        M_has_warp_field( boption("crb.has-warp-field") )
+        M_has_displacement_field( false )
     {
 
         bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
@@ -2067,16 +2067,16 @@ public:
 
     //! Return a P1 vector field to warp the domain if we want to visualize the
     //! the effect of geometric parameters.
-    virtual warp_element_type fieldForWarp( parameter_type const& mu )
+    virtual displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
     {
-        CHECK( false ) << "Error : the function fieldForWarp() has been called without beeing rewrite. Set option crb.has-warp-field to false or provide a fieldForWarp function\n";
+        CHECK( false ) << "Error : the function fieldForWarp() has been called without beeing rewrite.\n";
 
-        warp_element_type u;
+        displacement_field_ptrtype u;
         return u;
     }
 
-    bool hasWarpField() const { return M_has_warp_field; }
-    void setHasWarpField( bool const _hwf ) { M_has_warp_field=_hwf; }
+    bool hasDisplacementField() const { return M_has_displacement_field; }
+    void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
 
 protected :
@@ -2093,7 +2093,7 @@ protected :
 
     deim_vector_type M_deims;
     mdeim_vector_type M_mdeims;
-    bool M_is_initialized, M_has_warp_field;
+    bool M_is_initialized, M_has_displacement_field;
 
     sparse_matrix_ptrtype M;
     sparse_matrix_ptrtype M_energy_matrix;
