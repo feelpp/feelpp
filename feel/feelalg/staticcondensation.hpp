@@ -393,6 +393,10 @@ public:
         {
             M_block_row = row;
         }
+    std::size_t nnz() const
+        {
+            return M_nnz;
+        }
     //!
     //! zero out the local vectors and matrices
     //! @note the allocated memory is preserved
@@ -535,6 +539,7 @@ private:
     block_index_t M_block_rowcol;
     int M_block_row;
     int M_dim4;
+    std::size_t M_nnz;
     CondenseData M_condense;
     LocalSolveData M_localsolve;
     std::mutex mutex_add_v, mutex_add_m;;
@@ -1085,6 +1090,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         toc("sc.condense.sequential", FLAGS_v>0);
 
     }
+    M_nnz = S.nnz();
 }
 
 template<typename T>
@@ -1470,6 +1476,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
         }
 
     }
+    M_nnz = S.nnz();
 }
 template<typename E, typename T=double>
 struct LocalSolver

@@ -219,6 +219,13 @@ public:
     {
         return M_col_startInMatrix;
     }
+    //!
+    //! @return number of non-zero entries
+    //!
+    std::size_t nnz() const
+    {
+        M_matrix->nnz();
+    }
     /**
      * @brief set the bilinear form to zero
      * @details set the bilinear form and its
