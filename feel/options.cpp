@@ -684,7 +684,6 @@ crbOptions( std::string const& prefix )
         ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
 
         ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
-        ( "crb.has-warp-field",Feel::po::value<bool>()->default_value( false ), "does the model provide a vector field to warp the domain ? (geometricaly parametrised problem)")
 
         ;
 
