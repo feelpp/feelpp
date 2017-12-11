@@ -95,7 +95,7 @@ public:
     std::string const& prefix() const { return M_prefix; }
     std::string const& fluidPrefix() const { return super_type::prefix(); }
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    boost::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
     boost::shared_ptr<self_type> shared_from_this() { return boost::static_pointer_cast<self_type>(super_type::shared_from_this()); }
@@ -170,10 +170,10 @@ protected:
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
     // Linear solve
-    void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const;
+    void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const override;
     // Non-linear solve
-    void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const;
-    void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const;
+    void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const override;
+    void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const override;
     //--------------------------------------------------------------------//
     // Export
     virtual void exportResultsImpl( double time );
