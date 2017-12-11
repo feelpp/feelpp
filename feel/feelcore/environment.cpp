@@ -477,6 +477,11 @@ Environment::Environment( int argc, char** argv,
     initPetsc( &argc, &envargv );
 #endif
 
+#if defined(FEELPP_HAS_MONGOCXX )
+    if ( !S_mongocxxInstance )
+        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
+#endif
+
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
@@ -645,6 +650,11 @@ Environment::~Environment()
     VLOG( 2 ) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    VLOG( 2 ) << "cleaning mongocxxInstance";
+    S_mongocxxInstance.reset();
+#endif
 
     if ( i_initialized )
     {
@@ -1136,7 +1146,9 @@ Environment::processGenericOptions()
             worldComm().barrier();
             MPI_Finalize();
         }
-
+#if defined(FEELPP_HAS_MONGOCXX )
+        S_mongocxxInstance.reset();
+#endif
         exit( 0 );
     }
 
@@ -2320,4 +2332,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 
 TimerTable Environment::S_timers;
 
+#if defined(FEELPP_HAS_MONGOCXX )
+std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
+#endif
 }
