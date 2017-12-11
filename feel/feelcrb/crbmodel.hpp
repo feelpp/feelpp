@@ -4009,7 +4009,11 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             if( boption("crb.use-symmetric-matrix") )
                 Adu = A;
             else
+            {
+                Adu = M_backend_dual->newMatrix(_test=Xh,_trial=Xh);
                 A->transpose( Adu );
+            }
+
 
             //uold = udu;
             M_preconditioner_dual->setMatrix( Adu );
