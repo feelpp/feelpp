@@ -69,14 +69,12 @@ loadPlugin( std::string const& name, std::string const& id )
 
 void runCrbOnlineList()
 {
-#if defined ( FEELPP_HAS_MONGOCXX )    
-    mongocxx::instance inst{};
+#if defined ( FEELPP_HAS_MONGOCXX )
     mongocxx::client conn{mongocxx::uri{}};
 
     using namespace bsoncxx::builder::basic;
     document document{};
-    
-    
+
     auto collection = conn["feelpp"]["crbdb"];
 
     std::cout << "document " << bsoncxx::to_json(document.view()) << std::endl;
@@ -96,8 +94,7 @@ void runCrbOnlineList()
 
 void runCrbOnlineQuery()
 {
-#if defined ( FEELPP_HAS_MONGOCXX )    
-    mongocxx::instance inst{};
+#if defined ( FEELPP_HAS_MONGOCXX )
     mongocxx::client conn{mongocxx::uri{}};
 
     using namespace bsoncxx::builder::basic;
@@ -136,8 +133,7 @@ void runCrbOnlineQuery()
 
 void runCrbOnlineCompare()
 {
-#if defined ( FEELPP_HAS_MONGOCXX )    
-    mongocxx::instance inst{};
+#if defined ( FEELPP_HAS_MONGOCXX )
     mongocxx::client conn{mongocxx::uri{}};
 
     using namespace bsoncxx::builder::basic;
@@ -246,6 +242,7 @@ runCrbOnline( std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugin )
     if ( loadFiniteElementDatabase )
         plugin[0]->initExporter();
 
+    int rbDim = ioption(_name="rb-dim");
     int nSamples = mysampling->size();
     for ( int k=0;k<nSamples;++k )
     {
@@ -259,7 +256,7 @@ runCrbOnline( std::vector<boost::shared_ptr<Feel::CRBPluginAPI>> plugin )
         //std::cout << "input mu\n" << mu << "\n";
         for( auto const& p : plugin )
         {
-            auto crbResult = p->run( mu, time_crb, online_tol, -1, print_rb_matrix);
+            auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
             auto resOuptut = boost::get<0>( crbResult );
             auto resError = boost::get<0>( boost::get<6>( crbResult ) );
             std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
@@ -302,7 +299,6 @@ loadPlugin()
     {
         std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
         std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
-            
         std::cout << " . using db " << jsonfilename << std::endl;
 
         plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
@@ -324,6 +320,7 @@ int main(int argc, char**argv )
         ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
+        ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
         ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
         ( "compare", po::value<std::string>(), "compare results from query in mongodb DB feelpp.crbdb" )
         ( "list", "list registered DB in mongoDB  in feelpp.crbdb" )
