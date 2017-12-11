@@ -1,20 +1,12 @@
 #undef LEVELSET_DIM
 #undef LEVELSET_ORDERGEO
 #undef LEVELSET_ORDERPOLY
-#undef LEVELSET_INTERPOLATION_POINTS
-#undef LEVELSET_USE_PERIODICITY
 
 #define LEVELSET_DIM @LEVELSET_DIM@
 #define LEVELSET_ORDERGEO @LEVELSET_ORDERGEO@
 #define LEVELSET_ORDERPOLY @LEVELSET_ORDERPOLY@
-#define LEVELSET_INTERPOLATION_POINTS @LEVELSET_POINT_SET@
-#define LEVELSET_USE_PERIODICITY @LEVELSET_USE_PERIODICITY@
-
-#if LEVELSET_USE_PERIODICITY
-#define LEVELSET_PERIODICITY Periodicity<Periodic<>>
-#else
+#define LEVELSET_INTERPOLATION_POINTS PointSetFekete
 #define LEVELSET_PERIODICITY NoPeriodicity
-#endif
 
 #define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
     template< typename ConvexType, typename BasisType, typename PeriodicityType > \
@@ -26,7 +18,7 @@
     LevelSet< Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>, \
         Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS >, \
         LEVELSET_PERIODICITY \
-        >                                                              \
+        >                    \
     /**/
 #define LEVELSET_CLASS_INSTANTIATION \
     template class LEVELSET_CLASS_TYPE ;  \

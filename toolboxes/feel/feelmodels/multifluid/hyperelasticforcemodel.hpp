@@ -40,7 +40,7 @@ public:
     HyperelasticForceModel() = default;
     HyperelasticForceModel( HyperelasticForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
     void build( std::string const& prefix, levelset_ptrtype const& ls, std::string const& name );
 
     void loadParametersFromOptionsVm();
