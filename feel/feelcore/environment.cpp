@@ -477,6 +477,11 @@ Environment::Environment( int argc, char** argv,
     initPetsc( &argc, &envargv );
 #endif
 
+#if defined(FEELPP_HAS_MONGOCXX )
+    if ( !S_mongocxxInstance )
+        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
+#endif
+
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
@@ -534,11 +539,6 @@ Environment::Environment( int argc, char** argv,
     /* to extract info about architecture */
 #if defined(FEELPP_HAS_HARTS)
     Environment::initHwlocTopology();
-#endif
-
-#if defined(FEELPP_HAS_MONGOCXX )
-    if ( !S_mongocxxInstance )
-        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
 #endif
 
 }
@@ -1146,7 +1146,9 @@ Environment::processGenericOptions()
             worldComm().barrier();
             MPI_Finalize();
         }
-
+#if defined(FEELPP_HAS_MONGOCXX )
+        S_mongocxxInstance.reset();
+#endif
         exit( 0 );
     }
 
