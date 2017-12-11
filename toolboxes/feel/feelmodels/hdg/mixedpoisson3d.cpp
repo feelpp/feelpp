@@ -28,12 +28,8 @@ namespace Feel {
 
 namespace FeelModels {
 
-template class MixedPoisson<2,0,1,4>;
-template class MixedPoisson<2,1,1,4>;
-template class MixedPoisson<2,2,1,4>;
-template class MixedPoisson<2,3,1,4>;
 
-template class MixedPoisson<3,0,1,4>;
+//template class MixedPoisson<3,0,1,4>;
 template class MixedPoisson<3,1,1,4>;
 template class MixedPoisson<3,2,1,4>;
 template class MixedPoisson<3,3,1,4>;
