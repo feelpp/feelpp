@@ -47,7 +47,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-    mpOptions.add ( backend_options( "sc" ) );
+    mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
 
@@ -579,7 +579,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-    this->assembleCstPart();
+	M_A_cst->zero();
+	M_F->zero(); 
+	this->assembleCstPart();
     this->assembleNonCstPart();
 }
 

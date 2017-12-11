@@ -35,7 +35,7 @@ public:
 
     void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    boost::shared_ptr<std::ostringstream> getInfo() const override;
 
     void loadParametersFromOptionsVm();
     //--------------------------------------------------------------------//
@@ -46,7 +46,7 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F ) const;
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const override;
     void addHelfrichForce( element_ptrtype & F, int impl ) const;
 
     //--------------------------------------------------------------------//

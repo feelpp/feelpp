@@ -60,6 +60,7 @@ endforeach()
 
 
 feelpp_add_testcase(bitter CATEGORY hdg)
+feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
 feelpp_add_testcase(cylinder CATEGORY hdg )
 feelpp_add_testcase(testDarcy CATEGORY hdg )
 feelpp_add_testcase(mixed-poisson CATEGORY hdg )

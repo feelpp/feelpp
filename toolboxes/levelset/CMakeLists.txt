@@ -1,8 +1,8 @@
 
 feelpp_add_application( levelset_2d SRCS main_ls.cpp
   LINK_LIBRARIES
-  feelpp_model_levelset2dP1G1Fekete
-  feelpp_model_levelset2dP2G1Fekete
+  feelpp_model_levelset2dP1G1
+  feelpp_model_levelset2dP2G1
   #feelpp_model_fluidmec2dP1P1G1
   #feelpp_model_fluidmec2dP2P1cG1DVP0c
   #feelpp_model_fluidmec2dP1P1cG1DVP0c
