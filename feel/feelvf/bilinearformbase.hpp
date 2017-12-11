@@ -224,7 +224,7 @@ public:
     //!
     std::size_t nnz() const
     {
-        M_matrix->nnz();
+        return M_matrix->nnz();
     }
     /**
      * @brief set the bilinear form to zero
