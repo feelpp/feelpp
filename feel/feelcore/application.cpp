@@ -41,6 +41,8 @@
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -963,7 +965,7 @@ Application::run()
     // directory to store its results. the statistics files will be stored in the
     // same directory as the executable for now
     fs::path cp = fs::current_path();
-
+    ptree::ptree global_ptree;
     for ( auto i = M_simgets.begin(), end = M_simgets.end(); i != end; ++i )
     {
         if ( ( runonly.empty() == false  ) &&
@@ -988,8 +990,13 @@ Application::run()
                 {
                     has_stats = true;
 
+                    i->stats().put( "name",i->name() );
+                    i->stats().put( "nprocs", Environment::numberOfProcessors());
                     i->stats().put( "h",i->meshSize() );
                     i->stats().put( "level", i->level() );
+
+                    std::string node = i->name()+"."+std::to_string(i->level());
+                    global_ptree.put_child( node, i->stats() );
 
                     M_stats[i->name()].push_back( i->stats() );
                     updateStats( M_stats[i->name()] );
@@ -997,7 +1004,7 @@ Application::run()
                 }
 
         }
-        if ( !prepare && has_stats == true )
+        if ( !prepare && has_stats == true && Environment::isMasterRank() )
         {
             std::string fname = (boost::format( "%1%-%2%.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofs( cp / fname );
@@ -1015,8 +1022,13 @@ Application::run()
             this->printStats( ofserrors, Application::ERRORS|Application::FLAT );
             this->printStats( ofstime, Application::TIME|Application::FLAT );
             this->printStats( ofsdata, Application::DATA|Application::NUMBERS|Application::FLAT );
+
         }
     }
+    std::string fnamejson = (boost::format( "%1%-%2%.json" )% Environment::about().appName()% Environment::numberOfProcessors() ).str();
+    fs::ofstream ofsjson( cp / fnamejson );
+    ptree::write_json(ofsjson, global_ptree);
+
 }
 
 void
