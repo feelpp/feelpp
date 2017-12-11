@@ -9,18 +9,6 @@ foreach(_DIM 2 3)
           DIM     ${_DIM}
           LEVELSET_ORDER ${_PHI_ORDER}
           GEO_ORDER 1 
-          POINT_SET PointSetEquiSpaced
-          USE_PERIODICITY 0
-          ADD_CMAKE_INSTALL
-          )
-  set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME}  )
-      genLibLevelset(
-          DIM     ${_DIM}
-          LEVELSET_ORDER ${_PHI_ORDER}
-          GEO_ORDER 1 
-          POINT_SET PointSetFekete
-          USE_PERIODICITY 0
-          ADD_CMAKE_INSTALL
           )
   set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME}  )
   endforeach()
@@ -36,8 +24,6 @@ endforeach()
       #DIM     ${_DIM}
       #PHI_ORDER ${_PHI_ORDER}
       #GEO_ORDER ${_PHI_ORDER}
-      ##USE_PERIODICITY
-      #ADD_CMAKE_INSTALL
       #)
   #set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME} )
   #endforeach()
