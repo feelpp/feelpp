@@ -134,6 +134,16 @@ public:
                 M_sc->block( row, col );
             return this->shared_from_this();
         }
+    //!
+    //! @return the number of non-zero entries
+    //!
+    std::size_t nnz() const override
+        {
+            if ( staticCondensation() )
+                M_sc->nnz();
+            else
+                return super::nnz();
+        }
     void zero() override
         {
             if ( staticCondensation() )

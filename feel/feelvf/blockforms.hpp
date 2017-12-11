@@ -239,6 +239,11 @@ public :
         {
             M_matrix->zero( n1, n2 );
         }
+    //!
+    //! @return the number of non-zero entries in matrix representation
+    //!
+    std::size_t nnz() const { return M_matrix->nnz(); }
+    
     void syncLocalMatrix()
         {
             int s = M_ps.numberOfSpaces();
