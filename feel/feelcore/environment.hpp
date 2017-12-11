@@ -70,6 +70,9 @@
 #include <hwloc.h>
 #endif
 
+#if defined(FEELPP_HAS_MONGOCXX )
+#include <mongocxx/instance.hpp>
+#endif
 
 namespace Feel
 {
@@ -848,6 +851,10 @@ private:
 #endif
 
     static TimerTable S_timers;
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;
+#endif
 };
 
 BOOST_PARAMETER_FUNCTION(

@@ -536,6 +536,11 @@ Environment::Environment( int argc, char** argv,
     Environment::initHwlocTopology();
 #endif
 
+#if defined(FEELPP_HAS_MONGOCXX )
+    if ( !S_mongocxxInstance )
+        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
+#endif
+
 }
 void
 Environment::clearSomeMemory()
@@ -645,6 +650,11 @@ Environment::~Environment()
     VLOG( 2 ) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    VLOG( 2 ) << "cleaning mongocxxInstance";
+    S_mongocxxInstance.reset();
+#endif
 
     if ( i_initialized )
     {
@@ -2320,4 +2330,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 
 TimerTable Environment::S_timers;
 
+#if defined(FEELPP_HAS_MONGOCXX )
+std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
+#endif
 }
