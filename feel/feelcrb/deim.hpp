@@ -125,12 +125,9 @@ public :
     /**
      * \brief Constructor of DEIM class
      */
-    DEIMBase(  space_ptrtype Xh,
-               parameterspace_ptrtype Dmu,
-               sampling_ptrtype sampling,
-               uuids::uuid const& uid,
-               std::string const& modelname,
-               std::string prefix="",
+    DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling,
+               uuids::uuid const& uid, std::string const& modelname,
+               std::string prefix, std::string const& dbfilename, std::string const& dbdirectory,
                WorldComm const& worldComm = Environment::worldComm() ) :
         super ( ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
                 "deim",
@@ -159,8 +156,35 @@ public :
         M_online_model_updated( false )
     {
         using Feel::cout;
-        this->setDBDirectory( modelname,uid );
-        this->addDBSubDirectory( "deim"+M_prefix );
+
+        if ( dbfilename.empty() )
+        {
+            this->setDBDirectory( modelname,uid );
+            this->addDBSubDirectory( "deim"+M_prefix );
+        }
+        else
+        {
+            fs::path dbfilenamePath = dbfilename;
+            this->setDBFilename( dbfilenamePath.filename().string() );
+            if ( dbfilenamePath.is_relative() )
+            {
+                std::string mysubDir;
+                if ( !dbfilenamePath.parent_path().empty() )
+                    mysubDir = dbfilenamePath.parent_path().string();
+
+                fs::path dbdirectoryPath = dbdirectory;
+                if ( !dbdirectoryPath.is_absolute() )
+                    dbdirectoryPath = fs::absolute( dbdirectoryPath );
+                this->setDBDirectory( dbdirectoryPath.string() );
+
+                dbfilenamePath = (dbdirectoryPath/dbfilenamePath).string();
+
+                if ( !mysubDir.empty() )
+                    this->addDBSubDirectory( mysubDir );
+            }
+            else
+                this->setDBDirectory( dbfilenamePath.parent_path().string() );
+        }
 
         if ( !M_rebuild )
         {
@@ -187,6 +211,11 @@ public :
             return algorithm::to_lower_copy(name);
         return name;
     }
+    static std::string prefixName( std::string prefix="" )
+    {
+        return ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix ).str();
+    }
+
 
     /**
      * The assemble function has to be provided by the model. This
@@ -773,13 +802,11 @@ public :
         super_type()
     {}
 
-    DEIMModel( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model->functionSpace(),
-                    model->parameterSpace(),
-                    sampling,
-                    model->uuid(),
-                    model->modelName(),
-                    prefix ),
+    DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix,
+               std::string const& dbfilename, std::string const& dbdirectory) :
+        super_type( model->functionSpace(), model->parameterSpace(),
+                    sampling, model->uuid(), model->modelName(),
+                    prefix, dbfilename, dbdirectory ),
         M_model( model )
     {
         if ( this->M_optimized_online )
@@ -967,8 +994,9 @@ public :
     {}
 
     DEIM( model_ptrtype model, testspace_ptrtype test_space,
-          sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix ),
+          sampling_ptrtype sampling, std::string prefix,
+          std::string const& dbfilename, std::string const& dbdirectory ) :
+        super_type( model, sampling, prefix, dbfilename, dbdirectory ),
         Teh( test_space )
     {
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
@@ -1104,8 +1132,9 @@ public :
         super_type()
     {}
 
-    MDEIM( model_ptrtype model, sampling_ptrtype sampling=nullptr, std::string prefix="" ) :
-        super_type( model, sampling, prefix )
+    MDEIM( model_ptrtype model, sampling_ptrtype sampling, std::string prefix,
+           std::string const& dbfilename, std::string const& dbdirectory ) :
+        super_type( model, sampling, prefix, dbfilename, dbdirectory )
     {
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
         this->init();
@@ -1407,11 +1436,13 @@ BOOST_PARAMETER_FUNCTION(
                            ( sampling, *, nullptr )
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( test, *, model->functionSpace() )
+                           ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
-    return boost::make_shared<deim_type>( model,test, sampling, prefix );
+    return boost::make_shared<deim_type>( model,test, sampling, prefix, filename, directory );
 }
 
 
@@ -1425,11 +1456,13 @@ BOOST_PARAMETER_FUNCTION(
                          ( optional
                            ( sampling, *, nullptr )
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
-    return boost::make_shared<mdeim_type>( model, sampling, prefix );
+    return boost::make_shared<mdeim_type>( model, sampling, prefix, filename, directory );
 }
 
 po::options_description deimOptions( std::string const& prefix ="");
