@@ -99,6 +99,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
+        Environment::setOptionValue("deim.rebuild-db", true );
         auto M_deim = deim( _model=this->shared_from_this(),
                             _sampling=Pset );
 
