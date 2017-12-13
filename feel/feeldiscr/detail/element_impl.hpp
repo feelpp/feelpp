@@ -2577,8 +2577,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
 
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
-                 << " element id= " << ((faceConnectionId = 0)? curFace.ad_first() : curFace.ad_second() )
-                 << " pos in elt= " << ((faceConnectionId = 0)? curFace.pos_first() : curFace.pos_second() )
+                 << " element id= " << ((faceConnectionId == 0)? curFace.ad_first() : curFace.ad_second() )
+                 << " pos in elt= " << ((faceConnectionId == 0)? curFace.pos_first() : curFace.pos_second() )
                  << " hasMarker: " << curFace.hasMarker() << "\n";
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 

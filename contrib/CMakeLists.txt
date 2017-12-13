@@ -20,3 +20,5 @@ if ( FEELPP_HAS_MONGOCXX )
   add_subdirectory(mongocxx)
 endif()
 add_subdirectory(gmsh)
+
+install(EXPORT feelpp-contrib-export-targets DESTINATION share/feelpp/feel/cmake/modules)
