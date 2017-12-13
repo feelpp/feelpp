@@ -309,11 +309,22 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string cons
 
 
     M_prefix = prefix;
+
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
+	if (boption(prefixvm(this->prefix(), "use-sc")))
+	{
+    	if ( M_prefix.empty())
+        	M_backend = backend( _name="sc", _rebuild=true);
+    	else
+        	M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
+	} 
+	else	
+	{
+    	if ( M_prefix.empty())
+        	M_backend = backend( _rebuild=true);
+    	else
+        	M_backend = backend( _name=prefix, _rebuild=true);
+	}
 
     M_tau_constant = doption (prefixvm(M_prefix, "tau_constant") );
     M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
@@ -837,20 +848,20 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 	auto blf = blockform1(*M_ps, M_F);
 
     boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(M_backend,hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
-    M_backend->attachNearNullSpace( myNullSpace );
-    if ( boption(_name=prefixvm( prefix(), "nullspace").c_str()) )
+	M_backend->attachNearNullSpace( myNullSpace );
+    if ( boption(_name=prefixvm( this->prefix(), "nullspace").c_str()) )
 	    M_backend->attachNearNullSpace( myNullSpace );
 
 
     std::string solver_string = "MixedElasticity : ";
-    if( boption(prefixvm(prefix(), "use-sc")) )
+    if( boption(prefixvm(this->prefix(), "use-sc")) )
         solver_string += "static condensation";
     else
         solver_string += "monolithic";
     
     tic();
     tic();
-    bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
+    bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
     
