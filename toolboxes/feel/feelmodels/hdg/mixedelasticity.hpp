@@ -847,10 +847,11 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     
 	auto blf = blockform1(*M_ps, M_F);
 
-    boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(M_backend,hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
-	M_backend->attachNearNullSpace( myNullSpace );
+
+	boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(get_backend(),hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
+	get_backend()->attachNearNullSpace( myNullSpace );
     if ( boption(_name=prefixvm( this->prefix(), "nullspace").c_str()) )
-	    M_backend->attachNearNullSpace( myNullSpace );
+	    get_backend()->attachNearNullSpace( myNullSpace );
 
 
     std::string solver_string = "MixedElasticity : ";
@@ -861,7 +862,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     
     tic();
     tic();
-    bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
+    bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
     
