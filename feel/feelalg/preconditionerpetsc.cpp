@@ -48,6 +48,7 @@ extern "C" {
 #endif
 
 #include <feel/feelalg/preconditionerpetsclsc.cpp>
+#include <feel/feelalg/preconditionerpetscpmm.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
 
@@ -988,6 +989,7 @@ void PreconditionerPetsc<T>::init ()
     if ( !petscPCInHouseIsInit )
     {
         check( PCRegister("lsc2",PCCreate_LSC2) );
+        check( PCRegister("pmm",PCCreate_PMM_Feelpp) );
         check( PCRegister("blockns",PCCreate_FEELPP) );
         check( PCRegister("blockms",PCCreate_FEELPP) );
         petscPCInHouseIsInit=true;
@@ -1334,6 +1336,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case PMM_PRECOND:
+        ierr = PCSetType( pc, "pmm" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case FEELPP_BLOCKNS_PRECOND:
         ierr = PCSetType( pc, "blockns" );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1538,6 +1545,10 @@ ConfigurePC::run( PC& pc )
     else if ( std::string(pctype) == "lsc2" )
     {
         ConfigurePCLSC( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix(), "in-house" );
+    }
+    else if ( std::string(pctype) == "pmm" )
+    {
+        ConfigurePCPMM( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "blockns" )
     {
@@ -2151,6 +2162,17 @@ getOptionsDescLSC( std::string const& prefix, std::string const& sub )
         ( prefixvm( prefixLSC,"scale-diag" ).c_str(), Feel::po::value<bool>()->default_value( false ), "scale diag" )
         ;
     _options.add( getOptionsDescPrecBase(prefixLSC,"",true,"lu") );
+
+    return _options;
+}
+
+po::options_description
+getOptionsDescPMM( std::string const& prefix, std::string const& sub )
+{
+    std::string pcctx = (sub.empty())? "" : sub+"-";
+    std::string prefixPMM = prefixvm( prefix,pcctx+"pmm");
+    po::options_description _options( "options PC PMM", 100);
+    _options.add( getOptionsDescPrecBase(prefixPMM,"",true,"lu") );
 
     return _options;
 }
@@ -3574,6 +3596,69 @@ ConfigurePCLSC::run( PC& pc )
     else if ( M_subPCview )
         this->check( PCView( subpc, PETSC_VIEWER_STDOUT_WORLD ) );
 }
+
+/**
+ * ConfigurePCPMM
+ */
+ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                                std::string const& sub, std::string const& prefix )
+    :
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescPMM(prefix,sub) ),
+    M_prefixPMM( prefixvm(this->prefix(),"pmm") ),
+    M_subPCtype( option(_name="pc-type",_prefix=M_prefixPMM,_vm=this->vm()).as<std::string>() ),
+    M_subMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPMM,_vm=this->vm()).as<std::string>() ),
+    M_subPCview( option(_name="pc-view",_prefix=M_prefixPMM,_vm=this->vm()).as<bool>() )
+{
+    CHECK( this->precFeel()->hasAuxiliarySparseMatrix("pressure-mass-matrix") ) << "pressure-mass-matrix is not given";
+
+    auto massMat = this->precFeel()->auxiliarySparseMatrix("pressure-mass-matrix");
+    MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
+    this->check( PCSetPressureMassMatrix_PMM_Feelpp( pc, massMatPetsc->mat()) );
+
+
+    VLOG(2) << "ConfigurePC : PMM\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->prefixPMM : " << M_prefixPMM  << "\n"
+            << "  |->subPCtype : " << M_subPCtype << "\n";
+    google::FlushLogFiles(google::INFO);
+    run( pc );
+}
+
+void
+ConfigurePCPMM::run( PC& pc )
+{
+    std::vector<std::string> prefixOverwrite;
+
+    // setup sub-pc
+    this->check( PCSetUp( pc ) );
+
+    //-----------------------------------------------------------//
+    // get sub-ksp
+    KSP subksp;
+    this->check( PCGetKSP_PMM_Feelpp( pc, subksp ) );
+    // configure sub-ksp
+    ConfigureKSP kspConf( subksp, this->precFeel(), this->worldComm(), "", M_prefixPMM,prefixOverwrite,"preonly", 1e-5, 50 );
+    // setup sub-ksp
+    this->check( KSPSetUp( subksp ) );
+    //-----------------------------------------------------------//
+    // get sub-pc
+    PC subpc;
+    this->check( KSPGetPC( subksp, &subpc ) );
+    // configure sub-pc
+    SetPCType( subpc, pcTypeConvertStrToEnum( M_subPCtype ),
+               matSolverPackageConvertStrToEnum( M_subMatSolverPackage ),
+               this->worldComm() );
+    ConfigurePC( subpc, this->precFeel(), this->worldComm(), "", M_prefixPMM,prefixOverwrite,this->vm() );
+    // setup sub-pc
+    this->check( PCSetUp( subpc ) );
+    //-----------------------------------------------------------//
+    // ksp and pc view
+    if ( kspConf.kspView() )
+        this->check( KSPView( subksp, PETSC_VIEWER_STDOUT_WORLD ) );
+    else if ( M_subPCview )
+        this->check( PCView( subpc, PETSC_VIEWER_STDOUT_WORLD ) );
+}
+
 
 /**
  * ConfigurePCRedundant
