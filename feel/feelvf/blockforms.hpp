@@ -377,7 +377,7 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            auto r = S.solve( _solution=U, _rhs=V, _name=name+".sc",_rebuild=rebuild );//, _condense=true );
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
