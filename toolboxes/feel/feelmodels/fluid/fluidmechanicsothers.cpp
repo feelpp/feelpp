@@ -1038,8 +1038,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
-        myPrecBlockNs->setAlpha( myalpha );
+        if ( !this->isStationary() )
+            myPrecBlockNs->setAlpha( idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0) );
         myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
         myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
 
@@ -1066,10 +1066,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         }
         else if ( this->modelName() == "Navier-Stokes" )
         {
-            auto U = this->functionSpace()->element();
-            // copy vector values in fluid element
-            for ( size_type k=0;k<this->functionSpace()->nLocalDofWithGhost();++k )
-                U(k) = vecSol->operator()(/*rowStartInVector+*/k);
+            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
             auto u = U.template element<0>();
             auto const& rho = this->densityViscosityModel()->fieldRho();
 

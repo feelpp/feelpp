@@ -1944,7 +1944,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         // TODO other bc (fsi,...)
 #if 1
-        if ( Environment::isMasterRank() )
+        if ( this->worldComm().isMasterRank() && this->verbose() )
         {
             for( auto const& s : bcPrecPCD )
             {
@@ -1970,20 +1970,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 #endif
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
         // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+        //auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
 
         typedef space_fluid_type space_type;
         typedef space_densityviscosity_type properties_space_type;
 
-        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
-                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
-                                        _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
-                                        _bc=bcPrecPCD,
-                                        _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
-                                        _prefix="velocity",
-                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
-                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
-                                        _alpha=myalpha );
+        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =
+            Feel::blockns( _space=this->functionSpace(),
+                           _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
+                           _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
+                           _bc=bcPrecPCD,
+                           _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
+                           _prefix="velocity",
+                           _mu=idv(this->densityViscosityModel()->fieldMu()),
+                           _rho=idv(this->densityViscosityModel()->fieldRho())
+                           /*_alpha=myalpha*/ );
         this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
     }
 
