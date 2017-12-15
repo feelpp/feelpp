@@ -1309,6 +1309,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
         }
 #endif
+        bool attachPressureMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-pressure-mass-matrix");
+        if ( attachPressureMassMatrix )
+        {
+            auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+            auto const& p = this->fieldPressure();
+            auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(p),id(p) ) );
+            massbf.matrixPtr()->close();
+            M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "pressure-mass-matrix", massbf.matrixPtr() );
+        }
+
         this->initInHousePreconditioner();
     }
 

@@ -210,6 +210,7 @@ fluidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
+        (prefixvm(prefix,"preconditioner.attach-pressure-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach pressure mass matrix")
 
         (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
         (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
