@@ -22,7 +22,7 @@ public :
         M_callbackfunctions.logger = fmi2logger;
         M_callbackfunctions.allocateMemory = calloc;
         M_callbackfunctions.freeMemory = free;
-        M_callbackfunctions.stepFinished = stepFinished;
+        //M_callbackfunctions.stepFinished = stepFinished;
         M_callbackfunctions.componentEnvironment = 0;
 
         // Read informations in xml file for the model
@@ -63,26 +63,63 @@ public :
 
     ~FmuModel2()
     {
+        if ( M_allocated_fmu )
+        {
+            fmi2_import_terminate(M_fmu);
+            fmi2_import_free_instance(M_fmu);
+        }
         if ( M_allocated_xml )
             fmi2_import_free( M_fmu );
         if ( M_allocated_dll )
             fmi2_import_destroy_dllfmu(M_fmu);
     }
 
+    void setupExperiment( double const& t_init, double const& t_final, double const& tol ) override
+    {
+        auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, fmi2_false, t_final );
+        CHECK( status==fmi2_status_ok )<< "FMUModel2 : fmi2_import_setup_experiment failed\n";
+    }
+
+    void initialize() override
+    {
+        auto status = fmi2_import_enter_initialization_mode(M_fmu);
+        CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_enter_initialization_mode failed\n";
+        status = fmi2_import_exit_initialization_mode(M_fmu);
+        CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_exit_initialization_mode failed\n";
+    }
+
+    void doStep( double t_cur, double step, bool newStep ) override
+    {
+        fmi2_import_do_step( M_fmu, t_cur, step, newStep );
+    }
+
+
+    double defaultStartTime() override
+    {
+        return fmi2_import_get_default_experiment_start(M_fmu);
+    }
+
+    double defaultFinalTime() override
+    {
+        return fmi2_import_get_default_experiment_stop(M_fmu);
+    }
+
+    double defaultTolerance() override
+    {
+        return fmi2_import_get_default_experiment_tolerance(M_fmu);
+    }
+
 private :
     static void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,
                            fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...)
     {
-        char msg[BUFFER];
-        va_list argp;
-        va_start(argp, message);
-
-        printf("fmiStatus = %s;  %s (%s): %s\n", fmi2_status_to_string(status), instanceName, category, msg);
+        Feel::cout << "FMUModel2 : status="<<fmi2_status_to_string(status)
+                   << "; " << instanceName <<"("<<category<<") : " << message <<std::endl;
     }
 
     static void stepFinished(fmi2_component_environment_t env, fmi2_status_t status)
     {
-        printf("stepFinished is called wiht fmiStatus = %s\n", fmi2_status_to_string(status));
+        Feel::cout << "FMUModel2 : stepFinished called with fmiStatus : "<< fmi2_status_to_string(status) << std::endl;
     }
 
 
