@@ -618,6 +618,25 @@ private :
 };
 
 /**
+ * ConfigurePCPMM
+ */
+class ConfigurePCPMM : public ConfigurePCBase
+{
+public :
+    ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    std::string M_prefixPMM;
+    std::string M_subPCtype, M_subMatSolverPackage;
+    bool M_subPCview;
+
+};
+
+/**
  * ConfigurePCHYPRE_EUCLID
  */
 class ConfigurePCHYPRE_EUCLID : public ConfigurePCBase
