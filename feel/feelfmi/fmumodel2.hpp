@@ -18,6 +18,8 @@ public :
     FmuModel2( fmi_import_context_t* context, std::string tmp_dir, callbacks_ptrtype callbacks ) :
         super_type( callbacks )
     {
+        fmi2_type_t type;
+
         M_version = 2;
         M_callbackfunctions.logger = fmi2logger;
         M_callbackfunctions.allocateMemory = calloc;
@@ -41,11 +43,13 @@ public :
         {
             M_kind = "ME";
             M_id = fmi2_import_get_model_identifier_ME( M_fmu );
+            type = fmi2_model_exchange;
         }
         else if ( kind == fmi2_fmu_kind_cs )
         {
             M_kind = "CS";
             M_id = fmi2_import_get_model_identifier_CS( M_fmu );
+            type = fmi2_cosimulation;
         }
         else
             CHECK( false ) << "Unxepected FMU kind, exiting. " << jm_get_last_error( callbacks.get() ) << std::endl;
@@ -54,6 +58,11 @@ public :
         auto status = fmi2_import_create_dllfmu( M_fmu, kind, &M_callbackfunctions );
         CHECK( status!=jm_status_error ) << "Could not create the DLL loading mechanism(C-API). " << std::endl;
         M_allocated_dll = true;
+
+        // Instatiate the model
+        std::string instance_name = "FMU model " + M_name;
+        status = fmi2_import_instantiate( M_fmu, instance_name.c_str(), type, 0, 0 );
+        CHECK( status!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
 
 
         LOG(INFO) << "FMU Model loaded : name=" << M_name <<", guid=" << M_guid
@@ -113,8 +122,13 @@ private :
     static void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,
                            fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...)
     {
+        char buffer[1000];
+        va_list args;
+        va_start( args, message );
+        vsnprintf( buffer, 256, message, args );
         Feel::cout << "FMUModel2 : status="<<fmi2_status_to_string(status)
-                   << "; " << instanceName <<"("<<category<<") : " << message <<std::endl;
+                   << "; " << instanceName <<"("<<category<<") : " << buffer <<std::endl;
+        va_end (args);
     }
 
     static void stepFinished(fmi2_component_environment_t env, fmi2_status_t status)
