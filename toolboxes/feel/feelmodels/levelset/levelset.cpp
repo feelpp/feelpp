@@ -511,7 +511,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( M_thicknessInterface );
+            boost::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
         }
         break;
     }
@@ -1027,9 +1027,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
         if ( M_useHeavisideDiracNodalProj )
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
-                   Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
+                   Feel::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project( Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
+            *M_dirac = M_projectorL2->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
     }
     else
     {
@@ -1043,9 +1043,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
 
         if ( M_useHeavisideDiracNodalProj )
             *M_dirac = vf::project( this->functionSpace(), elements(this->mesh()),
-                   Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
+                   Feel::FeelModels::levelsetDelta(psi, eps0) );
         else
-            *M_dirac = M_projectorL2->project( Feel::vf::FeelModels::levelsetDelta(psi, eps0) );
+            *M_dirac = M_projectorL2->project( Feel::FeelModels::levelsetDelta(psi, eps0) );
     }
 
     M_doUpdateDirac = false;

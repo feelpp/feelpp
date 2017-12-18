@@ -2,8 +2,8 @@
 #define _LEVELSET_DELTA_EXPR_HPP 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
+//namespace vf {
 
 template<typename LSExprType>
 class LevelsetDeltaExpr
@@ -191,7 +191,7 @@ levelsetDelta( LSExprT phi, double eps )
     return Expr< lsdelta_t >(  lsdelta_t( phi, eps ) );
 }
 
-}
+//}
 }
 }
 
