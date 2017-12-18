@@ -417,8 +417,10 @@ reinitializer_hj_options(std::string const& prefix)
     Feel::po::options_description reinitializerHJOptions("ReinitializerHJ options");
     reinitializerHJOptions.add_options()
         (prefixvm(prefix,"tol").c_str(), Feel::po::value<double>()->default_value( 0.03 ), "tolerance on residual to \"distance function\" of HJ reinitialized level set")
+        (prefixvm(prefix,"time-step").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "time step used in HJ equation")
         (prefixvm(prefix,"max-iter").c_str(), Feel::po::value<int>()->default_value( 15 ), "maximum number of iterations for Hamilton-Jacobi reinitialization")
         (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Heaviside used to compute sign function)")
+        (prefixvm(prefix,"keep-volume").c_str(), Feel::po::value<bool>()->default_value( true ), "use constraint to conserve levelset volume")
         ;
 
     reinitializerHJOptions.add( advection_options( prefix ) );
