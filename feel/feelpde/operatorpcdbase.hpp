@@ -43,6 +43,7 @@ public :
     virtual sparse_matrix_ptrtype pressureMassMatrix() const = 0;
     virtual sparse_matrix_ptrtype pressureLaplacianMatrix() const = 0;
     virtual sparse_matrix_ptrtype pressureDiffusionConvectionMatrix() const = 0;
+    virtual sparse_matrix_ptrtype velocityMassMatrix() const = 0;
 
     virtual int pcdOrder() const = 0;
     virtual std::string const& pcdDiffusionType() const = 0;
