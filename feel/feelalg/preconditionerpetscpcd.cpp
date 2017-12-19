@@ -33,8 +33,8 @@
 typedef struct {
     PetscBool allocated;
     KSP       kspA,kspQ;
-    Mat       matA, matF, matQ;
-    Vec       x1,x2;
+    Mat       matA, matF, matAp, matQ, matMv, matBTBt;
+    Vec       x1, x2, MvDiag;
     int       pcdOrder;
     char      pcdLaplacianType[256];
 } PC_PCD_Feelpp;
@@ -64,9 +64,9 @@ static PetscErrorCode PCSetUp_PCD_Feelpp(PC pc)
         ierr = KSPSetFromOptions(pcpcd->kspQ);CHKERRQ(ierr);
 
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-        ierr = MatGetVecs(pcpcd->matA,&pcpcd->x2,&pcpcd->x1);CHKERRQ(ierr);
+        ierr = MatGetVecs(pcpcd->matF,&pcpcd->x2,&pcpcd->x1);CHKERRQ(ierr);
 #else
-        ierr = MatCreateVecs(pcpcd->matA,&pcpcd->x2,&pcpcd->x1);CHKERRQ(ierr);
+        ierr = MatCreateVecs(pcpcd->matF,&pcpcd->x2,&pcpcd->x1);CHKERRQ(ierr);
 #endif
 
         pcpcd->allocated = PETSC_TRUE;
@@ -76,15 +76,43 @@ static PetscErrorCode PCSetUp_PCD_Feelpp(PC pc)
     PetscStrcmp(pcpcd->pcdLaplacianType,"BTBt",&isBTBt);
     if ( isBTBt )
     {
-        std::cout<<"TODO BTBt\n";
-    }
+        if (!pcpcd->MvDiag )
+        {
+#if PETSC_VERSION_LESS_THAN(3,6,0)
+            ierr = MatGetVecs(pcpcd->matMv,&pcpcd->MvDiag,NULL);CHKERRQ(ierr);
+#else
+            ierr = MatCreateVecs(pcpcd->matMv,&pcpcd->MvDiag,NULL);CHKERRQ(ierr);
+#endif
+        }
 
+        Mat B, C;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+        ierr = MatSchurComplementGetSubMatrices(pc->mat,NULL,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#else
+        ierr = MatSchurComplementGetSubmatrices(pc->mat,NULL,NULL,&B,&C,NULL);CHKERRQ(ierr);
+#endif
+        ierr = MatGetDiagonal(pcpcd->matMv,pcpcd->MvDiag);CHKERRQ(ierr);
+        ierr = VecReciprocal(pcpcd->MvDiag);CHKERRQ(ierr);
+        // diag(F)^-1 * B
+        ierr =  MatDiagonalScale( B, pcpcd->MvDiag ,NULL);CHKERRQ(ierr);
+        // C* diag(F)^-1 * B
+        if ( !pcpcd->matBTBt )
+            ierr = MatMatMult(C,B,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&pcpcd->matBTBt);
+        else
+            ierr = MatMatMult(C,B,MAT_REUSE_MATRIX,PETSC_DEFAULT,&pcpcd->matBTBt);
+        CHKERRQ(ierr);
+        ierr = VecReciprocal(pcpcd->MvDiag);CHKERRQ(ierr);
+        ierr =  MatDiagonalScale( B, pcpcd->MvDiag ,NULL);CHKERRQ(ierr);
+        pcpcd->matAp = pcpcd->matBTBt;
+    }
+    else
+        pcpcd->matAp = pcpcd->matA;
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
-    ierr = KSPSetOperators(pcpcd->kspA,pcpcd->matA,pcpcd->matA);CHKERRQ(ierr);
+    ierr = KSPSetOperators(pcpcd->kspA,pcpcd->matAp,pcpcd->matAp);CHKERRQ(ierr);
     ierr = KSPSetOperators(pcpcd->kspQ,pcpcd->matQ,pcpcd->matQ);CHKERRQ(ierr);
 #else
-    ierr = KSPSetOperators(pcpcd->kspA,pcpcd->matA,pcpcd->matA,SAME_PRECONDITIONER);CHKERRQ(ierr);
+    ierr = KSPSetOperators(pcpcd->kspA,pcpcd->matAp,pcpcd->matAp,SAME_PRECONDITIONER);CHKERRQ(ierr);
     ierr = KSPSetOperators(pcpcd->kspQ,pcpcd->matQ,pcpcd->matQ,SAME_PRECONDITIONER);CHKERRQ(ierr);
 #endif
 
@@ -122,6 +150,12 @@ static PetscErrorCode PCReset_PCD_Feelpp(PC pc)
     KSPDestroy(&pcpcd->kspQ);
     MatDestroy(&pcpcd->matA);
     MatDestroy(&pcpcd->matQ);
+    MatDestroy(&pcpcd->matF);
+    MatDestroy(&pcpcd->matBTBt);
+    MatDestroy(&pcpcd->matMv);
+    VecDestroy(&pcpcd->x1);
+    VecDestroy(&pcpcd->x2);
+    VecDestroy(&pcpcd->MvDiag);
     PetscFunctionReturn(0);
 }
 
@@ -195,6 +229,18 @@ static PetscErrorCode PCSetMatF_PCD_Feelpp(PC pc, Mat mat )
     PetscFunctionReturn(0);
 }
 #undef __FUNCT__
+#define __FUNCT__ "PCSetMatMv_PCD_Feelpp"
+static PetscErrorCode PCSetMatMv_PCD_Feelpp(PC pc, Mat mat )
+{
+    PetscErrorCode ierr;
+    PC_PCD_Feelpp *pcpcd = (PC_PCD_Feelpp*)pc->data;
+    // increases the reference count for that object by one
+    if ( mat ) { PetscObjectReference((PetscObject) mat); }
+    MatDestroy(&pcpcd->matMv);
+    pcpcd->matMv = mat;
+    PetscFunctionReturn(0);
+}
+#undef __FUNCT__
 #define __FUNCT__ "PCSetOrder_PCD_Feelpp"
 static PetscErrorCode PCSetOrder_PCD_Feelpp(PC pc, int order )
 {
@@ -238,5 +284,7 @@ PETSC_EXTERN PetscErrorCode PCCreate_PCD_Feelpp(PC pc)
 
   pcpcd->pcdOrder = 1;
   PetscStrcpy(pcpcd->pcdLaplacianType, "Laplacian");
+  pcpcd->MvDiag = NULL;
+  pcpcd->matBTBt = NULL;
   PetscFunctionReturn(0);
 }
