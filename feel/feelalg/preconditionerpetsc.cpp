@@ -3503,7 +3503,6 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
         this->check( PCFieldSplitGetIS( subpc,(boost::format("%1%")%splitId).str().c_str(),&isTest ) );
         if ( isTest == NULL || this->precFeel()->indexSplitHasChanged() )
         {
-
             std::string fieldsDefStr = option(_name="fieldsplit-fields",_prefix=prefixSplit,_vm=this->vm()).as<std::string>();
             bool useComponentsSplit = option( _name="fieldsplit-use-components",_prefix=prefixSplit,_vm=this->vm() ).as<bool>();
             auto fieldsDef = IndexSplit::parseFieldsDef( fieldsDefStr );
@@ -3533,7 +3532,7 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
 #if 0
     if( M_typeFieldSplit == "schur" && splitId == 1 )
     {
-        if ( (PetscObject)subpc->setupcalled )
+        if ( subpc->setupcalled )
             PetscObjectStateIncrease((PetscObject)subpc->pmat);
     }
 #endif
@@ -3711,13 +3710,21 @@ ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, 
 
     auto opPCD = this->precFeel()->operatorPCD("pcd");
     MatrixPetsc<double> * pmMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureMassMatrix())) ) );
-    MatrixPetsc<double> * plMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureLaplacianMatrix())) ) );
     MatrixPetsc<double> * pdcMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureDiffusionConvectionMatrix())) ) );
-    this->check( PCSetMatA_PCD_Feelpp( pc, plMatPetsc->mat()) );
     this->check( PCSetMatQ_PCD_Feelpp( pc, pmMatPetsc->mat()) );
     this->check( PCSetMatF_PCD_Feelpp( pc, pdcMatPetsc->mat()) );
     this->check( PCSetOrder_PCD_Feelpp( pc, opPCD->pcdOrder() ) );
     this->check( PCSetLaplacianType_PCD_Feelpp( pc, opPCD->pcdDiffusionType().c_str() ) );
+    if ( opPCD->pressureLaplacianMatrix() )
+    {
+        MatrixPetsc<double> * plMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureLaplacianMatrix())) ) );
+        this->check( PCSetMatA_PCD_Feelpp( pc, plMatPetsc->mat()) );
+    }
+    if ( opPCD->velocityMassMatrix() )
+    {
+        MatrixPetsc<double> * vmMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->velocityMassMatrix())) ) );
+        this->check( PCSetMatMv_PCD_Feelpp( pc, vmMatPetsc->mat()) );
+    }
 
     VLOG(2) << "ConfigurePC : PCD\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
