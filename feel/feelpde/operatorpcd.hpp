@@ -85,7 +85,7 @@ public:
                  backend_ptrtype b,
                  BoundaryConditions const& bcFlags,
                  std::string const& p,
-                 bool acc = false );
+                 bool acc = false, bool applyInPETSc = false );
 
     OperatorPCD( const OperatorPCD& tc ) = default;
     OperatorPCD( OperatorPCD&& tc ) = default;
@@ -116,6 +116,7 @@ public:
     sparse_matrix_ptrtype pressureMassMatrix() const override { return M_mass; }
     sparse_matrix_ptrtype pressureLaplacianMatrix() const override { return M_diff; }
     sparse_matrix_ptrtype pressureDiffusionConvectionMatrix() const override { return M_conv; }
+    sparse_matrix_ptrtype velocityMassMatrix() const override { return M_massv; }
 
     BoundaryConditions const& bcFlags() const { return M_bcFlags; }
 
@@ -138,7 +139,7 @@ private:
     velocity_element_type u;
     pressure_element_type p;
 
-    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_massv_inv, M_Bt;
+    sparse_matrix_ptrtype M_mass, M_diff, M_conv, M_massv, M_massv_inv, M_Bt;
     vector_ptrtype M_rhs;
 
     op_mat_ptrtype massOp, diffOp, convOp;
@@ -157,6 +158,7 @@ private:
     std::string M_prob_type;
 
     bool M_accel;
+    bool M_applyInPETSc;
 
     void assembleMass();
 
@@ -172,7 +174,7 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
                                       backend_ptrtype b,
                                       BoundaryConditions const& bcFlags,
                                       std::string const& p,
-                                      bool acc)
+                                      bool acc, bool applyInPETSc )
     :
     super( Qh->template functionSpace<1>()->mapPtr(), "PCD", false, false ),
     M_b( b),
@@ -193,7 +195,8 @@ OperatorPCD<space_type>::OperatorPCD( space_ptrtype Qh,
     M_bcOutflowType( soption("blockns.pcd.outflow") ),
     M_bcFlags( bcFlags ),
     M_prefix( p ),
-    M_accel( acc )
+    M_accel( acc ),
+    M_applyInPETSc( applyInPETSc )
 {
     M_bcDirichlet = M_bcFlags.template getVectorFields<Dim>( std::string(M_prefix), "Dirichlet" );
 
@@ -312,7 +315,7 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
     //static bool init_G = false;
 
     //if ( !init_G )
-    if ( !precOp )
+    if ( !M_applyInPETSc && !precOp )
     {
         // S = F G^-1 M
         LOG(INFO) << "[OperatorPCD] setting pcd operator...\n";
@@ -338,7 +341,8 @@ OperatorPCD<space_type>::assembleMass()
     auto m = form2( _test=M_Qh, _trial=M_Qh, _matrix=M_mass );
     m = integrate( elements(M_Qh->mesh()), idt(p)*id(p) );
     M_mass->close();
-    massOp = op( M_mass, "Mp" );
+    if ( !M_applyInPETSc )
+        massOp = op( M_mass, "Mp" );
     toc("OperatorPCD::mass assembly",FLAGS_v>0);
 }
 
@@ -366,30 +370,41 @@ OperatorPCD<space_type>::assembleDiffusion()
      }
     if ( M_pcdDiffusionType == "BTBt" )
     {
-        if ( !M_massv_inv )
-            M_massv_inv = backend()->newMatrix(_trial=M_Vh, _test=M_Vh);
-        tic();
-        auto m = form2( _test=M_Vh, _trial=M_Vh );
-        m = integrate( _range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u)) );
-        m.matrixPtr()->close();
-        toc(" - OperatorPCD Velocity Mass Matrix" );
-        tic();
-        auto d = M_b->newVector( M_Vh );
-        M_b->diag( m.matrixPtr(), d );
-        d->reciprocal();
-        M_b->diag( d, M_massv_inv );
-        M_massv_inv->close();
-        toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
-        tic();
-        M_diff->clear(); // stencil will change
-        M_b->PtAP( M_massv_inv, M_Bt, M_diff );
-        M_diff->close();
-        toc(" - OperatorPCD B T^-1 B^T built");
-        //if ( Environment::numberOfProcessors() == 1 )
-        //    M_diff->printMatlab( "BTBt.m" );
+        if ( M_applyInPETSc )
+        {
+            if ( !M_massv )
+                M_massv = backend()->newMatrix(_trial=M_Vh, _test=M_Vh);
+            auto m = form2( _test=M_Vh, _trial=M_Vh,_matrix=M_massv );
+            m = integrate( _range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u)) );
+            M_massv->close();
+        }
+        else
+        {
+            if ( !M_massv_inv )
+                M_massv_inv = backend()->newMatrix(_trial=M_Vh, _test=M_Vh);
+            tic();
+            auto m = form2( _test=M_Vh, _trial=M_Vh );
+            m = integrate( _range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u)) );
+            m.matrixPtr()->close();
+            toc(" - OperatorPCD Velocity Mass Matrix" );
+            tic();
+            auto d = M_b->newVector( M_Vh );
+            M_b->diag( m.matrixPtr(), d );
+            d->reciprocal();
+            M_b->diag( d, M_massv_inv );
+            M_massv_inv->close();
+            toc(" - OperatorPCD inverse diagonal mass matrix extracted" );
+            tic();
+            M_diff->clear(); // stencil will change
+            M_b->PtAP( M_massv_inv, M_Bt, M_diff );
+            M_diff->close();
+            toc(" - OperatorPCD B T^-1 B^T built");
+            //if ( Environment::numberOfProcessors() == 1 )
+            //    M_diff->printMatlab( "BTBt.m" );
+        }
     }
-
-    diffOp = op( M_diff, "Ap" );
+    if ( !M_applyInPETSc )
+        diffOp = op( M_diff, "Ap" );
     toc("OperatorPCD::diffusion assembly",FLAGS_v>0);
 }
 
