@@ -30,8 +30,8 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
-
 #include <feel/feelalg/solverlinearpetsc.hpp>
+#include <feel/feelpde/operatorpcdbase.hpp>
 
 
 extern "C" {
@@ -49,6 +49,7 @@ extern "C" {
 
 #include <feel/feelalg/preconditionerpetsclsc.cpp>
 #include <feel/feelalg/preconditionerpetscpmm.cpp>
+#include <feel/feelalg/preconditionerpetscpcd.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
 
@@ -990,6 +991,7 @@ void PreconditionerPetsc<T>::init ()
     {
         check( PCRegister("lsc2",PCCreate_LSC2) );
         check( PCRegister("pmm",PCCreate_PMM_Feelpp) );
+        check( PCRegister("pcd",PCCreate_PCD_Feelpp) );
         check( PCRegister("blockns",PCCreate_FEELPP) );
         check( PCRegister("blockms",PCCreate_FEELPP) );
         petscPCInHouseIsInit=true;
@@ -1341,6 +1343,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case PCD_PRECOND:
+        ierr = PCSetType( pc, "pcd" );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
     case FEELPP_BLOCKNS_PRECOND:
         ierr = PCSetType( pc, "blockns" );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -1549,6 +1556,10 @@ ConfigurePC::run( PC& pc )
     else if ( std::string(pctype) == "pmm" )
     {
         ConfigurePCPMM( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix() );
+    }
+    else if ( std::string(pctype) == "pcd" )
+    {
+        ConfigurePCPCD( pc, this->precFeel(), this->worldComm(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "blockns" )
     {
@@ -2174,6 +2185,18 @@ getOptionsDescPMM( std::string const& prefix, std::string const& sub )
     po::options_description _options( "options PC PMM", 100);
     _options.add( getOptionsDescPrecBase(prefixPMM,"",true,"lu") );
 
+    return _options;
+}
+
+po::options_description
+getOptionsDescPCD( std::string const& prefix, std::string const& sub )
+{
+    std::string pcctx = (sub.empty())? "" : sub+"-";
+    std::string prefixPCD_A = prefixvm( prefix,pcctx+"pcd.A");
+    std::string prefixPCD_Q = prefixvm( prefix,pcctx+"pcd.Q");
+    po::options_description _options( "options PC PCD", 100);
+    _options.add( getOptionsDescPrecBase(prefixPCD_A,"",true,"lu") );
+    _options.add( getOptionsDescPrecBase(prefixPCD_Q,"",true,"lu") );
     return _options;
 }
 
@@ -3507,6 +3530,14 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
     if ( M_subPCtype[splitId] == "lsc" )
         CHECK( splitId==1 ) << "lsc must be use with only field 1, not " << splitId << "\n";
 
+#if 0
+    if( M_typeFieldSplit == "schur" && splitId == 1 )
+    {
+        if ( (PetscObject)subpc->setupcalled )
+            PetscObjectStateIncrease((PetscObject)subpc->pmat);
+    }
+#endif
+
     // configure sub-pc
     ConfigurePC( subpc, this->precFeel(), this->worldComm(), "", prefixSplit,prefixSplitOverwrite,this->vm() );
 
@@ -3609,9 +3640,9 @@ ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, 
     M_subMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPMM,_vm=this->vm()).as<std::string>() ),
     M_subPCview( option(_name="pc-view",_prefix=M_prefixPMM,_vm=this->vm()).as<bool>() )
 {
-    CHECK( this->precFeel()->hasAuxiliarySparseMatrix("pressure-mass-matrix") ) << "pressure-mass-matrix is not given";
+    CHECK( this->precFeel()->hasAuxiliarySparseMatrix("pmm") ) << "pmm is not given";
 
-    auto massMat = this->precFeel()->auxiliarySparseMatrix("pressure-mass-matrix");
+    auto massMat = this->precFeel()->auxiliarySparseMatrix("pmm");
     MatrixPetsc<double> * massMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*massMat) ) );
     this->check( PCSetPressureMassMatrix_PMM_Feelpp( pc, massMatPetsc->mat()) );
 
@@ -3657,6 +3688,93 @@ ConfigurePCPMM::run( PC& pc )
         this->check( KSPView( subksp, PETSC_VIEWER_STDOUT_WORLD ) );
     else if ( M_subPCview )
         this->check( PCView( subpc, PETSC_VIEWER_STDOUT_WORLD ) );
+}
+
+
+/**
+ * ConfigurePCPCD
+ */
+ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                                std::string const& sub, std::string const& prefix )
+    :
+    ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescPCD(prefix,sub) ),
+    M_prefixPCD_A( prefixvm(this->prefix(),"pcd.A") ),
+    M_prefixPCD_Q( prefixvm(this->prefix(),"pcd.Q") ),
+    M_subPCtype_A( option(_name="pc-type",_prefix=M_prefixPCD_A,_vm=this->vm()).as<std::string>() ),
+    M_subPCtype_Q( option(_name="pc-type",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<std::string>() ),
+    M_subMatSolverPackage_A( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_A,_vm=this->vm()).as<std::string>() ),
+    M_subMatSolverPackage_Q( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<std::string>() ),
+    M_subPCview_A( option(_name="pc-view",_prefix=M_prefixPCD_A,_vm=this->vm()).as<bool>() ),
+    M_subPCview_Q( option(_name="pc-view",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<bool>() )
+{
+    CHECK( this->precFeel()->hasOperatorPCD("pcd") ) << "operator pcd is not given";
+
+    auto opPCD = this->precFeel()->operatorPCD("pcd");
+    MatrixPetsc<double> * pmMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureMassMatrix())) ) );
+    MatrixPetsc<double> * plMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureLaplacianMatrix())) ) );
+    MatrixPetsc<double> * pdcMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureDiffusionConvectionMatrix())) ) );
+    this->check( PCSetMatA_PCD_Feelpp( pc, plMatPetsc->mat()) );
+    this->check( PCSetMatQ_PCD_Feelpp( pc, pmMatPetsc->mat()) );
+    this->check( PCSetMatF_PCD_Feelpp( pc, pdcMatPetsc->mat()) );
+    this->check( PCSetOrder_PCD_Feelpp( pc, opPCD->pcdOrder() ) );
+    this->check( PCSetLaplacianType_PCD_Feelpp( pc, opPCD->pcdDiffusionType().c_str() ) );
+
+    VLOG(2) << "ConfigurePC : PCD\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->prefixPCD_A : " << M_prefixPCD_A  << "\n"
+            << "  |->subPCtype_A : " << M_subPCtype_A << "\n"
+            << "  |->prefixPCD_Q : " << M_prefixPCD_Q  << "\n"
+            << "  |->subPCtype_Q : " << M_subPCtype_Q << "\n";
+    google::FlushLogFiles(google::INFO);
+    run( pc );
+}
+
+void
+ConfigurePCPCD::run( PC& pc )
+{
+    std::vector<std::string> prefixOverwrite;
+
+    // setup sub-pc
+    this->check( PCSetUp( pc ) );
+
+    //-----------------------------------------------------------//
+    // get sub-ksp
+    KSP subksp_A, subksp_Q;
+    this->check( PCGetKSP_A_PCD_Feelpp( pc, subksp_A ) );
+    this->check( PCGetKSP_Q_PCD_Feelpp( pc, subksp_Q ) );
+    // configure sub-ksp
+    ConfigureKSP kspConf_A( subksp_A, this->precFeel(), this->worldComm(), "", M_prefixPCD_A,prefixOverwrite,"preonly", 1e-5, 50 );
+    ConfigureKSP kspConf_Q( subksp_Q, this->precFeel(), this->worldComm(), "", M_prefixPCD_Q,prefixOverwrite,"preonly", 1e-5, 50 );
+    // setup sub-ksp
+    this->check( KSPSetUp( subksp_A ) );
+    this->check( KSPSetUp( subksp_Q ) );
+    //-----------------------------------------------------------//
+    // get sub-pc
+    PC subpc_A, subpc_Q;
+    this->check( KSPGetPC( subksp_A, &subpc_A ) );
+    this->check( KSPGetPC( subksp_Q, &subpc_Q ) );
+    // configure sub-pc
+    SetPCType( subpc_A, pcTypeConvertStrToEnum( M_subPCtype_A ),
+               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_A ),
+               this->worldComm() );
+    SetPCType( subpc_Q, pcTypeConvertStrToEnum( M_subPCtype_Q ),
+               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_Q ),
+               this->worldComm() );
+    ConfigurePC( subpc_A, this->precFeel(), this->worldComm(), "", M_prefixPCD_A,prefixOverwrite,this->vm() );
+    ConfigurePC( subpc_Q, this->precFeel(), this->worldComm(), "", M_prefixPCD_Q,prefixOverwrite,this->vm() );
+    // setup sub-pc
+    this->check( PCSetUp( subpc_A ) );
+    this->check( PCSetUp( subpc_Q ) );
+    //-----------------------------------------------------------//
+    // ksp and pc view
+    if ( kspConf_A.kspView() )
+        this->check( KSPView( subksp_A, PETSC_VIEWER_STDOUT_WORLD ) );
+    else if ( M_subPCview_A )
+        this->check( PCView( subpc_A, PETSC_VIEWER_STDOUT_WORLD ) );
+    if ( kspConf_Q.kspView() )
+        this->check( KSPView( subksp_Q, PETSC_VIEWER_STDOUT_WORLD ) );
+    else if ( M_subPCview_Q )
+        this->check( PCView( subpc_Q, PETSC_VIEWER_STDOUT_WORLD ) );
 }
 
 

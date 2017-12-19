@@ -46,6 +46,8 @@ template<typename T> class Backend;
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
 
+template<typename T> class OperatorPCDBase;
+
 /**
  * \class Preconditioner
  * \brief base class for preconditioner
@@ -80,11 +82,12 @@ public:
     //@{
     typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef boost::shared_ptr<preconditioner_type > preconditioner_ptrtype;
 
     typedef boost::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
     typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
+    typedef boost::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     
     //@}
 
@@ -255,6 +258,13 @@ public:
         return M_inHousePreconditioners[key];
     }
 
+    bool hasOperatorPCD( std::string const& key ) const { return M_operatorPCD.find( key ) != M_operatorPCD.end(); }
+    operator_pcdbase_ptrtype const& operatorPCD( std::string const& key ) const
+        {
+            CHECK( this->hasOperatorPCD( key ) ) << " operator PCD not given for this key : " << key ;
+            return M_operatorPCD.find(key)->second;
+        }
+
     //@}
 
     /** @name  Mutators
@@ -311,6 +321,11 @@ public:
     void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
     {
         M_inHousePreconditioners[key] = pc;
+    }
+
+    void attachOperatorPCD( std::string const& key, operator_pcdbase_ptrtype const& opPCD )
+    {
+        M_operatorPCD[key] = opPCD;
     }
 
     //@}
@@ -375,6 +390,8 @@ protected:
     std::map<std::string,vector_ptrtype> M_auxiliaryVector;
 
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
+
+    std::map<std::string,operator_pcdbase_ptrtype> M_operatorPCD;
 };
 
 typedef Preconditioner<double> preconditioner_type;
