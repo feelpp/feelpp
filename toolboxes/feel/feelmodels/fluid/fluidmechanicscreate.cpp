@@ -2007,7 +2007,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         if ( buildOperatorPCD )
         {
             boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
-            opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity");
+            opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
             this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
         }
     }
