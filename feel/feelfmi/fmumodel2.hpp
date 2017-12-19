@@ -30,7 +30,9 @@ struct Fmi2Variable
             type="string";
         else if ( base_type==fmi2_base_type_enum )
             type="enum";
-        desc = fmi2_import_get_variable_description( v );
+        auto s = fmi2_import_get_variable_description( v );
+        if ( s )
+            desc = s;
     }
 
     void print( bool with_header=false ) const
