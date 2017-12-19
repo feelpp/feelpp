@@ -56,6 +56,9 @@ int FMU::load( std::string _path )
         return 0;
     }
 
+    if ( boption(_name="fmu.display-variables-info", _prefix=M_prefix) )
+        M_model->printVariablesInfo();
+
     return 1;
 }
 
@@ -90,6 +93,14 @@ void FMU::setSolverTimeStep( double const& step )
     if ( !M_solver )
         initSolver();
     M_solver->setTimeStep( step );
+}
+
+
+void FMU::printModelInfo()
+{
+    CHECK( M_model ) <<"FMU : error in printModelInfo. No FMU loaded\n";
+    M_model->printInfo();
+    M_model->printVariablesInfo();
 }
 
 } //namespace Feel
