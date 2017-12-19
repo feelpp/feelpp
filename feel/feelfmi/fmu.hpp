@@ -30,14 +30,23 @@ public :
 
     int load( std::string _path="" );
     void simulate( double t_init=-1, double t_final=-1, double tolerance=-1 );
+
     void initSolver();
     void setSolverTimeStep( double const& step );
+
+    void printModelInfo();
+
+    template <typename VariableType>
+    void setVariable( std::string var_name, VariableType const& value )
+    {
+        CHECK( M_model ) <<"FMU trying to access variable without model\n";
+    }
 
 private :
     static void importlogger(jm_callbacks* c,
                              jm_string module, jm_log_level_enu_t log_level, jm_string message)
     {
-        Feel::cout << "FeelFMI["<< module <<"] : " << message << std::endl;
+        LOG(INFO) << "FeelFMI["<< module <<"] : " << message << std::endl;
     }
 
 

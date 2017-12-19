@@ -21,18 +21,26 @@ public :
     virtual ~FmuModelBase()
     {}
 
-    virtual void setupExperiment( double const& t_init, double const& t_final, double const& tol )=0;
-    virtual void initialize()=0;
-    virtual void doStep( double t_cur, double step, bool newStep )=0;
-
     int version() { return M_version; }
     std::string name() { return M_name; }
     std::string guid() { return M_guid; }
     std::string kind() { return M_kind; }
 
+    virtual void setupExperiment( double const& t_init, double const& t_final, double const& tol )=0;
+    virtual void initialize()=0;
+    virtual void doStep( double t_cur, double step, bool newStep )=0;
+
+    virtual void printInfo()=0;
+    virtual void printVariablesInfo()=0;
+
     virtual double defaultStartTime()=0;
     virtual double defaultFinalTime()=0;
     virtual double defaultTolerance()=0;
+
+    virtual void setValue( std::string name, double value )=0;
+    virtual void setValue( std::string name, int value )=0;
+    virtual void setValue( std::string name, std::string value )=0;
+    virtual void setValue( std::string name, bool value )=0;
 
 protected :
     callbacks_ptrtype M_callbacks;

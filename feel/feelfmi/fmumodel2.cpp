@@ -53,6 +53,15 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     status = fmi2_import_instantiate( M_fmu, instance_name.c_str(), type, 0, 0 );
     CHECK( status!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
 
+    // Build the map of variables
+    auto v_list = fmi2_import_get_variable_list( M_fmu, 1 );
+    int N = fmi2_import_get_variable_list_size( v_list );
+    for ( int n=0; n<N; n++ )
+    {
+        auto v = fmi2_import_get_variable( v_list, n );
+        auto var = variable_ptrtype( new variable_type(v) );
+        M_v_map[var->name] = var;
+    }
 
     LOG(INFO) << "FMU Model loaded : name=" << M_name <<", guid=" << M_guid
               << ", kind="<< M_kind << ", id=" << M_id <<std::endl
@@ -92,6 +101,24 @@ void FmuModel2::doStep( double t_cur, double step, bool newStep )
     fmi2_import_do_step( M_fmu, t_cur, step, newStep );
 }
 
+void FmuModel2::printInfo()
+{
+    Feel::cout << "FMU Model loaded : name=" << M_name <<", guid=" << M_guid
+               << ", kind="<< M_kind << ", id=" << M_id <<std::endl
+               << "Version returned from FMU = " << fmi2_import_get_version(M_fmu) << std::endl;
+}
+
+void FmuModel2::printVariablesInfo()
+{
+    Feel::cout << "=================================================================\n"
+               << "FMU Model "<< name() << " : list of variables\n"
+               << "=================================================================\n";
+    Feel::cout << std::left<< std::setw(30) << "Name" <<std::setw(6) <<"Alias" << std::setw(10)
+               <<"Type" << "Description" << std::endl;
+    for ( auto const& v : M_v_map )
+        v.second->print();
+    Feel::cout << "=================================================================\n";
+}
 
 double FmuModel2::defaultStartTime()
 {
@@ -108,6 +135,33 @@ double FmuModel2::defaultTolerance()
     return fmi2_import_get_default_experiment_tolerance(M_fmu);
 }
 
+void FmuModel2::setValue( std::string name, double value )
+{
+    CHECK( M_v_map[name]->type=="double" ) <<"FMIModel2 : setValue() called with wrong type double when type of the variable is set as " << M_v_map[name]->type <<std::endl;
+    auto ref = M_v_map[name]->ref;
+    auto status = fmi2_import_set_real( M_fmu, &ref, 1, &value );
+}
+void FmuModel2::setValue( std::string name, int value )
+{
+    CHECK( M_v_map[name]->type=="int" ) <<"FMIModel2 : setValue() called with wrong type int when type of the variable is set as " << M_v_map[name]->type <<std::endl;
+    auto ref = M_v_map[name]->ref;
+    auto status = fmi2_import_set_integer( M_fmu, &ref, 1, &value );
+}
+void FmuModel2::setValue( std::string name, std::string value )
+{
+    CHECK( M_v_map[name]->type=="string" ) <<"FMIModel2 : setValue() called with wrong type string when type of the variable is set as " << M_v_map[name]->type <<std::endl;
+    auto ref = M_v_map[name]->ref;
+    fmi2_string_t str = value.c_str();
+    auto status = fmi2_import_set_string( M_fmu, &ref, 1, &str );
+}
+void FmuModel2::setValue( std::string name, bool value )
+{
+    CHECK( M_v_map[name]->type=="bool" ) <<"FMIModel2 : setValue() called with wrong type bool when type of the variable is set as " << M_v_map[name]->type <<std::endl;
+    auto ref = M_v_map[name]->ref;
+    fmi2_boolean_t b = value;
+    auto status = fmi2_import_set_boolean( M_fmu, &ref, 1, &b );
+}
+
 
 void FmuModel2::fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,
                            fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...)
@@ -116,14 +170,16 @@ void FmuModel2::fmi2logger(fmi2_component_environment_t env, fmi2_string_t insta
     va_list args;
     va_start( args, message );
     vsnprintf( buffer, 256, message, args );
-    Feel::cout << "FMUModel2 : status="<<fmi2_status_to_string(status)
+    LOG(INFO) << "FMUModel2 : status="<<fmi2_status_to_string(status)
                << "; " << instanceName <<"("<<category<<") : " << buffer <<std::endl;
     va_end (args);
 }
 
 void FmuModel2::stepFinished(fmi2_component_environment_t env, fmi2_status_t status)
 {
-    Feel::cout << "FMUModel2 : stepFinished called with fmiStatus : "<< fmi2_status_to_string(status) << std::endl;
+    LOG(INFO) << "FMUModel2 : stepFinished called with fmiStatus : "<< fmi2_status_to_string(status) << std::endl;
 }
+
+
 
 } // namespace Feel
