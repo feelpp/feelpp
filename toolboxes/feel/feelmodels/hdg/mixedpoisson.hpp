@@ -209,7 +209,7 @@ class MixedPoisson : public ModelNumerical
     virtual void assembleAll();
     virtual void assembleCstPart();
     virtual void assembleNonCstPart();
-    void setFZero();
+    void setZero();
 
     void assembleRHS();
     template <typename ExprT>
@@ -551,10 +551,16 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
+void MixedPoisson<Dim, Order, G_Order, E_Order>::setZero()
+{
+    M_a.zero();
+    M_rhs.zero();
+}
+
+template <int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-	M_A_cst->zero();
-	M_F->zero(); 
+    this->setZero();
 	this->assembleCstPart();
     this->assembleNonCstPart();
 }
