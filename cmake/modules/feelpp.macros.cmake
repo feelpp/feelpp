@@ -447,6 +447,10 @@ macro(feelpp_add_test)
       endforeach()
     endif(FEELPP_TEST_GEO)
 
+    if ( FEELPP_APP_DEPS )
+      add_dependencies( feelpp_test_${FEELPP_TEST_NAME} ${FEELPP_APP_DEPS})
+    endif()
+
 endmacro(feelpp_add_test)
 
 #
@@ -707,13 +711,20 @@ endmacro (feelpp_add_man)
 include(feelpp.macros.crb)
 
 # OM cmake macros
-macro ( om_add_model )
+macro ( add_ommodel )
   PARSE_ARGUMENTS( OM_MODEL
-    "SRCS;LIB" "" ${ARGN} )
+    "SRCS;CLASS;VERS;TYPE" "" ${ARGN} )
 
   car( OMWRAPPER_NAME ${OM_MODEL_DEFAULT_ARGS} )
   set( OMWRAPPER_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMWRAPPER_NAME} )
   set( FMU_SCRIPT_NAME ${OMWRAPPER_LIBDIR}/${OMWRAPPER_NAME}_tofmu.mos )
+
+  if( NOT ${OM_MODEL_VERS} )
+    set( OM_MODEL_VERS "2.0")
+  endif()
+  if( NOT ${OM_MODEL_TYPE} )
+    set( OM_MODEL_TYPE "cs" )
+  endif()
 
   file( MAKE_DIRECTORY ${OMWRAPPER_LIBDIR} )
   file( REMOVE ${FMU_SCRIPT_NAME} )
@@ -722,14 +733,14 @@ macro ( om_add_model )
     file( APPEND ${FMU_SCRIPT_NAME} ${LOAD_CMD}\;\n )
     set( OMWRAPPER_SRCS_FULLPATH  ${OMWRAPPER_SRCS_FULLPATH} ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
   endforeach()
-  file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OMWRAPPER_NAME},version=\"2.0\");"\n)
+  file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");"\n)
 
-  add_custom_target( feelpp_om_add_${OMWRAPPER_NAME}  ALL COMMENT "Copying modified files"  )
+  add_custom_target( feelpp_add_ommodel_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
 
-  add_custom_command(TARGET feelpp_om_add_${OMWRAPPER_NAME}
-    COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
+  add_custom_command(TARGET feelpp_add_ommodel_${OMWRAPPER_NAME}
+    COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
 
-endmacro( om_add_model )
+endmacro( add_ommodel )
 
 
 
