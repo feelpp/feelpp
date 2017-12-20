@@ -649,9 +649,9 @@ private :
     void run( PC& pc );
 
 private :
-    std::string M_prefixPCD_A, M_prefixPCD_Q;
-    std::string M_subPCtype_A, M_subPCtype_Q, M_subMatSolverPackage_A, M_subMatSolverPackage_Q;
-    bool M_subPCview_A, M_subPCview_Q;
+    std::string M_prefixPCD_Ap, M_prefixPCD_Mp;
+    std::string M_subPCtype_Ap, M_subPCtype_Mp, M_subMatSolverPackage_Ap, M_subMatSolverPackage_Mp;
+    bool M_subPCview_Ap, M_subPCview_Mp;
 
 };
 

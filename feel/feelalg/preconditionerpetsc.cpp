@@ -1339,11 +1339,11 @@ po::options_description
 getOptionsDescPCD( std::string const& prefix, std::string const& sub )
 {
     std::string pcctx = (sub.empty())? "" : sub+"-";
-    std::string prefixPCD_A = prefixvm( prefix,pcctx+"pcd.A");
-    std::string prefixPCD_Q = prefixvm( prefix,pcctx+"pcd.Q");
+    std::string prefixPCD_Ap = prefixvm( prefix,pcctx+"pcd.Ap");
+    std::string prefixPCD_Mp = prefixvm( prefix,pcctx+"pcd.Mp");
     po::options_description _options( "options PC PCD", 100);
-    _options.add( getOptionsDescPrecBase(prefixPCD_A,"",true,"lu") );
-    _options.add( getOptionsDescPrecBase(prefixPCD_Q,"",true,"lu") );
+    _options.add( getOptionsDescPrecBase(prefixPCD_Ap,"",true,"lu") );
+    _options.add( getOptionsDescPrecBase(prefixPCD_Mp,"",true,"lu") );
     return _options;
 }
 
@@ -2676,14 +2676,12 @@ ConfigurePCFieldSplit::ConfigureSubKSP::run(KSP& ksp, int splitId )
     if ( M_subPCtype[splitId] == "lsc" )
         CHECK( splitId==1 ) << "lsc must be use with only field 1, not " << splitId << "\n";
 
-#if 1
     // force to setup the schur preconditioner
     if( M_typeFieldSplit == "schur" && splitId == 1 )
     {
         if ( subpc->setupcalled )
             PetscObjectStateIncrease((PetscObject)subpc->pmat);
     }
-#endif
 
     // configure sub-pc
     ConfigurePC( subpc, this->precFeel(), this->worldComm(), "", prefixSplit,prefixSplitOverwrite,this->vm() );
@@ -2845,28 +2843,28 @@ ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, 
                                 std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescPCD(prefix,sub) ),
-    M_prefixPCD_A( prefixvm(this->prefix(),"pcd.A") ),
-    M_prefixPCD_Q( prefixvm(this->prefix(),"pcd.Q") ),
-    M_subPCtype_A( option(_name="pc-type",_prefix=M_prefixPCD_A,_vm=this->vm()).as<std::string>() ),
-    M_subPCtype_Q( option(_name="pc-type",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<std::string>() ),
-    M_subMatSolverPackage_A( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_A,_vm=this->vm()).as<std::string>() ),
-    M_subMatSolverPackage_Q( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<std::string>() ),
-    M_subPCview_A( option(_name="pc-view",_prefix=M_prefixPCD_A,_vm=this->vm()).as<bool>() ),
-    M_subPCview_Q( option(_name="pc-view",_prefix=M_prefixPCD_Q,_vm=this->vm()).as<bool>() )
+    M_prefixPCD_Ap( prefixvm(this->prefix(),"pcd.Ap") ),
+    M_prefixPCD_Mp( prefixvm(this->prefix(),"pcd.Mp") ),
+    M_subPCtype_Ap( option(_name="pc-type",_prefix=M_prefixPCD_Ap,_vm=this->vm()).as<std::string>() ),
+    M_subPCtype_Mp( option(_name="pc-type",_prefix=M_prefixPCD_Mp,_vm=this->vm()).as<std::string>() ),
+    M_subMatSolverPackage_Ap( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_Ap,_vm=this->vm()).as<std::string>() ),
+    M_subMatSolverPackage_Mp( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPCD_Mp,_vm=this->vm()).as<std::string>() ),
+    M_subPCview_Ap( option(_name="pc-view",_prefix=M_prefixPCD_Ap,_vm=this->vm()).as<bool>() ),
+    M_subPCview_Mp( option(_name="pc-view",_prefix=M_prefixPCD_Mp,_vm=this->vm()).as<bool>() )
 {
     CHECK( this->precFeel()->hasOperatorPCD("pcd") ) << "operator pcd is not given";
 
     auto opPCD = this->precFeel()->operatorPCD("pcd");
     MatrixPetsc<double> * pmMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureMassMatrix())) ) );
     MatrixPetsc<double> * pdcMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureDiffusionConvectionMatrix())) ) );
-    this->check( PCSetMatQ_PCD_Feelpp( pc, pmMatPetsc->mat()) );
-    this->check( PCSetMatF_PCD_Feelpp( pc, pdcMatPetsc->mat()) );
+    this->check( PCSetMatMp_PCD_Feelpp( pc, pmMatPetsc->mat()) );
+    this->check( PCSetMatFp_PCD_Feelpp( pc, pdcMatPetsc->mat()) );
     this->check( PCSetOrder_PCD_Feelpp( pc, opPCD->pcdOrder() ) );
-    this->check( PCSetLaplacianType_PCD_Feelpp( pc, opPCD->pcdDiffusionType().c_str() ) );
+    this->check( PCSetApType_PCD_Feelpp( pc, opPCD->pcdDiffusionType().c_str() ) );
     if ( opPCD->pressureLaplacianMatrix() )
     {
         MatrixPetsc<double> * plMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPCD->pressureLaplacianMatrix())) ) );
-        this->check( PCSetMatA_PCD_Feelpp( pc, plMatPetsc->mat()) );
+        this->check( PCSetMatApLaplacian_PCD_Feelpp( pc, plMatPetsc->mat()) );
     }
     if ( opPCD->velocityMassMatrix() )
     {
@@ -2876,10 +2874,10 @@ ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, 
 
     VLOG(2) << "ConfigurePC : PCD\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
-            << "  |->prefixPCD_A : " << M_prefixPCD_A  << "\n"
-            << "  |->subPCtype_A : " << M_subPCtype_A << "\n"
-            << "  |->prefixPCD_Q : " << M_prefixPCD_Q  << "\n"
-            << "  |->subPCtype_Q : " << M_subPCtype_Q << "\n";
+            << "  |->prefixPCD_Ap : " << M_prefixPCD_Ap  << "\n"
+            << "  |->subPCtype_Ap : " << M_subPCtype_Ap << "\n"
+            << "  |->prefixPCD_Mp : " << M_prefixPCD_Mp  << "\n"
+            << "  |->subPCtype_Mp : " << M_subPCtype_Mp << "\n";
     google::FlushLogFiles(google::INFO);
     run( pc );
 }
@@ -2894,42 +2892,42 @@ ConfigurePCPCD::run( PC& pc )
 
     //-----------------------------------------------------------//
     // get sub-ksp
-    KSP subksp_A, subksp_Q;
-    this->check( PCGetKSP_A_PCD_Feelpp( pc, subksp_A ) );
-    this->check( PCGetKSP_Q_PCD_Feelpp( pc, subksp_Q ) );
+    KSP subksp_Ap, subksp_Mp;
+    this->check( PCGetKSP_Ap_PCD_Feelpp( pc, subksp_Ap ) );
+    this->check( PCGetKSP_Mp_PCD_Feelpp( pc, subksp_Mp ) );
     // configure sub-ksp
-    ConfigureKSP kspConf_A( subksp_A, this->precFeel(), this->worldComm(), "", M_prefixPCD_A,prefixOverwrite,"preonly", 1e-5, 50 );
-    ConfigureKSP kspConf_Q( subksp_Q, this->precFeel(), this->worldComm(), "", M_prefixPCD_Q,prefixOverwrite,"preonly", 1e-5, 50 );
+    ConfigureKSP kspConf_Ap( subksp_Ap, this->precFeel(), this->worldComm(), "", M_prefixPCD_Ap,prefixOverwrite,"preonly", 1e-5, 50 );
+    ConfigureKSP kspConf_Mp( subksp_Mp, this->precFeel(), this->worldComm(), "", M_prefixPCD_Mp,prefixOverwrite,"preonly", 1e-5, 50 );
     // setup sub-ksp
-    this->check( KSPSetUp( subksp_A ) );
-    this->check( KSPSetUp( subksp_Q ) );
+    this->check( KSPSetUp( subksp_Ap ) );
+    this->check( KSPSetUp( subksp_Mp ) );
     //-----------------------------------------------------------//
     // get sub-pc
-    PC subpc_A, subpc_Q;
-    this->check( KSPGetPC( subksp_A, &subpc_A ) );
-    this->check( KSPGetPC( subksp_Q, &subpc_Q ) );
+    PC subpc_Ap, subpc_Mp;
+    this->check( KSPGetPC( subksp_Ap, &subpc_Ap ) );
+    this->check( KSPGetPC( subksp_Mp, &subpc_Mp ) );
     // configure sub-pc
-    SetPCType( subpc_A, pcTypeConvertStrToEnum( M_subPCtype_A ),
-               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_A ),
+    SetPCType( subpc_Ap, pcTypeConvertStrToEnum( M_subPCtype_Ap ),
+               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_Ap ),
                this->worldComm() );
-    SetPCType( subpc_Q, pcTypeConvertStrToEnum( M_subPCtype_Q ),
-               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_Q ),
+    SetPCType( subpc_Mp, pcTypeConvertStrToEnum( M_subPCtype_Mp ),
+               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_Mp ),
                this->worldComm() );
-    ConfigurePC( subpc_A, this->precFeel(), this->worldComm(), "", M_prefixPCD_A,prefixOverwrite,this->vm() );
-    ConfigurePC( subpc_Q, this->precFeel(), this->worldComm(), "", M_prefixPCD_Q,prefixOverwrite,this->vm() );
+    ConfigurePC( subpc_Ap, this->precFeel(), this->worldComm(), "", M_prefixPCD_Ap,prefixOverwrite,this->vm() );
+    ConfigurePC( subpc_Mp, this->precFeel(), this->worldComm(), "", M_prefixPCD_Mp,prefixOverwrite,this->vm() );
     // setup sub-pc
-    this->check( PCSetUp( subpc_A ) );
-    this->check( PCSetUp( subpc_Q ) );
+    this->check( PCSetUp( subpc_Ap ) );
+    this->check( PCSetUp( subpc_Mp ) );
     //-----------------------------------------------------------//
     // ksp and pc view
-    if ( kspConf_A.kspView() )
-        this->check( KSPView( subksp_A, PETSC_VIEWER_STDOUT_WORLD ) );
-    else if ( M_subPCview_A )
-        this->check( PCView( subpc_A, PETSC_VIEWER_STDOUT_WORLD ) );
-    if ( kspConf_Q.kspView() )
-        this->check( KSPView( subksp_Q, PETSC_VIEWER_STDOUT_WORLD ) );
-    else if ( M_subPCview_Q )
-        this->check( PCView( subpc_Q, PETSC_VIEWER_STDOUT_WORLD ) );
+    if ( kspConf_Ap.kspView() )
+        this->check( KSPView( subksp_Ap, PETSC_VIEWER_STDOUT_WORLD ) );
+    else if ( M_subPCview_Ap )
+        this->check( PCView( subpc_Ap, PETSC_VIEWER_STDOUT_WORLD ) );
+    if ( kspConf_Mp.kspView() )
+        this->check( KSPView( subksp_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
+    else if ( M_subPCview_Mp )
+        this->check( PCView( subpc_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
 }
 
 
