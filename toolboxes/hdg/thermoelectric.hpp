@@ -99,7 +99,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     toc("assembleCstThermo");
 
     // first iteration
-    M_electro->copyCstPart();
     M_electro->updateConductivityTerm( false );
     M_electro->assembleRhsBoundaryCond();
     M_electro->assembleRHS();
@@ -110,7 +109,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     double normC = normL2(elements(M_mesh), idv(M_current) );
     Feel::cout << "norm potential = " << normP << "\tnorm current = " << normC << std::endl;
 
-    M_thermo->copyCstPart();
     M_thermo->updateConductivityTerm( false );
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
@@ -133,14 +131,14 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         std::string marker = pairMat.first;
         auto mat = pairMat.second;
         auto cond = mat.getScalar(soption(prefixvm(M_prefixElectro,"conductivity_json")));
-        sigmaF.on( markedelements(M_electro->mesh(), marker), cond );
+        sigmaF.on( _range=markedelements(M_electro->mesh(), marker), _expr=cond );
     }
     for( auto const& pairMat : thermoMat )
     {
         std::string marker = pairMat.first;
         auto mat = pairMat.second;
         auto cond = mat.getScalar(soption(prefixvm(M_prefixThermo,"conductivity_json")));
-        kF.on( markedelements(M_thermo->mesh(), marker), cond );
+        kF.on( _range=markedelements(M_thermo->mesh(), marker), _expr=cond );
     }
 
     potential_type oldPotential = M_electro->potentialSpace()->element();
@@ -176,7 +174,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         oldTempFlux = M_tempFlux;
 
         tic();
-        M_electro->copyCstPart();
+        M_electro->setZero();
+        M_electro->assembleCstPart();
+
         M_electro->assembleRHS();
         for( auto const& pairMat : electroMat )
         {
@@ -189,7 +189,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
                                        {"T"}, {idv(M_temperature)},
                                        {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
             M_electro->updateConductivityTerm( sigma, marker);
-            sigmaF.on( markedelements(M_electro->mesh(), marker), sigma );
+            sigmaF.on( _range=markedelements(M_electro->mesh(), marker), _expr=sigma );
         }
         M_electro->assembleRhsBoundaryCond();
         toc("assembleElectro");
@@ -200,7 +200,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         M_current = M_electro->fluxField();
 
         tic();
-        M_thermo->copyCstPart();
+        M_thermo->setZero();
+        M_thermo->assembleCstPart();
+
         for( auto const& pairMat : thermoMat )
         {
             std::string marker = pairMat.first;
@@ -212,7 +214,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
                                    {"T"}, {idv(M_temperature)},
                                    {{"k0",k0},{"T0",T0},{"alpha",alpha}});
             M_thermo->updateConductivityTerm( k, marker);
-            kF.on( markedelements(M_thermo->mesh(), marker), k );
+            kF.on( _range=markedelements(M_thermo->mesh(), marker), _expr=k );
         }
         M_thermo->assembleRhsBoundaryCond();
         for( auto const& pairMat : electroMat )
