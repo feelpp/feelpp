@@ -25,11 +25,11 @@ public :
     {
         M_model->setupExperiment( t_init, t_final, tol );
         M_model->initialize();
-        double t_cur = t_init;
-        while( t_cur<t_final )
+        M_tcur = t_init;
+        while( M_tcur<t_final )
         {
-            M_model->doStep( t_cur, M_step, true );
-            t_cur += M_step;
+            M_model->doStep( M_tcur, M_step, true );
+            M_tcur += M_step;
         }
     }
 
