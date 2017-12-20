@@ -30,16 +30,32 @@ public :
 
     int load( std::string _path="" );
     void simulate( double t_init=-1, double t_final=-1, double tolerance=-1 );
+    void reset();
 
     void initSolver();
     void setSolverTimeStep( double const& step );
 
     void printModelInfo();
 
+    double currentTime();
+
+
     template <typename VariableType>
-    void setVariable( std::string var_name, VariableType const& value )
+    void setVariable( std::string var_name, VariableType value )
     {
         CHECK( M_model ) <<"FMU trying to access variable without model\n";
+        M_model->setValue( var_name, value );
+    }
+
+    template <typename VariableType>
+    VariableType getValue( std::string var_name )
+    {
+        VariableType dummy;
+        CHECK( M_model ) <<"FMU trying to access variable without model\n";
+        if( std::is_same<VariableType,double>::value )
+            return M_model->getRealValue( var_name );
+
+        return dummy;
     }
 
 private :

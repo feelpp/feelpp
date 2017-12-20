@@ -15,7 +15,8 @@ public :
         M_callbacks( callbacks ),
         M_allocated_xml( false ),
         M_allocated_dll( false ),
-        M_allocated_fmu( false )
+        M_allocated_fmu( false ),
+        M_setup( false )
     {}
 
     virtual ~FmuModelBase()
@@ -25,9 +26,12 @@ public :
     std::string name() { return M_name; }
     std::string guid() { return M_guid; }
     std::string kind() { return M_kind; }
+    bool isSetup() { return M_setup; }
 
+    virtual void reset()=0;
     virtual void setupExperiment( double const& t_init, double const& t_final, double const& tol )=0;
     virtual void initialize()=0;
+    virtual void terminate()=0;
     virtual void doStep( double t_cur, double step, bool newStep )=0;
 
     virtual void printInfo()=0;
@@ -42,9 +46,11 @@ public :
     virtual void setValue( std::string name, std::string value )=0;
     virtual void setValue( std::string name, bool value )=0;
 
+    virtual double getRealValue( std::string name )=0;
+
 protected :
     callbacks_ptrtype M_callbacks;
-    bool M_allocated_xml, M_allocated_dll, M_allocated_fmu;
+    bool M_allocated_xml, M_allocated_dll, M_allocated_fmu, M_setup;
     std::string M_name, M_guid, M_id, M_kind;
     int M_version;
 };

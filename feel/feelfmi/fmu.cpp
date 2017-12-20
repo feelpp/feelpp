@@ -77,8 +77,15 @@ void FMU::simulate( double t_init, double t_final, double tolerance )
     M_solver->simulate( t_init, t_final, tolerance );
 }
 
+void FMU::reset()
+{
+    CHECK( M_model ) <<"FMU : error in reset(). No FMU loaded\n";
+    M_model->reset();
+}
+
 void FMU::initSolver()
 {
+    CHECK( M_model ) <<"FMU : error in initSolver. No FMU loaded\n";
     auto kind = M_model->kind();
     if ( kind=="CS" )
         M_solver = solver_ptrtype( new CSSolver( M_model ) );
@@ -101,6 +108,13 @@ void FMU::printModelInfo()
     CHECK( M_model ) <<"FMU : error in printModelInfo. No FMU loaded\n";
     M_model->printInfo();
     M_model->printVariablesInfo();
+}
+
+double FMU::currentTime()
+{
+    if ( !M_solver )
+        initSolver();
+    return M_solver->currentTime();
 }
 
 } //namespace Feel
