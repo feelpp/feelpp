@@ -19,7 +19,8 @@ public :
     {}
 
     SolverBase( fmumodel_ptrtype model ) :
-        M_model( model )
+        M_model( model ),
+        M_tcur( 0 )
     {}
 
     virtual ~SolverBase()
@@ -35,11 +36,15 @@ public :
         M_tol = tol;
     }
 
+    double currentTime()
+    {
+        return M_tcur;
+    }
     virtual void simulate( double const& t_init, double const& t_final, double const& tol )=0;
 
 protected :
     fmumodel_ptrtype M_model;
-    double M_step, M_tol;
+    double M_step, M_tol, M_tcur;
 
 }; //classe SovlerBase
 
