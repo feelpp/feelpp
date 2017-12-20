@@ -52,6 +52,7 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     std::string instance_name = "FMU model " + M_name;
     status = fmi2_import_instantiate( M_fmu, instance_name.c_str(), type, 0, 0 );
     CHECK( status!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
+    M_allocated_fmu=true;
 
     // Build the map of variables
     auto v_list = fmi2_import_get_variable_list( M_fmu, 1 );
@@ -70,17 +71,23 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
 
 FmuModel2::~FmuModel2()
 {
+    if ( M_setup )
+        terminate();
     if ( M_allocated_fmu )
-    {
-        fmi2_import_terminate(M_fmu);
         fmi2_import_free_instance(M_fmu);
-    }
     if ( M_allocated_xml )
         fmi2_import_free( M_fmu );
     if ( M_allocated_dll )
         fmi2_import_destroy_dllfmu(M_fmu);
 }
 
+void FmuModel2::reset()
+{
+    terminate();
+    auto status = fmi2_import_reset(M_fmu);
+    CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_reset failed\n";
+    M_setup=false;
+}
 
 void FmuModel2::initialize()
 {
@@ -90,10 +97,17 @@ void FmuModel2::initialize()
     CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_exit_initialization_mode failed\n";
 }
 
+void FmuModel2::terminate()
+{
+    auto status = fmi2_import_terminate(M_fmu);
+    CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_terminate failed\n";
+}
+
 void FmuModel2::setupExperiment( double const& t_init, double const& t_final, double const& tol )
 {
-    auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, fmi2_false, t_final );
+    auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, true, t_final );
     CHECK( status==fmi2_status_ok )<< "FMUModel2 : fmi2_import_setup_experiment failed\n";
+    M_setup=true;
 }
 
 void FmuModel2::doStep( double t_cur, double step, bool newStep )
@@ -160,6 +174,15 @@ void FmuModel2::setValue( std::string name, bool value )
     auto ref = M_v_map[name]->ref;
     fmi2_boolean_t b = value;
     auto status = fmi2_import_set_boolean( M_fmu, &ref, 1, &b );
+}
+
+
+double FmuModel2::getRealValue( std::string name )
+{
+    auto ref = M_v_map[name]->ref;
+    double value;
+    auto status = fmi2_import_get_real( M_fmu, &ref, 1, &value );
+    return value;
 }
 
 

@@ -66,8 +66,10 @@ public :
     FmuModel2( fmi_import_context_t* context, std::string tmp_dir, callbacks_ptrtype callbacks );
     ~FmuModel2();
 
+    void reset() override;
     void setupExperiment( double const& t_init, double const& t_final, double const& tol ) override;
     void initialize() override;
+    void terminate() override;
     void doStep( double t_cur, double step, bool newStep ) override;
 
     void printVariablesInfo() override;
@@ -81,6 +83,8 @@ public :
     void setValue( std::string name, int value ) override;
     void setValue( std::string name, std::string value ) override;
     void setValue( std::string name, bool value ) override;
+
+    double getRealValue( std::string name ) override;
 
 private :
     static void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,
