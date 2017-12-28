@@ -618,6 +618,44 @@ private :
 };
 
 /**
+ * ConfigurePCPMM
+ */
+class ConfigurePCPMM : public ConfigurePCBase
+{
+public :
+    ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    std::string M_prefixPMM;
+    std::string M_subPCtype, M_subMatSolverPackage;
+    bool M_subPCview;
+
+};
+
+/**
+ * ConfigurePCPCD
+ */
+class ConfigurePCPCD : public ConfigurePCBase
+{
+public :
+    ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    std::string M_prefixPCD_Ap, M_prefixPCD_Mp;
+    std::string M_subPCtype_Ap, M_subPCtype_Mp, M_subMatSolverPackage_Ap, M_subMatSolverPackage_Mp;
+    bool M_subPCview_Ap, M_subPCview_Mp;
+
+};
+
+/**
  * ConfigurePCHYPRE_EUCLID
  */
 class ConfigurePCHYPRE_EUCLID : public ConfigurePCBase

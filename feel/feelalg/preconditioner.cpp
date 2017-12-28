@@ -33,6 +33,9 @@
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #endif
 
+#include <feel/feelpde/operatorpcdbase.hpp>
+
+
 namespace Feel
 {
 template <typename T>
