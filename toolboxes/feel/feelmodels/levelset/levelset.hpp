@@ -48,6 +48,8 @@
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
+#include <boost/bimap.hpp>
+
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
@@ -193,6 +195,8 @@ public:
     enum class FastMarchingInitializationMethod { 
         NONE=0, ILP, SMOOTHED_ILP, HJ_EQ, IL_HJ_EQ
     };
+
+    typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -707,7 +711,8 @@ private:
 
     LevelSetReinitMethod M_reinitMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
-    static const std::map<std::string, FastMarchingInitializationMethod> FastMarchingInitializationMethodIdMap;
+    //static const std::map<std::string, FastMarchingInitializationMethod> FastMarchingInitializationMethodIdMap;
+    static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
     bool M_useMarkerDiracAsMarkerDoneFM;
 
     bool M_reinitInitialValue;

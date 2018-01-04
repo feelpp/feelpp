@@ -6,6 +6,9 @@
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/list_inserter.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -17,14 +20,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::ShapeTypeMap = {
 };
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-const std::map<std::string, typename LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethod>
-LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = {
-    {"none", FastMarchingInitializationMethod::NONE},
-    {"ilp", FastMarchingInitializationMethod::ILP},
-    {"smoothed_ilp", FastMarchingInitializationMethod::SMOOTHED_ILP},
-    {"hj", FastMarchingInitializationMethod::HJ_EQ},
-    {"il-hj", FastMarchingInitializationMethod::IL_HJ_EQ}
-};
+const typename LEVELSET_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type
+LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::assign::list_of< typename LEVELSET_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type::relation >
+    ( "none", FastMarchingInitializationMethod::NONE )
+    ( "ilp", FastMarchingInitializationMethod::ILP )
+    ( "smoothed_ilp", FastMarchingInitializationMethod::SMOOTHED_ILP )
+    ( "hj", FastMarchingInitializationMethod::HJ_EQ )
+    ( "il-hj", FastMarchingInitializationMethod::IL_HJ_EQ )
+;
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
@@ -706,8 +709,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
     const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
-    CHECK(FastMarchingInitializationMethodIdMap.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
-    M_fastMarchingInitializationMethod = FastMarchingInitializationMethodIdMap.at(fm_init_method);
+    CHECK(FastMarchingInitializationMethodIdMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
+    M_fastMarchingInitializationMethod = FastMarchingInitializationMethodIdMap.left.at(fm_init_method);
 
     M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
@@ -2104,7 +2107,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     std::string reinitMethod;
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
     if( reinitmethod == "fm" )
+    {
         reinitMethod = "Fast-Marching";
+        std::string fmInitMethod = FastMarchingInitializationMethodIdMap.right.at( this->M_fastMarchingInitializationMethod );
+        reinitMethod += " (" + fmInitMethod + ")";
+    }
     else if( reinitmethod == "hj" )
         reinitMethod = "Hamilton-Jacobi";
 
