@@ -1803,25 +1803,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 _space=M_cauchyGreenInvariant1->functionSpace(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
-#elif 1 // New implementation sqrt(tr(cof A))
+//#elif 1 // New implementation sqrt(tr(cof A))
+#elif 1 // Old implementation tr(cof A)
         auto A = idv(this->leftCauchyGreenTensor());
-        //auto trA = trace(A);
-        //M_cauchyGreenInvariant1->on(
-                //_range=this->interfaceElements(),
-                //_expr=sqrt( 0.5*( trA*trA-trace(A*A) ) )
-                //);
-        //auto const cgI1 = this->smootherInterface()->project(
-                //_expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
-                //);
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
                 _range=this->interfaceElements(),
                 _expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
-                //_expr=idv(cgI1)
                 );
-        //*M_cauchyGreenInvariant1 = this->smoother()->project(
-                //_expr=Feel::vf::FeelModels::cauchyGreenInvariant1Expr( A )
-                //);
 #endif
         M_doUpdateCauchyGreenInvariant1 = false;
 
@@ -1860,17 +1849,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant2() const
                 _range=this->interfaceElements(),
                 _expr=det(idv(K))/(trans(idv(N))*idv(KN))
                 );
-#elif 1 // New implementation TrA / (2 sqrt(cofA))
+//#elif 1 // New implementation TrA / (2 sqrt(cofA))
+#elif 1 // Old implementation TrA/2
         auto A = idv(this->leftCauchyGreenTensor());
         auto trA = trace(A);
-        //auto const cgI2 = this->smootherInterface()->project(
-                //_expr=0.5 * trA / idv(this->cauchyGreenInvariant1())
-                //);
         M_cauchyGreenInvariant2->zero();
         M_cauchyGreenInvariant2->on(
                 _range=this->interfaceElements(),
-                _expr=0.5 * trA / idv(this->cauchyGreenInvariant1())
-                //_expr=idv(cgI2)
+                _expr=0.5 * trA
                 );
 #endif
         M_doUpdateCauchyGreenInvariant2 = false;
