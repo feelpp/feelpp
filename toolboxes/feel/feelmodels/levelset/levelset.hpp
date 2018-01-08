@@ -711,7 +711,6 @@ private:
 
     LevelSetReinitMethod M_reinitMethod;
     FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
-    //static const std::map<std::string, FastMarchingInitializationMethod> FastMarchingInitializationMethodIdMap;
     static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
     bool M_useMarkerDiracAsMarkerDoneFM;
 
