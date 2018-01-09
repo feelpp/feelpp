@@ -1,10 +1,10 @@
 h = 0.16;
-xmin = -4.;
-xmax = 4.;
-ymin = -4.;
-ymax = 4.;
-zmin = -4.;
-zmax = 4.;
+xmin = -2.;
+xmax = 2.;
+ymin = -2.;
+ymax = 2.;
+zmin = -2.;
+zmax = 2.;
 
 Point(1) = {xmin,ymin,zmin,h};
 Point(2) = {xmax,ymin,zmin,h};
