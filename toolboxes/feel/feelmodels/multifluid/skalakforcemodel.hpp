@@ -100,10 +100,6 @@ SkalakForceModel<LevelSetType>::energyDerivative1Impl() const
         _expr=0.25*(M_skalakForceStretchModulus * I2 - M_skalakForceShearModulus)
         );
 
-    *M_energyDerivative1 = vf::project(
-        _space=M_energyDerivative1->functionSpace(),
-        _expr=0.25*M_skalakForceShearModulus * I1p1
-        );
     return M_energyDerivative1;
 }
 
