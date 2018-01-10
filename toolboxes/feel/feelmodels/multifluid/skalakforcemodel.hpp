@@ -93,11 +93,11 @@ SkalakForceModel<LevelSetType>::energyDerivative1Impl() const
     if( !M_energyDerivative1 )
         M_energyDerivative1.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative1") );
 
-    auto I2 = idv(this->levelset()->cauchyGreenInvariant2()) - 1;
+    auto i1 = idv(this->levelset()->cauchyGreenInvariant1());
 
     *M_energyDerivative1 = vf::project(
         _space=M_energyDerivative1->functionSpace(),
-        _expr=0.25*(M_skalakForceStretchModulus * I2 - M_skalakForceShearModulus)
+        _expr=0.5*i1*(M_skalakForceStretchModulus * (i1*i1 - 1) - M_skalakForceShearModulus)
         );
 
     return M_energyDerivative1;
@@ -110,12 +110,11 @@ SkalakForceModel<LevelSetType>::energyDerivative2Impl() const
     if( !M_energyDerivative2 )
         M_energyDerivative2.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative2") );
 
-    // I1 + 1 = (i1-2)+1 = i1-1
-    auto I1p1 = idv(this->levelset()->cauchyGreenInvariant1()) - 1;
+    auto i2 = idv(this->levelset()->cauchyGreenInvariant2());
 
     *M_energyDerivative2 = vf::project(
         _space=M_energyDerivative2->functionSpace(),
-        _expr=0.25*M_skalakForceShearModulus * I1p1
+        _expr=M_skalakForceShearModulus * (i2-0.5)
         );
     return M_energyDerivative2;
 }
