@@ -1200,12 +1200,15 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
                 e1.assignE( K, upK.head( N0 ) );
                 e2.assignE( K, upK.tail( N1 ) );
             };
-        futs.push_back( std::async(std::launch::async, f ) );
+        f();
+        //futs.push_back( std::async(std::launch::async, f ) );
     }
+#if 0
     for( auto& fut : futs )
     {
         fut.get();
     }
+#endif
 }
 
 template<typename T>
@@ -1273,12 +1276,15 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
                 }
             };
 
-        futs.push_back( std::async(std::launch::async, f ) );
+        //futs.push_back( std::async(std::launch::async, f ) );
+        f();
     }
+#if 0
     for( auto& fut : futs )
     {
         fut.get();
     }
+#endif
 }
 
 
