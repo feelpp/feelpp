@@ -3,7 +3,7 @@
  This file is part of the Feel++ library
 
  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
- Date:27 Nov 2017
+ Date:18 Dec 2017
 
  Copyright (C) 2017 Feel++ Consortium
 
@@ -22,37 +22,34 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#if !defined(FEELPP_MESH_SUPPORT_BASE_HPP)
-#define FEELPP_MESH_SUPPORT_BASE_HPP 1
+#ifndef FEELPP_OPERATORPCDBASE_HPP
+#define FEELPP_OPERATORPCDBASE_HPP 1
 
-#include <feel/feelcore/feel.hpp>
-#include <unordered_set>
+#include <feel/feelalg/operator.hpp>
 
 namespace Feel
 {
 
-/**
- * \brief Description of a mesh support.
- * A function space can use this object for built a space in a part of the mesh
- */
-class MeshSupportBase
+template<typename T>
+class OperatorPCDBase : public OperatorBase<T>
 {
+    typedef OperatorBase<T> super;
 public :
+    OperatorPCDBase( datamap_ptrtype const& map, std::string label, bool use_transpose, bool has_norminf )
+        :
+        super( map, label, use_transpose, has_norminf )
+        {}
 
-    virtual bool isFullSupport() const = 0;
-    virtual bool isPartialSupport() const = 0;
+    virtual sparse_matrix_ptrtype pressureMassMatrix() const = 0;
+    virtual sparse_matrix_ptrtype pressureLaplacianMatrix() const = 0;
+    virtual sparse_matrix_ptrtype pressureDiffusionConvectionMatrix() const = 0;
+    virtual sparse_matrix_ptrtype velocityMassMatrix() const = 0;
 
-    virtual size_type numElements() const = 0;
-
-    virtual bool hasElement( size_type eltId ) const = 0;
-
-    virtual bool hasGhostElement( size_type eltId ) const = 0;
-
-    virtual std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const = 0;
-    virtual std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const = 0;
+    virtual int pcdOrder() const = 0;
+    virtual std::string const& pcdDiffusionType() const = 0;
 
 };
 
-} // namespace Feel
+}
 
 #endif
