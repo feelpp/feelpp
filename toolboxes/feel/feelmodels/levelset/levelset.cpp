@@ -1803,8 +1803,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1() const
                 _space=M_cauchyGreenInvariant1->functionSpace(),
                 _expr=trace(idv(this->leftCauchyGreenTensor()))
                 );
-//#elif 1 // New implementation sqrt(tr(cof A))
-#elif 1 // Old implementation tr(cof A)
+#elif 1 // New implementation sqrt(tr(cof A))
         auto A = idv(this->leftCauchyGreenTensor());
         M_cauchyGreenInvariant1->zero();
         M_cauchyGreenInvariant1->on(
