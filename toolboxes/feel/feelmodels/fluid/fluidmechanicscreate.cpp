@@ -1233,19 +1233,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( buildModelAlgebraicFactory )
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
-#if 1
-        bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
-        if ( attachMassMatrix )
-        {
-            auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
-            auto const& u = this->fieldVelocity();
-            double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            if ( this->isStationary() ) coeff=1.;
-            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
-            massbf.matrixPtr()->close();
-            M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
-        }
-#endif
+
         this->initInHousePreconditioner();
     }
 
@@ -1881,7 +1869,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
-    if ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" )
+
+    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
+    if ( attachMassMatrix )
+    {
+        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+        auto const& u = this->fieldVelocity();
+        double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        if ( this->isStationary() ) coeff=1.;
+        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        massbf.matrixPtr()->close();
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+    }
+
+    bool attachPressureMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
+    if ( attachPressureMassMatrix )
+    {
+        auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        auto const& p = this->fieldPressure();
+        auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(p),id(p) ) );
+        massbf.matrixPtr()->close();
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", massbf.matrixPtr() );
+    }
+
+
+    bool buildPrecBlockns = ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" );
+    bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
+    if ( buildPrecBlockns || buildOperatorPCD )
     {
         BoundaryConditions bcPrecPCD;
         bcPrecPCD.clear();
@@ -1967,7 +1982,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         // TODO other bc (fsi,...)
 #if 1
-        if ( Environment::isMasterRank() )
+        if ( this->worldComm().isMasterRank() && this->verbose() )
         {
             for( auto const& s : bcPrecPCD )
             {
@@ -1992,22 +2007,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         }
 #endif
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-        // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
 
-        typedef space_fluid_type space_type;
-        typedef space_densityviscosity_type properties_space_type;
+        if ( buildPrecBlockns )
+        {
+            // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            //auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
+            typedef space_fluid_type space_type;
+            typedef space_densityviscosity_type properties_space_type;
+            boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =
+                Feel::blockns( _space=this->functionSpace(),
+                               _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
+                               _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
+                               _bc=bcPrecPCD,
+                               _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
+                               _prefix="velocity",
+                               _mu=idv(this->densityViscosityModel()->fieldMu()),
+                               _rho=idv(this->densityViscosityModel()->fieldRho())
+                               /*_alpha=myalpha*/ );
+            this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+        }
 
-        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
-                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
-                                        _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
-                                        _bc=bcPrecPCD,
-                                        _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
-                                        _prefix="velocity",
-                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
-                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
-                                        _alpha=myalpha );
-        this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+        if ( buildOperatorPCD )
+        {
+            boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
+            opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+            this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
+        }
     }
 
 }
