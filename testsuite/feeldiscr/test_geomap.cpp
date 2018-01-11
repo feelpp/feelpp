@@ -28,9 +28,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-07
  */
+#define BOOST_TEST_MODULE geomap testsuite
+#include <testsuite.hpp>
+
 #include <feel/feelcore/feel.hpp>
-
-
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
@@ -139,21 +140,15 @@ public:
 private:
     mesh_ptr_type M_mesh;
 };
-int
-main( int argc, char** argv )
+
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( test_geomap )
+
+BOOST_AUTO_TEST_CASE( test_geomap )
 {
-    Feel::Environment env( argc,argv);
-
-
-    Feel::Assert::setLog( "assertions.log" );
-    //boost::mpi::environment env( argc, argv );
     TestInterp<2,Simplex> test_interp;
-
-    if ( argc == 2 )
-    {
-        test_interp.test( std::atof( argv[1] ), FEELPP_GMSH_FORMAT_VERSION );
-    }
-
-    else
-        test_interp.test( 2.0, FEELPP_GMSH_FORMAT_VERSION );
+    test_interp.test( doption(_name="gmsh.hsize"), FEELPP_GMSH_FORMAT_VERSION );
 }
+BOOST_AUTO_TEST_SUITE_END()

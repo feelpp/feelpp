@@ -29,8 +29,6 @@
  */
 
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE integration testsuite
 // disable the main function creation, use our own
@@ -1272,17 +1270,6 @@ BOOST_AUTO_TEST_CASE( test_integration_3 )
 #endif
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 
 #else
 int
