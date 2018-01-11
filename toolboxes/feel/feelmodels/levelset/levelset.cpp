@@ -1711,6 +1711,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
     this->log("LevelSet", "updateLeftCauchyGreenTensor", "start");
     this->timerTool("UpdateInterfaceData").start();
 
+#if 0
     // Create interface projector L2
     auto const interfaceElts = this->interfaceElements();
     auto const spaceTensor2SymmInterface = self_type::space_tensor2symm_type::New( 
@@ -1725,26 +1726,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
 
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
     auto gradY = projectorL2Tensor2SymmInterface->project(
-            //_expr=trans(gradv(Y))
             _expr=gradv(Y)
             );
     auto invGradY = this->functionSpaceTensor2Symm()->element();
     invGradY.on(
             _range=interfaceElts,
-            //_expr=inv(gradv(Y))
             _expr=inv(idv(gradY))
             );
-#if 0
-    auto Id = vf::Id<nDim, nDim>();
-    auto N0 = this->projectorL2Vectorial()->project(
-            _expr=trans(idv(invGradY))*idv(this->N()) / norm2(trans(idv(invGradY))*idv(this->N()))
-            );
-    auto N0xN0 = idv(N0)*trans(idv(N0));
-
-    *M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
-            _expr=idv(invGradY)*(Id-N0xN0)*trans(idv(invGradY))
-            );
-#else
     // K = (gradY)^-1 (gradY)^-T
     auto const& N = this->N();
     M_leftCauchyGreenTensor_K->zero();
@@ -1759,18 +1747,35 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateLeftCauchyGreenTensor()
             _expr=idv(K)*idv(this->N())
             );
     auto const& KN = *M_leftCauchyGreenTensor_KN;
-    //auto K = this->projectorL2Tensor2Symm()->project(
-            //_expr=idv(invGradY)*trans(idv(invGradY))
-            //);
-    //auto KN = this->projectorL2Vectorial()->project(
-            //_expr=idv(K)*idv(this->N())
-            //);
-    //*M_leftCauchyGreenTensor = this->projectorL2Tensor2Symm()->project(
-            //_expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
-            //);
     M_leftCauchyGreenTensor->zero();
     M_leftCauchyGreenTensor->on(
             _range=interfaceElts,
+            _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
+            );
+#else
+    auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+    auto gradY = this->projectorL2Tensor2Symm()->project(
+            _expr=gradv(Y)
+            );
+    auto invGradY = vf::project(
+            _space=this->functionSpaceTensor2Symm(),
+            _range=elements(this->mesh()),
+            _expr=inv(idv(gradY))
+            );
+    // K = (gradY)^-1 (gradY)^-T
+    auto const& N = this->N();
+    M_leftCauchyGreenTensor_K->on(
+            _range=elements(this->mesh()),
+            _expr=idv(invGradY)*trans(idv(invGradY))
+            );
+    auto const& K = *M_leftCauchyGreenTensor_K;
+    M_leftCauchyGreenTensor_KN->on(
+            _range=elements(this->mesh()),
+            _expr=idv(K)*idv(this->N())
+            );
+    auto const& KN = *M_leftCauchyGreenTensor_KN;
+    M_leftCauchyGreenTensor->on(
+            _range=elements(this->mesh()),
             _expr=idv(K) - idv(KN)*trans(idv(KN))/(trans(idv(N))*idv(KN))
             );
 #endif
