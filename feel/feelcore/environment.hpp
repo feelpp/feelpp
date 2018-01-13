@@ -39,7 +39,10 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+
+#if defined(FEELPP_HAS_PYBIND11)
 #include <pybind11/pybind11.h>
+#endif
 
 #if defined(FEELPP_HAS_BOOST_PYTHON)
 #include <boost/python.hpp>

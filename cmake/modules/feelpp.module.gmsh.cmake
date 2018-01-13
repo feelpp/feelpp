@@ -21,20 +21,21 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
+#if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
 
   #add_subdirectory(contrib/gmsh)
   # we include this directory : add some missing headers from Gmsh
-  INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
+  #INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/contrib/gmsh )
+  INCLUDE_DIRECTORIES( ${FEELPP_BINARY_DIR}/contrib/gmsh )
 
 #else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/nlopt )
-else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
-  FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
-    $ENV{FEELPP_DIR}/include/feel/gmsh
-    NO_DEFAULT_PATH)
-  FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
-    PATH_SUFFIXES feel/gmsh )
-  include_directories(${GMSH_CONTRIB_INCLUDE_DIR})
+# else( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh )
+#   FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
+#     $ENV{FEELPP_DIR}/include/feel/gmsh
+#     NO_DEFAULT_PATH)
+#   FIND_PATH(GMSH_CONTRIB_INCLUDE_DIR BasisFactory.h
+#     PATH_SUFFIXES feel/gmsh )
+#   include_directories(${GMSH_CONTRIB_INCLUDE_DIR})
   
-endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh  )
+# endif(  EXISTS ${CMAKE_SOURCE_DIR}/contrib/gmsh  )
   
