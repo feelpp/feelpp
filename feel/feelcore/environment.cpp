@@ -54,14 +54,16 @@ extern "C"
 
 #include <gflags/gflags.h>
 
-#if defined ( FEELPP_HAS_PETSC_H )
-#include <petscsys.h>
-#endif
-
 #include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
+#if defined( FEELPP_HAS_GMSH_H )
+#include <Gmsh.h>
+#endif
 
 #include <feel/feelcore/environment.hpp>
 
@@ -476,7 +478,9 @@ Environment::Environment( int argc, char** argv,
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
-
+#if defined( FEELPP_HAS_GMSH_H )
+    GmshInitialize();
+#endif
 #if defined(FEELPP_HAS_MONGOCXX )
     if ( !S_mongocxxInstance )
         S_mongocxxInstance = std::make_unique<mongocxx::instance>();
@@ -654,6 +658,9 @@ Environment::~Environment()
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     S_mongocxxInstance.reset();
+#endif
+#if defined( FEELPP_HAS_GMSH_H )
+    GmshFinalize();
 #endif
 
     if ( i_initialized )
