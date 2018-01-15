@@ -1,7 +1,7 @@
 h = 0.1;
-xmin = 0;
+xmin = -1;
 xmax = 1;
-ymin = 0;
+ymin = -1;
 ymax = 1;
 Point(1) = {xmin,ymin,0.0,h};
 Point(2) = {xmax,ymin,0.0,h};
