@@ -558,6 +558,9 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
 	// M_A_cst->zero();
 	// M_F->zero(); 
+	M_a.zero();
+	M_rhs.zero();
+
 	this->assembleCstPart();
     this->assembleNonCstPart();
 }
