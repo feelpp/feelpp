@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelmesh/intersect.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/expr.hpp>
@@ -78,27 +79,17 @@ struct lift_args
  * @see OperatorLinear
  */
 template<class DomainSpace, class DualImageSpace>
-class Projector : public OperatorLinear<typename mpl::if_<is_shared_ptr<DomainSpace>,
-                                                          mpl::identity<typename DomainSpace::element_type>,
-                                                          mpl::identity<DomainSpace>>::type::type,
-                                        typename mpl::if_<is_shared_ptr<DualImageSpace>,
-                                                          mpl::identity<typename DualImageSpace::element_type>,
-                                                          mpl::identity<DualImageSpace>>::type::type>
-                                        
+class Projector : public OperatorLinear< functionspace_type<DomainSpace>,functionspace_type<DualImageSpace> >
 {
-    typedef Projector<DomainSpace,DualImageSpace> super;
+    typedef OperatorLinear< functionspace_type<DomainSpace>,functionspace_type<DualImageSpace> > super;
+    typedef Projector<DomainSpace, DualImageSpace> self_type;
 
 public :
 
     /** @name Typedefs
      */
     //@{
-    typedef OperatorLinear<typename mpl::if_<is_shared_ptr<DomainSpace>,
-                                             mpl::identity<typename DomainSpace::element_type>,
-                                             mpl::identity<DomainSpace>>::type::type,
-                           typename mpl::if_<is_shared_ptr<DualImageSpace>,
-                                             mpl::identity<typename DualImageSpace::element_type>,
-                                             mpl::identity<DualImageSpace>>::type::type> ol_type;
+    typedef super ol_type;
 
     typedef typename super::domain_space_type domain_space_type;
     typedef typename super::dual_image_space_type  dual_image_space_type;
@@ -115,6 +106,21 @@ public :
     typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
+
+    typedef elements_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_elements_type;
+    typedef faces_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_faces_type;
+
+    template<typename Args,typename IntEltsDefault>
+    struct integrate_type
+    {
+        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
+        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
+        typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
+        static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
+
+        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
+        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+    };
 
     //@}
     /** @name Constructors, destructor
@@ -142,19 +148,25 @@ public :
             CHECK( domainSpace->dof()->buildDofTableMPIExtended() && dualImageSpace->dof()->buildDofTableMPIExtended() ) << "functionspaces must have extended dof table";
 
         size_type thepattern = ( M_proj_type == CIP )? size_type(Pattern::EXTENDED) : size_type(Pattern::COUPLED);
-        M_matrixFull = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(),_pattern=thepattern );
+        M_matrixFull = this->backend()->newMatrix( _trial=this->dualImageSpace(), _test=this->domainSpace(),_pattern=thepattern );
 
         this->matPtr() = M_matrixFull;
 
         if ( M_proj_type == LIFT )
-            M_matrixCst = this->backend()->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(),_pattern=thepattern );
+            M_matrixCst = this->backend()->newMatrix( _trial=this->dualImageSpace(), _test=this->domainSpace(),_pattern=thepattern );
         else
             M_matrixCst = M_matrixFull; // same pointer
 
-        M_ie = this->backend()->newVector( this->dualImageSpace() );
+        M_ie = this->backend()->newVector( this->domainSpace() );
+
+        // Init ranges
+        M_rangeElements = self_type::rangeElements( this->domainSpace(), this->dualImageSpace() );
+        M_rangeBoundaryFaces = self_type::rangeBoundaryFaces( this->domainSpace(), this->dualImageSpace() );
 
         initMatrix<domain_element_type>();
     }
+
+    virtual ~Projector() {}
 
     //~Projector() {}
     //@}
@@ -162,17 +174,58 @@ public :
     /** @name  Methods
      */
     //@{
-    template<typename Args,typename IntEltsDefault>
-    struct integrate_type
-    {
-        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
-        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
-        typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-        static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
 
-        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
-    };
+    static range_elements_type rangeElements( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace )
+        {
+            return rangeElements( domainSpace,imageSpace, mpl::bool_<boost::is_same<dual_image_element_type,domain_element_type>::value>() );
+        }
+
+    static range_elements_type rangeElements( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace, mpl::true_ )
+    {
+        if ( !imageSpace->mesh()->isSameMesh( domainSpace->mesh() ) )
+            return elements( imageSpace->mesh() );
+
+        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport()
+            && domainSpace->dof()->meshSupport()->isPartialSupport();
+        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport()
+            && imageSpace->dof()->meshSupport()->isPartialSupport();
+
+        range_elements_type rangeElts;
+        if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+            rangeElts = intersect( domainSpace->dof()->meshSupport()->rangeElements(), imageSpace->dof()->meshSupport()->rangeElements() );
+        else if ( hasMeshSupportPartialDomain )
+            rangeElts = domainSpace->dof()->meshSupport()->rangeElements();
+        else if ( hasMeshSupportPartialImage )
+            rangeElts = imageSpace->dof()->meshSupport()->rangeElements();
+        else
+            rangeElts = elements( imageSpace->mesh() );
+
+        return rangeElts;
+    }
+    static range_elements_type rangeElements( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace, mpl::false_ )
+        {
+            return elements( imageSpace->mesh() );
+        }
+
+    static range_faces_type rangeBoundaryFaces( domain_space_ptrtype const& domainSpace, dual_image_space_ptrtype const& imageSpace )
+    {
+        range_faces_type rangeFaces;
+
+        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport() 
+            && domainSpace->dof()->meshSupport()->isPartialSupport();
+        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport() 
+            && imageSpace->dof()->meshSupport()->isPartialSupport();
+        if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+            rangeFaces = intersect( domainSpace->dof()->meshSupport()->rangeBoundaryFaces(), imageSpace->dof()->meshSupport()->rangeBoundaryFaces() );
+        else if ( hasMeshSupportPartialDomain )
+            rangeFaces = domainSpace->dof()->meshSupport()->rangeBoundaryFaces();
+        else if ( hasMeshSupportPartialImage )
+            rangeFaces = imageSpace->dof()->meshSupport()->rangeBoundaryFaces();
+        else
+            rangeFaces = boundaryfaces( imageSpace->mesh() );
+
+        return rangeFaces;
+    }
 
     template<typename Range, typename Expr, typename Elem>
     void applyOn( Range range, Expr const& expr, Elem const& de )
@@ -182,16 +235,16 @@ public :
     }
 
     template<typename RangeT, typename ExprT>
-    domain_element_type
+    dual_image_element_type
     projectL2( RangeT range, ExprT const& expr )
     {
-        auto sol = this->domainSpace()->element();
-        auto uImage = this->dualImageSpace()->element();
+        auto uDomain = this->domainSpace()->element();
+        auto sol = this->dualImageSpace()->element();
 
         M_ie->zero();
 
-        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-            integrate( _range=range, _expr=inner(expr,id( uImage ) ) );
+        form1( _test=this->domainSpace(), _vector=M_ie ) +=
+            integrate( _range=range, _expr=inner(expr,id( uDomain ) ) );
 
         this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=M_ie );
 
@@ -199,14 +252,14 @@ public :
     }
 
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( dual_image_element_type ),
                                      project,
                                      tag,
                                      ( required
                                        ( expr,   * )
                                      )
                                      ( optional
-                                       ( range,   *, elements( this->dualImageSpace()->mesh() )  )
+                                       ( range,   *, self_type::rangeElements(this->domainSpace(), this->dualImageSpace())  )
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, (integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::geoOrder > 1 )?
@@ -231,96 +284,15 @@ public :
         static const uint16_type quad1OrderId = nOrderImageSpace;
         static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
 
-        auto sol = this->domainSpace()->element();
-        auto uImage = this->dualImageSpace()->element();
+        auto sol = this->dualImageSpace()->element();
 
-        M_ie->zero();
-
-        if ( M_proj_type != LIFT )
-        {
-            //typedef typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type myquad;
-            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                integrate( _range=range, _expr=inner(expr,id( uImage ) ),
-                //integrate( _range=range, _expr=trans(expr)*id( uImage ),
-                           _quad=_Q<thequad_type::order+quadOrderId>(),
-                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
-                           _geomap=geomap );
-
-            switch( M_proj_type )
-                {
-                case H1:
-                    form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                        integrate( _range=range, _expr=trace(grad_expr*trans(grad( uImage )) ),
-                                   _quad=_Q<thequad_type::order+quadOrderGrad>(),
-                                   _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
-                                   _geomap=geomap );
-                    break;
-                case HDIV:
-                            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                                integrate( _range=range, _expr=div_expr*div( uImage ),
-                                           _quad=_Q<thequad_type::order+quadOrderGrad>(),//quad,
-                                           _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),//quad1,
-                                           _geomap=geomap );
-                            break;
-                case HCURL:
-                            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                                integrate( _range=range, _expr=trans(curl_expr)*curl( uImage ),
-                                           _quad=_Q<thequad_type::order+quadOrderGrad>(),
-                                           _quad1=_Q<thequad1_type::order+quad1OrderGrad>(),
-                                           _geomap=geomap );
-                            break;
-                case L2:
-                default:
-                    break;
-                }
-        }
-
-        else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
-        {
-            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                integrate( _range=range,
-                           _expr=inner( expr, -grad( uImage )*vf::N() +
-                                        M_gamma / vf::hFace() *id( uImage ) ),
-                           _quad=_Q<thequad_type::order+quadOrderId>(),
-                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
-                           _geomap=geomap );
-        }
-
-        //weak boundary conditions
-        if ( M_proj_type == DIFF )
-        {
-            form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-                integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                           _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
-                                                          M_gamma / vf::hFace() *id( uImage ) ),
-                           _quad=_Q<thequad_type::order+quadOrderId>(),
-                           _quad1=_Q<thequad1_type::order+quad1OrderId>(),
-                           _geomap=geomap );
-        }
-
-
-        if ( M_proj_type == LIFT )
-        {
-            M_matrixFull->zero();
-            M_matrixFull->addMatrix( 1., M_matrixCst );
-            auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
-
-            if ( M_dir == WEAK )
-            {
-                bilinearForm +=
-                    integrate( _range=range, _expr=
-                               -inner( id( uImage ), gradt( sol )*vf::N() )
-                               -inner( idt( sol ), grad( uImage )*vf::N() )
-                               + M_gamma * inner( idt( sol ), id( uImage ) ) / vf::hFace(),
-                               _quad=_Q<thequad_type::order+quadOrderId>(),
-                               _quad1=_Q<thequad1_type::order+quad1OrderId>(),
-                               _geomap=geomap );
-            }
-            else if ( M_dir == STRONG )
-            {
-                this->applyOn( range, expr, sol );
-            }
-        }
+        this->setRHSAndBC<domain_element_type>( 
+                sol, 
+                expr, range, 
+                quad, quad1, 
+                geomap,
+                grad_expr, div_expr, curl_expr
+                );
 
         this->backend()->solve( _matrix=M_matrixFull, _solution=sol, _rhs=M_ie );
 
@@ -328,72 +300,59 @@ public :
     }
 
     template<typename RhsExpr>
-    domain_element_type
+    dual_image_element_type
     operator()( RhsExpr const& rhs_expr )
     {
         return this->project( rhs_expr );
     }
     template<typename RhsExpr>
     void
-    operator()( domain_element_type& de, RhsExpr const& rhs_expr )
+    operator()( dual_image_element_type& de, RhsExpr const& rhs_expr )
     {
         de = this->project( rhs_expr );
     }
 
-    domain_element_type
-    operator()( image_element_type const& ie )
+    dual_image_element_type
+    operator()( domain_element_type const& de )
     {
-        domain_element_type de = this->domainSpace()->element();
-        this->backend()->solve( M_matrixFull, de, ie );
-        return de ;
+        auto ie = this->dualImageSpace()->element();
+        this->apply( de, ie );
+        return ie ;
     }
 
     void
-    operator()( domain_element_type &de, image_element_type const& ie )
+    operator()( domain_element_type const& de,dual_image_element_type &ie )
     {
-        this->backend()->solve( M_matrixFull, de, ie );
+        this->apply( de, ie );
     }
 
     template<typename Range, typename Expr>
-    domain_element_type
+    dual_image_element_type
     operator()( Range const& range ,Expr const& expr )
     {
         return this->project( expr, range );
     }
 
-    using ol_type::apply;
     void
-    apply( domain_element_type& de,
-           image_element_type const& ie )
+    apply( domain_element_type const& de,
+           dual_image_element_type& ie ) override
     {
-        this->backend()->solve( M_matrixFull, de, ie );
+        this->backend()->solve( M_matrixFull, ie, this->backend()->toBackendVectorPtr( de ) );
     }
 
     template<typename RhsExpr>
     void
-    apply( domain_element_type& de,
-           RhsExpr const& rhs_expr )
+    apply( RhsExpr const& rhs_expr,
+           dual_image_element_type& ie )
     {
-        de=this->project( rhs_expr );
+        ie = this->project( rhs_expr );
     }
 
 
     template< typename Expr>
-    domain_element_type derivate( Expr const& expr )
+    dual_image_element_type derivate( Expr const& expr )
     {
-        auto de = this->domainSpace()->element();
-        auto uImage = this->dualImageSpace()->element();
-        M_ie->zero();
-        form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
-            integrate(_range = elements( this->dualImageSpace()->mesh() ),
-                      _expr = - trace( expr * trans( grad( uImage ) ) ) );
-
-        form1(_test=this->dualImageSpace(), _vector=M_ie ) +=
-            integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
-                      _expr =  trans( id( uImage ) ) * expr * vf::N() );
-
-        this->backend()->solve( M_matrixFull, de, M_ie );
-        return de;
+        return this->derivateImpl<domain_element_type>( expr );
     }
 
     double epsilon() const { return M_epsilon; }
@@ -411,12 +370,13 @@ private :
         auto uDomain = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
 
-        auto a = form2 ( _trial=this->domainSpace(),
-                         _test=this->dualImageSpace(),
+
+        auto a = form2 ( _trial=this->dualImageSpace(),
+                         _test=this->domainSpace(),
                          _matrix=M_matrixCst );
 
-        a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                       _expr=inner( idt( uDomain ), id( uImage ) ) );
+        a = integrate( _range=this->M_rangeElements,
+                       _expr=inner( idt( uImage ), id( uDomain ) ) );
     }
     template<typename T>
         void initMatrix( typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value>::type* = nullptr )
@@ -425,14 +385,14 @@ private :
         auto uDomain = this->domainSpace()->element();
         auto uImage = this->dualImageSpace()->element();
 
-        auto a = form2 ( _trial=this->domainSpace(),
-                         _test=this->dualImageSpace(),
+        auto a = form2 ( _trial=this->dualImageSpace(),
+                         _test=this->domainSpace(),
                          _matrix=M_matrixCst );
 
         if ( M_proj_type != LIFT )
         {
-            a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                           _expr=inner( idt( uDomain ), id( uImage ) ) );
+            a = integrate( _range=this->M_rangeElements,
+                           _expr=inner( idt( uImage ), id( uDomain ) ) );
         }
         switch ( M_proj_type )
         {
@@ -443,47 +403,47 @@ private :
 
         case H1:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                            _expr=inner( gradt( uDomain ), grad( uImage ) ) );
+            a += integrate( _range=this->M_rangeElements,
+                            _expr=inner( gradt( uImage ), grad( uDomain ) ) );
         }
         break;
 
         case DIFF:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                            _expr=M_epsilon*inner( gradt( uDomain ), grad( uImage ) ) );
+            a += integrate( _range=this->M_rangeElements,
+                            _expr=M_epsilon*inner( gradt( uImage ), grad( uDomain ) ) );
 
             //weak boundary conditions
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                            _expr= M_epsilon*( -trans( id( uImage ) )*gradt( uDomain )*vf::N() ) );
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                            _expr= M_epsilon*( -trans( idt( uDomain ) )* grad( uImage )*vf::N() ) );
-            a += integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
-                            _expr= M_gamma * trans( idt( uDomain ) ) /*trial*/
-                                        *id( uImage ) / vf::hFace()   /*test*/
+            a += integrate( _range=this->M_rangeBoundaryFaces,
+                            _expr= M_epsilon*( -trans( id( uDomain ) )*gradt( uImage )*vf::N() ) );
+            a += integrate( _range=this->M_rangeBoundaryFaces,
+                            _expr= M_epsilon*( -trans( idt( uImage ) )* grad( uDomain )*vf::N() ) );
+            a += integrate( _range=this->M_rangeBoundaryFaces,
+                            _expr= M_gamma * trans( idt( uImage ) ) /*trial*/
+                            *id( uDomain ) / vf::hFace()   /*test*/
                             );
         }
         break;
 
         case HDIV:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                            _expr=divt( uDomain )*div( uImage ) );
+            a += integrate( _range=this->M_rangeElements,
+                            _expr=divt( uImage )*div( uDomain ) );
         }
         break;
 
         case HCURL:
         {
-            a += integrate( _range=elements( this->dualImageSpace()->mesh() ),
+            a += integrate( _range=this->M_rangeElements,
                            // only for 2D, need to specialize this for 3D
-                           _expr=curlzt( uDomain )*curlz( uImage ) );
+                            _expr=curlzt( uImage )*curlz( uDomain ) );
         }
         break;
 
         case LIFT:
         {
-            a = integrate( _range=elements( this->dualImageSpace()->mesh() ),
-                           _expr= inner( gradt( uDomain ), grad( uImage ) ) );
+            a = integrate( _range=this->M_rangeElements,
+                           _expr= inner( gradt( uImage ), grad( uDomain ) ) );
         }
         break;
 
@@ -491,7 +451,7 @@ private :
         {
             a += integrate( _range=internalfaces( this->dualImageSpace()->mesh() ),
                             _expr=M_gamma*hFace()*hFace()*
-                            /**/  inner( jumpt( gradt(uDomain) ),jump( grad(uImage) ) ) );
+                            /**/  inner( jumpt( gradt(uImage) ),jump( grad(uDomain) ) ) );
         }
         break;
 
@@ -503,15 +463,196 @@ private :
         M_matrixCst->close();
     }
 
+    template<typename T, 
+        typename ExprT, typename RangeT, 
+        typename QuadT, typename Quad1T, 
+        typename GradExprT, typename DivExprT, typename CurlExprT>
+    void setRHSAndBC( 
+            dual_image_element_type const& sol, 
+            ExprT expr, RangeT range,
+            QuadT quad, Quad1T quad1,
+            GeomapStrategyType geomap,
+            GradExprT grad_expr, DivExprT div_expr, CurlExprT curl_expr,
+            typename std::enable_if<is_tensor2_field<T>::value>::type* = nullptr )
+    {
+        if( M_proj_type != L2 )
+            throw std::logic_error( "Only L2 projection supported for rank-2 tensors" );
+
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
+        typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
+        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
+        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        static const uint16_type quadOrder = thequad_type::order;
+        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
+        static const uint16_type quad1Order = thequad1_type::order;
+        static const uint16_type quad1OrderId = nOrderImageSpace;
+
+        //auto uImage = this->dualImageSpace()->element();
+        auto uDomain = this->domainSpace()->element();
+        M_ie->zero();
+
+        form1( _test=this->dualImageSpace(), _vector=M_ie ) += integrate( 
+            _range=range, _expr=inner(expr,id( uDomain ) ),
+                _quad=_Q<quadOrder+quadOrderId>(),
+                _quad1=_Q<quad1Order+quad1OrderId>(),
+                _geomap=geomap 
+                );
+    }
+
+    template<typename T, 
+        typename ExprT, typename RangeT, 
+        typename QuadT, typename Quad1T, 
+        typename GradExprT, typename DivExprT, typename CurlExprT>
+    void setRHSAndBC( 
+            dual_image_element_type const& sol, 
+            ExprT expr, RangeT range,
+            QuadT quad, Quad1T quad1,
+            GeomapStrategyType geomap,
+            GradExprT grad_expr, DivExprT div_expr, CurlExprT curl_expr,
+            typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value>::type* = nullptr )
+    {
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
+        typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
+        typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
+        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
+        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        static const uint16_type quadOrder = thequad_type::order;
+        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
+        static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
+        static const uint16_type quad1Order = thequad1_type::order;
+        static const uint16_type quad1OrderId = nOrderImageSpace;
+        static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
+
+        auto uImage = this->dualImageSpace()->element();
+        auto uDomain = this->domainSpace()->element();
+        M_ie->zero();
+
+        if ( M_proj_type != LIFT )
+        {
+            //typedef typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type myquad;
+            form1( _test=this->domainSpace(), _vector=M_ie ) +=
+                integrate( _range=range, _expr=inner(expr,id( uDomain ) ),
+                           //integrate( _range=range, _expr=trans(expr)*id( uImage ),
+                           _quad=_Q<quadOrder+quadOrderId>(),
+                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _geomap=geomap );
+
+            switch( M_proj_type )
+            {
+            case H1:
+                form1( _test=this->domainSpace(), _vector=M_ie ) +=
+                    integrate( _range=range, _expr=trace(grad_expr*trans(grad( uDomain )) ),
+                               _quad=_Q<quadOrder+quadOrderGrad>(),
+                               _quad1=_Q<quad1Order+quad1OrderGrad>(),
+                               _geomap=geomap );
+                break;
+            case HDIV:
+                form1( _test=this->dualImageSpace(), _vector=M_ie ) +=
+                    integrate( _range=range, _expr=div_expr*div( uDomain ),
+                               _quad=_Q<quadOrder+quadOrderGrad>(),//quad,
+                               _quad1=_Q<quad1Order+quad1OrderGrad>(),//quad1,
+                               _geomap=geomap );
+                break;
+            case HCURL:
+                form1( _test=this->domainSpace(), _vector=M_ie ) +=
+                    integrate( _range=range, _expr=trans(curl_expr)*curl( uDomain ),
+                               _quad=_Q<quadOrder+quadOrderGrad>(),
+                               _quad1=_Q<quad1Order+quad1OrderGrad>(),
+                               _geomap=geomap );
+                break;
+            case L2:
+            default:
+                break;
+            }
+        }
+
+        else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        {
+            form1( _test=this->domainSpace(), _vector=M_ie ) +=
+                integrate( _range=range,
+                           _expr=inner( expr, -grad( uImage )*vf::N() +
+                                        M_gamma / vf::hFace() *id( uImage ) ),
+                           _quad=_Q<quadOrder+quadOrderId>(),
+                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _geomap=geomap );
+        }
+
+        //weak boundary conditions
+        if ( M_proj_type == DIFF )
+        {
+            form1( _test=this->domainSpace(), _vector=M_ie ) +=
+                integrate( _range=this->M_rangeBoundaryFaces,
+                           _expr=inner( expr, M_epsilon*( -grad( uImage )*vf::N() ) +
+                                                          M_gamma / vf::hFace() *id( uImage ) ),
+                           _quad=_Q<quadOrder+quadOrderId>(),
+                           _quad1=_Q<quad1Order+quad1OrderId>(),
+                           _geomap=geomap );
+        }
+
+
+        if ( M_proj_type == LIFT )
+        {
+            M_matrixFull->zero();
+            M_matrixFull->addMatrix( 1., M_matrixCst );
+            auto bilinearForm = form2( _trial=this->dualImageSpace(), _test=this->domainSpace(), _matrix=M_matrixFull );
+
+            if ( M_dir == WEAK )
+            {
+                bilinearForm +=
+                    integrate( _range=range, _expr=
+                               -inner( id( uDomain ), gradt( sol )*vf::N() )
+                               -inner( idt( sol ), grad( uDomain )*vf::N() )
+                               + M_gamma * inner( idt( sol ), id( uDomain ) ) / vf::hFace(),
+                               _quad=_Q<quadOrder+quadOrderId>(),
+                               _quad1=_Q<quad1Order+quad1OrderId>(),
+                               _geomap=geomap );
+            }
+            else if ( M_dir == STRONG )
+            {
+                this->applyOn( range, expr, sol );
+            }
+        }
+    }
+
+    template<typename T, typename ExprT,
+        typename std::enable_if<mpl::not_<is_tensor2_field<T>>::value, int>::type = 0>
+    dual_image_element_type derivateImpl( ExprT const& expr )
+    {
+        auto uDomain = this->domainSpace()->element();
+        auto uImage = this->dualImageSpace()->element();
+        M_ie->zero();
+        form1( _test=this->domainSpace(), _vector=M_ie ) +=
+            integrate(_range = elements( this->dualImageSpace()->mesh() ),
+                      _expr = - trace( expr * trans( grad( uDomain ) ) ) );
+
+        form1(_test=this->domainSpace(), _vector=M_ie ) +=
+            integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
+                      _expr =  trans( id( uDomain ) ) * expr * vf::N() );
+
+        this->backend()->solve( M_matrixFull, uImage, M_ie );
+        return uImage;
+    }
+
+    template<typename T, typename ExprT,
+        typename std::enable_if<is_tensor2_field<T>::value, int>::type = 0>
+    dual_image_element_type derivateImpl( ExprT const& expr )
+    {
+        static_assert( mpl::not_<is_tensor2_field<T>>::value, 
+                "Derivation in projector class is not yet supported for tensor2 fields." );
+    }
+
     template<typename Range, typename Expr, typename Elem >
-    void applyOn( Range range, Expr const& expr, Elem const& de, mpl::int_<MESH_ELEMENTS> ){}
+    void applyOn( Range range, Expr const& expr, Elem const& ie, mpl::int_<MESH_ELEMENTS> ){}
 
     template<typename Range, typename Expr, typename Elem>
-    void applyOn( Range range, Expr const& expr, Elem const& de, mpl::int_<MESH_FACES> )
+    void applyOn( Range range, Expr const& expr, Elem const& ie, mpl::int_<MESH_FACES> )
     {
-        form2 ( _trial=this->domainSpace(),
-                _test=this->dualImageSpace(),
-                _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=M_ie, _expr=expr );
+        form2 ( _trial=this->dualImageSpace(),
+                _test=this->domainSpace(),
+                _matrix=M_matrixFull ) +=  on( _range=range , _element=ie, _rhs=M_ie, _expr=expr );
     }
 
     //backend_ptrtype M_backend;
@@ -523,6 +664,8 @@ private :
     matrix_ptrtype M_matrixFull;
     //domain_element_type M_de;
     vector_ptrtype M_ie;
+    range_elements_type M_rangeElements;
+    range_faces_type M_rangeBoundaryFaces;
 
 };//Projector
 
