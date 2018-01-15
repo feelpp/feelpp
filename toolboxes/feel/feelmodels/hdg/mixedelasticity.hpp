@@ -343,6 +343,28 @@ void MixedElasticity<Dim, Order, G_Order, E_Order>::initTimeStep()
     if (!this->doRestart())
     {
         // start time step
+        auto itField = modelProperties() -> boundaryConditions().find( "displacement" );
+        if ( itField != modelProperties() -> boundaryConditions().end() )
+        {
+            auto mapField = ( *itField ).second;
+            auto itType = mapField.find( "InitialSolution" );
+            if ( itType != mapField.end() )
+            {
+                for ( auto const& exAtMarker : ( *itType ).second )
+                {
+                    if ( exAtMarker.isExpression() )
+                    {
+                        auto u_init = expr<Dim,1,expr_order>( exAtMarker.expression() );
+                        auto marker = exAtMarker.marker();
+
+                        if ( !this->isStationary() )
+                            u_init.setParameterValues( {{"t", this->time()}} );
+                        M_pp = project( _space = M_Wh, _range = markedelements( M_mesh, marker ), _expr = u_init );
+                    }
+                }
+            }
+        }
+        // start time step
         M_nm_mixedelasticity -> start( M_pp );
         // up current time
         this->updateTime( M_nm_mixedelasticity -> time() );
