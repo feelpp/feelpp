@@ -152,14 +152,14 @@ void
 MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Poisson()
 {
 	auto ps = M_PoissonModel->getPS();
-	auto F = M_PoissonModel->getF();
-
-	auto blf = blockform1 (*ps, F);
+	// auto F = M_PoissonModel->getF();
+	auto rhs = M_PoissonModel->get_rhs();
+	// auto blf = blockform1 (*ps, F);
 	auto w = M_PoissonModel->potentialSpace()->element();
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
 
 	// - <d/dt div(u),w> 
-	blf(1_c) += integrate( _range=elements( M_mesh ), 
+	rhs(1_c) += integrate( _range=elements( M_mesh ), 
 	 					   _expr= -( div(M_ElasticityModel-> potentialField())-div(M_ElasticityModel->timeStepNM()->previousUnknown()) ) * id(w) / dt );
 
 }
@@ -171,14 +171,15 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 	 
 	auto ps = product( M_ElasticityModel->fluxSpace(), M_ElasticityModel->potentialSpace(), M_ElasticityModel->traceSpace() );
 
-	auto blf = blockform1 ( ps, M_ElasticityModel->getF() );
+	auto rhs = blockform1 ( ps, M_ElasticityModel->getF() );
+	// auto rhs = M_ElasticityModel->M_rhs;
 	auto v = M_ElasticityModel->fluxSpace()->element( "v" );
     auto m = M_ElasticityModel->traceSpace()->element( "m" );
-
+	
 	auto pressure = M_PoissonModel->potentialField();
 
 	// - < pI , v>
-	blf( 0_c ) += integrate( _range=elements( M_mesh ), 
+	rhs( 0_c ) += integrate( _range=elements( M_mesh ), 
 	 						 _expr= - inner( idv(pressure)*eye<Dim,Dim>(),  id(v)) );
 
     // Adding extra-term for special Neumann 
@@ -192,7 +193,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
     }
 
     if (!marker.empty())
-        blf( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
+        rhs( 2_c ) += integrate( _range=markedfaces(M_mesh,marker),
                                  _expr= - inner( idv(pressure)*eye<Dim,Dim>() * N(), id(m)) );
     
 }
@@ -215,28 +216,50 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 	
 	// M_PoissonModel->assembleCstPart();
 	
+	// Initialization for non-linear inner iteration
+	int itmax = ioption( prefixvm( "poroelastic", "itmax") );
+	double tol = doption( prefixvm( "poroelastic", "tolerance") );
+
+
 	for (; !M_PoissonModel->timeStepBase()->isFinished() && !M_ElasticityModel->timeStepBase()->isFinished() ; M_PoissonModel->updateTimeStep() )
 	{
 		Feel::cout << "===============================================" << std::endl;
 		Feel::cout << "time simulation: " << M_PoissonModel->time() << "s \n";	
 		Feel::cout << "===============================================" << std::endl;
 
-		// Elasticity problem
-		M_ElasticityModel->assembleCst();	
-		M_ElasticityModel->assembleNonCst();	
-		this->assembleF_Elasticity();
-		M_ElasticityModel->solve();	
-		M_ElasticityModel->exportResults( M_ElasticityModel->mesh(), Idh_el, Idhv_el );
+		double incrP = 1;	// potential increment
+		double incrD = 1; 	// displacement increment
+		auto oldPotential = M_PoissonModel -> potentialField();
+		auto oldDisplacement = M_ElasticityModel -> potentialField();
 
-		// Poisson problem
+		M_ElasticityModel->assembleCst();
+		M_ElasticityModel->assembleNonCst();	
+	
 		// M_PoissonModel->assembleNonCstPart();
 		M_PoissonModel->assembleAll();
-		this->assembleF_Poisson();
-		M_PoissonModel->solve();	
-		M_PoissonModel->exportResults( M_PoissonModel->mesh(), Idh_poi, Idhv_poi );
+		
+		for ( int i=0 ; i < itmax && ( incrP > tol || incrD > tol ) ; i++ )
+		{	
+			this->assembleF_Elasticity();
+			M_ElasticityModel->solve();	
 
-		// Exporter
-		// this->exportResults( mesh, Idh_el, Idhv_el, Idh_poi, Idhv_poi );
+			this->assembleF_Poisson();
+			M_PoissonModel->solve();
+
+			double errP = normL2(elements(M_mesh), idv(M_PoissonModel->potentialField()) - idv(oldPotential) );
+			double normP = normL2(elements(M_mesh), idv(oldPotential) ); 
+			double normD = normL2(elements(M_mesh), idv(M_ElasticityModel->potentialField()) - idv(oldDisplacement) );
+			double errD = normL2(elements(M_mesh), idv(oldDisplacement) );
+			incrP = errP/normP;
+			incrD = errD/normD;
+
+			Feel::cout << "Picard[" << i << "] increment norm P: " << incrP << std::endl;
+			Feel::cout << "Picard[" << i << "] increment norm D: " << incrD << std::endl;
+
+		}	
+
+		M_ElasticityModel->exportResults( M_ElasticityModel->mesh(), Idh_el, Idhv_el );
+		M_PoissonModel->exportResults( M_PoissonModel->mesh(), Idh_poi, Idhv_poi );
 
 		// update
 		M_ElasticityModel->updateTimeStep();
