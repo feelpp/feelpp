@@ -61,7 +61,7 @@ makeMixedPoissonLibOptions( std::string prefix )
 }
 
 po::options_description
-makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
+makeMixedElasticityOptions( std::string prefix )
 {
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
@@ -81,15 +81,6 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
     return mpOptions;
 }
 
-po::options_description
-makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" )
-{
-    po::options_description mpLibOptions( "Mixed Elasticity HDG Lib options");
-    // if ( !prefix.empty() )
-    //     mpLibOptions.add( backend_options( prefix ) );
-    return mpLibOptions;
-}
-
 
 po::options_description makeMixedElasticityLibOptions( std::string prefix )
 {
@@ -99,25 +90,6 @@ po::options_description makeMixedElasticityLibOptions( std::string prefix )
     return mpLibOptions;
 }
 
-po::options_description
-makeMixedElasticityOptions( std::string prefix )
-{
-    po::options_description mpOptions( "Mixed Elasticity HDG options");
-    mpOptions.add_options()
-        ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
-        // ( "gmsh.submesh2", po::value<std::string>()->default_value( "" ), "submesh extraction" )
-        ( prefixvm( prefix, "hface").c_str(), po::value<int>()->default_value( 0 ), "hface" )
-        ( "lambda", po::value<std::string>()->default_value( "1" ), "lambda" )
-        ( "mu", po::value<std::string>()->default_value( "1" ), "mu" )
-        ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
-        ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
-        ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
-        ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
-        ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-	mpOptions.add ( feel_options() ).add( backend_options( prefixvm(prefix, "sc") ) );
-    return mpOptions;
-}
 
 //!
 //! Poroelasticity 
@@ -128,6 +100,10 @@ makeMixedPoissonElasticityOptions( std::string prefix  )
 	po::options_description mpOptions( "Mixed Poisson Elasticity HDG options");
 	mpOptions.add ( makeMixedPoissonOptions("mixedpoisson") );
 	mpOptions.add ( makeMixedElasticityOptions("mixedelasticity") );
+	mpOptions.add_options()
+    	( prefixvm( "poroelastic", "itmax").c_str(), po::value<int>()->default_value( 10 ), "Picard max iteration inner loop" )
+    	( prefixvm( "poroelastic", "tolerance").c_str(), po::value<double>()->default_value( 1e-10 ), "Picard tolerance inner loop" )
+    	;
 
 	return mpOptions;
 }
