@@ -6,8 +6,8 @@
     {
         "omega":
         {
-            "name":"copper",
-			"rho":"1",
+            "name":"simulation_domain",
+			"rho":"0.1",
             "lambda":"1",
 	    	"mu":"1"
         }
