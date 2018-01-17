@@ -40,11 +40,14 @@ public :
     {
         return M_tcur;
     }
-    virtual void simulate( double const& t_init, double const& t_final, double const& tol )=0;
+
+    virtual void initialize( double const& t_init, double const& t_final, double const& tol )=0;
+    virtual void simulate()=0;
+    virtual void doSteps( double t_stop )=0;
 
 protected :
     fmumodel_ptrtype M_model;
-    double M_step, M_tol, M_tcur;
+    double M_step, M_tol, M_tcur, M_tfinal;
 
 }; //classe SovlerBase
 

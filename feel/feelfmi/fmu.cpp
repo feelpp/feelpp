@@ -65,6 +65,12 @@ int FMU::load( std::string _path )
 
 void FMU::simulate( double t_init, double t_final, double tolerance )
 {
+    this->initialize( t_init, t_final, tolerance );
+    M_solver->simulate();
+}
+
+void FMU::initialize( double t_init, double t_final, double tolerance )
+{
     if ( !M_solver )
         initSolver();
     if ( t_init==-1 )
@@ -74,7 +80,12 @@ void FMU::simulate( double t_init, double t_final, double tolerance )
     if ( tolerance==-1 )
         tolerance = M_model->defaultTolerance();
 
-    M_solver->simulate( t_init, t_final, tolerance );
+    M_solver->initialize( t_init, t_final, tolerance );
+}
+
+void FMU::doSteps( double t_stop )
+{
+    M_solver->doSteps( t_stop );
 }
 
 void FMU::reset()
