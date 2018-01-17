@@ -19,7 +19,7 @@ FMU::FMU( std::string prefix ) :
     M_context = fmi_import_allocate_context( M_callbacks.get() );
 
     // create temporary repository to extract fmu
-    M_tmp_dir = Environment::rootRepository() + "/fmu_tmpdir/";
+    M_tmp_dir = Environment::appRepository() + "/fmu_tmpdir/";
     if ( M_prefix!="" )
         M_tmp_dir += M_prefix+"/";
     boost::filesystem::path dir( M_tmp_dir );
