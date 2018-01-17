@@ -50,12 +50,10 @@ public :
     template <typename VariableType>
     VariableType getValue( std::string var_name )
     {
-        VariableType dummy;
+        VariableType value;
         CHECK( M_model ) <<"FMU trying to access variable without model\n";
-        if( std::is_same<VariableType,double>::value )
-            return M_model->getRealValue( var_name );
-
-        return dummy;
+        M_model->getValue( var_name, value );
+        return value;
     }
 
 private :
