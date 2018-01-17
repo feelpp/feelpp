@@ -152,9 +152,7 @@ void
 MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Poisson()
 {
 	auto ps = M_PoissonModel->getPS();
-	// auto F = M_PoissonModel->getF();
 	auto rhs = M_PoissonModel->get_rhs();
-	// auto blf = blockform1 (*ps, F);
 	auto w = M_PoissonModel->potentialSpace()->element();
 	auto dt = M_PoissonModel->timeStepBDF()->timeStep();
 
@@ -171,8 +169,7 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::assembleF_Elasticity()
 	 
 	auto ps = product( M_ElasticityModel->fluxSpace(), M_ElasticityModel->potentialSpace(), M_ElasticityModel->traceSpace() );
 
-	auto rhs = blockform1 ( ps, M_ElasticityModel->getF() );
-	// auto rhs = M_ElasticityModel->M_rhs;
+	auto rhs = M_ElasticityModel->get_rhs();
 	auto v = M_ElasticityModel->fluxSpace()->element( "v" );
     auto m = M_ElasticityModel->traceSpace()->element( "m" );
 	
@@ -232,8 +229,9 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 		auto oldPotential = M_PoissonModel -> potentialField();
 		auto oldDisplacement = M_ElasticityModel -> potentialField();
 
-		M_ElasticityModel->assembleCst();
-		M_ElasticityModel->assembleNonCst();	
+		// M_ElasticityModel->assembleCst();
+		// M_ElasticityModel->assembleNonCst();	
+		M_ElasticityModel->assembleAll();
 	
 		// M_PoissonModel->assembleNonCstPart();
 		M_PoissonModel->assembleAll();
@@ -250,6 +248,11 @@ MixedPoissonElasticity<Dim,Order,G_Order,E_Order>::run(	op_interp_ptrtypeEL Idh_
 			double normP = normL2(elements(M_mesh), idv(oldPotential) ); 
 			double normD = normL2(elements(M_mesh), idv(M_ElasticityModel->potentialField()) - idv(oldDisplacement) );
 			double errD = normL2(elements(M_mesh), idv(oldDisplacement) );
+			if (normD < 1)
+				normD = 1;
+			if (normP < 1)
+				normP = 1;
+
 			incrP = errP/normP;
 			incrD = errD/normD;
 
