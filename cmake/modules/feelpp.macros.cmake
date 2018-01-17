@@ -719,10 +719,10 @@ macro ( add_ommodel )
   set( OMWRAPPER_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMWRAPPER_NAME} )
   set( FMU_SCRIPT_NAME ${OMWRAPPER_LIBDIR}/${OMWRAPPER_NAME}_tofmu.mos )
 
-  if( NOT ${OM_MODEL_VERS} )
+  if( NOT DEFINED OM_MODEL_VERS )
     set( OM_MODEL_VERS "2.0")
   endif()
-  if( NOT ${OM_MODEL_TYPE} )
+  if( NOT DEFINED OM_MODEL_TYPE )
     set( OM_MODEL_TYPE "cs" )
   endif()
 
