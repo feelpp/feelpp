@@ -21,12 +21,26 @@ public :
         super_type( model )
     {}
 
-    void simulate( double const& t_init, double const& t_final, double const& tol ) override
+    void initialize( double const& t_init, double const& t_final, double const& tol ) override
     {
         M_model->setupExperiment( t_init, t_final, tol );
         M_model->initialize();
         M_tcur = t_init;
-        while( M_tcur<t_final )
+        M_tfinal = t_final;
+    }
+
+    void simulate() override
+    {
+        while( M_tcur<M_tfinal )
+        {
+            M_model->doStep( M_tcur, M_step, true );
+            M_tcur += M_step;
+        }
+    }
+
+    void doSteps( double t_stop ) override
+    {
+        while( M_tcur<t_stop && M_tcur<M_tfinal )
         {
             M_model->doStep( M_tcur, M_step, true );
             M_tcur += M_step;
