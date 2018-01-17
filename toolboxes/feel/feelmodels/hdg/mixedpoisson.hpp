@@ -541,7 +541,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 
     tic();
     Feel::cout << "Start solving" << std::endl;
-    M_a.solve( _solution = U, _rhs = M_rhs, _condense = boption( prefixvm( prefix(), "use-sc" ) ) );
+    M_a.solve( _solution = U, _rhs = M_rhs, _condense = boption( prefixvm( prefix(), "use-sc" ) ), _name=prefix() );
     toc( "MixedPoisson : static condensation" );
 
     toc( "solve" );
@@ -556,8 +556,6 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 template <int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-	// M_A_cst->zero();
-	// M_F->zero(); 
 	M_a.zero();
 	M_rhs.zero();
 
