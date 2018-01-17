@@ -176,14 +176,34 @@ void FmuModel2::setValue( std::string name, bool value )
     auto status = fmi2_import_set_boolean( M_fmu, &ref, 1, &b );
 }
 
-
-double FmuModel2::getRealValue( std::string name )
+void FmuModel2::getValue( std::string name, double& value )
 {
     auto ref = M_v_map[name]->ref;
-    double value;
     auto status = fmi2_import_get_real( M_fmu, &ref, 1, &value );
-    return value;
 }
+
+void FmuModel2::getValue( std::string name, int& value )
+{
+    auto ref = M_v_map[name]->ref;
+    auto status = fmi2_import_get_integer( M_fmu, &ref, 1, &value );
+}
+
+void FmuModel2::getValue( std::string name, std::string& value )
+{
+    auto ref = M_v_map[name]->ref;
+    fmi2_string_t str;
+    auto status = fmi2_import_get_string( M_fmu, &ref, 1, &str );
+    value = str;
+}
+
+void FmuModel2::getValue( std::string name, bool& value )
+{
+    auto ref = M_v_map[name]->ref;
+    fmi2_boolean_t b;
+    auto status = fmi2_import_get_boolean( M_fmu, &ref, 1, &b );
+    value = b;
+}
+
 
 
 void FmuModel2::fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,

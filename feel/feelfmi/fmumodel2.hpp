@@ -84,7 +84,10 @@ public :
     void setValue( std::string name, std::string value ) override;
     void setValue( std::string name, bool value ) override;
 
-    double getRealValue( std::string name ) override;
+    void getValue( std::string name, double& value ) override;
+    void getValue( std::string name, int& value ) override;
+    void getValue( std::string name, std::string& value ) override;
+    void getValue( std::string name, bool& value ) override;
 
 private :
     static void fmi2logger(fmi2_component_environment_t env, fmi2_string_t instanceName,

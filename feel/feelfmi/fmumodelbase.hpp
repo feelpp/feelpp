@@ -46,7 +46,10 @@ public :
     virtual void setValue( std::string name, std::string value )=0;
     virtual void setValue( std::string name, bool value )=0;
 
-    virtual double getRealValue( std::string name )=0;
+    virtual void getValue( std::string name, double& value )=0;
+    virtual void getValue( std::string name, int& value )=0;
+    virtual void getValue( std::string name, std::string& value )=0;
+    virtual void getValue( std::string name, bool& value )=0;
 
 protected :
     callbacks_ptrtype M_callbacks;
