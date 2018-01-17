@@ -232,7 +232,8 @@ public:
 
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    //condensed_vector_ptr_t<value_type> getF() {return M_F; }
+	block_bilinear_type get_a() { return M_a; }
+	block_linear_type get_rhs() { return M_rhs; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
 
     // Exporter
@@ -261,6 +262,7 @@ public:
 
 	void assembleCst();
 	void assembleNonCst();
+	void assembleAll();
 
     void geometricTest();
     
@@ -804,8 +806,9 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleCst()
 {
     // Assembling standard matrix
     tic();
-	M_a.zero();
-    this->assembleSTD();
+	// M_a.zero();
+    
+	this->assembleSTD();
     M_timers["asbStd"].push_back(toc("assembleStandardMatrix"));
 
     // Assembling ibc part
@@ -823,16 +826,29 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assembleNonCst()
 {
     tic();
-	M_rhs.zero();
+	// M_rhs.zero();
     this->assembleF( );
 
     for ( int i = 0; i < M_IBCList.size(); i++ )
         this->assembleRhsIBC( i );
     // M_rhs.close();
+
     M_timers["asbRHS"].push_back(toc("assembleRHS"));
 
 }
 
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleAll()
+{
+	M_a.zero();
+	M_rhs.zero();
+	
+	this->assembleCst();
+    this->assembleNonCst();
+
+}
 
 template<int Dim, int Order, int G_Order, int E_Order>
 void
@@ -852,7 +868,7 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
     
     tic();
     tic();
-    M_a.solve(_solution=U, _rhs=M_rhs, _rebuild=true, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
+    M_a.solve(_solution=U, _rhs=M_rhs, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
     
