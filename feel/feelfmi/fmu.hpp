@@ -31,6 +31,8 @@ public :
     int load( std::string _path="" );
     void simulate( double t_init=-1, double t_final=-1, double tolerance=-1 );
     void reset();
+    void initialize( double t_init=-1, double t_final=-1, double tolerance=-1 );
+    void doSteps( double t_stop );
 
     void initSolver();
     void setSolverTimeStep( double const& step );
@@ -41,7 +43,7 @@ public :
 
 
     template <typename VariableType>
-    void setVariable( std::string var_name, VariableType value )
+    void setValue( std::string var_name, VariableType value )
     {
         CHECK( M_model ) <<"FMU trying to access variable without model\n";
         M_model->setValue( var_name, value );
