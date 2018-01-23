@@ -303,9 +303,8 @@ public :
         po::store(parsed,M_vm);
         for ( auto & configFile : Environment::configFiles() )
         {
-            //std::ifstream ifs( std::get<0>( configFile ) );
-            std::ifstream & ifs = std::get<1>( configFile );
-            po::store(po::parse_config_file(ifs, _options,true), M_vm);
+            std::istringstream & iss = std::get<1>( configFile );
+            po::store(po::parse_config_file(iss, _options,true), M_vm);
         }
         po::notify(M_vm);
     }
