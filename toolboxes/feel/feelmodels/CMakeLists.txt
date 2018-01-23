@@ -22,8 +22,6 @@
 #
 #
 
-#add_subdirectory(solid_oldversion)
-
 SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
 SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
 
@@ -62,7 +60,7 @@ endif()
 if ( FEELPP_MODELS_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-if ( 0 ) # disable
+if ( 1 ) # enable
 if ( FEELPP_MODELS_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()

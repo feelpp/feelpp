@@ -103,6 +103,8 @@ class ModelNumerical : public ModelAlgebraic
         bool tsSaveInFile() const { return M_tsSaveInFile; }
         int tsSaveFreq() const { return M_tsSaveFreq; }
         void setTimeInitial(double v)  { M_timeInitial=v; }
+        void setTimeFinal(double v)  { M_timeFinal=v; }
+        void setTimeStep(double v)  { M_timeStep=v; }
 
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
