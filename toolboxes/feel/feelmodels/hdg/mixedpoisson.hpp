@@ -257,7 +257,7 @@ public:
     // u.n + g1.p = g2
     template<typename ExprT> void assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker);
     void assembleIBC(int i, std::string marker = "");
-	void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
+	virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
 	virtual void solve();
 
@@ -1587,12 +1587,12 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
-
+					/*
                     auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
                     auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
-
+					
                     Feel::cout << "Integral value of potential(from pp) on "
-                      		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
+                      		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;*/
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
