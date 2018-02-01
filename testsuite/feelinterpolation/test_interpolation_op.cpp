@@ -26,10 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2007-12-19
   */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE interpolation operator testsuite
 // disable the main function creation, use our own
@@ -368,7 +365,7 @@ init_unit_test_suite( int argc, char** argv )
 {
   //boost::mpi::environment( argc, argv );
   mpiapp = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-  Feel::Assert::setLog( "test_integration.assert" );
+
   test_suite* test = BOOST_TEST_SUITE( "Interpolation test suite" );
 
 #if 1
@@ -433,7 +430,6 @@ main( int argc, char** argv )
       _desc=makeOptions(),
       _about=makeAbout() );
   Feel::Application mpiapp;
-  Feel::Assert::setLog( "test_interpolation.assert" );
 
 #if 1
   test_interpolation_op<1,1,1,1> t( mpiapp.vm()["hsize"].as<double>() );
