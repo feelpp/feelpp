@@ -942,7 +942,9 @@ DataMap::buildIndexSplitWithComponents( uint16_type nComp )
             if ( this->dofGlobalProcessIsGhost( index*nComp+k ) ) continue;
             const size_type globalDof = this->mapGlobalProcessToGlobalCluster(index*nComp+k);
 
-            const size_type theindexInSplit = (size_type(globalDof - firstDof -k ) ) / nComp;
+            const size_type theindexInSplit = (size_type((globalDof - firstDof) -k ) ) / nComp;
+            DCHECK(theindexInSplit<nLocalDofCompWithoutGhost) << "invalid index " << theindexInSplit << " should be < " << nLocalDofCompWithoutGhost
+                                                              << " globalDof="<<globalDof<<" firstDof="<<firstDof << " k="<<k;
             M_indexSplitWithComponents->operator[](k)[theindexInSplit] = globalDof;
 
         }

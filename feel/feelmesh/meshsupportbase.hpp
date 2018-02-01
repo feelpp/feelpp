@@ -26,6 +26,7 @@
 #define FEELPP_MESH_SUPPORT_BASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
+#include <unordered_set>
 
 namespace Feel
 {
