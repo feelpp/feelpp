@@ -711,7 +711,7 @@ endmacro (feelpp_add_man)
 include(feelpp.macros.crb)
 
 # OM cmake macros
-macro ( add_fmu )
+macro ( feelpp_add_fmu )
   if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
     PARSE_ARGUMENTS( OM_MODEL
       "SRCS;CLASS;VERS;TYPE;CATEGORY" "" ${ARGN} )
@@ -743,16 +743,17 @@ macro ( add_fmu )
     add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
       COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
   endif()
-endmacro( add_fmu )
+endmacro( feelpp_add_fmu )
 
-macro( add_omc )
+macro( feelpp_add_omc )
   if ( FEELPP_HAS_OMC )
     PARSE_ARGUMENTS( OM_MODEL
-      "SRCS;CATEGORY" "" ${ARGN} )
+      "SRCS;CLASS;CATEGORY" "" ${ARGN} )
 
     car( OMC_NAME ${OM_MODEL_DEFAULT_ARGS} )
     set( OMC_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMC_NAME} )
     file( MAKE_DIRECTORY ${OMC_OUTDIR} )
+    set( OMC_CLASS ${OM_MODEL_CLASS} )
 
     find_path( OMC_MACRO_DIR feelpp.macros.omc.cmake
       PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
@@ -760,7 +761,7 @@ macro( add_omc )
     foreach( srcs ${OM_MODEL_SRCS} )
       list( APPEND OMC_SRCS_FULLPATH  ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
     endforeach()
-    message( "${OMC_SRCS_FULLPATH}" )
+
     add_custom_target( feelpp_add_omc_${OMC_NAME}  ALL COMMENT "Compiling model"  )
 
     set( TMP_DIR "${OMC_OUTDIR}/tmp" )
@@ -769,15 +770,14 @@ macro( add_omc )
       PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
-      #COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DOMC_SRCS=${OMC_SRCS_FULLPATH} -DOMC_OUTDIR=${OMC_OUTDIR} -DOMC_NAME=${OMC_NAME} -P "${OMC_MACRO_DIR}/feelpp.macros.omc.cmake" )
       COMMAND ${OMC_COMPILER} -s -q ${OMC_SRCS_FULLPATH}
-      COMMAND make -f ${OMC_NAME}.makefile
+      COMMAND make -f ${OMC_CLASS}.makefile
       WORKING_DIRECTORY ${TMP_DIR}
       )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
       POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E rename ${TMP_DIR}/${OMC_NAME} ${OMC_OUTDIR}/${OMC_NAME}
-      COMMAND ${CMAKE_COMMAND} -E rename "${TMP_DIR}/${OMC_NAME}_init.xml" "${OMC_OUTDIR}/${OMC_NAME}_init.xml"
+      COMMAND ${CMAKE_COMMAND} -E rename ${TMP_DIR}/${OMC_CLASS} ${OMC_OUTDIR}/${OMC_NAME}.app
+      COMMAND ${CMAKE_COMMAND} -E rename "${TMP_DIR}/${OMC_CLASS}_init.xml" "${OMC_OUTDIR}/${OMC_CLASS}_init.xml"
       COMMAND ${CMAKE_COMMAND} -E remove_directory ${TMP_DIR}
       )
 
@@ -785,7 +785,7 @@ macro( add_omc )
 
     endif()
   endif()
-endmacro( add_omc )
+endmacro( feelpp_add_omc )
 
 
 
