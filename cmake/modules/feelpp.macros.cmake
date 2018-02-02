@@ -711,38 +711,81 @@ endmacro (feelpp_add_man)
 include(feelpp.macros.crb)
 
 # OM cmake macros
-macro ( add_ommodel )
-  PARSE_ARGUMENTS( OM_MODEL
-    "SRCS;CLASS;VERS;TYPE" "" ${ARGN} )
+macro ( add_fmu )
+  if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
+    PARSE_ARGUMENTS( OM_MODEL
+      "SRCS;CLASS;VERS;TYPE;CATEGORY" "" ${ARGN} )
 
-  car( OMWRAPPER_NAME ${OM_MODEL_DEFAULT_ARGS} )
-  set( OMWRAPPER_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMWRAPPER_NAME} )
-  set( FMU_SCRIPT_NAME ${OMWRAPPER_LIBDIR}/${OMWRAPPER_NAME}_tofmu.mos )
-  find_path( OMWRAPPER_MACRO_DIR feelpp.macros.om.cmake
-    PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
+    car( OMWRAPPER_NAME ${OM_MODEL_DEFAULT_ARGS} )
+    set( OMWRAPPER_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMWRAPPER_NAME} )
+    set( FMU_SCRIPT_NAME ${OMWRAPPER_LIBDIR}/${OMWRAPPER_NAME}_tofmu.mos )
+    find_path( OMWRAPPER_MACRO_DIR feelpp.macros.om.cmake
+      PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
 
-  if( NOT DEFINED OM_MODEL_VERS )
-    set( OM_MODEL_VERS "2.0")
+    if( NOT DEFINED OM_MODEL_VERS )
+      set( OM_MODEL_VERS "2.0")
+    endif()
+    if( NOT DEFINED OM_MODEL_TYPE )
+      set( OM_MODEL_TYPE "cs" )
+    endif()
+
+    file( MAKE_DIRECTORY ${OMWRAPPER_LIBDIR} )
+    file( REMOVE ${FMU_SCRIPT_NAME} )
+    foreach( srcs ${OM_MODEL_SRCS} )
+      set( LOAD_CMD "loadFile(\"${CMAKE_CURRENT_SOURCE_DIR}/${srcs}\" )" )
+      file( APPEND ${FMU_SCRIPT_NAME} ${LOAD_CMD}\;\n )
+      set( OMWRAPPER_SRCS_FULLPATH  ${OMWRAPPER_SRCS_FULLPATH} ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
+    endforeach()
+    file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");"\n)
+
+    add_custom_target( feelpp_add_fmu_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
+
+    add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
+      COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
   endif()
-  if( NOT DEFINED OM_MODEL_TYPE )
-    set( OM_MODEL_TYPE "cs" )
+endmacro( add_fmu )
+
+macro( add_omc )
+  if ( FEELPP_HAS_OMC )
+    PARSE_ARGUMENTS( OM_MODEL
+      "SRCS;CATEGORY" "" ${ARGN} )
+
+    car( OMC_NAME ${OM_MODEL_DEFAULT_ARGS} )
+    set( OMC_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMC_NAME} )
+    file( MAKE_DIRECTORY ${OMC_OUTDIR} )
+
+    find_path( OMC_MACRO_DIR feelpp.macros.omc.cmake
+      PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
+
+    foreach( srcs ${OM_MODEL_SRCS} )
+      list( APPEND OMC_SRCS_FULLPATH  ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
+    endforeach()
+    message( "${OMC_SRCS_FULLPATH}" )
+    add_custom_target( feelpp_add_omc_${OMC_NAME}  ALL COMMENT "Compiling model"  )
+
+    set( TMP_DIR "${OMC_OUTDIR}/tmp" )
+
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      PRE_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      #COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DOMC_SRCS=${OMC_SRCS_FULLPATH} -DOMC_OUTDIR=${OMC_OUTDIR} -DOMC_NAME=${OMC_NAME} -P "${OMC_MACRO_DIR}/feelpp.macros.omc.cmake" )
+      COMMAND ${OMC_COMPILER} -s ${OMC_SRCS_FULLPATH}
+      COMMAND make -f ${OMC_NAME}.makefile
+      WORKING_DIRECTORY ${TMP_DIR}
+      )
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E rename ${TMP_DIR}/${OMC_NAME} ${OMC_OUTDIR}/${OMC_NAME}
+      COMMAND ${CMAKE_COMMAND} -E rename "${TMP_DIR}/${OMC_NAME}_init.xml" "${OMC_OUTDIR}/${OMC_NAME}_init.xml"
+      COMMAND ${CMAKE_COMMAND} -E remove_directory ${TMP_DIR}
+      )
+
+    if( OM_MODEL_CATEGORY )
+
+    endif()
   endif()
-
-  file( MAKE_DIRECTORY ${OMWRAPPER_LIBDIR} )
-  file( REMOVE ${FMU_SCRIPT_NAME} )
-  foreach( srcs ${OM_MODEL_SRCS} )
-    set( LOAD_CMD "loadFile(\"${CMAKE_CURRENT_SOURCE_DIR}/${srcs}\" )" )
-    file( APPEND ${FMU_SCRIPT_NAME} ${LOAD_CMD}\;\n )
-    set( OMWRAPPER_SRCS_FULLPATH  ${OMWRAPPER_SRCS_FULLPATH} ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
-  endforeach()
-  file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");"\n)
-
-  add_custom_target( feelpp_add_ommodel_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
-
-  add_custom_command(TARGET feelpp_add_ommodel_${OMWRAPPER_NAME}
-    COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
-
-endmacro( add_ommodel )
+endmacro( add_omc )
 
 
 
