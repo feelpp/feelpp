@@ -1,6 +1,7 @@
 find_package( OMC )
 
 if( OMC_FOUND )
+  include_directories( ${OMC_INCLUDE_DIR} )
   message( STATUS "[omc] include dir : ${OMC_INCLUDE_DIR}" )
   message( STATUS "[omc] omc compiler : ${OMC_COMPILER}" )
   message( STATUS "[omc] libomcgc : " ${OMCGC_LIBRARY} )
@@ -12,4 +13,4 @@ else()
   return()
 endif()
 
-include_directories( ${OMC_INCLUDE_DIR} )
+
