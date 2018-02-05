@@ -771,7 +771,7 @@ macro( feelpp_add_omc )
       COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
       COMMAND ${OMC_COMPILER} -s -q ${OMC_SRCS_FULLPATH}
-      COMMAND make -f ${OMC_CLASS}.makefile
+      COMMAND make -f ${OMC_CLASS}.makefile CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
       WORKING_DIRECTORY ${TMP_DIR}
       )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
