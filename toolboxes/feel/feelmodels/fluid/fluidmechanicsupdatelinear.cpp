@@ -166,7 +166,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             double beta = this->definePressureCstPenalisationBeta();
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=rangeElt,
                                _expr=beta*idt(p)*id(q),
                                _geomap=this->geomap() );
         }
