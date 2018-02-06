@@ -935,6 +935,21 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
+fmu_options( std::string const& prefix )
+{
+    po::options_description _options( "FMU " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"fmu.verbose" ).c_str(), Feel::po::value<bool>()->default_value(true), "Run with verbosity" )
+        ( prefixvm( prefix,"fmu.display-variables-info" ).c_str(), Feel::po::value<bool>()->default_value(false), "Display the list of variables and description after loading FMU" )
+        ( prefixvm( prefix,"fmu.filename" ).c_str(), Feel::po::value<std::string>()->default_value(""), "The fmu to load" )
+
+        ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
+        ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+        ;
+    return _options;
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -1018,6 +1033,7 @@ feel_options( std::string const& prefix  )
         .add (msi_options(prefix))
         .add (fit_options(prefix))
         .add (checker_options(prefix))
+        .add( fmu_options(prefix) )
         ;
 
     return opt;
