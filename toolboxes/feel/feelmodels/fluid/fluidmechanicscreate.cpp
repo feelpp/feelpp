@@ -515,6 +515,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
 
+    // prec
+    M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
+    M_pmmNeedUpdate = false;
+
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -1881,18 +1885,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         massbf.matrixPtr()->close();
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
-
-    bool attachPressureMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
-    if ( attachPressureMassMatrix )
-    {
-        auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
-        auto const& p = this->fieldPressure();
-        auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
-        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(p),id(p) ) );
-        massbf.matrixPtr()->close();
-        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", massbf.matrixPtr() );
-    }
-
 
     bool buildPrecBlockns = ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" );
     bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
