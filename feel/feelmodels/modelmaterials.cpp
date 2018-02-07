@@ -27,6 +27,8 @@
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelmaterials.hpp>
+#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/utility.hpp>
 
 namespace Feel {
 
@@ -41,12 +43,37 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr )
 {
-    if( auto physics = p.get_child_optional("physics") )
+    if ( auto fnameOpt = p.get_optional<std::string>("filename") )
     {
-        for( auto const& item : p.get_child("physics") )
+        std::string fname = Environment::expand( fnameOpt.get() );
+        LOG(INFO) << "  - filename = " << fname << std::endl;
+        pt::ptree pf;
+        auto json_str_wo_comments = removeComments(readFromFile(fname));
+        std::istringstream istr( json_str_wo_comments );
+        pt::read_json( istr, pf );
+        for ( auto const& subpf : pf )
+        {
+            if ( M_p.count( subpf.first ) == 0 )
+            {
+                M_p.add_child(subpf.first,subpf.second );
+            }
+        }
+    }
+
+
+    if ( auto meshMarkers = M_p.get_child_optional("markers") )
+    {
+        for( auto const& item : M_p.get_child("markers") )
+            M_meshMarkers.insert(item.second.template get_value<std::string>());
+        if( M_meshMarkers.empty() )
+            M_meshMarkers.insert(M_p.get<std::string>("markers") );
+    }
+    if ( auto physics = M_p.get_child_optional("physics") )
+    {
+        for( auto const& item : M_p.get_child("physics") )
             M_physics.insert(item.second.template get_value<std::string>());
         if( M_physics.empty() )
-            M_physics.insert(p.get<std::string>("physics") );
+            M_physics.insert(M_p.get<std::string>("physics") );
     }
 
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
@@ -256,38 +283,15 @@ ModelMaterials::ModelMaterials( pt::ptree const& p, WorldComm const& worldComm )
     setup();
 }
 
-ModelMaterial
-ModelMaterials::loadMaterial( std::string const& s )
-{
-    pt::ptree p;
-    pt::read_json( s, p );
-    return this->getMaterial( p );
-}
 void
 ModelMaterials::setup()
 {
     for( auto const& v : M_p )
     {
         LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
-        if ( auto fname = v.second.get_optional<std::string>("filename") )
-        {
-            LOG(INFO) << "  - filename = " << Environment::expand( fname.get() ) << std::endl;
-            this->insert( std::make_pair( v.first, this->loadMaterial( Environment::expand( fname.get() ) ) ) );
-        }
-        else
-        {
-            this->insert( std::make_pair( v.first, this->getMaterial( v.second ) ) );
-        }
+        std::string name = v.first;
+        this->insert( std::make_pair( name, ModelMaterial( name, v.second, *M_worldComm, M_directoryLibExpr ) ) );
     }
-}
-ModelMaterial
-ModelMaterials::getMaterial( pt::ptree const& v )
-{
-    std::string t = v.get<std::string>( "name" );
-    LOG(INFO) << "loading material name: " << t << std::endl;
-    ModelMaterial m( t, v, *M_worldComm, M_directoryLibExpr );
-    LOG(INFO) << "adding material " << m;
-    return m;
 }
 
 void
