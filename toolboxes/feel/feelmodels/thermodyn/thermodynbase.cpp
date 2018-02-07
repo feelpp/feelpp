@@ -329,8 +329,9 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     bool hasMeasure = false;
 
+    std::string modelName = "heat-transfert";
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     //  heat flux measures
-    auto const& ptree = this->modelProperties().postProcess().pTree();
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
     {
@@ -373,7 +374,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);
@@ -612,6 +613,7 @@ void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
+    std::string modelName = "heat-transfert";
 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
@@ -630,7 +632,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )

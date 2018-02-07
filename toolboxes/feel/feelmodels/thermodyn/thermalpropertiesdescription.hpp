@@ -34,7 +34,7 @@ namespace FeelModels
 
         ThermalPropertiesDescription( ThermalPropertiesDescription const& app  ) = default;
 
-        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm )
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
             {
                 std::set<std::string> eltMarkersInMesh;
                 for (auto const& markPair : mesh->markerNames() )
@@ -45,16 +45,18 @@ namespace FeelModels
                 }
 
                 M_markers.clear();
-                for( auto const& m : mat )
+                for( auto const& m : mats )
                 {
-                    auto const& matmarker = m.first;
-                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                        continue;
                     auto const& mat = m.second;
-                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physic();
-                    if ( ( matphysics != "heat-transfert" ) && ( matphysics != "aerothermal" ) && ( matphysics != "thermo-electric" ) )
+                    if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfert","aerothermal","thermo-electric" } ) )
                         continue;
-                    M_markers.insert( matmarker );
+
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                            continue;
+                        M_markers.insert( matmarker );
+                    }
                 }
 
                 M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
@@ -67,32 +69,34 @@ namespace FeelModels
                 M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
                 M_fieldThermalExpansion = M_space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
 
-                for( auto const& m : mat )
+                for( auto const& m : mats )
                 {
                     auto const& mat = m.second;
-                    auto const& matmarker = m.first;
-                    if ( M_markers.find( matmarker ) == M_markers.end() )
-                        continue;
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( M_markers.find( matmarker ) == M_markers.end() )
+                            continue;
 
-                    if ( mat.hasPropertyExprScalar("rho") )
-                        this->setRho( mat.propertyExprScalar("rho"),matmarker );
-                    else
-                        this->setCstRho( mat.propertyConstant("rho"), matmarker );
+                        if ( mat.hasPropertyExprScalar("rho") )
+                            this->setRho( mat.propertyExprScalar("rho"),matmarker );
+                        else
+                            this->setCstRho( mat.propertyConstant("rho"), matmarker );
 
-                    if ( mat.hasPropertyExprScalar("k11") )
-                        this->setThermalConductivity( mat.propertyExprScalar("k11"),matmarker );
-                    else
-                        this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
+                        if ( mat.hasPropertyExprScalar("k11") )
+                            this->setThermalConductivity( mat.propertyExprScalar("k11"),matmarker );
+                        else
+                            this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
 
-                    if ( mat.hasPropertyExprScalar("Cp") )
-                        this->setHeatCapacity( mat.propertyExprScalar("Cp"),matmarker );
-                    else
-                        this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
+                        if ( mat.hasPropertyExprScalar("Cp") )
+                            this->setHeatCapacity( mat.propertyExprScalar("Cp"),matmarker );
+                        else
+                            this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
 
-                    if ( mat.hasPropertyExprScalar("beta") )
-                        this->setThermalExpansion( mat.propertyExprScalar("beta"),matmarker );
-                    else
-                        this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
+                        if ( mat.hasPropertyExprScalar("beta") )
+                            this->setThermalExpansion( mat.propertyExprScalar("beta"),matmarker );
+                        else
+                            this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
+                    }
                 }
             }
 

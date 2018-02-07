@@ -12,9 +12,9 @@
     // },
     "Materials":
     {
-        //"Omega":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
-        "Omega":
+        "mymat":
         {
+            "markers":"Omega",
             "name":"mymat",
             "k11":"10",//[ W/(m*K) ]
             "Cp":"1000.005", //[ J/(kg*K) ]
@@ -55,7 +55,22 @@
     },
     "PostProcess":
     {
-        "Fields":["temperature"]
+        "Exports":
+        {
+            "fields":["temperature"]
+        },
+        "Measures":
+        {
+            "Normal-Heat-Flux":["MarkerRobin","MarkerNeumann"],
+            "Points":
+            {
+                "ptA":
+                {
+                    "coord":"{-0.6,0.6}",
+                    "fields":"temperature"
+                }
+            }
+        }
     }
 
 }
