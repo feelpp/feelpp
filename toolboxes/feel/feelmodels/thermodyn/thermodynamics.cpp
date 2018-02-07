@@ -92,8 +92,10 @@ THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
 {
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+    std::string modelNameUsed = this->modelProperties().postProcess().useModelName() ? "heat-transfert" : "";
+
+    if ( this->modelProperties().postProcess().hasExports( modelNameUsed ) )
+        for ( auto const& o : this->modelProperties().postProcess().exports( modelNameUsed ).fields() )
         {
             if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
             if ( o == "velocity-convection" || o == "all" ) this->M_postProcessFieldExported.insert( "velocity-convection" );
