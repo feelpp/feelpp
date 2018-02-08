@@ -55,7 +55,6 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
-    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -86,23 +85,6 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerRobinBC( marker(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
-}
-
-THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
-{
-    std::string modelNameUsed = this->modelProperties().postProcess().useModelName() ? "heat-transfert" : "";
-
-    if ( this->modelProperties().postProcess().hasExports( modelNameUsed ) )
-        for ( auto const& o : this->modelProperties().postProcess().exports( modelNameUsed ).fields() )
-        {
-            if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
-            if ( o == "velocity-convection" || o == "all" ) this->M_postProcessFieldExported.insert( "velocity-convection" );
-            if ( o == "thermal-conductivity" || o == "all" ) this->M_postProcessFieldExported.insert( "thermal-conductivity" );
-            if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( "density" );
-            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( "pid" );
-        }
 }
 
 

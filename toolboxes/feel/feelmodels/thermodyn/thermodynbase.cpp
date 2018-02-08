@@ -48,8 +48,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::build()
     this->createFunctionSpaces();
     // bdf time schema
     this->createTimeDiscretisation();
-    //export
-    this->createExporters();
 
     this->log("ThermoDynamics","build", "finish" );
 }
@@ -66,8 +64,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
     this->createFunctionSpaces();
     // bdf time schema
     this->createTimeDiscretisation();
-    //export
-    this->createExporters();
 
     this->log("ThermoDynamics","loadMesh", "finish" );
 }
@@ -210,24 +206,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
     this->log("ThermoDynamics","createTimeDiscretisation",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
-{
-    this->log("ThermoDynamics","createExporters", "start");
-    this->timerTool("Constructor").start();
-
-    std::string geoExportType="static";//change_coords_only, change, static
-    M_exporter = exporter( _mesh=this->mesh(),
-                           _name="Export",
-                           _geo=geoExportType,
-                           _path=this->exporterPath() );
-
-    double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("ThermoDynamics","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
-}
-
-
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
@@ -323,13 +301,32 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    this->log("ThermoDynamics","initPostProcess", "start");
+    this->timerTool("Constructor").start();
+
+    std::string modelName = "heat-transfert";
+    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
+    {
+        if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
+        if ( o == "velocity-convection" || o == "all" ) this->M_postProcessFieldExported.insert( "velocity-convection" );
+        if ( o == "thermal-conductivity" || o == "all" ) this->M_postProcessFieldExported.insert( "thermal-conductivity" );
+        if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( "density" );
+        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( "pid" );
+    }
+
+
+    std::string geoExportType="static";//change_coords_only, change, static
+    M_exporter = exporter( _mesh=this->mesh(),
+                           _name="Export",
+                           _geo=geoExportType,
+                           _path=this->exporterPath() );
+
     // restart exporter
     if (this->doRestart() )
         this->restartExporters();
 
     bool hasMeasure = false;
 
-    std::string modelName = "heat-transfert";
     pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     //  heat flux measures
     std::string ppTypeMeasures = "Measures";
@@ -410,6 +407,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
     }
 
+    double tElpased = this->timerTool("Constructor").stop("initPostProcess");
+    this->log("ThermoDynamics","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 
