@@ -20,11 +20,11 @@
     },
     "Materials":
     {
-        "fluid":
+        "myfluid":
         {
-            "name":"fluid",
+            "markers":["fluid1","fluid2"],
             "physics": "electro",
-            "rho": "1", // density
+            "rho": "2", // density
             "eta": "0.001", // dynamic_viscosity
             "mu": "{1,t}:t",
             "nu": "{1,2,x*y}:x:y:z",
@@ -33,9 +33,9 @@
             "f" : "2*g:g",
             "h" : "2*g+t:g:t"
         },
-	"copper":
+	    "mycopper":
         {
-            "name":"copper",
+            "markers":"copper",
             "physics":["electro","thermo"],
             "rho": "1", // density
             "eta": "0.001", // dynamic_viscosity
