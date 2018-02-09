@@ -25,6 +25,10 @@ public :
     typedef SolverBase solver_type;
     typedef boost::shared_ptr<solver_type> solver_ptrtype;
 
+    typedef std::vector<std::string> var_list_type;
+    typedef boost::shared_ptr<var_list_type> var_list_ptrtype;
+
+
     FMU( std::string prefix="" );
     ~FMU();
 
@@ -38,9 +42,8 @@ public :
     void setSolverTimeStep( double const& step );
 
     void printModelInfo();
-
-    double currentTime();
-
+    void addExportedVariables( std::vector<std::string> const& var_list );
+    void setExportedVariables( std::vector<std::string> const& var_list );
 
     template <typename VariableType>
     void setValue( std::string var_name, VariableType value )
@@ -48,6 +51,8 @@ public :
         CHECK( M_model ) <<"FMU trying to access variable without model\n";
         M_model->setValue( var_name, value );
     }
+
+    double currentTime();
 
     template <typename VariableType>
     VariableType getValue( std::string var_name )
@@ -74,6 +79,8 @@ private :
 
     fmumodel_ptrtype M_model;
     solver_ptrtype M_solver;
+
+    var_list_ptrtype M_export_list;
 };
 
 
