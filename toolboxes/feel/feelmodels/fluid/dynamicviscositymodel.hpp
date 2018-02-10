@@ -84,7 +84,7 @@ public :
         }
     DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
     {
         std::set<std::string> eltMarkersInMesh;
         for (auto const& markPair : mesh->markerNames() )
@@ -95,16 +95,17 @@ public :
         }
 
         M_markers.clear();
-        for( auto const& m : mat )
+        for( auto const& m : mats )
         {
-            auto const& matmarker = m.first;
-            if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                continue;
             auto const& mat = m.second;
-            std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physic();
-            if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
+            if ( mat.hasPhysics() && !mat.hasPhysics( { "fluid","aerothermal" } ) )
                 continue;
-            M_markers.insert( matmarker );
+            for ( std::string const& matmarker : mat.meshMarkers() )
+            {
+                if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                    continue;
+                M_markers.insert( matmarker );
+            }
         }
 
         if( M_markers.size() > 0 )
@@ -117,35 +118,39 @@ public :
             M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
         M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
 
-        for( auto const& m : mat )
+        for( auto const& m : mats )
         {
             auto const& mat = m.second;
-            auto const& matmarker = m.first;
-            if ( M_markers.find( matmarker ) == M_markers.end() )
-                continue;
+            for ( std::string const& matmarker : mat.meshMarkers() )
+            {
+                if ( M_markers.find( matmarker ) == M_markers.end() )
+                    continue;
 
-            if ( mat.hasPropertyExprScalar("mu") )
-                this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
-            else
-                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+                if ( mat.hasPropertyExprScalar("mu") )
+                    this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
+                else
+                    this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+            }
         }
     }
-    void updateForUse( space_ptrtype const& space, ModelMaterials const& mat )
+    void updateForUse( space_ptrtype const& space, ModelMaterials const& mats )
     {
         M_isDefinedOnWholeMesh = true;
         M_space = space;
         M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
 
         M_markers.clear();
-        for( auto const& m : mat )
+        for( auto const& m : mats )
         {
             auto const& mat = m.second;
-            auto const& matmarker = m.first;
-            M_markers.insert( matmarker );
-            if ( mat.hasPropertyExprScalar("mu") )
-                this->setDynamicViscosity( mat.propertyExprScalar("mu"), matmarker );
-            else
-                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+            for ( std::string const& matmarker : mat.meshMarkers() )
+            {
+                M_markers.insert( matmarker );
+                if ( mat.hasPropertyExprScalar("mu") )
+                    this->setDynamicViscosity( mat.propertyExprScalar("mu"), matmarker );
+                else
+                    this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+            }
         }
     }
 

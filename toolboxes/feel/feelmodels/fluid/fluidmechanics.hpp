@@ -379,7 +379,6 @@ public:
     void init( bool buildModelAlgebraicFactory=true );
 
     void loadConfigBCFile();
-    void loadConfigPostProcess();
     void loadConfigMeshFile( std::string const& geofilename );
     void loadParameterFromOptionsVm();
 
@@ -1046,6 +1045,8 @@ protected:
     // post-process measure forces (lift,drag) and flow rate
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
+    // post-process measure fields
+    std::map<std::string,std::string> M_postProcessMeasuresFields;
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools

@@ -43,7 +43,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // load info from .json file
     this->loadConfigBCFile();
-    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -304,28 +303,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
-{
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        {
-            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
-            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
-            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
-            if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
-            if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
-            if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
-            if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
-            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
-
-            if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
-            if ( o == "pressurebc" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
-        }
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigMeshFile( std::string const& geofilename )
 {
     CHECK( false ) << "not allow";
@@ -429,7 +406,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
-    std::string theFluidModel = this->modelProperties().model();
+    std::string theFluidModel = this->modelProperties().models().model("fluid").equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         theFluidModel = soption(_name="model",_prefix=this->prefix());
     this->setModelName( theFluidModel );
@@ -1655,12 +1632,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    std::string modelName = "fluid";
+
     // update post-process expression
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     bool hasMeasure = false;
+
+    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
+    {
+        if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Velocity );
+        if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pressure );
+        if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Displacement );
+        if ( o == "vorticity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Vorticity );
+        if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::NormalStress );
+        if ( o == "wall-shear-stress" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::WallShearStress );
+        if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Density );
+        if ( o == "viscosity" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Viscosity );
+        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::Pid );
+
+        if ( o == "alemesh" /*|| o == "all"*/ ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::ALEMesh );
+        if ( o == "pressurebc" || o == "all" ) this->M_postProcessFieldExported.insert( FluidMechanicsPostProcessFieldExported::LagrangeMultiplierPressureBC );
+
+        // add user functions
+        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+            M_postProcessUserFieldExported.insert( o );
+    }
 
     // clean doExport with fields not available
     if ( !this->isMoveDomain() )
@@ -1681,18 +1680,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter_ho->restart( this->timeInitial() );
     }
 
-    // add user functions
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-    {
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        {
-            if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-                M_postProcessUserFieldExported.insert( o );
-        }
-    }
-
     // forces (lift, drag) and flow rate measures
-    auto const& ptree = this->modelProperties().postProcess().pTree();
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
     {
@@ -1745,14 +1734,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             }
             else if ( ptreeLevel1Name == "Pressure" )
             {
-                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
+                // this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
+                M_postProcessMeasuresFields["pressure"] = "";
                 this->postProcessMeasuresIO().setMeasure("pressure_sum",0.);
                 this->postProcessMeasuresIO().setMeasure("pressure_mean",0.);
                 hasMeasure = true;
             }
             else if ( ptreeLevel1Name == "VelocityDivergence" )
             {
-                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "VelocityDivergence" );
+                M_postProcessMeasuresFields["velocity-divergence"] = "";
+                // this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "VelocityDivergence" );
                 this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",0.);
                 this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",0.);
                 this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",0.);
@@ -1762,7 +1753,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);
