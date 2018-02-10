@@ -68,6 +68,9 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
         if( M_meshMarkers.empty() )
             M_meshMarkers.insert(M_p.get<std::string>("markers") );
     }
+    else if ( !name.empty() )
+        M_meshMarkers.insert( name );
+
     if ( auto physics = M_p.get_child_optional("physics") )
     {
         for( auto const& item : M_p.get_child("physics") )
