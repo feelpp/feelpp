@@ -741,11 +741,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         hasMeasure = true;
     }
 
-    auto itFindMeasures = this->modelProperties().postProcess().find("Measures");
-    if ( itFindMeasures != this->modelProperties().postProcess().end() )
+    
+    if ( true )
     {
-        bool hasMeasuresPressure = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "Pressure" ) != itFindMeasures->second.end();
-        bool hasMeasuresVelocityDivergence = std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "VelocityDivergence" ) != itFindMeasures->second.end();
+        bool hasMeasuresPressure = M_postProcessMeasuresFields.find("pressure") != M_postProcessMeasuresFields.end();
+        bool hasMeasuresVelocityDivergence = M_postProcessMeasuresFields.find( "velocity-divergence" ) != M_postProcessMeasuresFields.end();
         double area = 0;
         if ( hasMeasuresPressure || hasMeasuresVelocityDivergence )
             area = this->computeMeshArea();
@@ -769,12 +769,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    std::string modelName = "fluid";
 
     // point measures
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )
