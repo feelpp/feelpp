@@ -58,12 +58,20 @@ ModelBase::ModelBase( std::string const& prefix,
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
 {
     if ( M_rootRepositoryWithoutNumProc.empty() )
-        M_rootRepositoryWithoutNumProc = ModelBase::rootRepositoryByDefault();
-    M_rootRepositoryWithoutNumProc = Environment::expand( M_rootRepositoryWithoutNumProc );
-    if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
-        M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
-    std::string npSubDir = (boost::format( "np_%1%" ) % this->worldComm().localSize() ).str();
-    M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+    {
+        M_rootRepositoryWithoutNumProc = Environment::appRepositoryWithoutNumProc();
+        M_rootRepositoryWithNumProc = Environment::appRepository();
+        M_directoryLibSymbExpr = Environment::exprRepository();
+    }
+    else
+    {
+        M_rootRepositoryWithoutNumProc = Environment::expand( M_rootRepositoryWithoutNumProc );
+        if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
+            M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
+        std::string npSubDir = (boost::format( "np_%1%" ) % this->worldComm().localSize() ).str();
+        M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+        M_directoryLibSymbExpr = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
+    }
 
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
@@ -105,9 +113,6 @@ std::string const&
 ModelBase::rootRepositoryWithoutNumProc() const { return M_rootRepositoryWithoutNumProc; }
 std::string const&
 ModelBase::rootRepositoryWithNumProc() const { return M_rootRepositoryWithNumProc; }
-
-std::string
-ModelBase::rootRepositoryByDefault() { return soption(_name="exporter.directory"); }
 
 // verbose
 bool

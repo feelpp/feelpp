@@ -52,7 +52,7 @@ public :
     ModelBase( std::string const& prefix,
                WorldComm const& worldComm = Environment::worldComm(),
                std::string const& subPrefix = "",
-               std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+               std::string const& rootRepository = "" );
 
     ModelBase( ModelBase const& app ) = default;
     virtual ~ModelBase();
@@ -73,8 +73,8 @@ public :
     std::string const& rootRepository() const;
     std::string const& rootRepositoryWithoutNumProc() const;
     std::string const& rootRepositoryWithNumProc() const;
-    static std::string rootRepositoryByDefault();
-
+    // symbol expression directory
+    std::string const& directoryLibSymbExpr() const { return M_directoryLibSymbExpr; }
     // verbose
     bool verbose() const;
     bool verboseAllProc() const;
@@ -106,8 +106,9 @@ private :
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
-    // short repository name
+    // directory
     std::string M_rootRepositoryWithNumProc, M_rootRepositoryWithoutNumProc;
+    std::string M_directoryLibSymbExpr;
     // verbose
     bool M_verbose,M_verboseAllProc;
     // filename for save info

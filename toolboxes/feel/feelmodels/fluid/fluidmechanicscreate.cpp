@@ -485,7 +485,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         gravityStr = "{0,-9.80665}";
     else if (nDim == 3 )
         gravityStr = "{0,0,-9.80665}";
-    M_gravityForce = expr<nDim,1,2>( gravityStr );
+    M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->directoryLibSymbExpr() );
     M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
 
     // thermodynamics coupling

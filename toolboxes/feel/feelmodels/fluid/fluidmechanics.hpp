@@ -363,14 +363,14 @@ public:
                         bool __buildMesh = true,
                         WorldComm const& _worldComm = Environment::worldComm(),
                         std::string const& subPrefix = "",
-                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                        std::string const& rootRepository = "" );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             std::string const& rootRepository = "" );
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );

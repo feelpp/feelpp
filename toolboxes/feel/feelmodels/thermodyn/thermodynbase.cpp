@@ -447,7 +447,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoRobinBC();
     *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
-           << "\n     -- msh filename      : " << this->mshfileStr()
+           << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
     *_ostr << "\n   Space Temperature Discretization"
