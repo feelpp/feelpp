@@ -96,28 +96,19 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
     }
     else
     {
-        if (model.hasMshfileStr())
+        if (model.hasMeshFile())
         {
             std::string rootpath = model.rootRepository();
             std::string mshfileRebuildPartitions = rootpath + "/" + model.prefix() + ".msh";
 
-            model.log("createMeshModel","", "load mesh file : " + model.mshfileStr());
-            std::string meshFileExt = fs::path( model.mshfileStr() ).extension().string();
+            model.log("createMeshModel","", "load mesh file : " + model.meshFile());
+            std::string meshFileExt = fs::path( model.meshFile() ).extension().string();
             bool rebuildPartition = boption(_prefix=model.prefix(),_name="gmsh.partition");
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
-#if 0
-            mesh = loadGMSHMesh(_mesh=new mesh_type,
-                                _filename=model.mshfileStr(),
-                                _worldcomm=model.worldComm(),
-                                _prefix=model.prefix(),
-                                _rebuild_partitions=rebuildPartition,//model.rebuildMeshPartitions(),
-                                _rebuild_partitions_filename=mshfileRebuildPartitions,
-                                _partitions=model.worldComm().localSize(),
-                                _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK);
-#else
+
             mesh = loadMesh(_mesh=new mesh_type( model.worldComm() ),
-                            _filename=model.mshfileStr(),
+                            _filename=model.meshFile(),
                             _worldcomm=model.worldComm(),
                             _prefix=model.prefix(),
                             _rebuild_partitions=rebuildPartition,
@@ -125,15 +116,14 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
                             _partitions=model.worldComm().localSize(),
                             _savehdf5=0,
                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
-#endif
 
-            if (rebuildPartition/*model.rebuildMeshPartitions()*/) model.setMshfileStr(mshfileRebuildPartitions);
+            if (rebuildPartition) model.setMeshFile(mshfileRebuildPartitions);
         }
-        else if (model.hasGeofileStr())
+        else if (model.hasGeoFile())
         {
             std::string path = model.rootRepository();
             std::string mshfile = path + "/" + model.prefix() + ".msh";
-            model.setMshfileStr(mshfile);
+            model.setMeshFile(mshfile);
 
             // fs::path curPath=fs::current_path();
             // bool hasChangedRep=false;
@@ -144,7 +134,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             //     Environment::changeRepository( _directory=boost::format(model.rootRepository()), _subdir=false );
             // }
 
-            gmsh_ptrtype geodesc = geo( _filename=model.geofileStr(),
+            gmsh_ptrtype geodesc = geo( _filename=model.geoFile(),
                                         _prefix=model.prefix(),
                                         _worldcomm=model.worldComm() );
             // allow to have a geo and msh file with a filename equal to prefix
@@ -176,7 +166,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             std::string geotoolSaveName = model.geotoolSaveName();
             std::string mshfile = geotoolSavePath + "/" + geotoolSaveName + ".msh";
             std::string geofilename = geotoolSavePath + "/" + geotoolSaveName;// without .geo
-            model.setMshfileStr(mshfile);
+            model.setMeshFile(mshfile);
 
             model.loadConfigMeshFile(geofilename);
 
@@ -187,7 +177,7 @@ createMeshModel( ModelNumerical & model, boost::shared_ptr<MeshType> & mesh, std
             }
         }
 #endif
-        model.saveMSHfilePath(fmpath);
+        model.saveMeshFile( fmpath );
     } //not restart
 
 }

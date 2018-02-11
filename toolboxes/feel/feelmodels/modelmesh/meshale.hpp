@@ -122,7 +122,7 @@ public :
             //std::string exportName="ExportMeshALE",
             WorldComm const& worldcomm=Environment::worldComm(),
             bool moveGhostEltFromExtendedStencil=false,
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            std::string const& rootRepository = "" );
 
     void init();
 

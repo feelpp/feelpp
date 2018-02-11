@@ -72,7 +72,7 @@ class ModelNumerical : public ModelAlgebraic
 
 
         ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
-                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                        std::string const& rootRepository = "" );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 
@@ -89,7 +89,7 @@ class ModelNumerical : public ModelAlgebraic
         bool doRestart() const { return M_doRestart; }
         void setRestart(bool b) { M_doRestart=b; }
         std::string restartPath() const { return M_restartPath; }
-        void setRestartPath(std::string s) { M_restartPath=s; }
+        void setRestartPath(std::string const& s) { M_restartPath=s; }
         bool restartAtLastSave() const { return M_restartAtLastSave; }
         void setRestartAtLastSave( bool b) { M_restartAtLastSave=b; }
 
@@ -110,8 +110,6 @@ class ModelNumerical : public ModelAlgebraic
         ModelProperties & modelProperties() { return *M_modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
-        std::string const& directoryLibSymbExpr() const { return M_directoryLibSymbExpr; }
-
         size_type rowStartInMatrix() const { return M_row_startInMatrix; }
         void setRowStartInMatrix(size_type r) { M_row_startInMatrix=r; }
         size_type colStartInMatrix() const { return M_col_startInMatrix; }
@@ -119,27 +117,21 @@ class ModelNumerical : public ModelAlgebraic
         size_type rowStartInVector() const { return M_row_startInVector; }
         void setRowStartInVector(size_type r) { M_row_startInVector=r; }
 
-        bool rebuildMeshPartitions() const { return (M_rebuildMeshPartitions && (this->worldComm().localSize()>1)); }
-        void setRebuildMeshPartitions(bool b) { M_rebuildMeshPartitions=b; }
-
         GeomapStrategyType geomap() const { return M_geomap; }
 
         //----------------------------------------------------------------------------------//
 
 
-        std::string mshfileStr() const { return M_mshFileStr; }
-        void setMshfileStr(std::string file)  { M_mshFileStr=file; }
+        std::string meshFile() const { return M_meshFile; }
+        void setMeshFile(std::string const& file)  { M_meshFile=file; }
+        std::string geoFile() const { return M_geoFile; }
+        void setGeoFile(std::string const& file)  { M_geoFile=file; }
+        bool hasMeshFile() const { return !M_meshFile.empty(); }
+        bool hasGeoFile() const { return !M_geoFile.empty(); }
 
-        std::string geofileStr() const { return M_geoFileStr; }
-        void setGeofileStr(std::string file)  { M_geoFileStr=file; }
+        void saveMeshFile( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
 
-        bool hasMshfileStr() const { return M_mshFileStr!="FEELMODELS_WARNING_NODEFINE"; }
-        bool hasGeofileStr() const { return M_geoFileStr!="FEELMODELS_WARNING_NODEFINE"; }
-
-
-        void saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
-
-        void setExporterPath(std::string s)  { M_exporterPath=s; }
+        void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
         ModelMeasuresIO const& postProcessMeasuresIO() const { return M_postProcessMeasuresIO; }
@@ -149,9 +141,6 @@ class ModelNumerical : public ModelAlgebraic
 
 
     private :
-
-
-        bool M_rebuildMeshPartitions;
 
         bool M_isStationary;
         bool M_doRestart;
@@ -163,13 +152,11 @@ class ModelNumerical : public ModelAlgebraic
         int M_tsSaveFreq;
         double M_timeCurrent;
 
-        std::string M_directoryLibSymbExpr;
         std::shared_ptr<ModelProperties> M_modelProps;
 
         size_type M_row_startInMatrix, M_col_startInMatrix, M_row_startInVector;
 
-        std::string M_mshFileStr;
-        std::string M_geoFileStr;
+        std::string M_meshFile, M_geoFile;
 
         std::string M_exporterPath;
         ModelMeasuresIO M_postProcessMeasuresIO;

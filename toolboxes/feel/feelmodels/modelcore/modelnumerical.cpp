@@ -39,8 +39,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
                                 std::string const& rootRepository )
         :
         super_type( _theprefix, _worldComm, subPrefix, rootRepository ),
-        M_rebuildMeshPartitions( boption(_name="rebuild_mesh_partitions",_prefix=this->prefix()) ),
-        M_isStationary( /*false*/ boption(_name="ts.steady") ),
+        M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
         M_restartAtLastSave( boption(_name="ts.restart.at-last-save") ),
@@ -50,12 +49,9 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_directoryLibSymbExpr( "" ),
         M_row_startInMatrix(0),
         M_col_startInMatrix(0),
         M_row_startInVector(0),
-        M_mshFileStr("FEELMODELS_WARNING_NODEFINE"),
-        M_geoFileStr("FEELMODELS_WARNING_NODEFINE"),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
         M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
@@ -65,21 +61,14 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
         //-----------------------------------------------------------------------//
-        if ( Environment::vm().count(prefixvm(this->prefix(),"symbolic-expr.directory").c_str()) )
+        if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
         {
-            M_directoryLibSymbExpr = soption(_name="symbolic-expr.directory",_prefix=this->prefix());
-            if ( fs::path( M_directoryLibSymbExpr ).is_relative() )
-                M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc())/fs::path(M_directoryLibSymbExpr)).string();
+            std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+            if ( fs::path( meshfile ).extension() == ".geo" )
+                M_geoFile = meshfile;
+            else
+                M_meshFile = meshfile;
         }
-        else
-            M_directoryLibSymbExpr = (fs::path(this->rootRepositoryWithoutNumProc() )/fs::path("symbolic_expr")).string();
-        //-----------------------------------------------------------------------//
-        // mesh file : .msh
-        if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
-            M_mshFileStr = Environment::expand( soption(_prefix=this->prefix(),_name="mshfile") );
-        // mesh file : .geo
-        if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
-            M_geoFileStr = Environment::expand( soption(_prefix=this->prefix(),_name="geofile") );
         //-----------------------------------------------------------------------//
         if (soption(_prefix=this->prefix(),_name="geomap")=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
@@ -87,7 +76,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
         M_modelProps = std::make_shared<ModelProperties>( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ),
-                                                          M_directoryLibSymbExpr, this->worldComm() );
+                                                          this->directoryLibSymbExpr(), this->worldComm() );
     }
 
    void
@@ -116,10 +105,10 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
 
 
     void
-    ModelNumerical::saveMSHfilePath( std::string const& fileSavePath, std::string const& meshPath ) const
+    ModelNumerical::saveMeshFile( std::string const& fileSavePath, std::string const& meshPath ) const
     {
-        std::string meshPathUsed = (meshPath.empty())? this->mshfileStr() : meshPath;
-        if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMSHfilePath",
+        std::string meshPathUsed = (meshPath.empty())? this->meshFile() : meshPath;
+        if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMeshFile",
                                              "fileSavePath :"+ fileSavePath + "\nwrite :\n" + meshPathUsed,
                                              this->worldComm(),this->verboseAllProc());
 

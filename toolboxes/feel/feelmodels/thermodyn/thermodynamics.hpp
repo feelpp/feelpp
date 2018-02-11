@@ -58,7 +58,7 @@ public:
                     bool buildMesh = true,
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
-                    std::string const& appliShortRepository = ModelBase::rootRepositoryByDefault() );
+                    std::string const& appliShortRepository = "" );
 
     // load config files
     void loadConfigBCFile();

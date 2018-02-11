@@ -164,9 +164,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->getInfoALEMeshBC();
 #endif
     *_ostr << "\n   Space Discretization";
-    if ( this->hasGeofileStr() )
-        *_ostr << "\n     -- geo file name   : " << this->geofileStr();
-    *_ostr << "\n     -- mesh file name   : " << this->mshfileStr()
+    if ( this->hasGeoFile() )
+        *_ostr << "\n     -- geo file name   : " << this->geoFile();
+    *_ostr << "\n     -- mesh file name   : " << this->meshFile()
            << "\n     -- nb elt in mesh  : " << M_mesh->numGlobalElements()//numElements()
         // << "\n     -- nb elt in mesh  : " << M_mesh->numElements()
         // << "\n     -- nb face in mesh : " << M_mesh->numFaces()

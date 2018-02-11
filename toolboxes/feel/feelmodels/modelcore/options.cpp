@@ -93,13 +93,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
         (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
-        // mesh
-        (prefixvm(prefix,"geofile").c_str(), Feel::po::value< std::string >(), "input geo file")
-        (prefixvm(prefix,"mshfile").c_str(), Feel::po::value< std::string >(), "input msh file")
-        // other
-        (prefixvm(prefix,"rebuild_mesh_partitions").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to rebuild mesh partitions ")
+        (prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
-        (prefixvm(prefix,"symbolic-expr.directory").c_str(), Feel::po::value< std::string >(), "symbolic-expr.directory");
         ;
 
     return appliBaseOptions
