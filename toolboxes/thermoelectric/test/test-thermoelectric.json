@@ -2,13 +2,15 @@
 {
     "Name":"myThermoElectricName",
     "ShortName":"myThermoElectricShortName",
-    "Model":"ThermoElectric-nonlinear",//"ThermoElectric-nonlinear" or "ThermoElectric-linear"
+    "Models":
+    {
+        "equations":"ThermoElectric-nonlinear"//"ThermoElectric-nonlinear" or "ThermoElectric-linear"
+    },
     "Materials":
     {
         //"Omega":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
         "Omega":
         {
-            "name":"mymat",
             "k11":"370",//[ W/(m*K) ]
             //"Cp":"1000.005", //[ J/(kg*K) ]
             // "rho":"1.205", //[ kg/(m^3) ]
@@ -55,7 +57,10 @@
     },
     "PostProcess":
     {
-        "Fields":["temperature", "electric-potential","electric-field","pid"]
+        "Exports":
+        {
+            "fields":["temperature", "electric-potential","electric-field","pid"]
+        }
     }
 
 }
