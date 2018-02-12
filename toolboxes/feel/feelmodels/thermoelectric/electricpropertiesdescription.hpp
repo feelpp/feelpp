@@ -33,7 +33,7 @@ namespace FeelModels
 
         ElectricPropertiesDescription( ElectricPropertiesDescription const& app ) = default;
 
-        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm )
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
             {
                 std::set<std::string> eltMarkersInMesh;
                 for (auto const& markPair : mesh->markerNames() )
@@ -44,16 +44,18 @@ namespace FeelModels
                 }
 
                 M_markers.clear();
-                for( auto const& m : mat )
+                for( auto const& m : mats )
                 {
-                    auto const& matmarker = m.first;
-                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                        continue;
                     auto const& mat = m.second;
-                    std::string matphysics = ( mat.physics().empty() )? "electric" : mat.physic();
-                    if ( ( matphysics != "electric" ) && ( matphysics != "thermo-electric" ) )
+                    if ( mat.hasPhysics() && !mat.hasPhysics( { "electric","thermo-electric" } ) )
                         continue;
-                    M_markers.insert( matmarker );
+
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                            continue;
+                        M_markers.insert( matmarker );
+                    }
                 }
 
                 M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
@@ -63,19 +65,20 @@ namespace FeelModels
                     M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
                 M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
 
-                for( auto const& m : mat )
+                for( auto const& m : mats )
                 {
                     auto const& mat = m.second;
-                    auto const& matmarker = m.first;
-                    if ( M_markers.find( matmarker ) == M_markers.end() )
-                        continue;
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( M_markers.find( matmarker ) == M_markers.end() )
+                            continue;
 
-                    if ( mat.hasPropertyExprScalar("sigma") )
-                        this->setElectricConductivity( mat.propertyExprScalar("sigma"),matmarker );
-                    else
-                        this->setCstElectricConductivity( mat.propertyConstant("sigma"), matmarker );
+                        if ( mat.hasPropertyExprScalar("sigma") )
+                            this->setElectricConductivity( mat.propertyExprScalar("sigma"),matmarker );
+                        else
+                            this->setCstElectricConductivity( mat.propertyConstant("sigma"), matmarker );
+                    }
                 }
-
             }
 
         double cstElectricConductivity( std::string const& marker = "" ) const

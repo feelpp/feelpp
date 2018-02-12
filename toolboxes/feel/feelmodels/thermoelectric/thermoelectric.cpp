@@ -181,7 +181,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->timerTool("Constructor").start();
 
     //std::string theThermoElectricModel = this->modelProperties().model();
-    M_modelName = this->modelProperties().model();
+    M_modelName = this->modelProperties().models().model("thermo-electric").equations();
+
     M_solverName = "Linear";
     if ( M_modelName == "ThermoElectric-linear" )
     {
@@ -356,15 +357,15 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     M_postProcessFieldExported.clear();
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        {
-            if ( M_modelName == "ThermoElectric" )
-                if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
-            if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricPotential );
-            if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricField );
-            if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Pid );
-        }
+    std::string modelName = "thermo-electric";
+    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
+    {
+        if ( M_modelName == "ThermoElectric" )
+            if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
+        if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricPotential );
+        if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricField );
+        if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Pid );
+    }
 
 
     std::string geoExportType="static";//change_coords_only, change, static
@@ -414,7 +415,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoRobinBC();
     *_ostr << M_electricProperties->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
-           << "\n     -- msh filename      : " << this->mshfileStr()
+           << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
     *_ostr << "\n   Space ElectricPotential Discretization"
