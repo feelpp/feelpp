@@ -161,6 +161,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
         boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
         boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
+        void initTimeStep();
         void updateBdf();
         void updateTimeStep() { this->updateBdf(); }
         //___________________________________________________________________________________//
@@ -173,7 +174,6 @@ class ThermoDynamicsBase : public ModelNumerical,
         void loadParameterFromOptionsVm();
         void createMesh();
         void createFunctionSpaces();
-        void createTimeDiscretisation();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
         void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app );

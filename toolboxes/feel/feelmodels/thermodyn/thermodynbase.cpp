@@ -44,10 +44,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::build()
 
     // create or reload mesh
     this->createMesh();
-    // functionSpaces and elements
-    this->createFunctionSpaces();
-    // bdf time schema
-    this->createTimeDiscretisation();
 
     this->log("ThermoDynamics","build", "finish" );
 }
@@ -60,10 +56,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
 
     CHECK( mesh ) << "mesh not init";
     this->M_mesh = mesh;
-    // functionSpaces and elements
-    this->createFunctionSpaces();
-    // bdf time schema
-    this->createTimeDiscretisation();
 
     this->log("ThermoDynamics","loadMesh", "finish" );
 }
@@ -178,35 +170,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool only
     M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
 }
 
-
-THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
-{
-    this->log("ThermoDynamics","createTimeDiscretisation", "start" );
-    this->timerTool("Constructor").start();
-
-    std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdfTemperature = bdf( _vm=Environment::vm(), _space=this->spaceTemperature(),
-                            _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature"+suffixName)),
-                            _prefix=this->prefix(),
-                            // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
-                            _initial_time=this->timeInitial(),
-                            _final_time=this->timeFinal(),
-                            _time_step=this->timeStep(),
-                            _restart=this->doRestart(),
-                            _restart_path=this->restartPath(),
-                            _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-
-    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
-                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
-
-    double tElpased = this->timerTool("Constructor").stop("createSpaces");
-    this->log("ThermoDynamics","createTimeDiscretisation",(boost::format("finish in %1% s")%tElpased).str() );
-}
-
-
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
@@ -233,6 +196,12 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     this->log("ThermoDynamics","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->createFunctionSpaces();
+
+    // start or restart time step scheme
+    if ( !this->isStationary() )
+        this->initTimeStep();
+
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
@@ -257,25 +226,6 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
-    // start or restart time step scheme and exporter
-    if (!this->doRestart())
-    {
-        // start time step
-        M_bdfTemperature->start(this->fieldTemperature());
-        // up current time
-        this->updateTime( M_bdfTemperature->time() );
-    }
-    else
-    {
-        // start time step
-        M_bdfTemperature->restart();
-        // load a previous solution as current solution
-        *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
-        // up initial time
-        this->setTimeInitial( M_bdfTemperature->timeInitial() );
-        // up current time
-        this->updateTime( M_bdfTemperature->time() );
-    }
 
     this->updateBoundaryConditionsForUse();
 
@@ -299,6 +249,53 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, m
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+{
+    this->log("ThermoDynamics","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
+
+    std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    M_bdfTemperature = bdf( _space=this->spaceTemperature(),
+                            _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature"+suffixName)),
+                            _prefix=this->prefix(),
+                            // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
+                            _initial_time=this->timeInitial(),
+                            _final_time=this->timeFinal(),
+                            _time_step=this->timeStep(),
+                            _restart=this->doRestart(),
+                            _restart_path=this->restartPath(),
+                            _restart_at_last_save=this->restartAtLastSave(),
+                            _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+
+    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
+                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
+
+    // start or restart time step scheme
+    if (!this->doRestart())
+    {
+        // start time step
+        M_bdfTemperature->start(this->fieldTemperature());
+        // up current time
+        this->updateTime( M_bdfTemperature->time() );
+    }
+    else
+    {
+        // start time step
+        M_bdfTemperature->restart();
+        // load a previous solution as current solution
+        *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
+        // up initial time
+        this->setTimeInitial( M_bdfTemperature->timeInitial() );
+        // up current time
+        this->updateTime( M_bdfTemperature->time() );
+    }
+
+    double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
+    this->log("ThermoDynamics","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
+}
+
+THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("ThermoDynamics","initPostProcess", "start");
@@ -314,16 +311,18 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( "pid" );
     }
 
+    if ( !M_postProcessFieldExported.empty() )
+    {
+        std::string geoExportType="static";//change_coords_only, change, static
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="Export",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
 
-    std::string geoExportType="static";//change_coords_only, change, static
-    M_exporter = exporter( _mesh=this->mesh(),
-                           _name="Export",
-                           _geo=geoExportType,
-                           _path=this->exporterPath() );
-
-    // restart exporter
-    if (this->doRestart() )
-        this->restartExporters();
+        // restart exporter
+        if ( this->doRestart() )
+            this->restartExporters();
+    }
 
     bool hasMeasure = false;
 
@@ -416,7 +415,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::restartExporters()
 {
-    if (this->doRestart() && this->restartPath().empty() )
+    if ( M_exporter && this->doRestart() && this->restartPath().empty() )
     {
         if ( M_exporter->doExport() )
             M_exporter->restart(this->timeInitial());
@@ -548,6 +547,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
     this->log("ThermoDynamics","exportResults", "start");
