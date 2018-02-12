@@ -2,7 +2,14 @@
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "use-model-name":1,
+        "fluid":
+        {
+            "equations":"Navier-Stokes"
+        }
+    },
     "Parameters":
     {
         "ubar":"2",
@@ -11,14 +18,12 @@
     "Materials":
     {
         // "Fluid":{
-        //     "name":"water",
         //     "rho":"998.30",
         //     "mu":"1.002e-3",
         //     "k11":"0.604",
         //     "Cp":"4185.5"
         // }
         "Fluid":{
-            "name":"air",
             "rho":"1",
             "mu":"2.65e-2",
             "k11":"0.03",
@@ -68,7 +73,21 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","temperature","pid"]
+        "use-model-name":1,
+        "fluid":
+        {
+            "Exports":
+            {
+                "fields":["velocity","pressure","temperature","pid"]
+            }
+        },
+        "heat-transfert":
+        {
+            // "Exports":
+            // {
+            //     "fields":["temperature","pid"]
+            // }
+        }
     }
 
 }
