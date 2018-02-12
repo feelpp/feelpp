@@ -137,9 +137,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoRobinBC()
            << this->getInfoFluidStructureInterfaceBC();
     *_ostr << "\n   Space Discretization";
-    if ( this->hasGeofileStr() )
-        *_ostr << "\n     -- geo file name   : " << this->geofileStr();
-    *_ostr << "\n     -- msh file name   : " << this->mshfileStr()
+    if ( this->hasGeoFile() )
+        *_ostr << "\n     -- geo file name   : " << this->geoFile();
+    *_ostr << "\n     -- mesh file name   : " << this->meshFile()
            << "\n     -- nb elt in mesh : " << nElt
            << "\n     -- nb dof (displacement) : " << nDof
            << "\n     -- polynomial order : " << nOrder;
@@ -565,18 +565,20 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     if (!this->isStandardModel())
         return;
+
+    std::string modelName = "solid";
     bool hasMeasure = false;
 
     // volume variation
-    auto itFindMeasures = this->modelProperties().postProcess().find("Measures");
-    if ( itFindMeasures != this->modelProperties().postProcess().end() )
+    for ( auto const& ppvv : M_postProcessVolumeVariation )
     {
-        if ( std::find( itFindMeasures->second.begin(), itFindMeasures->second.end(), "VolumeVariation" ) != itFindMeasures->second.end() )
-        {
-            double volVar = this->computeVolumeVariation();
-            this->postProcessMeasuresIO().setMeasure( "volume_variation", volVar );
-            hasMeasure = true;
-        }
+        std::string const& vvname = ppvv.first;
+        auto const& vvmarkers = ppvv.second;
+        elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
+            M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
+        double volVar = this->computeVolumeVariation( vvrange );
+        this->postProcessMeasuresIO().setMeasure( vvname, volVar );
+        hasMeasure = true;
     }
 
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
@@ -585,7 +587,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )
@@ -728,7 +730,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
 
     // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum() )
+    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
     {
         auto const& fields = measureExtremum.fields();
         std::string const& name = measureExtremum.extremum().name();
@@ -1243,7 +1245,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const&
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation() const
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
 {
     //using namespace Feel::vf;
     if(!this->isStandardModel()) return 0.;
@@ -1252,10 +1254,10 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation() const
     auto const& u = this->fieldDisplacement();
     auto Fv = Id + gradv(u);
     auto detFv = det(Fv);
-    double newArea = integrate(_range=elements(u.mesh()),
-                             _expr=detFv,
-                             _geomap=this->geomap() ).evaluate()(0,0);
-    double refAera = integrate(_range=elements(u.mesh()),
+    double newArea = integrate(_range=rangeElt,
+                               _expr=detFv,
+                               _geomap=this->geomap() ).evaluate()(0,0);
+    double refAera = integrate(_range=rangeElt,
                                _expr=cst(1.),
                                _geomap=this->geomap() ).evaluate()(0,0);
 

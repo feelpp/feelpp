@@ -55,18 +55,17 @@ public:
                     bool buildMesh = true,
                     WorldComm const& worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                    std::string const& rootRepository = "" );
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             std::string const& rootRepository = "" );
 
     //___________________________________________________________________________________//
     // load config files
     void loadConfigBCFile();
-    void loadConfigPostProcess();
     void loadConfigMeshFile( std::string const& geofilename );
     void loadConfigMeshFile1dReduced( std::string const& geofilename );
 

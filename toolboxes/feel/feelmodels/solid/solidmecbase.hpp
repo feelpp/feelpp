@@ -308,7 +308,7 @@ public:
                         bool buildMesh=true,
                         WorldComm const& worldComm = Environment::worldComm(),
                         std::string const& subPrefix = "",
-                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                        std::string const& rootRepository = "" );
     SolidMechanicsBase( self_type const & M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );
@@ -336,7 +336,6 @@ protected :
     void createTimeDiscretisation1dReduced();
     void createExporters();
     void createExporters1dReduced();
-    void createOthers();
 
     void createAdditionalFunctionSpacesNormalStress();
     void createAdditionalFunctionSpacesStressTensor();
@@ -432,6 +431,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_displacement_ptrtype const& functionSpace() const { return this->functionSpaceDisplacement(); }
     space_displacement_ptrtype const& functionSpaceDisplacement() const { return M_XhDisplacement; }
@@ -590,7 +590,7 @@ public :
     bool hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     double computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const;
-    double computeVolumeVariation() const;
+    double computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const;
 
 
     //-----------------------------------------------------------------------------------//
@@ -644,7 +644,6 @@ protected:
 
 
     //model parameters
-    space_scalar_P0_ptrtype M_XhScalarP0;
     mechanicalproperties_ptrtype M_mechanicalProperties;
 
     // boundary conditions
@@ -664,6 +663,7 @@ protected:
     //-------------------------------------------//
     // mesh
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_meshMover;
     MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
     // function space
@@ -725,6 +725,7 @@ protected:
     context_pressure_ptrtype M_postProcessMeasuresContextPressure;
     context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
 
+    std::map<std::string,std::set<std::string> > M_postProcessVolumeVariation; // (name,list of markers)
     //-------------------------------------------//
     // 1d_reduced model
     //-------------------------------------------//

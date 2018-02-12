@@ -51,7 +51,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // load info from .json file
     this->loadConfigBCFile();
-    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -131,27 +130,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
 
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
-{
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        {
-            if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-            if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-            if ( o == "acceleration" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-            if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-            if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-            if ( o == "material-properties" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
-            if ( o == "fsi" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
-            if ( o == "Von-Mises" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
-            if ( o == "Tresca" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
-            if ( o == "principal-stresses" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
-        }
 }
 
 //---------------------------------------------------------------------------------------------------//
