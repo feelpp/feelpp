@@ -2,7 +2,10 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Hyper-Elasticity",
+    "Models":
+    {
+        "equations":"Hyper-Elasticity"
+    },
     "Parameters":
     {
         "gravity":"2"
@@ -10,7 +13,6 @@
     "Materials":
     {
         "beam":{
-            "name":"solid",
             "E":"5.6e6",
             "nu":"0.4",
             "rho":"1e3"
@@ -45,7 +47,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","Von-Mises"],
+        "Exports":
+        {
+            "fields":["displacement","Von-Mises"]
+        },
         "Measures":
         {
             "Points":
