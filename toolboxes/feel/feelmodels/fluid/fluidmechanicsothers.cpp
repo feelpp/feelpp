@@ -409,7 +409,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->exportResultsImplHO( time );
     }
 
-    if ( M_useThermodynModel && !M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+    if ( M_useThermodynModel /*&& !M_thermodynModel->mesh()->isSameMesh( this->mesh() )*/ )
     {
         M_thermodynModel->exportResults( time );
     }
