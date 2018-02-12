@@ -116,9 +116,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
     // time schema
     this->createTimeDiscretisation();
     //-----------------------------------------------------------------------------//
-    // physical parameters
-    this->createOthers();
-    //-----------------------------------------------------------------------------//
     // exporters
     this->createExporters();
     //-----------------------------------------------------------------------------//
@@ -186,7 +183,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_useDisplacementPressureFormulation = true;
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
 
-    std::string theSolidModel = this->modelProperties().model();
+    std::string theSolidModel = this->modelProperties().models().model("fluid").equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         theSolidModel = soption(_name="model",_prefix=this->prefix());
     this->pdeType( theSolidModel );
@@ -373,7 +370,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
             std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
             std::string path = this->rootRepository();
             std::string mshfile = path + "/" + prefix1dreduced + ".msh";
-            this->setMshfileStr(mshfile);
+            this->setMeshFile(mshfile);
 
             fs::path curPath=fs::current_path();
             bool hasChangedRep=false;
@@ -401,7 +398,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
         {
             this->loadConfigMeshFile1dReduced( prefix1dreduced );
         }
-        this->saveMSHfilePath( smpath );
+        this->saveMeshFile( smpath );
     }
 
     this->log("SolidMechanics","createMesh1dReduced", "finish" );
@@ -419,16 +416,33 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("SolidMechanics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    M_mechanicalProperties->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm() );
+
     //--------------------------------------------------------//
-    // function space for displacement (and maybe pressure)
-    M_XhDisplacement = space_displacement_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-    //--------------------------------------------------------//
-    // displacement
+    // function space for displacement
+    if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
+    {
+        M_rangeMeshElements = elements(this->mesh());
+        M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    }
+    else
+    {
+        M_rangeMeshElements = markedelements(this->mesh(), M_mechanicalProperties->markers());
+        M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),
+                                                         _range=M_rangeMeshElements );
+    }
+    // field displacement
     M_fieldDisplacement.reset( new element_displacement_type( M_XhDisplacement, "structure displacement" ));
     //--------------------------------------------------------//
     if ( M_useDisplacementPressureFormulation )
     {
-        M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
+            M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        else
+            M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
+                                                     _range=M_rangeMeshElements );
         M_fieldPressure.reset( new element_pressure_type( M_XhPressure, "pressure" ) );
     }
     //subfunctionspace vectorial
@@ -769,26 +783,6 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
 }
 
 //---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createOthers()
-{
-    this->log(this->prefix()+".SolidMechanics","createOthers", "start" );
-    this->timerTool("Constructor").start();
-
-    M_XhScalarP0 = space_scalar_P0_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
-    M_mechanicalProperties->initFromSpace( M_XhScalarP0 );
-    M_mechanicalProperties->updateFromModelMaterials( this->modelProperties().materials() );
-
-    this->timerTool("Constructor").stop("createOthers");
-    this->log("SolidMechanics","createOthers", "finish" );
-}
-
-
-//---------------------------------------------------------------------------------------------------//
 
 namespace detail
 {
@@ -1073,7 +1067,31 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    std::string modelName = "solid";
 
+    // update post-process expression
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
+    {
+        if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
+        if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
+        if ( o == "acceleration" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
+        if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
+        if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
+        if ( o == "material-properties" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
+        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
+        if ( o == "fsi" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
+        if ( o == "Von-Mises" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
+        if ( o == "Tresca" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
+        if ( o == "principal-stresses" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
+
+        // add user functions
+        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+            M_postProcessUserFieldExported.insert( o );
+    }
     // clean doExport with fields not available
     if ( !M_useDisplacementPressureFormulation )
         M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::Pressure );
@@ -1084,26 +1102,18 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
         M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
 #endif
 
-    // add user functions
-    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
-    {
-        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
-        {
-            if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-                M_postProcessUserFieldExported.insert( o );
-        }
-    }
+    if (this->isStandardModel())
+        this->createExporters();
+    else  if (this->is1dReducedModel())
+        this->createExporters1dReduced();
 
     // restart exporter
     if (this->doRestart())
         this->restartExporters( this->timeInitial() );
 
-    // update post-process expression
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
 
     bool hasMeasure = false;
-    auto const& ptree = this->modelProperties().postProcess().pTree();
+    auto const& ptree = this->modelProperties().postProcess().pTree( modelName );
 
     // volume variation
     std::string ppTypeMeasures = "Measures";
@@ -1117,9 +1127,15 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
             std::string ptreeLevel1Name = ptreeLevel1.first;
             if ( ptreeLevel1Name == ppTypeMeasuresVolumeVariation )
             {
-                this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( ppTypeMeasuresVolumeVariation );
-                this->postProcessMeasuresIO().setMeasure("volume_variation",0.);
-                hasMeasure = true;
+                // TODO : init name and markers from ptree
+                std::string vvname = "volume_variation";
+                std::set<std::string> markers; markers.insert( "" );
+                if ( !markers.empty() )
+                {
+                    M_postProcessVolumeVariation[vvname] = markers;
+                    this->postProcessMeasuresIO().setMeasure(vvname,0.);
+                    hasMeasure = true;
+                }
             }
         }
     }
@@ -1127,7 +1143,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
                                                     "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint() )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         if (!this->isStandardModel()) break;// TODO
 
@@ -1185,7 +1201,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum() )
+    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
     {
         auto const& fields = measureExtremum.fields();
         std::string const& name = measureExtremum.extremum().name();
