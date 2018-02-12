@@ -2,7 +2,10 @@
 {
     "Name": "2D beam ",
     "ShortName":"beam2d",
-    "Model":"hyperelastic",
+    "Models":
+    {
+        //"equations":"Hyper-Elasticity"
+    },
     // "Materials":
     // {
     //     "beam":{ "name":"Copper","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
@@ -29,7 +32,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement"]
+        "Exports":
+        {
+            "fields":["displacement"]
+        }
     }
 
 }
