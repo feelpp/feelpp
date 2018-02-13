@@ -230,7 +230,7 @@ fluidMechanics_options(std::string const& prefix)
     fluidOptions.add_options()
         (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
-    fluidOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+    fluidOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
 
     return fluidOptions;
 }
@@ -327,10 +327,10 @@ fluidStructInteraction_options( std::string const& prefix )
 
 
 Feel::po::options_description
-thermoDynamics_options(std::string const& prefix)
+heatTransfer_options(std::string const& prefix)
 {
-    Feel::po::options_description thermoDynamicsOptions("Thermo Dynamics options");
-    thermoDynamicsOptions.add_options()
+    Feel::po::options_description heatTransferOptions("HeatTransfert options");
+    heatTransferOptions.add_options()
         (prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
@@ -348,7 +348,7 @@ thermoDynamics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         ;
-    return thermoDynamicsOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+    return heatTransferOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 Feel::po::options_description
 electricity_options(std::string const& prefix)
@@ -367,7 +367,7 @@ thermoElectric_options(std::string const& prefix)
         // (prefixvm(prefix,"electric.electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
         ;
-    thermoElectricOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+    thermoElectricOptions.add( heatTransfer_options( prefixvm(prefix,"thermo") ) );
     thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
@@ -592,8 +592,8 @@ feelmodels_options(std::string type)
         FSIoptions.add(fluidMechanics_options("fluid"));
     else if (type == "solid")
         FSIoptions.add(solidMechanics_options("solid"));
-    else if ( type == "thermo-dynamics" )
-        FSIoptions.add( thermoDynamics_options("thermo") );
+    else if ( type == "heat-transfer" )
+        FSIoptions.add( heatTransfer_options("heat-transfer") );
     else if (type == "fsi")
         FSIoptions
             .add(fluidMechanics_options("fluid"))

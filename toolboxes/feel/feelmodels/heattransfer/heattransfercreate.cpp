@@ -77,7 +77,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         this->addMarkerDirichletBC("elimination", marker(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
