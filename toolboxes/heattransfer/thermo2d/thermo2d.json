@@ -2,7 +2,6 @@
 {
     "Name": "Thermo dynamics",
     "ShortName":"ThermoDyn",
-    "Model":"mythermicmodel",
     // "Parameters":
     // {
     //     "gravity":

@@ -1,42 +1,42 @@
 
-#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
+#include <feel/feelmodels/heattransfer/heattransfer.hpp>
 
 int main(int argc, char**argv )
 {
     using namespace Feel;
-	po::options_description thermodynoptions( "application thermo-dynamics options" );
-    thermodynoptions.add( feelmodels_options("thermo-dynamics") );
+	po::options_description heattransferoptions( "heat-transfer options" );
+    heattransferoptions.add( feelmodels_options("heat-transfer") );
 
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=thermodynoptions,
-                     _about=about(_name="application_thermodyn",
+                     _desc=heattransferoptions,
+                     _about=about(_name="toolboxes_heattransfer",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    typedef FeelModels::ThermoDynamics< Simplex<FEELPP_DIM,1>,
-                                        Lagrange<1, Scalar,Continuous,PointSetFekete> > model_type;
-    boost::shared_ptr<model_type> thermoDyn( new model_type("thermo") );
-    thermoDyn->init();
-    thermoDyn->printAndSaveInfo();
+    typedef FeelModels::HeatTransfer< Simplex<FEELPP_DIM,1>,
+                                      Lagrange<1, Scalar,Continuous,PointSetFekete> > model_type;
+    boost::shared_ptr<model_type> heatTransfer( new model_type("heat-transfer") );
+    heatTransfer->init();
+    heatTransfer->printAndSaveInfo();
 
-    if (thermoDyn->isStationary() )
+    if ( heatTransfer->isStationary() )
     {
-        thermoDyn->solve();
-        thermoDyn->exportResults();
+        heatTransfer->solve();
+        heatTransfer->exportResults();
     }
     else
     {
-        for ( ; !thermoDyn->timeStepBase()->isFinished(); thermoDyn->updateTimeStep() )
+        for ( ; !heatTransfer->timeStepBase()->isFinished(); heatTransfer->updateTimeStep() )
         {
-            if (thermoDyn->worldComm().isMasterRank())
+            if (heatTransfer->worldComm().isMasterRank())
             {
                 std::cout << "============================================================\n";
-                std::cout << "time simulation: " << thermoDyn->time() << "s \n";
+                std::cout << "time simulation: " << heatTransfer->time() << "s \n";
                 std::cout << "============================================================\n";
             }
 
-            thermoDyn->solve();
-            thermoDyn->exportResults();
+            heatTransfer->solve();
+            heatTransfer->exportResults();
         }
     }
 
