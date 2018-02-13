@@ -81,7 +81,7 @@
                 "fields":["velocity","pressure","temperature","pid"]
             }
         },
-        "heat-transfert":
+        "heat-transfer":
         {
             // "Exports":
             // {
