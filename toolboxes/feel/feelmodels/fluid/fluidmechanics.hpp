@@ -52,7 +52,7 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
-#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
+#include <feel/feelmodels/heattransfer/heattransfer.hpp>
 
 
 
@@ -349,10 +349,10 @@ public:
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // thermo dynamics coupling
-    typedef FeelModels::ThermoDynamics< convex_type,
-                                        Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > thermodyn_model_type;
-    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
+    // heat transfer coupling
+    typedef FeelModels::HeatTransfer< convex_type,
+                                      Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > heattransfer_model_type;
+    typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -529,8 +529,8 @@ public :
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
     //___________________________________________________________________________________//
-    // thermo dyn
-    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
+    // heat transfer
+    heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
     //___________________________________________________________________________________//
     // fsi parameters
 
@@ -1065,8 +1065,8 @@ protected:
     bool M_preconditionerAttachPMM;
     mutable bool M_pmmNeedUpdate;
     //----------------------------------------------------
-    bool M_useThermodynModel;
-    thermodyn_model_ptrtype M_thermodynModel;
+    bool M_useHeatTransferModel;
+    heattransfer_model_ptrtype M_heatTransferModel;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
     double M_BoussinesqRefTemperature;
 

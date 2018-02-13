@@ -353,7 +353,7 @@ heatTransfer_options(std::string const& prefix)
 Feel::po::options_description
 electricity_options(std::string const& prefix)
 {
-    Feel::po::options_description electricityOptions("Thermo Dynamics options");
+    Feel::po::options_description electricityOptions("Electricity options");
     electricityOptions.add_options()
         (prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
         ;
@@ -362,7 +362,7 @@ electricity_options(std::string const& prefix)
 Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
 {
-    Feel::po::options_description thermoElectricOptions("Thermo Dynamics options");
+    Feel::po::options_description thermoElectricOptions("ThermoElectric options");
     thermoElectricOptions.add_options()
         // (prefixvm(prefix,"electric.electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
         (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")

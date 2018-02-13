@@ -48,7 +48,7 @@ namespace FeelModels
                 for( auto const& m : mats )
                 {
                     auto const& mat = m.second;
-                    if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfert","aerothermal","thermo-electric" } ) )
+                    if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfer","aerothermal","thermo-electric" } ) )
                         continue;
 
                     for ( std::string const& matmarker : mat.meshMarkers() )

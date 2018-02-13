@@ -337,23 +337,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     this->updateResidualWeakBC( data, U );
 
     //------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel && M_useGravityForce )
+    if ( M_useHeatTransferModel && M_useGravityForce )
     {
         DataUpdateResidual dataThermo( data );
         dataThermo.setDoBCStrongDirichlet( false );
-        M_thermodynModel->updateResidual( dataThermo );
+        M_heatTransferModel->updateResidual( dataThermo );
 
         if ( !BuildCstPart )
         {
-            //auto const& t = M_thermodynModel->fieldTemperature();
-            auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
-            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+            //auto const& t = M_heatTransferModel->fieldTemperature();
+            auto XhT = M_heatTransferModel->spaceTemperature();
+            auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
+            auto const& thermalProperties = M_heatTransferModel->thermalProperties();
 
             auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
-            form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
+            form1( _test=M_heatTransferModel->spaceTemperature(), _vector=R,
                    _pattern=size_type(Pattern::COUPLED),
-                   _rowstart=M_thermodynModel->rowStartInVector() ) +=
+                   _rowstart=M_heatTransferModel->rowStartInVector() ) +=
                 integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
@@ -372,8 +372,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
-    if ( M_useThermodynModel && M_useGravityForce )
-        hasStrongDirichletBC = hasStrongDirichletBC || M_thermodynModel->hasMarkerDirichletBCelimination();
+    if ( M_useHeatTransferModel && M_useGravityForce )
+        hasStrongDirichletBC = hasStrongDirichletBC || M_heatTransferModel->hasMarkerDirichletBCelimination();
 
     if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
     {
@@ -423,8 +423,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #endif
         }
 
-        if ( M_useThermodynModel && M_useGravityForce )
-            M_thermodynModel->updateBCDirichletStrongResidual( R );
+        if ( M_useHeatTransferModel && M_useGravityForce )
+            M_heatTransferModel->updateBCDirichletStrongResidual( R );
     }
 
     //------------------------------------------------------------------------------------//
@@ -554,9 +554,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
         sync( pSol, "=" );
     }
 
-    if ( M_useThermodynModel && M_useGravityForce )
+    if ( M_useHeatTransferModel && M_useGravityForce )
     {
-        M_thermodynModel->updateNewtonInitialGuess( U );
+        M_heatTransferModel->updateNewtonInitialGuess( U );
     }
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");
