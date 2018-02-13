@@ -38,7 +38,7 @@ add_custom_target(feelpp-models-mesh)
 add_dependencies(feelpp-models-mesh feelpp_modelmesh)
 
 add_custom_target(feelpp-models)
-#add_dependencies(feelpp-models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
+#add_dependencies(feelpp-models feelpp_model_heattransfer feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
 add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
 
 add_custom_target(feelpp-models-common)
@@ -48,8 +48,8 @@ if( FEELPP_MODELS_HAS_MESHALE )
 endif()
 
 # generate models lib
-if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )
-  add_subdirectory(thermodyn)
+if ( FEELPP_MODELS_ENABLE_HEATTRANSFER )
+  add_subdirectory(heattransfer)
 endif()
 if ( FEELPP_MODELS_ENABLE_SOLIDMECHANICS )
   add_subdirectory(solid)

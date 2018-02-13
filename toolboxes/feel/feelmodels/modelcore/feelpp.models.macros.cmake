@@ -9,10 +9,10 @@ macro(resetToZeroAllPhysicalVariables)
   SET(FLUIDMECHANICS0 0 )
   SET(FLUIDMECHANICS1 0 )
   SET(FLUIDMECHANICS2 0 )
-  SET(THERMODYNAMICS 0 )
-  SET(THERMODYNAMICS0 0 )
-  SET(THERMODYNAMICS1 0 )
-  SET(THERMODYNAMICS2 0 )
+  SET(HEATTRANSFER 0 )
+  SET(HEATTRANSFER0 0 )
+  SET(HEATTRANSFER1 0 )
+  SET(HEATTRANSFER2 0 )
   SET(THERMOELECTRIC 0 )
 endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
@@ -82,7 +82,7 @@ endmacro(genLibBase)
 #############################################################################
 #############################################################################
 #############################################################################
-macro( genLibThermoDynamics )
+macro( genLibHeatTransfer )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER;"
     "NO_UPDATE_MODEL_DEF"
@@ -91,7 +91,7 @@ macro( genLibThermoDynamics )
 
   if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
     resetToZeroAllPhysicalVariables()
-    SET(THERMODYNAMICS 1 )
+    SET(HEATTRANSFER 1 )
   endif()
 
   #CAR(LIB_NAME ${FEELMODELS_APP_DEFAULT_ARGS})
@@ -100,21 +100,21 @@ macro( genLibThermoDynamics )
     message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
   endif()
 
-  set(THERMODYNAMICS_DIM ${FEELMODELS_APP_DIM})
-  set(THERMODYNAMICS_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
-  set(THERMODYNAMICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(HEATTRANSFER_DIM ${FEELMODELS_APP_DIM})
+  set(HEATTRANSFER_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
+  set(HEATTRANSFER_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
   if (0)
     MESSAGE("*** Arguments for fluid application ${LIB_NAME}")
-    MESSAGE("*** DIM ${THERMODYNAMICS_DIM}")
-    MESSAGE("*** ORDERPOLY ${THERMODYNAMICS_ORDERPOLY}")
-    MESSAGE("*** ORDERGEO ${THERMODYNAMICS_ORDERGEO}")
+    MESSAGE("*** DIM ${HEATTRANSFER_DIM}")
+    MESSAGE("*** ORDERPOLY ${HEATTRANSFER_ORDERPOLY}")
+    MESSAGE("*** ORDERGEO ${HEATTRANSFER_ORDERGEO}")
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${THERMODYNAMICS_DIM}dP${THERMODYNAMICS_ORDERPOLY}G${THERMODYNAMICS_ORDERGEO} )
-  set(FEELMODELS_MODEL_SPECIFIC_NAME thermodyn${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME heattransfer${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/thermodyn/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
+  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/heattransfer/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
   set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
   set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
@@ -125,11 +125,11 @@ macro( genLibThermoDynamics )
 
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynbase_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynamics_inst.cpp )
+      ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransfercreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransferassembly_inst.cpp )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/thermodynbase_inst.cpp
-      ${LIBBASE_DIR}/thermodynamics_inst.cpp )
+      ${LIBBASE_DIR}/heattransfercreate_inst.cpp
+      ${LIBBASE_DIR}/heattransferassembly_inst.cpp )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
@@ -140,13 +140,13 @@ macro( genLibThermoDynamics )
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransferconfig.h.in
       )
 
   endif()
 
 
-endmacro(genLibThermoDynamics)
+endmacro(genLibHeatTransfer)
 
 #############################################################################
 #############################################################################
@@ -365,8 +365,8 @@ macro(genLibFluidMechanics)
     if (FEELPP_MODELS_ENABLE_MESHALE )
       set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
     endif()
-    # thermodynamcis depend
-    set(LIB_DEPENDS feelpp_model_thermodyn${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
+    # heattransfer depend
+    set(LIB_DEPENDS feelpp_model_heattransfer${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
 
     # generate libmodelbase
     genLibBase(
@@ -859,8 +859,8 @@ macro( genLibThermoElectric )
     set(CODEGEN_SOURCES
       ${LIBBASE_DIR}/thermoelectric_inst.cpp )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
-    # thermodynamcis depend
-    set(LIB_DEPENDS feelpp_model_thermodyn${THERMOELECTRIC_DIM}dP${THERMOELECTRIC_ORDERPOLY}G${THERMOELECTRIC_ORDERGEO} ${LIB_DEPENDS})
+    # heattransfer depend
+    set(LIB_DEPENDS feelpp_model_heattransfer${THERMOELECTRIC_DIM}dP${THERMOELECTRIC_ORDERPOLY}G${THERMOELECTRIC_ORDERGEO} ${LIB_DEPENDS})
 
     # generate libmodelbase
     genLibBase(

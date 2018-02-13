@@ -22,16 +22,14 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file thermodyn.hpp
+   \file heattransfer.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2014-06-04
  */
 
 
-#ifndef FEELPP_THERMODYNAMICSBASE_HPP
-#define FEELPP_THERMODYNAMICSBASE_HPP 1
-
-
+#ifndef FEELPP_TOOLBOXES_HEATTRANSFER_HPP
+#define FEELPP_TOOLBOXES_HEATTRANSFER_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -43,7 +41,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/thermodyn/thermalpropertiesdescription.hpp>
+#include <feel/feelmodels/heattransfer/thermalpropertiesdescription.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -52,16 +50,16 @@ namespace Feel
 namespace FeelModels
 {
 
-
 template< typename ConvexType, typename BasisTemperatureType>
-class ThermoDynamicsBase : public ModelNumerical,
-                           public MarkerManagementDirichletBC,
-                           public MarkerManagementNeumannBC,
-                           public MarkerManagementRobinBC
+class HeatTransfer : public ModelNumerical,
+                     public boost::enable_shared_from_this< HeatTransfer<ConvexType,BasisTemperatureType> >,
+                     public MarkerManagementDirichletBC,
+                     public MarkerManagementNeumannBC,
+                     public MarkerManagementRobinBC
     {
     public:
         typedef ModelNumerical super_type;
-        typedef ThermoDynamicsBase<ConvexType,BasisTemperatureType> self_type;
+        typedef HeatTransfer<ConvexType,BasisTemperatureType> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
         // mesh
@@ -111,13 +109,13 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::shared_ptr<context_temperature_type> context_temperature_ptrtype;
 
 
-        ThermoDynamicsBase( std::string const& prefix,
-                            bool buildMesh,
-                            WorldComm const& worldComm,
-                            std::string const& subPrefix,
-                            std::string const& rootRepository );
+        HeatTransfer( std::string const& prefix,
+                      bool buildMesh,
+                      WorldComm const& worldComm,
+                      std::string const& subPrefix,
+                      std::string const& rootRepository );
 
-        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
+        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatTransferMesh.path"); }
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -168,15 +166,15 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         boost::shared_ptr<std::ostringstream> getInfo() const;
 
-        virtual void loadConfigBCFile() = 0;
-        virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
+        void loadConfigBCFile() = 0;
+        void loadConfigMeshFile(std::string const& geofilename) = 0;
 
         void loadParameterFromOptionsVm();
         void createMesh();
         void createFunctionSpaces();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app );
+        void init( bool buildModelAlgebraicFactory=true );
         void updateForUseFunctionSpacesVelocityConvection();
 
         void initPostProcess();
@@ -200,9 +198,9 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
         void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
-        virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
-        virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
-        virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
+        void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
+        void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+        void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
@@ -279,11 +277,9 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
         updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
 
-
-
     };
 
 } // namespace FeelModels
 } // namespace Feel
 
-#endif /* FEELPP_THERMODYNAMICSBASE_HPP */
+#endif /* FEELPP_TOOLBOXES_HEATTRANSFER_HPP */
