@@ -1,0 +1,25 @@
+#undef HEATTRANSFER_DIM
+#undef HEATTRANSFER_ORDERGEO
+#undef HEATTRANSFER_ORDERPOLY
+
+#define HEATTRANSFER_DIM @HEATTRANSFER_DIM@
+#define HEATTRANSFER_ORDERGEO @HEATTRANSFER_ORDERGEO@
+#define HEATTRANSFER_ORDERPOLY @HEATTRANSFER_ORDERPOLY@
+
+
+#define HEATTRANSFER_TEMPERATURE_INTERPOLATIONPOINTS PointSetFekete
+
+#define HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisTemperatureType> \
+        /**/
+#define HEATTRANSFER_CLASS_TEMPLATE_TYPE \
+    HeatTransfer<ConvexType,BasisTemperatureType> \
+        /**/
+#define HEATTRANSFER_CLASS_TYPE \
+    HeatTransfer< Simplex<HEATTRANSFER_DIM,HEATTRANSFER_ORDERGEO,HEATTRANSFER_DIM>, \
+        Lagrange<HEATTRANSFER_ORDERPOLY, Scalar,Continuous,HEATTRANSFER_TEMPERATURE_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define HEATTRANSFER_CLASS_INSTANTIATION \
+    template class HEATTRANSFER_CLASS_TYPE ;  \
+    /**/
