@@ -347,7 +347,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("HeatTransfer","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "heat-transfert";
+    std::string modelName = "heat-transfer";
     for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
     {
         if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
@@ -658,7 +658,7 @@ void
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
-    std::string modelName = "heat-transfert";
+    std::string modelName = "heat-transfer";
 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )

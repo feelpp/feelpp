@@ -252,27 +252,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     this->updateJacobianWeakBC( data, U );
 
     //--------------------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel && M_useGravityForce )
+    if ( M_useHeatTransferModel && M_useGravityForce )
     {
         DataUpdateJacobian dataThermo( data );
         dataThermo.setDoBCStrongDirichlet( false );
-        M_thermodynModel->updateJacobian( dataThermo );
+        M_heatTransferModel->updateJacobian( dataThermo );
 
         if ( BuildNonCstPart )
         {
-            auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
-            auto const& thermalProperties = M_thermodynModel->thermalProperties();
+            auto XhT = M_heatTransferModel->spaceTemperature();
+            auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
+            auto const& thermalProperties = M_heatTransferModel->thermalProperties();
 
             auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
             form2( _test=XhT,_trial=XhT,_matrix=J,
-                   _rowstart=M_thermodynModel->rowStartInMatrix(),
-                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
+                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
                 integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradt(t)*idv(u))*id(t),
                        _geomap=this->geomap() );
             form2( _test=XhT,_trial=Xh,_matrix=J,
-                   _rowstart=M_thermodynModel->rowStartInMatrix(),
+                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
                    _colstart=this->colStartInMatrix() ) +=
                 integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= thecoeff*(gradv(t)*idt(u))*id(t),
@@ -281,7 +281,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             auto betaFluid = idv(thermalProperties->fieldThermalExpansion() );
             form2( _test=Xh,_trial=XhT,_matrix=J,
                    _rowstart=this->rowStartInMatrix(),
-                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
+                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
                 integrate( _range=M_rangeMeshElementsAeroThermal,
                            _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
@@ -337,9 +337,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         }
 
 
-        if ( M_useThermodynModel && M_useGravityForce )
+        if ( M_useHeatTransferModel && M_useGravityForce )
         {
-            M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
+            M_heatTransferModel->updateBCStrongDirichletJacobian( J,RBis );
         }
 
     }
