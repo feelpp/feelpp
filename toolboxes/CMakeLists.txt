@@ -86,7 +86,7 @@ if ( FEELPP_MODELS_ENABLE_MULTIFLUID )
 endif()
   # Heat Toolbox
 if ( FEELPP_MODELS_ENABLE_HEATTRANSFER )
-  add_subdirectory( thermodyn )
+  add_subdirectory( heattransfer )
 endif()
 if ( FEELPP_MODELS_ENABLE_HEATTRANSFER AND FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
   add_subdirectory( heatfluid )
