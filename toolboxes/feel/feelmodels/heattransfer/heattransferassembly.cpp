@@ -4,6 +4,9 @@
 
 #include <feel/feelvf/vf.hpp>
 
+//#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -709,7 +712,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
+                integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                            _expr= expression(d)*id(v),
                            _geomap=this->geomap() );
         }

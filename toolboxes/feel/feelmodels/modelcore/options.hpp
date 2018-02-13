@@ -36,7 +36,7 @@ Feel::po::options_description fluidMechanics_options(std::string const& prefix="
 Feel::po::options_description solidMechanics_options(std::string const& prefix="struct");
 Feel::po::options_description alemesh_options(std::string const& prefix="fsi");
 Feel::po::options_description fluidStructInteraction_options(std::string const& prefix);
-Feel::po::options_description thermoDynamics_options(std::string const& prefix="thermo");
+Feel::po::options_description heatTransfer_options(std::string const& prefix="heat-transfer");
 
 Feel::po::options_description feelmodels_options(std::string type);
 

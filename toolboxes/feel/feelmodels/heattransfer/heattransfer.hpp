@@ -110,10 +110,10 @@ class HeatTransfer : public ModelNumerical,
 
 
         HeatTransfer( std::string const& prefix,
-                      bool buildMesh,
-                      WorldComm const& worldComm,
-                      std::string const& subPrefix,
-                      std::string const& rootRepository );
+                      bool buildMesh = true,
+                      WorldComm const& worldComm = Environment::worldComm(),
+                      std::string const& subPrefix  = "",
+                      std::string const& rootRepository  = "" );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatTransferMesh.path"); }
         //___________________________________________________________________________________//
@@ -166,8 +166,8 @@ class HeatTransfer : public ModelNumerical,
 
         boost::shared_ptr<std::ostringstream> getInfo() const;
 
-        void loadConfigBCFile() = 0;
-        void loadConfigMeshFile(std::string const& geofilename) = 0;
+        void loadConfigBCFile();
+        void loadConfigMeshFile( std::string const& geofilename );
 
         void loadParameterFromOptionsVm();
         void createMesh();
