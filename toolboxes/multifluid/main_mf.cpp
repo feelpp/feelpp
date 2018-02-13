@@ -11,7 +11,9 @@ runApplicationMultiFluid()
     typedef Simplex<FEELPP_DIM,FEELPP_GEO_ORDER> mesh_type;
     typedef FeelModels::FluidMechanics< mesh_type,
                                         Lagrange<OrderVelocity, Vectorial, Continuous, PointSetFekete>,
-                                        Lagrange<OrderPressure, Scalar, Continuous, PointSetFekete> > model_fluid_type;
+                                        Lagrange<OrderPressure, Scalar, Continuous, PointSetFekete>,
+                                        Lagrange<1, Scalar, Continuous>
+                                            > model_fluid_type;
     typedef FeelModels::LevelSet< mesh_type, 
                                   Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> > model_levelset_type;
 
