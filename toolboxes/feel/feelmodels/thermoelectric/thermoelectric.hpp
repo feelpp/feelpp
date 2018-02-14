@@ -30,7 +30,7 @@
 #ifndef FEELPP_THERMOELECTRIC_HPP
 #define FEELPP_THERMOELECTRIC_HPP 1
 
-#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
+#include <feel/feelmodels/heattransfer/heattransfer.hpp>
 #include <feel/feelmodels/thermoelectric/electricpropertiesdescription.hpp>
 
 
@@ -57,8 +57,8 @@ public:
     typedef ThermoElectric<ConvexType,BasisTemperatureType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    typedef ThermoDynamics<ConvexType,BasisTemperatureType> thermodyn_model_type;
-    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
+    typedef HeatTransfer<ConvexType,BasisTemperatureType> heattransfer_model_type;
+    typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
 
     // mesh
     typedef ConvexType convex_type;
@@ -110,7 +110,7 @@ public:
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
                     std::string const& appliShortRepository = "" );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoDynamicsMesh.path"); }
+    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
     // load config
@@ -139,8 +139,8 @@ public:
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
-    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
-    thermodyn_model_ptrtype thermodynModel() { return M_thermodynModel; }
+    heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
+    heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
 
     space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
     element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
@@ -158,9 +158,9 @@ public:
 
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<TSBase> timeStepBase() { return this->thermodynModel()->timeStepBase(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->thermodynModel()->timeStepBase(); }
-    void updateTimeStep() {  this->thermodynModel()->updateTimeStep(); }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->heatTransferModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatTransferModel()->timeStepBase(); }
+    void updateTimeStep() {  this->heatTransferModel()->updateTimeStep(); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -188,7 +188,7 @@ private :
     void updateBoundaryConditionsForUse();
 
 private :
-    thermodyn_model_ptrtype M_thermodynModel;
+    heattransfer_model_ptrtype M_heatTransferModel;
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 

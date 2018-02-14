@@ -137,7 +137,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( M_modelName == "ThermoElectric" )
-        nBlock += M_thermodynModel->nBlockMatrixGraph();
+        nBlock += M_heatTransferModel->nBlockMatrixGraph();
     return nBlock;
 }
 
@@ -151,15 +151,15 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     int indexBlock=0;
     if ( M_modelName == "ThermoElectric" )
     {
-        int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
-        for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
-            for (int tk2=0;tk2<nBlockThermoDyn ;++tk2 )
-                myblockGraph(indexBlock+tk1,indexBlock+tk2) = M_thermodynModel->buildBlockMatrixGraph()(tk1,tk2);
-        indexBlock += nBlockThermoDyn;
+        int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
+        for (int tk1=0;tk1<nBlockHeatTransfer ;++tk1 )
+            for (int tk2=0;tk2<nBlockHeatTransfer ;++tk2 )
+                myblockGraph(indexBlock+tk1,indexBlock+tk2) = M_heatTransferModel->buildBlockMatrixGraph()(tk1,tk2);
+        indexBlock += nBlockHeatTransfer;
 
-        BlocksStencilPattern patCoupling1(1,nBlockThermoDyn,size_type(Pattern::ZERO));
+        BlocksStencilPattern patCoupling1(1,nBlockHeatTransfer,size_type(Pattern::ZERO));
         patCoupling1(0,0) = size_type(Pattern::COUPLED);
-        myblockGraph(0,indexBlock) = stencil(_test=M_thermodynModel->spaceTemperature(),
+        myblockGraph(0,indexBlock) = stencil(_test=M_heatTransferModel->spaceTemperature(),
                                              _trial=this->spaceElectricPotential(),
                                              _pattern_block=patCoupling1,
                                              _diag_is_nonzero=false,_close=false)->graph();
@@ -202,19 +202,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     if ( M_modelName == "ThermoElectric" )
     {
-        M_thermodynModel.reset( new thermodyn_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
+        M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
                                                          this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
-        M_thermodynModel->loadMesh( this->mesh() );
+        M_heatTransferModel->loadMesh( this->mesh() );
         // disable thermo exporter if we use fluid exporter
-        M_thermodynModel->setDoExportResults( false );
-        M_thermodynModel->init( doSolveOnlyElectricPotential /*false*/ );
-        M_thermodynModel->setRowStartInMatrix( 0 );
-        M_thermodynModel->setColStartInMatrix( 0 );
-        M_thermodynModel->setRowStartInVector( 0 );
+        //M_heatTransferModel->setDoExportResults( false );
+        M_heatTransferModel->init( doSolveOnlyElectricPotential /*false*/ );
+        M_heatTransferModel->setRowStartInMatrix( 0 );
+        M_heatTransferModel->setColStartInMatrix( 0 );
+        M_heatTransferModel->setRowStartInVector( 0 );
         if ( M_solverName == "Linear" )
         {
-            M_thermodynModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                    boost::ref( *this ), _1, _2 );
+            M_heatTransferModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                                       boost::ref( *this ), _1, _2 );
         }
     }
 
@@ -244,7 +244,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_modelName == "ThermoElectric" )
     {
         M_startBlockIndexFieldsInMatrix["temperature"] = currentStartIndex;
-        currentStartIndex += M_thermodynModel->nBlockMatrixGraph();
+        currentStartIndex += M_heatTransferModel->nBlockMatrixGraph();
     }
     M_startBlockIndexFieldsInMatrix["potential-electric"] = currentStartIndex;
 
@@ -254,10 +254,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int indexBlock=0;
     if ( M_modelName == "ThermoElectric" )
     {
-        int nBlockThermoDyn = M_thermodynModel->nBlockMatrixGraph();
-        for (int tk1=0;tk1<nBlockThermoDyn ;++tk1 )
-            M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_thermodynModel->blockVectorSolution()(tk1);
-        indexBlock+=nBlockThermoDyn;
+        int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
+        for (int tk1=0;tk1<nBlockHeatTransfer ;++tk1 )
+            M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_heatTransferModel->blockVectorSolution()(tk1);
+        indexBlock+=nBlockHeatTransfer;
     }
     M_blockVectorSolutionMonolithic(indexBlock) = this->fieldElectricPotentialPtr();
 
@@ -397,7 +397,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     if ( M_modelName == "ThermoElectric" )
-        *_ostr << M_thermodynModel->getInfo()->str();
+        *_ostr << M_heatTransferModel->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -488,11 +488,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     bool hasFieldToExport = false;
 
     if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) &&
-         M_thermodynModel->mesh()->isSameMesh( this->mesh() ) )
+         M_heatTransferModel->mesh()->isSameMesh( this->mesh() ) )
     {
         M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                       M_thermodynModel->fieldTemperature() );
+                                       M_heatTransferModel->fieldTemperature() );
         hasFieldToExport = true;
     }
     if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
@@ -568,7 +568,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     if ( M_modelName == "ThermoElectric" )
-        M_thermodynModel->updateParameterValues();
+        M_heatTransferModel->updateParameterValues();
     this->updateParameterValues();
 
     //std::string theThermoElectricModel = this->modelProperties().model();
@@ -578,7 +578,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         auto mySolutionVectorLinear = M_backendElectricModel->toBackendVectorPtr( this->fieldElectricPotential() );
         M_algebraicFactoryElectricModel->solve( "LinearSystem", mySolutionVectorLinear );
         if ( M_modelName == "ThermoElectric" )
-            M_thermodynModel->solve();
+            M_heatTransferModel->solve();
     }
     else if ( M_solverName == "Newton" )
     {
@@ -658,11 +658,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
-    auto XhT = M_thermodynModel->spaceTemperature();
-    auto const& t = M_thermodynModel->fieldTemperature();
+    auto XhT = M_heatTransferModel->spaceTemperature();
+    auto const& t = M_heatTransferModel->fieldTemperature();
     auto sigma = idv(M_electricProperties->fieldElectricConductivity());
     form1( _test=XhT,_vector=F,
-           _rowstart=M_thermodynModel->rowStartInVector() ) +=
+           _rowstart=M_heatTransferModel->rowStartInVector() ) +=
         integrate( _range=M_rangeMeshElements,
                        _expr= sigma*inner(gradv(v),gradv(v))*id(t),
                        _geomap=this->geomap() );
@@ -676,7 +676,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
-    M_thermodynModel->updateNewtonInitialGuess( U );
+    M_heatTransferModel->updateNewtonInitialGuess( U );
 
     if ( M_bcDirichlet.empty() ) return;
 
@@ -719,8 +719,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto XhV = this->spaceElectricPotential();
     // auto const& v = this->fieldElectricPotential();
     auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto XhT = M_thermodynModel->spaceTemperature();
-    auto const& t = M_thermodynModel->fieldTemperature();
+    auto XhT = M_heatTransferModel->spaceTemperature();
+    auto const& t = M_heatTransferModel->fieldTemperature();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -748,14 +748,14 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     DataUpdateJacobian dataThermo( data );
     dataThermo.setDoBCStrongDirichlet( false );
-    M_thermodynModel->updateJacobian( dataThermo );
+    M_heatTransferModel->updateJacobian( dataThermo );
 
     this->updateBCWeakJacobian( v,J,buildCstPart );
 
     if ( buildNonCstPart && _doBCStrongDirichlet )
     {
         this->updateBCStrongDirichletJacobian( J,RBis );
-        M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
+        M_heatTransferModel->updateBCStrongDirichletJacobian( J,RBis );
     }
 }
 
@@ -836,8 +836,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // auto const& v = this->fieldElectricPotential();
     auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
 
-    auto XhT = M_thermodynModel->spaceTemperature();
-    // auto const& t = M_thermodynModel->fieldTemperature();
+    auto XhT = M_heatTransferModel->spaceTemperature();
+    // auto const& t = M_heatTransferModel->fieldTemperature();
     auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
 
     auto myLinearFormThermo = form1( _test=XhV, _vector=R,
@@ -863,18 +863,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     DataUpdateResidual dataThermo( data );
     dataThermo.setDoBCStrongDirichlet( false );
-    M_thermodynModel->updateResidual( dataThermo );
+    M_heatTransferModel->updateResidual( dataThermo );
 
     this->updateSourceTermResidual( R,buildCstPart ) ;
 
     this->updateBCWeakResidual( v,R,buildCstPart );
 
     if ( !buildCstPart && _doBCStrongDirichlet &&
-         (this->hasMarkerDirichletBCelimination() || M_thermodynModel->hasMarkerDirichletBCelimination() ) )
+         (this->hasMarkerDirichletBCelimination() || M_heatTransferModel->hasMarkerDirichletBCelimination() ) )
     {
         R->close();
         this->updateBCDirichletStrongResidual( R );
-        M_thermodynModel->updateBCDirichletStrongResidual( R );
+        M_heatTransferModel->updateBCDirichletStrongResidual( R );
     }
 }
 
