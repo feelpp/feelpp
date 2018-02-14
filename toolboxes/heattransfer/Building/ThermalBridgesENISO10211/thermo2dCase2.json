@@ -1,7 +1,7 @@
 // -*- mode: javascript -*-
 {
-    "Name": "Thermo dynamics",
-    "ShortName":"ThermoDyn",
+    "Name": "ISO 10211:2007 Thermal bridges in building construction",
+    "ShortName":"ThermalBridges",
     "Materials":
     {
         "Concrete":
