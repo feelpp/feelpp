@@ -192,11 +192,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
         // load the field velocity convection from a math expr
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
-            std::string pathGinacExpr = this->directoryLibSymbExpr() + "/velocity-convection";
-            M_exprVelocityConvection /*auto myexpr*/ = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                                                     this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
+            M_exprVelocityConvection = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
+                                                     "",this->worldComm(),this->directoryLibSymbExpr() );
             this->updateFieldVelocityConvection();
-            //M_fieldVelocityConvection->on(_range=elements(this->mesh()),_expr=*M_exprVelocityConvection/*myexpr*/);
         }
     }
 }
@@ -244,13 +242,25 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->createFunctionSpaces();
 
+    // load an initial solution from a math expr
+    auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
+    for( auto const& d : initialSolution )
+    {
+        auto rangeElt = (marker(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),marker(d));
+        this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=expression(d),_geomap=this->geomap());
+    }
+    if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
+    {
+        auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
+                            "",this->worldComm(),this->directoryLibSymbExpr() );
+        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
+    }
+
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    if ( this->fieldVelocityConvectionIsUsed() )
-        this->updateForUseFunctionSpacesVelocityConvection();
-
+    // stabilization gls
     if ( M_stabilizationGLS )
     {
         typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
@@ -258,25 +268,17 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_stabilizationGLSParameter->init();
     }
 
-    // load an initial solution from a math expr
-    if ( Environment::vm().count(prefixvm(this->prefix(),"initial-solution.temperature").c_str()) )
-    {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/initial-solution.temperature";
-        auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                            this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
-        this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
-    }
+    // boundary condition
+    this->updateBoundaryConditionsForUse();
+
+    // post-process
+    this->initPostProcess();
 
     // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
-
-    this->updateBoundaryConditionsForUse();
-
-    // post-process
-    this->initPostProcess();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
