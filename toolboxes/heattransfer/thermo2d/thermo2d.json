@@ -1,7 +1,7 @@
 // -*- mode: javascript -*-
 {
-    "Name": "Thermo dynamics",
-    "ShortName":"ThermoDyn",
+    "Name": "Test heat-transfer toolbox",
+    "ShortName":"TestHeatTransfer",
     // "Parameters":
     // {
     //     "gravity":
