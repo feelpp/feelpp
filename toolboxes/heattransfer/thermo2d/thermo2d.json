@@ -52,6 +52,19 @@
             }
         }
     },
+    "InitialConditions":
+    {
+        "temperature":
+        {
+            "":
+            {
+                "":
+                {
+                    "expr":"293"
+                }
+            }
+        }
+    },
     "PostProcess":
     {
         "Exports":

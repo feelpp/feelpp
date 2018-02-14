@@ -2,40 +2,32 @@
 {
     "Name": "Thermo dynamics",
     "ShortName":"ThermoDyn",
-    "Model":"mythermicmodel",
-    // "Parameters":
-    // {
-    //     "gravity":
-    //     {
-    //         "value":"-1"
-    //     }
-    // },
     "Materials":
     {
-        "mat1":
+        "Concrete":
         {
-            "name":"Concrete",
+            "markers":"mat1",
             "k11":"1.15",//[ W/(m*K) ]
             "Cp":"880", //[ J/(kg*K) ]
             "rho":"2300" //[ kg/(m^3) ]
         },
-        "mat2":
+        "Wood":
         {
-            "name":"Wood",
+            "markers":"mat2",
             "k11":"0.12",//[ W/(m*K) ]
             "Cp":"2500", //[ J/(kg*K) ]
             "rho":"500" //[ kg/(m^3) ]
         },
-        "mat3":
+        "Insulation":
         {
-            "name":"Insulation",
+            "markers":"mat3",
             "k11":"0.029",//[ W/(m*K) ]
             "Cp":"1000", //[ J/(kg*K) ]
             "rho":"150" //[ kg/(m^3) ]
         },
-        "mat4":
+        "Aluminium":
         {
-            "name":"Aluminium",
+            "markers":"mat4",
             "k11":"230",//[ W/(m*K) ]
             "Cp":"900", //[ J/(kg*K) ]
             "rho":"2700" //[ kg/(m^3) ]
@@ -63,7 +55,10 @@
     },
     "PostProcess":
     {
-        "Fields":["temperature"],
+        "Exports":
+        {
+            "fields":["temperature"]
+        },
         "Measures":
         {
             "Normal-Heat-Flux":"bottom",
