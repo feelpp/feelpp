@@ -360,17 +360,17 @@ public:
     //___________________________________________________________________________________//
     // constructor
     FluidMechanics( std::string const& prefix,
-                        bool __buildMesh = true,
-                        WorldComm const& _worldComm = Environment::worldComm(),
-                        std::string const& subPrefix = "",
-                        std::string const& rootRepository = "" );
+                    bool __buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = "" );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );

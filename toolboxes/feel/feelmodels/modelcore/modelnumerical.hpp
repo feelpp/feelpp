@@ -72,7 +72,7 @@ class ModelNumerical : public ModelAlgebraic
 
 
         ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm=WorldComm(), std::string const& subPrefix="",
-                        std::string const& rootRepository = "" );
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         ModelNumerical( ModelNumerical const& app ) = default;
 

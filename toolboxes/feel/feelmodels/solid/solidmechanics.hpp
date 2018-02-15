@@ -55,13 +55,13 @@ public:
                     bool buildMesh = true,
                     WorldComm const& worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
-                    std::string const& rootRepository = "" );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = "" );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     //___________________________________________________________________________________//
     // load config files

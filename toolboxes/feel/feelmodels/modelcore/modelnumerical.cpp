@@ -36,9 +36,9 @@ namespace FeelModels
 
 
 ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& _worldComm, std::string const& subPrefix,
-                                std::string const& rootRepository )
+                                ModelBaseRepository const& modelRep )
         :
-        super_type( _theprefix, _worldComm, subPrefix, rootRepository ),
+        super_type( _theprefix, _worldComm, subPrefix, modelRep ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
@@ -76,7 +76,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
         M_modelProps = std::make_shared<ModelProperties>( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ),
-                                                          this->directoryLibSymbExpr(), this->worldComm() );
+                                                          this->repository().expr(), this->worldComm() );
     }
 
    void

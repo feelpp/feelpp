@@ -35,11 +35,11 @@ namespace FeelModels {
 
 
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix,
-                                          WorldComm const& _worldComm,
-                                          std::string const& subPrefix,
-                                          std::string const& rootRepository )
+                                WorldComm const& _worldComm,
+                                std::string const& subPrefix,
+                                ModelBaseRepository const& modelRep )
     :
-    super_type( _theprefix,_worldComm,subPrefix,rootRepository),
+    super_type( _theprefix,_worldComm,subPrefix,modelRep ),
     M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
     M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
     M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),

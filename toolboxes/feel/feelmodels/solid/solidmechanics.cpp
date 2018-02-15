@@ -41,9 +41,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     bool buildMesh,
                                                     WorldComm const& worldComm,
                                                     std::string const& subPrefix,
-                                                    std::string const& rootRepository )
+                                                    ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, buildMesh, worldComm, subPrefix, rootRepository )
+    super_type( prefix, buildMesh, worldComm, subPrefix, modelRep )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -73,9 +73,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
                                          bool buildMesh,
                                          WorldComm const& worldComm,
                                          std::string const& subPrefix,
-                                         std::string const& appliShortRepository )
+                                         ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, appliShortRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 }
 
 

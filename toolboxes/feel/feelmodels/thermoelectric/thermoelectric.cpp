@@ -47,9 +47,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     bool buildMesh,
                                                     WorldComm const& worldComm,
                                                     std::string const& subPrefix,
-                                                    std::string const& rootRepository )
+                                                    ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_electricProperties( new electricproperties_type( prefixvm(prefix,"electric") ) )
 {
     this->log("ThermoElectric","constructor", "start" );
@@ -203,7 +203,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_modelName == "ThermoElectric" )
     {
         M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
-                                                         this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
+                                                               this->subPrefix(), this->repository() ) );
         M_heatTransferModel->loadMesh( this->mesh() );
         // disable thermo exporter if we use fluid exporter
         //M_heatTransferModel->setDoExportResults( false );

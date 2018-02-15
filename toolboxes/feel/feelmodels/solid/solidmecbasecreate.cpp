@@ -21,9 +21,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string const& p
                                                             bool buildMesh,
                                                             WorldComm const& worldComm,
                                                             std::string const& subPrefix,
-                                                            std::string const& rootRepository )
+                                                            ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
