@@ -409,6 +409,7 @@ endif(FEELPP_ENABLE_MKL)
 
 option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
+  set(HDF5_PREFER_PARALLEL TRUE)
   find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND )
     if( HDF5_IS_PARALLEL )
@@ -417,8 +418,6 @@ if ( FEELPP_ENABLE_HDF5 )
         INCLUDE_DIRECTORIES( ${HDF5_INCLUDE_DIRS} )
         set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
         set(FEELPP_HAS_HDF5 1)
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
-
         # check HDF5 version
         if(NOT HDF5_VERSION)
           set( HDF5_VERSION "" )
@@ -454,6 +453,9 @@ if ( FEELPP_ENABLE_HDF5 )
         IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
           MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
         ENDIF()
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5/${HDF_VERSION_REF}" )
+
+
       else(HDF5_IS_PARALLEL)
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
       endif( HDF5_IS_PARALLEL)
@@ -469,12 +471,42 @@ endif(FEELPP_ENABLE_HDF5)
 find_package(XDMF QUIET)
 if (XDMF_FOUND)
     INCLUDE_DIRECTORIES( ${XDMF_INCLUDE_DIRS} )
-    set(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
+    set(FEELPP_LIBRARIES ${XDMF_LIBRARIES} ${FEELPP_LIBRARIES})
     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
     message(STATUS "Found Xdmf." )
 else()
     message(STATUS "Could not find Xdmf." )
 endif (XDMF_FOUND)
+
+# Python libs
+option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if(FEELPP_ENABLE_PYTHON)
+  #
+  # Python interp
+  #
+  FIND_PACKAGE(PythonInterp 3  REQUIRED)
+  if(PYTHONINTERP_FOUND)
+    execute_process(COMMAND
+      ${PYTHON_EXECUTABLE}
+      -c "import sys; print(sys.version[0:3])"
+      OUTPUT_VARIABLE PYTHON_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${PYTHON_VERSION}" )
+  endif()
+
+  FIND_PACKAGE(PythonLibs 3 REQUIRED)
+  if ( PYTHONLIBS_FOUND )
+    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
+    set( FEELPP_HAS_PYTHON 1 )
+
+  endif()
+
+endif()
 
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
@@ -486,15 +518,15 @@ SET(BOOST_MIN_VERSION "1.61.0")
 
 # First we try to find boost with the python components
 if(FEELPP_ENABLE_PYTHON_WRAPPING)
-    FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
-    if(Boost_PYTHON_FOUND)
-        set(FEELPP_HAS_BOOST_PYTHON 1)
-        set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
+    # FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
+    # if(Boost_PYTHON_FOUND)
+    #     set(FEELPP_HAS_BOOST_PYTHON 1)
+    #     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
+    #     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )
 
-    else()
-        message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
-      endif()
+    # else()
+    #     message(FATAL_ERROR "[feelpp] Boost.Python was not found on your system (Required for Python Wrapping)." )
+    #   endif()
 endif()
 
 # Then we try to find rest of the Boost components
@@ -728,33 +760,6 @@ if(FEELPP_ENABLE_LIBXML2)
   endif()
 endif()
 
-# Python libs
-option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if(FEELPP_ENABLE_PYTHON)
-  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
-  if ( PYTHONLIBS_FOUND )
-    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
-    set( FEELPP_HAS_PYTHON 1 )
-
-  endif()
-
-  #
-  # Python interp
-  #
-  FIND_PACKAGE(PythonInterp 2.7  REQUIRED)
-  if(PYTHONINTERP_FOUND)
-    execute_process(COMMAND
-      ${PYTHON_EXECUTABLE}
-      -c "import sys; print sys.version[0:3]"
-      OUTPUT_VARIABLE PYTHON_VERSION
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
-  endif()
-endif()
 
 
 #
@@ -1267,7 +1272,7 @@ include( contrib.dependencies )
 
 #
 # Acusim
-# 
+#
 include(feelpp.module.altair)
 
 # Asciidoctor
@@ -1292,6 +1297,17 @@ option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTA
 if( FEELPP_ENABLE_CLING_INTERPRETER )
   include(feelpp.module.cling.interpreter)
 endif()
+
+option( FEELPP_ENABLE_OMC "Enable OpemModelica in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_OMC )
+  include( feelpp.module.omc )
+endif()
+
+option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_FMILIB )
+  include( feelpp.module.fmilib )
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
@@ -1325,7 +1341,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
     FIND_LIBRARY(FEELPP_NLOPT_LIBRARY feelpp_nlopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
   if ( FEELPP_ENABLE_IPOPT )
-    FIND_LIBRARY(FEELPP_IPOPT_LIBRARY feelpp_ipopt PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+    FIND_LIBRARY(FEELPP_IPOPT_LIBRARY feelpp_ipopt feelpp_ipoptfort PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   endif()
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib NO_DEFAULT_PATH)
@@ -1402,7 +1418,7 @@ set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
 foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
   string(TOUPPER ${_c} _BOOST_LIB)
-  set(FEELPP_BOOST_TEXT 
+  set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}
     set(Boost_${_BOOST_LIB}_FOUND \"${Boost_${_BOOST_LIB}_FOUND}\")
     set(Boost_${_BOOST_LIB}_LIBRARY \"${Boost_${_BOOST_LIB}_LIBRARY}\")

@@ -675,18 +675,18 @@ GraphCSR::addMissingZeroEntriesDiagonal()
     const size_type firstRow = this->firstRowEntryOnProc();
     size_type firstCol = this->firstColEntryOnProc();
     const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    rank_type procId = this->mapRow().worldComm().globalRank();
     for ( size_type i = firstRow ; i<rowEnd ; ++i,++firstCol )
     {
-        if ( this->storage().find( firstRow )!=this->end() )
+        auto & row = this->row( i );
+        //! init if empty
+        if ( row.get<2>().empty() )
         {
-            this->row( i ).get<2>().insert( i/*firstCol*/ ); // insert col on diag
+            row.get<0>() = procId;
+            row.get<1>() = i-firstRow; //local index (just a shift because active dof)
         }
-        else // if (this->mapCol().dofGlobalClusterIsOnProc( i/*firstCol*/ ) ) //&& this->mapCol().dofGlobalClusterIsOnProc( firstCol ))
-        {
-            this->row( i ).get<0>() = this->mapRow().worldComm().globalRank();//proc
-            this->row( i ).get<1>() = i-firstRow;//local index
-            this->row( i ).get<2>().insert(i/*firstCol*/); // insert col on diag
-        }
+        //! insert diagonal entry
+        row.get<2>().insert( i ); // insert col on diag
     }
 }
 

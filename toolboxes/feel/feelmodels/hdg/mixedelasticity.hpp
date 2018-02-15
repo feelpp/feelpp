@@ -31,6 +31,32 @@
 
 namespace Feel {
 
+
+template <typename SpaceType>
+NullSpace<double> hdgNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( vec(Py(),-Px()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+    return userNullSpace;
+}
+
+template <typename SpaceType>
+NullSpace<double> hdgNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( oneZ() );
+    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+    return userNullSpace;
+}
+
+
+
 namespace FeelModels {
 
 inline
@@ -48,9 +74,10 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix,"tau_constant").c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix,"tau_order").c_str(), po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
+        ( prefixvm( prefix, "nullspace").c_str(), po::value<bool>()->default_value( false ), "add null space" )
         ;
     mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-	mpOptions.add ( feel_options() ).add( backend_options("sc") );
+	mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
 
@@ -221,7 +248,7 @@ public:
 
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
-    vector_ptrtype getF() {return M_F; }
+    condensed_vector_ptr_t<value_type> getF() {return M_F; }
     std::map<std::string, std::vector<double> > getTimers() {return M_timers; }
 
     // Exporter
@@ -247,6 +274,9 @@ public:
     void assembleF();
     void assembleMatrixIBC(int i, std::string markerOpt = "" ); 
     void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
+
+	void assembleCst();
+	void assembleNonCst();
 
     void geometricTest();
     
@@ -279,11 +309,22 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string cons
 
 
     M_prefix = prefix;
+
     M_modelProperties = std::make_shared<model_prop_type>( Environment::expand( soption( prefixvm(M_prefix, "model_json") ) ) );
-    if ( M_prefix.empty())
-        M_backend = backend( _rebuild=true);
-    else
-        M_backend = backend( _name=M_prefix, _rebuild=true);
+	if (boption(prefixvm(this->prefix(), "use-sc")))
+	{
+    	if ( M_prefix.empty())
+        	M_backend = backend( _name="sc", _rebuild=true);
+    	else
+        	M_backend = backend( _name=prefixvm(prefix,"sc"), _rebuild=true);
+	} 
+	else	
+	{
+    	if ( M_prefix.empty())
+        	M_backend = backend( _rebuild=true);
+    	else
+        	M_backend = backend( _name=prefix, _rebuild=true);
+	}
 
     M_tau_constant = doption (prefixvm(M_prefix, "tau_constant") );
     M_tau_order = ioption( prefixvm(M_prefix, "tau_order") );
@@ -745,9 +786,6 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
 {
 
-    // auto ps = product(M_Vh,M_Wh,M_Mh);
-
-	
     tic();
 	solve::strategy s = boption(prefixvm(prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
@@ -760,8 +798,16 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
     //M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
     toc("creating matrices and vectors");
     
+
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleCst()
+{
     // Assembling standard matrix
     tic();
+	M_A_cst->zero();
     this->assembleSTD();
     M_timers["asbStd"].push_back(toc("assembleStandardMatrix"));
 
@@ -771,8 +817,23 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assemble()
         this->assembleMatrixIBC( i );
     M_timers["asbIbc"].push_back(toc("assembleIbcMatrix"));
 
-
     M_A_cst->close();
+}
+
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void
+MixedElasticity<Dim, Order, G_Order, E_Order>::assembleNonCst()
+{
+    tic();
+	M_F->zero();
+    this->assembleF( );
+
+    for ( int i = 0; i < M_IBCList.size(); i++ )
+        this->assembleRhsIBC( i );
+    M_F->close();
+    M_timers["asbRHS"].push_back(toc("assembleRHS"));
+
 }
 
 
@@ -781,30 +842,27 @@ void
 MixedElasticity<Dim, Order, G_Order, E_Order>::solve()
 {
     
-
-    tic();
-    this->assembleF( );
-
-    for ( int i = 0; i < M_IBCList.size(); i++ )
-        this->assembleRhsIBC( i );
-    M_F->close();
-    M_timers["asbRHS"].push_back(toc("assembleRHS"));
-	
-
     auto U = M_ps -> element();
 	auto bbf = blockform2(*M_ps, M_A_cst);
     
 	auto blf = blockform1(*M_ps, M_F);
 
+
+	boost::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(get_backend(),hdgNullSpace(M_Wh,mpl::int_<FEELPP_DIM>())) );
+	get_backend()->attachNearNullSpace( myNullSpace );
+    if ( boption(_name=prefixvm( this->prefix(), "nullspace").c_str()) )
+	    get_backend()->attachNearNullSpace( myNullSpace );
+
+
     std::string solver_string = "MixedElasticity : ";
-    if( boption(prefixvm(prefix(), "use-sc")) )
+    if( boption(prefixvm(this->prefix(), "use-sc")) )
         solver_string += "static condensation";
     else
         solver_string += "monolithic";
     
     tic();
     tic();
-    bbf.solve(_solution=U, _rhs=blf, _rebuild=true, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
+    bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=boption(prefixvm(this->prefix(), "use-sc")), _name= this->prefix());
     M_timers["solver"].push_back(toc("solver"));
     toc(solver_string);
     
@@ -1017,7 +1075,7 @@ template<int Dim, int Order, int G_Order, int E_Order>
 void
 MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 {
-    M_F->zero();
+
     auto blf = blockform1( *M_ps, M_F );
 
     auto w     = M_Wh->element( "w" ); 
@@ -1201,7 +1259,6 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         std::vector<double> force_integral(Dim);
-                        std::string stringForce = "integralForce_";
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
@@ -1211,7 +1268,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
-                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
                             force_integral[i] = j_integral.evaluate()(i,0);
                             Feel::cout << force_integral[i] << std::endl;
                             M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
@@ -1230,11 +1287,10 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 auto j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
                                             _expr=trans(idv(M_up))*N());
                     
-                std::string stringForce = "integralForce_";
                 Feel::cout << "Force computed: " << std::endl;
                 for( auto i=0;i < Dim;i++ )
                 {
-                    auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                    std::string stringForce_help = (boost::format("integralForce_%1%")%i).str();
                     force_integral[i] = j_integral.evaluate()(i,0);
                     Feel::cout << force_integral[i] << std::endl;
                     M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);
@@ -1299,7 +1355,6 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         std::vector<double> force_integral(Dim);
-                        std::string stringForce = "scaled_integralForce_";
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting scaled integral flux at time "
                                   << time << " on marker " << marker;
@@ -1308,7 +1363,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                         Feel::cout << "Force computed: " << std::endl;
                         for( auto i=0;i < Dim;i++ )
                         {
-                            auto stringForce_help = stringForce + static_cast<std::ostringstream*>( &(std::ostringstream() << i) )->str();
+                            std::string stringForce_help = (boost::format("scaled_integralForce_%1%")%i).str();
                             force_integral[i] = j_integral.evaluate()(i,0);
                             Feel::cout << force_integral[i] << std::endl;
                             M_exporter->step( time )->add(prefixvm(prefix(), stringForce_help),force_integral[i]);

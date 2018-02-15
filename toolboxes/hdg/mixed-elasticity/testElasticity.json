@@ -37,6 +37,14 @@
 		},
 		"displacement":
 		{
+			"InitialSolution":
+			{
+				"omega":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+					
+				}
+			},
 	    	"Dirichlet":
 	    	{
         		"int":

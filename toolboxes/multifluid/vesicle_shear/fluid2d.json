@@ -1,9 +1,10 @@
 {
     "Name": "Square2d",
     "ShortName":"Square2d",
+    "Model": "Stokes",
     "Parameters":
     {
-        "gammaDot": { "value":"1." },
+        "gammaDot": { "value":"2" },
 	"yMax": { "value":"4." },
 	"yMin": { "value":"-4." }
     },
@@ -13,11 +14,19 @@
         {
             "Dirichlet":
             {
-                "Left":
+                "UpperLeft":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
                 },
-                "Right":
+                "LowerLeft":
+                {
+                    "expr":"{gammaDot*y,0}:gammaDot:y"
+                },
+                "UpperRight":
+                {
+                    "expr":"{gammaDot*y,0}:gammaDot:y"
+                },
+                "LowerRight":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
                 },

@@ -233,7 +233,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
     virtual operatorcomposite_ptrtype operatorCompositeLightA()
     {
@@ -615,7 +615,7 @@ void HeatShield<Order>::assemble()
 
 
 template<int Order>
-double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     using namespace vf;
 

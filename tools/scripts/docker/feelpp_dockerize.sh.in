@@ -3,6 +3,7 @@
 set -eo pipefail
 #set -x
 
+
 # default values
 TARGET=ubuntu:16.10
 BRANCH=master
@@ -82,36 +83,9 @@ echo "CMAKE_FLAGS=${CMAKE_FLAGS}"
 echo "FEELPP_DIR=${FEELPP_DIR}"
 echo "FEELPP_VERSION=${FEELPP_VERSION}"
 
+export FEELPP_DIR
+source $(dirname $0)/../share/feelpp/scripts/common.sh
 
-# Combines a dockerfile template with a generated FROM line
-dockerfile_from() {
-    local dockerfile="$1"
-    local from="$2"
-    printf 'FROM %s\n%s' "$from" "$(<$dockerfile)"
-}
-
-tag_from_target() {
-    splitfrom=(`echo "$1" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        image=${tokens[0]}
-        printf "%s" "$image" 
-    done
-}
-extratags_from_target() {
-    splitfrom=(`echo "$1" | tr ":" "\n"`)
-    fromos=${splitfrom[0]}
-    fromtag=${splitfrom[1]}
-
-    $FEELPP_DIR/share/feelpp/scripts/list.sh | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        extratags=${tokens[@]:5}
-        printf "%s" "${extratags}" 
-    done
-}
 
 tag=$(tag_from_target $TARGET $BRANCH $PROJECT_VERSION)
 echo "tag: $tag"

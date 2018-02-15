@@ -25,10 +25,11 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models)
+SET(DIRS core math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi )
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
-endforeach() 
+endforeach()
+
 # add_subdirectory (feelcore)
 # add_subdirectory (feelmath)
 # add_subdirectory (feelalg)
@@ -45,7 +46,7 @@ endforeach()
 # add_subdirectory (feelvf )
 # add_subdirectory (feelpde)
 # add_subdirectory (feells)
-# 
+#
 # add_subdirectory (feelpython)
 
 
@@ -70,7 +71,8 @@ if( FEELPP_ENABLE_PCH )
 endif()
 
 # Install feelpp
-INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs)
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)

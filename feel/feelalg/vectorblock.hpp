@@ -158,6 +158,11 @@ public :
     vector_ptrtype& vector() { return M_vector; }
     vector_ptrtype const& vector() const { return M_vector; }
 
+    //! return the monolithic vector
+    vector_ptrtype& vectorMonolithic();
+    //! return the monolithic vector
+    vector_ptrtype const& vectorMonolithic() const;
+
     /**
      * termination function to fill
      */
@@ -280,6 +285,7 @@ public:
     VectorBlockBase& operator=( VectorBlockBase const& vb ) = default;
     VectorBlockBase& operator=( VectorBlockBase && vb ) = default;
 
+    Vector<T>& operator= ( const Vector<value_type> &V ) override { return M_vec->operator=( V ); }
     virtual T& operator() ( const size_type i ) override { return M_vec->operator()( i ); }
     virtual T operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
     virtual Vector<T> & operator += ( const Vector<value_type> &V ) override { return M_vec->operator+=( V ); }
@@ -289,10 +295,8 @@ public:
     /** @name Accessors
      */
     //@{
-    vector_ptrtype getVector()
-    {
-        return M_vec;
-    }
+    vector_ptrtype& getVector() { return M_vec; }
+    vector_ptrtype const& getVector() const { return M_vec; }
     //@}
 
     /** @name  Mutators

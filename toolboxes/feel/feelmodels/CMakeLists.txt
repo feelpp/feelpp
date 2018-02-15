@@ -22,29 +22,8 @@
 #
 #
 
-add_subdirectory(solid_oldversion)
-
-SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
-SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
-
-
-option(FEELPP_MODELS_ENABLE_MESHALE "Enable/Disable mesh ALE" ON)
-if ( FEELPP_MODELS_ENABLE_MESHALE )
-  set( FEELPP_MODELS_HAS_MESHALE 1)
-endif()
-set(FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION 1)
-#set(FEELPP_MODELS_HAS_MESHALE_WINSLOW 1)
-
-option(FEELPP_MODELS_ENABLE_THERMODYNAMICS "Enable/Disable ThermoDynamics" ON)
-option(FEELPP_MODELS_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ON)
-option(FEELPP_MODELS_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ON)
-option(FEELPP_MODELS_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ON)
-option(FEELPP_MODELS_ENABLE_FSI "Enable/Disable FSI" ON)
-option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" OFF)
-option(FEELPP_MODELS_ENABLE_LEVELSET "Enable/Disable LevelSet" OFF)
-option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
-option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
-
+SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
+SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
 
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
@@ -81,7 +60,7 @@ endif()
 if ( FEELPP_MODELS_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-if ( 0 ) # disable
+if ( 1 ) # enable
 if ( FEELPP_MODELS_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()
@@ -95,3 +74,11 @@ endif()
 if ( FEELPP_MODELS_ENABLE_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
+if ( FEELPP_MODELS_ENABLE_HDG )
+  add_subdirectory(hdg)
+endif()
+
+set( FEELPP_TOOLBOXES_CONFIG_FILE  ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake)
+configure_file(${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake.in ${FEELPP_TOOLBOXES_CONFIG_FILE} @ONLY)
+install(FILES ${FEELPP_TOOLBOXES_CONFIG_FILE} DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
+install(EXPORT feelpp-toolboxes-targets DESTINATION share/feelpp/toolboxes/cmake )

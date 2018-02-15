@@ -51,7 +51,7 @@ namespace FeelModels
                     if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
                     auto const& mat = m.second;
-                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physics();
+                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physic();
                     if ( ( matphysics != "heat-transfert" ) && ( matphysics != "aerothermal" ) && ( matphysics != "thermo-electric" ) )
                         continue;
                     M_markers.insert( matmarker );
@@ -80,17 +80,17 @@ namespace FeelModels
                         this->setCstRho( mat.propertyConstant("rho"), matmarker );
 
                     if ( mat.hasPropertyExprScalar("k11") )
-                        this->setRho( mat.propertyExprScalar("k11"),matmarker );
+                        this->setThermalConductivity( mat.propertyExprScalar("k11"),matmarker );
                     else
                         this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
 
                     if ( mat.hasPropertyExprScalar("Cp") )
-                        this->setRho( mat.propertyExprScalar("Cp"),matmarker );
+                        this->setHeatCapacity( mat.propertyExprScalar("Cp"),matmarker );
                     else
                         this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
 
                     if ( mat.hasPropertyExprScalar("beta") )
-                        this->setRho( mat.propertyExprScalar("beta"),matmarker );
+                        this->setThermalExpansion( mat.propertyExprScalar("beta"),matmarker );
                     else
                         this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
                 }
@@ -225,39 +225,6 @@ namespace FeelModels
             if ( !M_fieldThermalExpansion ) return;
             auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
             M_fieldThermalExpansion->on(_range=rangeEltUsed,_expr=__expr);
-        }
-
-        void updateFromModelMaterials( ModelMaterials const& mat )
-        {
-            if ( mat.empty() ) return;
-
-            for( auto const& m : mat )
-            {
-                auto const& mat = m.second;
-                auto const& matmarker = m.first;
-                //LOG(INFO) << "set material " << mat.name() << " associated to marker : " << matmarker<< "\n";
-                M_markers.insert( matmarker );
-
-                if ( mat.hasPropertyExprScalar("rho") )
-                    this->setRho( mat.propertyExprScalar("rho"),matmarker );
-                else
-                    this->setCstRho( mat.propertyConstant("rho"), matmarker );
-
-                if ( mat.hasPropertyExprScalar("k11") )
-                    this->setRho( mat.propertyExprScalar("k11"),matmarker );
-                else
-                    this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
-
-                if ( mat.hasPropertyExprScalar("Cp") )
-                    this->setRho( mat.propertyExprScalar("Cp"),matmarker );
-                else
-                    this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
-
-                if ( mat.hasPropertyExprScalar("beta") )
-                    this->setRho( mat.propertyExprScalar("beta"),matmarker );
-                else
-                    this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
-            }
         }
 
         boost::shared_ptr<std::ostringstream>

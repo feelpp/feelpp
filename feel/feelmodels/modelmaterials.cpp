@@ -41,8 +41,13 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr )
 {
-    if( boost::optional<std::string> itphyisic = p.get_optional<std::string>( "physics" ) )
-        M_physics = *itphyisic;
+    if( auto physics = p.get_child_optional("physics") )
+    {
+        for( auto const& item : p.get_child("physics") )
+            M_physics.insert(item.second.template get_value<std::string>());
+        if( M_physics.empty() )
+            M_physics.insert(p.get<std::string>("physics") );
+    }
 
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
                                             "k11","k12","k13","k22","k23","k33",
@@ -50,6 +55,16 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
                                             "Ks","Kl","Tsol","Tliq" };
     for ( std::string const& prop : matProperties )
         this->setProperty( prop,M_p );
+}
+
+bool
+ModelMaterial::hasProperty( std::string const& prop ) const
+{
+    auto p = M_p.get_child_optional( prop );
+    if( !p ) // child is missing
+        return false;
+    else
+        return true;
 }
 
 bool

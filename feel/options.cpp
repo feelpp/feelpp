@@ -451,6 +451,10 @@ eimOptions( std::string const& prefix )
         ( "eim.show-mu-selection",Feel::po::value<bool>()->default_value( false )," print list of parameters selected during offline step" )
         ( "eim.show-t-selection",Feel::po::value<bool>()->default_value( false )," print list of interpolation points selected during offline step" )
         ( "eim.show-offline-error",Feel::po::value<bool>()->default_value( false )," print list of error associated to mu selected during offline step" )
+
+        ( "eim.elements.write", Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( "eim.elements.directory", Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
+        ( "eim.elements.clean-directory", Feel::po::value<bool>()->default_value( false ), ""  )
         ;
 
     return eimoptions;
@@ -465,9 +469,19 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
         ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
+        ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.store-vectors" ).c_str(), Feel::po::value<bool>()->default_value(true ), "Store Vectors for the parameters in the trainset in DEIM"  )
+        ( prefixvm( prefix, "deim.store-matrices" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store Matrices for the parameters in the trainset in MDEIM"  )
+
+        ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
+        ( prefixvm( prefix, "deim.elements.clean-directory" ).c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
+        ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
+
+        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
-        return deimoptions;
+    return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
 }
 
 Feel::po::options_description
@@ -616,14 +630,14 @@ crbOptions( std::string const& prefix )
         ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
         ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
-        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( false ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
-        
-        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
+        ( "crb.fixedpoint.aitken",Feel::po::value<bool>()->default_value( true ), "use Aitken relaxtion algorithm in nonlinear fixpoint solver" )
+
+        ( "crb.fixedpoint.maxit",Feel::po::value<int>()->default_value( 20 ), "nb iteration max for the fixed point (online part)" )
         ( "crb.fixedpoint.increment-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
         ( "crb.fixedpoint.output-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
         ( "crb.fixedpoint.verbose",Feel::po::value<bool>()->default_value( false ), "fixed point verbose if true" )
         ( "crb.fixedpoint.critical-value",Feel::po::value<double>()->default_value(1000 ), "will crash if increment error at the end of fixed point is greater than this critical value" )
-        
+
         ( "crb.use-continuity",Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
         ( "crb.compute-error-on-reduced-residual-jacobian",Feel::po::value<bool>()->default_value( false ), "only for crb_trilinear")
         ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
@@ -672,6 +686,7 @@ crbOptions( std::string const& prefix )
         ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
 
         ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
+
         ;
 
     crboptions
@@ -759,6 +774,7 @@ blockns_options( std::string const& prefix )
         ( prefixvm( prefix, "blockns.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
         ( prefixvm( prefix, "blockns.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
         ( prefixvm( prefix, "blockns.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        ( prefixvm( prefix, "blockns.weakdir.penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" )
         // options for pmm
         ( prefixvm( prefix, "blockns.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
         ;
@@ -921,6 +937,21 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
+fmu_options( std::string const& prefix )
+{
+    po::options_description _options( "FMU " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"fmu.verbose" ).c_str(), Feel::po::value<bool>()->default_value(true), "Run with verbosity" )
+        ( prefixvm( prefix,"fmu.display-variables-info" ).c_str(), Feel::po::value<bool>()->default_value(false), "Display the list of variables and description after loading FMU" )
+        ( prefixvm( prefix,"fmu.filename" ).c_str(), Feel::po::value<std::string>()->default_value(""), "The fmu to load" )
+
+        ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
+        ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+        ;
+    return _options;
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -1004,6 +1035,7 @@ feel_options( std::string const& prefix  )
         .add (msi_options(prefix))
         .add (fit_options(prefix))
         .add (checker_options(prefix))
+        .add( fmu_options(prefix) )
         ;
 
     return opt;

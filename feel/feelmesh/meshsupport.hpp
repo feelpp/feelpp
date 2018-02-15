@@ -25,6 +25,7 @@
 #if !defined(FEELPP_MESH_SUPPORT_HPP)
 #define FEELPP_MESH_SUPPORT_HPP 1
 
+#include <feel/feelmesh/meshsupportbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -36,9 +37,10 @@ namespace Feel
  * A function space can use this object for built a space in a part of the mesh
  */
 template<typename MeshType>
-class MeshSupport
+class MeshSupport : public MeshSupportBase
 {
 public :
+    using super_type = MeshSupportBase;
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
     using range_elements_type = elements_reference_wrapper_t<mesh_type>;
@@ -67,8 +69,8 @@ public :
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
         }
 
-    bool isFullSupport() const { return M_isFullSupport; }
-    bool isPartialSupport() const { return !M_isFullSupport; }
+    bool isFullSupport() const override { return M_isFullSupport; }
+    bool isPartialSupport() const override { return !M_isFullSupport; }
 
     range_elements_type const& rangeElements() const { return M_rangeElements; }
     range_faces_type const& rangeInterProcessFaces() const { return M_rangeInterProcessFaces; }
@@ -114,21 +116,21 @@ public :
             return rangeExtendedElements;
         }
 
-    size_type numElements() const
+    size_type numElements() const override
         {
             if ( M_isFullSupport )
                 return M_mesh->numElements();
             else
                 return M_rangeMeshElementsIdsPartialSupport.size();
         }
-    bool hasElement( size_type eltId ) const
+    bool hasElement( size_type eltId ) const override
         {
             if ( M_isFullSupport )
                 return M_mesh->hasElement( eltId );
             else
                 return M_rangeMeshElementsIdsPartialSupport.find( eltId ) != M_rangeMeshElementsIdsPartialSupport.end();
         }
-    bool hasGhostElement( size_type eltId ) const
+    bool hasGhostElement( size_type eltId ) const override
         {
             if ( M_isFullSupport )
             {
@@ -143,21 +145,29 @@ public :
 
     bool isGhostFace( face_type const& face ) const
         {
-            if ( !face.isGhostFace() )
-                return false;
-
             if ( M_isFullSupport )
-                return true;
+                return face.isGhostFace();
             else
             {
-                bool hasElt0 = this->hasElement( face.element(0).id() );
-                bool hasElt1 = this->hasElement( face.element(1).id() );
-                return ( hasElt0 && hasElt1 );
+                if ( !face.isInterProcessDomain() )
+                    return false;
+                auto const& elt0 = face.element(0);
+                auto const& elt1 = face.element(1);
+                bool hasElt0 = this->hasElement( elt0.id() );
+                bool hasElt1 = this->hasElement( elt1.id() );
+                if ( hasElt0 && hasElt1 )
+                    return face.isGhostFace();
+                else if ( hasElt0 )
+                    return elt0.isGhostCell();
+                else if ( hasElt1 )
+                    return elt1.isGhostCell();
+                else
+                    return true;
             }
         }
 
-    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const { return M_rangeMeshElementsIdsPartialSupport; }
-    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const { return M_rangeMeshElementsGhostIdsPartialSupport; }
+    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const override { return M_rangeMeshElementsIdsPartialSupport; }
+    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const override { return M_rangeMeshElementsGhostIdsPartialSupport; }
 
     void updateParallelData()
         {
@@ -298,16 +308,52 @@ private :
                 faceInRange[faceId].second = 3;
             }
 
+            std::map<rank_type,std::vector<size_type> > dataToSend;
+            std::map<rank_type,std::vector<size_type> > dataToRecv;
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype mybfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myifaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             for ( auto const& faceDataPair : faceInRange )
             {
                 auto const& faceData = faceDataPair.second;
                 if ( faceData.second == 1 )
-                    mybfaces->push_back( boost::cref( *faceData.first ) );
+                {
+                    auto const& theface = *faceData.first;
+                    if ( theface.isInterProcessDomain() )
+                    {
+                        rank_type neighborPid = theface.partition2();
+                        dataToSend[neighborPid].push_back( theface.idInOthersPartitions(neighborPid) );
+                    }
+                    mybfaces->push_back( boost::cref( theface ) );
+                }
                 else
                     myifaces->push_back( boost::cref( *faceData.first ) );
             }
+
+            // maybe some boundary faces on interprocess faces are not detected
+            // on neighbor part (because not connected to an element of partial support)
+            // but should be added on range : required mpi comm
+            int neighborSubdomains = M_mesh->neighborSubdomains().size();
+            int nbRequest = 2*neighborSubdomains;
+            mpi::request * reqs = new mpi::request[nbRequest];
+            int cptRequest=0;
+            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+            {
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+            }
+            mpi::wait_all(reqs, reqs + nbRequest);
+            delete [] reqs;
+
+            for ( auto const& dataRecvByProc : dataToRecv )
+            {
+                for ( size_type faceId : dataRecvByProc.second )
+                {
+                    if ( faceInRange.find( faceId ) == faceInRange.end() )
+                        mybfaces->push_back( boost::cref( M_mesh->face( faceId ) ) );
+                }
+            }
+
+
             M_rangeBoundaryFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces );
             M_rangeInternalFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),myifaces->begin(),myifaces->end(),myifaces );
         }

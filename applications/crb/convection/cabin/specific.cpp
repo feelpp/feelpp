@@ -182,5 +182,5 @@ ConvectionCrb::output( int output_index,
 
 namespace Feel
 {
-    FEELPP_CRBTRILINEAR_PLUGIN( ConvectionCrb, "cabin" )
+    FEELPP_CRBTRILINEAR_PLUGIN( ConvectionCrb, cabin )
 }

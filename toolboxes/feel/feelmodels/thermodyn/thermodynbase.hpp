@@ -177,10 +177,12 @@ class ThermoDynamicsBase : public ModelNumerical,
         void createExporters();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
+        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app );
         void updateForUseFunctionSpacesVelocityConvection();
 
         void initPostProcess();
+        bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+
         void restartExporters();
         void exportMeasures( double time );
         void exportResults() { this->exportResults( this->currentTime() ); }
@@ -268,6 +270,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
         // post-process
+        std::set<std::string> M_postProcessFieldExported;
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
