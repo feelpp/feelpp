@@ -308,7 +308,7 @@ public:
                         bool buildMesh=true,
                         WorldComm const& worldComm = Environment::worldComm(),
                         std::string const& subPrefix = "",
-                        std::string const& rootRepository = "" );
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
     SolidMechanicsBase( self_type const & M ) = default;
 
     static std::string expandStringFromSpec( std::string const& expr );

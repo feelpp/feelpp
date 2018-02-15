@@ -113,7 +113,7 @@ class HeatTransfer : public ModelNumerical,
                       bool buildMesh = true,
                       WorldComm const& worldComm = Environment::worldComm(),
                       std::string const& subPrefix  = "",
-                      std::string const& rootRepository  = "" );
+                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatTransferMesh.path"); }
         //___________________________________________________________________________________//

@@ -18,12 +18,12 @@ namespace FeelModels {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
-                                                        bool buildMesh,
-                                                        WorldComm const& worldComm,
-                                                        std::string const& subPrefix,
-                                                        std::string const& rootRepository )
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    ModelBaseRepository const& modelRep )
     :
-    super_type( prefix,worldComm,subPrefix, self_type::expandStringFromSpec( rootRepository ) ),
+    super_type( prefix,worldComm,subPrefix, modelRep ),
     M_hasBuildFromMesh( false ), M_isUpdatedForUse(false ),
     M_densityViscosityModel( new densityviscosity_model_type( prefix ) )
 {
@@ -62,10 +62,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
-                                             WorldComm const& worldComm, std::string const& subPrefix,
-                                             std::string const& rootRepository )
+                                         WorldComm const& worldComm, std::string const& subPrefix,
+                                         ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, rootRepository );
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 
 }
 
@@ -292,7 +292,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
         std::list<std::string> markerList = detailbc::generateMarkerBCList( this->modelProperties().boundaryConditions(), "fluid", "inlet", bcMarker );
         for (std::string const& currentMarker : markerList )
         {
-            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->directoryLibSymbExpr() )) );
+            this->M_fluidInletDesc.push_back(std::make_tuple(currentMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->repository().expr() )) );
             this->addMarkerALEMeshBC(bcTypeMeshALE,currentMarker);
         }
     }
@@ -485,7 +485,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         gravityStr = "{0,-9.80665}";
     else if (nDim == 3 )
         gravityStr = "{0,0,-9.80665}";
-    M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->directoryLibSymbExpr() );
+    M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->repository().expr() );
     M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
 
     // heat transfer coupling
@@ -731,7 +731,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
                                            this->prefix(),
                                            this->localNonCompositeWorldsComm()[0],
                                            moveGhostEltFromExtendedStencil,
-                                           this->rootRepositoryWithoutNumProc() ));
+                                           this->repository() ));
         this->log("FluidMechanics","createALE", "--1--" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
@@ -1146,7 +1146,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_useHeatTransferModel )
     {
         M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
-                                                         this->subPrefix(), this->rootRepositoryWithoutNumProc() ) );
+                                                         this->subPrefix(), this->repository() ) );
         M_heatTransferModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
         M_heatTransferModel->loadMesh( this->mesh() );
         M_heatTransferModel->init( !M_useGravityForce/*false*/ );

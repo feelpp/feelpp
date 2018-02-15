@@ -109,7 +109,7 @@ public:
                     bool buildMesh = true,
                     WorldComm const& _worldComm = Environment::worldComm(),
                     std::string const& subPrefix = "",
-                    std::string const& appliShortRepository = "" );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
     boost::shared_ptr<std::ostringstream> getInfo() const;
 

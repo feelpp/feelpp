@@ -83,7 +83,8 @@ public:
      */
     ALE( mesh_ptrtype mesh, std::string prefix="",
          WorldComm const& worldcomm = WorldComm(),
-         bool moveGhostEltFromExtendedStencil=false );
+         bool moveGhostEltFromExtendedStencil=false,
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     ALE( ALE const& tc );
     //~ALE();
 
@@ -92,7 +93,8 @@ public:
      */
     static self_ptrtype build(mesh_ptrtype mesh, std::string prefix="",
                               WorldComm const& worldcomm = WorldComm(),
-                              bool moveGhostEltFromExtendedStencil=false );
+                              bool moveGhostEltFromExtendedStencil=false,
+                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * Add the set of flags that mark the boundary

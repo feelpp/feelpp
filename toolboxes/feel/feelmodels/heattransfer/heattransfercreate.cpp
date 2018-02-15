@@ -18,12 +18,12 @@ namespace FeelModels
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
-                                                 bool buildMesh,
-                                                 WorldComm const& worldComm,
-                                                 std::string const& subPrefix,
-                                                 std::string const& rootRepository )
+                                                bool buildMesh,
+                                                WorldComm const& worldComm,
+                                                std::string const& subPrefix,
+                                                ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_thermalProperties( new thermalproperties_type( prefix ) )
 {
     this->log("HeatTransfer","constructor", "start" );
@@ -193,7 +193,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
         if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
         {
             M_exprVelocityConvection = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                                     "",this->worldComm(),this->directoryLibSymbExpr() );
+                                                     "",this->worldComm(),this->repository().expr() );
             this->updateFieldVelocityConvection();
         }
     }
@@ -252,7 +252,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
     {
         auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                            "",this->worldComm(),this->directoryLibSymbExpr() );
+                            "",this->worldComm(),this->repository().expr() );
         this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
     }
 
