@@ -26,15 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-08-13
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
-//#define BOOST_TEST_MAIN
+
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh_codim1 testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 
 #include <feel/feelcore/feel.hpp>
@@ -102,8 +100,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "test_mesh_filters starts" );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
-
 
         using namespace Feel;
 
@@ -130,16 +126,17 @@ struct test_mesh_filters
 
             for ( ; it != en; ++it )
             {
+                auto const& elt = it->second;
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
 
-                FEELPP_ASSERT( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 )( it->id() )( __c->xReal() )( it->G() ).error( "invalid element" );
-                FEELPP_ASSERT( it->marker().value() == 3 )( it->id() )( it->marker().value() ).error( "invalid element marker" );
+                FEELPP_ASSERT( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 )( elt.id() )( __c->xReal() )( elt.G() ).error( "invalid element" );
+                FEELPP_ASSERT( elt.marker().value() == 3 )( elt.id() )( elt.marker().value() ).error( "invalid element marker" );
 
                 //BOOST_CHECK_SMALL( ublas::norm_frobenius( __c->xReal() - it->G() ), 1e-15 );
-                BOOST_CHECK_EQUAL( it->marker().value(), 3 );
+                BOOST_CHECK_EQUAL( elt.marker().value(), 3 );
 
             }
         }

@@ -72,14 +72,18 @@ makeHeatShieldMinimalVersionAbout( std::string const& str = "heatShield" )
  * @see
  */
 template<int Order>
-class HeatShieldMinimalVersion : public ModelCrbBase< ParameterSpace<2>, decltype(Pch<Order>(Mesh<Simplex<2>>::New())) , TimeDependent >
+class HeatShieldMinimalVersion : public ModelCrbBase< ParameterSpaceX, decltype(Pch<Order>(Mesh<Simplex<2>>::New())) , TimeDependent >
 {
 public:
 
-    typedef ModelCrbBase< ParameterSpace<2>, decltype(Pch<Order>(Mesh<Simplex<2>>::New())) , TimeDependent > super_type;
+    typedef ModelCrbBase< ParameterSpaceX, decltype(Pch<Order>(Mesh<Simplex<2>>::New())) , TimeDependent > super_type;
     typedef typename super_type::element_type element_type;
     typedef typename super_type::parameter_type parameter_type;
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
+
+    HeatShieldMinimalVersion() : super_type( "thermalblockminver" ) {}
+        
+    
     //! initialization of the model
     void initModel();
 
@@ -87,7 +91,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
@@ -120,6 +124,7 @@ void HeatShieldMinimalVersion<Order>::initModel()
 
     M_bdf = bdf( _space=this->Xh, _vm=Environment::vm(), _name="heatshield" , _prefix="heatshield" );
 
+    this->Dmu->setDimension( 2 );
     auto mu_min = this->Dmu->element();
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     this->Dmu->setMin( mu_min );
@@ -168,7 +173,7 @@ void HeatShieldMinimalVersion<Order>::initModel()
 
 
 template<int Order>
-double HeatShieldMinimalVersion<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+double HeatShieldMinimalVersion<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     auto mesh = this->Xh->mesh();
     double output=0;

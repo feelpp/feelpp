@@ -28,15 +28,12 @@
    \date 2005-09-03
  */
 
-// Boost.Test
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -102,7 +99,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
 
 
         using namespace Feel;
@@ -187,12 +183,13 @@ struct test_mesh_filters
             //BOOST_CHECK( std::distance( it, en ) == 1 );
             for ( ; it != en; ++it )
             {
+                auto const& elt = it->second;
                 // check that the geometric transformation from
                 // the current gives back the vertices of the
                 // element
-                gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
+                gmc_ptrtype __c( new gmc_type( __gm, elt, __geopc ) );
 
-                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - it->G() ) < 1e-15 );
+                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 );
             }
         }
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );

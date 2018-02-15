@@ -43,6 +43,7 @@
 #include <boost/serialization/split_member.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcrb/crbdb.hpp>
 
 namespace Feel
 {
@@ -71,16 +72,18 @@ public :
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
-    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+    typedef boost::shared_ptr<rbfunctionspace_type> rbfunctionspace_ptrtype;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename rbfunctionspace_type::rb_basis_type wn_type;
 
     //! constructors
     CRBElementsDB( std::string const& name = "defaultname_crbelementdb",
+                   std::string const& ext = "elements",
                    WorldComm const& worldComm = Environment::worldComm() )
     :
-        super( name, worldComm ),
+        super( name, ext, worldComm ),
         M_fileFormat( soption(_name="crb.db.format") ),
+        M_useMonolithicRbSpace( true ),
         M_N( 0 )
     {
 #ifndef FEELPP_HAS_HDF5
@@ -91,19 +94,21 @@ public :
         }
 #endif
         if ( M_fileFormat == "hdf5" )
-            this->setDBFilename( ( boost::format( "%1%.h5" )
-                                   %this->name() ).str() );
+            this->setDBFilename( ( boost::format( "%1%.%2%.h5" )
+                                   %this->name()%ext ).str() );
         else
-            this->setDBFilename( ( boost::format( "%1%_p%2%.crbdb" )
+            this->setDBFilename( ( boost::format( "%1%.%2%_p%3%.crbdb" )
                                    %this->name()
+                                   %ext
                                    %this->worldComm().globalRank()
                                    ).str() );
     }
 
     CRBElementsDB( std::string const& name,
+                   std::string const& ext,
                    model_ptrtype const & model )
         :
-        CRBElementsDB( name )
+        CRBElementsDB( name, ext )
         {
             M_model = model;
         }
@@ -120,6 +125,9 @@ public :
             size_type rbdim = ptree.template get<int>( "dimension" );
             this->setMN( rbdim );
             std::string dbname = ptree.template get<std::string>( "database-filename" );
+            if ( this->worldComm().globalSize() > 1 && M_fileFormat != "hdf5" )
+                dbname.replace(dbname.end()-std::string("_p0.crbdb").size(), dbname.end(),
+                               (boost::format("_p%1%.crbdb")%this->worldComm().globalRank()).str() );
             fs::path dbnamePath = fs::path( dbname );
             this->setDBFilename( dbnamePath.filename().string() );
             if ( dbnamePath.is_absolute() )
@@ -134,13 +142,18 @@ public :
     /**
      * save the database
      */
-    void saveDB();
+    void saveDB() override;
 
-    /**
-     * load the database
-     */
-    bool loadDB();
+    //!
+    //! 
+    //!
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+    
 #ifdef FEELPP_HAS_HDF5
     /**
      * save the database in hdf5 format
@@ -160,6 +173,16 @@ public :
         return boost::make_tuple( M_rbSpace->primalRB(), M_rbSpace->dualRB() );
     }
 
+    bool useMonolithicRbSpace() const
+    {
+        return M_useMonolithicRbSpace;
+    }
+
+    void setUseMonolithicRbSpace( bool b )
+    {
+        M_useMonolithicRbSpace = (space_type::nSpaces>1)? b : true;
+    }
+
     void setMN( size_type MN )
     {
         M_N = MN;
@@ -174,7 +197,9 @@ public :
     void setModel( model_ptrtype const& model )
     {
         M_model = model;
+        this->setDBDirectory( M_model->uuid() );
         M_rbSpace = model->rBFunctionSpace();
+        M_useMonolithicRbSpace = model->useMonolithicRbSpace();
     }
 
 private :
@@ -192,6 +217,8 @@ private :
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     std::string M_fileFormat;
+
+    bool M_useMonolithicRbSpace;
 
     size_type M_N;
 
@@ -219,7 +246,10 @@ CRBElementsDB<ModelType>::saveDB()
     else
     /* save in boost format by default */
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        auto p = this->dbLocalPath() / this->dbFilename();
+        if( this->worldComm().isMasterRank() )
+            std::cout << "CRBElementsDB::saveDB : " << p << std::endl;
+        fs::ofstream ofs( p );
 
         if ( ofs )
         {
@@ -285,6 +315,112 @@ CRBElementsDB<ModelType>::loadDB()
 }
 
 
+
+namespace detail
+{
+template<class Archive,typename RbSpaceType>
+struct SaveDatabaseCompositeByBlock
+{
+    SaveDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace )
+        :
+        M_ar( ar ),
+        M_rbSpace( rbSpace )
+    {}
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+
+        auto subRbSpace = M_rbSpace.template rbFunctionSpace<key_type::value>();
+        auto const& WN = subRbSpace->primalRB();
+        auto const& WNdu = subRbSpace->dualRB();
+        size_type numberOfPrimalBasis = WN.size();
+        size_type numberOfDualBasis = WNdu.size();
+        M_ar & BOOST_SERIALIZATION_NVP( numberOfPrimalBasis );
+        M_ar & BOOST_SERIALIZATION_NVP( numberOfDualBasis );
+        for( size_type i=0; i<numberOfPrimalBasis; i++ )
+            M_ar & BOOST_SERIALIZATION_NVP( WN[i] );
+        for( size_type i=0; i<numberOfDualBasis; i++ )
+            M_ar & BOOST_SERIALIZATION_NVP( WNdu[i] );
+    }
+    Archive & M_ar;
+    RbSpaceType const& M_rbSpace;
+};
+
+template<class Archive,typename RbSpaceType>
+void
+saveDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace, typename std::enable_if<RbSpaceType::element_type::is_composite>::type* = nullptr )
+{
+    boost::fusion::for_each( rbSpace.rbfunctionspaces(), SaveDatabaseCompositeByBlock<Archive,RbSpaceType>( ar,rbSpace ) );
+}
+template<class Archive,typename RbSpaceType>
+void
+saveDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace, typename std::enable_if<!RbSpaceType::element_type::is_composite>::type* = nullptr )
+{}
+
+template<class Archive,typename RbSpaceType>
+struct LoadDatabaseCompositeByBlock
+{
+    LoadDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace )
+        :
+        M_ar( ar ),
+        M_rbSpace( rbSpace )
+    {}
+    template <typename T>
+    void operator()( T & x ) const
+    {
+        typedef typename T::first_type key_type;
+
+        auto subRbSpace = M_rbSpace.template rbFunctionSpace<key_type::value>();
+
+        size_type numberOfPrimalBasis = 0, numberOfDualBasis = 0;
+        M_ar & BOOST_SERIALIZATION_NVP( numberOfPrimalBasis );
+        M_ar & BOOST_SERIALIZATION_NVP( numberOfDualBasis );
+
+        size_type numberOfPrimalBasisLoaded = numberOfPrimalBasis;//std::min( numberOfPrimalBasis,M_N );
+        size_type numberOfDualBasisLoaded = numberOfDualBasis;//std::min( numberOfDualBasis,M_N );
+
+        auto & WN = subRbSpace->primalRB();
+        auto & WNdu = subRbSpace->dualRB();
+        if ( WN.size() < numberOfPrimalBasisLoaded )
+            WN.resize( numberOfPrimalBasisLoaded );
+        if ( WNdu.size() < numberOfDualBasisLoaded )
+            WNdu.resize( numberOfDualBasisLoaded );
+
+        CHECK( subRbSpace->functionSpace() ) << "rbspace does not defined a fespace";
+        auto Xh = subRbSpace->functionSpace();
+        auto temp = Xh->elementPtr();
+
+        for( size_type i = 0 ; i < numberOfPrimalBasisLoaded ; i++ )
+        {
+            temp->setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            M_ar & BOOST_SERIALIZATION_NVP( temp );
+            WN[i] = temp;
+        }
+        for( size_type i = 0 ; i < numberOfDualBasisLoaded ; i++ )
+        {
+            temp->setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            M_ar & BOOST_SERIALIZATION_NVP( temp );
+            WNdu[i] = temp;
+        }
+    }
+    Archive & M_ar;
+    RbSpaceType const& M_rbSpace;
+};
+
+template<class Archive,typename RbSpaceType>
+void
+loadDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace, typename std::enable_if<RbSpaceType::element_type::is_composite>::type* = nullptr )
+{
+    boost::fusion::for_each( rbSpace.rbfunctionspaces(), LoadDatabaseCompositeByBlock<Archive,RbSpaceType>( ar,rbSpace ) );
+}
+template<class Archive,typename RbSpaceType>
+void
+loadDatabaseCompositeByBlock( Archive & ar, RbSpaceType const& rbSpace, typename std::enable_if<!RbSpaceType::element_type::is_composite>::type* = nullptr )
+{}
+
+} // namespace detail
+
 template<typename ModelType>
 template<class Archive>
 void
@@ -301,16 +437,25 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
 #endif
-    auto const& M_WN = M_rbSpace->primalRB();
-    auto const& M_WNdu = M_rbSpace->dualRB();
-    int sizepr = M_WN.size();
-    int sizedu = M_WNdu.size();
-
-    LOG( INFO ) << "saving Elements DB";
-    for(int i=0; i<sizepr; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
-    for(int i=0; i<sizedu; i++)
-        ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+    ar & BOOST_SERIALIZATION_NVP( M_useMonolithicRbSpace );
+    if ( M_useMonolithicRbSpace )
+    {
+        auto const& WN = M_rbSpace->primalRB();
+        auto const& WNdu = M_rbSpace->dualRB();
+        size_type numberOfPrimalBasis = WN.size();
+        size_type numberOfDualBasis = WNdu.size();
+        LOG( INFO ) << "saving Elements DB";
+        ar & BOOST_SERIALIZATION_NVP( numberOfPrimalBasis );
+        ar & BOOST_SERIALIZATION_NVP( numberOfDualBasis );
+        for( size_type i=0; i<numberOfPrimalBasis; i++ )
+            ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( WN[i] ) );
+        for( size_type i=0; i<numberOfDualBasis; i++ )
+            ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( WNdu[i] ) );
+    }
+    else
+    {
+        Feel::detail::saveDatabaseCompositeByBlock( ar,*M_rbSpace );
+    }
     LOG( INFO ) << "Elements DB saved";
 }
 
@@ -319,10 +464,10 @@ template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveHDF5DB()
 {
-    auto & M_WN = M_rbSpace->primalRB();
-    auto & M_WNdu = M_rbSpace->dualRB();
+    auto & WN = M_rbSpace->primalRB();
+    auto & WNdu = M_rbSpace->dualRB();
 
-    int size = M_WN.size();
+    int size = WN.size();
 
     std::ostringstream hdf5File;
     fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
@@ -365,12 +510,12 @@ CRBElementsDB<ModelType>::saveHDF5DB()
     {
         std::ostringstream tableName;
         LOG( INFO ) << hdf5File.str();
-        tableName << "M_WN[" << i << "]";
-        M_WN[i].saveHDF5(hdf5File.str(), tableName.str(), true);
+        tableName << "WN[" << i << "]";
+        WN[i]->saveHDF5(hdf5File.str(), tableName.str(), true);
 
         tableName.str("");
-        tableName << "M_WNdu[" << i << "]";
-        M_WNdu[i].saveHDF5(hdf5File.str(), tableName.str(), true);
+        tableName << "WNdu[" << i << "]";
+        WNdu[i]->saveHDF5(hdf5File.str(), tableName.str(), true);
     }
     LOG( INFO ) << "Elements DB saved in hdf5";
 }
@@ -382,12 +527,6 @@ void
 CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
 {
     LOG( INFO ) << " loading Elements DB ... ";
-
-    auto & M_WN = M_rbSpace->primalRB();
-    auto & M_WNdu = M_rbSpace->dualRB();
-
-    M_WN.resize( M_N );
-    M_WNdu.resize( M_N );
 
     //mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -412,24 +551,46 @@ CRBElementsDB<ModelType>::load( Archive & ar, const unsigned int version )
             LOG(INFO) << "[load] get mesh/Xh from model done.\n";
         }
     }
-    element_type temp = Xh->element();
 
-    LOG( INFO ) << "loading Elements DB (boost)";
-    for( int i = 0 ; i < M_N ; i++ )
-    {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WN[i] = temp;
-    }
+    ar & BOOST_SERIALIZATION_NVP( M_useMonolithicRbSpace );
 
-    for( int i = 0 ; i < M_N ; i++ )
+    if ( M_useMonolithicRbSpace )
     {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        ar & BOOST_SERIALIZATION_NVP( temp );
-        M_WNdu[i] = temp;
+        size_type numberOfPrimalBasis = 0, numberOfDualBasis = 0;
+        ar & BOOST_SERIALIZATION_NVP( numberOfPrimalBasis );
+        ar & BOOST_SERIALIZATION_NVP( numberOfDualBasis );
+
+        size_type numberOfPrimalBasisLoaded = std::min( numberOfPrimalBasis,M_N );
+        size_type numberOfDualBasisLoaded = std::min( numberOfDualBasis,M_N );
+
+        if ( M_rbSpace->dimension() < numberOfPrimalBasisLoaded )
+            M_rbSpace->setDimension( numberOfPrimalBasisLoaded );
+        auto & WN = M_rbSpace->primalRB();
+        auto & WNdu = M_rbSpace->dualRB();
+
+        LOG( INFO ) << "loading Elements DB (boost)";
+        for( size_type i = 0 ; i < numberOfPrimalBasisLoaded ; i++ )
+        {
+            auto & wni = WN[i];
+            if ( !wni )
+                wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( wni ) );
+        }
+
+        for( size_type i = 0 ; i < numberOfDualBasisLoaded ; i++ )
+        {
+            auto & wndui = WNdu[i];
+            if ( !wndui )
+                wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( unwrap_ptr( wndui ) );
+        }
+        M_rbSpace->updatePrimalBasisForUse();
+        M_rbSpace->updateDualBasisForUse();
     }
-    M_rbSpace->updatePrimalBasisForUse();
-    M_rbSpace->updateDualBasisForUse();
+    else
+    {
+        Feel::detail::loadDatabaseCompositeByBlock( ar,*M_rbSpace );
+    }
     LOG( INFO ) << "Elements DB loaded";
 }
 
@@ -450,16 +611,6 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     fs::path p = dbpath / fs::path(this->dbFilename());
     p.replace_extension("");
     hdf5File << p.string() << ".h5";
-    /* If the path does not exist then the db are in the system path */
-    if ( ! fs::exists( hdf5File.str() ) )
-    {
-        dbpath = this->dbSystemPath();
-        p = dbpath / fs::path(this->dbFilename());
-        p.replace_extension("");
-        hdf5File.str("");
-        hdf5File << p.string() << ".h5";
-    }
-
     HDF5 hdf5;
     hsize_t dims[1];
     hsize_t offset[1];
@@ -483,11 +634,11 @@ CRBElementsDB<ModelType>::loadHDF5DB()
 
     this->setMN(size);
 
-    auto & M_WN = M_rbSpace->primalRB();
-    auto & M_WNdu = M_rbSpace->dualRB();
+    auto & WN = M_rbSpace->primalRB();
+    auto & WNdu = M_rbSpace->dualRB();
 
-    M_WN.resize( M_N );
-    M_WNdu.resize( M_N );
+    WN.resize( M_N );
+    WNdu.resize( M_N );
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
@@ -508,22 +659,23 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         LOG(INFO) << "[load] get mesh/Xh from model done.\n";
     }
 
-    element_type temp = Xh->element();
 
     LOG( INFO ) << "loading Elements DB (hdf5)";
     for(int i=0; i<M_N; i++)
     {
         std::ostringstream tableName;
-        tableName << "M_WN[" << i << "]";
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        temp.loadHDF5(hdf5File.str(), tableName.str());
-        M_WN[i] = temp;
+        tableName << "WN[" << i << "]";
+        auto & wni = WN[i];
+        if ( !wni )
+            wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        wni->loadHDF5(hdf5File.str(), tableName.str());
 
         tableName.str("");
-        tableName << "M_WNdu[" << i << "]";
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        temp.loadHDF5(hdf5File.str(), tableName.str());
-        M_WNdu[i] = temp;
+        tableName << "WNdu[" << i << "]";
+        auto & wndui = WNdu[i];
+        if ( !wndui )
+            wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        wndui->loadHDF5(hdf5File.str(), tableName.str());
     }
     M_rbSpace->updatePrimalBasisForUse();
     M_rbSpace->updateDualBasisForUse();

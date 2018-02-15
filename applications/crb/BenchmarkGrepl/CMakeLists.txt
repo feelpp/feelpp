@@ -23,6 +23,26 @@
 #
 add_library( feelpp-applications-crb-benchmarkgrepl-options SHARED benchmarkgrepl-options.cpp )
 target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
+install(FILES benchmarkgrepl-options.hpp benchmarkgrepl-linear-elliptic.hpp benchmarkgrepl-nonlinear-elliptic.hpp DESTINATION include/feelpp/crb/BenchmarkGrepl COMPONENT Devel)
+set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-options PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BenchmarkGrepl_LIBRARIES PARENT_SCOPE)
+
+crb_add_library( benchmarkgrepl-linear-elliptic
+  SRCS benchmarkgrepl-linear-elliptic.cpp
+  LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
+  EXEC CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC )
+
+crb_add_library( benchmarkgrepl-nonlinear-elliptic-2d
+  SRCS benchmarkgrepl-nonlinear-elliptic_inst2d.cpp
+  LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
+  EXEC CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_2D )
+
+crb_add_library( benchmarkgrepl-nonlinear-elliptic-3d
+  SRCS benchmarkgrepl-nonlinear-elliptic_inst3d.cpp
+  LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
+  EXEC CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_3D )
+
 
 foreach(O 1 2 3)
   configure_file( benchmarkgrepl-linear-elliptic.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/benchmarkgrepl-linear-elliptic${O}.xml.in COPYONLY )
@@ -30,7 +50,7 @@ foreach(O 1 2 3)
 
   crb_add_model(
     benchmarkgrepl-linear-elliptic${O} BenchmarkGreplLinearElliptic CLASS BenchmarkGreplLinearElliptic<${O}>
-    HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
+    HDRS benchmarkgrepl-linear-elliptic.hpp LINK_LIBRARIES ${CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC}
     CFG benchmarkgrepl-linear-elliptic${O}.cfg XML benchmarkgrepl-linear-elliptic${O}.xml )
 
   foreach(D 2 3)
@@ -39,7 +59,7 @@ foreach(O 1 2 3)
 
     crb_add_model(
       benchmarkgrepl-nonlinear-elliptic${O}-${D}D BenchmarkGreplNonlinearElliptic CLASS BenchmarkGreplNonlinearElliptic<${O},${D}>
-      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} feelpp-applications-crb-benchmarkgrepl-options
+      HDRS benchmarkgrepl-nonlinear-elliptic.hpp LINK_LIBRARIES ${CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_${D}D}
       CFG benchmarkgrepl-nonlinear-elliptic${O}-${D}D.cfg XML benchmarkgrepl-nonlinear-elliptic${O}-${D}D.xml )
   endforeach()
 endforeach()

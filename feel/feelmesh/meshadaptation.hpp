@@ -119,11 +119,10 @@ namespace Feel
         //! the exporter factory (shared_ptr<> type)
         typedef boost::shared_ptr<export_type> export_ptrtype;
 
-        typedef bases<Lagrange<Order, Scalar> > basis_type;
-        typedef FunctionSpace<mesh_type, basis_type> space_type;
-        //! the approximation function space type (shared_ptr<> type)
+        // typedef bases<Lagrange<Order, Scalar> > basis_type;
+        // typedef FunctionSpace<mesh_type, basis_type> space_type;
+        typedef Pch_type<mesh_type, Order> space_type;
         typedef boost::shared_ptr<space_type> space_ptrtype;
-        //! an element type of the approximation function space
         typedef typename space_type::element_type element_type;
 
         //! Scalar P0 space
@@ -355,18 +354,17 @@ namespace Feel
         std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElementWithProcessId();
-        auto eltEnd = mesh->endElementWithProcessId();
-        for ( ; eltIt != eltEnd; eltIt++)
+        for ( auto const& eltWrap : elements(mesh) )
             {
-                std::vector<point_type> eltPoints( eltIt->nPoints() );
+                auto const& elt = unwrap_ref( eltWrap );
+                std::vector<point_type> eltPoints( elt.nPoints() );
                 if (Dim == 2)
                     newPosFile << "ST(";
                 if (Dim == 3)
                     newPosFile << "SS(";
-                for (int i=0; i < eltIt->nPoints(); i++)
+                for (int i=0; i < elt.nPoints(); i++)
                     {
-                        eltPoints[i] = eltIt->point(i);
+                        eltPoints[i] = elt.point(i);
                         for (int j=0; j< Dim; j++)
                             {
                                 newPosFile << eltPoints[i](j);
@@ -378,7 +376,7 @@ namespace Feel
 
                         if (Dim == 2)
                             newPosFile << "0"; //2D case => z coordinate = 0
-                        if (i!= eltIt->nPoints() - 1)
+                        if (i!= elt.nPoints() - 1)
                             newPosFile << ", ";
                     }
 
@@ -386,7 +384,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
                         newPosFile << bbNewMap[ dofIndex ];
                         if ( k!= eltPoints.size() - 1)
                             newPosFile << ", ";
@@ -422,11 +420,10 @@ namespace Feel
         std::ofstream newPosFile( posFileName );
 
         newPosFile << "View \" background mesh \" { \n";
-        auto eltIt = mesh->beginElementWithProcessId();
-        auto eltEnd = mesh->endElementWithProcessId();
-        for ( ; eltIt != eltEnd; eltIt++)
+        for ( auto const& eltWrap : elements(mesh) )
             {
-                std::vector<point_type> eltPoints( eltIt->nPoints() );
+                auto const& elt = unwrap_ref( eltWrap );
+                std::vector<point_type> eltPoints( elt.nPoints() );
                 newPosFile << "T";
                 if (Dim == 2)
                     newPosFile << "T";
@@ -434,9 +431,9 @@ namespace Feel
                     newPosFile << "S";
 
                 newPosFile << "(";
-                for (int i=0; i < eltIt->nPoints(); i++)
+                for (int i=0; i < elt.nPoints(); i++)
                     {
-                        eltPoints[i] = eltIt->point(i);
+                        eltPoints[i] = elt.point(i);
                         for (int j=0; j< Dim; j++)
                             {
                                 newPosFile << eltPoints[i](j);
@@ -445,7 +442,7 @@ namespace Feel
                             }
                         if (Dim == 2)
                             newPosFile << "0"; //2D case => z coordinate = 0
-                        if (i!= eltIt->nPoints() - 1)
+                        if (i!= elt.nPoints() - 1)
                             newPosFile << ", ";
                     }
 
@@ -453,7 +450,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( elt.id(), k) );
 
                         int num = 0;
                         newPosFile << (bbNewMap[num++])[ dofIndex ];
@@ -765,52 +762,30 @@ namespace Feel
                 //#if 0
 
                 std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
-                std::string exeName = "";
 
-                // Load geofile (.geo) and post processing (.pos) files
-                int argcGmsh = nbPosfiles + 2;
-                char **argvGmsh = new char * [argcGmsh]; // geofile + posfiles
-
-                /// argv[0] is the executable name
-                char *argExe = new char[exeName.size() + 1];
-                copy(exeName.begin(), exeName.end(), argExe);
-                argExe[exeName.size()] = '\0';
-                argvGmsh[0] = argExe;
-
-
-                /// argv[1] => geofile
-                char *argGeo = new char[geofileNameWE.size() + 1];
-                copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
-                argGeo[geofileNameWE.size()] = '\0';
-                argvGmsh[1] = argGeo;
-
-                /// argv[2,...,n] => posfiles
-                for (int i=0; i<nbPosfiles; i++)
-                    {
-                        int j = i + 2; // Shift (0 = exe, 1 = geo)
-                        char *argPos = new char[posfiles[i].size() + 1];
-                        copy(posfiles[i].begin(), posfiles[i].end(), argPos);
-                        argPos[posfiles[i].size()] = '\0';
-                        argvGmsh[j] = argPos;
-                    }
-
-                // Initializing
-                GmshInitialize(argcGmsh, argvGmsh);
+                CTX _backup = *(CTX::instance());
                 Msg::SetVerbosity( ioption("gmsh.verbosity") );
 
                 GmshSetOption("Mesh", "Algorithm", 5.);
                 ::GModel *newGmshModel = new GModel();
+                //::GModel::current(::GModel::list.size() - 1);
 
                 // Read the input geometry file
                 newGmshModel->readGEO(geofileNameWE);
 
                 // Retreive list of files
+#if 0
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {
                         LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
                         Feel::cout << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << std::endl;
                         MergeFile(CTX::instance()->files[i]);
                     }
+#else
+                for (int i=0; i<nbPosfiles; i++)
+                    MergeFile( posfiles[i] );
+
+#endif
 
                 // /* Create Fields from PView list */
                 ::FieldManager* myFieldManager = newGmshModel->getFields();
@@ -819,7 +794,7 @@ namespace Feel
                 for (unsigned int i = 0; i < ::PView::list.size(); i++)
                     {
                         ::PView *v = ::PView::list[i];
-                        if (v->getData()->hasModel(::GModel::current()))
+                        if (v->getData()->hasModel( newGmshModel/*::GModel::current()*/))
                             {
                                 Msg::Error("Cannot use view based on current mesh for background mesh: you might"
                                            " want to use a list-based view (.pos file) instead");
@@ -892,10 +867,8 @@ namespace Feel
                 // Cleanup memory
                 newGmshModel->destroy();
                 delete newGmshModel;
-                delete[] argGeo;
-                delete[] argExe;
-                delete[] argvGmsh;
-                GmshFinalize();
+                // copy context (in order to allow multiple calls)
+                *(CTX::instance()) = _backup ;
 
 #else
                 std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);

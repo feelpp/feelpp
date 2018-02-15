@@ -31,6 +31,38 @@
 
 namespace Feel {
 
+namespace crb {
+
+enum class stage
+{
+    //! offline mode is triggered
+    offline = 0,
+
+    //! online mode is triggered
+    online = 1
+};
+
+enum class load
+{
+    //! load none of the data
+    none=0,
+    //! load reduced basis data
+    rb = 1,
+    //! load finite element data
+    fe = 2,
+    //! load all
+    all = 3
+};
+
+enum class last
+{
+    //! last created
+    created = 1,
+    //! last modified
+    modified = 2
+};
+} // crb
+
 /**
  * CRBErrorType
  * Determine the type of error estimation used

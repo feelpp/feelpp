@@ -351,24 +351,27 @@ public:
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
+    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
+    using is_symm  = Feel::is_symm<polyset_type>;
     static const bool is_tensor2 = polyset_type::is_tensor2;
+    static const bool is_tensor2symm = is_tensor2 && is_symm_v;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
-    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
-    using is_symm  = Feel::is_symm<polyset_type>;
 
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
+    static constexpr int Nm1 = (N>0)?N-1:0;
 
     typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+
+    typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<boost::none_t>,
-            mpl::identity< Lagrange<N-1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
+            mpl::identity< Lagrange<Nm1, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type face_basis_type;
 
     typedef boost::shared_ptr<face_basis_type> face_basis_ptrtype;
     typedef typename mpl::if_<mpl::less_equal<mpl::int_<nDim>, mpl::int_<2> >,
@@ -437,7 +440,24 @@ public:
         // M_bdylag( new face_basis_type )
     {
 
-
+        if ( is_tensor2symm )
+        {
+            M_unsymm2symm.resize( nComponents*nLocalDof );
+            for ( uint16_type l = 0; l < nLocalDof; ++l )
+            {
+                for ( int c1 = 0; c1 < nComponents1; ++c1)
+                {
+                    for ( int c2 = c1+1; c2 < nComponents2; ++c2 )
+                    {
+                        const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
+                        M_unsymm2symm[ nLocalDof*(nComponents1*c1+c2) + l ] = nLocalDof*k+l;
+                        M_unsymm2symm[ nLocalDof*(nComponents1*c2+c1) + l ] = nLocalDof*k+l;
+                    }
+                    const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
+                    M_unsymm2symm[ nLocalDof*(nComponents1*c1+c1) + l ] = nLocalDof*k+l;
+                }
+            }
+        }
 
         // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
@@ -468,10 +488,41 @@ public:
     /**
      * \return the family name of the finite element
      */
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "lagrange";
     }
+
+
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const override
+        {
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const override
+        {
+            uint16_type ldofParent = localDofId % nLocalDof;
+            return ldofParent;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const override
+        {
+            return 1;
+        }
+
+    //! give an unsymmetric dof index i, provide the symmetric one
+    uint16_type unsymmToSymm( uint16_type i ) const override
+        {
+            if ( !is_tensor2symm )
+                return i;
+            DCHECK( M_unsymm2symm.size() > i ) << "invalid size of unsymm2symm container";
+            return M_unsymm2symm[i];
+        }
 
     //@}
 
@@ -485,11 +536,25 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::MatrixXd local_interpolant_type;
+
+    //!
+    //! build interpolant object on \p n finite elements
+    //!
+    using  local_interpolant_type = Eigen::VectorXd;
     local_interpolant_type
-    localInterpolant() const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( nComponents*nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nComponents*nLocalDof );
+        }
+
+    //!
+    //! build \p p  interpolants object on \p n finite elements
+    //!
+    using  local_interpolants_type = Eigen::MatrixXd;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nComponents*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -629,7 +694,7 @@ public:
         }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type & Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*
@@ -685,6 +750,7 @@ private:
 
     reference_convex_type M_refconvex;
     face_basis_ptrtype M_bdylag;
+    std::vector<uint16_type> M_unsymm2symm;
 };
 template<uint16_type N,
          uint16_type RealDim,

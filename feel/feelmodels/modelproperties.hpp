@@ -31,6 +31,7 @@
 #include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelfunctions.hpp>
+#include <feel/feelmodels/modeloutputs.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 
@@ -38,7 +39,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-class ModelProperties
+class FEELPP_EXPORT ModelProperties
 {
 public:
     ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
@@ -77,6 +78,9 @@ public:
     ModelFunctions & functions() { return M_functions; }
     ModelFunctions const& functions() const { return M_functions; }
 
+    ModelOutputs & outputs() { return M_outputs; }
+    ModelOutputs const& outputs() const { return M_outputs; }
+
     std::string getEntry(std::string &s);
 
     void saveMD(std::ostream &os);
@@ -104,6 +108,7 @@ private:
     BoundaryConditions M_ic; // Initial conditions
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
+    ModelOutputs M_outputs;
 };
 
 

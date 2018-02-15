@@ -47,7 +47,7 @@ namespace Feel
  * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename MeshType>
-class Importer
+class FEELPP_EXPORT Importer
     :
 public VisitorBase,
 public Visitor<MeshType>

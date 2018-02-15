@@ -562,3 +562,4 @@ basic & ex::construct_from_double(double d)
 
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

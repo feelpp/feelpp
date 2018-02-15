@@ -226,6 +226,10 @@ public:
      */
     //@{
 
+    //!
+    //! @return order of the finite element
+    //!
+    int order() const { return M_primal.nOrder; }
 
     /**
      * \return the domain shape of the finite element
@@ -298,6 +302,18 @@ public:
      * \return the family name of the finite element
      */
     virtual std::string familyName() const = 0;
+
+    //! \return the component of a local dof
+    virtual uint16_type component( uint16_type localDofId ) const = 0;
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    virtual uint16_type dofParent( uint16_type localDofId ) const = 0;
+
+    //! \return the type of a local dof
+    virtual uint16_type dofType( uint16_type localDofId ) const = 0;
+
+    //! give an unsymmetric dof index i, provide the symmetric one
+    virtual uint16_type unsymmToSymm( uint16_type i ) const { return i; }
 
     //@}
 

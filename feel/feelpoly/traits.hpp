@@ -32,6 +32,18 @@ class ScalarBase {};
 class VectorialBase {};
 class Tensor2Base {};
 
+template<typename T>
+struct polynomial_order: std::integral_constant<int,T::nOrder> {};
+
+template<typename T>
+constexpr bool polynomial_order_v = polynomial_order<T>::value;
+
+
+template<typename T>
+struct is_linear_polynomial: std::integral_constant<bool,(polynomial_order_v<T> == 1)> {};
+
+template<typename T>
+constexpr bool is_linear_polynomial_v = is_linear_polynomial<T>::value;
 
 //template<template<uint16_type> class PolySetType>
 //struct is_scalar_field : std::is_base_of<ScalarBase,PolySetType<1> >::type {};
@@ -53,6 +65,34 @@ struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type {};
 
 template<typename T>
 using is_matrix_polynomial = is_tensor2_polynomial<T>;
+
+template<typename T>
+using local_interpolant_t = typename T::local_interpolant_type;
+template<typename T>
+struct local_interpolant
+{
+    using type = local_interpolant_t<T>;
+};
+template<typename T>
+using local_interpolants_t = typename T::local_interpolants_type;
+template<typename T>
+struct local_interpolants
+{
+    using type = local_interpolants_t<T>;
+};
+
+namespace detail {
+
+inline constexpr uint16_type
+symmetricIndex( uint16_type i, uint16_type j, uint16_type n)
+{
+    if ( j>=i )
+        return  j + n*i - i*(i+1)/2;
+    else
+        return i + n*j - j*(j+1)/2;
+};
+
+}
 
 } // Feel
 #endif /* __Traits_H */

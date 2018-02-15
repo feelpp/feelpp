@@ -55,6 +55,7 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::ThermoDynamics( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // load info from .bc file
     this->loadConfigBCFile();
+    this->loadConfigPostProcess();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -86,6 +87,22 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 }
+
+THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMODYNAMICS_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
+{
+    if ( this->modelProperties().postProcess().find("Fields") != this->modelProperties().postProcess().end() )
+        for ( auto const& o : this->modelProperties().postProcess().find("Fields")->second )
+        {
+            if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
+            if ( o == "velocity-convection" || o == "all" ) this->M_postProcessFieldExported.insert( "velocity-convection" );
+            if ( o == "thermal-conductivity" || o == "all" ) this->M_postProcessFieldExported.insert( "thermal-conductivity" );
+            if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( "density" );
+            if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( "pid" );
+        }
+}
+
 
 THERMODYNAMICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -148,16 +165,11 @@ THERMODYNAMICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
         for( auto const& d : this->M_volumicForcesProperties )
         {
-            if ( marker(d).empty() )
-                myLinearForm +=
-                    integrate( _range=elements(this->mesh()),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
-            else
-                myLinearForm +=
-                    integrate( _range=markedelements(this->mesh(),marker(d)),
-                               _expr= expression(d)*id(v),
-                               _geomap=this->geomap() );
+            auto rangeBodyForceUsed = ( marker(d).empty() )? this->rangeMeshElements() : markedelements(this->mesh(),marker(d));
+            myLinearForm +=
+                integrate( _range=rangeBodyForceUsed,
+                           _expr= expression(d)*id(v),
+                           _geomap=this->geomap() );
         }
     }
 }

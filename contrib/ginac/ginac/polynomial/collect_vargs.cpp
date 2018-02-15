@@ -204,3 +204,4 @@ cln::cl_I integer_lcoeff(const ex& e, const exvector& vars)
 }
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;

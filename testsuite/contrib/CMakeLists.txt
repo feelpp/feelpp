@@ -26,4 +26,4 @@ add_executable(test_po po.cpp)
 target_link_libraries(test_po  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE} )
 
 add_executable(test_mpi mpi.cpp)
-target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_LIBRARIES} )
+target_link_libraries(test_mpi ${Boost_MPI_LIBRARY_RELEASE} ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${MPI_CXX_LIBRARIES} )

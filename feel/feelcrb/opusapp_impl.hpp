@@ -31,131 +31,13 @@ template<typename ModelType,
          template < typename ReducedMethod > class RM,
          template < typename ModelInterface > class Model>
 void
-OpusApp<ModelType,RM,Model>::SER()
-{
-    bool do_offline_eim = false;
-
-    int nb_levels = ioption( _name="ser.nb-levels" );
-    for( int ser_level=0; ser_level < nb_levels; ++ser_level )
-    {
-        if ( ser_level > 0 )
-        {
-            crbs.push_back( newCRB( ser_level ) );
-            crb = crbs.back();
-        }
-
-        // Identifiy is offline eim still needs to be done
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-        for( auto eim_sc : eim_sc_vector )
-            do_offline_eim = do_offline_eim || eim_sc->offlineStep();
-        for( auto eim_sd : eim_sd_vector )
-            do_offline_eim = do_offline_eim || eim_sd->offlineStep();
-
-        do
-        {
-            //Begin with rb since first eim has already been built in initModel
-            //this->loadDB(); // update AffineDecomposition and enrich RB database
-            tic();
-            crb->setOfflineStep( true );
-            do  // SER r-adaptation for RB
-            {
-                crb->setAdaptationSER( false ); //re-init to false
-                crb->offline();
-            }
-            while(crb->adaptationSER());
-            toc("SER - crb offline", FLAGS_v>0);
-
-            crb->setRebuild( false ); //do not rebuild since co-build is not finished
-            int use_rb = boption(_name="ser.use-rb-in-eim-mu-selection") || boption(_name="ser.use-rb-in-eim-basis-build");
-
-            tic();
-            if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
-            {
-                do_offline_eim = false; //re-init
-                for( auto eim_sc : eim_sc_vector )
-                {
-                    eim_sc->setRestart( false ); //do not restart since co-build is not finished
-
-                    if( use_rb )
-                    {
-                        if ( crbs.size() > 1 )
-                        {
-                            CHECK( crbs.size() == models.size() );
-                            eim_sc->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sc->setModel( models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sc->setRB( crb ); // current crb (first level)
-                            eim_sc->setModel( model );
-                        }
-                    }
-                    do //r-adaptation for EIM
-                    {
-                        eim_sc->setAdaptationSER( false ); //re-init to false
-                        eim_sc->offline();
-                    }
-                    while( eim_sc->adaptationSER() );
-
-                    do_offline_eim = do_offline_eim || eim_sc->offlineStep();
-                }
-                for( auto eim_sd : eim_sd_vector )
-                {
-                    eim_sd->setRestart( false ); //do not restart since co-build is not finished
-                    //eim_sd->setAdaptationSER( false ); //re-init to false
-
-                    if( use_rb )
-                    {
-                        if ( crbs.size() > 1 )
-                        {
-                            CHECK( crbs.size() == models.size() );
-                            eim_sd->setRB( crbs[ser_level-1] ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( models[ser_level-1] );
-                        }
-                        else
-                        {
-                            eim_sd->setRB( crb ); //update rb model member to be used in eim offline
-                            eim_sd->setModel( model );
-                        }
-                    }
-                    do //r-adaptation for EIM
-                    {
-                        eim_sd->setAdaptationSER( false ); //re-init to false
-                        eim_sd->offline();
-                    }
-                    while( eim_sd->adaptationSER() );
-
-                    do_offline_eim = do_offline_eim || eim_sd->offlineStep();
-                }
-
-                model->assemble(); //Affine decomposition has changed since eim has changed
-            }
-            toc("SER - eim offline + re-assemble", FLAGS_v>0);
-        }
-        while( crb->offlineStep() );
-    } // ser level
-}
-
-template<typename ModelType,
-         template < typename ReducedMethod > class RM,
-         template < typename ModelInterface > class Model>
-void
 OpusApp<ModelType,RM,Model>::run()
 {
     bool export_solution = boption(_name=_o( this->about().appName(),"export-solution" ));
     int proc_number =  Environment::worldComm().globalRank();
-
     bool load_elements_db= boption(_name="crb.load-elements-database");
     bool rebuild_db= boption(_name="crb.rebuild-database");
-
     int exportNameSize = ioption(_name="crb.export-name-max-size"); //paraview reads max 49 characters
-
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
 
     //check options (does it make sens ?)
     bool option_checked=true;
@@ -175,7 +57,8 @@ OpusApp<ModelType,RM,Model>::run()
     tic();
     if( model->hasEim() && model->useSER() )
     {
-        this->SER(); // Simultaneous EIM - RB
+        M_ser = boost::make_shared<ser_type>( crb, model );
+        M_ser->run();
     }
     this->loadDB();
     toc("Offline", FLAGS_v>0);
@@ -336,30 +219,24 @@ OpusApp<ModelType,RM,Model>::run()
     if( n_eval_computational_time > 0 )
     {
         compute_fem = false;
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-        int size1 = eim_sc_vector.size();
-        int size2 = eim_sd_vector.size();
-        if( size1 + size2 == 0 )
-            throw std::logic_error( "[OpusApp] no eim object detected" );
 
         std::string appname = this->about().appName();
-        for(int i=0; i<size1; i++)
+
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+        for(int i=0; i<eim_sc_vector.size(); i++)
             eim_sc_vector[i]->computationalTimeStatistics(appname);
-        for(int i=0; i<size2; i++)
+        for(int i=0; i<eim_sd_vector.size(); i++)
             eim_sd_vector[i]->computationalTimeStatistics(appname);
 
         run_sampling_size = 0;
-    }
-    n_eval_computational_time = ioption(_name="crb.computational-time-neval");
-    if( n_eval_computational_time > 0 )
-    {
+
         if( ! boption(_name="crb.cvg-study") )
         {
             compute_fem = false;
             run_sampling_size = 0;
         }
-        std::string appname = this->about().appName();
+
         //in the case we don't do the offline step, we need the affine decomposition
         model->computeAffineDecomposition();
         crb->computationalTimeStatistics( appname );
@@ -639,7 +516,9 @@ OpusApp<ModelType,RM,Model>::run()
             exporterName = Environment::about().appName() + "-l" + std::to_string(ser_level);
         auto e = exporter( _mesh= model->functionSpace()->mesh(), _name=exporterName );
 
-        crb = crbs[ser_level];
+        if ( ser_level>0 )
+            crb = M_ser->crb( ser_level );
+
         curpar=0;
 
         for( auto mu : *Sampling )
@@ -802,9 +681,9 @@ OpusApp<ModelType,RM,Model>::run()
 
                     // Re-use uN given by lb in crb->run
 
-                    u_crb = crb->expansion( uN[size-1] , N , WN );
+                    u_crb = crb->expansion( uN[size-1], N );
                     if( solve_dual_problem )
-                        u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
+                        u_crb_dual = crb->expansion( uNdu[0], N, true );
 
 
                     std::ostringstream u_crb_str;
@@ -823,6 +702,12 @@ OpusApp<ModelType,RM,Model>::run()
                         else
                             exportName = u_crb.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                         e->add( exportName, u_crb );
+
+                        if ( model->hasDisplacementField() )
+                        {
+                            auto warp_field = model->meshDisplacementField(mu);
+                            e->add( "warp"+mu.toString()+"-"+std::to_string(curpar), *warp_field );
+                        }
                     }
 
                     double relative_error = -1;
@@ -1153,7 +1038,7 @@ OpusApp<ModelType,RM,Model>::run()
                             auto u_crb = solutions.template get<0>();
                             auto u_crb_du = solutions.template get<1>();
                             int size = u_crb.size();
-                            auto uN = crb->expansion( u_crb[size-1], N, WN );
+                            auto uN = crb->expansion( u_crb[size-1], N  );
 
                             element_type uNdu;
 
@@ -1161,7 +1046,7 @@ OpusApp<ModelType,RM,Model>::run()
                             auto u_dual_error = model->functionSpace()->element();
                             if( solve_dual_problem )
                             {
-                                uNdu = crb->expansion( u_crb_du[0], N, WNdu );
+                                uNdu = crb->expansion( u_crb_du[0], N, true );
                                 u_dual_error = u_dual_fem - uNdu;
                             }
 
@@ -1532,10 +1417,10 @@ OpusApp<ModelType,RM,Model>::run()
                                     //size is the number of time step
                                     for(int t=0; t<size; t++)
                                     {
-                                        uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
-                                        uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
-                                        uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
-                                        uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                        uNelement.push_back( crb->expansion( u_crb[t], N ) );
+                                        uNelement_old.push_back( crb->expansion( u_crb_old[t], N ) );
+                                        uNelement_du.push_back( crb->expansion( u_crb_du[t], N, true ) );
+                                        uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, true ) );
                                     }//loop over time step
 
                                     crb->compareResidualsForTransientProblems(N, mu ,
@@ -1856,7 +1741,7 @@ OpusApp<ModelType,RM,Model>::run()
         }
 
         //model->computationalTimeEimStatistics();
-        
+
         if( export_solution )
             e->save();
 

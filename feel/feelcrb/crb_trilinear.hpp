@@ -69,18 +69,18 @@
 namespace Feel
 {
 
-/**
- * \class CRBTrilinear
- * \brief Certifed Reduced Basis for Trilinear forms class
- *
- * Implements the certified reduced basis method for treat trilinear forms
- *
- *
- * @author Elisa Schenone, Stephane Veys
- * @see
- */
-//class CRBTrilinear : public CRBDB,
-//                     public CRB<TruthModelType>
+//!
+//! @class
+//! @brief Certifed Reduced Basis for Trilinear forms class
+//!
+//! Implements the certified reduced basis method for treat trilinear forms
+//!
+//! @author Elisa Schenone
+//! @author Stephane Veys
+//! @author Jean-Baptiste Wahl
+//! @author Christophe Prud'homme
+//! @author Vincent Chabannes
+//!
 template<typename TruthModelType>
 class CRBTrilinear : public CRB<TruthModelType>
 {
@@ -131,7 +131,7 @@ public:
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -172,29 +172,39 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRBTrilinear()
+    CRBTrilinear( crb::stage stage = crb::stage::online )
         :
-        super_crb(),
-        M_crbdb()
-    {
+        super_crb( stage )
+        {}
+    CRBTrilinear( std::string const& name, crb::stage stage = crb::stage::online )
+        :
+        super_crb( name, boost::make_shared<truth_model_type>(stage), stage )
+        {
 
-    }
+        }
+    CRBTrilinear( std::string const& name,
+                  truth_model_ptrtype const & model,
+                  crb::stage stage = crb::stage::online,
+                  std::string const& prefixExt = "" )
+        :
+        super_crb( name, model, stage, prefixExt )
+        {}
+    //! default constructor
+    FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
+                                    WorldComm const& worldComm = Environment::worldComm() )
+        :
+        super_crb( name, worldComm )
+        {}
 
     //! constructor from command line options
-    CRBTrilinear( std::string  name,
-         po::variables_map const& vm,
-         truth_model_ptrtype const & model )
+    FEELPP_DEPRECATED CRBTrilinear( std::string  name,
+                                    truth_model_ptrtype const & model )
         :
-        super_crb( name, vm , model ),
-        M_crbdb( ( boost::format( "%1%" ) % ioption(_name="crb.error-type") ).str(),
-                 name,
-                 ( boost::format( "%1%-%2%-%3%-trilinear" ) % name % ioption(_name="crb.output-index") % option(_name="crb.error-type") ).str(),
-                 vm )
+        super_crb( name, model )
     {
-        this->setTruthModel( model );
-        if ( M_crbdb.loadDB() )
-            LOG(INFO) << "Database " << M_crbdb.lookForDB() << " available and loaded\n";
+        /*this->setTruthModel( model );
+        if ( this->loadDB() )
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
 
         //this will be in the offline step (it's only when we enrich or create the database that we want to have access to elements of the RB)
         this->M_elements_database.setMN( this->M_N );
@@ -207,7 +217,7 @@ public:
         else
         {
             LOG( INFO ) <<"no database for basis functions loaded. Start from the begining";
-        }
+            }*/
 
     }
 
@@ -215,8 +225,7 @@ public:
     //! copy constructor
     CRBTrilinear( CRBTrilinear const & o )
         :
-        super_crb( o ),
-        M_crbdb( o )
+        super_crb( o )
     {}
 
     //! destructor
@@ -248,15 +257,20 @@ public:
      *\return compute online the lower bound
      *\and also condition number of matrix A
      */
-    boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
+    boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu,
+                                                            std::vector< vectorN_type >& uN,
+                                                            std::vector< vectorN_type >& uNdu ,
+                                                            std::vector<vectorN_type> & uNold,
+                                                            std::vector<vectorN_type> & uNduold,
+                                                            bool print_rb_matrix=false, int K=0,
+                                                            bool computeOutput = true ) const override;
 
     /**
      * Offline computation
      *
      * \return the convergence history (max error)
      */
-    convergence_type offline();
+    convergence_type offline() override;
 
     /**
      * \param mu : parameters
@@ -268,13 +282,13 @@ public:
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
+    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const override;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
+    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const override;
 
 
     void displayVector(const map_dense_vector_type& V ) const ;
@@ -284,21 +298,22 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB();
+    void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB();
+    bool loadDB() override;
 
+    //!
+    //! 
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override { super_crb::loadDB( filename, l ); }
+    
     //@}
 
 
 private:
-    CRBDB M_crbdb;
-
-    //crb_elements_db_type M_elements_database;
-
     std::vector < std::vector < matrixN_type> >  M_Aqm_tril_pr;
     mutable matrixN_type M_bilinear_terms;
     mutable vectorN_type M_linear_terms;
@@ -324,6 +339,13 @@ template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::convergence_type
 CRBTrilinear<TruthModelType>::offline()
 {
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( this->dbLocalPath() ) )
+            fs::create_directories( this->dbLocalPath() );
+    }
+    this->worldComm().barrier();
 
     int proc_number = this->worldComm().globalRank();
 
@@ -438,6 +460,16 @@ CRBTrilinear<TruthModelType>::offline()
         for(int q=0; q<this->M_model->Ql( this->M_output_index ); q++)
             this->M_Lqm_pr[q].resize( 1 );
 
+        // save mesh of rbspace
+        if ( true )
+        {
+            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilename = (this->M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
+            std::cout << "save Mesh : " << meshFilename << std::endl;
+            this->M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        this->M_model->copyAdditionalModelFiles( this->dbDirectory() );
+
     }//end of if( rebuild_database )
 #if 1
     else
@@ -528,45 +560,6 @@ CRBTrilinear<TruthModelType>::offline()
             throw std::logic_error( "[CRB::offline] ERROR : You have to choose an appropriate strategy for the offline sampling : random, equi, logequi or predefined" );
 
         this->M_WNmu->writeOnFile(file_name);
-
-        /*        if( ! file )
-        {
-            this->M_WNmu->clear();
-            std::vector< parameter_type > V;
-            parameter_type __mu;
-            __mu = this->M_Dmu->element();
-            __mu(0)= 1      ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 111112 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 222223 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 333334 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 444445 , __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 555556 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 666667 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 777778 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 888889 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 1e+06  ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 8123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)= 9123   ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-         __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=3.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=9.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=812     ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.111e3 ; __mu(1)= 1  ; V.push_back( __mu );
-            __mu(0)=5.124e2 ; __mu(1)= 1  ; V.push_back( __mu );
-            this->M_WNmu->setElements( V );
-            this->M_iter_max = this->M_WNmu->size();
-            this->M_WNmu->writeOnFile(file_name);
-         }*/
         use_predefined_WNmu=true;
     } //build sampling
 
@@ -617,7 +610,7 @@ CRBTrilinear<TruthModelType>::offline()
         //no dual problem was solved
         this->M_model->rBFunctionSpace()->addDualBasisElement( *u );
 
-	    int number_of_added_elements=1;
+        int number_of_added_elements=1;
         this->M_N+=number_of_added_elements;
 
         if ( orthonormalize_primal )
@@ -736,9 +729,13 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) <<"========================================"<<"\n";
 
         //save DB after adding an element
-        saveDB();
+        tic();
+        this->saveDB();
         this->M_elements_database.setWn( boost::make_tuple( this->M_model->rBFunctionSpace()->primalRB() , this->M_model->rBFunctionSpace()->dualRB() ) );
         this->M_elements_database.saveDB();
+
+
+        toc("Saving the Database");
     }
 
 
@@ -751,7 +748,7 @@ CRBTrilinear<TruthModelType>::offline()
         std::vector<std::string> names;
         wn.push_back( this->M_model->rBFunctionSpace()->primalRB() );
         names.push_back( "primal" );
-        this->exportBasisFunctions( boost::make_tuple( wn ,names ) );
+        //this->exportBasisFunctions( boost::make_tuple( wn ,names ) );
 
         if ( orthonormalize_primal )
             LOG(INFO)<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized";
@@ -784,7 +781,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
                                   std::vector< vectorN_type >& uNdu,
                                   std::vector<vectorN_type> & uNold,
                                   std::vector<vectorN_type> & uNduold,
-                                  bool print_rb_matrix, int K ) const
+                                  bool print_rb_matrix, int K,
+                                  bool computeOutput ) const
 {
     uN.resize(1);
     if ( N > this->M_N ) N =this->M_N;
@@ -961,7 +959,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the jacobian matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = this->expansion( map_X , N  );
         auto J = this->M_model->jacobian( expansionX );
         matrixN_type model_reduced_jacobian( N , N );
         for(int i=0; i<N; i++)
@@ -996,8 +994,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
-    if( enable )
+    if( boption("crb.enable-convection-terms")  )
     {
         int qatri = this->M_model->QaTri();
         for ( size_type q = 0; q < qatri; ++q )
@@ -1013,10 +1010,10 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
 
-    if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
+    if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
-        auto expansionX = this->expansion( map_X , N , this->M_model->rBFunctionSpace()->primalRB() );
+        auto expansionX = this->expansion( map_X , N  );
         auto R = this->M_model->residual( expansionX );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( this->M_model->functionSpace() ) );
@@ -1090,6 +1087,7 @@ CRBTrilinear<TruthModelType>::save( Archive & ar, const unsigned int version ) c
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRBTrilinear::save] version : "<<version<<std::endl;
+    ar & boost::serialization::base_object<super_crb>( *this );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
@@ -1114,15 +1112,14 @@ template<class Archive>
 void
 CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
-
     int proc_number = this->worldComm().globalRank();
 
     LOG(INFO) <<"[CRBTrilinear::load] version"<< version <<std::endl;
-
+    ar & boost::serialization::base_object<super_crb>( *this );
     ar & BOOST_SERIALIZATION_NVP( this->M_output_index );
     ar & BOOST_SERIALIZATION_NVP( this->M_N );
 
-	ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
+    ar & BOOST_SERIALIZATION_NVP( this->M_rbconv );
 
     ar & BOOST_SERIALIZATION_NVP( this->M_error_type );
     ar & BOOST_SERIALIZATION_NVP( this->M_Xi );
@@ -1139,14 +1136,11 @@ CRBTrilinear<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( this->M_maxerror );
 }
 
-
 template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
-    super_crb::saveDB();
-
-    fs::ofstream ofs( M_crbdb.dbLocalPath() / M_crbdb.dbFilename() );
+    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
     {
@@ -1155,19 +1149,17 @@ CRBTrilinear<TruthModelType>::saveDB()
         oa << *this;
         // archive and stream closed when destructors are called
     }
+    this->saveJson();
 }
 
 template<typename TruthModelType>
 bool
 CRBTrilinear<TruthModelType>::loadDB()
 {
+    if( this->isDBLoaded() )
+        return true;
 
-    if ( this->rebuildDB() )
-        return false;
-
-    super_crb::loadDB();
-
-    fs::path db = M_crbdb.lookForDB();
+    fs::path db = this->lookForDB();
 
     if ( db.empty() )
         return false;
@@ -1175,22 +1167,20 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    //std::cout << "Loading " << db << "...\n";
-    fs::ifstream ifs( db );
+    fs::ifstream ifs(db );
 
     if ( ifs )
     {
         boost::archive::text_iarchive ia( ifs );
         // write class instance to archive
         ia >> *this;
-        //std::cout << "Loading " << db << " done...\n";
+        this->setIsLoaded( true );
         // archive and stream closed when destructors are called
         return true;
     }
 
     return false;
 }
-
 
 } // Feel
 namespace boost

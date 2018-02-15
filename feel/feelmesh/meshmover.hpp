@@ -176,7 +176,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     {
         // call updateMeasures in parallel here because this function is called ( at the end of this function)
         // by others proc which have elements and need collective comm
-        if ( imesh->worldComm().localSize() > 1 ) {
+        if ( M_updateMeshMeasures && imesh->worldComm().localSize() > 1 ) {
             //imesh->updateForUse();
             imesh->updateMeasures();
         }
@@ -204,10 +204,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //const uint16_type ndofv = fe_type::nDof;
 
 
-    std::map<int,bool> points_done;
-
-    //if ( !u.areGlobalValuesUpdated() )
-    u.updateGlobalValues();
+    std::unordered_set<size_type> points_done;
 
 
     uint16_type nptsperelem = gm->points().size2();
@@ -216,7 +213,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     for ( ; it_elt != en_elt; ++it_elt )
     {
         element_type const& curElt = *it_elt;
-
+        auto & eltModified = imesh->elementIterator( curElt )->second;
         __c->update( *it_elt );
         __ctx->update( __c );
         std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
@@ -229,59 +226,16 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 val[ comp ] = uvalues[l]( comp,0 );
             }
 
-            if ( points_done.find( curElt.point( l ).id() ) == points_done.end() )
+            size_type ptId = curElt.point( l ).id();
+            if ( points_done.find( ptId ) == points_done.end() )
             {
                 //std::cout << "Pt: " << thedof << "Elem " << curElt.id() << " G=" << curElt.G() << "\n";
-                imesh->elements().modify( imesh->elementIterator( curElt ), // it_elt,
-                                          lambda::bind( &element_type::applyDisplacement,
-                                                        lambda::_1,
-                                                        l,
-                                                        val ) );
-                points_done[curElt.point( l ).id()] = true;
+                eltModified.applyDisplacement( l, val );
+                points_done.insert( ptId );
                 //std::cout << "Pt: " << thedof << " Moved Elem " << curElt.id() << " G=" << curElt.G() << "\n";
             }
-
-            // else
-            // {
-            //     imesh->elements().modify( imesh->elementIterator( curElt ), //it_elt,
-            //                               lambda::bind( &element_type::applyDisplacementG,
-            //                                             lambda::_1,
-            //                                             l,
-            //                                             val ) );
-            // }
         }
-
-#if 0
-        // update internal data point of faces attached on this elt
-        for ( size_type j = 0; j < imesh->numLocalFaces(); j++ )
-        {
-            if ( !curElt.facePtr( j ) ) continue;
-            face_type const& curFace = curElt.face( j );
-
-            for ( int f = 0; f < face_type::numPoints; ++f )
-            {
-                uint16_type ptLocalId = ( MeshType::nDim==1 )?j:curElt.fToP( j, f );
-                auto const& curPoint = curElt.point( ptLocalId );
-                for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
-                {
-                    val[ comp ] = curPoint( comp );
-                }
-                imesh->faces().modify( imesh->faceIterator( curFace ),
-                                       lambda::bind( &face_type::setPointCoordG,
-                                                     lambda::_1,
-                                                     f,
-                                                     val ) );
-            }
-        }
-
-        // Todo : edges
-#endif
     }
-
-    //imesh->updateForUse();
-
-    if ( M_updateMeshMeasures )
-        imesh->updateMeasures();
 
     // reset geomap cache
     if ( imesh->gm()->isCached() )
@@ -290,6 +244,10 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         if ( mesh_type::nOrder > 1 )
             imesh->gm1()->initCache( imesh.get() );
     }
+
+    // update measures
+    if ( M_updateMeshMeasures )
+        imesh->updateMeasures();
 
     // reset localisation tool
     imesh->tool_localization()->reset();

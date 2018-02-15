@@ -37,9 +37,11 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     :
     M_worldComm( world ),
     M_params( world ),
+    M_mat( world ),
     M_bc( world, false ),
     M_ic( world, false ),
-    M_postproc( world )
+    M_postproc( world ),
+    M_outputs( world )
 {
     if ( !fs::exists( filename ) ) 
     {
@@ -113,10 +115,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any boundary conditions\n";
-    }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
     {
@@ -125,20 +123,13 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any initial conditions\n";
-    }
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )
     {
         LOG(INFO) << "Model with materials\n";
+        if ( !directoryLibExpr.empty() )
+            M_mat.setDirectoryLibExpr( directoryLibExpr );
         M_mat.setPTree( *mat );
-        
-    }
-    else
-    {
-        LOG(WARNING) << "Model does not have any materials\n";
     }
     auto pp = M_p.get_child_optional("PostProcess");
     if ( pp )
@@ -147,11 +138,14 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
-        
     }
-    else
+    auto out = M_p.get_child_optional("Outputs");
+    if ( out )
     {
-        LOG(WARNING) << "Model does not have any materials\n";
+        LOG(INFO) << "Model with outputs\n";
+        if ( !directoryLibExpr.empty() )
+            M_outputs.setDirectoryLibExpr( directoryLibExpr );
+        M_outputs.setPTree( *out );
     }
 }
 

@@ -9,7 +9,6 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER 1
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC  ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${LIBBASE_NAME}  )
   endforeach()
@@ -25,7 +24,6 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC  ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${LIBBASE_NAME} )
   endforeach()
@@ -33,4 +31,8 @@ endforeach()
 
 add_library(feelpp_model_thermoelectric SHARED libthermoelectric.cpp )
 target_link_libraries(feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC})
-install(TARGETS feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} DESTINATION lib COMPONENT Lib)
+set_property(TARGET feelpp_model_thermoelectric PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_model_thermoelectric DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermoelectric COMPONENT Devel)

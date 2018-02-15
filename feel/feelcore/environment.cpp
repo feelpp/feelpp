@@ -51,16 +51,19 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-#include <gflags/gflags.h>
 
-#if defined ( FEELPP_HAS_PETSC_H )
-#include <petscsys.h>
-#endif
+#include <gflags/gflags.h>
 
 #include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
+#if defined( FEELPP_HAS_GMSH_H )
+#include <Gmsh.h>
+#endif
 
 #include <feel/feelcore/environment.hpp>
 
@@ -68,6 +71,7 @@ extern "C"
 #include <feel/feelcore/feelpetsc.hpp>
 #endif
 #include <feel/feelcore/timertable.hpp>
+#include <feel/feelcore/utility.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
 
@@ -291,9 +295,10 @@ Environment::Environment( int& argc, char**& argv )
 
 
 
-#if defined(FEELPP_HAS_BOOST_PYTHON) && defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 struct PythonArgs
 {
+#if defined(FEELPP_HAS_BOOST_PYTHON) 
     PythonArgs( boost::python::list arg )
         {
             if ( argv == nullptr )
@@ -301,7 +306,7 @@ struct PythonArgs
                 /* Convert python options into argc/argv format */
 
                 argc = boost::python::len( arg );
-
+                
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
@@ -317,11 +322,49 @@ struct PythonArgs
                 argv[argc]=nullptr;
             }
         }
+#endif
+    PythonArgs( pybind11::list arg )
+        {
+            argc = 0;
+            for (auto item : arg)
+            {
+                ++argc;
+            }
+            argv =new char* [argc+1];
+            int i = 0;
+            for (auto item : arg)
+            {
+                argv[i++] = strdup( std::string(pybind11::str(item) ).c_str() );
+                argv[argc]=nullptr;
+            }
+            
+        }
     static int argc;
     static char** argv;
 };
 int PythonArgs::argc = 1;
 char** PythonArgs::argv = nullptr;
+
+Environment::Environment( pybind11::list arg )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, feel_nooptions(), feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+Environment::Environment( pybind11::list arg, po::options_description const& desc )
+    :
+#if BOOST_VERSION >= 105500
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, mpi::threading::single, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#else
+    Environment( PythonArgs(arg).argc, PythonArgs::argv, desc, feel_options(), makeAboutDefault(PythonArgs::argv[0]), makeAboutDefault(PythonArgs::argv[0]).appName() )
+#endif
+{
+}
+
+#if 0
 Environment::Environment( boost::python::list arg )
     :
 #if BOOST_VERSION >= 105500
@@ -331,7 +374,9 @@ Environment::Environment( boost::python::list arg )
 #endif
 {
 }
-#endif
+#endif // 0
+
+#endif // FEELPP_ENABLE_PYTHON_WRAPPING
 
 #if defined ( FEELPP_HAS_PETSC_H )
 void
@@ -433,6 +478,13 @@ Environment::Environment( int argc, char** argv,
 
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
+#endif
+#if defined( FEELPP_HAS_GMSH_H )
+    GmshInitialize();
+#endif
+#if defined(FEELPP_HAS_MONGOCXX )
+    if ( !S_mongocxxInstance )
+        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
 #endif
 
     // parse options
@@ -603,6 +655,14 @@ Environment::~Environment()
     VLOG( 2 ) << "[~Environment] sending delete to all deleters" << "\n";
 
     Environment::clearSomeMemory();
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    VLOG( 2 ) << "cleaning mongocxxInstance";
+    S_mongocxxInstance.reset();
+#endif
+#if defined( FEELPP_HAS_GMSH_H )
+    GmshFinalize();
+#endif
 
     if ( i_initialized )
     {
@@ -1094,7 +1154,9 @@ Environment::processGenericOptions()
             worldComm().barrier();
             MPI_Finalize();
         }
-
+#if defined(FEELPP_HAS_MONGOCXX )
+        S_mongocxxInstance.reset();
+#endif
         exit( 0 );
     }
 
@@ -1206,27 +1268,31 @@ Environment::doOptions( int argc, char** argv,
                 std::vector<std::string> configFiles = S_vm["config-files"].as<std::vector<std::string> >();
                 // reverse order (priorty for the last)
                 std::reverse(configFiles.begin(),configFiles.end());
-                for ( std::string cfgfile : configFiles )
+                for ( std::string const& cfgfile : configFiles )
                 {
                     if ( !fs::exists( cfgfile ) ) continue;
-                    cout << tc::green << "Reading " << cfgfile << "..." << tc::reset << std::endl;
+                    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+                    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
                     // LOG( INFO ) << "Reading " << cfgfile << "...";
-                    S_configFileNames.insert( fs::absolute( cfgfile ).string() );
-                    S_cfgdir = fs::absolute( cfgfile ).parent_path();
-                    std::ifstream ifs( cfgfile.c_str() );
+                    S_cfgdir = cfgAbsolutePath.parent_path();
+                    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+                    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
                     po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
                 }
             }
 
             if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                cout << tc::green << "Reading " << S_vm["config-file"].as<std::string>()
-                     << "..." << tc::reset << std::endl;
+                std::string cfgfile = S_vm["config-file"].as<std::string>();
+                fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+                cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
                 // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
-                S_configFileNames.insert( fs::absolute( S_vm["config-file"].as<std::string>() ).string() );
-                S_cfgdir = fs::absolute( S_vm["config-file"].as<std::string>() ).parent_path();
-                std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
-                po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                S_cfgdir = cfgAbsolutePath.parent_path();
+                //std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+                std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+                po::store( parse_config_file( iss, *S_desc, true ), S_vm );
+                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(),std::forward<std::istringstream>( iss ) ) );
             }
 
             po::notify( S_vm );
@@ -1283,13 +1349,15 @@ Environment::doOptions( int argc, char** argv,
             if ( found )
             {
                 LOG( INFO ) << "Reading  " << config_name << "...\n";
-                S_configFileNames.insert( fs::absolute( config_name ).string() );
                 S_cfgdir = fs::absolute( config_name ).parent_path();
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                fs::path cfgAbsolutePath = fs::absolute( config_name );
+                //std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+                std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+                store( parse_config_file( iss, *S_desc, true ), S_vm );
                 LOG( INFO ) << "Reading  " << config_name << " done.\n";
                 //po::store(po::parse_command_line(argc, argv, desc), S_vm);
                 po::notify( S_vm );
+                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
             }
         }
 
@@ -1588,6 +1656,20 @@ Environment::exportsRepository()
     return (S_appdir / "exports").string();
 }
 
+uuids::uuid
+Environment::randomUUID( bool parallel )
+{
+    auto uuid = S_generator();
+    if ( parallel )
+    {
+        // overwrite uuid with the uuid from master rank process
+        std::string suuid = uuids::to_string(uuid);
+        mpi::broadcast( Environment::worldComm().globalComm(), suuid, 0 );
+        uuid = boost::lexical_cast<uuids::uuid>( suuid );
+        
+    }
+    return uuid;
+}
 void
 Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
@@ -2229,7 +2311,7 @@ char** Environment::S_argv = 0;
 AboutData Environment::S_about;
 pt::ptree Environment::S_summary;
 boost::shared_ptr<po::command_line_parser> Environment::S_commandLineParser;
-std::set<std::string> Environment::S_configFileNames;
+std::vector<std::tuple<std::string,std::istringstream> > Environment::S_configFiles;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
 boost::shared_ptr<po::options_description> Environment::S_desc_app;
@@ -2240,6 +2322,7 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
+boost::uuids::random_generator Environment::S_generator;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
@@ -2258,4 +2341,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 
 TimerTable Environment::S_timers;
 
+#if defined(FEELPP_HAS_MONGOCXX )
+std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
+#endif
 }

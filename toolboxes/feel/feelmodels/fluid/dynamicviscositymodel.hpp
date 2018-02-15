@@ -53,6 +53,7 @@ public :
     DynamicViscosityModel( std::string prefix )
         :
         M_viscosityModelName( soption(_name="viscosity.law",_prefix=prefix ) ),
+        M_isDefinedOnWholeMesh( true ),
         M_powerLaw_n( doption(_name="power_law.n",_prefix=prefix) ),
         M_powerLaw_k( doption(_name="power_law.k",_prefix=prefix) ),
         M_powerLaw_n_generic( (M_powerLaw_n-1.)/2. ), M_powerLaw_k_generic( M_powerLaw_k ),
@@ -83,17 +84,69 @@ public :
         }
     DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
 
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
+    {
+        std::set<std::string> eltMarkersInMesh;
+        for (auto const& markPair : mesh->markerNames() )
+        {
+            std::string meshMarker = markPair.first;
+            if ( mesh->hasElementMarker( meshMarker ) )
+                eltMarkersInMesh.insert( meshMarker );
+        }
 
-    void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
-    {
-        M_space = space_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
-                                   _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
-        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
+        M_markers.clear();
+        for( auto const& m : mat )
+        {
+            auto const& matmarker = m.first;
+            if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                continue;
+            auto const& mat = m.second;
+            std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physic();
+            if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
+                continue;
+            M_markers.insert( matmarker );
+        }
+
+        if( M_markers.size() > 0 )
+            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+        else
+            M_isDefinedOnWholeMesh = true;
+        if ( M_isDefinedOnWholeMesh )
+            M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm, _extended_doftable=useExtendedDofTable );
+        else
+            M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
+
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            if ( M_markers.find( matmarker ) == M_markers.end() )
+                continue;
+
+            if ( mat.hasPropertyExprScalar("mu") )
+                this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
+            else
+                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+        }
     }
-    void initFromSpace( space_ptrtype const& space )
+    void updateForUse( space_ptrtype const& space, ModelMaterials const& mat )
     {
+        M_isDefinedOnWholeMesh = true;
         M_space = space;
-        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
+
+        M_markers.clear();
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            M_markers.insert( matmarker );
+            if ( mat.hasPropertyExprScalar("mu") )
+                this->setDynamicViscosity( mat.propertyExprScalar("mu"), matmarker );
+            else
+                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+        }
     }
 
     bool checkDynamicViscosityLaw() const
@@ -113,6 +166,8 @@ public :
 
     std::set<std::string> const& markers() const { return M_markers; }
 
+    bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
+
     double cstMu( std::string const& marker = "" ) const { return this->cstDynamicViscosity( marker); }
     double cstDynamicViscosity( std::string const& marker = "" ) const
     {
@@ -128,13 +183,21 @@ public :
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
 
-    void setCstDynamicViscosity( double d, std::string const& marker = "" )
+    void setCstDynamicViscosity( double d, std::string const& marker = "", bool update = true )
     {
         std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
         M_cstDynamicViscosity[markerUsed]=d;
-        this->updateDynamicViscosity( cst(d), marker );
+        if ( update )
+            this->updateDynamicViscosity( cst(d), marker );
     }
 
+    template < typename ExprT >
+    void setDynamicViscosity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+    {
+        this->updateDynamicViscosity( vfexpr,marker );
+        if ( M_fieldDynamicViscosity )
+            this->setCstDynamicViscosity( M_fieldDynamicViscosity->min(), marker, false );
+    }
     template < typename ExprT >
     void updateDynamicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
     {
@@ -181,19 +244,6 @@ public :
     void walburnSchneck_C3(double d) { M_walburnSchneck_C3=d; }
     double walburnSchneck_C4() const { return M_walburnSchneck_C4; }
     void walburnSchneck_C4(double d) { M_walburnSchneck_C4=d; }
-
-
-    void updateFromModelMaterials( ModelMaterials const& mat )
-    {
-        if ( mat.empty() ) return;
-        for( auto const& m : mat )
-        {
-            auto const& mat = m.second;
-            auto const& matmarker = m.first;
-            M_markers.insert( matmarker );
-            this->setCstDynamicViscosity( mat.mu(), matmarker );
-        }
-    }
 
 
     boost::shared_ptr<std::ostringstream>
@@ -285,6 +335,7 @@ private :
     std::string M_viscosityModelName;
     space_ptrtype M_space;
     std::set<std::string> M_markers;
+    bool M_isDefinedOnWholeMesh;
 
     element_ptrtype M_fieldDynamicViscosity;
     std::map<std::string,double> M_cstDynamicViscosity;

@@ -14,9 +14,9 @@ endforeach()
 
 # Build libmetis.
 add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
-#if(UNIX)
-#  target_link_libraries(feelpp_metis m)
-#endif()
+if(UNIX)
+ target_link_libraries(feelpp_metis m)
+endif()
 if ("${METIS_LIBRARY_TYPE}" STREQUAL "SHARED" )
   set_property(TARGET feelpp_metis PROPERTY MACOSX_RPATH ON)
 endif()
@@ -24,6 +24,7 @@ endif()
 
 if(METIS_INSTALL)
   install(TARGETS feelpp_metis
+    EXPORT feelpp-contrib-export-targets
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib
     ARCHIVE DESTINATION lib)

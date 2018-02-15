@@ -49,6 +49,8 @@
 
 #include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelcrb/crbmodelbase.hpp>
+
 namespace Feel
 {
 enum class CRBModelMode
@@ -72,7 +74,8 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
+class CRBModel : public CRBModelBase,
+                 public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -213,35 +216,14 @@ public:
      */
     //@{
 
-    CRBModel( CRBModelMode mode = CRBModelMode::PFEM, int level=0, bool doInit = true )
+    CRBModel( crb::stage stage, int level = 0 )
         :
-        M_Aqm(),
-        M_InitialGuessV(),
-        M_InitialGuessVector(),
-        M_Mqm(),
-        M_Fqm(),
-        M_model( new model_type ),
-        M_is_initialized( false ),
-        M_mode( mode ),
-        M_backend( backend() ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
-        M_alreadyCountAffineDecompositionTerms( false ),
-        M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
-        M_numberOfTimeStep( 1 ),
-        M_has_eim( false ),
-        M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
+        CRBModel( boost::make_shared<model_type>(), stage, level )
     {
-        if ( level != 0 )
-            M_model->setModelName( M_model->modelName() + "-" + std::to_string(level) );
-        if ( doInit )
-            this->init();
     }
-
-    CRBModel( model_ptrtype const& model , CRBModelMode mode = CRBModelMode::PFEM, bool doInit = true )
+    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
         :
+        M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
         M_InitialGuessVector(),
@@ -249,26 +231,57 @@ public:
         M_Fqm(),
         M_model( model ),
         M_is_initialized( false ),
-        M_mode( mode ),
-        M_backend( backend() ),
-        M_backend_primal( backend( _name="backend-primal") ),
-        M_backend_dual( backend( _name="backend-dual") ),
-        M_backend_l2( backend( _name="backend-l2") ),
+        M_backend( (stage==crb::stage::offline)?backend():nullptr ),
+        M_backend_primal( (stage==crb::stage::offline)?backend( _name="backend-primal"):nullptr ),
+        M_backend_dual( (stage==crb::stage::offline)?backend( _name="backend-dual"):nullptr ),
+        M_backend_l2( (stage==crb::stage::offline)?backend( _name="backend-l2"):nullptr ),
+        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
         M_alreadyCountAffineDecompositionTerms( false ),
         M_isSteadyModel( !model_type::is_time_dependent || boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_numberOfTimeStep( 1 ),
         M_has_eim( false ),
         M_useSER( ioption(_name="ser.rb-frequency") || ioption(_name="ser.eim-frequency") )
+
+        {
+            M_model = model;
+            if ( stage == crb::stage::offline )
+                this->init();
+        }
+
+
+    FEELPP_DEPRECATED CRBModel( bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, 0 )
+        {}
+
+    FEELPP_DEPRECATED CRBModel( int level, bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
     {
-        if ( doInit )
-            this->init();
     }
+
+    FEELPP_DEPRECATED CRBModel( CRBModelMode mode, int level=0, bool doInit = true )
+        :
+        CRBModel( doInit?crb::stage::offline:crb::stage::online, level )
+        {}
+
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , bool doInit = true )
+        :
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
+        {
+        }
+
+    FEELPP_DEPRECATED CRBModel( model_ptrtype const& model , CRBModelMode mode, bool doInit = true )
+        :
+        CRBModel( model, doInit?crb::stage::offline:crb::stage::online, 0 )
+        {}
 
     /**
      * copy constructor
      */
     CRBModel( CRBModel const & o )
         :
+        M_level( o.M_level ),
         M_Aqm( o.M_Aqm ),
         M_InitialGuessV( o.M_InitialGuessV ),
         M_InitialGuessVector( o.M_InitialGuessVector ),
@@ -276,7 +289,6 @@ public:
         M_Fqm( o.M_Fqm ),
         M_model(  o.M_model ),
         M_is_initialized( o.M_is_initialized ),
-        M_mode( o.M_mode ),
         M_backend( o.M_backend ),
         M_backend_primal( o.M_backend_primal ),
         M_backend_dual( o.M_backend_dual ),
@@ -334,14 +346,6 @@ public:
 
         M_model->buildGinacBetaExpressions( M_model->parameterSpace()->min() );
 
-        if ( M_mode != CRBModelMode::CRB_ONLINE &&
-                M_mode != CRBModelMode::SCM_ONLINE )
-        {
-            //the model is already initialized
-            //std::cout << "  -- init FEM  model\n";
-            //M_model->init();
-        }
-
         auto Xh = M_model->functionSpace();
         M_u = Xh->element();
         M_v = Xh->element();
@@ -350,8 +354,7 @@ public:
         bool stock = boption(_name="crb.stock-matrices");
 
         // Access to eim eventually built in initModel
-        if( this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 )
-            M_has_eim = true;
+        M_has_eim = this->scalarContinuousEim().size() > 0 || this->scalarDiscontinuousEim().size() > 0 || M_model->hasDeim();
 
         if( stock )
             this->computeAffineDecomposition();
@@ -430,6 +433,14 @@ public:
      */
     //@{
 
+
+    virtual bool useMonolithicRbSpace() { return true; }
+
+    //!
+    //! world communicator
+    //!
+    WorldComm const& worldComm() const { return M_model->worldComm(); }
+
     /**
      * \return  the \p variables_map
      */
@@ -447,6 +458,17 @@ public:
      * \return model
      */
     model_ptrtype & model() { return M_model; }
+
+    //!
+    //! get the id of the model
+    //!
+    uuids::uuid uuid() const { return M_model->uuid(); }
+
+    //!
+    //! in case of hierarchy of models, return level index.
+    //! default value is 0
+    //!
+    int level() const { return M_level; }
 
     /**
      * create a new matrix
@@ -1056,14 +1078,25 @@ public:
             ptree_mMaxLinearDecompositionA.push_back( std::make_pair("", ptree_mMaxLinearDecompositionA_value) );
         }
 
-        boost::property_tree::ptree ptreeAffineDecomposition;
-        ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
-        ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
-        ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
-        ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
 
-        boost::property_tree::ptree ptreeCrbModel;
-        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        auto ptreeAffineDecompositionOptional = ptree.get_child_optional( "affine-decomposition" );
+        if ( ptreeAffineDecompositionOptional )
+        {
+            ptreeAffineDecompositionOptional->add_child( "mMaxA", ptree_mMaxA );
+            ptreeAffineDecompositionOptional->add_child( "mMaxM", ptree_mMaxM );
+            ptreeAffineDecompositionOptional->add_child( "mMaxF", ptree_mMaxF );
+            ptreeAffineDecompositionOptional->add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+        }
+        else
+        {
+            boost::property_tree::ptree ptreeAffineDecomposition;
+            ptreeAffineDecomposition.add_child( "mMaxA", ptree_mMaxA );
+            ptreeAffineDecomposition.add_child( "mMaxM", ptree_mMaxM );
+            ptreeAffineDecomposition.add_child( "mMaxF", ptree_mMaxF );
+            ptreeAffineDecomposition.add_child( "mMaxLinearDecompositionA", ptree_mMaxLinearDecompositionA );
+
+            ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
+        }
     }
 
     /**
@@ -1099,6 +1132,9 @@ public:
      */
     void loadJson( std::string const& filename, std::string const& childname = "" )
         {
+            // first the underlying model
+            M_model->loadJson( filename, "crbmodel" );
+
             if ( !fs::exists( filename ) )
             {
                 LOG(INFO) << "Could not find " << filename << std::endl;
@@ -1194,6 +1230,24 @@ public:
         return M_model->scalarDiscontinuousEim();
     }
 
+    typename model_type::deim_vector_type deimVector() const
+    {
+        return M_model->deimVector();
+    }
+    typename model_type::mdeim_vector_type mdeimVector() const
+    {
+        return M_model->mdeimVector();
+    }
+    void updateRbInDeim( typename rbfunctionspace_type::rb_basis_type const& wn )
+    {
+        auto deim_vector = this->deimVector();
+        auto mdeim_vector = this->mdeimVector();
+
+        for ( auto deim : deim_vector )
+            deim->updateRb(wn);
+        for ( auto mdeim : mdeim_vector )
+            mdeim->updateRb(wn);
+    }
 
     struct ComputeNormL2InCompositeCase
     {
@@ -1217,8 +1271,8 @@ public:
 
             auto u1 = M_composite_u1.template element< T::value >();
             auto u2 = M_composite_u2.template element< T::value >();
-            mesh_ptrtype mesh = u1.functionSpace()->mesh();
-            double norm  = normL2(_range=elements( mesh ),_expr=( idv(u1)-idv(u2) ) );
+            double norm  = normL2(_range=u1.functionSpace()->template rangeElements< 0 >(),
+                                  _expr=( idv(u1)-idv(u2) ) );
             M_vec(i)= norm ;
         }
 
@@ -1240,7 +1294,8 @@ public:
     }
     double computeNormL2( element_type u1 , element_type u2 , mpl::bool_<false>)
     {
-        double norm=normL2(_range=elements( u2.mesh() ),_expr=( idv(u1)-idv(u2) ) );
+        double norm = normL2(_range=u2.functionSpace()->template rangeElements<0>(),
+                             _expr=( idv(u1)-idv(u2) ) );
         return norm;
     }
     double computeNormL2( element_type u1 , element_type u2 , mpl::bool_<true>)
@@ -1721,7 +1776,12 @@ public:
      */
     bool hasEim()
     {
-        return M_has_eim;
+        return M_has_eim || hasDeim();
+    }
+
+    bool hasDeim()
+    {
+        return M_model->hasDeim();
     }
     /*
      * return true if the model uses SER
@@ -2772,12 +2832,18 @@ public:
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
 
 
+    typename model_type::displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
+    {
+        return M_model->meshDisplacementField(mu);
+    }
+    bool hasDisplacementField() const { return M_model->hasDisplacementField(); }
     //@}
 
 
 
 protected:
 
+    int M_level = 0;
 
     //! affine decomposition terms for the left hand side
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
@@ -2807,10 +2873,11 @@ protected:
 
 
 private:
-    bool M_is_initialized;
+
+
+    bool M_is_initialized = false;
 
     //! mode for CRBModel
-    CRBModelMode M_mode;
 
 
     backend_ptrtype M_backend;
@@ -2917,9 +2984,9 @@ struct PreAssembleMassMatrixInCompositeCase
         auto u = M_composite_u.template element< T::value >();
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_u.functionSpace();
-        mesh_ptrtype mesh = Xh->mesh();
 
-        auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*id( v ) ) ;
+        auto expr = integrate( _range=u.functionSpace()->template rangeElements< 0 >(),
+                               _expr=trans( idt( u ) )*vf::id( v ) ) ;
         auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
 
         //each composant of the affine decomposition
@@ -2984,10 +3051,11 @@ struct AssembleMassMatrixInCompositeCase
         auto u = this->M_composite_u.template element< T::value >();
         auto v = this->M_composite_v.template element< T::value >();
         auto Xh = M_composite_u.functionSpace();
-        mesh_ptrtype mesh = Xh->mesh();
+        auto Vh = u.functionSpace();
 
         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
+            integrate( _range=Vh->template rangeElements< 0 >(),
+                       _expr=trans( idt( u ) )*vf::id( v ) );
 
     }
 
@@ -3036,7 +3104,8 @@ struct AssembleInitialGuessVInCompositeCase
 
         auto v = M_composite_v.template element< T::value >();
         auto Xh = M_composite_v.functionSpace();
-        mesh_ptrtype mesh = Xh->mesh();
+        auto Vh = v.functionSpace();
+        auto range = Vh->template rangeElements< 0 >();
         int q_max = M_crb_model->QInitialGuess();
         for(int q = 0; q < q_max; q++)
         {
@@ -3045,7 +3114,7 @@ struct AssembleInitialGuessVInCompositeCase
             {
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
-                    integrate ( _range=elements( mesh ), _expr=trans( idv( view ) )*id( v ) );
+                    integrate ( _range=range, _expr=trans( idv( view ) )*vf::id( v ) );
             }
         }
     }
@@ -3077,9 +3146,8 @@ CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> , bool light_
 {
 
     auto Xh = M_model->functionSpace();
-    auto mesh = Xh->mesh();
 
-    auto expr=integrate( _range=elements( mesh ) , _expr=inner( idt( M_u ),id( M_v ) ) );
+    auto expr = integrate( _range=Xh->template rangeElements<0>() , _expr=inner( idt( M_u ),vf::id( M_v ) ) );
     auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
     auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
     opfree->setName("mass operator (automatically created)");
@@ -3132,9 +3200,8 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm.resize( 1 );
     M_Mqm[0].resize( 1 );
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
-    auto mesh = Xh->mesh();
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
-        integrate( _range=elements( mesh ), _expr=inner(idt( M_u ),id( M_v ) )  );
+        integrate( _range=Xh->template rangeElements<0>(), _expr=inner(idt( M_u ),vf::id( M_v ) )  );
     M_Mqm[0][0]->close();
 }
 
@@ -3208,7 +3275,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
 {
     using namespace Feel::vf;
     auto Xh = M_model->functionSpace();
-    auto mesh = Xh->mesh();
+    auto range = Xh->template rangeElements<0>();
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
@@ -3223,7 +3290,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
             M_InitialGuessV[q][m] = Xh->elementPtr();
             M_InitialGuessVector[q][m] = this->newVector();
             form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
-                integrate( _range=elements( mesh ), _expr=inner( idv( initial_guess[q][m] ),id( M_v ) )  );
+                integrate( _range=range, _expr=inner( idv( initial_guess[q][m] ),vf::id( M_v ) )  );
             M_InitialGuessVector[q][m]->close();
         }
     }
@@ -3509,8 +3576,8 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     auto uold = Xh->element();
     u=uold;
 
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    int max_fixedpoint_iterations  = this->vm()["crb.fixedpoint.maxit"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.fixedpoint.increment-tol"].template as<double>();
     int iter=0;
     double norm=0;
 
@@ -3568,9 +3635,9 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     sparse_matrix_ptrtype A;
     std::vector<vector_ptrtype> F;
 
-    int max_fixedpoint_iterations = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol = doption(_name="crb.increment-fixedpoint-tol");
-
+    int max_fixedpoint_iterations = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol = doption(_name="crb.fixedpoint.increment-tol");
+    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
     double norm=0;
     int iter=0;
 
@@ -3587,7 +3654,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             }
             else
             {
-                M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
             }
         }
         else
@@ -3612,26 +3679,27 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 }
                 else
                 {
-                    M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
+                    backend( _name="backend-primal")->solve( _matrix=A , _solution=u, _rhs=F[0] );
                 }
-                Feel::cout << "[OFFLINE] iteration " << iter << ", increment_norm = " <<  norm << "\n";
 
+                iter++;
                 if ( !useAitkenRelaxation )
                 {
                     norm = this->computeNormL2( uold , u );
-                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        std::cout << "[solveFemUsingAffineDecompositionFixedPoint] iteration " << iter << ", increment_norm = " <<  norm << "\n";
                 }
                 else
                 {
                     residual = u-uold;
                     aitkenRelax.apply2(_newElt=u,_residual=residual, _currentElt=u );
-                    aitkenRelax.printInfo();
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        aitkenRelax.printInfo();
                     ++aitkenRelax;
                     if ( aitkenRelax.isFinished() )
                         fixPointIsFinished=true;
                 }
-
-                iter++;
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
 
         }
@@ -3925,8 +3993,9 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     std::vector<vector_ptrtype> F;
     vector_ptrtype Rhs = M_backend_dual->newVector( Xh );
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    bool fixedPointVerbose = boption(_name="crb.fixedpoint.verbose");
 
     double norm=0;
     int iter=0;
@@ -3970,22 +4039,24 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 M_preconditioner_dual->setMatrix( Adu );
                 M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual );
 
+                iter++;
                 if ( !useAitkenRelaxation )
                 {
                     norm = this->computeNormL2( uold , udu );
-                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter>=max_fixedpoint_iterations;
+                    fixPointIsFinished = norm < increment_fixedpoint_tol || iter >= max_fixedpoint_iterations;
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        std::cout << "[solveFemDualUsingAffineDecompositionFixedPoint] iteration " << iter << ", increment_norm = " <<  norm << "\n";
                 }
                 else
                 {
                     residual = udu-uold;
                     aitkenRelax.apply2(_newElt=udu,_residual=residual, _currentElt=udu );
-                    aitkenRelax.printInfo();
+                    if ( this->worldComm().isMasterRank() && fixedPointVerbose )
+                        aitkenRelax.printInfo();
                     ++aitkenRelax;
                     if ( aitkenRelax.isFinished() )
                         fixPointIsFinished=true;
                 }
-
-                iter++;
             } while( !fixPointIsFinished );//norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         }
         return udu;

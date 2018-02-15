@@ -9,7 +9,6 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER 1
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMODYNAMICS  ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS} ${LIBBASE_NAME}  )
   endforeach()
@@ -25,7 +24,6 @@ foreach(_DIM 2 3)
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_THERMODYNAMICS  ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS} ${LIBBASE_NAME} )
   endforeach()
@@ -33,4 +31,8 @@ endforeach()
 
 add_library(feelpp_model_thermodynamics SHARED libthermodynamics.cpp )
 target_link_libraries(feelpp_model_thermodynamics ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS})
-install(TARGETS feelpp_model_thermodynamics ${FEELPP_MODELS_LIBRARIES_THERMODYNAMICS} DESTINATION lib COMPONENT Lib)
+set_property(TARGET feelpp_model_thermodynamics PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_model_thermodynamics DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermodyn COMPONENT Devel)

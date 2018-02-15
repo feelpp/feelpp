@@ -288,14 +288,14 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     if (this->isStandardModel())
     {
-        M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldDisplacement(), 0 );
+        M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldDisplacement(), 0 );
 
         if ( M_useDisplacementPressureFormulation )
         {
             size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
-            M_blockVectorSolution.setVector( *M_blockVectorSolution.vector(), this->fieldPressure(), blockIndexPressure );
+            M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldPressure(), blockIndexPressure );
         }
-        M_blockVectorSolution.vector()->close();
+        //M_blockVectorSolution.vectorMonolithic()->close();
     }
     else if (this->is1dReducedModel())
     {
@@ -382,6 +382,20 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
             if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::PrincipalStresses ) )
                 for (int d=0;d<M_fieldsPrincipalStresses.size();++d)
                     M_exporter->step( time )->add( prefixvm(this->prefix(),(boost::format("princial-stress-%1%")%d).str() ), *M_fieldsPrincipalStresses[d] );
+#if 0
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_xx"), M_fieldStressTensor->comp( Component::X,Component::X ) );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_xy"), M_fieldStressTensor->comp( Component::X,Component::Y ) );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_yx"), M_fieldStressTensor->comp( Component::Y,Component::X ) );
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_yy"), M_fieldStressTensor->comp( Component::Y,Component::Y ) );
+            if (nDim==3)
+            {
+                M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_xz"), M_fieldStressTensor->comp( Component::X,Component::Z ) );
+                M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_yz"), M_fieldStressTensor->comp( Component::Y,Component::Z ) );
+                M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_zx"), M_fieldStressTensor->comp( Component::Z,Component::X ) );
+                M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_zy"), M_fieldStressTensor->comp( Component::Z,Component::Y ) );
+                M_exporter->step( time )->add( prefixvm(this->prefix(),"sigma_zz"), M_fieldStressTensor->comp( Component::Z,Component::Z ) );
+            }
+#endif
             hasFieldToExport = true;
         }
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::MaterialProperties ) )
@@ -834,11 +848,11 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     {
         if (M_pdeSolver=="LinearSystem")
         {
-            M_algebraicFactory->linearSolver( M_blockVectorSolution.vector() );
+            M_algebraicFactory->solveLinear( M_blockVectorSolution.vectorMonolithic() );
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if ( M_pdeType=="Hyper-Elasticity" || M_pdeType=="Elasticity-Large-Deformation" )
@@ -849,7 +863,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         }
         else if (M_pdeSolver == "Newton")
         {
-            M_algebraicFactory->AlgoNewton2( M_blockVectorSolution.vector() );
+            M_algebraicFactory->solveNewton( M_blockVectorSolution.vectorMonolithic() );
         }
     }
     else if (M_pdeType=="Generalised-String")
@@ -859,7 +873,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
         //Uvec->close();
         if (M_pdeSolver=="LinearSystem")
         {
-            M_algebraicFactory_1dReduced->linearSolver(Uvec);
+            M_algebraicFactory_1dReduced->solveLinear(Uvec);
         }
         else if (M_pdeSolver == "Newton")
         {
@@ -1019,6 +1033,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     typedef Eigen::Matrix<double, nDim, nDim> matrixN_type;
     Eigen::EigenSolver< matrixN_type > eigenSolver;
     matrixN_type sigma_eigen_matrix;
+    std::vector<double> eigenValuesSorted(nDim);
 
     auto dof = M_XhStressTensor->dof();
     for ( auto const& eltWrap : elements(this->mesh()) )
@@ -1039,35 +1054,46 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
             //compute eigenvalues
             eigenSolver.compute(sigma_eigen_matrix);
 
+            for ( uint16_type comp=0; comp < space_stress_tensor_type::nComponents1;++comp )
+                eigenValuesSorted[comp] = real(eigenSolver.eigenvalues()[comp]);
+            std::sort(eigenValuesSorted.begin(), eigenValuesSorted.end(), std::greater/*less*/<double>() );
+
+            // global dof id
             size_type gdofScal = M_XhStressTensor->compSpace()->dof()->localToGlobal( elt, j, 0 ).index();
 
-            double resPrincipalStress1=0;
+            // update principal stress
             for ( uint16_type comp=0; comp < space_stress_tensor_type::nComponents1;++comp )
-                resPrincipalStress1 += real(eigenSolver.eigenvalues()[comp]);
-            M_fieldsPrincipalStresses[0]->set( gdofScal, resPrincipalStress1 );
-            double resPrincipalStress2=0;
+                M_fieldsPrincipalStresses[comp]->set( gdofScal, eigenValuesSorted[comp] );
+
+#if 0
+            // update invariants
+            double invariant1=0;
+            for ( uint16_type comp=0; comp < space_stress_tensor_type::nComponents1;++comp )
+                invariant1 += eigenValuesSorted[comp];
+            M_fieldsPrincipalStresses[0]->set( gdofScal, invariant1 );
+            double invariant2=0;
             for ( uint16_type comp1=0; comp1 < space_stress_tensor_type::nComponents1;++comp1 )
                 for ( uint16_type comp2=comp1+1; comp2 < space_stress_tensor_type::nComponents2;++comp2 )
-                    resPrincipalStress2 += real(eigenSolver.eigenvalues()[comp1])*real(eigenSolver.eigenvalues()[comp2]);
-            M_fieldsPrincipalStresses[1]->set( gdofScal, resPrincipalStress2 );
-            if ( space_stress_tensor_type::nComponents1 == 3 )
-            {
-                double resPrincipalStress3 = real(eigenSolver.eigenvalues()[0])*real(eigenSolver.eigenvalues()[1])*real(eigenSolver.eigenvalues()[2]);
-                M_fieldsPrincipalStresses[2]->set( gdofScal, resPrincipalStress3 );
-            }
-
+                    invariant2 += eigenValuesSorted[comp1]*eigenValuesSorted[comp2];
+            M_fieldsPrincipalStresses[1]->set( gdofScal, invariant2 );
+            double invariant3 = 1;
+            for ( uint16_type comp=0; comp < space_stress_tensor_type::nComponents1;++comp )
+                invariant3 *= eigenValuesSorted[comp];
+            M_fieldsPrincipalStresses[2]->set( gdofScal, invariant3 );
+#endif
+            // update Tresca Criterions
             double resTresca = 0;
             for ( uint16_type comp1=0; comp1 < space_stress_tensor_type::nComponents1;++comp1 )
                 for (uint16_type comp2=comp1+1; comp2 < space_stress_tensor_type::nComponents2;++comp2 )
-                    resTresca =  std::max( resTresca, std::abs( real(eigenSolver.eigenvalues()[comp1])- real(eigenSolver.eigenvalues()[comp2]) ) );
+                    resTresca =  std::max( resTresca, std::abs( eigenValuesSorted[comp1] - eigenValuesSorted[comp2] ) );
+            M_fieldTrescaCriterions->set( gdofScal, resTresca );
 
+            // update Von Mises Criterions
             double resVonMises = 0;
             for ( uint16_type comp1=0; comp1 < space_stress_tensor_type::nComponents1;++comp1 )
                 for (uint16_type comp2=comp1+1; comp2 < space_stress_tensor_type::nComponents2;++comp2 )
-                    resVonMises += (1./2.)*std::pow( real(eigenSolver.eigenvalues()[comp1])- real(eigenSolver.eigenvalues()[comp2]), 2 );
+                    resVonMises += (1./2.)*std::pow( eigenValuesSorted[comp1] - eigenValuesSorted[comp2], 2 );
             resVonMises = std::sqrt( resVonMises );
-
-            M_fieldTrescaCriterions->set( gdofScal, resTresca );
             M_fieldVonMisesCriterions->set( gdofScal, resVonMises );
         }
     }
@@ -1288,8 +1314,156 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
     M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
 }
 
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+{
+    if ( !this->isStandardModel() )
+        return;
+
+    auto XhDisp = this->functionSpaceDisplacement();
+    auto XhCompDisp = XhDisp->compSpace();
+    static const uint16_type nDofComponentsDisp = XhDisp->dof()->nDofComponents();
+    auto mesh = this->mesh();
+
+    std::set<std::string> dispMarkers;
+    std::map<ComponentType,std::set<std::string> > compDispMarkers;
+
+    auto & dofsWithValueImposedDisp = M_dofsWithValueImposed["displacement"];
+    dofsWithValueImposedDisp.clear();
+
+    // strong Dirichlet bc on displacement from expression
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d) );
+        dispMarkers.insert( listMark.begin(), listMark.end() );
+    }
+    // strong Dirichlet bc on displacement component from expression
+    for ( auto const& bcDirComp : M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto listMark = this->markerDirichletBCByNameId( "elimination",marker(d), comp );
+            compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
+        }
+    }
+
+
+
+    //-------------------------------------//
+    // distribute mesh markers by entity
+    std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > meshMarkersDispByEntities;
+    std::map<ComponentType, std::tuple< std::list<std::string>,std::list<std::string>,std::list<std::string>,std::list<std::string> > > meshMarkersCompDispByEntities;
+    meshMarkersDispByEntities = detail::distributeMarkerListOnSubEntity( mesh, dispMarkers );
+    for ( auto const& compMarkerPair : compDispMarkers )
+    {
+        meshMarkersCompDispByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
+    }
+    //-------------------------------------//
+    // on topological faces
+    auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
+    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesDisp ) )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto facedof = XhDisp->dof()->faceLocalDof( face.id() );
+        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+        {
+            dofsWithValueImposedDisp.insert( it->index() );
+        }
+    }
+    // on marked edges (only 3d)
+    auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
+    for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesDisp ) )
+    {
+        auto const& edge = unwrap_ref( edgeWrap );
+        auto itEltInfo = edge.elements().begin();
+        if ( itEltInfo == edge.elements().end() )
+            continue;
+        size_type eid = itEltInfo->first;
+        uint16_type edgeid_in_element = itEltInfo->second;
+        for( auto const& ldof : XhDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+        {
+            dofsWithValueImposedDisp.insert( ldof.index() );
+        }
+    }
+    // on marked points
+    auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
+    for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsDisp ) )
+    {
+        auto const& point = unwrap_ref( pointWrap );
+        auto itPointInfo = point.elements().begin();
+        if ( itPointInfo == point.elements().end() )
+            continue;
+        size_type eid = itPointInfo->first;
+        uint16_type ptid_in_element = itPointInfo->second;
+        for( uint16_type c = 0; c < nDofComponentsDisp; ++c )
+        {
+            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+            dofsWithValueImposedDisp.insert( index );
+        }
+    }
+    //-------------------------------------//
+    // on disp components
+    for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
+    {
+        ComponentType comp = meshMarkersPair.first;
+        int compDofShift = ((int)comp);
+        // topological faces
+        auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
+        for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesCompDisp ) )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = XhCompDisp->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+            {
+                size_type compdof = it->index();
+                size_type thedof = compDofShift +  nDofComponentsDisp*compdof;
+                dofsWithValueImposedDisp.insert( thedof );
+            }
+        }
+        // edges (only 3d)
+        auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
+        for ( auto const& edgeWrap : markededges(mesh,listMarkedEdgesCompDisp ) )
+        {
+            auto const& edge = unwrap_ref( edgeWrap );
+            auto itEltInfo = edge.elements().begin();
+            if ( itEltInfo == edge.elements().end() )
+                continue;
+            size_type eid = itEltInfo->first;
+            uint16_type edgeid_in_element = itEltInfo->second;
+            for( auto const& ldof : XhCompDisp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            {
+                size_type compdof = ldof.index();
+                size_type thedof = compDofShift + nDofComponentsDisp*compdof;
+                dofsWithValueImposedDisp.insert( ldof.index() );
+            }
+        }
+        // points
+        auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
+        for ( auto const& pointWrap : markedpoints(mesh,listMarkedPointsCompDisp ) )
+        {
+            auto const& point = unwrap_ref( pointWrap );
+            auto itPointInfo = point.elements().begin();
+            if ( itPointInfo == point.elements().end() )
+                continue;
+            size_type eid = itPointInfo->first;
+            uint16_type ptid_in_element = itPointInfo->second;
+            size_type index = XhDisp->dof()->localToGlobal( eid, ptid_in_element, compDofShift ).index();
+            dofsWithValueImposedDisp.insert( index );
+        }
+    }
+
+
+
+
+
+    
+
+}
 
 } // FeelModels
+
 
 } // Feel
 

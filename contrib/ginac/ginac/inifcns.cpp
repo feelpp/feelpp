@@ -1247,3 +1247,5 @@ unsigned force_include_tgamma = tgamma_SERIAL::serial;
 unsigned force_include_zeta1 = zeta1_SERIAL::serial;
 
 } // namespace GiNaC
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

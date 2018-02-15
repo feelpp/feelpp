@@ -56,6 +56,8 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
 
     for ( int i=0;i<nTimeStep;++i )
     {
+        if ( myDb.worldComm().isMasterRank() )
+            std::cout << "compute values of pod matrix at row "<<i+1<<"/"<<nTimeStep << std::flush;
         myDb.load( timeSetIndex[i],fieldPod,ui );
         for ( int j=0;j<i;++j )
         {
@@ -73,8 +75,6 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
                 pod( i,j ) = inner_product( ui, uj );
             }
             pod( j,i ) = pod( i,j );
-            if ( myDb.worldComm().isMasterRank() )
-                std::cout << "("<<i<<","<<j<<")"<<std::flush;
         }
         if ( useScalarProductL2 )
         {
@@ -89,7 +89,7 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
             pod( i,i ) = inner_product( ui,ui );
         }
         if ( myDb.worldComm().isMasterRank() )
-            std::cout << "("<<i<<","<<i<<")\n"<<std::flush;
+            std::cout << " : done\n"<<std::flush;
     }
 
     if ( myDb.worldComm().isMasterRank() )
@@ -104,13 +104,57 @@ runPOD( DatabaseType & myDb, boost::shared_ptr<SpaceType> const& space, std::str
         matrixPodFeel.printMatlab( "pod.m" );
     }
 
-    Eigen::EigenSolver< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> > eigenSolver;
-    eigenSolver.compute( pod );
-    auto eigenValues = eigenSolver.eigenvalues();
-    //double myeigen = real(eigenValues[k]);
-    auto eigenVectors = eigenSolver.eigenvectors();
-    if ( myDb.worldComm().isMasterRank() )
-        std::cout << "eigenValues=\n" << eigenValues << "\n";
+    std::string eigenSolverType = soption(_name="eigen-solver");
+    if ( eigenSolverType == "general" )
+    {
+        Eigen::EigenSolver< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> > eigenSolver;
+        eigenSolver.compute( pod );
+        auto eigenValues = eigenSolver.eigenvalues();
+        //double myeigen = real(eigenValues[k]);
+        auto eigenVectors = eigenSolver.eigenvectors();
+        /*if ( myDb.worldComm().isMasterRank() )
+            std::cout << "eigenValues=\n" << eigenValues << "\n";
+        if ( myDb.worldComm().isMasterRank() )
+         std::cout << "eigenVectors=\n" << eigenVectors << "\n";*/
+        //std::cout << "eigenValues.size() " << eigenValues.size() << " and eigenVectors.size() " << eigenVectors.size() << " " << eigenVectors.rows() << " " << eigenVectors.cols()  << "\n";
+        int nEigenValues = eigenValues.size();
+        std::vector<std::pair<double,int> > eigenValuesSortedWithInitialId;
+        for (int k=0;k<nEigenValues;++k)
+            eigenValuesSortedWithInitialId.push_back( std::make_pair(real(eigenValues[k]),k) );
+        std::sort(eigenValuesSortedWithInitialId.begin(), eigenValuesSortedWithInitialId.end(),
+                  [](std::pair<double,int> const& a, std::pair<double,int>const& b) { return b.first > a.first; });
+        Eigen::VectorXd eigenValuesSorted(nEigenValues);
+        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigenVectorsSorted(nEigenValues,nEigenValues);
+        for(int k1=0;k1<nEigenValues;++k1)
+        {
+            int k1Initial = eigenValuesSortedWithInitialId[k1].second;
+            eigenValuesSorted(k1) = real(eigenValues[k1Initial]);
+            for(int k2=0;k2<nEigenValues;++k2)
+                eigenVectorsSorted(k2,k1) = real(eigenVectors( k2,k1Initial ));
+        }
+        if ( false )
+        {
+            if ( myDb.worldComm().isMasterRank() )
+                std::cout << "eigenValues (sorted)=\n" << eigenValuesSorted << "\n";
+            if ( myDb.worldComm().isMasterRank() )
+                std::cout << "eigenVectors (sorted)=\n" << eigenVectorsSorted << "\n";
+        }
+    }
+
+    if ( eigenSolverType == "self-adjoint" )
+    {
+        Eigen::SelfAdjointEigenSolver< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> > eigenSolver;
+        eigenSolver.compute( pod );
+        auto eigenValues = eigenSolver.eigenvalues();
+        auto eigenVectors = eigenSolver.eigenvectors();
+        if ( false )
+        {
+            if ( myDb.worldComm().isMasterRank() )
+                std::cout << "eigenValues=\n" << eigenValues << "\n";
+            if ( myDb.worldComm().isMasterRank() )
+                std::cout << "eigenVectors=\n" << eigenVectors << "\n";
+        }
+    }
 }
 
 int main(int argc, char**argv )
@@ -124,6 +168,7 @@ int main(int argc, char**argv )
         ( "scalar-product.use-operator", po::value<bool>()->default_value( true ), "build  scalar product operator  " )
         ( "time-initial", po::value<double>(), "initial time used for pod" )
         ( "time-final", po::value<double>(), "final time used for pod" )
+        ( "eigen-solver", po::value<std::string>()->default_value( "self-adjoint" ), "self-adjoint, general" )
 		;
 
 	Environment env( _argc=argc, _argv=argv,

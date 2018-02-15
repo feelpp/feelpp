@@ -488,8 +488,8 @@ public:
         VLOG(4) << " o- nLocalDof      = " << nLocalDof << "\n";
 
         if ( nDim == 2 )
-            CHECK( nLocalDof == nOrder*(nOrder+2) ) 
-                << "Invalid finite element dimension. Expected : " 
+            CHECK( nLocalDof == nOrder*(nOrder+2) )
+                << "Invalid finite element dimension. Expected : "
                 << nOrder*(nOrder+2) << " Actual: " << nLocalDof;
 
         //LOG(INFO) << "Nedelec finite element(dual): \n";
@@ -1156,10 +1156,28 @@ public:
         return M_refconvex;
     }
 
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "nedelec";
     }
+
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const override
+        {
+            return 0;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const override
+        {
+            return localDofId;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const override
+        {
+            return 1;
+        }
 
     //@}
 
@@ -1173,11 +1191,18 @@ public:
     /** @name  Methods
      */
     //@{
-    typedef Eigen::MatrixXd local_interpolant_type;
+    typedef Eigen::VectorXd local_interpolant_type;
     local_interpolant_type
-    localInterpolant() const
+    localInterpolant( int n = 1 ) const
         {
-            return local_interpolant_type::Zero( nLocalDof, 1 );
+            return local_interpolant_type::Zero( n*nLocalDof );
+        }
+
+    typedef Eigen::MatrixXd local_interpolants_type;
+    local_interpolants_type
+    localInterpolants( int p, int n = 1 ) const
+        {
+            return local_interpolants_type::Zero( n*nLocalDof, p );
         }
 
     template<typename ExprType>
@@ -1186,7 +1211,7 @@ public:
         {
             Ihloc.setZero();
             auto g = expr.geom();
- 
+
             // edge dof
             for( int e = 0; e < convex_type::numEdges; ++e )
             {
@@ -1219,7 +1244,7 @@ public:
                 for ( int l = 0; l < n_internal_dof; ++l )
                 {
                     int dof = first_dof+l;
-                    
+
                     for( int q=0;q < im.nPoints(); ++q  )
                     {
                         value_type scal = 0.;
@@ -1266,23 +1291,23 @@ public:
 
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolant_type& Ihloc ) const
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
         Ihloc.setZero();
-        
+
         for( int e = 0; e < convex_type::numEdges; ++e )
         {
             expr.geom()->edgeTangent(e, t, true);
-            
+
             for ( int l = 0; l < nDofPerEdge; ++l )
             {
                 int q = e*nDofPerEdge+l;
                 for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
                 {
                     int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-                    
+
                     for ( uint16_type c = 0; c < ncomp; ++c )
                     {
                         uint16_type I = expr_basis_t::nLocalDof*c + i;

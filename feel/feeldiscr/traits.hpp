@@ -26,6 +26,9 @@
 
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/traits.hpp>
+#include <feel/feelpoly/policy.hpp>
+#include <feel/feelmesh/meshbase.hpp>
+#include <feel/feeldiscr/functionspacebase.hpp>
 
 namespace Feel {
 
@@ -33,6 +36,30 @@ namespace Feel {
  * \addtogroup Traits
  * @{
  */
+/**
+ * if \p T has base class \p MeshBase (hense if it is a function space)
+ * then provides the member constant value equal to true, false otherwise
+ */
+template<typename MeshType>
+using is_mesh = typename std::is_base_of<MeshBase,MeshType>::type;
+
+/**
+ * provides the mesh  type
+ * if \p MeshType is a shared_ptr of a Mesh then provides the mesh type
+ * \note it checks that the \p Mesh is indeed a mesh type and return void if it is not the case.
+ */
+template<typename MeshType>
+using mesh_t = typename mpl::if_<is_mesh<decay_type<MeshType> >,
+                                 mpl::identity<decay_type<MeshType>>,
+                                 mpl::identity<void> >::type::type;
+
+
+/**
+ * helper variable template for is_mesh
+ */
+template<typename MeshType>
+constexpr bool is_mesh_v = is_mesh<MeshType>::value;
+
 
 /**
  * if \p T has base class \p ScalarBase then @return the member constant value equal
@@ -79,6 +106,8 @@ constexpr bool is_tensor2_field_v = is_tensor2_field<T>::value;
  */
 template<typename T>
 using is_tensor2symm_field  =typename std::is_base_of<Tensor2SymmBase, T>::type;
+using tensor2symm_true  = std::integral_constant<bool,true>;
+using tensor2symm_false  = std::integral_constant<bool,false>;
 
 /**
  * helper variable template for is_tensor2symm_field

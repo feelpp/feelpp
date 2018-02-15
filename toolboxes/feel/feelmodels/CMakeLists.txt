@@ -22,32 +22,13 @@
 #
 #
 
-add_subdirectory(solid_oldversion)
-
-SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
-SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
-
-
-option(FEELPP_MODELS_ENABLE_MESHALE "Enable/Disable mesh ALE" ON)
-if ( FEELPP_MODELS_ENABLE_MESHALE )
-  set( FEELPP_MODELS_HAS_MESHALE 1)
-endif()
-set(FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION 1)
-#set(FEELPP_MODELS_HAS_MESHALE_WINSLOW 1)
-
-option(FEELPP_MODELS_ENABLE_THERMODYNAMICS "Enable/Disable ThermoDynamics" ON)
-option(FEELPP_MODELS_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ON)
-option(FEELPP_MODELS_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ON)
-option(FEELPP_MODELS_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ON)
-option(FEELPP_MODELS_ENABLE_FSI "Enable/Disable FSI" ON)
-option(FEELPP_MODELS_ENABLE_ADVECTION "Enable/Disable Advection" OFF)
-option(FEELPP_MODELS_ENABLE_LEVELSET "Enable/Disable LevelSet" OFF)
-option(FEELPP_MODELS_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF)
-
+SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
+SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
 
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
+add_subdirectory(modelvf)
 
 
 add_custom_target(feelpp-models-algebra)
@@ -60,18 +41,11 @@ add_custom_target(feelpp-models)
 #add_dependencies(feelpp-models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
 add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
 
-
-set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS  feelpp_modelcore feelpp_modelmesh )
+add_custom_target(feelpp-models-common)
+add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelalg feelpp_modelmesh)
 if( FEELPP_MODELS_HAS_MESHALE )
-  set(FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS feelpp_modelmeshale ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS} )
+  add_dependencies(feelpp-models-common feelpp_modelmeshale)
 endif()
-add_custom_target(install-feelpp-models-common
-  DEPENDS ${FEELPP_MODELS_INSTALL_LIBBASE_DEPENDS}
-  COMMAND
-      "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=LibsFeelppModelsCommon
-      -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
-)
-
 
 # generate models lib
 if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )
@@ -86,7 +60,7 @@ endif()
 if ( FEELPP_MODELS_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-if ( 0 ) # disable
+if ( 1 ) # enable
 if ( FEELPP_MODELS_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()
@@ -100,3 +74,11 @@ endif()
 if ( FEELPP_MODELS_ENABLE_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
+if ( FEELPP_MODELS_ENABLE_HDG )
+  add_subdirectory(hdg)
+endif()
+
+set( FEELPP_TOOLBOXES_CONFIG_FILE  ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake)
+configure_file(${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/cmake/Feel++-ToolboxesConfig.cmake.in ${FEELPP_TOOLBOXES_CONFIG_FILE} @ONLY)
+install(FILES ${FEELPP_TOOLBOXES_CONFIG_FILE} DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
+install(EXPORT feelpp-toolboxes-targets DESTINATION share/feelpp/toolboxes/cmake )

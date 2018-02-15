@@ -38,6 +38,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcrb/crbenums.hpp>
 
 namespace Feel
 {
@@ -71,9 +72,18 @@ public:
      */
     //@{
 
+    CRBDB() = delete;
+    
     //! default constructor
-    CRBDB( std::string const& name = "defaultname_crbdb", WorldComm const& worldComm = Environment::worldComm() );
+    CRBDB( std::string const& name,
+           std::string const& ext, 
+           WorldComm const& worldComm = Environment::worldComm() );
 
+    CRBDB( std::string const& name,
+           std::string const& ext,
+           uuids::uuid const& i,
+           WorldComm const& worldComm = Environment::worldComm() );
+    
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -103,6 +113,43 @@ public:
         return M_name;
     }
 
+    //!
+    //! return extension
+    //!
+    std::string const& extension() const { return M_ext; }
+    
+    //!
+    //! @return the uuid of the CRBDB
+    //!
+    uuids::uuid const& id() const
+    {
+        return M_uuid;
+    }
+
+    //!
+    //! @return the uuid from a path to the json file
+    //!
+    uuids::uuid id( fs::path p ) const;
+
+    //!
+    //! @return the string representation of the uuid
+    //!
+    std::string idStr() const { return boost::lexical_cast<std::string>( M_uuid ); }
+    
+    //!
+    //! set UUID 
+    //!
+    void setId( uuids::uuid const& i )
+        {
+            M_uuid = i;
+            this->setDBDirectory( M_uuid );
+        } 
+        
+    //! \return the DB filename
+    std::string jsonFilename() const
+        {
+            return fs::path( M_dbfilename ).stem().string()+".json";
+        }
     //! \return the DB filename
     std::string const& dbFilename() const
     {
@@ -110,10 +157,22 @@ public:
     }
 
     //! \return prefix directory
-    std::string const& dbDirectory() const
+    std::string dbDirectory( bool withSubDir = true ) const
     {
+        if ( withSubDir && !M_dbSubDirectory.empty() )
+            return (fs::path( M_dbDirectory )/ M_dbSubDirectory ).string();
         return M_dbDirectory;
     }
+
+    //!
+    //! set the DB directory according to a name and a UUID
+    //!
+    void setDBDirectory( std::string const& name, uuids::uuid const& i );
+
+    //!
+    //! set the DB directory according to a UUID
+    //!
+    void setDBDirectory( uuids::uuid const& i );
 
     //! \return sub directory
     std::string const& dbSubDirectory() const
@@ -130,9 +189,6 @@ public:
 
     //! \return the db local path
     virtual fs::path dbLocalPath() const;
-
-    //! \return the db system path
-    fs::path dbSystemPath() const;
 
     //! \return path to database, empty path if not found
     virtual fs::path lookForDB() const;
@@ -155,13 +211,23 @@ public:
      */
     //@{
 
-    //! set the DB filename
+    //!
+    //! set the name of the model for the DB
+    //! @code
+    //! this->setName( "heat" );
+    //! @endcode
+    //!
     void setName( std::string const& name )
     {
         M_name = name;
     }
 
-    //! set the DB filename
+    //!
+    //! set the name of the model for the DB
+    //! @code
+    //! this->setDBFilename( "heat.crbdb" );
+    //! @endcode
+    //!
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;
@@ -180,8 +246,14 @@ public:
             M_dbSubDirectory = subdirectory;
         else
             M_dbSubDirectory = (fs::path( M_dbSubDirectory ) / fs::path(subdirectory )).string();
-        M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
+        //M_dbDirectory = ( fs::path( M_dbDirectory )/fs::path( subdirectory ) ).string();
     }
+
+    //! set DB sub directory
+    void setDBSubDirectory( std::string const& directory )
+        {
+            M_dbSubDirectory = directory;
+        }
 
     //@}
 
@@ -199,6 +271,42 @@ public:
      */
     virtual bool loadDB();
 
+    //!
+    //! 
+    //!
+    virtual void loadDB( std::string const& filename, crb::load l ) = 0;
+
+    //!
+    //! @return path to file \p f and check json extension
+    //!
+    fs::path db( std::string const& ) const;
+        
+    //!
+    //! 
+    //!
+    virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+
+    //!
+    //! @return fs::path from DB \p id
+    //! check existence of json metadata file
+    //! @param id db id
+    //! @param root root repository for CRB DB
+    //!
+    fs::path dbFromId( std::string const& id, std::string const& root = Environment::rootRepository() ) const;
+    
+    //!
+    //! 
+    //!
+    virtual void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
+
+    //!
+    //! @return fs::path from DB \p last
+    //! check existence of json metadata file
+    //! @param last what last file type 
+    //! @param root root repository for CRB DB
+    //!
+    fs::path dbLast( crb::last last = crb::last::modified, std::string const& root = Environment::rootRepository() ) const;
+    
     //@}
 
 protected:
@@ -226,6 +334,8 @@ private:
     WorldComm const& M_worldComm;
 
     std::string M_name;
+    std::string M_ext;
+    uuids::uuid M_uuid;
     std::string M_dbfilename;
     std::string M_dbDirectory;
     std::string M_dbSubDirectory;
