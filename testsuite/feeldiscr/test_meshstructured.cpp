@@ -28,7 +28,7 @@
 #define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_meshstructured
-#include <testsuite/testsuite.hpp>
+#include <testsuite.hpp>
 #endif
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -44,7 +44,10 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/hbf.hpp>
+#if defined(FEELPP_HAS_FFTW)
 #include <fftw3.h>
+#endif
 #include <feel/feeldiscr/meshstructured.hpp>
 
 namespace Feel
@@ -76,122 +79,174 @@ class Test_MeshStructured
     Test_MeshStructured(int nx,int ny)
     {
         ima = holo3_image<float>(ny,nx);
+        ima2 = holo3_image<float>(ny,nx);
         for (int i=0;i<nx;i++)
         {
             for (int j=0;j<ny;j++)
             {
                 ima(j,i)=1;
+                ima2(j,i)=0;
             }
         }
     }
     
     
     void run (double pixelsize) 
-    {
-     tic();
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
-     mesh->components().reset();
-     mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
-     mesh->updateForUse();
-     toc("mesh");
+        {
+            tic();
+            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                            Environment::worldComm(),"", false, false);
+
+            mesh->components().reset();
+            mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->updateForUse();
+            toc("mesh");
     
-     auto Vh = Pch<1> ( mesh ) ;
-     auto u = Vh->element () ;
-     auto v = Vh->element () ;
+            auto Vh = Pch<1> ( mesh ) ;
+            auto u = Vh->element () ;
+            auto v = Vh->element () ;
      
-    auto imaP = vf::project(Vh,elements(mesh),Px()); 
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=id(v)*idv(imaP));
+            auto imaP = vf::project(Vh,elements(mesh),Px()); 
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh),
+                          _expr=id(v)*idv(imaP));
                      
-    auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements(mesh),
-                   _expr=idt(u)*id(v));
+            auto a = form2( _trial=Vh, _test=Vh);
+            a = integrate( _range=elements(mesh),
+                           _expr=idt(u)*id(v));
                       
-    a.solve(_rhs=l,_solution=u) ;
+            a.solve(_rhs=l,_solution=u) ;
 
-    auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->addRegions(); 
-    e->save();
+            auto e = exporter( _mesh=mesh );
+            e->add( "u", u );
+            e->addRegions(); 
+            e->save();
 
-    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP));
-    std::cout << " Norm2 " << n << std::endl;
+            auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP));
+            std::cout << " Norm2 " << n << std::endl;
 
-    }
+        }
 
     void runImage  (double pixelsize) 
-    {
+        {
 
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
-     mesh->components().reset();
-     mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
-     mesh->updateForUse();
+            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                            Environment::worldComm(),"", false, false);
+            mesh->components().reset();
+            mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->updateForUse();
     
-     auto Vh = Pch<1> ( mesh ) ;
-     auto u = Vh->element () ;
-     auto v = Vh->element () ;
+            auto Vh = Pch<1> ( mesh ) ;
+            auto u = Vh->element () ;
+            auto v = Vh->element () ;
      
-    auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  //_expr=grad(v)*vec(idv(ima),idv(ima)));
-                  _expr=grad(v)*vec(idv(imaP),idv(imaP)));
+            auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
+            auto imaP2 = vf::project(Vh,elements(mesh),cst(0.)); 
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh),
+                          //_expr=grad(v)*vec(idv(ima),idv(ima)));
+                          _expr=grad(v)*vec(idv(imaP),idv(imaP2)));
     
-    auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate( _range=elements(mesh),
-                   //_expr=gradt(u)*trans(grad(v)));
-                   _expr=gradt(u)*trans(grad(v)));
+            auto a = form2( _trial=Vh, _test=Vh);
+            a = integrate( _range=elements(mesh),
+                           //_expr=gradt(u)*trans(grad(v)));
+                           _expr=gradt(u)*trans(grad(v)));
     
-    a.solve(_rhs=l,_solution=u) ;
+            a.solve(_rhs=l,_solution=u) ;
     
-    auto value  = vf::project(Vh,elements(mesh),sqrt(2.)); 
-    auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(imaP)); 
-    std::cout << " Norm2 " << n << std::endl;
+            auto value  = vf::project(Vh,elements(mesh),Py()); 
+            auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(value)); 
+            std::cout << " Norm2 " << n << std::endl;
 
-    }
+        }
+  
+    void runImageHbf  (std::string hbf1, std::string hbf2, std::string solution, double pixelsize) 
+        {
+#if 0
+            auto x = readHBF( hbf1 );
+            auto y = readHBF( hbf2 );
+            auto z = readHBF( solution );
+
+            auto mesh = boost::make_shared<MeshStructured>( x.rows(),
+                                                            x.cols(),
+                                                            pixelsize,
+                                                            cx,cy,
+                                                            /*NULL,*/
+                                                            Environment::worldComm(),
+                                                            "",
+                                                            false,
+                                                            false);
+            mesh->components().reset();
+            mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->updateForUse();
+    
+            auto Vh = Pch<1> ( mesh ) ;
+            auto u = Vh->element () ;
+            auto v = Vh->element () ;
+            auto px = Vh->element () ;
+            auto py = Vh->element () ;
+            Hbf2FeelppStruc h2f( nx, ny, Vh );
+            Hbf2FeelppStruc h2fS( z.cols(), z.rows(), Vh );
+            px = h2f( x);
+            py = h2f( y );
+            auto s = h2fS ( z);
+      
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh),
+                          _expr=grad(v)*vec(idv(px),idv(py)));
+    
+            auto a = form2( _trial=Vh, _test=Vh);
+            a = integrate( _range=elements(mesh),
+                           //_expr=gradt(u)*trans(grad(v)));
+                           _expr=gradt(u)*trans(grad(v)));
+    
+            a.solve(_rhs=l,_solution=u) ;
+    
+            std::cout << "L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-idv(s) ) << "\n"; 
+#endif   
+
+        }
 
 
     void runParallel ( double pixelsize )
-    {
-     tic();
-     Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
-     auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize,
-                                                    Environment::worldComm() );
-     Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
-     Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
-     mesh->components().reset();
-     Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
-     Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
-     //mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
-     mesh->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES) );
-     Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
-     Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
-     mesh->updateForUse();
-     Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
-     Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
+        {
+            tic();
+            Feel::cout << "[nbPt X] x [nbPt Y] = " << ima.rows() << "\t" << ima.cols() << std::endl;
+            auto mesh = boost::make_shared<MeshStructured>( ima.rows(), ima.cols(), pixelsize, ima,ima,
+                                                            Environment::worldComm(),"", false, false);
+            Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
+            Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
+            mesh->components().reset();
+            Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
+            Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
+            //mesh->components().set( size_type(MESH_NO_UPDATE_MEASURES) );
+            mesh->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES) );
+            Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
+            Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
+            mesh->updateForUse();
+            Feel::cout <<"  mesh->numGlobalElements() " << mesh->numGlobalElements() << std::endl;
+            Feel::cout <<"  mesh->numGlobalPoints()   " << mesh->numGlobalPoints()   << std::endl;
  
 
-    auto Vh = Pch<1>(mesh,true);
-     std::cout << "Rank - nDof \t" << Environment::worldComm().localRank() << "\t" <<  Vh->nLocalDof() << std::endl;
-     //Vh->map().showMe(true,std::cout);
-     std::cout << "Rank - Ghost Local Dof :" << Environment::worldComm().localRank() << "\t"<< Vh->dof()->nLocalGhosts() << std::endl;
-     //auto a = form2(Vh,Vh);
-     //a.matrixPtr()->printMatlab("theMat");
+            auto Vh = Pch<1>(mesh,true);
+            std::cout << "Rank - nDof \t" << Environment::worldComm().localRank() << "\t" <<  Vh->nLocalDof() << std::endl;
+            //Vh->map().showMe(true,std::cout);
+            std::cout << "Rank - Ghost Local Dof :" << Environment::worldComm().localRank() << "\t"<< Vh->dof()->nLocalGhosts() << std::endl;
+            //auto a = form2(Vh,Vh);
+            //a.matrixPtr()->printMatlab("theMat");
 
-     auto e = exporter( _mesh=mesh );
-     e->addRegions();
-     e->save(); 
+            auto e = exporter( _mesh=mesh );
+            e->addRegions();
+            e->save(); 
 
-   }
+        }
 
 
 
     private :
 
     holo3_image<float> ima;
+    holo3_image<float> ima2;
     
 };
 
@@ -204,10 +259,11 @@ double ps=1e-2;
 BOOST_AUTO_TEST_CASE( test_run0 )
 {
     Test_MeshStructured tms0(13,4);
-    tms0.runParallel(ps);
+    tms0.runImage(ps);
+    //tms0.runParallel(ps);
 }
 
-/*
+
 BOOST_AUTO_TEST_CASE( test_run2 )
 {
     Test_MeshStructured tms2(12,24);
@@ -219,7 +275,6 @@ BOOST_AUTO_TEST_CASE( test_run3 )
     Test_MeshStructured tms3(42,18);
     tms3.runParallel(ps);
 }
-*/
 
 /*
 BOOST_AUTO_TEST_CASE( test_run4 )

@@ -78,7 +78,25 @@ Pdhv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                   _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                   _extended_doftable=buildExtendedDofTable );
+}
+
+/**
+ Given a \p mesh, build a function space of vectorial discontinuous function
+ which are piecewise polynomial of degree (total or in each variable) less
+ than k using Lagrange basis functions
+ */
+template<int Order,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType,
+         int Tag = 0>
+inline
+Pdhv_ptrtype<MeshType,Order,Pts,Tag>
+Pdhv( boost::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false  )
+{
+    return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
+                                                   _range=rangeElt,
+                                                   _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                   _extended_doftable=buildExtendedDofTable );
 }
 
 }

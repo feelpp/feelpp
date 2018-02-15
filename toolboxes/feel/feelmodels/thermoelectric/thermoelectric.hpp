@@ -137,6 +137,7 @@ public:
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
     thermodyn_model_ptrtype thermodynModel() { return M_thermodynModel; }
@@ -148,6 +149,8 @@ public:
     space_electricfield_ptrtype const& spaceElectricField() const { return M_XhElectricField; }
     element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
+
+    electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
@@ -182,18 +185,23 @@ public:
     void updateElectricField();
 
 private :
+    void updateBoundaryConditionsForUse();
+
+private :
     thermodyn_model_ptrtype M_thermodynModel;
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;
     element_electricpotential_ptrtype M_fieldElectricPotential;
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
     // physical parameter
-    space_scalar_P0_ptrtype M_XhScalarP0;
+    std::string M_modelName;
+    std::string M_solverName;
     electricproperties_ptrtype M_electricProperties;
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
@@ -205,6 +213,7 @@ private :
     backend_ptrtype M_backendMonolithic;
     model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
     BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
+    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     // start dof index fields in matrix (temperature,electric-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 

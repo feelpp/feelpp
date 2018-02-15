@@ -24,7 +24,7 @@
 include (FindPackageHandleStandardArgs)
 
 function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_version_h)
-	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*__VERSION.*")
+	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*_VERSION.*")
 	if (NOT _gmsh_vinfo)
 		message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
 	endif()
@@ -89,16 +89,17 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
 
   if ( GMSH_INCLUDE_PATH )
     set( FEELPP_HAS_GMSH_H 1 )
-    FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
-      Openfile.h Field.h
-      PATHS ${GMSH_INCLUDE_PATH}
-      DOC "Directory where GMSH header files are stored" )
-    if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-      set( FEELPP_HAS_GMSH_ADAPT_H 1 )
-    else ( GMSH_ADAPTMESH_INCLUDE_DIR )
-      message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
-      message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
-    endif( GMSH_ADAPTMESH_INCLUDE_DIR )
+    # FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
+    #   Openfile.h Field.h
+    #   PATHS ${GMSH_INCLUDE_PATH}
+    #   DOC "Directory where GMSH header files are stored" )
+    # if ( GMSH_ADAPTMESH_INCLUDE_DIR )
+    #   set( FEELPP_HAS_GMSH_ADAPT_H 1 )
+    # else ( GMSH_ADAPTMESH_INCLUDE_DIR )
+    #   message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
+    #   message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
+    # endif( GMSH_ADAPTMESH_INCLUDE_DIR )
+    set( FEELPP_HAS_GMSH_ADAPT_H 1 )
   endif(GMSH_INCLUDE_PATH)
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
@@ -158,19 +159,21 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       ERROR_FILE "gmsh-config.err")
     execute_process(COMMAND grep "Build options" gmsh-config.err
       OUTPUT_VARIABLE GMSH_BUILDOPTS)
-    STRING(REPLACE "Build options    : " "" GMSH_EXTERNAL_LIBS_STRING ${GMSH_BUILDOPTS})
-    string(REPLACE " " ";" GMSH_EXTERNAL_LIBS ${GMSH_EXTERNAL_LIBS_STRING})
+    if ( GMSH_BUILDOPTS )
+      STRING(REPLACE "Build options    : " "" GMSH_EXTERNAL_LIBS_STRING ${GMSH_BUILDOPTS})
+      string(REPLACE " " ";" GMSH_EXTERNAL_LIBS ${GMSH_EXTERNAL_LIBS_STRING})
     
-    # Could also check for Cgns support (not really working in Gmsh)
-    set (EXTERNAL_LIBS Med OpenCascade)
-    foreach(_l ${EXTERNAL_LIBS})
-      list (FIND GMSH_EXTERNAL_LIBS ${_l} _index)
-      if (${_index} GREATER -1)
-        MESSAGE(STATUS "Gmsh has ${_l} support")
-        string(TOUPPER ${_l} EXTERNLIB)
-        set(FEELPP_ENABLE_${EXTERNLIB} ON)
-      ENDIF()
-    endforeach()
+      # Could also check for Cgns support (not really working in Gmsh)
+      set (EXTERNAL_LIBS Med OpenCascade)
+      foreach(_l ${EXTERNAL_LIBS})
+        list (FIND GMSH_EXTERNAL_LIBS ${_l} _index)
+        if (${_index} GREATER -1)
+          MESSAGE(STATUS "Gmsh has ${_l} support")
+          string(TOUPPER ${_l} EXTERNLIB)
+          set(FEELPP_ENABLE_${EXTERNLIB} ON)
+        ENDIF()
+      endforeach()
+    endif( GMSH_BUILDOPTS)
   ELSE(GMSH_EXECUTABLE)
     MESSAGE(STATUS "gmsh executable has not been detected. Support for Med and OpenCascade set to OFF")
   ENDIF(GMSH_EXECUTABLE)
@@ -217,13 +220,14 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   set(GMSH_LIBRARIES "")
   if(GMSH_LIBRARY)
     set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
-endif()
-
+  endif()
+  
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
       GMSH_INCLUDE_DIR GMSH_LIBRARIES GMSH_EXECUTABLE
     )
 
   if ( GMSH_FOUND )
+    _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH}/GmshVersion.h) 
     set(FEELPP_HAS_GMSH_LIBRARY 1)
     MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
     MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )

@@ -49,7 +49,6 @@
 
 
 #include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
-#include <feel/feelmodels/modelalg/functionSup.cpp>
 
 namespace Feel
 {
@@ -224,7 +223,7 @@ public :
     template< typename elem_type >
     void update( elem_type const& polyDisplacementSet );
 
-    void updateImpl( Vector<double> const& dispInput );
+    void updateImpl();
 
     /**
      * \Revert mesh_ho in reference state
@@ -291,7 +290,7 @@ private :
     bool M_isARestart;
     std::string M_restartPath;
 
-    //bool M_doExport;
+    std::set<size_type> M_dofsOnMovingBoundary_HO;
 };
 
 //------------------------------------------------------------------------------------------------//
@@ -307,34 +306,17 @@ MeshALE<Convex>::update( std::vector<elem_type> const& polyDisplacementSet )
 template< class Convex >
 template< typename elem_type >
 void
-MeshALE<Convex>::update( elem_type/*std::vector<elem_type>*/ const& polyDisplacementSet )
+MeshALE<Convex>::update( elem_type const& polyDisplacementSet )
 {
     this->log(prefixvm(this->prefix(),"MeshALE"),"update", "start");
 
     CHECK( this->isOnMovingMesh() ) << "meshALE must be on moving mesh\n";
 
-    //---------------------------------------------------------------------------------------------//
-    // reset to 0
-    //M_displacementOnMovingBoundary_HO_ref->zero();
+    M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving")),
+        _expr=vf::idv(polyDisplacementSet) );
+    sync( *M_displacementOnMovingBoundary_HO_ref, "=", M_dofsOnMovingBoundary_HO );
 
-    //---------------------------------------------------------------------------------------------//
-    // interp disp to ref_ho
-    auto vecDisp = backend()->newVector( M_displacementOnMovingBoundary_HO_ref->functionSpace() );
-    for ( uint16_type i=0; i < this->aleFactory()->flagSet("moving").size(); ++i )
-    {
-#if 1
-        modifVec(markedfaces( M_movingMesh, this->aleFactory()->flagSet("moving",i) ),
-                 *M_displacementOnMovingBoundary_HO_ref,
-                 vecDisp/*M_displacementOnMovingBoundary_HO_ref*/,
-                 vf::idv(polyDisplacementSet/*[i]*/) );
-#else
-        //M_displacementOnMovingBoundary_HO_ref->on(_range=markedfaces( M_movingMesh, this->aleFactory()->flagSet("moving",i) ),_expr=vf::idv(polyDisplacementSet) );
-#endif
-    }
-    vecDisp->close();
-    //*M_displacementOnMovingBoundary_HO_ref = *vecDisp;
-
-    this->updateImpl( *vecDisp );
+    this->updateImpl();
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"update", "finish");
 }

@@ -34,6 +34,7 @@
 #include <feel/feeldiscr/odh.hpp>
 #include <feel/feeldiscr/moch.hpp>
 #include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/p2ch.hpp>
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/dhpdh.hpp>
 
@@ -42,6 +43,7 @@
 #include <feel/feeldiscr/elementproduct.hpp>
 #include <feel/feeldiscr/measureofelementsatpoints.hpp>
 #include <feel/feeldiscr/createsubmesh.hpp>
+#include <feel/feeldiscr/makemesh.hpp>
 
 // operators
 #include <feel/feeldiscr/operatorinterpolation.hpp>

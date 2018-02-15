@@ -45,6 +45,7 @@
 
 #include <feel/feelmodels/thermodyn/thermalpropertiesdescription.hpp>
 
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 namespace Feel
 {
@@ -70,7 +71,8 @@ class ThermoDynamicsBase : public ModelNumerical,
         typedef Mesh<convex_type> mesh_type;
         typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
-        static const uint16_type nOrderPoly = BasisTemperatureType::nOrder;
+        static const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
+        static const uint16_type nOrderPoly = nOrderTemperature;
         typedef BasisTemperatureType basis_temperature_type;
         typedef Lagrange<nOrderPoly, Vectorial,Continuous,PointSetFekete> basis_velocityconvection_type;
         // function space temperature
@@ -93,6 +95,9 @@ class ThermoDynamicsBase : public ModelNumerical,
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
         typedef boost::shared_ptr<bdf_temperature_type> bdf_temperature_ptrtype;
+        // stabilization
+        typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
+        typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
         // exporter
         typedef Exporter<mesh_type,nOrderGeo> export_type;
         typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -116,6 +121,8 @@ class ThermoDynamicsBase : public ModelNumerical,
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
+        elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
         element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
@@ -128,11 +135,19 @@ class ThermoDynamicsBase : public ModelNumerical,
         bool fieldVelocityConvectionIsOperational() const { return (M_fieldVelocityConvection.use_count() > 0); }
         bool fieldVelocityConvectionIsUsedAndOperational() const { return this->fieldVelocityConvectionIsUsed() && this->fieldVelocityConvectionIsOperational(); }
         void setFieldVelocityConvectionIsIncompressible(bool b) { M_fieldVelocityConvectionIsIncompressible=b; }
+        // stabilization
+        bool stabilizationGLS() const { return M_stabilizationGLS; }
+        std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
+        stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
         //___________________________________________________________________________________//
         // physical parameters
         thermalproperties_ptrtype const& thermalProperties() const { return M_thermalProperties; }
         thermalproperties_ptrtype & thermalProperties() { return M_thermalProperties; }
-
+        // boundary condition + body forces
+        map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
+        map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
+        map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
+        map_scalar_field<2> const& bodyForces() const { return M_volumicForcesProperties; }
         //___________________________________________________________________________________//
         // algebraic data and solver
         backend_ptrtype const& backend() const { return  M_backend; }
@@ -162,10 +177,12 @@ class ThermoDynamicsBase : public ModelNumerical,
         void createExporters();
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
-        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app );
+        void init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app );
         void updateForUseFunctionSpacesVelocityConvection();
 
         void initPostProcess();
+        bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+
         void restartExporters();
         void exportMeasures( double time );
         void exportResults() { this->exportResults( this->currentTime() ); }
@@ -183,6 +200,7 @@ class ThermoDynamicsBase : public ModelNumerical,
         /*virtual*/ void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
+        void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const = 0;
         virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const=0;
         virtual void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const =0;
@@ -211,13 +229,15 @@ class ThermoDynamicsBase : public ModelNumerical,
             M_fieldVelocityConvection->on(_range=elements(this->mesh()), _expr=expr );
         }
 
+    private :
+        void updateBoundaryConditionsForUse();
 
-        //private :
     protected :
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
         mesh_ptrtype M_mesh;
+        elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
         element_temperature_ptrtype M_fieldTemperature;
@@ -238,12 +258,19 @@ class ThermoDynamicsBase : public ModelNumerical,
         map_scalar_fields<2> M_bcRobin;
         map_scalar_field<2> M_volumicForcesProperties;
 
+        // stabilization
+        bool M_stabilizationGLS;
+        std::string M_stabilizationGLSType;
+        stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+
         // algebraic data/tools
         backend_ptrtype M_backend;
         model_algebraic_factory_ptrtype M_algebraicFactory;
         BlocksBaseVector<double> M_blockVectorSolution;
+        std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
         // post-process
+        std::set<std::string> M_postProcessFieldExported;
         export_ptrtype M_exporter;
         bool M_doExportAll, M_doExportVelocityConvection;
         std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
@@ -252,6 +279,8 @@ class ThermoDynamicsBase : public ModelNumerical,
 
         typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;
         updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
+
+
 
     };
 

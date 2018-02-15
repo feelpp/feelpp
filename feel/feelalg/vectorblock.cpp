@@ -78,10 +78,24 @@ BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
     M_vector = backend->newBlockVector( _block=*this );
 }
 
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype&
+BlocksBaseVector<T>::vectorMonolithic()
+{
+    boost::shared_ptr< VectorBlockBase<T> > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
+    return vcast->getVector();
+}
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype const&
+BlocksBaseVector<T>::vectorMonolithic() const
+{
+    boost::shared_ptr< VectorBlockBase<T> const > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
+    return vcast->getVector();
+}
 
 template <typename T>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , int blockId ) const
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int blockId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
@@ -94,6 +108,8 @@ BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec , i
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
+    if ( closeVector )
+        vec.close();
 }
 
 template <typename T>
@@ -112,6 +128,18 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
             subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
     }
+}
+
+template <typename T>
+void
+BlocksBaseVector<T>::updateVectorFromSubVectors()
+{
+    if ( !M_vector )
+        return;
+    int nBlock = this->nRow();
+    for ( int k = 0 ; k<nBlock ;++k )
+        this->setVector( *M_vector, *(this->operator()(k)), k, false );
+    M_vector->close();
 }
 
 
@@ -154,6 +182,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
             //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
 template <typename T>
@@ -176,8 +205,15 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
         for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
+template<typename T>
+void
+VectorBlockBase<T>::addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 )
+{
+    M_vec->addVector( rows, nrows, data, K, K2 );
+}
 template class VectorBlockBase<double>;
 
 } // Feel

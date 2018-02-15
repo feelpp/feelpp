@@ -63,7 +63,7 @@
 
 namespace Feel
 {
-class ModelCrbBaseBase {};
+class ModelCrbBaseBase;
 class EimFunctionNoSolveBase {};
 
 /**
@@ -162,11 +162,6 @@ public:
 
     typedef boost::tuple<double,Eigen::Matrix<double,nDim,1> > space_residual_type;
     typedef boost::tuple<double,parameter_type> parameter_residual_type;
-
-    typedef CRBModel<ModelType> crbmodel_type;
-    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
-    typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::VectorXd vectorN_type;
 
@@ -340,11 +335,6 @@ public:
             return M_restart;
         }
 
-    void setRB( boost::any crb )
-        {
-            M_model->setRB( crb );
-        }
-
     /** @name  Mutators
      */
     //@{
@@ -507,7 +497,7 @@ EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, model_solution_t
     auto projected_expression = M_model->operator()( solution  , mu );
     auto eim_approximation = this->operator()(mu, solution, M);
     auto diff = idv( projected_expression ) - idv( eim_approximation );
-    auto norm = normLinf( _range=elements( M_model->mesh()), _pset=_Q<0>(), _expr= diff );
+    auto norm = normLinf( _range=M_model->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= diff );
     double error = norm.template get<0>();
     return error;
 }
@@ -648,6 +638,13 @@ EIM<ModelType>::offline()
 {
     using namespace vf;
 
+    if ( this->worldComm().isMasterRank() )
+    {
+        if ( !fs::exists( M_model->dbLocalPath() ) )
+            fs::create_directories( M_model->dbLocalPath() );
+    }
+    this->worldComm().barrier();
+
     bool expression_expansion = M_model->computeExpansionOfExpression();
 
     int max_z=0;
@@ -747,7 +744,7 @@ EIM<ModelType>::offline()
         DVLOG( 2 )<<"add the interpolation point : \n"<<t;
         DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
 
-        auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0.) );
+        auto zero = vf::project( _space=M_model->functionSpace(), _range=M_model->functionSpace()->template rangeElements<0>(), _expr=cst(0.) );
         if( expression_expansion )
         {
             M_model->addZ( zero );
@@ -1284,12 +1281,16 @@ public:
     typedef typename geometricspace_type::Context geometricspace_context_type;
     typedef boost::shared_ptr<geometricspace_context_type> geometricspace_context_ptrtype;
 
+    typedef CRBBase<model_functionspace_type,parameterspace_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     EIMFunctionBase( parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
-                     std::string const& name )
+                     std::string const& name,
+                     uuids::uuid const& uid )
         :
-        super_type( name ),
+        super_type( name, "eim", uid ),
         M_fspace(),
         M_pspace( pspace ),
         M_trainset( sampling ),
@@ -1298,6 +1299,7 @@ public:
         M_computeExpansionOfExpression( boption(_name="eim.compute-expansion-of-expression") ),
         M_normUsedForResidual( ResidualNormType::Linfty)
         {
+            this->setDBDirectory( modelname,uid );
             std::string norm_used = soption(_name="eim.norm-used-for-residual");
             if( norm_used == "Linfty" )
                 M_normUsedForResidual = ResidualNormType::Linfty;
@@ -1314,9 +1316,10 @@ public:
                      parameterspace_ptrtype const& pspace,
                      sampling_ptrtype const& sampling,
                      std::string const& modelname,
-                     std::string const& name )
+                     std::string const& name,
+                     uuids::uuid const& uid )
         :
-        EIMFunctionBase( pspace, sampling, modelname, name )
+        EIMFunctionBase( pspace, sampling, modelname, name, uid )
         {
             M_fspace = fspace;
         }
@@ -1433,9 +1436,7 @@ public:
     virtual bool rbCorrection() const = 0;
     virtual void setRbCorrection(bool b)=0;
     virtual void setRestart(bool b)=0;
-    virtual void setRB( boost::any rb )=0;
-    virtual void setModel( boost::any rbmodel )=0;
-    virtual bool modelBuilt() const = 0;
+    virtual void setRB( crb_ptrtype rb )=0;
     virtual bool rbBuilt() const = 0;
     virtual void offline()=0;
 
@@ -1501,7 +1502,7 @@ public :
         {}
 
     eim_functionspace_ptrtype const& eimFunctionSpace() { return M_eimFunctionSpace; }
-    model_functionspace_ptrtype const& modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
+    model_functionspace_ptrtype const modelFunctionSpace() const { return M_model.lock()->functionSpace(); }
 
     int maxQ() const { return M_max_q; }
     int maxG() const { return M_max_g; }
@@ -1780,7 +1781,7 @@ public:
 
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
-    typedef CRB<crbmodel_type> crb_type;
+    typedef CRBBase<typename model_type::functionspace_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
 
     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
@@ -1802,19 +1803,20 @@ public:
                  std::string const& dbfilename,
                  std::string const& dbdirectory)
         :
-        super( space, model->parameterSpace(), sampling, model->modelName(), name ),
+        super( space, model->parameterSpace(), sampling, model->modelName(), name, model->uuid() ),
         M_model( model ),
         M_expr( expr ),
         M_u( &u ),
         M_u2( &u2 ),
         M_mu( mu ),
         M_crb_built( false ),
-        M_crbmodel_built( false ),
-        M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
+        M_mu_sampling( new sampling_type ( model->parameterSpace() , 0 , sampling ) ),
         M_t(),
         M_B(),
         M_offline_error(),
-        M_eim()
+        M_eim(),
+        M_write_nl_solutions( boption( "eim.elements.write") ),
+        M_write_nl_directory( soption( "eim.elements.directory") )
         {
             if ( model )
                 M_eimFeSpaceDb.setModel( model );
@@ -1836,14 +1838,9 @@ public:
             // update ouput path of database
             if ( dbfilename.empty() )
             {
-                this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
-                this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
-                if ( this->worldComm().isMasterRank() )
-                {
-                    if ( !fs::exists( this->dbLocalPath() ) )
-                        fs::create_directories( this->dbLocalPath() );
-                }
-                this->worldComm().barrier();
+                //this->setDBFilename( ( boost::format( "%1%.crbdb" ) %this->name() ).str() );
+                //this->addDBSubDirectory( "EIMFunction_"+model->modelName() );
+                this->addDBSubDirectory( "eim" );
             }
             else
             {
@@ -1881,6 +1878,24 @@ public:
             // build eim basis
             if ( this->functionSpace() )
                 M_eim.reset( new eim_type( this, sampling , 1e-8, hasLoadedDb ) );
+
+            if ( M_write_nl_solutions )
+            {
+                if ( this->worldComm().isMasterRank() )
+                {
+                    boost::filesystem::path dir( M_write_nl_directory );
+                    if ( boost::filesystem::exists(dir) && boption( "eim.elements.clean-directory" ) )
+                    {
+                        boost::filesystem::remove_all(dir);
+                        boost::filesystem::create_directory(dir);
+                    }
+                    else if ( !boost::filesystem::exists(dir) )
+                    {
+                        boost::filesystem::create_directory(dir);
+                    }
+                }
+            }
+            this->worldComm().barrier();
 
         }
 
@@ -1955,7 +1970,12 @@ public:
         return M_expr( idv(urb), gradv(urb2) );
     }
 
-    void saveDB()
+    //!
+    //!
+    //!
+    void loadDB( std::string const& filename, crb::load l ) override {}
+
+    void saveDB() override
     {
         if ( this->worldComm().isMasterRank() )
         {
@@ -1976,7 +1996,7 @@ public:
     /**
      * load the EIM database
      */
-    bool loadDB()
+    bool loadDB() override
     {
         if( M_eimFeSpaceDb.q().size() > 0 && M_t.size() > 0 )
         {
@@ -2028,7 +2048,7 @@ public:
         return false;
     }
 
-    void initializeDataStructures()
+    void initializeDataStructures() override
     {
         M_mu_sampling->clear();
         if ( M_ctxGeoEim )
@@ -2041,12 +2061,12 @@ public:
         M_eimFeSpaceDb.clear();
     }
 
-    vector_type beta( parameter_type const& mu ) /*const*/ { return this->beta( mu, this->mMax() ); }
-    vector_type beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ { return this->beta( mu, T, this->mMax() ); }
-    vector_type beta( parameter_type const& mu, vectorN_type const& urb ) /*const*/ { return this->beta( mu, urb, this->mMax() ); }
+    vector_type beta( parameter_type const& mu ) /*const*/ override { return this->beta( mu, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, model_solution_type const& T ) /*const*/ override { return this->beta( mu, T, this->mMax() ); }
+    vector_type beta( parameter_type const& mu, vectorN_type const& urb ) /*const*/ override { return this->beta( mu, urb, this->mMax() ); }
 
     vector_type
-    beta( parameter_type const& mu, size_type __M )
+    beta( parameter_type const& mu, size_type __M ) override
     {
 
         vector_type __beta( __M );
@@ -2064,7 +2084,7 @@ public:
     }
 
     vector_type
-    beta( parameter_type const& mu, model_solution_type const& T, size_type __M )
+    beta( parameter_type const& mu, model_solution_type const& T, size_type __M ) override
     {
         DCHECK( M_ctxFeModelSolution ) << "no fe context";
         // beta=B_M\g(Od(indx),mut(i))'
@@ -2077,7 +2097,7 @@ public:
     }
 
     vector_type
-    beta( parameter_type const& mu, vectorN_type const& urb, size_type __M )
+    beta( parameter_type const& mu, vectorN_type const& urb, size_type __M ) override
     {
         if ( !M_ctxRbModelSolution )
             return this->beta(mu,__M );
@@ -2093,10 +2113,10 @@ public:
     }
 
 
-    model_functionspace_ptrtype modelFunctionSpace() const { return this->model()->functionSpace();}
-    model_functionspace_ptrtype modelFunctionSpace() { return this->model()->functionSpace();}
+    model_functionspace_ptrtype modelFunctionSpace() const override { return this->model()->functionSpace();}
+    model_functionspace_ptrtype modelFunctionSpace() override { return this->model()->functionSpace();}
 
-    void addInterpolationPoint( node_type const& t )
+    void addInterpolationPoint( node_type const& t ) override
     {
         M_t.push_back( t );
         typename Feel::node<value_type>::type no(nDim);
@@ -2109,24 +2129,24 @@ public:
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
     }
 
-    bool hasRbSpaceContext() const
+    bool hasRbSpaceContext() const override
     {
         return M_ctxRbModelSolution.use_count() > 0;
     }
-    bool hasRbSpaceContext2() const
+    bool hasRbSpaceContext2() const override
     {
         return M_ctxRbModelSolution2.use_count() > 0;
     }
-    boost::any rbSpaceContext() const
+    boost::any rbSpaceContext() const override
     {
         return M_ctxRbModelSolution;
     }
-    boost::any rbSpaceContext2() const
+    boost::any rbSpaceContext2() const override
     {
         return M_ctxRbModelSolution2;
     }
 
-    void updateRbSpaceContext( boost::any const& rbspacebase )
+    void updateRbSpaceContext( boost::any const& rbspacebase ) override
     {
         // no update if model is not a modelcrbbase
         if ( !model_is_modelcrbbase )
@@ -2185,7 +2205,7 @@ public:
         }
 
     }
-    void setRbSpaceContext( boost::any const& rbCtxBase )
+    void setRbSpaceContext( boost::any const& rbCtxBase ) override
     {
         if ( !boost::any_cast<rbfunctionspace_context_ptrtype>( &rbCtxBase ) )
         {
@@ -2195,7 +2215,7 @@ public:
         //std::cout << "[EIMFunction::setRbSpaceContext] cast ok\n";
         M_ctxRbModelSolution = boost::any_cast<rbfunctionspace_context_ptrtype>( rbCtxBase );
     }
-    void setRbSpaceContext2( boost::any const& rbCtxBase )
+    void setRbSpaceContext2( boost::any const& rbCtxBase ) override
     {
         if ( !boost::any_cast<rbfunctionspace_context2_ptrtype>( &rbCtxBase ) )
         {
@@ -2206,56 +2226,89 @@ public:
         M_ctxRbModelSolution2 = boost::any_cast<rbfunctionspace_context2_ptrtype>( rbCtxBase );
     }
 
-    node_type interpolationPoint( int position ) const
+    node_type interpolationPoint( int position ) const override
     {
         int size = M_t.size();
         DCHECK( position < size ) << "Invalid point position: " << position << " M_t.size() =" << M_t.size() << "\n";
         return M_t[position];
     }
 
-    void addBasis( element_type const &q )
+    void addBasis( element_type const &q ) override
     {
         M_eimFeSpaceDb.addBasis( q );
     }
-    void addExpressionEvaluation( element_type const &g )
+    void addExpressionEvaluation( element_type const &g ) override
     {
         M_eimFeSpaceDb.addExpressionEvaluation( g );
     }
-    void addZ( element_type const &z )
+    void addZ( element_type const &z ) override
     {
         M_eimFeSpaceDb.addZ( z );
     }
-    void addSolution( model_solution_type const &solution )
+    void addSolution( model_solution_type const &solution ) override
     {
         M_eimFeSpaceDb.addSolution( solution );
     }
-    void addParameter( parameter_type const &mu )
+    void addParameter( parameter_type const &mu ) override
     {
         M_mu_sampling->addElement( mu );
     }
-    void clearParameterSampling()
+    void clearParameterSampling() override
     {
         M_mu_sampling->clear();
     }
-    void addOfflineError( double error )
+    void addOfflineError( double error ) override
     {
         M_offline_error.push_back( error );
     }
-    void clearOfflineError()
+    void clearOfflineError() override
     {
         M_offline_error.resize(0);
     }
 
-    model_solution_type solve( parameter_type const&  mu )
+    model_solution_type solve( parameter_type const&  mu ) override
     {
         M_mu = mu;
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return this->model()->solve( mu );
+        model_solution_type u = this->model()->functionSpace()->element();
+        bool need_solve = true;
+
+        if ( M_write_nl_solutions )
+        {
+            need_solve = !u.load( _path=M_write_nl_directory,
+                                  _suffix=std::to_string(mu.key()), _type="hdf5" );
+            if ( need_solve )
+                LOG(INFO) << "EIM : Unable to load nl solution in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key()<< ". Solve function will be called.";
+            else
+                LOG(INFO) << "EIM : NL solution loaded in direcotry "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+        }
+
+        if ( need_solve )
+        {
+            LOG(INFO) << "EIM : calling solve function for parameter " << mu.toString()
+                      <<" / " << mu.key();
+            u = this->model()->solve(mu);
+
+            if ( M_write_nl_solutions )
+            {
+                LOG(INFO) << "EIM : Wrting solution on disk in directory "
+                          << M_write_nl_directory << ", for parameter : " << mu.toString()
+                          <<" / " << mu.key();
+                u.save( _path=M_write_nl_directory,
+                        _suffix=std::to_string(mu.key()), _type="hdf5" );
+            }
+        }
+
+        return u;
     }
 
-    element_type operator()( parameter_type const&  mu )
+    element_type operator()( parameter_type const&  mu ) override
         {
             model_solution_type sol;
             if( ioption(_name="ser.eim-frequency") != 0 ) //Use SER
@@ -2266,15 +2319,15 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
             auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
-            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
+            return vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         }
-    element_type operator()( model_solution_type const& T, parameter_type const&  mu )
+    element_type operator()( model_solution_type const& T, parameter_type const&  mu ) override
         {
             auto eimexpr = this->expr( mu, T );
-            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
+            return vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         }
 
     vector_type operator()( geometricspace_context_type const& ctx, parameter_type const& mu , int M )
@@ -2297,7 +2350,7 @@ public:
                     sol = this->computePfem( mu ); //PFEM
             }
             else
-                sol = this->model()->solve( mu ); //FEM
+                sol = this->solve( mu ); //FEM
 
             auto eimexpr = this->expr( mu, sol );
 
@@ -2322,7 +2375,9 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto eimexpr = this->expr( mu,urbelt );
             return evaluateFromContext( _context=ctx, _expr=eimexpr , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
@@ -2331,15 +2386,19 @@ public:
     vector_type operator()( vectorN_type const& urb, rbfunctionspace_context_type const& ctx, rbfunctionspace_context2_type const& ctx2, parameter_type const& mu , int M )
         {
             auto urbelt = ctx.rbFunctionSpace()->element();
-            urbelt.container() = urb;
+            int dimRb = std::min((int)urbelt.size(),(int)urb.size());
+            for ( int k=0; k<dimRb; ++k )
+                urbelt(k) = urb(k);
             auto urbelt2 = ctx2.rbFunctionSpace()->element();
-            urbelt2.container() = urb;
+            int dimRb2 = std::min((int)urbelt2.size(),(int)urb.size());
+            for ( int k=0; k<dimRb2; ++k )
+                urbelt2(k) = urb(k);
             auto eimexpr2 = this->expr( mu,urbelt,urbelt2 );
             return evaluateFromContext( _context=ctx, _context2=ctx2, _expr=eimexpr2 , _max_points_used=M,
                                         _mpi_communications=false, _projection=false );
         }
 
-    vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M)
+    vector_type computeExpansionCoefficients( parameter_type const& mu, model_solution_type const& solution,  int M) override
     {
         vector_type rhs( M );
 
@@ -2363,12 +2422,12 @@ public:
     }
 
 
-    vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M)
+    vector_type evaluateExpressionAtInterpolationPoints(model_solution_type const &solution, parameter_type const& mu, int M) override
     {
         auto eimexpr = this->expr( mu, solution );
         return evaluateFromContext( _context=*M_ctxFeModelSolution, _expr=eimexpr , _max_points_used=M, _projection=true );
     }
-    vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M)
+    vector_type evaluateElementAtInterpolationPoints(element_type const & element, int M) override
     {
         return evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv(element) , _max_points_used=M, _projection=true );
     }
@@ -2378,7 +2437,7 @@ public:
     // mu : parameter
     // z  : expansion in the EIM basis
     // g  : projection of the expression
-    boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, model_solution_type const& solution, element_type const& z)
+    boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, model_solution_type const& solution, element_type const& z) override
     {
         double max=0;
         node_type node(mesh_type::nDim);
@@ -2391,7 +2450,7 @@ public:
         // auto residual_projected_expr = idv(proj_g)-idv(z);
         if ( !this->M_computeExpansionOfExpression || ( this->M_normUsedForResidual == super::ResidualNormType::LinftyVec ) )
         {
-            this->M_internalModelFeFunc->on(_range=elements(this->functionSpace()->mesh()),_expr=residual_expr );
+            this->M_internalModelFeFunc->on(_range=this->functionSpace()->template rangeElements<0>(),_expr=residual_expr );
             // this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=M_expr );
             // this->M_internalModelFeFunc->add(-1., z );
         }
@@ -2402,17 +2461,17 @@ public:
         case super::ResidualNormType::Linfty:
         {
             if( this->M_computeExpansionOfExpression )
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= residual_expr );
             else
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_projected_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= residual_projected_expr );
         }
         break;
         case super::ResidualNormType::L2:
         {
             if( this->M_computeExpansionOfExpression )
-                max = normL2( _range=elements( this->mesh()), _expr=residual_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=residual_expr );
             else
-                max = normL2( _range=elements( this->mesh()), _expr=residual_projected_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=residual_projected_expr );
         }
         break;
         case super::ResidualNormType::LinftyVec:
@@ -2425,7 +2484,7 @@ public:
         return boost::make_tuple( max , node );
     }
 
-    boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, model_solution_type const& solution )
+    boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, model_solution_type const& solution ) override
     {
         double max=0;
         node_type node(mesh_type::nDim);
@@ -2434,7 +2493,7 @@ public:
         auto eimexpr = this->expr( mu, solution );
 #if 1
         if ( !this->M_computeExpansionOfExpression || ( this->M_normUsedForResidual == super::ResidualNormType::LinftyVec ) )
-            this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=eimexpr );
+            this->M_internalModelFeFunc->on(_range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
         auto projected_expr = idv( this->M_internalModelFeFunc );
 
         switch ( this->M_normUsedForResidual )
@@ -2442,17 +2501,17 @@ public:
         case super::ResidualNormType::Linfty:
         {
             if( this->M_computeExpansionOfExpression )
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= eimexpr );
             else
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= projected_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= projected_expr );
         }
         break;
         case super::ResidualNormType::L2:
         {
             if( this->M_computeExpansionOfExpression )
-                max = normL2( _range=elements( this->mesh()), _expr=eimexpr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
             else
-                max = normL2( _range=elements( this->mesh()), _expr=projected_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=projected_expr );
         }
         break;
         case super::ResidualNormType::LinftyVec:
@@ -2463,7 +2522,7 @@ public:
         }
 
 #else
-        auto proj_g = vf::project( _space=this->functionSpace(),_expr=eimexpr/*M_expr*/ );
+        auto proj_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr/*M_expr*/ );
         auto projected_expr = idv( proj_g );
 
         std::string norm_used = soption(_name="eim.norm-used-for-residual");
@@ -2474,13 +2533,13 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
+                auto exprmax = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= eimexpr );
                 max = exprmax.template get<0>();
                 node = exprmax.template get<1>();
             }
             else
             {
-                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr=projected_expr);
+                auto exprmax = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr=projected_expr);
                 max = exprmax.template get<0>();
                 node = exprmax.template get<1>();
             }
@@ -2490,12 +2549,12 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
+                double norm = math::sqrt( integrate( _range=this->functionSpace()->template rangeElements<0>() ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
                 max = norm;
             }
             else
             {
-                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=projected_expr*projected_expr).evaluate()( 0,0 ) );
+                double norm = math::sqrt( integrate( _range=this->functionSpace()->template rangeElements<0>() ,_expr=projected_expr*projected_expr).evaluate()( 0,0 ) );
                 max = norm;
             }
         }
@@ -2504,13 +2563,13 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto projection = vf::project( _space=this->functionSpace(),_expr=eimexpr );
+                auto projection = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
                 double norm = projection.linftyNorm();
                 max = norm ;
             }
             else
             {
-                auto projection = vf::project( _space=this->functionSpace(),_expr=projected_expr );
+                auto projection = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=projected_expr );
                 double norm = projection.linftyNorm();
                 max = norm ;
             }
@@ -2521,7 +2580,7 @@ public:
         return boost::make_tuple( max , node );
     }
 
-    element_type residual( element_type const& z, element_type const& g )
+    element_type residual( element_type const& z, element_type const& g ) override
     {
         auto residual_projected_expr = idv(g) - idv(z);
 
@@ -2533,7 +2592,7 @@ public:
     }
 
 
-    void fillInterpolationMatrixFirstTime(  )
+    void fillInterpolationMatrixFirstTime(  ) override
     {
         // update interpolation matrix
         // TODO: update only the new line and eventually the new column rather than recomputing everything
@@ -2558,7 +2617,7 @@ public:
         else
         {
             auto eimexpr = this->expr( M_mu );//, *M_u );
-            auto projected_g = vf::project( _space=this->functionSpace(),_expr=eimexpr );
+            auto projected_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
 
             auto projected_g_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
             double eval = projected_g_evaluated(0);
@@ -2577,7 +2636,7 @@ public:
     //build eim m^th eim basis function
     //m : index of the eim basis
     //q : vector of projected on functionspace eim basis functions
-    boost::any buildBasisFunction( int m )
+    boost::any buildBasisFunction( int m ) override
     {
         //rank of the current processor
         int proc_number = this->worldComm().globalRank();
@@ -2620,7 +2679,7 @@ public:
         return 0;
     }
 
-    element_type Residual( int m, element_type const& z)
+    element_type Residual( int m, element_type const& z) override
     {
         if( this->M_computeExpansionOfExpression )
         {
@@ -2646,19 +2705,19 @@ public:
             {
                 expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=eimexpr );
                 double eval = expression_evaluated( 0 );
-                res = vf::project( _space=this->functionSpace(), _expr=eimexpr/eval );
+                res = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr/eval );
             }
             else
             {
                 expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
                 double eval = expression_evaluated( 0 );
-                res = vf::project( _space=this->functionSpace(), _expr=residual/eval );
+                res = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=residual/eval );
             }
             return res;
         }
         else
         {
-            auto residual = vf::project(_space=this->functionSpace(), _expr=idv(M_eimFeSpaceDb.g(m)) - idv( z ) );
+            auto residual = vf::project(_space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(M_eimFeSpaceDb.g(m)) - idv( z ) );
             auto t = M_t[m];
             residual.scale( 1./residual(t)(0,0,0) );
             return residual;
@@ -2666,7 +2725,7 @@ public:
     }
 
 
-    void fillInterpolationMatrix()
+    void fillInterpolationMatrix() override
     {
         //rank of the current processor
         int proc_number = this->worldComm().globalRank();
@@ -2679,7 +2738,7 @@ public:
 
         auto eimexpr = this->expr( M_mu );//, *M_u );
 
-        auto element_zero = project( _space=this->functionSpace(), _expr=cst(0) );
+        auto element_zero = project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=cst(0) );
         auto example_of_q = ( eimexpr - idv(element_zero) )/1.0;
 
         typedef decltype( example_of_q ) expression_type ;
@@ -2714,12 +2773,12 @@ public:
      computeRbExpansion returns RB solution expansion to be used with SER (return FE solution is RB space is not available)
      If option ser.corrected-rb=true, return the RB solution corrected with Riesz representation of RB residual
      */
-    model_solution_type computeRbExpansion( parameter_type const& mu )
+    model_solution_type computeRbExpansion( parameter_type const& mu ) override
     {
         if( this->rbBuilt() )
             return computeRbExpansion( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, boost::mpl::bool_<false>)
     {
@@ -2733,12 +2792,12 @@ public:
         return computeRbExpansion( mu, uN );
     }
 
-    model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN)
+    model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN) override
     {
         if( this->rbBuilt() )
             return computeRbExpansion( mu, uN, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computeRbExpansion( parameter_type const& mu, std::vector<vectorN_type> uN, boost::mpl::bool_<false>)
     {
@@ -2750,7 +2809,7 @@ public:
         if( size!= 0 )
         {
             // Compute RB expansion from uN
-            model_solution_type sol = Feel::expansion( M_crbmodel->rBFunctionSpace()->primalRB(), uN[size-1] , M_crb->dimension());
+            model_solution_type sol = M_crb->expansion( uN[size-1], M_crb->dimension(), false );
 
             this->M_rb_online_iterations.push_back( M_crb->online_iterations().first );
             this->M_rb_online_increments.push_back( M_crb->online_iterations().second );
@@ -2761,12 +2820,12 @@ public:
     }
 
     /* computePfem returns PFEM solution (FE with affine decomposition) */
-    model_solution_type computePfem( parameter_type const& mu )
+    model_solution_type computePfem( parameter_type const& mu ) override
     {
-        if( this->modelBuilt() )
+        if( M_crb )
             return computePfem( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         else
-            return this->model()->solve( mu );
+            return this->solve( mu );
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<false> )
     {
@@ -2774,13 +2833,10 @@ public:
     }
     model_solution_type computePfem( parameter_type const& mu, boost::mpl::bool_<true> )
     {
-        if( boption(_name="crb.use-newton") )
-            return M_crbmodel->solveFemUsingAffineDecompositionNewton( mu );
-        else
-            return M_crbmodel->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return M_crb->solveFemModelUsingAffineDecomposition( mu );
     }
 
-    boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu )
+    boost::tuple<double,std::vector<vectorN_type> > RieszResidualNorm( parameter_type const& mu ) override
     {
         if( this->rbBuilt() )
             return RieszResidualNorm( mu, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
@@ -2800,7 +2856,7 @@ public:
         return boost::make_tuple( error, uN );
     }
 
-    sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method )
+    sampling_ptrtype createSubTrainset( sampling_ptrtype const& trainset, int method ) override
     {
         sampling_ptrtype subtrainset( new sampling_type( this->model()->parameterSpace() ) );
         std::vector<parameter_type> subvector;
@@ -2856,75 +2912,75 @@ public:
 
     //Let g the expression that we want to have an eim expasion
     //here is computed its l2 norm : || g ||_L2
-    double expressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
+    double expressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        return normL2( _range=elements( mesh ), _expr=eimexpr );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
     }
 
     //Let geim the eim expansion of g
     //here is computed || g - geim ||_L2
-    double diffL2Norm(  model_solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
+    double diffL2Norm(  model_solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
         auto difference = eimexpr - idv(eim_expansion);
-        return normL2( _range=elements( mesh ), _expr=difference );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=difference );
     }
 
 
     //Let \pi_g the projection of g on the function space
     //here is computed || \pi_g ||_L2
-    double projExpressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const
+    double projExpressionL2Norm( model_solution_type const& T , parameter_type const& mu ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
-        return normL2( _range=elements( mesh ), _expr=idv(pi_g) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(pi_g) );
     }
 
     //here is computed || \pi_g - geim ||_L2
-    double projDiffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    double projDiffL2Norm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
-        return normL2( _range=elements( mesh ), _expr=idv(diff) );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(diff) );
     }
 
     //here is computed || \pi_g - geim ||_Linf
-    double projDiffLinfNorm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    double projDiffLinfNorm( model_solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
-        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
+        auto linf = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<5>(), _expr=idv(diff) );
         return linf.template get<0>();
     }
 
     //here is computed || \pi_g  ||_Linf
-    double projExprLinfNorm( model_solution_type const& T , parameter_type const& mu ) const
+    double projExprLinfNorm( model_solution_type const& T , parameter_type const& mu ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
-        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(pi_g) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
+        auto linf = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<5>(), _expr=idv(pi_g) );
         return linf.template get<0>();
     }
 
-    double interpolationError(model_solution_type const& T , parameter_type const& mu ) const
+    double interpolationError(model_solution_type const& T , parameter_type const& mu ) const override
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto difference = eimexpr - idv(pi_g);
-        return normL2( _range=elements( mesh ), _expr=difference );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=difference );
     }
 
-    void computationalTimeStatistics( std::string appname )
+    void computationalTimeStatistics( std::string appname ) override
         {
             computationalTimeStatistics( appname, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
         }
@@ -2932,13 +2988,16 @@ public:
         {}
     void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
+#if 0 // this function is removed for now since it need M_crb
+
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         if( !this->modelBuilt() )
-            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model()/*M_model*/ , CRBModelMode::CRB ) );
+            M_crbmodel = crbmodel_ptrtype( new crbmodel_type( this->model(), crb::stage::offline/*M_model*/ ) );
         //make sure that the CRB DB is already build
         if( !this->rbBuilt() )
             M_crb = crb_ptrtype( new crb_type( appname,
-                                               M_crbmodel ) );
+                                               M_crbmodel,
+                                               crb::stage::offline ) );
 
         if ( !M_crb->isDBLoaded() || M_crb->rebuild() )
         {
@@ -2972,7 +3031,7 @@ public:
             auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
             int size=uN.size();
-            auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+            auto u_crb = M_crb->expansion( uN[size-1] , N , false );
 
             boost::mpi::timer teim;
             this->beta( mu , u_crb );
@@ -2983,71 +3042,33 @@ public:
 
         this->model()->computeStatistics( super::onlineTime() , super::name() );
         this->model()->computeStatistics( time_crb , super::name()+" - global crb timing" );
-
+#endif
     }
 
-    bool offlineStep() const { return M_eim->offlineStep(); }
-    bool adaptationSER() const { return M_eim->adaptationSER(); }
-    void setAdaptationSER(bool b){M_eim->setAdaptationSER(b);}
-    bool rbCorrection() const { return M_eim->rbCorrection(); }
-    void setRbCorrection(bool b){M_eim->setRbCorrection(b);}
+    bool offlineStep() const override { return M_eim->offlineStep(); }
+    bool adaptationSER() const override { return M_eim->adaptationSER(); }
+    void setAdaptationSER(bool b) override {M_eim->setAdaptationSER(b);}
+    bool rbCorrection() const override { return M_eim->rbCorrection(); }
+    void setRbCorrection(bool b) override {M_eim->setRbCorrection(b);}
 
-    void offline() { M_eim->offline(); }
-    void setRestart(bool b){ M_eim->setRestart(b);}
+    void offline() override { M_eim->offline(); }
+    void setRestart(bool b) override { M_eim->setRestart(b);}
 
-    void setRB( boost::any rb )
+    void setRB( crb_ptrtype rb ) override
     {
-        setRB( rb, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        M_crb = rb;
+        if ( M_crb )
+            M_crb_built=true;
     }
-    void setRB( boost::any rb, boost::mpl::bool_<false> )
-    {
-        M_crb_built=true; //no need of M_crb for eim_no_solve approx.
-    }
-    void setRB( boost::any rb, boost::mpl::bool_<true> )
-    {
-        try
-        {
-            M_crb = boost::any_cast<crb_ptrtype>(rb);
-        }
-        catch (...)
-        {
-            std::cout << "setRB fails (bad type)" << std::endl;
-        }
-        M_crb_built=true;
-    }
+    bool rbBuilt() const override { return M_crb_built; }
 
-    void setModel( boost::any rbmodel )
-    {
-        setModel( rbmodel, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
-    }
-    void setModel( boost::any rbmodel, boost::mpl::bool_<false> )
-    {
-        M_crbmodel_built=true;
-    }
-    void setModel( boost::any rbmodel, boost::mpl::bool_<true> )
-    {
-        try
-        {
-            M_crbmodel = boost::any_cast<crbmodel_ptrtype>(rbmodel);
-        }
-        catch (...)
-        {
-            std::cout << "setRB fails (bad type)" << std::endl;
-        }
-        //M_crbmodel = rbmodel;
-        M_crbmodel_built = true;
-    }
-
-    bool modelBuilt() const { return M_crbmodel_built; }
-    bool rbBuilt() const { return M_crb_built; }
-
-    void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
-    element_type interpolant( parameter_type const& mu )
+    void setTrainSet( sampling_ptrtype tset ) override { M_eim->setTrainSet( tset ); }
+    element_type interpolant( parameter_type const& mu ) override
     {
         auto beta = this->beta( mu );
         return expansion( M_eimFeSpaceDb.q(), this->beta( mu ) , M_M_max);
     }
-    element_type interpolant( parameter_type const& mu , model_solution_type const & solution , int M)
+    element_type interpolant( parameter_type const& mu , model_solution_type const & solution , int M) override
     {
         return expansion( M_eimFeSpaceDb.q(), this->beta( mu , solution , M) , M );
     }
@@ -3055,12 +3076,12 @@ public:
     //return M_eim->operator()( mu , M_eim->mMax() ); }
 
     //element_type const& q( int m ) const { return M_eim->q( m ); }
-    element_type const& q( int m ) const
+    element_type const& q( int m ) const override
     {
         return M_eimFeSpaceDb.q( m );
     }
 
-    void printInterpolationPointsSelection() const
+    void printInterpolationPointsSelection() const override
     {
         if ( this->worldComm().isMasterRank() )
         {
@@ -3086,7 +3107,7 @@ public:
         }
     }
 
-    void printMuSelection() const
+    void printMuSelection() const override
     {
         if ( this->worldComm().isMasterRank() )
         {
@@ -3115,7 +3136,7 @@ public:
         }
     }
 
-    void printOfflineError() const
+    void printOfflineError() const override
     {
         if ( this->worldComm().isMasterRank() )
         {
@@ -3133,7 +3154,7 @@ public:
         }
     }
 
-    void printRbIterationsSER( int M ) const
+    void printRbIterationsSER( int M ) const override
     {
         if ( this->worldComm().isMasterRank() )
         {
@@ -3167,14 +3188,14 @@ public:
         }
     }
 
-    std::vector<element_type> const& q() const { return M_eimFeSpaceDb.q(); }
+    std::vector<element_type> const& q() const override { return M_eimFeSpaceDb.q(); }
 
 
-    void studyConvergence( parameter_type const & mu , model_solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
-    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , model_solution_type const& solution, int M ) const { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
-    double errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
+    void studyConvergence( parameter_type const & mu , model_solution_type & solution, std::vector< std::string > all_file_name ) const override { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
+    boost::tuple<double,element_type> interpolationErrorEstimation( parameter_type const & mu , model_solution_type const& solution, int M ) const override { return M_eim->interpolationErrorEstimation(mu , solution, M) ; }
+    double errorEstimationLinf( parameter_type const & mu, model_solution_type const& solution , int M ) const override { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }
-    size_type mMax( bool & error) const
+    size_type mMax( bool & error) const override
     {
         int max=0;
         int user_max = ioption(_name="eim.dimension-max");
@@ -3197,7 +3218,7 @@ public:
         }
         return max;
     }
-    size_type mMax() const
+    size_type mMax() const override
     {
         int max=0;
         int user_max = ioption(_name="eim.dimension-max");
@@ -3217,25 +3238,25 @@ public:
         return max;
     }
 
-    void setMax(int m, int max_q, int max_g, int max_z, int max_solution )
+    void setMax(int m, int max_q, int max_g, int max_z, int max_solution ) override
     {
         M_M_max = m;
         M_eimFeSpaceDb.setMax( max_q, max_g, max_z, max_solution );
     }
 
-    int maxQ() const
+    int maxQ() const override
     {
         return M_eimFeSpaceDb.maxQ();
     }
-    int maxG() const
+    int maxG() const override
     {
         return M_eimFeSpaceDb.maxG();
     }
-    int maxZ() const
+    int maxZ() const override
     {
         return M_eimFeSpaceDb.maxZ();
     }
-    int maxSolution() const
+    int maxSolution() const override
     {
         return M_eimFeSpaceDb.maxSolution();
     }
@@ -3294,10 +3315,8 @@ private:
     model_element_expr_type * M_u;
     model_element2_expr_type * M_u2;
     parameter_type& M_mu;
-    crbmodel_ptrtype M_crbmodel;
     crb_ptrtype M_crb;
     bool M_crb_built;
-    bool M_crbmodel_built;
     sampling_ptrtype M_mu_sampling ;
     std::vector< double > M_evaluation_vector; // we need to store this to be able to compute expression of eim basis functions and the user can use them in integrals
     int M_M_max;
@@ -3310,6 +3329,9 @@ private:
     matrix_type M_B;
     std::vector<double> M_offline_error;
     eim_ptrtype M_eim;
+
+    bool  M_write_nl_solutions;
+    std::string M_write_nl_directory;
 
     std::vector<int> M_rb_online_iterations;
     std::vector<double> M_rb_online_increments;
@@ -3445,6 +3467,7 @@ struct EimFunctionNoSolve : public EimFunctionNoSolveBase
 #endif
 
     std::string /*const&*/ modelName() const { return M_model.lock()->modelName(); }
+    uuids::uuid uuid() const { return M_model.lock()->uuid(); }
     functionspace_ptrtype const& functionSpace() const { return M_model.lock()->functionSpace(); }
     parameterspace_ptrtype const& parameterSpace() const { return M_model.lock()->parameterSpace(); }
 #if 0
@@ -3506,6 +3529,5 @@ eimBasisExpression(int m, ExprType const& expr, EimType const& eim)
     return boost::any_cast<basis_type>(any_type);
 }
 
-po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */

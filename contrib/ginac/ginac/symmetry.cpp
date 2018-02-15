@@ -576,3 +576,6 @@ ex ex::symmetrize_cyclic(const lst & l) const
 }
 
 } // namespace GiNaC
+
+extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

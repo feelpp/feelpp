@@ -675,18 +675,18 @@ GraphCSR::addMissingZeroEntriesDiagonal()
     const size_type firstRow = this->firstRowEntryOnProc();
     size_type firstCol = this->firstColEntryOnProc();
     const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    rank_type procId = this->mapRow().worldComm().globalRank();
     for ( size_type i = firstRow ; i<rowEnd ; ++i,++firstCol )
     {
-        if ( this->storage().find( firstRow )!=this->end() )
+        auto & row = this->row( i );
+        //! init if empty
+        if ( row.get<2>().empty() )
         {
-            this->row( i ).get<2>().insert( i/*firstCol*/ ); // insert col on diag
+            row.get<0>() = procId;
+            row.get<1>() = i-firstRow; //local index (just a shift because active dof)
         }
-        else // if (this->mapCol().dofGlobalClusterIsOnProc( i/*firstCol*/ ) ) //&& this->mapCol().dofGlobalClusterIsOnProc( firstCol ))
-        {
-            this->row( i ).get<0>() = this->mapRow().worldComm().globalRank();//proc
-            this->row( i ).get<1>() = i-firstRow;//local index
-            this->row( i ).get<2>().insert(i/*firstCol*/); // insert col on diag
-        }
+        //! insert diagonal entry
+        row.get<2>().insert( i ); // insert col on diag
     }
 }
 
@@ -828,9 +828,10 @@ GraphCSR::close()
 
     }
     VLOG(2) << "Closing graph done.";
-
+    
     if ( nProc > 1 )
     {
+        VLOG(2) << "Closing graph parallel work start.";
 #if 1
         std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToSendBase( nProc );
         std::vector< boost::tuple< std::vector<size_type>,std::vector<size_type> > > vecToRecvBase( nProc );
@@ -902,10 +903,12 @@ GraphCSR::close()
             reqs[cptRequest++] = this->worldComm().globalComm().irecv( procIdNeigh, 0, vecToRecvBase[procIdNeigh] );
 #endif
         }
+        VLOG(2) << "Closing graph parallel wait all process " << nbRequest;
         // wait all requests
         mpi::wait_all(reqs, reqs + nbRequest);
         // delete reqs because finish comm
-        delete [] reqs;
+        if ( nbRequest )
+            delete [] reqs;
 
         for ( rank_type procIdNeigh : M_mapRow->neighborSubdomains() )
         {
@@ -976,6 +979,7 @@ GraphCSR::close()
                 }
             }
         }
+        VLOG(2) << "Closing graph parallel work done ";
     } //if ( nProc > 1 )
 #endif // MPI_MODE
 
@@ -1018,9 +1022,13 @@ GraphCSR::close()
 
     }
 #else
+    VLOG(2) << "Closing graph almost done";
     size_type nRowLoc = this->mapRow().nLocalDofWithoutGhost();
+    VLOG(2) << "Closing graph almost done " << nRowLoc << "," << sum_nz;
+
     M_ia.resize( nRowLoc+1,0 );
     M_ja.resize( sum_nz, 0. );
+
     //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
     size_type col_cursor = 0;
     auto jait = M_ja.begin();
@@ -1041,6 +1049,7 @@ GraphCSR::close()
     }
 
     M_ia[nRowLoc] = sum_nz;
+    VLOG(2) << "Closing graph done";
 #endif
 } // close
 

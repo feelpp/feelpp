@@ -36,6 +36,9 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #endif
 
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetsc<double> )
+BOOST_CLASS_EXPORT_IMPLEMENT( Feel::VectorPetscMPI<double> )
+
 #if defined( FEELPP_HAS_PETSC_H )
 
 extern "C"
@@ -173,7 +176,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
+VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
@@ -183,7 +186,6 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -518,7 +520,7 @@ VectorPetsc<T>::max() const
     if ( !this->closed() )
         const_cast<VectorPetsc<T>*>( this )->close();
 
-    int index=0, ierr=0;
+    int index, ierr=0;
     PetscReal max=0.;
 
     ierr = VecMax ( M_vec, &index, &max );
@@ -527,6 +529,39 @@ VectorPetsc<T>::max() const
     // this return value is correct: VecMax returns a PetscReal
     return static_cast<Real>( max );
 }
+
+template <typename T>
+typename VectorPetsc<T>::real_type
+VectorPetsc<T>::maxWithIndex( int* index ) const
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
+    int ierr=0;
+    PetscReal max=0.;
+
+    ierr = VecMax ( M_vec, index, &max );
+    CHKERRABORT( this->comm(),ierr );
+
+    // this return value is correct: VecMax returns a PetscReal
+    return static_cast<Real>( max );
+}
+
+
+template <typename T>
+void
+VectorPetsc<T>::abs()
+{
+    DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
+    int ierr = 0;
+    ierr = VecAbs( M_vec );
+    CHKERRABORT( this->comm(),ierr );
+}
+
 
 template <typename T>
 typename VectorPetsc<T>::real_type
@@ -855,6 +890,76 @@ VectorPetsc<T>::getSubVectorPetsc( std::vector<size_type> const& rows,
 
     delete[] rowMap;
 }
+template <typename T>
+void
+VectorPetsc<T>::save( std::string filename, std::string format )
+{
+    if ( !this->closed() )
+        this->close();
+
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ofstream ofs( filename );
+    if (ofs)
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_oarchive oa(ofs);
+            oa << *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_oarchive oa(ofs);
+            oa << *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc save() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+template <typename T>
+void
+VectorPetsc<T>::load( std::string filename, std::string format ) 
+{
+    filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
+    std::ifstream ifs( filename );
+    if ( ifs )
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else
+            Feel::cout << "VectorPetsc save() function : error with unknown format "
+                       << format <<std::endl;
+    }
+    else
+    {
+        Feel::cout << "VectorPetsc load() function : error opening ofstream with name "
+                   << filename <<std::endl;
+    }
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -1281,7 +1386,7 @@ VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 
 template <typename T>
 void
-VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
+VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type K2 )
 {
     DCHECK( this->isInitialized() ) << "vector not initialized";
     DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
@@ -1636,6 +1741,7 @@ VectorPetscMPI<T>::lastLocalIndex() const
 
     return static_cast<size_type>( petsc_last );
 }
+
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -2496,8 +2602,6 @@ VectorPetscMPIRange<T>::localize()
 
 
 
-
-
 #if BOOST_VERSION < 105900
 vector_ptrtype
 vec( Vec v, datamap_ptrtype datamap )
@@ -2525,5 +2629,6 @@ template class VectorPetscMPI<double>;
 template class VectorPetscMPIRange<double>;
 
 } // Feel
+
 
 #endif // FEELPP_HAS_PETSC_H

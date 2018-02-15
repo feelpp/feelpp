@@ -117,11 +117,11 @@ public :
  * @see
  */
 template<int Order>
-class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order>, TimeDependent >
+class HeatShield : public ModelCrbBase< ParameterSpaceX, FunctionSpaceDefinition<Order>, TimeDependent >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> , TimeDependent > super_type;
+    typedef ModelCrbBase<ParameterSpaceX, FunctionSpaceDefinition<Order> , TimeDependent > super_type;
 
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
     typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
@@ -147,6 +147,7 @@ public:
 
     using super_type::computeBetaQm;
 
+    HeatShield() : super_type("heatshield") {}
     //! initialization of the model
     void initModel();
     //@}
@@ -232,7 +233,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    double output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
     virtual operatorcomposite_ptrtype operatorCompositeLightA()
     {
@@ -499,6 +500,7 @@ void HeatShield<Order>::initModel()
     if( M_use_ginac )
         buildGinacExpressions();
 
+    this->Dmu->setDimension(2);
     //typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     auto mu_min = this->Dmu->element();
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
@@ -613,7 +615,7 @@ void HeatShield<Order>::assemble()
 
 
 template<int Order>
-double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     using namespace vf;
 

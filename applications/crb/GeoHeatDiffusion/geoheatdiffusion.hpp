@@ -118,11 +118,11 @@ public :
  * @author Stephane Veys
  * @see
  */
-class GeoHeatDiffusion : public ModelCrbBase< ParameterSpace<3>, FunctionSpaceDefinition >
+class GeoHeatDiffusion : public ModelCrbBase< ParameterSpaceX, FunctionSpaceDefinition >
 {
 public:
 
-    typedef ModelCrbBase<ParameterSpace<3>,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition> super_type;
 
     typedef double value_type;
 
@@ -184,7 +184,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
+    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
@@ -204,9 +204,13 @@ private:
 };
 
 GeoHeatDiffusion::GeoHeatDiffusion()
+    :
+    super_type( "geoheatdiffusion" )
 {}
 
 GeoHeatDiffusion::GeoHeatDiffusion( po::variables_map const& vm )
+    :
+    super_type( "geoheatdiffusion" )
 {}
 
 void GeoHeatDiffusion::initModel()
@@ -233,7 +237,7 @@ void GeoHeatDiffusion::initModel()
         std::cout << "Number of dof " << Xh->nDof() << "\n";
         std::cout << "Number of local dof " << Xh->nLocalDof() << "\n";
     }
-
+    Dmu->setDimension(3);
     auto mu_min = Dmu->element();
     mu_min <<  /*length*/0.1, /*heat transfer coefficient*/ 0.1 , 0.1;
     Dmu->setMin( mu_min );
@@ -307,7 +311,7 @@ void GeoHeatDiffusion::assemble()
 }
 
 
-double GeoHeatDiffusion::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+double GeoHeatDiffusion::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 

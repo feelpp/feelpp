@@ -34,6 +34,19 @@
 
 namespace Feel
 {
+
+namespace solve {
+
+enum class strategy
+{
+    //! monolithic solve
+    monolithic=0,
+    // static condensation solve strategy
+    static_condensation=1
+};
+
+}
+
 /**
  * Context for 'on' operation on sparse matrices
  */
@@ -143,6 +156,8 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          FIELDSPLIT_PRECOND,
                          LSC_PRECOND,
                          LSC2_PRECOND,
+                         PMM_PRECOND,
+                         PCD_PRECOND,
                          FEELPP_BLOCKNS_PRECOND,
                          FEELPP_BLOCKMS_PRECOND,
                          ML_PRECOND,

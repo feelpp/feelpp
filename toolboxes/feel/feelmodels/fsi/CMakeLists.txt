@@ -15,7 +15,6 @@ foreach( _DIM 2 3)
       FLUID_GEO_ORDER  1
       SOLID_DISP_ORDER 1
       SOLID_GEO_ORDER 1
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FSI  ${FEELPP_MODELS_LIBRARIES_FSI} ${LIBBASE_NAME}  )
   endforeach()
@@ -35,7 +34,6 @@ foreach( _DIM 2 3)
       FLUID_GEO_ORDER ${_FLUID_P_ORDER}
       SOLID_DISP_ORDER ${_FLUID_P_ORDER}
       SOLID_GEO_ORDER ${_FLUID_P_ORDER}
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FSI  ${FEELPP_MODELS_LIBRARIES_FSI} ${LIBBASE_NAME}  )
   endforeach()
@@ -52,7 +50,6 @@ if ( FEELPP_INSTANTIATION_ORDER_MAX GREATER 1 AND FEELPP_MESH_MAX_ORDER GREATER 
     FLUID_GEO_ORDER 2
     SOLID_DISP_ORDER 2
     SOLID_GEO_ORDER 2
-    ADD_CMAKE_INSTALL
     )
 endif()
 
@@ -70,7 +67,6 @@ foreach( _DIM 2 3)
       FLUID_GEO_ORDER  1
       SOLID_DISP_ORDER ${_FLUID_U_ORDER}
       SOLID_GEO_ORDER 1
-      ADD_CMAKE_INSTALL
       )
     set(FEELPP_MODELS_LIBRARIES_FSI  ${FEELPP_MODELS_LIBRARIES_FSI} ${LIBBASE_NAME}  )
   endforeach()
@@ -78,3 +74,8 @@ endforeach()
 
 add_library(feelpp_model_fsi SHARED libfsi.cpp)
 target_link_libraries(feelpp_model_fsi ${FEELPP_MODELS_LIBRARIES_FSI})
+set_property(TARGET feelpp_model_fsi PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_model_fsi DESTINATION lib/ COMPONENT Libs)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fsi COMPONENT Devel)

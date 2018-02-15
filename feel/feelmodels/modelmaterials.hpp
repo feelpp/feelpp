@@ -35,131 +35,149 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct ModelMaterial
+struct FEELPP_EXPORT ModelMaterial
 {
-    ModelMaterial() = default;
+    static const uint16_type expr_order = 2;
+    typedef scalar_field_expression<expr_order> expr_scalar_type;
+    typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
+    typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
+    typedef std::tuple< boost::optional<double>, boost::optional<expr_scalar_type>, boost::optional<expr_vectorial2_type>,boost::optional<expr_vectorial3_type> > mat_property_expr_type;
+
+    ModelMaterial( WorldComm const& worldComm = Environment::worldComm() );
     ModelMaterial( ModelMaterial const& ) = default;
     ModelMaterial( ModelMaterial&& ) = default;
     ModelMaterial& operator=( ModelMaterial const& ) = default;
     ModelMaterial& operator=( ModelMaterial && ) = default;
-    ModelMaterial( std::string name, pt::ptree p )
-        :
-        M_name( name ),
-        M_p( p ),
-        M_rho( 1. ),
-        M_mu(1. ),
-        M_Cp( 1 ),
-        M_Cv( 1 ),
-        M_k11( 1 ),
-        M_k12( 0 ),
-        M_k13( 0 ),
-        M_k22( 1 ),
-        M_k23( 0 ),
-        M_k33( 1 ),
-        M_Tref( 0 ),
-        M_beta( 0 ),
-        M_C( 1 ),
-        M_Cs( 0. ),
-        M_Cl( 0. ),
-        M_L( 0. ),
-        M_Ks( 0. ),
-        M_Kl( 0. ),
-        M_Tsol( 0. ),
-        M_Tliq( 0. ),
-        M_young_modulus( 1 ),
-        M_nu( 1 ),
-        M_sigma( 1 )
-        {}
+    ModelMaterial( std::string const& name, pt::ptree const& p,
+                   WorldComm const& worldComm = Environment::worldComm(),
+                   std::string const& directoryLibExpr = "" );
+
     std::string const& name() const { return M_name; }
+    std::set<std::string> const& physics() const { return M_physics; }
+    std::string const physic() const { return M_physics.empty() ? "" : *(M_physics.begin()); }
     /*! Set Name
      */
     void setName( std::string const& name ) { M_name = name; }
 
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+
+    void setPhysics( std::set<std::string> const s) { M_physics = s; }
+    void addPhysics( std::string const s) { M_physics.insert( s ); }
+
+    void setProperty( std::string const& property, pt::ptree const& p );
+    void setProperty( std::string const& property, double val );
+
+    bool hasProperty( std::string const& prop ) const;
+    bool hasPropertyConstant( std::string const& prop ) const;
+    bool hasPropertyExprScalar( std::string const& prop ) const;
+    bool hasPropertyExprVectorial2( std::string const& prop ) const;
+    bool hasPropertyExprVectorial3( std::string const& prop ) const;
+    double propertyConstant( std::string const& prop ) const;
+    expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;
+    expr_vectorial2_type const& propertyExprVectorial2( std::string const& prop ) const;
+    expr_vectorial3_type const& propertyExprVectorial3( std::string const& prop ) const;
+
+    bool hasPhysics() const { return !M_physics.empty(); }
+    bool hasPhysics( std::string physic ) const { return M_physics.find(physic) != M_physics.end(); }
+
     /*! Material mass density
      */
-    double rho() const { return M_rho; }
-    void setRho( double v ) { M_rho = v; }
+    double rho() const { return this->propertyConstant( "rho" ); }
+    void setRho( double v ) { this->setProperty( "rho", v ); }
 
     /*! Molecular(dynamic) viscosity
      */
-    double mu() const { return M_mu; }
-    void setMu( double v ) { M_mu = v; }
+    double mu() const { return this->propertyConstant( "mu" ); }
+    void setMu( double v ) { this->setProperty( "mu", v ); }
 
     /*! Specify the constant-pressure specific heat Cp.
      */
-    double Cp() const {  return M_Cp; }
-    void setCp( double t) { M_Cp = t; }
+    double Cp() const { return this->propertyConstant( "Cp" ); }
+    void setCp( double v ) { this->setProperty( "Cp", v ); }
     /*! Specify the constant-volume specific heat Cv.
      */
-    double Cv() const {  return M_Cv; }
-    void setCv( double t) { M_Cv = t; }
+    double Cv() const { return this->propertyConstant( "Cv" ); }
+    void setCv( double v ) { this->setProperty( "Cv", v ); }
 
     /*! heat diffusion coefficients
      */
-    double k11() const {  return M_k11; }
-    void setK11( double t) { M_k11 = t; }
-    double k12() const {  return M_k12; }
-    void setK12( double t) { M_k12 = t; }
-    double k13() const {  return M_k13; }
-    void setK13( double t) { M_k13 = t; }
-    double k22() const {  return M_k22; }
-    void setK22( double  t) { M_k22 = t; }
-    double k23() const {  return M_k23; }
-    void setK23( double t) { M_k23 = t; }
-    double k33() const {  return M_k33; }
-    void setK33( double t) { M_k33 = t; }
+    double k11() const {  return this->propertyConstant( "k11" ); }
+    void setK11( double v ) { this->setProperty( "k11", v ); }
+    double k12() const { return this->propertyConstant( "k12" ); }
+    void setK12( double v ) { this->setProperty( "k12", v ); }
+    double k13() const { return this->propertyConstant( "k13" ); }
+    void setK13( double v ) { this->setProperty( "k13", v ); }
+    double k22() const { return this->propertyConstant( "k22" ); }
+    void setK22( double v ) { this->setProperty( "k22", v ); }
+    double k23() const { return this->propertyConstant( "k23" ); }
+    void setK23( double v ) { this->setProperty( "k23", v ); }
+    double k33() const { return this->propertyConstant( "k33" ); }
+    void setK33( double v ) { this->setProperty( "k33", v ); }
 
     /*! Material Reference temperature
      */
-    double Tref() const {  return M_Tref; }
-    void setTref( double t) { M_Tref = t; }
+    double Tref() const { return this->propertyConstant( "Tref" ); }
+    void setTref( double v ) { this->setProperty( "Tref", v ); }
 
     /*! Material coefficient for thermal expansion
      */
-    double beta() const {  return M_beta; }
-    void setBeta( double t) { M_beta = t; }
+    double beta() const { return this->propertyConstant( "beta" ); }
+    void setBeta( double v ) { this->setProperty( "beta", v ); }
 
     /*! heat capacity
      */
-    double C() const {  return M_C; }
-    void setC( double const& t) { M_C = t; }
+    double C() const { return this->propertyConstant( "C" ); }
+    void setC( double v ) { this->setProperty( "C", v ); }
 
-    double Cs()    const { return M_Cs   ;}
-    double Cl()    const { return M_Cl   ;}
-    double L()     const { return M_L    ;}
-    double Ks() const { return M_Ks;}
-    double Kl() const { return M_Kl;}
-    double Tsol()   const { return M_Tsol  ;}
-    double Tliq()   const { return M_Tliq  ;}
-    void setCs( double const &v )     { M_Cs    = v;}
-    void setCl( double const &v )     { M_Cl    = v;}
-    void setL( double const &v )      { M_L     = v;}
-    void setKs( double const &v )  { M_Ks = v;}
-    void setKl( double const &v )  { M_Kl = v;}
-    void setTsol( double const &v )    { M_Tsol   = v;}
-    void setTliq( double const &v )    { M_Tliq   = v;}
+    double Cs() const { return this->propertyConstant( "Cs" ); }
+    double Cl() const { return this->propertyConstant( "Cl" ); }
+    double L() const { return this->propertyConstant( "L" ); }
+    double Ks() const { return this->propertyConstant( "Ks" ); }
+    double Kl() const { return this->propertyConstant( "Kl" ); }
+    double Tsol() const { return this->propertyConstant( "Tsol" ); }
+    double Tliq() const { return this->propertyConstant( "Tliq" ); }
+    void setCs( double v ) { this->setProperty( "Cs", v ); }
+    void setCl( double v ) { this->setProperty( "Cl", v ); }
+    void setL( double v ) { this->setProperty( "L", v ); }
+    void setKs( double v ) { this->setProperty( "Ks", v ); }
+    void setKl( double v ) { this->setProperty( "Kl", v ); }
+    void setTsol( double v ) { this->setProperty( "Tsol", v ); }
+    void setTliq( double v ) { this->setProperty( "Tliq", v ); }
 
     // Mechanical properties
     /*! Young's Modulus
      */
-    double E() const {  return M_young_modulus; }
-    void setE( double const& t) { M_young_modulus = t; }
+    double E() const { return this->propertyConstant( "E" ); }
+    void setE( double v ) { this->setProperty( "E", v ); }
 
     /*! Poisson's ratio
      */
-    double nu() const {  return M_nu; }
-    void setNu( double const& t) { M_nu = t; }
+    double nu() const { return this->propertyConstant( "nu" ); }
+    void setNu( double v ) { this->setProperty( "nu", v ); }
     /*! Electrical conductivity
      */
-    double sigma() const {  return M_sigma; }
-    void setSigma( double const& t) { M_sigma = t; }
+    double sigma() const { return this->propertyConstant( "sigma" ); }
+    void setSigma( double v ) { this->setProperty( "sigma", v ); }
 
     void load( std::string const& );
+
+    void setParameterValues( std::map<std::string,double> const& mp );
 
     /**
      *
      */
-    std::string getString( std::string const& key ) {
+    pt::ptree getNode( std::string const& key ) const {
+        try { return M_p.get_child( key ); }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    std::string getString( std::string const& key ) const {
         try { return M_p.get<std::string>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -170,7 +188,7 @@ struct ModelMaterial
     /**
      *
      */
-    int getInt( std::string const& key ) {
+    int getInt( std::string const& key ) const {
         try { return M_p.get<int>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -181,17 +199,50 @@ struct ModelMaterial
     /**
      *
      */
-    double getDouble( std::string const& key ) {
+    double getDouble( std::string const& key ) const {
         try { return M_p.get<double>( key ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
             exit(1);
         }
     }
+
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key ) {
+    std::vector<std::string> getVecString( std::string const& key ) const {
+        try {
+            std::vector<std::string> res;
+            for( auto const& item : M_p.get_child( key ) )
+                res.push_back(item.second.template get_value<std::string>());
+            return res;
+        }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    std::vector<double> getVecDouble( std::string const& key ) const {
+        try {
+            std::vector<double> res;
+            for( auto const& item : M_p.get_child( key ) )
+                res.push_back(item.second.template get_value<double>());
+            return res;
+        }
+        catch( pt::ptree_error e ) {
+            cerr << "key " << key << ": " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+
+    /**
+     *
+     */
+    Expr<GinacEx<2> > getScalar( std::string const& key ) const {
         try { return expr( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -202,7 +253,7 @@ struct ModelMaterial
     /**
      *
      */
-    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) {
+    Expr<GinacEx<2> > getScalar( std::string const& key, std::map<std::string,double> const& params ) const {
         try { return expr( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -214,7 +265,7 @@ struct ModelMaterial
      *
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
-                                                                std::string const& sym, ExprT e ) {
+                                                                std::string const& sym, ExprT e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -227,7 +278,7 @@ struct ModelMaterial
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
-                                                                std::initializer_list<ExprT> e ) {
+                                                                std::initializer_list<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -240,7 +291,7 @@ struct ModelMaterial
      */
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::vector<std::string> const& sym,
-                                                                std::vector<ExprT> e ) {
+                                                                std::vector<ExprT> e ) const {
         try { return expr( M_p.get<std::string>( key ), sym, e ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -254,7 +305,7 @@ struct ModelMaterial
     template<typename ExprT> Expr<GinacExVF<ExprT> > getScalar( std::string const& key,
                                                                 std::initializer_list<std::string> const& sym,
                                                                 std::initializer_list<ExprT> e,
-                                                                std::map<std::string, double> params ) {
+                                                                std::map<std::string, double> params ) const {
         try {
             auto ex = expr( M_p.get<std::string>( key ), sym, e );
             ex.setParameterValues( params );
@@ -265,7 +316,7 @@ struct ModelMaterial
             exit(1);
         }
     }
-    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) {
+    template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -273,7 +324,7 @@ struct ModelMaterial
         }
     }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::pair<std::string,double> const& params ) {
+                                                         std::pair<std::string,double> const& params ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -281,7 +332,7 @@ struct ModelMaterial
         }
     }
     template<int T> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key,
-                                                         std::map<std::string,double> const& params ) {
+                                                         std::map<std::string,double> const& params ) const {
         try { return expr<T,1>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -291,7 +342,7 @@ struct ModelMaterial
     // template<int T, typename ExprT> Expr<GinacMatrixVF<ExprT> > getVector( std::string const& key, std::string const& sym, ExprT e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::initializer_list<std::string> const& sym, std::initializer_list<ExprT> e );
     // template<int T, typename ExprT> Expr<GinacMatrix<T,1,2> > getVector( std::string const& key, std::vector<std::string> const& sym, std::vector<ExprT> e );
-    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) {
+    template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ) ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -299,7 +350,7 @@ struct ModelMaterial
         }
     }
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::pair<std::string,double> const& params ) {
+                                                                       std::pair<std::string,double> const& params ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -307,7 +358,7 @@ struct ModelMaterial
         }
     }
     template<int T1, int T2=T1> Expr<GinacMatrix<T1,T2,2> > getMatrix( std::string const& key,
-                                                                       std::map<std::string,double> const& params ) {
+                                                                       std::map<std::string,double> const& params ) const {
         try { return expr<T1,T2>( M_p.get<std::string>( key ), params ); }
         catch( pt::ptree_error e ) {
             cerr << "key " << key << ": " << e.what() << std::endl;
@@ -320,39 +371,15 @@ struct ModelMaterial
 
 private:
 
+    WorldComm const * M_worldComm;
     std::string M_name; /*!< Material name*/
     pt::ptree M_p;
+    std::string M_directoryLibExpr;
 
-    double M_rho; /*!< Density */
-    double M_mu;  /*!< Molecular(dynamic) viscosity */
-
-    double M_Cp; /*!< Constant-pressure specific heat Cp */
-    double M_Cv; /*!< Constant-volume specific heat Cv */
-
-    // Thermal properties
-    double M_k11;  /*!< Diffusivity coefficient (1,1) */
-    double M_k12;  /*!< Diffusivity coefficient (1,2)  */
-    double M_k13;  /*!< Diffusivity coefficient (1,3)  */
-    double M_k22;  /*!< Diffusivity coefficient (2,2)  */
-    double M_k23;  /*!< Diffusivity coefficient (2,3)  */
-    double M_k33;  /*!< Diffusivity coefficient (3,3)  */
-    double M_Tref; /*!< Reference temperature  */
-    double M_beta; /*!< \f$ \beta \f$  */
-    double M_C;    /*!< Heat capacity  */
-    double M_Cs;   /*!< Specific Heat (solid)  */
-    double M_Cl;   /*!< Specific Heat (liquid) */
-    double M_L;    /*!< Latent heat            */
-    double M_Ks;   /*!< Conductivity (solid)   */
-    double M_Kl;   /*!< Conductivity (liquid)  */
-    double M_Tsol; /*!< Solidus temperature    */
-    double M_Tliq; /*!< Liquidus temperature   */
-
-    // Mechanical Properties
-    double M_young_modulus; /*!< Young's modulus */
-    double M_nu; /*!< Poisson's Ration */
-
-    // Electrical conductivity
-    double M_sigma; /*!< Electrical conductivity */
+    //! mat propeteries
+    std::map<std::string, mat_property_expr_type > M_materialProperties;
+    //! material physics
+    std::set<std::string> M_physics;
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
@@ -362,12 +389,12 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
  * key: mesh marker
  * name -> name of the materials - can be different
  */
-class ModelMaterials: public std::map<std::string,ModelMaterial>
+class FEELPP_EXPORT ModelMaterials: public std::map<std::string,ModelMaterial>
 {
 public:
     using value_type = std::map<std::string,ModelMaterial>::value_type;
-    ModelMaterials() = default;
-    ModelMaterials( pt::ptree const& p );
+    ModelMaterials( WorldComm const& worldComm = Environment::worldComm() );
+    ModelMaterials( pt::ptree const& p, WorldComm const& worldComm = Environment::worldComm() );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
     ModelMaterial loadMaterial( std::string const& );
@@ -382,20 +409,57 @@ public:
             return it->second;
 
         }
+
+    /** return all the materials which physic is physic
+     *
+     */
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::string physic) const
+    {
+        std::map<std::string,ModelMaterial> mat;
+        std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                     [physic](std::pair<std::string,ModelMaterial> const& mp)
+                     { return mp.second.hasPhysics(physic); } );
+        return mat;
+    }
+
+    /** return all the materials which physic is one of physics
+     *
+     */
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> physics) const
+    {
+        std::map<std::string,ModelMaterial> mat;
+        std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                     [physics](std::pair<std::string,ModelMaterial> const& mp)
+                     {
+                         bool b = false;
+                         for( auto const& p : physics )
+                             b = b || mp.second.hasPhysics(p);
+                         return b;
+                     });
+        return mat;
+    }
+
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+
+    void setParameterValues( std::map<std::string,double> const& mp );
+
     void saveMD(std::ostream &os);
 private:
     void setup();
 private:
+    WorldComm const* M_worldComm;
     pt::ptree M_p;
+    std::string M_directoryLibExpr;
+
 };
 
-inline ModelMaterial
+FEELPP_EXPORT inline ModelMaterial
 material( ModelMaterials::value_type const& m )
 {
     return m.second;
 }
 
-inline std::string
+FEELPP_EXPORT inline std::string
 marker( ModelMaterials::value_type const& m )
 {
     return m.first;

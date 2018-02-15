@@ -200,7 +200,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersNameMovingBoundary()/*"Paroi"*/) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     typedef SubMeshData smd_type;
     typedef boost::shared_ptr<smd_type> smd_ptrtype;
@@ -211,7 +211,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
         auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
         size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
         //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
-        auto const& theface2 = FM->mesh()->element(idElt2,e.processId()).face(theface.pos_first());
+        auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
         smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
     }
     submeshStruct->setSubMeshData( smd );
@@ -226,7 +226,7 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
     auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersNameMovingBoundary() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faces().modify( submeshStruct->faceIterator( unwrap_ref(*itp).id() ) , Feel::detail::UpdateMarker( submeshStruct->markerName("Fixe") ) );
+        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
 
     return submeshStruct;
 }
@@ -272,7 +272,8 @@ FSI<FluidType,SolidType>::init()
         M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMshfileStr(M_mshfilepathFluidPartN.string());
-        M_fluidModel->build();
+        //M_fluidModel->build();
+        M_fluidModel->init();
     }
 
     // solid model build
@@ -303,6 +304,7 @@ FSI<FluidType,SolidType>::init()
                 M_solidModel->setMshfileStr( M_mshfilepathSolidPartN.string() );
             M_solidModel->build();
         }
+        M_solidModel->init();
     }
 
     CHECK( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" ||
@@ -335,8 +337,8 @@ FSI<FluidType,SolidType>::init()
     M_reuseJacRebuildAtFirstNewtonStepOptSolid = M_solidModel->backend()->reuseJacRebuildAtFirstNewtonStep();
     //-------------------------------------------------------------------------//
     // call init
-    M_fluidModel->init();
-    M_solidModel->init();
+    // M_fluidModel->init();
+    // M_solidModel->init();
     this->updateTime( this->timeStepBase()->time() );
     //-------------------------------------------------------------------------//
     M_fluidModel->setCouplingFSI_solidIs1dReduced( M_solidModel->is1dReducedModel() );

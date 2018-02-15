@@ -204,25 +204,34 @@ class Mesh2D
     }
 
     /**
- * \return the number of faces in an element
- * \sa numLocalEdges()
- */
+     * \return the number of faces in an element
+     * \sa numLocalEdges()
+     */
     size_type numLocalFaces() const
     {
         return super_elements::element_type::numLocalEdges;
     }
 
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
+    uint16_type numLocalTopologicalFaces() const
+    {
+        return super_elements::element_type::numTopologicalFaces;
+    }
+
     /**
- * \return the number of vertices in an element
- */
+     * \return the number of vertices in an element
+     */
     size_type numLocalVertices() const
     {
         return super_elements::element_type::numLocalVertices;
     }
 
     /**
- * \return the number of faces
- */
+     * \return the number of faces
+     */
     size_type numFaces() const
     {
         return this->faces().size();
@@ -276,9 +285,9 @@ class Mesh2D
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
-        this->elements().clear();
-        this->points().clear();
-        this->faces().clear();
+        super_elements::clear();
+        super_points::clear();
+        super_faces::clear();
         CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
     }
 
@@ -313,19 +322,19 @@ class Mesh2D
 
     void updateEntitiesCoDimensionOnePermutation( mpl::bool_<true> )
     {
-        for ( typename super_elements::element_iterator elt = this->beginElement();
-              elt != this->endElement(); ++elt )
+        for ( typename super_elements::element_iterator elt_it = this->beginElement();
+              elt_it != this->endElement(); ++elt_it )
         {
+            auto & elt = elt_it->second;
             for ( uint16_type j = 0; j < element_type::numEdges; j++ )
             {
-                if ( !elt->hasFace( j ) )
+                if ( !elt.hasFace( j ) )
                     continue;
-                if ( elt->face( j ).isConnectedTo1() &&
-                     elt->face( j ).ad_second() == elt->id() )
+                if ( elt.face( j ).isConnectedTo1() &&
+                     elt.face( j ).ad_second() == elt.id() )
                 {
-                    this->elements().modify( elt,
-                                             Feel::detail::UpdateEdgePermutation<edge_permutation_type>( elt->face( j ).pos_second(),
-                                                                                                         edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) ) );
+                    elt.setEdgePermutation( elt.face( j ).pos_second(),
+                                            edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
                 }
             }
         }
