@@ -98,7 +98,7 @@ public :
         }
     }
 
-    void forwardLoad( int N, bool restart = true, std::string fileformat="hdf5")
+    void forwardLoad( int N, bool restart = true, shift=false, std::string fileformat="hdf5")
     {
         auto Xh = Pch<1>( M_mesh );
         auto ts = bdf( _space=Xh, _name="ts" );
@@ -121,11 +121,12 @@ public :
             BOOST_CHECK( ts->timeFinal() == 100 );
             BOOST_CHECK( ts->timeStep() == 10 );
 
-            for ( ; ts->isFinished() == false; ts->next() )
+            for ( ; ts->isFinished() == false; )
             {
                 LOG(INFO) << "BDF forward iteration: " << ts->iteration() << ", time:" << ts->time();
                 const int iter = ts->iteration();
                 u.on(_range=elements(M_mesh), _expr=cst(iter) );
+                ( shift ) ? ts->next(u) : ts->next();
             }
         }
     }
@@ -159,19 +160,19 @@ BOOST_AUTO_TEST_CASE( test_forward_multi_restart )
 BOOST_AUTO_TEST_CASE( test_forward_load_single )
 {
     Test<2> t;
-    t.forward(1,false);
+    t.forwardLoad(1,false);
 }
 
 BOOST_AUTO_TEST_CASE( test_forward_load_single_restart )
 {
     Test<2> t;
-    t.forward(1,true);
+    t.forwardLoad(1,true);
 }
 
 BOOST_AUTO_TEST_CASE( test_forward_load_multi_restart )
 {
     Test<2> t;
-    t.forward(2,true);
+    t.forwardLoad(2,true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
