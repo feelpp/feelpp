@@ -2535,7 +2535,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     t_expr1_type expr1( ex, mapgmc1 );
 
 
-
+    bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
+    bool hasDofTableMPIExtended = __dof->buildDofTableMPIExtended();
 
     size_type nbFaceDof = invalid_size_type_value;
 
@@ -2554,13 +2555,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
 
+        uint16_type __face_id = curFace.pos_first();
+        uint16_type faceConnectionId = 0;
+        if ( hasMeshSupportPartial )
+        {
+            auto const& elt0 = curFace.element( 0 );
+            if ( !__dof->meshSupport()->hasElement( elt0.id() ) || ( !hasDofTableMPIExtended && elt0.isGhostCell() ) )
+            {
+                auto const& elt1 = curFace.element( 1 );
+                if ( !__dof->meshSupport()->hasElement( elt1.id() ) || ( !hasDofTableMPIExtended && elt1.isGhostCell() ) )
+                    continue;
+                __face_id = curFace.pos_second();
+                faceConnectionId = 1;
+            }
+        }
+        else if ( !hasDofTableMPIExtended && curFace.element( 0 ).isGhostCell() )
+        {
+            DCHECK( curFace.isConnectedTo1() ) << "invalid face, no other connection";
+            __face_id = curFace.pos_second();
+            faceConnectionId = 1;
+        }
+
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
-                      << " element id= " << curFace.ad_first()
-                      << " pos in elt= " << curFace.pos_first()
-                      << " hasMarker: " << curFace.hasMarker() << "\n";
+                 << " element id= " << ((faceConnectionId == 0)? curFace.ad_first() : curFace.ad_second() )
+                 << " pos in elt= " << ((faceConnectionId == 0)? curFace.pos_first() : curFace.pos_second() )
+                 << " hasMarker: " << curFace.hasMarker() << "\n";
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << curFace.G() << "\n";
 
-        uint16_type __face_id = curFace.pos_first();
 
         std::pair<size_type,size_type> range_dof( std::make_pair( this->start(),
                 this->functionSpace()->nDof() ) );
@@ -2573,7 +2594,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         case GeomapStrategyType::GEOMAP_OPT:
         case GeomapStrategyType::GEOMAP_HO:
         {
-            __c->update( curFace.element( 0 ), __face_id );
+            __c->update( curFace.element( faceConnectionId ), __face_id );
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c->xReal() << "\n";
 
@@ -2586,7 +2607,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
         case GeomapStrategyType::GEOMAP_O1:
         {
-            __c1->update( curFace.element( 0 ), __face_id );
+            __c1->update( curFace.element( faceConnectionId ), __face_id );
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << "  ref pts=" << __c1->xRefs() << "\n";
             DVLOG(2) << "[projector] FACE_ID = " << curFace.id() << " real pts=" << __c1->xReal() << "\n";
 

@@ -26,33 +26,12 @@
 #
 # MONGOCXX
 #
-OPTION( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
+option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ON )
 
 if ( FEELPP_ENABLE_MONGOCXX )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/mongocxx )
-    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
-      execute_process(
-        COMMAND git submodule update --init --recursive contrib/mongocxx
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_FILE git.mongocxx.log
-        ERROR_FILE git.mongocxx.log
-        RESULT_VARIABLE ERROR_CODE
-        )
-      if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "[feelpp] Git submodule contrib/mongocxx updated.")
-      else()
-        MESSAGE(WARNING "Git submodule contrib/mongocxx failed to be updated. Possible cause: No internet access, firewalls ...")
-      endif()
-    else()
-      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/ )
-        message( WARNING "Please make sure that git submodule contrib/mongocxx is available")
-        message( WARNING "  run `git submodule update --init --recursive contrib/mongocxx`")
-      endif()
-    endif()
+  feelppContribPrepare( mongocxx )
 
-  endif()
-  
-  if( EXISTS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake")
     find_package(LibBSON 1.5 )
     find_package(LibMongoC 1.5 )
@@ -68,15 +47,15 @@ if ( FEELPP_ENABLE_MONGOCXX )
       set(LIBBSON_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
       list(APPEND LIBBSONCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
       list(APPEND LIBMONGOCXX_INCLUDE_DIRS ${FEELPP_SOURCE_DIR}/contrib/mongocxx/src ${FEELPP_BINARY_DIR}/contrib/mongocxx/src)
-      SET(FEELPP_HAS_BSONCXX 1)
-      SET(FEELPP_HAS_MONGOCXX 1)
-      SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
+      include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
+      set(FEELPP_HAS_BSONCXX 1)
+      set(FEELPP_HAS_MONGOCXX 1)
+      set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MongoCXX" )
       #set(FEELPP_LIBRARIES "${MONGOCXX_LIBRARIES} ${FEELPP_LIBRARIES}")
       list(APPEND MONGO_LIBRARIES feelpp_mongocxx feelpp_bsoncxx ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES} )
       list(INSERT FEELPP_LIBRARIES 0 ${MONGO_LIBRARIES})
     endif()
   else()
-      MESSAGE(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
+      message(WARNING "MongoCXX was not found on your system. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF.")
   endif()
- 
 endif()

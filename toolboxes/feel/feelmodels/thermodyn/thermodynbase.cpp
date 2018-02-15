@@ -111,6 +111,8 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     this->log("ThermoDynamics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
 
@@ -248,7 +250,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::nLocalDof() const
 
 THERMODYNAMICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
+THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app )
 {
     this->log("ThermoDynamics","init", "start" );
     this->timerTool("Constructor").start();
@@ -525,7 +527,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vector() );
+    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vector() );
 
     M_blockVectorSolution.localize();
@@ -551,16 +553,47 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoDynamics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                   this->fieldTemperature() );
-    if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
+    bool hasFieldToExport = false;
+    if ( this->hasPostProcessFieldExported( "temperature" ) )
     {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                       this->fieldVelocityConvection() );
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
+                                       this->fieldTemperature() );
+        hasFieldToExport = true;
     }
-    M_exporter->save();
+    if ( this->hasPostProcessFieldExported( "pid" ) )
+    {
+        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+
+    if ( this->hasPostProcessFieldExported( "velocity-convection" ) )
+    {
+        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
+        {
+            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                           this->fieldVelocityConvection() );
+            hasFieldToExport = true;
+        }
+    }
+    if ( this->hasPostProcessFieldExported( "thermal-conductivity" ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
+                                       this->thermalProperties()->fieldThermalConductivity() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "density" ) )
+    {
+        M_exporter->step( time )->add( prefixvm(this->prefix(),"density"),
+                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
+                                       this->thermalProperties()->fieldRho() );
+        hasFieldToExport = true;
+    }
+
+    if ( hasFieldToExport )
+        M_exporter->save();
 
     this->exportMeasures( time );
 
@@ -669,7 +702,7 @@ THERMODYNAMICSBASE_CLASS_TEMPLATE_TYPE::updateBdf()
         {
             if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".ThermoDynamics","updateBdf", "do rebuildCstLinearPDE",
                                                        this->worldComm(),this->verboseAllProc());
-            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vector());
+            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
         }
     }
 

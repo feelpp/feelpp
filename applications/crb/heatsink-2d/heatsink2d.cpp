@@ -517,7 +517,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 
 
 
-double HeatSink2D::output( int output_index, parameter_type const& mu, element_type& unknown, bool need_to_solve, bool export_outputs )
+double HeatSink2D::output( int output_index, parameter_type const& mu, element_type& unknown, bool need_to_solve )
 {
     using namespace vf;
 
@@ -555,7 +555,7 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, element_t
 }
 
 
-FEELPP_CRB_PLUGIN( HeatSink2D, "heatsink2d" )
+FEELPP_CRB_PLUGIN( HeatSink2D, heatsink2d )
 } // Feel
 
 

@@ -37,8 +37,13 @@
 #include <feel/feelalg/topetsc.hpp>
 #include <feel/feeltiming/tic.hpp>
 
-BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetsc<double> )
-BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetscMPI<double> )
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/string.hpp> // Needed to send/receive strings!
 
 #if defined( FEELPP_HAS_PETSC_H )
 
@@ -1739,7 +1744,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
         CHKERRABORT( this->comm(),ierr );
 
-        VectorPetsc<value_type> diag( this->size1(), stop-start );
+        VectorPetsc<value_type> diag( this->mapColPtr() );
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq getdiag";
@@ -2343,65 +2348,134 @@ void MatrixPetsc<T>::threshold(void)
 }
 
 template <typename T>
-template<class Archive>
-void MatrixPetsc<T>::save( Archive & ar, const unsigned int version ) const
+void
+MatrixPetsc<T>::save( std::string const& filename, std::string const& format )
 {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
-
-    int m = this->mapRow().nLocalDofWithGhost();
-    int n = this->mapCol().nLocalDofWithGhost();
-    int idxm [m];
-    int idxn [n];
-    double array[m*n];
-
-    int i=0;
-    for ( int index=this->mapRow().firstDofGlobalCluster();
-          index<=this->mapRow().lastDofGlobalCluster(); index++ )
+    std::string filenameUsed = boost::str( boost::format("%1%_%2%_%3%") %filename %format %this->comm().globalRank() );
+    std::ofstream ofs( filenameUsed );
+    if (ofs)
     {
-        idxm[i]=index;
-        i++;
+        if ( format=="binary" )
+        {
+            boost::archive::binary_oarchive oa(ofs);
+            oa << *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_oarchive oa(ofs);
+            oa << boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_oarchive oa(ofs);
+            oa << *this;
+        }
+        else
+            CHECK( false ) << "MatrixPetsc save() function : error with unknown format " << format;
     }
-    Feel::cout <<"Save matrix : i="<<i <<", size row="<<m <<std::endl;
-
-    i=0;
-    for ( int index=this->mapCol().firstDofGlobalCluster();
-          index<=this->mapCol().lastDofGlobalCluster(); index++ )
+    else
     {
-        idxn[i]=index;
-        i++;
+        CHECK( false ) << "MatrixPetsc save() function : error opening ofstream with name " << filenameUsed;
     }
-    Feel::cout <<"Save matrix : i="<<i <<", size col="<<n <<std::endl;
+    ofs.close();
+}
 
-    MatGetValues( M_mat, m, idxm, n, idxn, array );
-
-    for( int i = 0; i < m*n; ++i )
-        ar & boost::serialization::make_nvp("arrayi", array[i] );
+template <typename T>
+void
+MatrixPetsc<T>::load( std::string const& filename, std::string const& format )
+{
+    std::string filenameUsed = boost::str( boost::format("%1%_%2%_%3%") %filename %format %this->comm().globalRank() );
+    std::ifstream ifs( filenameUsed );
+    if ( ifs )
+    {
+        if ( format=="binary" )
+        {
+            boost::archive::binary_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else if ( format=="xml")
+        {
+            boost::archive::xml_iarchive ia(ifs);
+            ia >> boost::serialization::make_nvp("vectorpetsc", *this );
+        }
+        else if ( format=="text")
+        {
+            boost::archive::text_iarchive ia(ifs);
+            ia >> *this;
+        }
+        else
+            CHECK( false ) << "MatrixPetsc save() function : error with unknown format " << format;
+    }
+    else
+    {
+        CHECK( false ) << "MatrixPetsc load() function : error opening ofstream with name " << filenameUsed;
+    }
+    ifs.close();
 }
 
 template <typename T>
 template<class Archive>
-void MatrixPetsc<T>::load( Archive & ar, const unsigned int version )
+void MatrixPetsc<T>::serialize(Archive & ar, const unsigned int version )
 {
+    if ( !this->closed() )
+        this->close();
+
+    CHECK( this->isInitialized() ) << "TODO : matrix not initialized";
+    int ierr=0;
+#if 0
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
+#endif
 
-    int m = this->mapRow().nLocalDofWithGhost();
-    int n = this->mapCol().nLocalDofWithGhost();
-    
+    if ( Archive::is_saving::value )
+    {
+        CHECK( this->hasGraph() ) << "graph is required";
 
+        std::vector<double> matValues;
+        matValues.reserve( this->graph()->ja().size() );
+        auto itVal = matValues.begin();
+        PetscInt rowIds[1];
+        std::vector<PetscInt> colIds;
+        for ( auto const& rowDataEntries : this->graph()->storage() )
+        {
+            if ( !this->mapRow().dofGlobalClusterIsOnProc( rowDataEntries.first ) )
+                continue;
+            rowIds[0] = rowDataEntries.first;
+            auto const& colData = boost::get<2>( rowDataEntries.second );
+            if ( colData.empty() )
+                continue;
+            colIds.assign( colData.begin(),colData.end() );
+            itVal = matValues.end();
+            matValues.resize( matValues.size() + colIds.size() );
+            ierr = MatGetValues( this->mat(), 1, rowIds, colIds.size(), colIds.data(), &(*itVal)/*matValues.data()*/ );
+            CHKERRABORT( this->comm(),ierr );
+        }
+        ar & boost::serialization::make_nvp("values", matValues );
+    }
+    else
+    {
+        CHECK( this->hasGraph() ) << "graph is required";
 
-    std::vector<int> idxm(m), idxn(n);
-    std::iota( idxm.begin(), idxm.end(), this->mapRow().firstDofGlobalCluster() );
-    std::iota( idxn.begin(), idxn.end(), this->mapCol().firstDofGlobalCluster() );
-    std::vector<PetscScalar> array(m*n);
-    for( int i = 0; i < m*n; ++i )
-        ar & boost::serialization::make_nvp("arrayi", array[i] );
-
-    MatSetValues( M_mat, m, idxm.data(), n, idxn.data(), array.data(), INSERT_VALUES );
-
-    this->close();
-
+        std::vector<double> matValues;
+        ar & boost::serialization::make_nvp("values", matValues );
+        auto itVal = matValues.begin();
+        PetscInt rowIds[1];
+        std::vector<PetscInt> colIds;
+        for ( auto const& rowDataEntries : this->graph()->storage() )
+        {
+            if ( !this->mapRow().dofGlobalClusterIsOnProc( rowDataEntries.first ) )
+                continue;
+            rowIds[0] = rowDataEntries.first;
+            auto const& colData = boost::get<2>( rowDataEntries.second );
+            if ( colData.empty() )
+                continue;
+            colIds.assign( colData.begin(),colData.end() );
+            ierr = MatSetValues( this->mat(), 1, rowIds, colIds.size(), colIds.data(), &(*itVal), INSERT_VALUES );
+            CHKERRABORT( this->comm(),ierr );
+            itVal += colIds.size();
+        }
+        this->close();
+    }
 }
-
 
 //----------------------------------------------------------------------------------------------------//
 
@@ -3198,6 +3272,20 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
 template class MatrixPetsc<double>;
 template class MatrixPetscMPI<double>;
+
+template void MatrixPetsc<double>::serialize(boost::archive::text_oarchive & ar, const unsigned int version );
+template void MatrixPetsc<double>::serialize(boost::archive::text_iarchive & ar, const unsigned int version );
+template void MatrixPetsc<double>::serialize(boost::archive::binary_oarchive & ar, const unsigned int version );
+template void MatrixPetsc<double>::serialize(boost::archive::binary_iarchive & ar, const unsigned int version );
+template void MatrixPetsc<double>::serialize(boost::archive::xml_oarchive & ar, const unsigned int version );
+template void MatrixPetsc<double>::serialize(boost::archive::xml_iarchive & ar, const unsigned int version );
+
 } // Feel
+
+
+
+//BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetsc<double> )
+//BOOST_CLASS_EXPORT_IMPLEMENT( Feel::MatrixPetscMPI<double> )
+
 
 #endif // FEELPP_HAS_PETSC_H

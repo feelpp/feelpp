@@ -70,6 +70,7 @@ struct FEELPP_EXPORT ModelParameter
     void setMin( double v ) { M_min = v; }
     double max() const { return M_max; }
     void setMax( double v ) { M_max = v; }
+    bool hasMinMax() const { return M_min != 0 || M_max != 0; }
 
     bool hasExpression() const { return M_expr.get_ptr() != 0; } //M_expr != boost::none; }
     void setParameterValues( std::map<std::string,double> const& mp )

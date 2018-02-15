@@ -441,17 +441,18 @@ public:
     backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backend() const { return  M_backend; }
     block_pattern_type blockPattern() const;
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
-    int nBlockMatrixGraph() const;
+    virtual int nBlockMatrixGraph() const;
     indexsplit_ptrtype buildIndexSplit() const;
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    size_type nLocalDof() const;
+    virtual size_type nLocalDof() const;
     std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
+    void buildBlockVector();
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    void updateBlockVectorSolution();
+    virtual void updateBlockVectorSolution();
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -836,6 +837,8 @@ public :
 
     void updateJacobianModel( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualModel( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
+    virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
+    virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
 
     virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
     virtual void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const = 0;
@@ -854,6 +857,7 @@ public :
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A , vector_ptrtype& F, bool _BuildCstPart ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
+    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
     virtual void updateSourceTermLinearPDE( vector_ptrtype& F, bool BuildCstPart ) const = 0;
     virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
     virtual void updateBCDirichletLagMultLinearPDE( vector_ptrtype& F ) const = 0;
@@ -870,7 +874,10 @@ private :
     void updateBoundaryConditionsForUse();
 
 protected:
+    virtual size_type initStartBlockIndexFieldsInMatrix();
+    virtual int initBlockVector();
 
+    //___________________________________________________________________________________//
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
     

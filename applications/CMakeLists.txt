@@ -27,6 +27,7 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 project( applications )
 add_subdirectory( mesh )
+add_subdirectory( fmi )
 add_subdirectory( databases )
 #add_subdirectory( polyvis )
 #add_subdirectory( check )
@@ -35,4 +36,3 @@ add_subdirectory( databases )
     add_subdirectory( crb )
     # endif()
 #endif()
-

@@ -28,9 +28,14 @@
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 namespace Feel
 {
+
+template<typename T> class Preconditioner;
+
 /**
  * Base class for Operators
  */

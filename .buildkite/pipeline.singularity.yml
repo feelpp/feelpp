@@ -1,8 +1,0 @@
-steps:
- - name: "feelpp-singularity"
-   command: tools/scripts/buildkite/singularity-generate.sh feelpp/feelpp-libs feelpp/feelpp-base feelpp/feelpp-toolboxes feelpp/feelpp-crb
-   label: ":singularity: generate images"
-   agents:
-     singularity: true
-   env:
-     TARGET: ubuntu:16.10

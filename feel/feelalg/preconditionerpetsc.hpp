@@ -301,10 +301,10 @@ public :
             style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
             allow_unregistered().run();
         po::store(parsed,M_vm);
-        for ( std::string cfgfile : Environment::configFileNames() )
+        for ( auto & configFile : Environment::configFiles() )
         {
-            std::ifstream ifs( cfgfile );
-            po::store(po::parse_config_file(ifs, _options,true), M_vm);
+            std::istringstream & iss = std::get<1>( configFile );
+            po::store(po::parse_config_file(iss, _options,true), M_vm);
         }
         po::notify(M_vm);
     }
@@ -613,6 +613,44 @@ private :
     bool M_scaleDiag;
     std::string M_subPCtype, M_subMatSolverPackage;
     bool M_subPCview;
+
+};
+
+/**
+ * ConfigurePCPMM
+ */
+class ConfigurePCPMM : public ConfigurePCBase
+{
+public :
+    ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    std::string M_prefixPMM;
+    std::string M_subPCtype, M_subMatSolverPackage;
+    bool M_subPCview;
+
+};
+
+/**
+ * ConfigurePCPCD
+ */
+class ConfigurePCPCD : public ConfigurePCBase
+{
+public :
+    ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, WorldComm const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    std::string M_prefixPCD_Ap, M_prefixPCD_Mp;
+    std::string M_subPCtype_Ap, M_subPCtype_Mp, M_subMatSolverPackage_Ap, M_subMatSolverPackage_Mp;
+    bool M_subPCview_Ap, M_subPCview_Mp;
 
 };
 

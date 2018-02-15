@@ -20,7 +20,7 @@ endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;ADD_CMAKE_INSTALL"
+    "LIB_NAME;LIB_DIR;LIB_DEPENDS;PREFIX_INCLUDE_USERCONFIG;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
     ""
     ${ARGN}
     )
@@ -73,9 +73,7 @@ macro(genLibBase)
   endif()
 
   # install process
-  if ( FEELMODELS_GENLIB_BASE_ADD_CMAKE_INSTALL )
-    INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT Libs)
-  endif()
+  INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 endmacro(genLibBase)
 
@@ -87,7 +85,7 @@ endmacro(genLibBase)
 macro( genLibThermoDynamics )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER;"
-    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+    "NO_UPDATE_MODEL_DEF"
     ${ARGN}
     )
 
@@ -134,12 +132,6 @@ macro( genLibThermoDynamics )
       ${LIBBASE_DIR}/thermodynamics_inst.cpp )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-
     # generate libmodelbase
     genLibBase(
       LIB_NAME ${LIBBASE_NAME}
@@ -149,7 +141,6 @@ macro( genLibThermoDynamics )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermodyn/thermodynconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
   endif()
@@ -164,8 +155,8 @@ endmacro(genLibThermoDynamics)
 
 macro( genLibSolidMechanics )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;DISP_ORDER;GEO_ORDER;DENSITY_COEFFLAME_TYPE;ADD_CMAKE_INSTALL_BIS"
-    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+    "DIM;DISP_ORDER;GEO_ORDER;DENSITY_COEFFLAME_TYPE"
+    "NO_UPDATE_MODEL_DEF"
     ${ARGN}
     )
 
@@ -230,16 +221,6 @@ macro( genLibSolidMechanics )
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-    # overwrite options
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
-      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
-    endif()
-
     # generate libmodelbase
     genLibBase(
       LIB_NAME ${LIBBASE_NAME}
@@ -249,7 +230,6 @@ macro( genLibSolidMechanics )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
   endif()
@@ -263,8 +243,8 @@ endmacro( genLibSolidMechanics )
 
 macro(genLibFluidMechanics)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS;ADD_CMAKE_INSTALL_BIS"
-    "USE_PERIODICITY;NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+    "DIM;U_ORDER;P_ORDER;P_CONTINUITY;GEO_ORDER;DENSITY_VISCOSITY_CONTINUITY;DENSITY_VISCOSITY_ORDER;USE_PERIODICITY_BIS"
+    "USE_PERIODICITY;NO_UPDATE_MODEL_DEF"
     ${ARGN}
     )
 
@@ -358,31 +338,28 @@ macro(genLibFluidMechanics)
 
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbasecreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseothers_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinear_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatelinearweakbc_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobian_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidual_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisation_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecbaseupdatestabilisationgls_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanics_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicscreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsothers_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinear_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinearbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobian_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidual_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/fluidmecbasecreate_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseothers_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatelinear_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatelinearweakbc_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatejacobian_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatejacobianstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidual_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdateresidualstresstensorlaw_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisation_inst.cpp
-      ${LIBBASE_DIR}/fluidmecbaseupdatestabilisationgls_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanics_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicscreate_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsothers_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatelinear_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatejacobian_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdateresidual_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
     if (FEELPP_MODELS_ENABLE_MESHALE )
@@ -390,17 +367,6 @@ macro(genLibFluidMechanics)
     endif()
     # thermodynamcis depend
     set(LIB_DEPENDS feelpp_model_thermodyn${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
-
-
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-    # overwrite options
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
-      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
-    endif()
 
     # generate libmodelbase
     genLibBase(
@@ -410,8 +376,7 @@ macro(genLibFluidMechanics)
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmecconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsconfig.h.in
       )
 
   endif()
@@ -426,7 +391,7 @@ endmacro( genLibFluidMechanics )
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC;SOLID_DENSITY_COEFFLAME_TYPE"
-    "FLUID_USE_PERIODICITY;ADD_CMAKE_INSTALL"
+    "FLUID_USE_PERIODICITY"
     ${ARGN}
     )
 
@@ -435,12 +400,6 @@ macro(genLibFSI)
     message(FATAL_ERROR "miss argument!")
   endif()
 
-  ###############################################################
-  if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-    set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-  else()
-    set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-  endif()
   ###############################################################
   # fluid lib
   if ( FEELMODELS_APP_FLUID_USE_PERIODICITY )
@@ -457,7 +416,6 @@ macro(genLibFSI)
     DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
     DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     USE_PERIODICITY_BIS ${FEELMODELS_FLUID_USE_PERIODICITY}
-    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
   set(FLUID_LIB_NAME ${LIBBASE_NAME})
   set(FLUID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
@@ -468,7 +426,6 @@ macro(genLibFSI)
     DISP_ORDER ${FEELMODELS_APP_SOLID_DISP_ORDER}
     GEO_ORDER ${FEELMODELS_APP_SOLID_GEO_ORDER}
     DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_SOLID_DENSITY_COEFFLAME_TYPE}
-    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
   set(SOLID_LIB_NAME ${LIBBASE_NAME})
   set(SOLID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
@@ -504,7 +461,6 @@ macro(genLibFSI)
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fsi/fsiconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
 
@@ -519,9 +475,9 @@ endmacro( genLibFSI )
 #############################################################################
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
-      "DIM;POLY_ORDER;POLY_SET;GEO_ORDER;USE_PERIODICITY;POINT_SET;DIFFUSION_REACTION_ORDER;DIFFUSION_REACTION_CONTINUITY;"
-    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
-    ${ARGN}
+      "DIM;POLY_ORDER;CONTINUITY;POLY_SET;GEO_ORDER;DIFFUSION_REACTION_ORDER;DIFFUSIONCOEFF_POLY_SET;REACTIONCOEFF_POLY_SET;DIFFUSION_REACTION_CONTINUITY"
+      "NO_UPDATE_MODEL_DEF"
+      ${ARGN}
     )
 
   if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
@@ -537,7 +493,27 @@ macro( genLibAdvection )
 
   set(ADVECTION_DIM ${FEELMODELS_APP_DIM})
   set(ADVECTION_ORDERPOLY ${FEELMODELS_APP_POLY_ORDER})
+
+  # continuity
+  if (FEELMODELS_APP_CONTINUITY)
+      if ("${FEELMODELS_APP_CONTINUITY}" STREQUAL "Continuous" )
+          set(ADVECTION_USE_CONTINUOUS 1)
+          unset(ADVECTION_CONTINUITY_TAG)
+      elseif ("${FEELMODELS_APP_CONTINUITY}" STREQUAL "Discontinuous" )
+          set(ADVECTION_USE_CONTINUOUS 0)
+          set(ADVECTION_CONTINUITY_TAG d)
+      else()
+          message(FATAL_ERROR "CONTINUITY ${FEELMODELS_APP_CONTINUITY} : is not valid! It must be Continuous or Discontinuous")
+      endif()
+  else()
+      # default value (Continuous)
+    set(ADVECTION_USE_CONTINUOUS 1)
+    unset(ADVECTION_CONTINUITY_TAG) 
+  endif()
+
+  # geometric order
   set(ADVECTION_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
   # polynomial set
   if(FEELMODELS_APP_POLY_SET)
       set(ADVECTION_POLYSET ${FEELMODELS_APP_POLY_SET})
@@ -553,20 +529,6 @@ macro( genLibAdvection )
       set(ADVECTION_POLYSET Scalar)
       unset(ADVECTION_POLY_SET_TAG)
   endif()
-  # point set
-  if (FEELMODELS_APP_POINT_SET)
-      if("${FEELMODELS_APP_POINT_SET}" STREQUAL "EquiSpaced" )
-          set(ADVECTION_POINT_SET PointSet${FEELMODELS_APP_POINT_SET} )
-          unset(ADVECTION_POINT_SET_TAG) #default value PointSetEquiSpaced
-      else()
-          set(ADVECTION_POINT_SET PointSet${FEELMODELS_APP_POINT_SET} )
-          set(ADVECTION_POINT_SET_TAG ${FEELMODELS_APP_POINT_SET} )
-      endif()
-  else()
-      # default value
-      set(ADVECTION_POINT_SET EquiSpaced)
-      unset(ADVECTION_POINT_SET_TAG) #default value PointSetEquiSpaced
-  endif()
   #######################################################
   if (FEELMODELS_APP_DIFFUSION_REACTION_ORDER)
       set(ADVECTION_ORDER_DIFFUSION_REACTION ${FEELMODELS_APP_DIFFUSION_REACTION_ORDER} )
@@ -574,35 +536,55 @@ macro( genLibAdvection )
     # default value
     set(ADVECTION_ORDER_DIFFUSION_REACTION ${FEELMODELS_APP_POLY_ORDER} )
   endif()
+  if(FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET)
+      set(ADVECTION_DIFFUSIONCOEFF_POLYSET ${FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET})
+      if("${FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET}" STREQUAL "Scalar" )
+          unset(ADVECTION_DIFFUSIONCOEFF_POLY_SET_TAG)
+      elseif("${FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET}" STREQUAL "Tensor2" )
+          set(ADVECTION_DIFFUSIONCOEFF_POLY_SET_TAG t)
+      elseif("${FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET}" STREQUAL "Tensor2Symm" )
+          set(ADVECTION_DIFFUSIONCOEFF_POLY_SET_TAG ts)
+      else()
+          message(FATAL_ERROR "DIFFUSIONCOEFF_POLY_SET ${FEELMODELS_APP_DIFFUSIONCOEFF_POLY_SET} is not valid! It must be Scalar or Tensor2 or Tensor2Symm")
+      endif()
+  else()
+      #default value
+      set(ADVECTION_DIFFUSIONCOEFF_POLYSET Scalar)
+      unset(ADVECTION_DIFFUSIONCOEFF_POLY_SET_TAG)
+  endif()
+  if(FEELMODELS_APP_REACTIONCOEFF_POLY_SET)
+      set(ADVECTION_REACTIONCOEFF_POLYSET ${FEELMODELS_APP_REACTIONCOEFF_POLY_SET})
+      if("${FEELMODELS_APP_REACTIONCOEFF_POLY_SET}" STREQUAL "Scalar" )
+          unset(ADVECTION_REACTIONCOEFF_POLY_SET_TAG)
+      elseif("${FEELMODELS_APP_REACTIONCOEFF_POLY_SET}" STREQUAL "Tensor2" )
+          set(ADVECTION_REACTIONCOEFF_POLY_SET_TAG t)
+      elseif("${FEELMODELS_APP_REACTIONCOEFF_POLY_SET}" STREQUAL "Tensor2Symm" )
+          set(ADVECTION_REACTIONCOEFF_POLY_SET_TAG ts)
+      else()
+          message(FATAL_ERROR "REACTIONCOEFF_POLY_SET ${FEELMODELS_APP_REACTIONCOEFF_POLY_SET} is not valid! It must be Scalar or Tensor2 or Tensor2Symm")
+      endif()
+  else()
+      #default value
+      set(ADVECTION_REACTIONCOEFF_POLYSET Scalar)
+      unset(ADVECTION_REACTIONCOEFF_POLY_SET_TAG)
+  endif()
   #######################################################
   if (FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY)
       if ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Continuous" )
           set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 1)
-          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}c)
+          unset(ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG)
       elseif ("${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY}" STREQUAL "Discontinuous" )
           set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 0)
-          if ( "${ADVECTION_ORDER_DIFFUSION_REACTION}" STREQUAL "0" )
-              unset(ADVECTION_DIFFUSION_REACTION_TAG) # default value P0d
+          set(ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG d)
       else()
-          set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}d)
+          message(FATAL_ERROR "DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_DIFFUSION_REACTION_CONTINUITY} : is not valid! It must be Continuous or Discontinuous")
       endif()
-    else()
-        message(FATAL_ERROR "DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_DIFFUSION_REACTION}_CONTINUITY : is not valid! It must be Continuous or Discontinuous")
-    endif()
   else()
     # default value
     set(ADVECTION_USE_CONTINUOUS_DIFFUSION_REACTION 1)
-    set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}c) # default value P${ORDER_POLY}c
+    unset(ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG)
   endif()
-
-  #######################################################
-  if ( FEELMODELS_APP_USE_PERIODICITY )
-      set(ADVECTION_USE_PERIODICITY 1)
-      set(ADVECTION_USE_PERIODICITY_TAG Periodic)
-  else()
-      set(ADVECTION_USE_PERIODICITY 0)
-      unset(ADVECTION_USE_PERIODICITY_TAG)
-  endif()
+  set(ADVECTION_DIFFUSION_REACTION_TAG DRP${ADVECTION_ORDER_DIFFUSION_REACTION}${ADVECTION_DIFFUSIONCOEFF_POLY_SET_TAG}${ADVECTION_DIFFUSION_REACTION_CONTINUITY_TAG}) # default value P${ORDER_POLY}${POLY_SET}
   #######################################################
 
   if (0)
@@ -610,10 +592,9 @@ macro( genLibAdvection )
     MESSAGE("*** DIM ${ADVECTION_DIM}")
     MESSAGE("*** ORDERPOLY ${ADVECTION_ORDERPOLY}")
     MESSAGE("*** ORDERGEO ${ADVECTION_ORDERGEO}")
-    MESSAGE("*** PERIODICITY ${ADVECTION_PERIODICITY_TAG}")
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${ADVECTION_DIM}dP${ADVECTION_ORDERPOLY}${ADVECTION_POLY_SET_TAG}G${ADVECTION_ORDERGEO}${ADVECTION_POINT_SET_TAG}${ADVECTION_DIFFUSION_REACTION_TAG}${ADVECTION_PERIODICITY_TAG} )
+  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${ADVECTION_DIM}dP${ADVECTION_ORDERPOLY}${ADVECTION_CONTINUITY_TAG}${ADVECTION_POLY_SET_TAG}G${ADVECTION_ORDERGEO}${ADVECTION_DIFFUSION_REACTION_TAG} )
   set(FEELMODELS_MODEL_SPECIFIC_NAME advection${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
   set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/advection/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
@@ -634,12 +615,6 @@ macro( genLibAdvection )
       ${LIBBASE_DIR}/advection_inst.cpp )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-
     # generate libmodelbase
     genLibBase(
       LIB_NAME ${LIBBASE_NAME}
@@ -649,7 +624,6 @@ macro( genLibAdvection )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/advection/advectionconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
   endif()
@@ -663,8 +637,8 @@ endmacro(genLibAdvection)
 #############################################################################
 macro( genLibLevelset )
     PARSE_ARGUMENTS(FEELMODELS_APP
-        "DIM;LEVELSET_ORDER;USE_PERIODICITY;GEO_ORDER;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY;ADD_CMAKE_INSTALL_BIS"
-        "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+        "DIM;LEVELSET_ORDER;GEO_ORDER;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY"
+        "NO_UPDATE_MODEL_DEF"
         ${ARGN}
         )
 
@@ -683,25 +657,15 @@ macro( genLibLevelset )
     set(LEVELSET_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
     set(LEVELSET_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
     #######################################################
-    if ( FEELMODELS_APP_USE_PERIODICITY )
-        set(LEVELSET_USE_PERIODICITY 1)
+    if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER)
+        set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER})
     else()
-        set(LEVELSET_USE_PERIODICITY 0)
+        set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${LEVELSET_ORDERPOLY})
     endif()
-    if( LEVELSET_USE_PERIODICITY )
-        set(LEVELSET_USE_PERIODICITY_TAG Periodic)
+    if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY)
+        set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY})
     else()
-        unset(LEVELSET_USE_PERIODICITY_TAG)
-    endif()
-    ###############################################################
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-        set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-        set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-    # overwrite options
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS )
-      set( LIBBASE_ADD_CMAKE_INSTALL ${FEELMODELS_APP_ADD_CMAKE_INSTALL_BIS} )
+        set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY Continuous)
     endif()
     #######################################################
     # advection
@@ -709,24 +673,32 @@ macro( genLibLevelset )
         DIM          ${FEELMODELS_APP_DIM}
         GEO_ORDER    ${FEELMODELS_APP_GEO_ORDER}
         POLY_ORDER      ${FEELMODELS_APP_LEVELSET_ORDER}
-        POINT_SET       EquiSpaced 
-        DIFFUSION_REACTION_ORDER      ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER}
-        DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY}
-        USE_PERIODICITY ${FEELMODELS_APP_USE_PERIODICITY}
-        ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
+        DIFFUSION_REACTION_ORDER      ${LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER}
+        DIFFUSION_REACTION_CONTINUITY ${LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY}
         )
     set(ADVECTION_LIB_NAME ${LIBBASE_NAME})
     set(ADVECTION_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
+    # vectorial advection (backward characteristics)
+    genLibAdvection(
+        DIM          ${FEELMODELS_APP_DIM}
+        GEO_ORDER    ${FEELMODELS_APP_GEO_ORDER}
+        POLY_ORDER      ${FEELMODELS_APP_LEVELSET_ORDER}
+        POLY_SET        Vectorial
+        DIFFUSION_REACTION_ORDER      ${LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER}
+        DIFFUSION_REACTION_CONTINUITY ${LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY}
+        )
+    set(ADVECTIONVEC_LIB_NAME ${LIBBASE_NAME})
+    set(ADVECTIONVEC_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
     #######################################################
 
-    set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}G${LEVELSET_ORDERGEO}${LEVELSET_USE_PERIODICITY_TAG} )
+    set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}G${LEVELSET_ORDERGEO} )
     set(FEELMODELS_MODEL_SPECIFIC_NAME levelset${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
     set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/levelset/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
     set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
     set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
 
-    set(LIB_DEPENDS ${ADVECTION_LIB_NAME} ${FEELPP_LIBRARIES} )
+    set(LIB_DEPENDS ${ADVECTION_LIB_NAME} ${ADVECTIONVEC_LIB_NAME} ${FEELPP_LIBRARIES} )
 
     if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
 
@@ -735,9 +707,11 @@ macro( genLibLevelset )
 
         # configure libmodelbase
         set(CODEGEN_FILES_TO_COPY
-            ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelset_inst.cpp )
+            ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelset_inst.cpp
+            ${FEELPP_MODELS_SOURCE_DIR}/levelset/parameter_map.cpp )
         set(CODEGEN_SOURCES
-            ${LIBBASE_DIR}/levelset_inst.cpp )
+            ${LIBBASE_DIR}/levelset_inst.cpp
+            ${LIBBASE_DIR}/parameter_map.cpp )
         #set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
         # generate libmodelbase
@@ -749,7 +723,6 @@ macro( genLibLevelset )
             FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
             FILES_SOURCES ${CODEGEN_SOURCES}
             CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/levelset/levelsetconfig.h.in
-            ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
             )
 
     endif()
@@ -761,8 +734,8 @@ endmacro(genLibLevelset)
 
 macro(genLibMultiFluid)
   PARSE_ARGUMENTS(FEELMODELS_APP
-      "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY;USE_PERIODICITY"
-    "ADD_CMAKE_INSTALL"
+    "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY"
+    ""
     ${ARGN}
     )
 
@@ -772,18 +745,7 @@ macro(genLibMultiFluid)
   endif()
 
   ###############################################################
-  if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-    set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-  else()
-    set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-  endif()
-  ###############################################################
   # fluid lib
-  if ( FEELMODELS_APP_USE_PERIODICITY )
-    set( FEELMODELS_FLUID_USE_PERIODICITY 1 )
-  else()
-    set( FEELMODELS_FLUID_USE_PERIODICITY 0 )
-  endif()
   genLibFluidMechanics(
     DIM          ${FEELMODELS_APP_DIM}
     GEO_ORDER    ${FEELMODELS_APP_GEO_ORDER}
@@ -792,8 +754,6 @@ macro(genLibMultiFluid)
     P_CONTINUITY ${FEELMODELS_APP_FLUID_P_CONTINUITY}
     DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
     DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
-    USE_PERIODICITY_BIS ${FEELMODELS_FLUID_USE_PERIODICITY}
-    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
   set(FLUID_LIB_NAME ${LIBBASE_NAME})
   set(FLUID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
@@ -802,11 +762,9 @@ macro(genLibMultiFluid)
   genLibLevelset(
     DIM ${FEELMODELS_APP_DIM}
     LEVELSET_ORDER ${FEELMODELS_APP_LEVELSET_ORDER}
-    USE_PERIODICITY ${FEELMODELS_FLUID_USE_PERIODICITY}
     GEO_ORDER ${FEELMODELS_APP_GEO_ORDER}
     ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
     ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
-    ADD_CMAKE_INSTALL_BIS ${LIBBASE_ADD_CMAKE_INSTALL}
     )
   set(LEVELSET_LIB_NAME ${LIBBASE_NAME})
   set(LEVELSET_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
@@ -842,7 +800,6 @@ macro(genLibMultiFluid)
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/multifluid/multifluidconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
 
@@ -858,7 +815,7 @@ endmacro( genLibMultiFluid )
 macro( genLibThermoElectric )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER;"
-    "NO_UPDATE_MODEL_DEF;ADD_CMAKE_INSTALL"
+    "NO_UPDATE_MODEL_DEF"
     ${ARGN}
     )
 
@@ -905,12 +862,6 @@ macro( genLibThermoElectric )
     # thermodynamcis depend
     set(LIB_DEPENDS feelpp_model_thermodyn${THERMOELECTRIC_DIM}dP${THERMOELECTRIC_ORDERPOLY}G${THERMOELECTRIC_ORDERGEO} ${LIB_DEPENDS})
 
-    if ( FEELMODELS_APP_ADD_CMAKE_INSTALL )
-      set( LIBBASE_ADD_CMAKE_INSTALL 1 )
-    else()
-      set( LIBBASE_ADD_CMAKE_INSTALL 0 )
-    endif()
-
     # generate libmodelbase
     genLibBase(
       LIB_NAME ${LIBBASE_NAME}
@@ -920,7 +871,6 @@ macro( genLibThermoElectric )
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermoelectric/thermoelectricconfig.h.in
-      ADD_CMAKE_INSTALL ${LIBBASE_ADD_CMAKE_INSTALL}
       )
 
   endif()

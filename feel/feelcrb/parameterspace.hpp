@@ -49,6 +49,7 @@
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/removecomments.hpp>
 #include <feel/feelcore/utility.hpp>
+#include <feel/feelcore/hashtables.hpp>
 
 namespace Feel
 {
@@ -93,9 +94,9 @@ public:
     public:
         typedef ParameterSpace<Dimension> parameterspace_type;
         typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-        //typedef typename Eigen::internal::ref_selector<Element>::type Nested; 
+        //typedef typename Eigen::internal::ref_selector<Element>::type Nested;
         typedef typename Eigen::internal::remove_all<Eigen::VectorXd>::type NestedExpression;
-        
+
         /**
          * default constructor
          */
@@ -133,12 +134,30 @@ public:
         /**
          * copy constructor
          */
-        Element& operator=( Element const& e ) = default;
+        Element& operator=( Element const& e )
+            {
+                if ( this == &e )
+                    return *this;
+
+                this->resize( e.size() );
+                super::operator=( e );
+                M_space = e.M_space;
+                
+                return *this;
+            }
 
         template<typename OtherDerived>
         super& operator=( const Eigen::MatrixBase<OtherDerived>& other )
             {
                 return super::operator=( other );
+            }
+
+        /**
+         * return name of parameter at index d
+         */
+        std::string parameterName( int d ) const
+            {
+                return M_space->parameterName(d);
             }
 
         /**
@@ -159,6 +178,19 @@ public:
                     this->operator()( it - paramNames.begin() ) = value;
             }
 
+        /**
+         * get index of named parameter
+         */
+        int indexOfParameterNamed( std::string name ) const
+            {
+                auto paramNames = M_space->parameterNames();
+                auto it = std::find(paramNames.begin(), paramNames.end(), name);
+                if( it != paramNames.end() )
+                    return it - paramNames.begin();
+                else
+                    return -1;
+            }
+
         void setParameterSpace( parameterspace_ptrtype const& space )
             {
                 M_space = space;
@@ -175,6 +207,7 @@ public:
 
         void check() const
             {
+#if !defined(NDEBUG)
                 if ( !M_space->check() )
                 {
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
@@ -206,21 +239,42 @@ public:
                     << "sum parameter " << std::setprecision(15) << sum << "\n"
                     << "space min : " << M_space->min() << "\n"
                     << "space max : " << M_space->max() << "\n";
+#endif
             }
+
+
+        size_t key() const
+        {
+            int N = this->size();
+            std::vector<std::string> s;
+            for ( int i=0; i<N; i++ )
+                s.push_back( std::to_string(this->operator[](i)) );
+            HashTables::HasherContainers<std::string> h;
+            return h(s);
+        }
+
+        std::string toString() const
+        {
+            std::ostringstream mu_str;
+            mu_str << "["<<this->operator[](0);
+            for ( int i=1; i<this->size(); i++ )
+                mu_str <<","<< this->operator[](i);
+            mu_str <<"]";
+            return mu_str.str();
+        }
+
     private:
         friend class boost::serialization::access;
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
             }
 
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -322,6 +376,7 @@ public:
          */
         void setElements( std::vector< element_type > const& V )
         {
+#if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
             // first empty the set
@@ -334,7 +389,9 @@ public:
             }
 
             boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
-
+#else
+            super::operator=( V );
+#endif
         }
 
         /**
@@ -343,13 +400,16 @@ public:
          */
         void addElement( element_type const mu )
         {
+#if 0
             CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
             if( M_space->worldComm().isMasterRank() )
             {
                 super::push_back( mu );
             }
-
             boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
+#else
+            super::push_back( mu );
+#endif
         }
 
         void distributeOnAllProcessors( int N , std::string const& file_name )
@@ -462,7 +522,7 @@ public:
         }
 
         void sampling( size_type N, std::string const& samplingMode ) { return sample( N, samplingMode ); }
-        
+
         /**
          * \brief create a sampling with global number of samples
          * \param N the number of samples
@@ -485,10 +545,10 @@ public:
 
             if ( !filename.empty() )
             {
-                //if ( all_procs_have_same_sampling )
-                //    M_space->worldComm().barrier();
                 if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
                     this->writeOnFile(filename);
+                if ( all_procs_have_same_sampling )
+                    M_space->worldComm().barrier();
             }
         }
 
@@ -510,10 +570,10 @@ public:
 
             if ( !filename.empty() )
             {
-                //if ( all_procs_have_same_sampling )
-                //    M_space->worldComm().barrier();
                 if ( !all_procs_have_same_sampling || M_space->worldComm().isMasterRank() )
                     this->writeOnFile(filename);
+                if ( all_procs_have_same_sampling )
+                    M_space->worldComm().barrier();
             }
 
         }
@@ -961,6 +1021,60 @@ public:
             }
         }
 
+        /**
+         * \brief create a sampling with random elements
+         * \param N : vector of bool for the direction to sample
+         */
+        void randomInDirections( int N,  std::vector<bool> const& Nd, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
+        {
+            // clear previous sampling
+            this->clear();
+
+            size_type samplingSize = N;
+
+            if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
+            {
+
+                bool already_exist;
+                // first element
+                auto mu = parameterspace_type::random( M_space, Nd );
+                super::push_back( mu );
+
+                for(int i=1; i<N; i++)
+                {
+                    //while mu is already in temporary_sampling
+                    //we pick an other parameter
+                    do
+                    {
+                        already_exist=false;
+                        mu = parameterspace_type::random( M_space, Nd );
+
+                        for( auto const& _mu : *this )
+                        {
+                            if( mu == _mu )
+                                already_exist=true;
+                        }
+
+                    }
+                    while( already_exist );
+
+                    super::push_back( mu );
+
+                }//loop over N
+
+                this->writeOnFile( file_name );
+            }//master proc
+
+            if( all_procs_have_same_sampling )
+            {
+                boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+            }
+            else
+            {
+                this->distributeOnAllProcessors( N , file_name );
+            }
+        }
+
 
         /**
          * \brief Returns the minimum element in the sampling and its index
@@ -1157,7 +1271,7 @@ public:
             }
 
     private:
-        
+
         Sampling() {}
 
         void genericEquidistributeImpl( std::vector<size_type> const& samplingSizeDirection, int type )
@@ -1223,18 +1337,26 @@ public:
         void save( Archive & ar, const unsigned int version ) const
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
-                ar & M_supersampling;
-                ar & M_superindices;
+                ar & BOOST_SERIALIZATION_NVP( M_space );
+                bool hasSupersampling = ( M_supersampling )? true : false;
+                ar & hasSupersampling;
+                if ( hasSupersampling )
+                    ar & BOOST_SERIALIZATION_NVP( M_supersampling );
+                ar & BOOST_SERIALIZATION_NVP( M_superindices );
             }
 
         template<class Archive>
         void load( Archive & ar, const unsigned int version )
             {
                 ar & boost::serialization::base_object<super>( *this );
-                ar & M_space;
-                ar & M_supersampling;
-                ar & M_superindices;
+                ar & BOOST_SERIALIZATION_NVP( M_space );
+                bool hasSupersampling = false;
+                ar & hasSupersampling;
+                if ( hasSupersampling )
+                    ar & BOOST_SERIALIZATION_NVP( M_supersampling );
+                else
+                    M_supersampling.reset();
+                ar & BOOST_SERIALIZATION_NVP( M_superindices );
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
         private:
@@ -1436,6 +1558,18 @@ public:
     void setParameterName( uint16_type d, std::string const& name )
         {
             M_parameterNames[d] = name;
+        }
+
+    /**
+     * get index of named parameter
+     */
+    int indexOfParameterNamed( std::string name ) const
+        {
+            auto it = std::find(M_parameterNames.begin(), M_parameterNames.end(), name);
+            if( it != M_parameterNames.end() )
+                return it - M_parameterNames.begin();
+            else
+                return -1;
         }
 
     //@}
@@ -1651,6 +1785,26 @@ public:
             mu.array() = space->min().array()+mur.array()*( space->max().array()-space->min().array() );
             if ( broadcast )
                 mu.check();
+            return mu;
+        }
+
+    /**
+     * \brief Returns a random element of the parameter space int the directions N
+     */
+    static element_type random( parameterspace_ptrtype const& space, std::vector<bool> N )
+        {
+            element_type mur( space );
+            if ( space->dimension() == 0 )
+                return mur;
+            mur.array() = element_type::Random(space->dimension(),1).array().abs();
+            //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
+
+            element_type mu( space );
+            element_type muMin = space->min();
+            element_type muMax = space->max();
+            for (int d=0;d<space->dimension();++d)
+                mu(d) = muMin(d) + int(N[d])*mur(d)*( muMax(d)-muMin(d) );
+
             return mu;
         }
 
