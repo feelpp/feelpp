@@ -52,8 +52,8 @@ class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
     ModelModels( ModelModels const& ) = default;
     ModelModels( ModelModels && ) = default;
     pt::ptree const& pTree() const { return M_p; }
-    ModelModel const& model( std::string const& name ) const;
-    bool hasModel( std::string const& name ) const;
+    ModelModel const& model( std::string const& name = "" ) const;
+    bool hasModel( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
   private :
