@@ -366,6 +366,124 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( elem
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const
+{
+    if ( !this->hasDirichletBC() ) return;
+
+    //auto RBis = this->backend()->newVector( J->mapRowPtr() );
+    auto bilinearForm_PatternCoupled = form2( _test=this->functionSpace(),_trial=this->functionSpace(),_matrix=J,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+    auto const& u = this->fieldDisplacement();
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+        auto const& listMarkerFaces = std::get<0>( ret );
+        auto const& listMarkerEdges = std::get<1>( ret );
+        auto const& listMarkerPoints = std::get<2>( ret );
+        if ( !listMarkerFaces.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
+        if ( !listMarkerEdges.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markededges(this->mesh(), listMarkerEdges),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
+        if ( !listMarkerPoints.empty() )
+            bilinearForm_PatternCoupled +=
+                on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                    _element=u,_rhs=RBis,_expr=0*one()/*Expression-idv(u)*/,
+                    _prefix=this->prefix() );
+    }
+    for ( auto const& bcDirComp : this->M_bcDirichletComponents )
+    {
+        ComponentType comp = bcDirComp.first;
+        for( auto const& d : bcDirComp.second )
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            if ( !listMarkerFaces.empty() )
+                bilinearForm_PatternCoupled +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm_PatternCoupled +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm_PatternCoupled +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u[comp],_rhs=RBis,_expr=cst(0.)/*Expression-idv(u)*/,
+                        _prefix=this->prefix() );
+
+        }
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype& J) const
+{
+    if ( this->M_bcRobin.empty() ) return;
+
+    auto Xh = this->functionSpaceDisplacement();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    auto const& u = this->fieldDisplacement();
+
+    // Warning : take only first component of expression1
+    for( auto const& d : this->M_bcRobin )
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _geomap=this->geomap() );
+
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
+{
+    if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
+
+    auto Xh = this->functionSpaceDisplacement();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
+    {
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+                       _expr= -expression(d)*inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
+                       _geomap=this->geomap() );
+    }
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
+    {
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+                       _expr= -inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d),id(u) ),
+                       _geomap=this->geomap() );
+    }
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
+    {
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)) ,
+                       _expr= -inner(Feel::vf::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d)*N(),id(u) ),
+                       _geomap=this->geomap() );
+    }
+}
+
 } // FeelModels
 
 } // Feel

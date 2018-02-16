@@ -475,6 +475,117 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype
                                                this->worldComm(),this->verboseAllProc());
 }
 
+//--------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) const
+{
+    if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldDisplacement();
+
+    for( auto const& d : this->M_bcNeumannScalar )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
+                       _expr= -expression(d)*inner( N(),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : this->M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= -inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : this->M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= -inner( expression(d)*N(),id(v) ),
+                       _geomap=this->geomap() );
+}
+
+
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R) const
+{
+
+    if ( this->M_bcRobin.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+
+    // Warning : take only first component of expression1
+    for( auto const& d : this->M_bcRobin )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= inner( expression1(d)(0,0)*idv(u) - expression2(d) ,id(u) ),
+                       _geomap=this->geomap() );
+
+}
+
+
+
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R ) const
+{
+
+    if ( this->M_volumicForcesProperties.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldDisplacement();
+
+    for( auto const& d : this->M_volumicForcesProperties )
+    {
+        if ( marker(d).empty() )
+            myLinearForm +=
+                integrate( _range=elements(this->mesh()),
+                           _expr= -inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
+        else
+            myLinearForm +=
+                integrate( _range=markedelements(this->mesh(),marker(d)),
+                           _expr= -inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
+    }
+}
+
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
+{
+    if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=R,
+                               _rowstart=this->rowStartInVector() );
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
+    {
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)),
+                       _expr= -expression(d)*inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                       _geomap=this->geomap() );
+    }
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
+    {
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)),
+                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d),id(u) ),
+                       _geomap=this->geomap() );
+    }
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
+    {
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)),
+                       _expr= -inner( Feel::vf::FeelModels::solidMecGeomapEulerian(u)*expression(d)*N(),id(u) ),
+                       _geomap=this->geomap() );
+    }
+}
+
 
 } // FeelModels
 } // Feel

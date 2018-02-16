@@ -61,6 +61,7 @@ enum class SolidMechanicsPostProcessFieldExported
 
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp >
 class SolidMechanicsBase : public ModelNumerical,
+                           public boost::enable_shared_from_this< SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> >,
                            public MarkerManagementDirichletBC,
                            public MarkerManagementNeumannBC,
                            public MarkerManagementNeumannEulerianFrameBC,
@@ -311,6 +312,12 @@ public:
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     SolidMechanicsBase( self_type const & M ) = default;
 
+    static self_ptrtype New( std::string const& prefix,
+                             bool buildMesh = true,
+                             WorldComm const& worldComm = Environment::worldComm(),
+                             std::string const& subPrefix = "",
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
     static std::string expandStringFromSpec( std::string const& expr );
 
     void build();
@@ -323,8 +330,9 @@ protected :
     void buildStandardModel( mesh_ptrtype mesh = mesh_ptrtype() );
     void build1dReducedModel( mesh_1dreduced_ptrtype mesh = mesh_1dreduced_ptrtype() );
 
-    virtual void loadConfigMeshFile(std::string const& geofilename) = 0;
-    virtual void loadConfigMeshFile1dReduced(std::string const& geofilename) = 0;
+    void loadConfigBCFile();
+    void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
+    void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
     void createWorldsComm();
 
@@ -349,8 +357,8 @@ public :
 
     //-----------------------------------------------------------------------------------//
 
-    void init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::model_ptrtype const& app );
-    virtual void solve( bool upVelAcc=true );
+    void init( bool buildAlgebraicFactory = true );
+    void solve( bool upVelAcc=true );
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
@@ -615,19 +623,19 @@ public :
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
 
-    virtual void updateBCNeumannResidual( vector_ptrtype& R ) const = 0;
-    virtual void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
-    virtual void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const = 0;
-    virtual void updateSourceTermResidual( vector_ptrtype& R ) const = 0;
+    void updateBCNeumannResidual( vector_ptrtype& R ) const;
+    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
+    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R ) const;
+    void updateSourceTermResidual( vector_ptrtype& R ) const;
 
-    virtual void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const = 0;
-    virtual void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const = 0;
-    virtual void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const = 0;
+    void updateBCDirichletStrongJacobian( sparse_matrix_ptrtype& J, vector_ptrtype& RBis ) const;
+    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
+    void updateBCRobinJacobian( sparse_matrix_ptrtype& J) const;
 
-    virtual void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const = 0;
-    virtual void updateBCNeumannLinearPDE( vector_ptrtype& F ) const = 0;
-    virtual void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const = 0;
-    virtual void updateSourceTermLinearPDE( vector_ptrtype& F ) const = 0;
+    void updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
+    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateSourceTermLinearPDE( vector_ptrtype& F ) const;
 
 private :
     void updateBoundaryConditionsForUse();
