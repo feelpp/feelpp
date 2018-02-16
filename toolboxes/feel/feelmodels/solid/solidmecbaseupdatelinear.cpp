@@ -269,7 +269,170 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( 
 
 } // updateLinearElasticityGeneralisedAlpha
 
+//---------------------------------------------------------------------------------------//
+//---------------------------------------------------------------------------------------//
+//---------------------------------------------------------------------------------------//
 
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+{
+    if ( this->isStandardModel() )
+    {
+        if ( !this->hasDirichletBC() ) return;
+
+        auto Xh = this->functionSpace();
+        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=this->colStartInMatrix() );
+        auto const& u = this->fieldDisplacement();
+        for( auto const& d : this->M_bcDirichlet )
+        {
+            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) );
+            auto const& listMarkerFaces = std::get<0>( ret );
+            auto const& listMarkerEdges = std::get<1>( ret );
+            auto const& listMarkerPoints = std::get<2>( ret );
+            if ( !listMarkerFaces.empty() )
+                bilinearForm +=
+                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
+            if ( !listMarkerEdges.empty() )
+                bilinearForm +=
+                    on( _range=markededges(this->mesh(), listMarkerEdges),
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
+            if ( !listMarkerPoints.empty() )
+                bilinearForm +=
+                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                        _element=u,_rhs=F,_expr=expression(d),
+                        _prefix=this->prefix() );
+        }
+        for ( auto const& bcDirComp : this->M_bcDirichletComponents )
+        {
+            ComponentType comp = bcDirComp.first;
+            for( auto const& d : bcDirComp.second )
+            {
+                auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d),comp ) );
+                auto const& listMarkerFaces = std::get<0>( ret );
+                auto const& listMarkerEdges = std::get<1>( ret );
+                auto const& listMarkerPoints = std::get<2>( ret );
+                if ( !listMarkerFaces.empty() )
+                    bilinearForm +=
+                        on( _range=markedfaces(this->mesh(), listMarkerFaces),
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
+                if ( !listMarkerEdges.empty() )
+                    bilinearForm +=
+                        on( _range=markededges(this->mesh(), listMarkerEdges),
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
+                if ( !listMarkerPoints.empty() )
+                    bilinearForm +=
+                        on( _range=markedpoints(this->mesh(), listMarkerPoints),
+                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _prefix=this->prefix() );
+            }
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+        if ( this->M_bcDirichlet.empty() ) return;
+
+        auto Xh = this->functionSpace1dReduced();
+        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=this->colStartInMatrix() );
+        auto const& u = this->fieldDisplacementScal1dReduced();
+        //WARNING : fixed at zero
+        for( auto const& d : this->M_bcDirichlet )
+            bilinearForm +=
+                on( _range=markedfaces(Xh->mesh(),this->markerDirichletBCByNameId( "elimination",marker(d) ) ),
+                    _element=u, _rhs=F, _expr=cst(0.),
+                    _prefix=this->prefix() );
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
+{
+    if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldDisplacement();
+
+    for( auto const& d : this->M_bcNeumannScalar )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
+                       _expr= expression(d)*inner( N(),id(v) ),
+                        _geomap=this->geomap() );
+    for( auto const& d : this->M_bcNeumannVectorial )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+                       _expr= inner( expression(d),id(v) ),
+                       _geomap=this->geomap() );
+    for( auto const& d : this->M_bcNeumannTensor2 )
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+                       _expr= inner( expression(d)*N(),id(v) ),
+                       _geomap=this->geomap() );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+{
+    if ( this->M_bcRobin.empty() ) return;
+
+    auto Xh = this->functionSpaceDisplacement();
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+    auto myLinearForm = form1( _test=Xh, _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& u = this->fieldDisplacement();
+
+    // Warning : take only first component of expression1
+    for( auto const& d : this->M_bcRobin )
+    {
+        bilinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _geomap=this->geomap() );
+        myLinearForm +=
+            integrate( _range=markedfaces(this->mesh(),marker(d)/*this->markerRobinBC()*/),
+                       _expr= inner( expression2(d) , id(u) ),
+                       _geomap=this->geomap() );
+
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F ) const
+{
+    if ( this->M_volumicForcesProperties.empty() ) return;
+
+    auto myLinearForm = form1( _test=this->functionSpaceDisplacement(), _vector=F,
+                               _rowstart=this->rowStartInVector() );
+    auto const& v = this->fieldDisplacement();
+
+    for( auto const& d : this->M_volumicForcesProperties )
+    {
+        if ( marker(d).empty() )
+            myLinearForm +=
+                integrate( _range=elements(this->mesh()),
+                           _expr= inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
+        else
+            myLinearForm +=
+                integrate( _range=markedelements(this->mesh(),marker(d)),
+                           _expr= inner( expression(d),id(v) ),
+                           _geomap=this->geomap() );
+    }
+}
 
 
 } // FeelModels

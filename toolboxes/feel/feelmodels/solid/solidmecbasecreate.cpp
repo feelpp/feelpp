@@ -27,6 +27,8 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string const& p
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
+    this->log("SolidMechanics","constructor", "start" );
+
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsConstructor.data";
     std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsSolve.data";
     std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".SolidMechanicsPostProcessing.data";
@@ -35,6 +37,32 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string const& p
     this->addTimerTool("Solve",nameFileSolve);
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
+
+    //-----------------------------------------------------------------------------//
+    // load info from .json file
+    this->loadConfigBCFile();
+    //-----------------------------------------------------------------------------//
+    // option in cfg files
+    this->loadParameterFromOptionsVm();
+    //-----------------------------------------------------------------------------//
+    // set of worldComm for the function spaces
+    this->createWorldsComm();
+    //-----------------------------------------------------------------------------//
+    // build  mesh, space,exporter,...
+    if (buildMesh) this->build();
+    //-----------------------------------------------------------------------------//
+    this->log("SolidMechanics","constructor", "finish" );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
+                                         bool buildMesh,
+                                         WorldComm const& worldComm,
+                                         std::string const& subPrefix,
+                                         ModelBaseRepository const& modelRep )
+{
+    return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 }
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -315,6 +343,61 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
     }
 
     this->log("SolidMechanics","createWorldsComm", "finish" );
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+{
+    this->clearMarkerDirichletBC();
+    this->clearMarkerNeumannBC();
+    this->clearMarkerFluidStructureInterfaceBC();
+    this->clearMarkerRobinBC();
+
+    std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
+    for( auto const& d : this->M_bcDirichlet )
+        this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
+    for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
+    {
+        std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
+        this->M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
+        for( auto const& d : this->M_bcDirichletComponents.find(comp)->second )
+            this->addMarkerDirichletBC( dirichletbcType, marker(d), comp );
+    }
+
+    this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
+    for( auto const& d : this->M_bcNeumannScalar )
+        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
+    this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_vectorial" );
+    for( auto const& d : this->M_bcNeumannVectorial )
+        this->addMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d));
+    this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_tensor2" );
+    for( auto const& d : this->M_bcNeumannTensor2 )
+        this->addMarkerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d));
+
+    this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
+    for( auto const& d : this->M_bcInterfaceFSI )
+        this->addMarkerFluidStructureInterfaceBC( marker(d) );
+
+    this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<super_type::nDim>( "displacement", "robin" );
+    for( auto const& d : this->M_bcRobin )
+        this->addMarkerRobinBC( marker(d) );
+
+    this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
+    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
+        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::SCALAR,marker(d));
+    this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_eulerian_vectorial" );
+    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
+        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::VECTORIAL,marker(d));
+    this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_eulerian_tensor2" );
+    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
+        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::TENSOR2,marker(d));
+
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
+
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -827,7 +910,7 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 
 SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typename model_algebraic_factory_type::model_ptrtype const& app )
+SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
@@ -883,7 +966,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
     {
         if (this->isStandardModel())
         {
-            M_algebraicFactory.reset( new model_algebraic_factory_type(app,this->backend() ) );
+            M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 
             if ( this->nBlockMatrixGraph() == 1 )
             {
@@ -907,7 +990,7 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory, typena
         }
         else if (this->is1dReducedModel())
         {
-            M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type(app,this->backend1dReduced()) );
+            M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend1dReduced()) );
             M_algebraicFactory_1dReduced->initFromFunctionSpace( this->functionSpace1dReduced() );
         }
     }

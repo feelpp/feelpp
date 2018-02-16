@@ -845,6 +845,21 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->log("SolidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
+    this->modelProperties().parameters().updateParameterValues();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : this->M_bcDirichletComponents )
+        bcDirComp.second.setParameterValues( paramValues );
+    this->M_bcNeumannScalar.setParameterValues( paramValues );
+    this->M_bcNeumannVectorial.setParameterValues( paramValues );
+    this->M_bcNeumannTensor2.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
+    this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
+    this->M_bcRobin.setParameterValues( paramValues );
+    this->M_volumicForcesProperties.setParameterValues( paramValues );
+
     this->updateBlockVectorSolution();
     if (M_pdeType=="Elasticity")
     {
