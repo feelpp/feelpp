@@ -215,15 +215,15 @@ public:
     pt::ptree & pTree() { return M_p; }
     pt::ptree pTree( std::string const& name ) const;
     bool useModelName() const { return M_useModelName; }
-    std::map<std::string,ModelPostprocessExports> exports() const { return M_exports; }
-    std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& measuresPoint() const { return M_measuresPoint; }
-    std::map<std::string,std::vector<ModelPostprocessExtremum> > const& measuresExtremum() const { return M_measuresExtremum; }
-    bool hasExports( std::string const& name ) const;
-    bool hasMeasuresPoint( std::string const& name ) const;
-    bool hasMeasuresExtremum( std::string const& name ) const;
-    ModelPostprocessExports const& exports( std::string const& name ) const;
-    std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name ) const;
-    std::vector<ModelPostprocessExtremum> const& measuresExtremum( std::string const& name ) const;
+    std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
+    std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
+    std::map<std::string,std::vector<ModelPostprocessExtremum> > const& allMeasuresExtremum() const { return M_measuresExtremum; }
+    bool hasExports( std::string const& name = "" ) const;
+    bool hasMeasuresPoint( std::string const& name = "" ) const;
+    bool hasMeasuresExtremum( std::string const& name = "" ) const;
+    ModelPostprocessExports const& exports( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessExtremum> const& measuresExtremum( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
