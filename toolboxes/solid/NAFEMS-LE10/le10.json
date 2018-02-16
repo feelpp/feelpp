@@ -1,12 +1,14 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Elasticity",
+    "Models":
+    {
+        "equations":"Elasticity"
+    },
     "Materials":
     {
         "Omega":
         {
-            "name":"solid",
             "E":"210e9",
             "nu":"0.3",
             "rho":"7800"
@@ -65,7 +67,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","Von-Mises","tresca","principal-stresses"],
+        "Exports":
+        {
+            "fields":["displacement","Von-Mises","tresca","principal-stresses"]
+        },
         "Measures":
         {
             "Points":
