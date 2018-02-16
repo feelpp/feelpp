@@ -1,22 +1,18 @@
 {
     "Name": "Fluid Mechanics",
     "ShortName":"Fluid",
-    "Model":"Oseen",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
-        "ubar":
-        {
-            "value":"2"
-        },
-        "chi":
-        {
-            "value":"t<2:t"
-        }
+        "ubar":"2",
+        "chi":"t<2:t"
     },
     "Materials":
     {
         "Fluid":{
-            "name":"myFluidMat",
             "rho":"1.0e3",
             "mu":"1.0"
         }
@@ -54,7 +50,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure"],
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"]
+        },
         "Measures":
         {
             "Forces":"wall2"
