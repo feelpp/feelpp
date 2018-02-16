@@ -1,4 +1,4 @@
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
 
 namespace Feel
@@ -6,9 +6,9 @@ namespace Feel
 namespace FeelModels
 {
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlpha( DataUpdateLinear & data ) const
 {
 #if (SOLIDMECHANICS_DIM==2)
     using namespace Feel::vf;

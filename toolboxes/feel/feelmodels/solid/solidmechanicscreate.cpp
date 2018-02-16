@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
@@ -16,12 +16,12 @@ namespace Feel
 namespace FeelModels
 {
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::SolidMechanicsBase( std::string const& prefix,
-                                                            bool buildMesh,
-                                                            WorldComm const& worldComm,
-                                                            std::string const& subPrefix,
-                                                            ModelBaseRepository const& modelRep )
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
+                                                    bool buildMesh,
+                                                    WorldComm const& worldComm,
+                                                    std::string const& subPrefix,
+                                                    ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
     M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
@@ -65,9 +65,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
     return boost::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
 {
     std::string res = expr;
     boost::replace_all( res, "$solid_disp_order", (boost::format("%1%")%nOrderDisplacement).str() );
@@ -78,16 +78,16 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const&
 }
 
 // add members instatantiations need by static function expandStringFromSpec
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nOrderGeo;
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build()
 {
     /**/ if ( M_pdeType == "Elasticity" )                   { buildStandardModel(); }
     else if ( M_pdeType == "Elasticity-Large-Deformation" ) { buildStandardModel(); }
@@ -99,9 +99,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype mesh )
 {
     if ( M_pdeType == "Elasticity" || M_pdeType == "Elasticity-Large-Deformation" || M_pdeType == "Hyper-Elasticity" )
         this->buildStandardModel(mesh);
@@ -111,9 +111,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype mesh )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_1dreduced_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build( mesh_1dreduced_ptrtype mesh )
 {
     if ( M_pdeType == "Generalised-String" )
         this->build1dReducedModel(mesh);
@@ -123,9 +123,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build( mesh_1dreduced_ptrtype mesh )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
 {
     this->log("SolidMechanics","buildStandardModel", "start" );
     //-----------------------------------------------------------------------------//
@@ -153,18 +153,18 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
 {
     if (this->doRestart())
         this->build();
     else
         this->build(mesh);
 }
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_1dreduced_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_1dreduced_ptrtype mesh )
 {
     // no restart case here :
     // we consider that the mesh given is identicaly (from createsubmesh of fluid mesh)
@@ -173,9 +173,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadMesh( mesh_1dreduced_ptrtype mesh )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype mesh )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype mesh )
 {
     this->log("SolidMechanics","build1dReducedModel", "start" );
     //-----------------------------------------------------------------------------//
@@ -199,9 +199,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrt
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("SolidMechanics","loadParameterFromOptionsVm", "start" );
 
@@ -291,9 +291,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createWorldsComm()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createWorldsComm()
 {
     this->log("SolidMechanics","createWorldsComm", "start" );
 
@@ -357,7 +357,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
     this->clearMarkerRobinBC();
 
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Dirichlet" );
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
         this->addMarkerDirichletBC( dirichletbcType, marker(d), ComponentType::NO_COMPONENT );
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
@@ -370,33 +370,33 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
     this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
     for( auto const& d : this->M_bcNeumannScalar )
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d));
-    this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_vectorial" );
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+    this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_vectorial" );
     for( auto const& d : this->M_bcNeumannVectorial )
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d));
-    this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_tensor2" );
+        this->addMarkerNeumannBC(NeumannBCShape::VECTORIAL,marker(d));
+    this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_tensor2" );
     for( auto const& d : this->M_bcNeumannTensor2 )
-        this->addMarkerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d));
+        this->addMarkerNeumannBC(NeumannBCShape::TENSOR2,marker(d));
 
     this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
     for( auto const& d : this->M_bcInterfaceFSI )
         this->addMarkerFluidStructureInterfaceBC( marker(d) );
 
-    this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<super_type::nDim>( "displacement", "robin" );
+    this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<nDim>( "displacement", "robin" );
     for( auto const& d : this->M_bcRobin )
         this->addMarkerRobinBC( marker(d) );
 
     this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
     for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
-        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::SCALAR,marker(d));
-    this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "Neumann_eulerian_vectorial" );
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::SCALAR,marker(d));
+    this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_eulerian_vectorial" );
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::VECTORIAL,marker(d));
-    this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<super_type::nDim>( "displacement", "Neumann_eulerian_tensor2" );
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::VECTORIAL,marker(d));
+    this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_eulerian_tensor2" );
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        this->addMarkerNeumannEulerianFrameBC(super_type::NeumannEulerianFrameBCShape::TENSOR2,marker(d));
+        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::TENSOR2,marker(d));
 
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<super_type::nDim>( "displacement", "VolumicForces" );
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "VolumicForces" );
 
 }
 
@@ -404,9 +404,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("SolidMechanics","createMesh", "start" );
     this->timerTool("Constructor").start();
@@ -420,9 +420,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 {
     this->log("SolidMechanics","createMesh1dReduced", "start" );
     std::string prefix1dreduced = prefixvm(this->prefix(),"1dreduced");
@@ -492,9 +492,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     this->log("SolidMechanics","createFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
@@ -546,9 +546,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
 {
     this->log("SolidMechanics","createFunctionSpaces1dReduced", "start" );
 
@@ -575,18 +575,18 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesNormalStress()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesNormalStress()
 {
     if ( !M_XhNormalStress )
         M_XhNormalStress = space_normal_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
     if ( !M_fieldNormalStressFromStruct )
         M_fieldNormalStressFromStruct.reset( new element_normal_stress_type( M_XhNormalStress ) );
 }
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTensor()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTensor()
 {
     if ( !M_XhStressTensor )
         M_XhStressTensor = space_stress_tensor_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
@@ -605,9 +605,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTens
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
 {
     if ( this->isStandardModel() )
         this->createAdditionalFunctionSpacesFSIStandard();
@@ -617,9 +617,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
 {
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "start" );
 
@@ -651,9 +651,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandar
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
 {
     if ( M_XhStressVect_1dReduced ) return;
     this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
@@ -671,9 +671,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduc
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 {
     this->log("SolidMechanics","createTimeDiscretisation", "start" );
     this->timerTool("Constructor").start();
@@ -716,9 +716,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
 {
     this->log("SolidMechanics","createTimeDiscretisation1dReduced", "start" );
 
@@ -748,9 +748,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
 {
     this->log("SolidMechanics","createExporters", "start" );
     this->timerTool("Constructor").start();
@@ -843,9 +843,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters1dReduced()
 {
     this->log("SolidMechanics","createExporters1dReduced", "start" );
 
@@ -908,9 +908,9 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 }
 } // detail
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
@@ -1004,9 +1004,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     // update timediscr and exporters
     if (!this->doRestart())
@@ -1071,9 +1071,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initTimeStep()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initUserFunctions()
 {
     if ( this->modelProperties().functions().empty() )
         return;
@@ -1108,9 +1108,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
     this->updateUserFunctions();
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
 {
     if ( this->modelProperties().functions().empty() )
         return;
@@ -1146,9 +1146,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTi
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     std::string modelName = "solid";
 

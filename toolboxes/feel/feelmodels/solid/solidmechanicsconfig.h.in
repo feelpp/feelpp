@@ -10,22 +10,6 @@
 
 #define SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS PointSetFekete
 
-#define SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp> \
-        /**/
-#define SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE \
-    SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> \
-        /**/
-#define SOLIDMECHANICSBASE_CLASS_TYPE \
-    SolidMechanicsBase< Simplex<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
-        Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS >, \
-        SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME                                  \
-        >                                                              \
-    /**/
-#define SOLIDMECHANICSBASE_CLASS_INSTANTIATION \
-    template class SOLIDMECHANICSBASE_CLASS_TYPE ;  \
-    /**/
-
 #define SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS \
     template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp> \
         /**/

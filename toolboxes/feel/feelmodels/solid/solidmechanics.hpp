@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file solidmecbase.hpp
+ \file solidmechanics.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2011-07-17
  */
@@ -59,19 +59,19 @@ enum class SolidMechanicsPostProcessFieldExported
     Displacement=0, Velocity, Acceleration, NormalStress, Pressure, MaterialProperties, Pid, VonMises, Tresca, PrincipalStresses, FSI
 };
 
-template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp >
-class SolidMechanicsBase : public ModelNumerical,
-                           public boost::enable_shared_from_this< SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> >,
-                           public MarkerManagementDirichletBC,
-                           public MarkerManagementNeumannBC,
-                           public MarkerManagementNeumannEulerianFrameBC,
-                           public MarkerManagementRobinBC,
-                           public MarkerManagementFluidStructureInterfaceBC
+template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
+class SolidMechanics : public ModelNumerical,
+                       public boost::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
+                       public MarkerManagementDirichletBC,
+                       public MarkerManagementNeumannBC,
+                       public MarkerManagementNeumannEulerianFrameBC,
+                       public MarkerManagementRobinBC,
+                       public MarkerManagementFluidStructureInterfaceBC
 {
 public:
     typedef ModelNumerical super_type;
 
-    typedef SolidMechanicsBase<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
+    typedef SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     //___________________________________________________________________________________//
@@ -305,12 +305,12 @@ public:
     //___________________________________________________________________________________//
 
 
-    SolidMechanicsBase( std::string const& prefix,
-                        bool buildMesh=true,
-                        WorldComm const& worldComm = Environment::worldComm(),
-                        std::string const& subPrefix = "",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    SolidMechanicsBase( self_type const & M ) = default;
+    SolidMechanics( std::string const& prefix,
+                    bool buildMesh=true,
+                    WorldComm const& worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    SolidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,

@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
 
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
 //#include <feel/feeldiscr/pchv.hpp>
 
@@ -12,9 +12,9 @@ namespace FeelModels
 
 //-------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
     if ( M_pdeType=="Elasticity" )
     {
@@ -28,9 +28,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data
 
 //-------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const
 {
     using namespace Feel::vf;
 
@@ -365,17 +365,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
 
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= expression(d)*inner( N(),id(v) ),
                         _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,marker(d)) ),
                        _expr= inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,marker(d)) ),
                        _expr= inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
