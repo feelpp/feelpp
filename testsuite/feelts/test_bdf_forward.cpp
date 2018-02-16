@@ -98,7 +98,7 @@ public :
         }
     }
 
-    void forwardLoad( int N, bool restart = true, shift=false, std::string fileformat="hdf5")
+    void forwardLoad( int N, bool restart = true, bool shift=false, std::string fileformat="hdf5")
     {
         auto Xh = Pch<1>( M_mesh );
         auto ts = bdf( _space=Xh, _name="ts" );
