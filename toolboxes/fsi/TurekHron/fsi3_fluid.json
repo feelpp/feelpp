@@ -2,7 +2,10 @@
 {
     "Name": "Fluid fsi",
     "ShortName":"FluidFSI",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
         "ubar":"2",
@@ -10,9 +13,7 @@
     },
     "Materials":
     {
-        //"Fluid":{ "name":"Glycerine","filename":"$feelpp_srcdir/databases/materials/pure/copper.json" }
         "Fluid": {
-            "name":"fluidFSI3",
             "rho":"1.0e3",
             "mu":"1.0"
         }
@@ -57,7 +58,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","displacement","pid"],
+        "Exports":
+        {
+            "fields":["velocity","pressure","displacement","pid"]
+        },
         "Measures":
         {
             "Forces":["fsi-wall","fluid-cylinder"],
