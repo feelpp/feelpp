@@ -1,7 +1,10 @@
 {
     "Name": "Square2d",
     "ShortName": "Square2d",
-    "Model": "Levelset",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
 
     "Parameters":
     {

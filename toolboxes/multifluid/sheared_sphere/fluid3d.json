@@ -1,7 +1,10 @@
 {
     "Name": "Square3d",
     "ShortName":"Square3d",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "BoundaryConditions":
     {
         "velocity":
@@ -37,7 +40,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 
 }
