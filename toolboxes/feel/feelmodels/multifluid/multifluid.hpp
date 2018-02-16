@@ -72,14 +72,14 @@ public:
             std::string const& prefix,
             WorldComm const& wc = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
     MultiFluid( self_type const& M ) = default;
 
     static self_ptrtype New(
             std::string const& prefix,
             WorldComm const& wc = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     static std::string expandStringFromSpec( std::string const& expr );
 

@@ -34,9 +34,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_isBuilt(false),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
@@ -227,7 +227,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_hasSourceAdded = false;
 
     // Model
-    std::string advection_model = this->modelProperties().model();
+    std::string advection_model = this->modelProperties().models().model().equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         advection_model = soption(_name="model",_prefix=this->prefix());
     if( !advection_model.empty() )
@@ -346,7 +346,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     // Load the field velocity convection from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
     {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        std::string pathGinacExpr = this->repository().expr() + "/advection-velocity";
         M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
                                                                  this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         //this->updateFieldVelocityConvection();

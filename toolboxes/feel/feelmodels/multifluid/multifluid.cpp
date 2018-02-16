@@ -13,8 +13,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const& prefix,
         WorldComm const& wc,
         std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, self_type::expandStringFromSpec( rootRepository ) )
+        ModelBaseRepository const& modelRep )
+: super_type( prefixvm(prefix,"fluid"), false, wc, subPrefix, modelRep )
 , M_prefix( prefix )
 , M_doRebuildSpaceInextensibilityLM( true )
 {
@@ -29,9 +29,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
         WorldComm const& wc,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 {
-    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, rootRepository) );
+    self_ptrtype new_multifluid( new self_type(prefix, wc, subPrefix, modelRep ) );
     return new_multifluid;
 }
 
@@ -54,17 +54,21 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     this->log("MultiFluid", "build", "start");
 
     // Read mesh info from multifluid options
-    if (Environment::vm().count(prefixvm(this->prefix(),"mshfile").c_str()))
-        this->setMshfileStr( Environment::expand( soption(_prefix=this->prefix(),_name="mshfile") ) );
-    if (Environment::vm().count(prefixvm(this->prefix(),"geofile").c_str()))
-        this->setGeofileStr( Environment::expand( soption(_prefix=this->prefix(),_name="geofile") ) );
+    if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
+    {
+        std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+        if ( fs::path( meshfile ).extension() == ".geo" )
+            this->setGeoFile( meshfile );
+        else
+            this->setMeshFile( meshfile );
+    }
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
     super_type::init();
 
     M_globalLevelset.reset(
-            new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+            new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->repository() )
             );
 
     M_globalLevelset->build( this->mesh() );
@@ -84,7 +88,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
         M_levelsets[i].reset(
-                new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
+                new levelset_type( levelset_prefix, this->worldComm(), "", this->repository() )
                 );
         M_levelsets[i]->build(
                 _space=M_globalLevelset->functionSpace(),
@@ -174,19 +178,19 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
     }
     else
     {
-        if (this->hasMshfileStr())
+        if (this->hasMeshFile())
         {
             std::string mshfileRebuildPartitions = this->rootRepository() + "/" + this->prefix() + ".msh";
 
-            this->log("createMesh","", "load mesh file : " + this->mshfileStr());
-            std::string meshFileExt = fs::path( this->mshfileStr() ).extension().string();
+            this->log("createMesh","", "load mesh file : " + this->meshFile());
+            std::string meshFileExt = fs::path( this->meshFile() ).extension().string();
             bool rebuildPartition = boption(_prefix=this->prefix(), _name="gmsh.partition");
             if ( rebuildPartition && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
             mesh = loadMesh(
                     _mesh=new mesh_type( this->worldComm() ),
-                    _filename=this->mshfileStr(),
+                    _filename=this->meshFile(),
                     _worldcomm=this->worldComm(),
                     _prefix=this->prefix(),
                     _rebuild_partitions=rebuildPartition,
@@ -196,15 +200,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
                     _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES
                     );
 
-            if (rebuildPartition) this->setMshfileStr(mshfileRebuildPartitions);
+            if (rebuildPartition) this->setMeshFile(mshfileRebuildPartitions);
         }
-        else if (this->hasGeofileStr())
+        else if (this->hasGeoFile() )
         {
             std::string mshfile = this->rootRepository() + "/" + this->prefix() + ".msh";
-            this->setMshfileStr(mshfile);
+            this->setMeshFile(mshfile);
 
             gmsh_ptrtype geodesc = geo( 
-                    _filename=this->geofileStr(),
+                    _filename=this->geoFile(),
                     _prefix=this->prefix(),
                     _worldcomm=this->worldComm() 
                     );
@@ -217,7 +221,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::createMesh()
                     _directory=this->rootRepository() 
                     );
         }
-        this->saveMSHfilePath(fmpath);
+        this->saveMeshFile(fmpath);
     }
 
     CHECK( mesh ) << "mesh generation fail";
