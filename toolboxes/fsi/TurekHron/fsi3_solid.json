@@ -2,11 +2,13 @@
 {
     "Name": "2D beam ",
     "ShortName":"beam2d",
-    "Model":"Hyper-Elasticity",
+    "Models":
+    {
+        "equations":"Hyper-Elasticity"
+    },
     "Materials":
     {
         "Solid": {
-            "name":"solidFSI3",
             "E":"5.6e6",
             "nu":"0.4",
             "rho":"1e3"
@@ -34,7 +36,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","velocity","pid"],
+        "Exports":
+        {
+            "fields":["displacement","velocity","pid"]
+        },
         "Measures":
         {
             "Points":

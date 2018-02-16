@@ -2,7 +2,10 @@
 {
     "Name": "Blood fluid mechanics",
     "ShortName":"Blood",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
         "pIn":
@@ -17,7 +20,6 @@
     "Materials":
     {
         "Blood":{
-            "name":"myFluidMat",
             "rho":"1.0",
             "mu":"0.03"
         }
@@ -61,7 +63,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","displacement","pid"],
+        "Exports":
+        {
+            "fields":["velocity","pressure","displacement","pid"]
+        },
         "Measures":
         {
             "FlowRate":
