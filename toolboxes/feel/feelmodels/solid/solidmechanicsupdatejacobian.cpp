@@ -1,10 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
 //#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
+#include <feel/feelmodels/modelvf/solidmecgeomapeulerian.hpp>
 
 namespace Feel
 {
@@ -12,9 +13,9 @@ namespace FeelModels
 {
 
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     using namespace Feel::vf;
 
@@ -230,9 +231,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & dat
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u,
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u,
                                                                               element_pressure_external_storage_type const& p,
                                                                               sparse_matrix_ptrtype& J) const
 {
@@ -334,9 +335,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( el
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
 {
 #if 0
     using namespace Feel::vf;
@@ -452,7 +453,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinJacobian( sparse_matrix_ptrtype
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( typename super_type::element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureJacobian( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const
 {
     if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 

@@ -1,10 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 
 //#include <feel/feelmodels/modelvf/solidmecstvenantkirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
+#include <feel/feelmodels/modelvf/solidmecgeomapeulerian.hpp>
 
 namespace Feel
 {
@@ -12,9 +13,9 @@ namespace FeelModels
 {
 
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     using namespace Feel::vf;
 
@@ -284,9 +285,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & dat
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u,
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u,
                                                                               element_pressure_external_storage_type const& p, vector_ptrtype& R) const
 {
     using namespace Feel::vf;
@@ -367,9 +368,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( el
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const
 {
 #if 0
     using namespace Feel::vf;
@@ -411,9 +412,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( elem
 //--------------------------------------------------------------------------------------------------//
 
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
     if ( !this->hasDirichletBC() ) return;
 
@@ -489,17 +490,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannResidual(vector_ptrtype& R) c
 
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::SCALAR,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,marker(d)) ),
                        _expr= -expression(d)*inner( N(),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::VECTORIAL,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,marker(d)) ),
                        _expr= -inner( expression(d),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
-            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(super_type::NeumannBCShape::TENSOR2,marker(d)) ),
+            integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,marker(d)) ),
                        _expr= -inner( expression(d)*N(),id(v) ),
                        _geomap=this->geomap() );
 }
@@ -557,7 +558,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermResidual( vector_ptrtype& R 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( typename super_type::element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCFollowerPressureResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R ) const
 {
     if ( this->M_bcNeumannEulerianFrameScalar.empty() && this->M_bcNeumannEulerianFrameVectorial.empty() && this->M_bcNeumannEulerianFrameTensor2.empty() ) return;
 

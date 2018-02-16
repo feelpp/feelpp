@@ -1,11 +1,11 @@
 
-#include "solidmecconfig.h"
-#include <feel/feelmodels/solid/solidmecbaseupdatejacobian.cpp>
+#include "solidmechanicsconfig.h"
+#include <feel/feelmodels/solid/solidmechanicsupdatejacobian.cpp>
 
 namespace Feel {
 namespace FeelModels {
 
-SOLIDMECHANICSBASE_CLASS_INSTANTIATION
+SOLIDMECHANICS_CLASS_INSTANTIATION
 
 }
 }

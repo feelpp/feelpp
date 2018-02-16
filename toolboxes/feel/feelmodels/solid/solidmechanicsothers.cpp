@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
 
-#include <feel/feelmodels/solid/solidmecbase.hpp>
+#include <feel/feelmodels/solid/solidmechanics.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
 
@@ -13,9 +13,9 @@ namespace FeelModels
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters( double time )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 {
     // restart exporter
     if (this->doRestart() && this->restartPath().empty())
@@ -45,9 +45,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     this->log("SolidMechanics","getInfo", "start" );
 
@@ -190,9 +190,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
 {
     if ( __type == "Elasticity" )                      { M_pdeType="Elasticity"; M_pdeSolver="LinearSystem"; }
     else if ( __type == "Elasticity-Large-Deformation" ) { M_pdeType="Elasticity-Large-Deformation"; M_pdeSolver="Newton"; }
@@ -207,9 +207,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeType(std::string __type)
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
 {
     if ( __type == "LinearSystem" )
         M_pdeSolver="LinearSystem";
@@ -221,9 +221,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::pdeSolver(std::string __type)
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 int
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( M_useDisplacementPressureFormulation )
@@ -231,9 +231,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     return nBlock;
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     this->log("SolidMechanics","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
@@ -264,9 +264,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     if (this->isStandardModel())
     {
@@ -282,9 +282,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
     }
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
     if (this->isStandardModel())
     {
@@ -305,9 +305,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("SolidMechanics","exportResults",(boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
@@ -330,9 +330,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("SolidMechanics","exportResults", "finish" );
 
 } // SolidMechanics::export
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
 {
     if (this->isStandardModel())
     {
@@ -471,9 +471,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImpl( double time )
     }
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
 {
     if (this->isStandardModel())
     {
@@ -559,9 +559,9 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 } // namespace detail
 #endif
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     if (!this->isStandardModel())
         return;
@@ -759,9 +759,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->log("SolidMechanics","updateTimeStep", "start" );
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
@@ -794,9 +794,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
     this->log("SolidMechanics","predictorDispl", "start" );
 
@@ -838,9 +838,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::predictorDispl()
 //---------------------------------------------------------------------------------------------------//
 
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 {
     this->log("SolidMechanics","solve", "start" );
     this->timerTool("Solve").start();
@@ -920,9 +920,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
     this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
 
@@ -940,9 +940,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateVelocity()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 {
     using namespace Feel::vf;
 
@@ -996,9 +996,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
 {
     this->log("SolidMechanics","updateStressCriterions", "start" );
 
@@ -1121,9 +1121,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressCriterions()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::block_pattern_type
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::block_pattern_type
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
     if (M_useDisplacementPressureFormulation)
         return BlocksStencilPattern(2,2) << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED)
@@ -1134,9 +1134,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::blockPattern() const
 
 //---------------------------------------------------------------------------------------------------//
 #if 0
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_ptrtype stressN)
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_ptrtype stressN)
 {
 
     if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor start\n";
@@ -1163,9 +1163,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_pt
 #endif
 //---------------------------------------------------------------------------------------------------//
 #if 0
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
 {
     double res = 0;
     if(this->isStandardModel())
@@ -1189,9 +1189,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDisp() const
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __marker) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __marker) const
 {
     double res = 0;
     auto u = this->fieldDisplacement();
@@ -1206,9 +1206,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeMaxDispOnBoundary(std::string __m
     return res;
 }
 #endif
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::list<std::string> const& markers, std::string const& type ) const
 {
     if(!this->isStandardModel()) return 0.;
     CHECK( type == "max" || type == "min" ) << "invalid type " << type;
@@ -1258,9 +1258,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const&
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
 {
     //using namespace Feel::vf;
     if(!this->isStandardModel()) return 0.;
@@ -1281,9 +1281,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_referen
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 {
     M_disp_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
                                _expr=idv(M_disp_1dReduced)*oneY() );
@@ -1291,9 +1291,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
 {
     M_stress_1dReduced->on( _range=elements(M_mesh_1dReduced),
                             _expr=-inner(idv(M_stress_vect_1dReduced),oneY()) );
@@ -1301,9 +1301,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStr
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 {
     M_velocity_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
                                    _expr=idv(M_newmark_displ_1dReduced->currentVelocity())*oneY() );
@@ -1311,9 +1311,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::element_vect_1dreduced_ptrtype
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::element_vect_1dreduced_ptrtype
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const
 {
     auto res = M_Xh_vect_1dReduced->elementPtr( vf::idv(vel1d)*vf::oneY() );
     return res;
@@ -1321,9 +1321,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( elemen
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
 {
     auto subfsimesh = M_fieldSubMeshDispFSI->mesh();
     M_fieldSubMeshDispFSI->on(_range=elements(subfsimesh),
@@ -1331,9 +1331,9 @@ SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
     M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
 }
 
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_DECLARATIONS
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 {
     if ( !this->isStandardModel() )
         return;
