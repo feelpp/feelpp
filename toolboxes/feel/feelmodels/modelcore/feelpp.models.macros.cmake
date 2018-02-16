@@ -202,22 +202,20 @@ macro( genLibSolidMechanics )
 
     # configure libmodelbase
     set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbasecreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseothers_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatelinear_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatelinear1dreduced_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdatejacobian_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecbaseupdateresidual_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanics_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicscreate_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsothers_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatelinear_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatejacobian_inst.cpp
+      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdateresidual_inst.cpp
       )
     set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/solidmecbasecreate_inst.cpp
-      ${LIBBASE_DIR}/solidmecbaseothers_inst.cpp
-      ${LIBBASE_DIR}/solidmecbaseupdatelinear_inst.cpp
-      ${LIBBASE_DIR}/solidmecbaseupdatelinear1dreduced_inst.cpp
-      ${LIBBASE_DIR}/solidmecbaseupdatejacobian_inst.cpp
-      ${LIBBASE_DIR}/solidmecbaseupdateresidual_inst.cpp
-      ${LIBBASE_DIR}/solidmechanics_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicscreate_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicsothers_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicsupdatelinear_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicsupdatejacobian_inst.cpp
+      ${LIBBASE_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
     set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
@@ -229,7 +227,7 @@ macro( genLibSolidMechanics )
       PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmecconfig.h.in
+      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsconfig.h.in
       )
 
   endif()
