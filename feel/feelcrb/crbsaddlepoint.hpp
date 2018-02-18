@@ -1041,19 +1041,23 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
                 F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
             }
         }
-        uN[0] = A.lu().solve( F );
+        uN[0] = A.fullPivLu().solve( F );
     }
     else //non-linear
     {
         vectorN_type previous_uN( N0+N1 );
-        uN[0].resize( N0+N1 );
+        uN[0].setZero( N0+N1 ); // initial guess
         int fi=0;
         bool fixPointIsFinished = false;
         do
         {
             previous_uN = uN[0];
-            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
+            // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+            //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+            //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+            // else
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                    this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
             A.setZero( N0+N1,N0+N1);
             for ( size_type q=0; q<Qa; q++ )
             {
@@ -1075,7 +1079,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
                     F.tail(N1) += betaFqm[0][q][m]*M_blockFqm_pr[1][q][m].head(N1);
                 }
             }
-            uN[0] = A.lu().solve( F );
+            uN[0] = A.fullPivLu().solve( F );
 
             increment = (uN[0]-previous_uN).norm();
             auto increment_abs = (uN[0]-previous_uN).array().abs();
@@ -1088,6 +1092,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
                 VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
                 double residual_norm = (A * uN[0] - F).norm() ;
                 VLOG(2) << " residual_norm :  "<<residual_norm;
+                Feel::cout << "[CRBSaddlePoint::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment << std::endl;
             }
             ++fi;
         }while ( !fixPointIsFinished );
