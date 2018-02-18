@@ -1920,19 +1920,31 @@ CRBSaddlePoint<TruthModelType>::maxErrorBounds( size_type N ) const
     std::vector< vectorN_type > uNold;
     std::vector< vectorN_type > uNduold;
 
-    double rez=0;
+    double err=0;
     parameter_type mu;
 
-    // we evaluate residual for each parameter in the complement of W_MNmu
+    if( this->M_error_type == CRB_EMPIRICAL && this->M_WNmu->size() == 1 )
+    {
+        parameter_type mu( this->M_Dmu );
+        size_type id;
+        boost::tie( mu, id ) = this->M_Xi->max();
+        return boost::make_tuple(1e5, mu, 0, 0);
+    }
+
+    // we evaluate the error (residual or empirical) for each parameter in the complement of W_MNmu
     for ( int k=0; k<this->M_WNmu_complement->size(); k++ )
     {
         parameter_type const& current_mu = this->M_WNmu_complement->at(k);
-        this->lb( N, current_mu, uN, uNdu, uNold, uNduold );
-        double current_rez = onlineResidual( N, current_mu, uN[0] );
-        if ( current_rez>rez )
+        auto o = this->lb( N, current_mu, uN, uNdu, uNold, uNduold );
+        double current_err;
+        if( this->M_error_type == CRB_EMPIRICAL )
+            current_err = empiricalError( N, current_mu, o.template get<0>() );
+        else
+            current_err = onlineResidual( N, current_mu, uN[0] );
+        if ( current_err > err )
         {
             mu = current_mu;
-            rez = current_rez;
+            err = current_err;
         }
     } // loop on M_WNmu_complement
 
@@ -1940,23 +1952,37 @@ CRBSaddlePoint<TruthModelType>::maxErrorBounds( size_type N ) const
     int world_size = Environment::worldComm().globalSize();
     std::vector<double> max_world( world_size );
     mpi::all_gather( Environment::worldComm().globalComm(),
-                     rez,
+                     err,
                      max_world );
     auto it_max = std::max_element( max_world.begin(), max_world.end() );
     int proc_having_good_mu = it_max - max_world.begin();
 
     // we broadcast the good parameter and the value of the max residual
-    auto tuple = boost::make_tuple( mu, rez );
+    auto tuple = boost::make_tuple( mu, err );
     boost::mpi::broadcast( Environment::worldComm(), tuple, proc_having_good_mu );
     mu = tuple.template get<0>();
-    rez = tuple.template get<1>();
+    err = tuple.template get<1>();
 
-    Feel::cout << std::setprecision(15) << "[CRBSaddlePoint] max residual="<< rez << std::endl;
+    Feel::cout << std::setprecision(15) << "[CRBSaddlePoint] max error="<< err << std::endl;
 
-    return boost::make_tuple( rez, mu, 0, 0 );
+    return boost::make_tuple( err, mu, 0, 0 );
 }
 
+template<typename TruthModelType>
+double
+CRBSaddlePoint<TruthModelType>::empiricalError( int N, parameter_type const& mu, std::vector<double> output_vec ) const
+{
+    double output = output_vec[0];
+    std::vector<vectorN_type> uN2;
+    std::vector<vectorN_type> uNdu2;//( nb_element );
+    std::vector<vectorN_type> uNold2;
+    std::vector<vectorN_type> uNduold2;
+    auto o = this->lb(N-1, mu, uN2, uNdu2, uNold2, uNduold2);
+    auto output_vec2 = o.template get<0>();
+    auto output2 = output_vec2[0];
 
+    return math::abs(output-output2);
+}
 
 template<typename TruthModelType>
 typename CRBSaddlePoint<TruthModelType>::element_type
