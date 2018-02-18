@@ -1005,7 +1005,7 @@ public:
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
      */
-    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
+    virtual void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
                           std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const;
 
     /**
@@ -1304,12 +1304,12 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB() override;
+    virtual void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB() override;
+    virtual bool loadDB() override;
 
     /**
      *  do the projection on the POD space of u (for transient problems)
@@ -1373,7 +1373,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -4493,7 +4493,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 // backup uNdu
                 next_uNdu = uNdu[0];
                 // update coefficients of affine decomposition
-                // warning! should be uN[0] instead of uNdu[0] but no access to uN[0] at this time
                 if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
                     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
@@ -5781,7 +5780,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         double time_for_output = time_step;
         if ( !M_model->isSteady() )
         {
-            double time_for_output = (number_of_time_step-1)*time_step;
+            time_for_output = (number_of_time_step-1)*time_step;
             if ( K > 0 )
                 time_for_output = K*time_step;
         }
