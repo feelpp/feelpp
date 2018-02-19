@@ -322,7 +322,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     this->updateResidualStabilisation( data, U );
 
     //------------------------------------------------------------------------------------//
-
+#if 0
     if ( UsePeriodicity && !BuildCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
@@ -331,7 +331,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=-inner(pressureJump*N(),id(v) ) );
     }
-
+#endif
     //------------------------------------------------------------------------------------//
 
     this->updateResidualWeakBC( data, U );
