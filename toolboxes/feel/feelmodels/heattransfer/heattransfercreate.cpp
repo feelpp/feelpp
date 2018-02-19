@@ -39,9 +39,6 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"HeatTransfer.info") );
     //-----------------------------------------------------------------------------//
-    // load info from .bc file
-    this->loadConfigBCFile();
-    //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
@@ -62,36 +59,6 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::build()
     this->createMesh();
 
     this->log("HeatTransfer","build", "finish" );
-}
-
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
-{
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
-
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
-}
-
-
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadConfigMeshFile(std::string const& geofilename)
-{
-    CHECK( false ) << "not allow";
 }
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
@@ -140,15 +107,25 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::createMesh()
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 {
-    this->log("HeatTransfer","createFunctionSpaces", "start" );
+    this->log("HeatTransfer","initMaterialProperties", "start" );
     this->timerTool("Constructor").start();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
     M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
+    double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
+    this->log("HeatTransfer","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
+{
+    this->log("HeatTransfer","initFunctionSpaces", "start" );
+    this->timerTool("Constructor").start();
 
     // functionspace
     if ( M_thermalProperties->isDefinedOnWholeMesh() )
@@ -167,11 +144,8 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     if ( this->fieldVelocityConvectionIsUsed() )
         this->updateForUseFunctionSpacesVelocityConvection();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
-
-    double tElpased = this->timerTool("Constructor").stop("createSpaces");
-    this->log("HeatTransfer","createFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
+    double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
+    this->log("HeatTransfer","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
@@ -240,7 +214,11 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatTransfer","init", "start" );
     this->timerTool("Constructor").start();
 
-    this->createFunctionSpaces();
+    this->initMaterialProperties();
+
+    this->initFunctionSpaces();
+
+    this->initBoundaryConditions();
 
     // load an initial solution from a math expr
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
@@ -268,11 +246,11 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_stabilizationGLSParameter->init();
     }
 
-    // boundary condition
-    this->updateBoundaryConditionsForUse();
-
     // post-process
     this->initPostProcess();
+
+    // backend : use worldComm of Xh
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldComm() );
 
     // vector solution
     M_blockVectorSolution.resize( 1 );
@@ -368,8 +346,8 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
                                _path=this->exporterPath() );
 
         // restart exporter
-        if ( this->doRestart() )
-            this->restartExporters();
+        if ( M_exporter->doExport() && this->doRestart() && this->restartPath().empty() )
+            M_exporter->restart(this->timeInitial());
     }
 
     bool hasMeasure = false;
@@ -460,18 +438,6 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::restartExporters()
-{
-    if ( M_exporter && this->doRestart() && this->restartPath().empty() )
-    {
-        if ( M_exporter->doExport() )
-            M_exporter->restart(this->timeInitial());
-    }
-}
-
-
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::getInfo() const
 {
@@ -535,11 +501,27 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateParameterValues()
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    this->clearMarkerDirichletBC();
+    this->clearMarkerNeumannBC();
+    this->clearMarkerRobinBC();
+
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
+    for( auto const& d : this->M_bcDirichlet )
+        this->addMarkerDirichletBC("elimination", marker(d) );
+    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
+    for( auto const& d : this->M_bcNeumann )
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+
+    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
+    for( auto const& d : this->M_bcRobin )
+        this->addMarkerRobinBC( marker(d) );
+
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
+
     auto mesh = this->mesh();
     auto XhTemperature = this->spaceTemperature();
-    //auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
     auto & dofsWithValueImposedTemperature = M_dofsWithValueImposed["temperature"];
     dofsWithValueImposedTemperature.clear();
     std::set<std::string> temperatureMarkers;
@@ -595,53 +577,10 @@ HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if ( !M_exporter ) return;
-    if ( !M_exporter->doExport() ) return;
-
     this->log("HeatTransfer","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExport = false;
-    if ( this->hasPostProcessFieldExported( "temperature" ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                       this->fieldTemperature() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( "pid" ) )
-    {
-        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    if ( this->hasPostProcessFieldExported( "velocity-convection" ) )
-    {
-        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
-        {
-            M_exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
-                                           prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
-                                           this->fieldVelocityConvection() );
-            hasFieldToExport = true;
-        }
-    }
-    if ( this->hasPostProcessFieldExported( "thermal-conductivity" ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
-                                       this->thermalProperties()->fieldThermalConductivity() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( "density" ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"density"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
-                                       this->thermalProperties()->fieldRho() );
-        hasFieldToExport = true;
-    }
-
-    if ( hasFieldToExport )
-        M_exporter->save();
+    this->exportFields( time );
 
     this->exportMeasures( time );
 
@@ -653,6 +592,62 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("HeatTransfer","exportResults", "finish");
+}
+
+HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportFields( double time )
+{
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, time );
+    if ( hasFieldToExport )
+        M_exporter->save();
+}
+HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+bool
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, double time )
+{
+    if ( !exporter ) return false;
+    if ( !exporter->doExport() ) return false;
+
+    bool hasFieldToExport = false;
+    if ( this->hasPostProcessFieldExported( "temperature" ) )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
+                                     this->fieldTemperature() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "pid" ) )
+    {
+        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+
+    if ( this->hasPostProcessFieldExported( "velocity-convection" ) )
+    {
+        if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
+        {
+            exporter->step( time )->add( prefixvm(this->prefix(),"velocity-convection"),
+                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-convection")),
+                                         this->fieldVelocityConvection() );
+            hasFieldToExport = true;
+        }
+    }
+    if ( this->hasPostProcessFieldExported( "thermal-conductivity" ) )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
+                                     this->thermalProperties()->fieldThermalConductivity() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "density" ) )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"density"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
+                                     this->thermalProperties()->fieldRho() );
+        hasFieldToExport = true;
+    }
+    return hasFieldToExport;
 }
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS

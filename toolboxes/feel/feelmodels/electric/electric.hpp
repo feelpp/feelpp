@@ -110,23 +110,23 @@ public:
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ElectricMesh.path"); }
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
-    // load config
-    void loadConfigBCFile();
-    //void loadConfigMeshFile( std::string const& geofilename );
+private :
     void loadParameterFromOptionsVm();
-
     void createMesh();
+    void initBoundaryConditions();
+    void initPostProcess();
+public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     int nBlockMatrixGraph() const;
 
-    void initPostProcess();
-    void restartExporters();
-    // void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( export_ptrtype exporter, double time );
+    void exportMeasures( double time );
     void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
     bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
@@ -169,9 +169,6 @@ public:
 
     //___________________________________________________________________________________//
     void updateElectricField();
-
-private :
-    void updateBoundaryConditionsForUse();
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;

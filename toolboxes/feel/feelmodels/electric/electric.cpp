@@ -65,9 +65,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
 
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Electric.info") );
     //-----------------------------------------------------------------------------//
-    // load config (from json)
-    this->loadConfigBCFile();
-    //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
@@ -78,34 +75,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
     this->log("Electric","constructor", "finish");
 }
 
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
-{
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
-
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( marker(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
-}
-
-// ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-// void
-// ELECTRIC_CLASS_TEMPLATE_TYPE::loadConfigMeshFile(std::string const& geofilename)
-// {
-//     CHECK( false ) << "not allow";
-// }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -160,7 +129,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->timerTool("Constructor").start();
 
     CHECK( M_mesh ) << "no mesh defined";
+
     // physical properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
     M_electricProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
 
     // functionspace
@@ -179,6 +151,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
 
+    this->initBoundaryConditions();
+
+    // post-process
+    this->initPostProcess();
+
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
@@ -194,10 +171,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
 
-    this->updateBoundaryConditionsForUse();
-
-    // post-process
-    this->initPostProcess();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -216,8 +189,25 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
+ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    this->clearMarkerDirichletBC();
+    this->clearMarkerNeumannBC();
+    this->clearMarkerRobinBC();
+
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
+    for( auto const& d : this->M_bcDirichlet )
+        this->addMarkerDirichletBC("elimination", marker(d) );
+    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
+    for( auto const& d : this->M_bcNeumann )
+        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
+
+    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
+    for( auto const& d : this->M_bcRobin )
+        this->addMarkerRobinBC( marker(d) );
+
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
+
     auto mesh = this->mesh();
     auto XhElectricPotential = this->spaceElectricPotential();
 
@@ -327,32 +317,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("Electric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExport = false;
+    this->exportFields( time );
 
-    if ( this->hasPostProcessFieldExported( "electric-potential" ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
-                                       this->fieldElectricPotential() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( "electric-field" ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
-                                       *M_fieldElectricField );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( "pid" ) )
-    {
-        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    if ( hasFieldToExport )
-        M_exporter->save();
-
-    // this->exportMeasures( time );
+    this->exportMeasures( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -362,6 +329,51 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("Electric","exportResults", "finish");
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
+{
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, time );
+    if ( hasFieldToExport )
+        M_exporter->save();
+}
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+bool
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, double time )
+{
+    if ( !exporter ) return false;
+    if ( !exporter->doExport() ) return false;
+
+    bool hasFieldToExport = false;
+    if ( this->hasPostProcessFieldExported( "electric-potential" ) )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
+                                     this->fieldElectricPotential() );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "electric-field" ) )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
+                                     *M_fieldElectricField );
+        hasFieldToExport = true;
+    }
+    if ( this->hasPostProcessFieldExported( "pid" ) )
+    {
+        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+    return hasFieldToExport;
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+{
+
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
