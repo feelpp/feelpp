@@ -1,0 +1,25 @@
+#undef ELECTRIC_DIM
+#undef ELECTRIC_ORDERGEO
+#undef ELECTRIC_ORDERPOLY
+
+#define ELECTRIC_DIM @ELECTRIC_DIM@
+#define ELECTRIC_ORDERGEO @ELECTRIC_ORDERGEO@
+#define ELECTRIC_ORDERPOLY @ELECTRIC_ORDERPOLY@
+
+
+#define ELECTRIC_POTENTIAL_INTERPOLATIONPOINTS PointSetFekete
+
+#define ELECTRIC_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisPotentialType> \
+        /**/
+#define ELECTRIC_CLASS_TEMPLATE_TYPE \
+    Electric<ConvexType,BasisPotentialType> \
+        /**/
+#define ELECTRIC_CLASS_TYPE \
+    Electric< Simplex<ELECTRIC_DIM,ELECTRIC_ORDERGEO,ELECTRIC_DIM>, \
+        Lagrange<ELECTRIC_ORDERPOLY, Scalar,Continuous,ELECTRIC_POTENTIAL_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define ELECTRIC_CLASS_INSTANTIATION \
+    template class ELECTRIC_CLASS_TYPE ;  \
+    /**/
