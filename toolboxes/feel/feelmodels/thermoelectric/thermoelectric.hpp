@@ -31,7 +31,7 @@
 #define FEELPP_THERMOELECTRIC_HPP 1
 
 #include <feel/feelmodels/heattransfer/heattransfer.hpp>
-#include <feel/feelmodels/thermoelectric/electricpropertiesdescription.hpp>
+#include <feel/feelmodels/electric/electric.hpp>
 
 
 namespace Feel
@@ -44,64 +44,38 @@ enum class ThermoElectricPostProcessFieldExported
     Temperature = 0, ElectricPotential, ElectricField, Pid
 };
 
-template< typename ConvexType, typename BasisTemperatureType>
+template< typename HeatTransferType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementRobinBC,
-                       public boost::enable_shared_from_this< ThermoElectric<ConvexType,BasisTemperatureType> >
+                       public boost::enable_shared_from_this< ThermoElectric<HeatTransferType,ElectricType> >
 {
 
 public:
     typedef ModelNumerical super_type;
-    typedef ThermoElectric<ConvexType,BasisTemperatureType> self_type;
+    typedef ThermoElectric<HeatTransferType,ElectricType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    typedef HeatTransfer<ConvexType,BasisTemperatureType> heattransfer_model_type;
+    typedef HeatTransferType heattransfer_model_type;
     typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
 
+    typedef ElectricType electric_model_type;
+    typedef boost::shared_ptr<electric_model_type> electric_model_ptrtype;
+
     // mesh
-    typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    typedef Mesh<convex_type> mesh_type;
+    typedef typename heattransfer_model_type::mesh_type mesh_heattransfer_type;
+    typedef typename electric_model_type::mesh_type mesh_electric_type;
+    typedef mesh_heattransfer_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef mesh_type mesh_electric_type;
-
-    // function space electric-potential
-    typedef BasisTemperatureType basis_electricpotential_type;
-    static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
-    typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
-    typedef boost::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_type element_electricpotential_type;
-    typedef boost::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
-    // function space electric-field
-    typedef Lagrange<nOrderPolyElectricPotential, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_electricfield_type;
-    typedef FunctionSpace<mesh_electric_type, bases<basis_electricfield_type> > space_electricfield_type;
-    typedef boost::shared_ptr<space_electricfield_type> space_electricfield_ptrtype;
-    typedef typename space_electricfield_type::element_type element_electricfield_type;
-    typedef boost::shared_ptr<element_electricfield_type> element_electricfield_ptrtype;
-
-    // mechanical properties desc
-    typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
-    typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef boost::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-    typedef ElectricPropertiesDescription<space_scalar_P0_type> electricproperties_type;
-    typedef boost::shared_ptr<electricproperties_type> electricproperties_ptrtype;
 
     // exporter
-    typedef Exporter<mesh_type,nOrderGeo> export_type;
+    typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef boost::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-
-    // context for evaluation
-    typedef typename space_electricpotential_type::Context context_electricpotential_type;
-    typedef boost::shared_ptr<context_electricpotential_type> context_electricpotential_ptrtype;
-
 
     //___________________________________________________________________________________//
     // constructor
@@ -114,8 +88,8 @@ public:
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
     // load config
-    void loadConfigBCFile();
-    void loadConfigMeshFile( std::string const& geofilename );
+    //void loadConfigBCFile();
+    //void loadConfigMeshFile( std::string const& geofilename );
     void loadParameterFromOptionsVm();
 
     void createMesh();
@@ -125,11 +99,11 @@ public:
     int nBlockMatrixGraph() const;
 
     void initPostProcess();
-    void restartExporters();
+    //void restartExporters();
     // void exportMeasures( double time );
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
+    //void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
     bool hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void updateParameterValues();
@@ -142,15 +116,9 @@ public:
     heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
     heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
 
-    space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
-    element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
-    element_electricpotential_type const& fieldElectricPotential() const { return *M_fieldElectricPotential; }
+    electric_model_ptrtype const& electricModel() const { return M_electricModel; }
+    electric_model_ptrtype electricModel() { return M_electricModel; }
 
-    space_electricfield_ptrtype const& spaceElectricField() const { return M_XhElectricField; }
-    element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
-    element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
-
-    electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
@@ -167,58 +135,34 @@ public:
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
+    //void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
-    void updateBCWeakJacobian( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
     void updateResidual( DataUpdateResidual & data ) const;
     void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
-    void updateBCWeakResidual( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
-    void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
-
-    //___________________________________________________________________________________//
-    void updateElectricField();
-
-private :
-    void updateBoundaryConditionsForUse();
 
 private :
     heattransfer_model_ptrtype M_heatTransferModel;
+    electric_model_ptrtype M_electricModel;
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
-    space_electricpotential_ptrtype M_XhElectricPotential;
-    element_electricpotential_ptrtype M_fieldElectricPotential;
-    space_electricfield_ptrtype M_XhElectricField;
-    element_electricfield_ptrtype M_fieldElectricField;
     // physical parameter
     std::string M_modelName;
     std::string M_solverName;
-    electricproperties_ptrtype M_electricProperties;
-    // boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
 
     // algebraic data/tools
     backend_ptrtype M_backendMonolithic;
     model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
     BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
     // start dof index fields in matrix (temperature,electric-potential,...)
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
-
-    backend_ptrtype M_backendElectricModel;
-    model_algebraic_factory_ptrtype M_algebraicFactoryElectricModel;
 
     // post-process
     export_ptrtype M_exporter;

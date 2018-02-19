@@ -13,6 +13,7 @@ macro(resetToZeroAllPhysicalVariables)
   SET(HEATTRANSFER0 0 )
   SET(HEATTRANSFER1 0 )
   SET(HEATTRANSFER2 0 )
+  SET(ELECTRIC 0 )
   SET(THERMOELECTRIC 0 )
 endmacro(resetToZeroAllPhysicalVariables)
 #############################################################################
@@ -30,7 +31,7 @@ macro(genLibBase)
   #CDR(FEELMODELS_GENLIB_APPLICATION_DIR       ${FEELMODELS_GENLIB_BASE_DEFAULT_ARGS})
 
   set(LIB_DEPENDS           ${FEELMODELS_GENLIB_BASE_LIB_DEPENDS})
-  set(PREFIX_FILES_TO_COPY  ${FEELMODELS_GENLIB_BASE_PREFIX_INCLUDE_USERCONFIG})
+  #set(PREFIX_FILES_TO_COPY  ${FEELMODELS_GENLIB_BASE_PREFIX_INCLUDE_USERCONFIG})
   set(LIB_APPLICATION_NAME ${FEELMODELS_GENLIB_BASE_LIB_NAME})
 
   set(CODEGEN_FILES_TO_COPY ${FEELMODELS_GENLIB_BASE_FILES_TO_COPY})
@@ -111,42 +112,91 @@ macro( genLibHeatTransfer )
     MESSAGE("*** ORDERGEO ${HEATTRANSFER_ORDERGEO}")
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
-  set(FEELMODELS_MODEL_SPECIFIC_NAME heattransfer${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/heattransfer/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  set(HEATTRANSFER_LIB_VARIANTS ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
+  set(HEATTRANSFER_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heattransfer/${HEATTRANSFER_LIB_VARIANTS})
+  set(HEATTRANSFER_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/heattransfer${HEATTRANSFER_LIB_VARIANTS}.txt )
+  set(HEATTRANSFER_LIB_NAME feelpp_toolbox_heattransfer_lib_${HEATTRANSFER_LIB_VARIANTS})
 
-  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+  if ( NOT EXISTS ${HEATTRANSFER_LIB_CHECK_PATH} )
 
     #write empty file in orter to check if this lib has already define
-    file(WRITE ${LIBBASE_CHECK_PATH} "")
+    file(WRITE ${HEATTRANSFER_LIB_CHECK_PATH} "")
 
     # configure libmodelbase
-    set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransfercreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransferassembly_inst.cpp )
-    set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/heattransfercreate_inst.cpp
-      ${LIBBASE_DIR}/heattransferassembly_inst.cpp )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(HEATTRANSFER_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransfercreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferassembly_inst.cpp )
+    set(HEATTRANSFER_CODEGEN_SOURCES
+      ${HEATTRANSFER_LIB_DIR}/heattransfercreate_inst.cpp
+      ${HEATTRANSFER_LIB_DIR}/heattransferassembly_inst.cpp )
+    set(HEATTRANSFER_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
 
     # generate libmodelbase
     genLibBase(
-      LIB_NAME ${LIBBASE_NAME}
-      LIB_DIR ${LIBBASE_DIR}
-      LIB_DEPENDS ${LIB_DEPENDS}
-      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/heattransfer/heattransferconfig.h.in
+      LIB_NAME ${HEATTRANSFER_LIB_NAME}
+      LIB_DIR ${HEATTRANSFER_LIB_DIR}
+      LIB_DEPENDS ${HEATTRANSFER_LIB_DEPENDS}
+      FILES_TO_COPY ${HEATTRANSFER_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${HEATTRANSFER_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferconfig.h.in
       )
 
   endif()
-
-
 endmacro(genLibHeatTransfer)
+
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibElectric )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;P_ORDER;GEO_ORDER;"
+    "NO_UPDATE_MODEL_DEF"
+    ${ARGN}
+    )
+
+  if ( NOT FEELMODELS_APP_NO_UPDATE_MODEL_DEF )
+    resetToZeroAllPhysicalVariables()
+    SET(ELECTRIC 1 )
+  endif()
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(ELECTRIC_DIM ${FEELMODELS_APP_DIM})
+  set(ELECTRIC_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
+  set(ELECTRIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  set(ELECTRIC_LIB_VARIANTS ${ELECTRIC_DIM}dP${ELECTRIC_ORDERPOLY}G${ELECTRIC_ORDERGEO} )
+  set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS} )
+  set(ELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/electric${ELECTRIC_LIB_VARIANTS}.txt )
+  set(ELECTRIC_LIB_NAME feelpp_toolbox_electric_lib_${ELECTRIC_LIB_VARIANTS})
+
+  if ( NOT EXISTS ${ELECTRIC_LIB_CHECK_PATH} )
+    #write empty file in orter to check if this lib has already define
+    file(WRITE ${ELECTRIC_LIB_CHECK_PATH} "")
+
+    # configure libmodelbase
+    set(ELECTRIC_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
+    set(ELECTRIC_CODEGEN_SOURCES
+      ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
+    set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+
+    # generate libmodelbase
+    genLibBase(
+      LIB_NAME ${ELECTRIC_LIB_NAME}
+      LIB_DIR ${ELECTRIC_LIB_DIR}
+      LIB_DEPENDS ${ELECTRIC_LIB_DEPENDS}
+      FILES_TO_COPY ${ELECTRIC_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${ELECTRIC_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricconfig.h.in
+      )
+  endif()
+endmacro(genLibElectric)
 
 #############################################################################
 #############################################################################
@@ -364,7 +414,7 @@ macro(genLibFluidMechanics)
       set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
     endif()
     # heattransfer depend
-    set(LIB_DEPENDS feelpp_model_heattransfer${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
+    set(LIB_DEPENDS feelpp_toolbox_heattransfer_lib_${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
 
     # generate libmodelbase
     genLibBase(
@@ -833,46 +883,48 @@ macro( genLibThermoElectric )
   set(THERMOELECTRIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
   if (0)
-    MESSAGE("*** Arguments for fluid application ${LIB_NAME}")
+    MESSAGE("*** Arguments for thermoelectric lib")
     MESSAGE("*** DIM ${THERMOELECTRIC_DIM}")
     MESSAGE("*** ORDERPOLY ${THERMOELECTRIC_ORDERPOLY}")
     MESSAGE("*** ORDERGEO ${THERMOELECTRIC_ORDERGEO}")
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${THERMOELECTRIC_DIM}dP${THERMOELECTRIC_ORDERPOLY}G${THERMOELECTRIC_ORDERGEO} )
-  set(FEELMODELS_MODEL_SPECIFIC_NAME thermoelectric${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  #set(FEELMODELS_MODEL_SPECIFIC_NAME ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/thermoelectric/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  genLibHeatTransfer(
+    DIM     ${THERMOELECTRIC_DIM}
+    T_ORDER ${THERMOELECTRIC_ORDERPOLY}
+    GEO_ORDER ${THERMOELECTRIC_ORDERGEO}
+    )
+  genLibElectric(
+    DIM     ${THERMOELECTRIC_DIM}
+    P_ORDER ${THERMOELECTRIC_ORDERPOLY}
+    GEO_ORDER ${THERMOELECTRIC_ORDERGEO}
+    )
 
-  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+  set(THERMOELECTRIC_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${ELECTRIC_LIB_VARIANTS})
+  set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
+  set(THERMOELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/thermoelectric${THERMOELECTRIC_LIB_VARIANTS}.txt )
+  set(THERMOELECTRIC_LIB_NAME feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_LIB_VARIANTS})
 
+  if ( NOT EXISTS ${THERMOELECTRIC_LIB_CHECK_PATH} )
     #write empty file in orter to check if this lib has already define
-    file(WRITE ${LIBBASE_CHECK_PATH} "")
-
-    # configure libmodelbase
-    set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/thermoelectric/thermoelectric_inst.cpp )
-    set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/thermoelectric_inst.cpp )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
-    # heattransfer depend
-    set(LIB_DEPENDS feelpp_model_heattransfer${THERMOELECTRIC_DIM}dP${THERMOELECTRIC_ORDERPOLY}G${THERMOELECTRIC_ORDERGEO} ${LIB_DEPENDS})
-
-    # generate libmodelbase
+    file(WRITE ${THERMOELECTRIC_LIB_CHECK_PATH} "")
+    # configure the lib
+    set(THERMOELECTRIC_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
+    set(THERMOELECTRIC_CODEGEN_SOURCES
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
+    set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(THERMOELECTRIC_LIB_DEPENDS ${HEATTRANSFER_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
+    # generate the lib
     genLibBase(
-      LIB_NAME ${LIBBASE_NAME}
-      LIB_DIR ${LIBBASE_DIR}
-      LIB_DEPENDS ${LIB_DEPENDS}
-      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/thermoelectric/thermoelectricconfig.h.in
+      LIB_NAME ${THERMOELECTRIC_LIB_NAME}
+      LIB_DIR ${THERMOELECTRIC_LIB_DIR}
+      LIB_DEPENDS ${THERMOELECTRIC_LIB_DEPENDS}
+      FILES_TO_COPY ${THERMOELECTRIC_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${THERMOELECTRIC_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricconfig.h.in
       )
-
   endif()
-
 
 endmacro(genLibThermoElectric)
 
