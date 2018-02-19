@@ -153,6 +153,14 @@ public:
             }
 
         /**
+         * return name of parameter at index d
+         */
+        std::string parameterName( int d ) const
+            {
+                return M_space->parameterName(d);
+            }
+
+        /**
          * access element by name
          */
         double const& parameterNamed( std::string name ) const
@@ -1013,6 +1021,60 @@ public:
             }
         }
 
+        /**
+         * \brief create a sampling with random elements
+         * \param N : vector of bool for the direction to sample
+         */
+        void randomInDirections( int N,  std::vector<bool> const& Nd, bool all_procs_have_same_sampling=true, std::string const& file_name="" )
+        {
+            // clear previous sampling
+            this->clear();
+
+            size_type samplingSize = N;
+
+            if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
+            {
+
+                bool already_exist;
+                // first element
+                auto mu = parameterspace_type::random( M_space, Nd );
+                super::push_back( mu );
+
+                for(int i=1; i<N; i++)
+                {
+                    //while mu is already in temporary_sampling
+                    //we pick an other parameter
+                    do
+                    {
+                        already_exist=false;
+                        mu = parameterspace_type::random( M_space, Nd );
+
+                        for( auto const& _mu : *this )
+                        {
+                            if( mu == _mu )
+                                already_exist=true;
+                        }
+
+                    }
+                    while( already_exist );
+
+                    super::push_back( mu );
+
+                }//loop over N
+
+                this->writeOnFile( file_name );
+            }//master proc
+
+            if( all_procs_have_same_sampling )
+            {
+                boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+            }
+            else
+            {
+                this->distributeOnAllProcessors( N , file_name );
+            }
+        }
+
 
         /**
          * \brief Returns the minimum element in the sampling and its index
@@ -1723,6 +1785,26 @@ public:
             mu.array() = space->min().array()+mur.array()*( space->max().array()-space->min().array() );
             if ( broadcast )
                 mu.check();
+            return mu;
+        }
+
+    /**
+     * \brief Returns a random element of the parameter space int the directions N
+     */
+    static element_type random( parameterspace_ptrtype const& space, std::vector<bool> N )
+        {
+            element_type mur( space );
+            if ( space->dimension() == 0 )
+                return mur;
+            mur.array() = element_type::Random(space->dimension(),1).array().abs();
+            //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
+
+            element_type mu( space );
+            element_type muMin = space->min();
+            element_type muMax = space->max();
+            for (int d=0;d<space->dimension();++d)
+                mu(d) = muMin(d) + int(N[d])*mur(d)*( muMax(d)-muMin(d) );
+
             return mu;
         }
 

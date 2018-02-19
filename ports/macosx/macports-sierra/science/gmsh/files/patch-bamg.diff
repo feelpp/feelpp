@@ -1,0 +1,59 @@
+--- contrib/bamg/bamglib/Mesh2.cpp	2012-06-19 14:22:26.000000000 +0200
++++ contrib/bamg/bamglib/Mesh2.cpp	2018-01-07 10:29:58.000000000 +0100
+@@ -1459,9 +1459,9 @@
+   //--------------------------------------------
+ 
+   Triangle * tt[3]; // the 3 new Triangles
+-  Vertex &s0 = (* t)[0], &s1=(* t)[1], &s2=(* t)[2];
++  Vertex *s0 = (* t)(0), *s1=(* t)(1), *s2=(* t)(2);
+   Icoor2  det3local[3];
+-  int infv = &s0 ?  ((  &s1 ? ( &s2  ? -1 : 2) : 1  )) : 0;
++  int infv = s0 ?  ((  s1 ? ( s2  ? -1 : 2) : 1  )) : 0;
+   // infv = ordre of the infini vertex (null)
+   register int nbd0 =0; // number of zero det3
+   register int izerodet=-1,iedge; // izerodet = egde contening the vertex s
+@@ -1470,8 +1470,8 @@
+   if ( ( infv <0 ) && (detOld <0) ||  ( infv >=0  ) && (detOld >0) )
+     {
+       cerr << "  infv " << infv << " det = " << detOld << endl;
+-      cerr << Number(s) << " "<< Number(s0) << " "
+-	   << Number(s1) << " "  << Number(s2) << endl;
++      cerr << Number(s) << " "<< Number(*s0) << " "
++	   << Number(*s1) << " "  << Number(*s2) << endl;
+       MeshError(3);
+     }
+ 
+@@ -1479,14 +1479,14 @@
+   if (!det3) {
+     det3 = det3local; // alloc
+     if ( infv<0 ) {
+-      det3[0]=bamg::det(s ,s1,s2);
+-      det3[1]=bamg::det(s0,s ,s2);
+-      det3[2]=bamg::det(s0,s1,s );}
++      det3[0]=bamg::det(s ,*s1,*s2);
++      det3[1]=bamg::det(*s0,s ,*s2);
++      det3[2]=bamg::det(*s0,*s1,s );}
+     else {
+       // one of &s1  &s2  &s0 is NULL so (&si || &sj) <=> !&sk
+-      det3[0]=  &s0 ? -1  : bamg::det(s ,s1,s2) ;
+-      det3[1]=  &s1 ? -1 : bamg::det(s0,s ,s2) ;
+-      det3[2]=  &s2 ? -1 : bamg::det(s0,s1,s ) ;}}
++      det3[0]=  s0 ? -1  : bamg::det(s ,*s1,*s2) ;
++      det3[1]=  s1 ? -1 : bamg::det(*s0,s ,*s2) ;
++      det3[2]=  s2 ? -1 : bamg::det(*s0,*s1,s ) ;}}
+ 
+ 
+   if (!det3[0]) izerodet=0,nbd0++;
+@@ -1519,9 +1519,9 @@
+       cerr << " bug  " << nbd0 <<endl;
+       cerr << " Bug double points in " << endl ;
+       cerr << " s = " << Number(s) << " " <<  s << endl;
+-      cerr << " s0 = "<< Number(s0) << " "  << s0 << endl;
+-      cerr << " s1 = "<< Number(s1) << " "  << s1 << endl;
+-      cerr << " s2 = "<< Number(s2) << " "  << s2 << endl;
++      cerr << " s0 = "<< Number(*s0) << " "  << *s0 << endl;
++      cerr << " s1 = "<< Number(*s1) << " "  << *s1 << endl;
++      cerr << " s2 = "<< Number(*s2) << " "  << *s2 << endl;
+       MeshError(5,this);}
+ 
+   // remove de MarkUnSwap edge

@@ -50,6 +50,7 @@ makeOptions()
         ( "use_hypercube", po::value<bool>()->default_value( false ), "use hypercube or a given geometry" )
         ( "tau_constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "tau_order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+		( "use-sc", po::value<bool>()->default_value(true), "use static condensation")
         ;
     return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
 }
@@ -111,6 +112,8 @@ public:
     using Mh_ptr_t =  Pdhv_ptrtype<face_mesh_type,OrderP>;
     using M0h_t =  Pdh_type<face_mesh_type,0>;
     using M0h_ptr_t =  Pdh_ptrtype<face_mesh_type,0>;
+    using Ch_ptr_t = Pchv_ptrtype<face_mesh_type,0>;
+
 
     using product_space_type = ProductSpaces<Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
     using product_space_ptrtype = boost::shared_ptr<product_space_type>;
@@ -172,16 +175,7 @@ Hdg<Dim, OrderP, OrderG>::run()
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
 
-    double sc_param = 1;
-
-#if 0
-	bool condense = boption("sc.condense");
-#else
-	bool condense = 1;
-#endif
-
-    if( condense )
-        sc_param = 0.5;
+	double sc_param = boption("use-sc") ? 0.5 : 1.0;
     
     auto lambda = expr(soption("lambda"));
     auto mu     = expr(soption("mu"));
@@ -314,10 +308,26 @@ Hdg<Dim, OrderP, OrderG>::run()
 
 
 	tic();
-    auto ps = product( Vh, Wh, Mh );
-	auto a = blockform2( ps , backend() );
-	auto rhs = blockform1( ps , backend() );
+    solve::strategy s = boption("use-sc")?solve::strategy::static_condensation:solve::strategy::monolithic;
+	
 
+
+
+
+#if 1	
+	auto ps = product( Vh, Wh, Mh );
+	auto a = blockform2( ps , s, backend() );
+	auto rhs = blockform1( ps , s, backend() );
+#else
+    Ch_ptr_t Ch = Pchv<0>(face_mesh, true);
+	auto ibcSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >(0, Ch);
+	auto ps = product2( ibcSpaces, Vh, Wh, Mh );
+
+	auto A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(ps), backend() );
+	auto F = makeSharedVectorCondensed<value_type>(s, blockVector(ps), backend(), false);
+    auto a = blockform2(ps, A); 
+    auto rhs = blockform1(ps, F);
+#endif
 
     // Building the RHS
     M0h_ptr_t M0h = Pdh<0>( face_mesh,true );
@@ -405,7 +415,8 @@ Hdg<Dim, OrderP, OrderG>::run()
     tic();
     auto U = ps.element();
     auto Ue = ps.element();
-    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=condense);
+    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("use-sc"));
+
     toc("solve",true);
     cout << "[Hdg] solve done" << std::endl;
 
@@ -444,6 +455,7 @@ Hdg<Dim, OrderP, OrderG>::run()
 	{
     	cout << "||sigma_exact - sigma||_L2 = " << l2err_sigma << std::endl;
     	cout << "||u_exact - u||_L2 = " << l2err_u << std::endl;
+    	cout << "||u_exact - u||_H1 = " << h1err_u << std::endl;
 	}
 
 	// CHECKER
