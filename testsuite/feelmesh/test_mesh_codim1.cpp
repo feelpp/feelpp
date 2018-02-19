@@ -26,9 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-08-13
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
-//#define BOOST_TEST_MAIN
+
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh_codim1 testsuite
 // disable the main function creation, use our own
@@ -102,8 +100,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "test_mesh_filters starts" );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
-
 
         using namespace Feel;
 

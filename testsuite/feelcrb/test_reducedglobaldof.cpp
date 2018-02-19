@@ -28,24 +28,29 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
     auto f = form1( Xh );
     f = integrate( elements(mesh), expr*id(u) );
     auto V = f.vectorPtr();
+    V->close();
 
     // get the maximum entry of the vector and corresponding index (dof)
-    auto absV = V->clone();
-    *absV = *V;
-    absV->abs();
     int index = 0;
-    double max = absV->maxWithIndex( &index );
+    double max = V->maxWithIndex( &index );
     int proc_n = V->map().procOnGlobalCluster(index);
 
     // get all the list of all the elements containing the dof
     std::set<int> element_ids;
     std::vector<std::pair<int,int>> local_id_dof;
-    if ( Environment::worldComm().globalRank()==proc_n )
-        for ( auto const& dof : Xh->dof()->globalDof(index-V->map().firstDofGlobalCluster()) )
+    auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
+    if ( boost::get<0>( searchGpDof ) )
+    {
+        size_type gpdof = boost::get<1>( searchGpDof );
+        for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
-            element_ids.insert( dof.second.elementId() );
+            size_type eltId = dof.second.elementId();
+            if ( Xh->mesh()->element( eltId ).isGhostCell() )
+                continue;
+            element_ids.insert( eltId );
             local_id_dof.push_back( std::make_pair(dof.second.elementId(),dof.second.localDof()) );
         }
+    }
 
     // create a submesh and subspace on these elements
     auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
@@ -55,6 +60,7 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
     auto fR = form1(Rh);
     fR = integrate( elements(newmesh), expr*id(v) );
     auto VR = fR.vectorPtr();
+    VR->close();
 
     // check if the indexR in the reduced space correspond to the good entry
     double valueR=0;
@@ -63,9 +69,7 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
         auto sub_id = newmesh->meshToSubMesh( l.first );
 
         auto indexR = Rh->dof()->localToGlobalId( sub_id, l.second );
-        proc_n = VR->map().procOnGlobalCluster(indexR);
-        if ( Environment::worldComm().globalRank()==proc_n )
-            valueR = math::abs(VR->operator()( indexR - VR->map().firstDofGlobalCluster() ));
+        valueR = VR->operator()( indexR );
 
         BOOST_CHECK_CLOSE( max, valueR, 1e-9 );
     }
@@ -87,13 +91,10 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     auto f = form1( Xh );
     f = integrate( elements(mesh), expr*id(u) );
     auto V = f.vectorPtr();
-
+    V->close();
     // get the maximum entry of the vector and corresponding index (dof)
-    auto absV = V->clone();
-    *absV = *V;
-    absV->abs();
     int index = 0;
-    double max = absV->maxWithIndex( &index );
+    double max = V->maxWithIndex( &index );
 
     int proc_n = Xh->dof()->procOnGlobalCluster(index);
 
@@ -102,21 +103,26 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     int elt_id=-1;
     int l_dof=-1;
 
-    if ( Environment::worldComm().globalRank()==proc_n )
+    auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
+    if ( boost::get<0>( searchGpDof ) )
     {
-        for ( auto const& dof : Xh->dof()->globalDof(index-Xh->dof()->firstDofGlobalCluster()) )
+        size_type gpdof = boost::get<1>( searchGpDof );
+        for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
-            element_ids.insert( dof.second.elementId() );
+            size_type eltId = dof.second.elementId();
+            if ( Xh->mesh()->element( eltId ).isGhostCell() )
+                continue;
+            element_ids.insert( eltId );
             if ( elt_id==-1)
             {
                 elt_id=dof.second.elementId();
                 l_dof=dof.second.localDof();
+                auto elt = mesh->element(elt_id);
+                for ( int p=0; p<elt.nPoints(); p++ )
+                    points_id.insert( elt.point(p).id()+1 );
             }
         }
 
-        auto elt = mesh->element(elt_id);
-        for ( int p=0; p<elt.nPoints(); p++ )
-            points_id.insert( elt.point(p).id()+1 );
     }
     boost::mpi::broadcast( Environment::worldComm(), points_id, proc_n );
     boost::mpi::broadcast( Environment::worldComm(), l_dof, proc_n );
@@ -124,6 +130,7 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     // build submesh and reload it in sequential mode
     auto newmesh = createSubmesh( mesh, idelements(mesh,element_ids.begin(), element_ids.end()) );
     saveGMSHMesh(_mesh=newmesh, _filename="submesh.msh" );
+    Environment::worldComm().barrier();
     auto seqmesh = loadMesh( _mesh=new mesh_type,
                              _filename="submesh.msh", _worldcomm= Environment::worldCommSeq() );
 
@@ -147,18 +154,18 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     else
         POUT<<"elt id not found in map\n";
 
-    auto Rh = space_type::New(seqmesh,
-                              _worldscomm=std::vector<WorldComm>(1,Environment::worldCommSeq()) );
+    auto Rh = space_type::New(_mesh=seqmesh );
+
     auto v = Rh->element();
     auto fR = form1(Rh);
     fR = integrate( elements(seqmesh), expr*id(v) );
     auto VR = fR.vectorPtr();
+    VR->close();
     auto indexR = Rh->dof()->localToGlobalId( elt_idR, l_dof );
 
     double valueR = VR->operator()( indexR );
     BOOST_CHECK_CLOSE( max, valueR, 1e-9 );
 }
-
 
 
 BOOST_AUTO_TEST_SUITE_END()

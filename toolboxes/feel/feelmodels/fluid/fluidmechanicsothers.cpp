@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -181,7 +182,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- stabilisation   : " << stabAll_str;
     if ( this->definePressureCst() )
     {
-        *_ostr << "\n     -- define cst pressure  : " << this->definePressureCstMethod();
+        if ( !M_definePressureCstMarkers.empty() )
+        {
+            *_ostr << "\n     -- define cst pressure on markers  : ";
+            for ( auto const& markers : M_definePressureCstMarkers )
+            {
+                if ( markers.empty() ) continue;
+                *_ostr << "[ ";
+                for( auto it=markers.begin(),en=(--markers.end());it!=en;++it )
+                    *_ostr << *it << " : ";
+                *_ostr << *markers.rbegin() << " ]";
+            }
+        }
+        *_ostr << "\n     -- define cst pressure with method  : " << this->definePressureCstMethod();
         if ( this->definePressureCstMethod() == "penalisation" )
             *_ostr << " ( beta=" << this->definePressureCstPenalisationBeta() << ")";
     }
@@ -859,6 +872,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
         myPrecBlockNs->setParameterValues( paramValues );
     }
+    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    {
+        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        myOpPCD->setParameterValues( paramValues );
+    }
+
 
     if ( this->M_useThermodynModel && this->M_useGravityForce )
         this->M_thermodynModel->updateParameterValues();
@@ -977,9 +997,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_
     {
         auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
         auto pSol = upSol.template element<1>();
-        CHECK( M_definePressureCstAlgebraicOperatorMeanPressure ) << "mean pressure operator does not init";
-        double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure, pSol );
-        pSol.add( -meanPressureCurrent );
+        CHECK( !M_definePressureCstAlgebraicOperatorMeanPressure.empty() ) << "mean pressure operator does not init";
+        for ( int k=0;k<M_definePressureCstAlgebraicOperatorMeanPressure.size();++k )
+        {
+            double meanPressureImposed = 0;
+            double meanPressureCurrent = inner_product( *M_definePressureCstAlgebraicOperatorMeanPressure[k].first, pSol );
+            for ( size_type dofId : M_definePressureCstAlgebraicOperatorMeanPressure[k].second )
+                pSol(dofId) += (meanPressureImposed - meanPressureCurrent);
+        }
+        sync( pSol, "=" );
     }
 }
 
@@ -1000,12 +1026,38 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
                                                                      vector_ptrtype const& vecSol ) const
 {
-    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    if ( this->algebraicFactory() )// && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
+        if ( M_preconditionerAttachPMM )
+            this->updateInHousePreconditionerPMM( mat, vecSol );
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol) const
+{
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
+        return;
+    sparse_matrix_ptrtype pmmMat;
+    if ( hasAlreadyBuiltPMM )
+        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+    else
+    {
+        pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+    }
+    CHECK( pmmMat ) << "pmmMat is not initialized";
+
+    auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
+    auto const& p = this->fieldPressure();
+    auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+    massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
+    pmmMat->close();
+    M_pmmNeedUpdate = false;
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
@@ -1020,8 +1072,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
-        myPrecBlockNs->setAlpha( myalpha );
+        if ( !this->isStationary() )
+            myPrecBlockNs->setAlpha( idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0) );
         myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
         myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
 
@@ -1048,10 +1100,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         }
         else if ( this->modelName() == "Navier-Stokes" )
         {
-            auto U = this->functionSpace()->element();
-            // copy vector values in fluid element
-            for ( size_type k=0;k<this->functionSpace()->nLocalDofWithGhost();++k )
-                U(k) = vecSol->operator()(/*rowStartInVector+*/k);
+            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
             auto u = U.template element<0>();
             auto const& rho = this->densityViscosityModel()->fieldRho();
 
@@ -1069,6 +1118,57 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 
         this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish");
     }
+
+    if ( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    {
+        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        auto const& rho = this->densityViscosityModel()->fieldRho();
+        auto const& mu = this->densityViscosityModel()->fieldMu();
+        bool hasAlpha = !this->isStationary();
+        double coeffAlpha = (this->isStationary())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
+        auto alpha = idv(rho)*coeffAlpha;
+        if ( this->modelName() == "Stokes" )
+        {
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),idv(mu), -idv(rho)*idv(this->meshVelocity()), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),idv(mu), zero<nDim,1>(), alpha, false, hasAlpha );
+        }
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
+        {
+            auto BetaU = this->timeStepBDF()->poly();
+            auto betaU = BetaU.template element<0>();
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),idv(mu), idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),idv(mu), idv(rho)*idv(betaU) , alpha, true, hasAlpha );
+        }
+        else if ( this->modelName() == "Navier-Stokes" )
+        {
+            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
+            auto u = U.template element<0>();
+            auto p = U.template element<1>();
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel());
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*idv(u) , alpha, true, hasAlpha );
+        }
+    }
+
 }
 
 
@@ -1076,21 +1176,53 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
-    if ( this->definePressureCstMethod() == "lagrange-multiplier" && !M_XhMeanPressureLM )
+    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = M_densityViscosityModel->isDefinedOnWholeMesh();
+    M_definePressureCstMeshRanges.clear();
+    for ( auto const& markers : M_definePressureCstMarkers )
     {
-        if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
-            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        for ( std::string const& marker : markers )
+            CHECK( M_mesh->hasElementMarker( marker ) ) << "marker " << marker << "does not found in mesh";
+        M_definePressureCstMeshRanges.push_back( markedelements(M_mesh,markers) );
+    }
+    if ( M_definePressureCstMeshRanges.empty() )
+        M_definePressureCstMeshRanges.push_back( M_rangeMeshElements );
+    else
+        M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = false;
+
+
+
+    if ( this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_XhMeanPressureLM.resize( M_definePressureCstMeshRanges.size() );
+        if ( M_definePressureCstOnlyOneZoneAppliedOnWholeMesh )
+            M_XhMeanPressureLM[0] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
         else
-            M_XhMeanPressureLM = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-                                                                 _range=M_rangeMeshElements );
+        {
+            for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
+                M_XhMeanPressureLM[k] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                                                                        _range=M_definePressureCstMeshRanges[k] );
+        }
     }
     else if ( this->definePressureCstMethod() == "algebraic" )
     {
         auto p = this->functionSpacePressure()->element();
-        M_definePressureCstAlgebraicOperatorMeanPressure = form1_mean(_test=this->functionSpacePressure(),
-                                                                      _range=M_rangeMeshElements,
-                                                                      _expr=id(p) ).vectorPtr();
-        M_definePressureCstAlgebraicOperatorMeanPressure->close();
+
+        M_definePressureCstAlgebraicOperatorMeanPressure.resize(M_definePressureCstMeshRanges.size());
+        auto dofTablePressure = this->functionSpacePressure()->dof();
+        for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
+        {
+            auto const& rangeElt = M_definePressureCstMeshRanges[k];
+            M_definePressureCstAlgebraicOperatorMeanPressure[k].first = form1_mean(_test=this->functionSpacePressure(),
+                                                                                   _range=rangeElt,
+                                                                                   _expr=id(p) ).vectorPtr();
+            M_definePressureCstAlgebraicOperatorMeanPressure[k].first->close();
+            auto & dofsOnRange = M_definePressureCstAlgebraicOperatorMeanPressure[k].second;
+            for ( auto const& elt : rangeElt )
+            {
+                for( auto const& ldof : dofTablePressure->localDof( unwrap_ref( elt ).id() ) )
+                    dofsOnRange.insert( ldof.second.index() );
+            }
+        }
     }
 }
 
@@ -1931,7 +2063,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 1;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-        ++nBlock;
+        nBlock+=M_XhMeanPressureLM.size();
     if (this->hasMarkerDirichletBClm())
         ++nBlock;
     if ( this->hasMarkerPressureBC() )
@@ -1971,13 +2103,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingLM(0,1) = size_type(Pattern::COUPLED);
 
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM,_trial=this->functionSpace(),
-                                             _pattern_block=patCouplingLM,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_XhMeanPressureLM,
-                                             _pattern_block=patCouplingLM.transpose(),
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+        {
+            myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM[k],_trial=this->functionSpace(),
+                                                 _pattern_block=patCouplingLM,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_XhMeanPressureLM[k],
+                                                 _pattern_block=patCouplingLM.transpose(),
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            ++indexBlock;
+        }
     }
 
     if (this->hasMarkerDirichletBClm())
@@ -2074,7 +2209,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
-    myblockGraph.close();
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;
@@ -2087,6 +2221,8 @@ typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
         return blockGraph(0,0);
     else
@@ -2152,7 +2288,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-        res += M_XhMeanPressureLM->nLocalDofWithGhost();
+    {
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+            res += M_XhMeanPressureLM[k]->nLocalDofWithGhost();
+    }
     if (this->hasMarkerDirichletBClm())
         res += this->XhDirichletLM()->nLocalDofWithGhost();
     if ( this->hasFluidOutletWindkesselImplicit() )
