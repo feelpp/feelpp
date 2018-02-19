@@ -122,9 +122,9 @@ public:
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
-        M_crb( boost::make_shared<method_t>(name,crb::stage::online) ),
         M_load( crb::load::none )
         {
+            M_crb = method_t::New(name, crb::stage::online);
         }
 
     std::string const& name() const override

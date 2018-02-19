@@ -72,6 +72,9 @@ public:
     typedef double value_type;
     typedef typename convergence_type::value_type convergence;
 
+    using self_type = CRBSaddlePoint;
+    using self_ptrtype = boost::shared_ptr<self_type>;
+
     //@{ /// Function Space and Elements
     typedef typename model_type::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -119,6 +122,22 @@ public:
     typedef typename super::max_error_type max_error_type;
     typedef typename super::error_estimation_type error_estimation_type;
 
+    static self_ptrtype New( std::string const& name = "defaultname_crb",
+                             crb::stage stage = crb::stage::online )
+        {
+            return New( name, boost::make_shared<model_type>(stage), stage );
+        }
+
+    static self_ptrtype New( std::string const& name,
+                             truth_model_ptrtype const& model,
+                             crb::stage stage = crb::stage::online )
+        {
+            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage ) );
+            crb->init();
+            return crb;
+        }
+
+protected:
     //! Default Constructor
     CRBSaddlePoint( std::string const& name = "defaultname_crb",
                     crb::stage stage = crb::stage::online,
@@ -138,7 +157,7 @@ public:
         {
         }
 
-#if 0
+public:
     void init()
     {
         using Feel::cout;
@@ -164,6 +183,13 @@ public:
                 }
             }
         }
+        else
+        {
+            this->M_scmM->setId( this->id() );
+            this->M_scmA->setId( this->id() );
+            this->M_elements_database.setId( this->id() );
+        }
+        cout << "Use DB id " << this->id() << std::endl;
 
         if ( this->M_N == 0 )
         {
@@ -171,8 +197,10 @@ public:
             LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
         }
 
+        // fe vector is requiert in online : must not be TODO
+        if ( this->M_use_newton && this->M_loadElementsDb && this->M_Rqm.empty() )
+            boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, this->M_Rqm ) = this->M_model->computeAffineDecomposition();
     }
-#endif
 
     //@{ /// Database
     //! save the CRB SP database
