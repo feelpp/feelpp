@@ -57,9 +57,20 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "heat-transfer":
         {
-            "fields":["temperature", "electric-potential","electric-field","pid"]
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            }
+        },
+        "electric":
+        {
+            "Exports":
+            {
+                "fields":[ "electric-potential","electric-field"]
+            }
         }
     }
 
