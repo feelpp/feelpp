@@ -180,6 +180,9 @@ class MixedPoisson : public ModelNumerical
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
     product2_space_type getPS() const { return M_ps; }
+	block_bilinear_type get_a() { return M_a; }
+    block_linear_type get_rhs() { return M_rhs; }
+
 
     // time step scheme
     virtual void createTimeDiscretization();
@@ -538,7 +541,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 
     tic();
     Feel::cout << "Start solving" << std::endl;
-    M_a.solve( _solution = U, _rhs = M_rhs, _condense = boption( prefixvm( prefix(), "use-sc" ) ) );
+    M_a.solve( _solution = U, _rhs = M_rhs, _condense = boption( prefixvm( prefix(), "use-sc" ) ), _name=prefix() );
     toc( "MixedPoisson : static condensation" );
 
     toc( "solve" );
@@ -561,6 +564,7 @@ template <int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
     this->setZero();
+
 	this->assembleCstPart();
     this->assembleNonCstPart();
 }
