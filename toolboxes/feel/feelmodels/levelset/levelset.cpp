@@ -102,15 +102,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
-    // Set levelset initial value
-    this->initLevelsetValue();
-    M_initialVolume = this->volume();
     // Init levelset advection
     M_advectionToolbox->init();
     M_timeOrder = this->timeStepBDF()->timeOrder();
     this->updateTime( M_advectionToolbox->currentTime() );
     if (this->doRestart())
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
+
+    if( !this->doRestart() )
+    {
+        // Set levelset initial value
+        this->initLevelsetValue();
+    }
+    M_initialVolume = this->volume();
 
     // Init modGradPhi advection
     if( M_useGradientAugmented )
