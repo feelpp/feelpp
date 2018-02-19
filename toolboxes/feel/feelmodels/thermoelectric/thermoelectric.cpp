@@ -243,18 +243,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    M_postProcessFieldExported.clear();
-    std::string modelName = "thermo-electric";
-    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
-    {
-        if ( M_modelName == "ThermoElectric" )
-            if ( o == "temperature" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Temperature );
-        if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricPotential );
-        if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::ElectricField );
-        if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( ThermoElectricPostProcessFieldExported::Pid );
-    }
-
-
     std::string geoExportType="static";//change_coords_only, change, static
     M_exporter = exporter( _mesh=this->mesh(),
                            _name="Export",
@@ -283,15 +271,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string myexporterType = M_exporter->type();
     int myexporterFreq = M_exporter->freq();
-    std::string doExport_str;
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) )
-        doExport_str=(doExport_str.empty())?"temperature":doExport_str+" - temperature";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
-        doExport_str=(doExport_str.empty())?"electric-potential":doExport_str+" - electric-potential";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
-        doExport_str=(doExport_str.empty())?"electric-field":doExport_str+" - electric-field";
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
-        doExport_str=(doExport_str.empty())?"pid":doExport_str+" - pid";
 
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
@@ -309,7 +288,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Exporter"
            << "\n     -- type            : " << myexporterType
            << "\n     -- freq save       : " << myexporterFreq
-           << "\n     -- fields exported : " << doExport_str
+           << "\n     -- fields [heat-transfer] : TODO"// << doExport_str
+           << "\n     -- fields [electric] : TODO" //<< doExport_str
            << "\n   Processors"
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
@@ -335,40 +315,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExport = false;
-
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Temperature ) &&
-         M_heatTransferModel->mesh()->isSameMesh( this->mesh() ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                       M_heatTransferModel->fieldTemperature() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricPotential ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
-                                       M_electricModel->fieldElectricPotential() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::ElectricField ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
-                                       M_electricModel->fieldElectricField() );
-        hasFieldToExport = true;
-    }
-    if ( this->hasPostProcessFieldExported( ThermoElectricPostProcessFieldExported::Pid ) )
-    {
-        M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    if ( hasFieldToExport )
+    bool hasFieldToExportHeatTransfer = M_heatTransferModel->updateExportedFields( M_exporter,time );
+    bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,time );
+    if ( hasFieldToExportHeatTransfer || hasFieldToExportElectric )
         M_exporter->save();
 
-    // this->exportMeasures( time );
+    M_heatTransferModel->exportMeasures( time );
+    M_electricModel->exportMeasures( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -379,7 +332,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     }
     this->log("ThermoElectric","exportResults", "finish");
 }
-
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void

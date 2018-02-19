@@ -159,31 +159,33 @@ class HeatTransfer : public ModelNumerical,
         bdf_temperature_ptrtype const& timeStepBdfTemperature() const { return M_bdfTemperature; }
         boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfTemperature(); }
         boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfTemperature(); }
-        void initTimeStep();
         void updateBdf();
         void updateTimeStep() { this->updateBdf(); }
         //___________________________________________________________________________________//
 
         boost::shared_ptr<std::ostringstream> getInfo() const;
-
-        void loadConfigBCFile();
-        void loadConfigMeshFile( std::string const& geofilename );
-
+    private :
         void loadParameterFromOptionsVm();
         void createMesh();
-        void createFunctionSpaces();
+        void initMaterialProperties();
+        void initFunctionSpaces();
+        void initBoundaryConditions();
+        void initTimeStep();
+        void initPostProcess();
+    public :
+
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
         void init( bool buildModelAlgebraicFactory=true );
         void updateForUseFunctionSpacesVelocityConvection();
 
-        void initPostProcess();
         bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
 
-        void restartExporters();
-        void exportMeasures( double time );
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
+        void exportFields( double time );
+        bool updateExportedFields( export_ptrtype exporter, double time );
+        void exportMeasures( double time );
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void build();
@@ -225,9 +227,6 @@ class HeatTransfer : public ModelNumerical,
             M_exprVelocityConvection.reset();// symbolic expression is remove
             M_fieldVelocityConvection->on(_range=elements(this->mesh()), _expr=expr );
         }
-
-    private :
-        void updateBoundaryConditionsForUse();
 
     protected :
 
