@@ -44,13 +44,15 @@ ADVECTION_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVECTION_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
+    if( !this->M_isBuilt )
+        super_type::build();
     // Init super_type
-    super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
     if( !this->doRestart() )
     {
         // Set initial value
         this->setInitialValue();
     }
+    super_type::init( buildModelAlgebraicFactory, this->shared_from_this() );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS
