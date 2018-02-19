@@ -68,10 +68,9 @@ enum class FluidMechanicsPostProcessFieldExported
 
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
-          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/>,
-          bool UsePeriodicity=false>
+          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
 class FluidMechanics : public ModelNumerical,
-                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >,
+                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementALEMeshBC,
@@ -81,7 +80,7 @@ class FluidMechanics : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
 
-    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
+    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -111,11 +110,7 @@ public:
     typedef bases<basis_fluid_u_type,basis_fluid_p_type> basis_fluid_type;
     //___________________________________________________________________________________//
     // function space
-    typedef FunctionSpace<mesh_type, basis_fluid_type, Periodicity< Periodic<>, NoPeriodicity > > space_fluid_periodic_type;
-    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_nonperiodic_type;
-    typedef typename mpl::if_< mpl::bool_<UsePeriodicity>,
-                               space_fluid_periodic_type,
-                               space_fluid_nonperiodic_type >::type space_fluid_type;
+    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_type;
     typedef boost::shared_ptr<space_fluid_type> space_fluid_ptrtype;
     typedef typename space_fluid_type::element_type element_fluid_type;
     typedef boost::shared_ptr<element_fluid_type> element_fluid_ptrtype;
