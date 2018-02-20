@@ -326,6 +326,24 @@ public:                                                                 \
         }                                                               \
 };                                                                      \
                                                                         \
+#define FEELPP_CRBSADDLEPOINT_PLUGIN( classname, strname )                \
+    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
+        public CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>      \
+{                                                                       \
+public:                                                                 \
+    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
+    BOOST_PP_CAT(classname,Plugin)()                                    \
+        :                                                               \
+        CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>( BOOST_PP_STRINGIZE( strname ) ) \
+        {}                                                              \
+                                                                        \
+    /* Factory method */                                                \
+    static boost::shared_ptr<this_t> create()                           \
+        {                                                               \
+            return boost::shared_ptr<this_t>( new this_t() );           \
+        }                                                               \
+};                                                                      \
+                                                                        \
                                                                         \
 BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
 
