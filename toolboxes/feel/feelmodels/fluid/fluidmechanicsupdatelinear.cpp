@@ -252,7 +252,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         double timeElapsedConvection = this->timerTool("Solve").stop();
         this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
     }
-    else if ( this->modelName() == "Stokes" && build_ConvectiveTerm && this->isMoveDomain() )
+    else if ( (this->modelName() == "Stokes" || this->modelName() == "StokesTransient") 
+            && build_ConvectiveTerm && this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
         bilinearForm_PatternDefault +=
@@ -266,7 +267,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
     //--------------------------------------------------------------------------------------------------//
     //transients terms
-    if (!this->isStationary())
+    if (!this->isStationaryModel())
     {
         if (build_Form2TransientTerm)
         {

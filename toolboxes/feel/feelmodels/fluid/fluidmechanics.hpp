@@ -510,6 +510,8 @@ public :
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
+    bool isStationaryModel() const;
+
     void setDynamicViscosityLaw( std::string const& type);
     std::string const& dynamicViscosityLaw() const;
 
