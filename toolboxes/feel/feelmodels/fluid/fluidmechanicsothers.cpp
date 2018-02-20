@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -1027,10 +1028,36 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_p
 {
     if ( this->algebraicFactory() )// && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
+        if ( M_preconditionerAttachPMM )
+            this->updateInHousePreconditionerPMM( mat, vecSol );
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol) const
+{
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
+        return;
+    sparse_matrix_ptrtype pmmMat;
+    if ( hasAlreadyBuiltPMM )
+        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+    else
+    {
+        pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+    }
+    CHECK( pmmMat ) << "pmmMat is not initialized";
+
+    auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
+    auto const& p = this->fieldPressure();
+    auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+    massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
+    pmmMat->close();
+    M_pmmNeedUpdate = false;
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
@@ -2182,7 +2209,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
-    myblockGraph.close();
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;
@@ -2195,6 +2221,8 @@ typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
         return blockGraph(0,0);
     else
