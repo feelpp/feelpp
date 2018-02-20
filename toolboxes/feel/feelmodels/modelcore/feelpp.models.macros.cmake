@@ -114,7 +114,7 @@ macro( genLibHeatTransfer )
 
   set(HEATTRANSFER_LIB_VARIANTS ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
   set(HEATTRANSFER_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heattransfer/${HEATTRANSFER_LIB_VARIANTS})
-  set(HEATTRANSFER_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/heattransfer${HEATTRANSFER_LIB_VARIANTS}.txt )
+  set(HEATTRANSFER_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/heattransfer_${HEATTRANSFER_LIB_VARIANTS}.txt )
   set(HEATTRANSFER_LIB_NAME feelpp_toolbox_heattransfer_lib_${HEATTRANSFER_LIB_VARIANTS})
 
   if ( NOT EXISTS ${HEATTRANSFER_LIB_CHECK_PATH} )
@@ -172,7 +172,7 @@ macro( genLibElectric )
 
   set(ELECTRIC_LIB_VARIANTS ${ELECTRIC_DIM}dP${ELECTRIC_ORDERPOLY}G${ELECTRIC_ORDERGEO} )
   set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS} )
-  set(ELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/electric${ELECTRIC_LIB_VARIANTS}.txt )
+  set(ELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/electric_${ELECTRIC_LIB_VARIANTS}.txt )
   set(ELECTRIC_LIB_NAME feelpp_toolbox_electric_lib_${ELECTRIC_LIB_VARIANTS})
 
   if ( NOT EXISTS ${ELECTRIC_LIB_CHECK_PATH} )
@@ -356,58 +356,56 @@ macro(genLibFluidMechanics)
   #######################################################
 
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG})
-  set(FEELMODELS_MODEL_SPECIFIC_NAME fluidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+  set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG})
+  set(FLUIDMECHANICS_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/fluid/${FLUIDMECHANICS_LIB_VARIANTS} )
+  set(FLUIDMECHANICS_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/fluid_${FLUIDMECHANICS_LIB_VARIANTS}.txt )
+  set(FLUIDMECHANICS_LIB_NAME feelpp_toolbox_fluid_lib_${FLUIDMECHANICS_LIB_VARIANTS})
 
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/fluid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
-
-  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
+  if ( NOT EXISTS ${FLUIDMECHANICS_LIB_CHECK_PATH} )
     #write empty file in orter to check if this lib has already define
-    file(WRITE ${LIBBASE_CHECK_PATH} "")
+    file(WRITE ${FLUIDMECHANICS_LIB_CHECK_PATH} "")
 
-    # configure libmodelbase
-    set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicscreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsothers_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatelinearbc_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobian_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidual_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdateresidualbc_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisation_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
+    # configure the lib
+    set(FLUIDMECHANICS_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicscreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsothers_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatelinearbc_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidual_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
-    set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/fluidmechanicscreate_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsothers_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatelinear_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatejacobian_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdateresidual_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
-      ${LIBBASE_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
+    set(FLUIDMECHANICS_CODEGEN_SOURCES
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsothers_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinear_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatelinearbc_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobian_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatejacobianbc_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidual_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdateresidualbc_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
     if (FEELPP_MODELS_ENABLE_MESHALE )
-      set(LIB_DEPENDS feelpp_modelmeshale ${LIB_DEPENDS})
+      set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
     # heattransfer depend
-    set(LIB_DEPENDS feelpp_toolbox_heattransfer_lib_${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${LIB_DEPENDS})
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_heattransfer_lib_${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${FLUIDMECHANICS_LIB_DEPENDS})
 
-    # generate libmodelbase
+    # generate the lib target
     genLibBase(
-      LIB_NAME ${LIBBASE_NAME}
-      LIB_DIR ${LIBBASE_DIR}
-      LIB_DEPENDS ${LIB_DEPENDS}
-      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fluid/fluidmechanicsconfig.h.in
+      LIB_NAME ${FLUIDMECHANICS_LIB_NAME}
+      LIB_DIR ${FLUIDMECHANICS_LIB_DIR}
+      LIB_DEPENDS ${FLUIDMECHANICS_LIB_DEPENDS}
+      #PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
+      FILES_TO_COPY ${FLUIDMECHANICS_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${FLUIDMECHANICS_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsconfig.h.in
       )
 
   endif()
@@ -878,7 +876,7 @@ macro( genLibThermoElectric )
 
   set(THERMOELECTRIC_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${ELECTRIC_LIB_VARIANTS})
   set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
-  set(THERMOELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/thermoelectric${THERMOELECTRIC_LIB_VARIANTS}.txt )
+  set(THERMOELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/thermoelectric_${THERMOELECTRIC_LIB_VARIANTS}.txt )
   set(THERMOELECTRIC_LIB_NAME feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_LIB_VARIANTS})
 
   if ( NOT EXISTS ${THERMOELECTRIC_LIB_CHECK_PATH} )
