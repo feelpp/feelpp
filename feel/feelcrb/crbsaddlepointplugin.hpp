@@ -40,7 +40,6 @@ class CRBSaddlePointPlugin : public CRBPlugin<ModelT>
 {
 public :
     typedef CRBPlugin<ModelT> super_type;
-    //typedef Feel::CRBModelTrilinear<ModelT > crbmodel_type;
     typedef Feel::CRBSaddlePoint<ModelT> crbsaddlepoint_type;
 
     CRBSaddlePointPlugin( std::string const& name ) :

@@ -32,6 +32,8 @@
 #include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelcrb/crb_trilinear.hpp>
+#include <feel/feelcrb/crbsaddlepoint.hpp>
+#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
 
 
 namespace Feel {
@@ -326,9 +328,13 @@ public:                                                                 \
         }                                                               \
 };                                                                      \
                                                                         \
-#define FEELPP_CRBSADDLEPOINT_PLUGIN( classname, strname )                \
+                                                                        \
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
+
+
+#define FEELPP_CRBSADDLEPOINT_PLUGIN( classname, strname )              \
     class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
-        public CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>      \
+        public CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>  \
 {                                                                       \
 public:                                                                 \
     using this_t = BOOST_PP_CAT(classname,Plugin);                      \
