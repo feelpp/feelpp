@@ -66,8 +66,7 @@ endforeach()
 add_library(feelpp_model_fluidmechanics SHARED libfluidmechanics.cpp)
 target_link_libraries(feelpp_model_fluidmechanics ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
 set_property(TARGET feelpp_model_fluidmechanics PROPERTY MACOSX_RPATH ON)
-
-install(TARGETS feelpp_model_fluidmechanics DESTINATION lib/ COMPONENT Libs)
+install(TARGETS feelpp_model_fluidmechanics DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fluid COMPONENT Devel)
