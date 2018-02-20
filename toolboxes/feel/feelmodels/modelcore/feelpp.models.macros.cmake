@@ -113,16 +113,11 @@ macro( genLibHeatTransfer )
   endif()
 
   set(HEATTRANSFER_LIB_VARIANTS ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
-  set(HEATTRANSFER_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heattransfer/${HEATTRANSFER_LIB_VARIANTS})
-  set(HEATTRANSFER_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/heattransfer_${HEATTRANSFER_LIB_VARIANTS}.txt )
   set(HEATTRANSFER_LIB_NAME feelpp_toolbox_heattransfer_lib_${HEATTRANSFER_LIB_VARIANTS})
 
-  if ( NOT EXISTS ${HEATTRANSFER_LIB_CHECK_PATH} )
-
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${HEATTRANSFER_LIB_CHECK_PATH} "")
-
-    # configure libmodelbase
+  if ( NOT TARGET ${HEATTRANSFER_LIB_NAME} )
+    # configure the lib
+    set(HEATTRANSFER_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heattransfer/${HEATTRANSFER_LIB_VARIANTS})
     set(HEATTRANSFER_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransfercreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferassembly_inst.cpp )
@@ -130,8 +125,7 @@ macro( genLibHeatTransfer )
       ${HEATTRANSFER_LIB_DIR}/heattransfercreate_inst.cpp
       ${HEATTRANSFER_LIB_DIR}/heattransferassembly_inst.cpp )
     set(HEATTRANSFER_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
-
-    # generate libmodelbase
+    # generate the lib target
     genLibBase(
       LIB_NAME ${HEATTRANSFER_LIB_NAME}
       LIB_DIR ${HEATTRANSFER_LIB_DIR}
@@ -140,7 +134,6 @@ macro( genLibHeatTransfer )
       FILES_SOURCES ${HEATTRANSFER_CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferconfig.h.in
       )
-
   endif()
 endmacro(genLibHeatTransfer)
 
@@ -171,22 +164,17 @@ macro( genLibElectric )
   set(ELECTRIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
   set(ELECTRIC_LIB_VARIANTS ${ELECTRIC_DIM}dP${ELECTRIC_ORDERPOLY}G${ELECTRIC_ORDERGEO} )
-  set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS} )
-  set(ELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/electric_${ELECTRIC_LIB_VARIANTS}.txt )
   set(ELECTRIC_LIB_NAME feelpp_toolbox_electric_lib_${ELECTRIC_LIB_VARIANTS})
 
-  if ( NOT EXISTS ${ELECTRIC_LIB_CHECK_PATH} )
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${ELECTRIC_LIB_CHECK_PATH} "")
-
-    # configure libmodelbase
+  if ( NOT TARGET ${ELECTRIC_LIB_NAME} )
+    # configure the lib
+    set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS})
     set(ELECTRIC_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
     set(ELECTRIC_CODEGEN_SOURCES
       ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
     set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
-
-    # generate libmodelbase
+    # generate the lib target
     genLibBase(
       LIB_NAME ${ELECTRIC_LIB_NAME}
       LIB_DIR ${ELECTRIC_LIB_DIR}
@@ -239,47 +227,38 @@ macro( genLibSolidMechanics )
     set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
   endif()
 
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_DENSITY_COEFFLAME_TAG})
-  set(FEELMODELS_MODEL_SPECIFIC_NAME solidmec${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
+  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_DENSITY_COEFFLAME_TAG})
+  set(SOLIDMECHANICS_LIB_NAME feelpp_toolbox_solid_lib_${SOLIDMECHANICS_LIB_VARIANTS})
 
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/solid/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
-
-  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${LIBBASE_CHECK_PATH} "")
-
-    # configure libmodelbase
-    set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicscreate_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsothers_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdatejacobian_inst.cpp
-      ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsupdateresidual_inst.cpp
+  if ( NOT TARGET ${SOLIDMECHANICS_LIB_NAME} )
+    # configure the lib
+    set(SOLIDMECHANICS_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/solid/${SOLIDMECHANICS_LIB_VARIANTS})
+    set(SOLIDMECHANICS_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicscreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsothers_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatejacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdateresidual_inst.cpp
       )
-    set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/solidmechanicscreate_inst.cpp
-      ${LIBBASE_DIR}/solidmechanicsothers_inst.cpp
-      ${LIBBASE_DIR}/solidmechanicsupdatelinear_inst.cpp
-      ${LIBBASE_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
-      ${LIBBASE_DIR}/solidmechanicsupdatejacobian_inst.cpp
-      ${LIBBASE_DIR}/solidmechanicsupdateresidual_inst.cpp
+    set(SOLIDMECHANICS_CODEGEN_SOURCES
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicscreate_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsothers_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
-    set(LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
-
-    # generate libmodelbase
+    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} ) 
+    # generate the lib target
     genLibBase(
-      LIB_NAME ${LIBBASE_NAME}
-      LIB_DIR ${LIBBASE_DIR}
-      LIB_DEPENDS ${LIB_DEPENDS}
-      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/solid/solidmechanicsconfig.h.in
+      LIB_NAME ${SOLIDMECHANICS_LIB_NAME}
+      LIB_DIR ${SOLIDMECHANICS_LIB_DIR}
+      LIB_DEPENDS ${SOLIDMECHANICS_LIB_DEPENDS}
+      FILES_TO_COPY ${SOLIDMECHANICS_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${SOLIDMECHANICS_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsconfig.h.in
       )
-
   endif()
 
 endmacro( genLibSolidMechanics )
@@ -357,15 +336,11 @@ macro(genLibFluidMechanics)
 
 
   set(FLUIDMECHANICS_LIB_VARIANTS ${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDER_VELOCITY}P${FLUIDMECHANICS_ORDER_PRESSURE}${FLUIDMECHANICS_PRESSURE_CONTINUITY_TAG}G${FLUIDMECHANICS_ORDERGEO}${FLUIDMECHANICS_DENSITY_VISCOSITY_TAG})
-  set(FLUIDMECHANICS_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/fluid/${FLUIDMECHANICS_LIB_VARIANTS} )
-  set(FLUIDMECHANICS_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/fluid_${FLUIDMECHANICS_LIB_VARIANTS}.txt )
   set(FLUIDMECHANICS_LIB_NAME feelpp_toolbox_fluid_lib_${FLUIDMECHANICS_LIB_VARIANTS})
 
-  if ( NOT EXISTS ${FLUIDMECHANICS_LIB_CHECK_PATH} )
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${FLUIDMECHANICS_LIB_CHECK_PATH} "")
-
+  if ( NOT TARGET ${FLUIDMECHANICS_LIB_NAME} )
     # configure the lib
+    set(FLUIDMECHANICS_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/fluid/${FLUIDMECHANICS_LIB_VARIANTS})
     set(FLUIDMECHANICS_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsothers_inst.cpp
@@ -402,7 +377,6 @@ macro(genLibFluidMechanics)
       LIB_NAME ${FLUIDMECHANICS_LIB_NAME}
       LIB_DIR ${FLUIDMECHANICS_LIB_DIR}
       LIB_DEPENDS ${FLUIDMECHANICS_LIB_DEPENDS}
-      #PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
       FILES_TO_COPY ${FLUIDMECHANICS_CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${FLUIDMECHANICS_CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsconfig.h.in
@@ -429,7 +403,7 @@ macro(genLibFSI)
     message(FATAL_ERROR "miss argument!")
   endif()
 
-  ###############################################################
+  # fluid lib
   genLibFluidMechanics(
     DIM          ${FEELMODELS_APP_DIM}
     GEO_ORDER    ${FEELMODELS_APP_FLUID_GEO_ORDER}
@@ -439,9 +413,6 @@ macro(genLibFSI)
     DENSITY_VISCOSITY_CONTINUITY ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_CONTINUITY}
     DENSITY_VISCOSITY_ORDER      ${FEELMODELS_APP_FLUID_DENSITY_VISCOSITY_ORDER}
     )
-  set(FLUID_LIB_NAME ${LIBBASE_NAME})
-  set(FLUID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
-  ###############################################################
   # solid lib
   genLibSolidMechanics(
     DIM ${FEELMODELS_APP_DIM}
@@ -449,43 +420,29 @@ macro(genLibFSI)
     GEO_ORDER ${FEELMODELS_APP_SOLID_GEO_ORDER}
     DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_SOLID_DENSITY_COEFFLAME_TYPE}
     )
-  set(SOLID_LIB_NAME ${LIBBASE_NAME})
-  set(SOLID_MODEL_SPECIFIC_NAME_SUFFIX ${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX}  )
-  ###############################################################
-  # fsi lib base
-  set(FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX ${FLUID_MODEL_SPECIFIC_NAME_SUFFIX}_${SOLID_MODEL_SPECIFIC_NAME_SUFFIX}  )
-  set(FEELMODELS_MODEL_SPECIFIC_NAME fsi_${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX})
 
-  set(LIBBASE_DIR ${FEELPP_MODELS_BINARY_DIR}/fsi/${FEELMODELS_MODEL_SPECIFIC_NAME_SUFFIX} )
-  set(LIBBASE_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/${FEELMODELS_MODEL_SPECIFIC_NAME}.txt )
-  set(LIBBASE_NAME feelpp_model_${FEELMODELS_MODEL_SPECIFIC_NAME})
+  set(FSI_LIB_VARIANTS ${FLUIDMECHANICS_LIB_VARIANTS}_${SOLIDMECHANICS_LIB_VARIANTS})
+  set(FSI_LIB_NAME feelpp_toolbox_fsi_lib_${FSI_LIB_VARIANTS})
 
-  set(LIB_DEPENDS ${FLUID_LIB_NAME} ${SOLID_LIB_NAME})
-
-  if ( NOT EXISTS ${LIBBASE_CHECK_PATH} )
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${LIBBASE_CHECK_PATH} "")
-
-    # configure libmodelbase
-    set(CODEGEN_FILES_TO_COPY
-      ${FEELPP_MODELS_SOURCE_DIR}/fsi/fsi_inst.cpp
+  if ( NOT TARGET ${FSI_LIB_NAME} )
+    # configure the lib
+    set(FSI_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/fsi/${FSI_LIB_VARIANTS})
+    set(FSI_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fsi/fsi_inst.cpp
       )
-    set(CODEGEN_SOURCES
-      ${LIBBASE_DIR}/fsi_inst.cpp
+    set(FSI_CODEGEN_SOURCES
+      ${FSI_LIB_DIR}/fsi_inst.cpp
       )
-
-    # generate libmodelbase
+    set(FSI_LIB_DEPENDS ${FLUIDMECHANICS_LIB_NAME} ${SOLIDMECHANICS_LIB_NAME})
+    # generate the lib target
     genLibBase(
-      LIB_NAME ${LIBBASE_NAME}
-      LIB_DIR ${LIBBASE_DIR}
-      LIB_DEPENDS ${LIB_DEPENDS}
-      PREFIX_INCLUDE_USERCONFIG ${PREFIX_FILES_TO_COPY}
-      FILES_TO_COPY ${CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_MODELS_SOURCE_DIR}/fsi/fsiconfig.h.in
+      LIB_NAME ${FSI_LIB_NAME}
+      LIB_DIR ${FSI_LIB_DIR}
+      LIB_DEPENDS ${FSI_LIB_DEPENDS}
+      FILES_TO_COPY ${FSI_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${FSI_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fsi/fsiconfig.h.in
       )
-
-
   endif()
 
 endmacro( genLibFSI )
@@ -875,21 +832,18 @@ macro( genLibThermoElectric )
     )
 
   set(THERMOELECTRIC_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${ELECTRIC_LIB_VARIANTS})
-  set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
-  set(THERMOELECTRIC_LIB_CHECK_PATH ${FEELPP_MODELS_LIBBASE_CHECK_DIR}/thermoelectric_${THERMOELECTRIC_LIB_VARIANTS}.txt )
   set(THERMOELECTRIC_LIB_NAME feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_LIB_VARIANTS})
 
-  if ( NOT EXISTS ${THERMOELECTRIC_LIB_CHECK_PATH} )
-    #write empty file in orter to check if this lib has already define
-    file(WRITE ${THERMOELECTRIC_LIB_CHECK_PATH} "")
+  if ( NOT TARGET ${THERMOELECTRIC_LIB_NAME} )
     # configure the lib
+    set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
     set(THERMOELECTRIC_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
     set(THERMOELECTRIC_CODEGEN_SOURCES
       ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
     set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
     set(THERMOELECTRIC_LIB_DEPENDS ${HEATTRANSFER_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
-    # generate the lib
+    # generate the lib target
     genLibBase(
       LIB_NAME ${THERMOELECTRIC_LIB_NAME}
       LIB_DIR ${THERMOELECTRIC_LIB_DIR}
