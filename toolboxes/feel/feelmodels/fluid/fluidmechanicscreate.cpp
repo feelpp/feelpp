@@ -1900,7 +1900,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
         auto const& u = this->fieldVelocity();
         double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        if ( this->isStationary() ) coeff=1.;
+        if ( this->isStationaryModel() ) coeff=1.;
         massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
         massbf.matrixPtr()->close();
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
@@ -2022,8 +2022,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         if ( buildPrecBlockns )
         {
-            // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            //auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
             typedef space_fluid_type space_type;
             typedef space_densityviscosity_type properties_space_type;
             boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =

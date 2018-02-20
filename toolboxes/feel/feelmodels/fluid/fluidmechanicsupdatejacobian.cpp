@@ -193,7 +193,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     bool Build_TransientTerm = !BuildCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
 
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
     {
         bilinearForm_PatternDefault +=
             integrate( _range=M_rangeMeshElements,

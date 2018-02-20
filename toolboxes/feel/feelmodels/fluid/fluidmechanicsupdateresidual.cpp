@@ -236,7 +236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if (!this->isStationary())
+    if (!this->isStationaryModel())
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
