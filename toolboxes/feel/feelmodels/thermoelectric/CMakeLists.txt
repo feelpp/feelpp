@@ -8,6 +8,7 @@ foreach(_DIM 2 3)
     genLibThermoelectric(
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
+      P_ORDER ${_T_ORDER}
       GEO_ORDER 1
       )
     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME}  )
@@ -23,6 +24,7 @@ foreach(_DIM 2 3)
     genLibThermoelectric(
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
+      P_ORDER ${_T_ORDER}
       GEO_ORDER ${_T_ORDER}
       )
     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME} )
@@ -32,7 +34,7 @@ endforeach()
 add_library(feelpp_model_thermoelectric SHARED libthermoelectric.cpp )
 target_link_libraries(feelpp_model_thermoelectric ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC})
 set_property(TARGET feelpp_model_thermoelectric PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_model_thermoelectric DESTINATION lib/ COMPONENT Libs)
+install(TARGETS feelpp_model_thermoelectric DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/thermoelectric COMPONENT Devel)

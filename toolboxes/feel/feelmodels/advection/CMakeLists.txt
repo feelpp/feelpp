@@ -34,7 +34,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER 1
       )
-    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -49,7 +49,7 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER ${_POLY_ORDER}
       )
-    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
+    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME} )
   endforeach()
 endforeach()
 
@@ -65,13 +65,14 @@ foreach(_DIM 2 3)
       POLY_SET Vectorial
       GEO_ORDER 1
       )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
+  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME}  )
   endforeach()
 endforeach()
 
 add_library(feelpp_model_advection SHARED libadvection.cpp )
 target_link_libraries(feelpp_model_advection ${FEELPP_MODELS_LIBRARIES_ADVECTION})
+set_property(TARGET feelpp_model_advection PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_model_advection DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
-install(TARGETS feelpp_model_advection DESTINATION lib/ COMPONENT Libs)
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/advection COMPONENT Devel)
