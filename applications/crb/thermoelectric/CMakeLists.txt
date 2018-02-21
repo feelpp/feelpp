@@ -26,7 +26,7 @@ crb_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
 set(FEELPP_CRB_ELECTRIC_LIBRARIES ${CRB_LIB_ELECTRIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_LIBRARIES PARENT_SCOPE)
 
-crb_add_library( thermic SRCS thermic.cpp EXEC CRB_LIB_THERMIC)
+crb_add_library( thermic SRCS thermic.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC} EXEC CRB_LIB_THERMIC)
 set(FEELPP_CRB_THERMIC_LIBRARIES ${CRB_LIB_THERMIC} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_THERMIC_LIBRARIES PARENT_SCOPE)
 
@@ -63,8 +63,16 @@ feelpp_add_application( thermoelectric-simple-app
 feelpp_add_application( thermoelectric-linear-app
                         SRCS thermoelectric-linear.hpp thermoelectric-linear_main.cpp
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} INSTALL )
+feelpp_add_application( saddle-thermoelectric-linear-app
+                        SRCS thermoelectric-linear.hpp thermoelectric-linear_main.cpp
+                        DEFS THERMOELECTRIC_SADDLEPOINT
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} INSTALL )
 feelpp_add_application( thermoelectric-nonlinear-app
                         SRCS thermoelectric-nonlinear.hpp thermoelectric-nonlinear_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+feelpp_add_application( saddle-thermoelectric-nonlinear-app
+                        SRCS thermoelectric-nonlinear.hpp thermoelectric-nonlinear_main.cpp
+                        DEFS THERMOELECTRIC_SADDLEPOINT
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 feelpp_add_application( electric-alpha-app
                         SRCS electric-alpha_main.cpp electric-alpha.hpp
