@@ -25,6 +25,8 @@
 #ifndef FEELPP_SER_HPP
 #define FEELPP_SER_HPP 1
 
+#include <boost/shared_ptr.hpp>
+
 namespace Feel{
 
 template <typename CRBType>
