@@ -125,9 +125,10 @@ public :
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void exportFields( double time );
-    bool updateExportedFields( export_ptrtype exporter, double time );
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
     void exportMeasures( double time );
-    void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
+    //void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
     bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void updateParameterValues();

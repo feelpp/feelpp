@@ -179,12 +179,13 @@ class HeatTransfer : public ModelNumerical,
         void init( bool buildModelAlgebraicFactory=true );
         void updateForUseFunctionSpacesVelocityConvection();
 
+        std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
 
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
         void exportFields( double time );
-        bool updateExportedFields( export_ptrtype exporter, double time );
+        bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
         void exportMeasures( double time );
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
