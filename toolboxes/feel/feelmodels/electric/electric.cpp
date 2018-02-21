@@ -234,6 +234,22 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
 }
 
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : ifields )
+    {
+        if ( o == prefixvm(prefix,"electric-potential") || o == prefixvm(prefix,"all") )
+            res.insert( "electric-potential" );
+        if ( o == prefixvm(prefix,"electric-field") || o == prefixvm(prefix,"all") )
+            res.insert( "electric-field" );
+        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
+            res.insert( "pid" );
+    }
+    return res;
+}
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -244,24 +260,21 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     M_postProcessFieldExported.clear();
     std::string modelName = "electric";
-    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+
+    if ( !M_postProcessFieldExported.empty() )
     {
-        if ( o == "electric-potential" || o == "all" ) M_postProcessFieldExported.insert( "electric-potential" );
-        if ( o == "electric-field" || o == "all" ) M_postProcessFieldExported.insert( "electric-field" );
-        if ( o == "pid" || o == "all" ) M_postProcessFieldExported.insert( "pid" );
-    }
+        std::string geoExportType="static";//change_coords_only, change, static
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="Export",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
 
-
-    std::string geoExportType="static";//change_coords_only, change, static
-    M_exporter = exporter( _mesh=this->mesh(),
-                           _name="Export",
-                           _geo=geoExportType,
-                           _path=this->exporterPath() );
-
-    if (this->doRestart() && this->restartPath().empty() )
-    {
-        if ( M_exporter->doExport() )
-            M_exporter->restart(this->timeInitial());
+        if (this->doRestart() && this->restartPath().empty() )
+        {
+            if ( M_exporter->doExport() )
+                M_exporter->restart(this->timeInitial());
+        }
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
@@ -312,8 +325,6 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    if ( !M_exporter->doExport() ) return;
-
     this->log("Electric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
@@ -335,33 +346,33 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, time );
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
         M_exporter->save();
 }
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 bool
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, double time )
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
 {
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    if ( this->hasPostProcessFieldExported( "electric-potential" ) )
+    if ( fields.find( "electric-potential" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"electric-potential"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-potential")),
                                      this->fieldElectricPotential() );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "electric-field" ) )
+    if ( fields.find( "electric-field" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"electric-fields"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"electric-fields")),
                                      *M_fieldElectricField );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "pid" ) )
+    if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;

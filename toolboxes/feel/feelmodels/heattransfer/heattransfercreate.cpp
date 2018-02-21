@@ -321,6 +321,27 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initTimeStep()
 }
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : ifields )
+    {
+        if ( o == prefixvm(prefix,"temperature") || o == prefixvm(prefix,"all") )
+            res.insert( "temperature" );
+        if ( o == prefixvm(prefix,"velocity-convection") || o == prefixvm(prefix,"all") )
+            res.insert( "velocity-convection" );
+        if ( o == prefixvm(prefix,"thermal-conductivity") || o == prefixvm(prefix,"all") )
+            res.insert( "thermal-conductivity" );
+        if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
+            res.insert( "density" );
+        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
+            res.insert( "pid" );
+    }
+    return res;
+}
+
+HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
@@ -328,14 +349,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     std::string modelName = "heat-transfer";
-    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
-    {
-        if ( o == "temperature" || o == "all" ) this->M_postProcessFieldExported.insert( "temperature" );
-        if ( o == "velocity-convection" || o == "all" ) this->M_postProcessFieldExported.insert( "velocity-convection" );
-        if ( o == "thermal-conductivity" || o == "all" ) this->M_postProcessFieldExported.insert( "thermal-conductivity" );
-        if ( o == "density" || o == "all" ) this->M_postProcessFieldExported.insert( "density" );
-        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( "pid" );
-    }
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -598,32 +612,32 @@ HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
-    bool hasFieldToExport = this->updateExportedFields( M_exporter, time );
+    bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
         M_exporter->save();
 }
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 bool
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, double time )
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
 {
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    if ( this->hasPostProcessFieldExported( "temperature" ) )
+    if ( fields.find( "temperature" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
                                      this->fieldTemperature() );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "pid" ) )
+    if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
 
-    if ( this->hasPostProcessFieldExported( "velocity-convection" ) )
+    if ( fields.find( "velocity-convection" ) != fields.end() )
     {
         if ( ( M_doExportVelocityConvection || M_doExportAll ) && this->fieldVelocityConvectionIsOperational() )
         {
@@ -633,14 +647,14 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter,
             hasFieldToExport = true;
         }
     }
-    if ( this->hasPostProcessFieldExported( "thermal-conductivity" ) )
+    if ( fields.find( "thermal-conductivity" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"thermal-conductivity"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"thermal-conductivity")),
                                      this->thermalProperties()->fieldThermalConductivity() );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "density" ) )
+    if ( fields.find( "density" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"density"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),

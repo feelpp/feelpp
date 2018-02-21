@@ -243,16 +243,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string geoExportType="static";//change_coords_only, change, static
-    M_exporter = exporter( _mesh=this->mesh(),
-                           _name="Export",
-                           _geo=geoExportType,
-                           _path=this->exporterPath() );
+    std::string modelName = "thermo-electric";
+    auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
+    M_postProcessFieldExportedHeatTransfert = M_heatTransferModel->postProcessFieldExported( exportsFields, "heat-transfer" );
+    M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, "electric" );
 
-    if ( this->doRestart() && this->restartPath().empty() )
+    if ( !M_postProcessFieldExportedHeatTransfert.empty() || !M_postProcessFieldExportedElectric.empty() )
     {
-        if ( M_exporter->doExport() )
-            M_exporter->restart(this->timeInitial());
+        std::string geoExportType="static";//change_coords_only, change, static
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="Export",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
+
+        if ( this->doRestart() && this->restartPath().empty() )
+        {
+            if ( M_exporter->doExport() )
+                M_exporter->restart(this->timeInitial());
+        }
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
@@ -315,13 +323,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExportHeatTransfer = M_heatTransferModel->updateExportedFields( M_exporter,time );
-    bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,time );
+    bool hasFieldToExportHeatTransfer = M_heatTransferModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatTransfert,time );
+    bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
     if ( hasFieldToExportHeatTransfer || hasFieldToExportElectric )
         M_exporter->save();
 
-    M_heatTransferModel->exportMeasures( time );
-    M_electricModel->exportMeasures( time );
+    M_heatTransferModel->exportResults( time );
+    M_electricModel->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
