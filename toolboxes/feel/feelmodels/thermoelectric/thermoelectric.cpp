@@ -171,6 +171,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
                                                            this->subPrefix(), this->repository() ) );
+    if ( !M_heatTransferModel->modelPropertiesPtr() )
+        M_heatTransferModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatTransferModel->loadMesh( this->mesh() );
     M_heatTransferModel->init( useSubSolver );
     if ( M_solverName == "Linear" )
@@ -181,6 +183,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldComm(),
                                                    this->subPrefix(), this->repository() ) );
+    if ( !M_electricModel->modelPropertiesPtr() )
+        M_electricModel->setModelProperties( this->modelPropertiesPtr() );
     M_electricModel->setMesh( this->mesh() );
     M_electricModel->init( useSubSolver );
 
