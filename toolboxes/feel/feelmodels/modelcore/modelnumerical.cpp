@@ -75,8 +75,9 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
-        M_modelProps = std::make_shared<ModelProperties>( Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) ),
-                                                          this->repository().expr(), this->worldComm() );
+        std::string modelPropFilename = Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) );
+        if ( !modelPropFilename.empty() )
+            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldComm() );
     }
 
    void

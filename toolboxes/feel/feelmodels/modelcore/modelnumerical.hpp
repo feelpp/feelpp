@@ -106,8 +106,10 @@ class ModelNumerical : public ModelAlgebraic
         void setTimeFinal(double v)  { M_timeFinal=v; }
         void setTimeStep(double v)  { M_timeStep=v; }
 
+        std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
+        void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
         size_type rowStartInMatrix() const { return M_row_startInMatrix; }
