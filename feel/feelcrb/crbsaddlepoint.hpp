@@ -130,9 +130,10 @@ public:
 
     static self_ptrtype New( std::string const& name,
                              truth_model_ptrtype const& model,
-                             crb::stage stage = crb::stage::online )
+                             crb::stage stage = crb::stage::online,
+                             std::string const& prefixElt = "")
         {
-            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage ) );
+            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
             crb->init();
             return crb;
         }
@@ -147,8 +148,8 @@ protected:
 
     //! constructor from command line options
     CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model,
-                    crb::stage stage = crb::stage::online ) :
-        super( name, model, stage ),
+                    crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
+        super( name, model, stage, prefixExt ),
         M_N0(0),
         M_N1(0),
         M_addSupremizer(boption("crb.saddlepoint.add-supremizer")),
