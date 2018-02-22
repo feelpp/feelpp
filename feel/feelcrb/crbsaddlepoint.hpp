@@ -1728,12 +1728,20 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
-    // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
-    //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-    //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-    // else
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-        this->M_model->computeBetaQm( this->expansion( Un, Ncur ), mu );
+    if( this->M_model->isLinear() )
+    {
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+            this->M_model->computeBetaQm( mu );
+    }
+    else
+    {
+        // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+        //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+        //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+        // else
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+            this->M_model->computeBetaQm( this->expansion( Un, Ncur ), mu );
+    }
 
     beta_vector_type betaLhs = betaAqm;
     beta_vector_type betaRhs= betaFqm[0];
