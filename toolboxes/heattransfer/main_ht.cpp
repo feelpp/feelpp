@@ -5,7 +5,7 @@ int main(int argc, char**argv )
 {
     using namespace Feel;
 	po::options_description heattransferoptions( "heat-transfer options" );
-    heattransferoptions.add( feelmodels_options("heat-transfer") );
+    heattransferoptions.add( toolboxes_options("heat-transfer") );
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=heattransferoptions,
