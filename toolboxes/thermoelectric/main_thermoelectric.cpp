@@ -44,7 +44,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
     po::options_description thermoelectricoptions( "application thermo-electric options" );
-    thermoelectricoptions.add( feelmodels_options("thermo-electric") );
+    thermoelectricoptions.add( toolboxes_options("thermo-electric") );
     thermoelectricoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2,P3 ")
         ;
