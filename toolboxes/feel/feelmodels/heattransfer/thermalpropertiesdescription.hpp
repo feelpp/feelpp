@@ -4,263 +4,298 @@
 #define FEELPP_TOOLBOXES_THERMALPROPERTIES_DESCRIPTION_H 1
 
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-    template<class SpaceType>
-    class ThermalPropertiesDescription
-    {
-        typedef ThermalPropertiesDescription<SpaceType> self_type;
-    public :
-        typedef SpaceType space_type;
-        typedef boost::shared_ptr<SpaceType> space_ptrtype;
-        typedef typename SpaceType::element_type element_type;
-        typedef boost::shared_ptr<element_type> element_ptrtype;
-        typedef typename space_type::mesh_type mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+template<class SpaceType>
+class ThermalPropertiesDescription
+{
+    typedef ThermalPropertiesDescription<SpaceType> self_type;
+public :
+    typedef SpaceType space_type;
+    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef typename SpaceType::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-        static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
+    ThermalPropertiesDescription( std::string const& prefix )
+        :
+        M_thermalConductivityDefaultValue( doption(_name="thermal-conductivity",_prefix=prefix) ),// [ W/(m*K) ]
+        M_heatCapacityDefaultValue( doption(_name="heat-capacity",_prefix=prefix) ), // [ J/(kg*K) ]
+        M_rhoDefaultValue( doption(_name="rho",_prefix=prefix) ),
+        M_thermalExpansionDefaultValue( doption(_name="thermal-expansion",_prefix=prefix) ) // [ 1/K ]
+        {}
 
-        ThermalPropertiesDescription( std::string const& prefix )
+    ThermalPropertiesDescription( ThermalPropertiesDescription const& ) = default;
+
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+        {
+            std::set<std::string> eltMarkersInMesh;
+            for (auto const& markPair : mesh->markerNames() )
             {
-                M_cstThermalConductivity[self_type::defaultMaterialName()] = doption(_name="thermal-conductivity",_prefix=prefix);
-                M_cstHeatCapacity[self_type::defaultMaterialName()] = doption(_name="heat-capacity",_prefix=prefix);
-                M_cstRho[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);
-                M_cstThermalExpansion[self_type::defaultMaterialName()] = doption(_name="thermal-expansion",_prefix=prefix);
+                std::string meshMarker = markPair.first;
+                if ( mesh->hasElementMarker( meshMarker ) )
+                    eltMarkersInMesh.insert( meshMarker );
             }
 
-        ThermalPropertiesDescription( ThermalPropertiesDescription const& app  ) = default;
-
-        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+            std::map<std::string,std::set<std::string>> markersByMaterial;
+            M_markers.clear();
+            for( auto const& m : mats )
             {
-                std::set<std::string> eltMarkersInMesh;
-                for (auto const& markPair : mesh->markerNames() )
-                {
-                    std::string meshMarker = markPair.first;
-                    if ( mesh->hasElementMarker( meshMarker ) )
-                        eltMarkersInMesh.insert( meshMarker );
-                }
+                std::string const& matName = m.first;
+                auto const& mat = m.second;
+                if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfer","aerothermal","thermo-electric" } ) )
+                    continue;
 
-                M_markers.clear();
-                for( auto const& m : mats )
+                for ( std::string const& matmarker : mat.meshMarkers() )
                 {
-                    auto const& mat = m.second;
-                    if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfer","aerothermal","thermo-electric" } ) )
+                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
-
-                    for ( std::string const& matmarker : mat.meshMarkers() )
-                    {
-                        if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                            continue;
-                        M_markers.insert( matmarker );
-                    }
-                }
-
-                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-                if ( M_isDefinedOnWholeMesh )
-                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
-                else
-                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
-                M_fieldThermalConductivity = M_space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
-                M_fieldHeatCapacity = M_space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
-                M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
-                M_fieldThermalExpansion = M_space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
-
-                for( auto const& m : mats )
-                {
-                    auto const& mat = m.second;
-                    for ( std::string const& matmarker : mat.meshMarkers() )
-                    {
-                        if ( M_markers.find( matmarker ) == M_markers.end() )
-                            continue;
-
-                        if ( mat.hasPropertyExprScalar("rho") )
-                            this->setRho( mat.propertyExprScalar("rho"),matmarker );
-                        else
-                            this->setCstRho( mat.propertyConstant("rho"), matmarker );
-
-                        if ( mat.hasPropertyExprScalar("k11") )
-                            this->setThermalConductivity( mat.propertyExprScalar("k11"),matmarker );
-                        else
-                            this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
-
-                        if ( mat.hasPropertyExprScalar("Cp") )
-                            this->setHeatCapacity( mat.propertyExprScalar("Cp"),matmarker );
-                        else
-                            this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
-
-                        if ( mat.hasPropertyExprScalar("beta") )
-                            this->setThermalExpansion( mat.propertyExprScalar("beta"),matmarker );
-                        else
-                            this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
-                    }
+                    M_markers.insert( matmarker );
+                    markersByMaterial[matName].insert( matmarker );
                 }
             }
 
-        double cstThermalConductivity( std::string const& marker = "" ) const
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            auto itFindMarker = M_cstThermalConductivity.find( markerUsed );
-            CHECK( itFindMarker != M_cstThermalConductivity.end() ) << "invalid marker not registered " << markerUsed;
-            return itFindMarker->second;
-        }
-        double cstHeatCapacity( std::string const& marker = "" ) const
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            auto itFindMarker = M_cstHeatCapacity.find( markerUsed );
-            CHECK( itFindMarker != M_cstHeatCapacity.end() ) << "invalid marker not registered " << markerUsed;
-            return itFindMarker->second;
-        }
-        double cstRho( std::string const& marker = "" ) const
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            auto itFindMarker = M_cstRho.find( markerUsed );
-            CHECK( itFindMarker != M_cstRho.end() ) << "invalid marker not registered " << markerUsed;
-            return itFindMarker->second;
-        }
-        double cstThermalExpansion( std::string const& marker = "" ) const
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            auto itFindMarker = M_cstThermalExpansion.find( markerUsed );
-            CHECK( itFindMarker != M_cstThermalExpansion.end() ) << "invalid marker not registered " << markerUsed;
-            return itFindMarker->second;
+            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+            if ( M_isDefinedOnWholeMesh )
+                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+            else
+                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+            M_fieldThermalConductivity = M_space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
+            M_fieldHeatCapacity = M_space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
+            M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
+            M_fieldThermalExpansion = M_space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
+
+            for( auto const& m : mats )
+            {
+                std::string const& matName = m.first;
+                auto const& mat = m.second;
+                auto itFindMat = markersByMaterial.find( matName );
+                if ( itFindMat == markersByMaterial.end() )
+                    continue;
+                if ( itFindMat->second.empty() )
+                    continue;
+                auto const& matmarkers = itFindMat->second;
+                auto range = markedelements( mesh,matmarkers );
+                M_rangeMeshElementsByMaterial[matName] = range;
+
+                if ( mat.hasPropertyExprScalar("k11") )
+                {
+                    auto const& expr = mat.propertyExprScalar("k11");
+                    M_thermalConductivityByMaterial[matName].setExpr( expr );
+                    M_thermalConductivityByMaterial[matName].setValue( 0 );//TODO
+                    M_fieldThermalConductivity->on(_range=range,_expr=expr);
+                }
+                else
+                {
+                    double value = mat.propertyConstant("k11");
+                    M_thermalConductivityByMaterial[matName].setValue( value );
+                    M_fieldThermalConductivity->on(_range=range,_expr=cst(value));
+                }
+
+                if ( mat.hasPropertyExprScalar("rho") )
+                {
+                    auto const& expr = mat.propertyExprScalar("rho");
+                    M_rhoByMaterial[matName].setExpr( expr );
+                    M_rhoByMaterial[matName].setValue( 0 );//TODO
+                    M_fieldRho->on(_range=range,_expr=expr);
+                }
+                else
+                {
+                    double value = mat.propertyConstant("rho");
+                    M_rhoByMaterial[matName].setValue( value );
+                    M_fieldRho->on(_range=range,_expr=cst(value));
+                }
+
+                if ( mat.hasPropertyExprScalar("Cp") )
+                {
+                    auto const& expr = mat.propertyExprScalar("Cp");
+                    M_heatCapacityByMaterial[matName].setExpr( expr );
+                    M_heatCapacityByMaterial[matName].setValue( 0 );//TODO
+                    M_fieldHeatCapacity->on(_range=range,_expr=expr);
+                }
+                else
+                {
+                    double value = mat.propertyConstant("Cp");
+                    M_heatCapacityByMaterial[matName].setValue( value );
+                    M_fieldHeatCapacity->on(_range=range,_expr=cst(value));
+                }
+
+                if ( mat.hasPropertyExprScalar("beta") )
+                {
+                    auto const& expr = mat.propertyExprScalar("beta");
+                    M_thermalExpansionByMaterial[matName].setExpr( expr );
+                    M_thermalExpansionByMaterial[matName].setValue( 0 );//TODO
+                    M_fieldThermalExpansion->on(_range=range,_expr=expr);
+                }
+                else
+                {
+                    double value = mat.propertyConstant("beta");
+                    M_thermalExpansionByMaterial[matName].setValue( value );
+                    M_fieldThermalExpansion->on(_range=range,_expr=cst(value));
+                }
+            }
         }
 
-        std::set<std::string> const& markers() const { return M_markers; }
+    std::set<std::string> const& markers() const { return M_markers; }
 
-        bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
+    bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
-        element_type const& fieldThermalConductivity() const { return *M_fieldThermalConductivity; }
-        element_type const& fieldHeatCapacity() const { return *M_fieldHeatCapacity; }
-        element_type const& fieldRho() const { return *M_fieldRho; }
-        element_type const& fieldThermalExpansion() const { return *M_fieldThermalExpansion; }
-        element_ptrtype const& fieldThermalConductivityPtr() const { return M_fieldThermalConductivity; }
-        element_ptrtype const& fieldHeatCapacityPtr() const { return M_fieldHeatCapacity; }
-        element_ptrtype const& fieldRhoPtr() const { return M_fieldRho; }
-        element_ptrtype const& fieldThermalExpansionPtr() const { return M_fieldThermalExpansion; }
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
 
-        void setCstThermalConductivity( double val, std::string const& marker = "", bool update = true )
+    bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
+
+    element_type const& fieldThermalConductivity() const { return *M_fieldThermalConductivity; }
+    element_type const& fieldHeatCapacity() const { return *M_fieldHeatCapacity; }
+    element_type const& fieldRho() const { return *M_fieldRho; }
+    element_type const& fieldThermalExpansion() const { return *M_fieldThermalExpansion; }
+    element_ptrtype const& fieldThermalConductivityPtr() const { return M_fieldThermalConductivity; }
+    element_ptrtype const& fieldHeatCapacityPtr() const { return M_fieldHeatCapacity; }
+    element_ptrtype const& fieldRhoPtr() const { return M_fieldRho; }
+    element_ptrtype const& fieldThermalExpansionPtr() const { return M_fieldThermalExpansion; }
+
+    // thermal conductivity
+    bool hasThermalConductivity( std::string const& matName ) const
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            M_cstThermalConductivity[markerUsed]=val;
-            if ( update )
-                this->updateThermalConductivity( cst(val), marker );
+            return M_thermalConductivityByMaterial.find( matName ) != M_thermalConductivityByMaterial.end();
         }
-        void setCstHeatCapacity( double val, std::string const& marker = "", bool update = true )
+    ModelExpressionScalar const& thermalConductivity( std::string const& matName ) const
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            M_cstHeatCapacity[markerUsed]=val;
-            if ( update )
-                this->updateHeatCapacity( cst(val), marker );
+            CHECK( this->hasThermalConductivity( matName ) ) << "material name not registered : " << matName;
+            return M_thermalConductivityByMaterial.find( matName )->second;
         }
-        void setCstRho( double val, std::string const& marker = "", bool update = true )
+    double cstThermalConductivity( std::string const& matName = "" ) const
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            M_cstRho[markerUsed]=val;
-            if ( update )
-                this->updateRho( vf::cst(val), marker );
+            if ( matName.empty() )
+            {
+                if ( M_thermalConductivityByMaterial.empty() )
+                    return M_thermalConductivityDefaultValue;
+                else
+                    return M_thermalConductivityByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_thermalConductivityByMaterial.find( matName );
+            CHECK( itFindMat != M_thermalConductivityByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
         }
-        void setCstThermalExpansion( double val, std::string const& marker = "", bool update = true )
+    // rho
+    bool hasRho( std::string const& matName ) const
         {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            M_cstThermalExpansion[markerUsed]=val;
-            if ( update )
-                this->updateThermalExpansion( vf::cst(val), marker );
+            return M_rhoByMaterial.find( matName ) != M_rhoByMaterial.end();
+        }
+    ModelExpressionScalar const& rho( std::string const& matName ) const
+        {
+            CHECK( this->hasRho( matName ) ) << "material name not registered : " << matName;
+            return M_rhoByMaterial.find( matName )->second;
+        }
+    double cstRho( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_rhoByMaterial.empty() )
+                    return M_rhoDefaultValue;
+                else
+                    return M_rhoByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_rhoByMaterial.find( matName );
+            CHECK( itFindMat != M_rhoByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
+        }
+    // heat capacity
+    bool hasHeatCapacity( std::string const& matName ) const
+        {
+            return M_heatCapacityByMaterial.find( matName ) != M_heatCapacityByMaterial.end();
+        }
+    ModelExpressionScalar const& heatCapacity( std::string const& matName ) const
+        {
+            CHECK( this->hasHeatCapacity( matName ) ) << "material name not registered : " << matName;
+            return M_heatCapacityByMaterial.find( matName )->second;
+        }
+    double cstHeatCapacity( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_heatCapacityByMaterial.empty() )
+                    return M_heatCapacityDefaultValue;
+                else
+                    return M_heatCapacityByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_heatCapacityByMaterial.find( matName );
+            CHECK( itFindMat != M_heatCapacityByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
+        }
+    // thermal expansion
+    bool hasThermalExpansion( std::string const& matName ) const
+        {
+            return M_thermalExpansionByMaterial.find( matName ) != M_thermalExpansionByMaterial.end();
+        }
+    ModelExpressionScalar const& thermalExpansion( std::string const& matName ) const
+        {
+            CHECK( this->hasThermalExpansion( matName ) ) << "material name not registered : " << matName;
+            return M_thermalExpansionByMaterial.find( matName )->second;
+        }
+    double cstThermalExpansion( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_thermalExpansionByMaterial.empty() )
+                    return M_thermalExpansionDefaultValue;
+                else
+                    return M_thermalExpansionByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_thermalExpansionByMaterial.find( matName );
+            CHECK( itFindMat != M_thermalExpansionByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
         }
 
-        template < typename ExprT >
-        void setThermalConductivity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
-        {
-            this->updateThermalConductivity( vfexpr,marker);
-            if ( M_fieldThermalConductivity )
-                this->setCstThermalConductivity( M_fieldThermalConductivity->min(), marker, false );
-        }
-        template < typename ExprT >
-        void updateThermalConductivity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
-        {
-            if ( !M_fieldThermalConductivity ) return;
-            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
-            M_fieldThermalConductivity->on(_range=rangeEltUsed,_expr=__expr);
-        }
 
-        template < typename ExprT >
-        void setHeatCapacity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
-        {
-            this->updateHeatCapacity( vfexpr,marker);
-            if ( M_fieldHeatCapacity )
-                this->setCstHeatCapacity( M_fieldHeatCapacity->min(), marker, false );
-        }
-        template < typename ExprT >
-        void updateHeatCapacity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
-        {
-            if ( !M_fieldHeatCapacity ) return;
-            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
-            M_fieldHeatCapacity->on(_range=rangeEltUsed,_expr=__expr);
-        }
-
-        template < typename ExprT >
-        void setRho( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
-        {
-            this->updateRho( vfexpr,marker);
-            if ( M_fieldRho )
-                this->setCstRho( M_fieldRho->min(), marker, false );
-        }
-        template < typename ExprT >
-        void updateRho(vf::Expr<ExprT> const& __expr, std::string const& marker = "")
-        {
-            if ( !M_fieldRho ) return;
-            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
-            M_fieldRho->on(_range=rangeEltUsed,_expr=__expr);
-        }
-
-        template < typename ExprT >
-        void setThermalExpansion( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
-        {
-            this->updateThermalExpansion( vfexpr,marker);
-            if ( M_fieldThermalExpansion )
-                this->setCstThermalExpansion( M_fieldRho->min(), marker, false );
-        }
-        template < typename ExprT >
-        void updateThermalExpansion(vf::Expr<ExprT> const& __expr, std::string const& marker = "")
-        {
-            if ( !M_fieldThermalExpansion ) return;
-            auto rangeEltUsed = ( marker.empty() )? elements( M_space->mesh()) : markedelements( M_space->mesh(),marker );
-            M_fieldThermalExpansion->on(_range=rangeEltUsed,_expr=__expr);
-        }
-
-        boost::shared_ptr<std::ostringstream>
-        getInfoMaterialParameters() const
+    boost::shared_ptr<std::ostringstream>
+    getInfoMaterialParameters() const
         {
             boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
             *ostr << "\n   Materials parameters";
-            std::set<std::string> matmarkerset = this->markers();
-            if (  matmarkerset.empty() ) matmarkerset.insert(std::string(""));
-            *ostr << "\n     -- number of materials : " << matmarkerset.size();
-            for ( std::string const& matmarker : matmarkerset)
+            *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();
+            for ( auto const& matRange : M_rangeMeshElementsByMaterial)
             {
-                std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
-                *ostr << "\n     -- " << matmarkertag << "rho : " << this->cstRho(matmarker)
-                      << "\n     -- " << matmarkertag << "thermal conductivity : " << this->cstThermalConductivity(matmarker)
-                      << "\n     -- " << matmarkertag << "heat capacity : " << this->cstHeatCapacity(matmarker)
-                      << "\n     -- " << matmarkertag << "thermal expansion : " << this->cstThermalExpansion(matmarker);
+                std::string const& matName = matRange.first;
+                *ostr << "\n     -- [" << matName << "] rho : ";
+                if ( this->rho(matName).isConstant() )
+                    *ostr << this->rho(matName).value();
+                else
+                    *ostr << str( this->rho(matName).expr().expression() );
+                *ostr << "\n     -- [" << matName << "] thermal conductivity : ";
+                if ( this->thermalConductivity(matName).isConstant() )
+                    *ostr << this->thermalConductivity(matName).value();
+                else
+                    *ostr << str( this->thermalConductivity(matName).expr().expression() );
+                *ostr << "\n     -- [" << matName << "] heat capacity : ";
+                if ( this->heatCapacity(matName).isConstant() )
+                    *ostr << this->heatCapacity(matName).value();
+                else
+                    *ostr << str( this->heatCapacity(matName).expr().expression() );
+                *ostr << "\n     -- [" << matName << "] thermal expansion : ";
+                if ( this->thermalExpansion(matName).isConstant() )
+                    *ostr << this->thermalExpansion(matName).value();
+                else
+                    *ostr << str( this->thermalExpansion(matName).expr().expression() );
             }
             return ostr;
         }
 
-    private :
-        std::map<std::string,double> M_cstThermalConductivity;// [ W/(m*K) ]
-        std::map<std::string,double> M_cstHeatCapacity;// [ J/(kg*K) ]
-        std::map<std::string,double> M_cstRho;
-        std::map<std::string,double> M_cstThermalExpansion;// [ 1/K ]
-        std::set<std::string> M_markers;
-        bool M_isDefinedOnWholeMesh;
-        space_ptrtype M_space;
-        element_ptrtype M_fieldThermalConductivity, M_fieldHeatCapacity, M_fieldRho;
-        element_ptrtype M_fieldThermalExpansion;
-    };
+private :
+    std::set<std::string> M_markers;
+    bool M_isDefinedOnWholeMesh;
+    space_ptrtype M_space;
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+
+    std::map<std::string, ModelExpressionScalar> M_thermalConductivityByMaterial, M_heatCapacityByMaterial, M_rhoByMaterial, M_thermalExpansionByMaterial;
+    element_ptrtype M_fieldThermalConductivity, M_fieldHeatCapacity, M_fieldRho, M_fieldThermalExpansion;
+    double M_thermalConductivityDefaultValue, M_heatCapacityDefaultValue, M_rhoDefaultValue, M_thermalExpansionDefaultValue;
+};
 
 
 } // namespace FeelModels
