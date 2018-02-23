@@ -28,7 +28,6 @@
 
 namespace Feel
 {
-Feel::po::options_description envfeelmodels_options(std::string const& prefix);
 Feel::po::options_description modelbase_options(std::string const& prefix);
 Feel::po::options_description modelalgebraic_options(std::string const& prefix);
 Feel::po::options_description modelnumerical_options(std::string const& prefix);
@@ -38,7 +37,7 @@ Feel::po::options_description alemesh_options(std::string const& prefix="fsi");
 Feel::po::options_description fluidStructInteraction_options(std::string const& prefix);
 Feel::po::options_description heatTransfer_options(std::string const& prefix="heat-transfer");
 
-Feel::po::options_description feelmodels_options(std::string type);
+Feel::po::options_description toolboxes_options(std::string const& type);
 
 }
 #endif /* FEELMODELS_OPTIONS_HPP */
