@@ -104,9 +104,7 @@ ModelMaterial::hasPropertyConstant( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    if ( !std::get<0>( matProp ) )
-        return false;
-    return true;
+    return matProp.hasValue();
 }
 bool
 ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
@@ -115,9 +113,7 @@ ModelMaterial::hasPropertyExprScalar( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    if ( !std::get<1>( matProp ) )
-        return false;
-    return true;
+    return matProp.hasExprScalar();
 }
 bool
 ModelMaterial::hasPropertyExprVectorial2( std::string const& prop ) const
@@ -126,9 +122,7 @@ ModelMaterial::hasPropertyExprVectorial2( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    if ( !std::get<2>( matProp ) )
-        return false;
-    return true;
+    return matProp.hasExprVectorial2();
 }
 bool
 ModelMaterial::hasPropertyExprVectorial3( std::string const& prop ) const
@@ -137,15 +131,13 @@ ModelMaterial::hasPropertyExprVectorial3( std::string const& prop ) const
     if ( itFindProp == M_materialProperties.end() )
         return false;
     auto const& matProp = itFindProp->second;
-    if ( !std::get<3>( matProp ) )
-        return false;
-    return true;
+    return matProp.hasExprVectorial3();
 }
 double
 ModelMaterial::propertyConstant( std::string const& prop ) const
 {
     if ( this->hasPropertyConstant( prop ) )
-        return *std::get<0>( M_materialProperties.find( prop )->second );
+        return M_materialProperties.find( prop )->second.value();
     else
         return 0;
 }
@@ -153,26 +145,26 @@ ModelMaterial::expr_scalar_type const&
 ModelMaterial::propertyExprScalar( std::string const& prop ) const
 {
     CHECK( this->hasPropertyExprScalar( prop ) ) << "no scalar expr";
-    return *std::get<1>( M_materialProperties.find( prop )->second );
+    return M_materialProperties.find( prop )->second.exprScalar();
 }
 ModelMaterial::expr_vectorial2_type const&
 ModelMaterial::propertyExprVectorial2( std::string const& prop ) const
 {
     CHECK( this->hasPropertyExprVectorial2( prop ) ) << "no vectorial2 expr";
-    return *std::get<2>( M_materialProperties.find( prop )->second );
+    return M_materialProperties.find( prop )->second.exprVectorial2();
 }
 ModelMaterial::expr_vectorial3_type const&
 ModelMaterial::propertyExprVectorial3( std::string const& prop ) const
 {
     CHECK( this->hasPropertyExprVectorial3( prop ) ) << "no vectorial3 expr";
-    return *std::get<3>( M_materialProperties.find( prop )->second );
+    return M_materialProperties.find( prop )->second.exprVectorial3();
 }
 
 void
 ModelMaterial::setProperty( std::string const& property, double val )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    std::get<0>( M_materialProperties[property] ) = val;
+    M_materialProperties[property].setValue( val );
 }
 
 void
@@ -183,7 +175,7 @@ ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
         double val = *itvald;
         VLOG(1) << "set property " << property << " is constant : " << val;
         M_materialProperties[property] = mat_property_expr_type();
-        std::get<0>( M_materialProperties[property] ) = val;
+        M_materialProperties[property].setValue( val );
     }
     else if( boost::optional<std::string> itvals = p.get_optional<std::string>( property ) )
     {
@@ -211,19 +203,18 @@ ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
             }
             VLOG(1) << "set property " << property <<" is const from expr=" << val;
             M_materialProperties[property] = mat_property_expr_type();
-            std::get<0>(M_materialProperties[property]) = val;
+            M_materialProperties[property].setValue( val );
         }
         else
         {
             VLOG(1) << "set property " << property << " build symbolic expr with nComp=" << nComp;
             M_materialProperties[property] = mat_property_expr_type();
             if ( nComp == 1 )
-                std::get<1>( M_materialProperties[property] ) = boost::optional<expr_scalar_type>( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+                M_materialProperties[property].setExprScalar( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
             else if ( nComp == 2 )
-                std::get<2>( M_materialProperties[property] ) = boost::optional<expr_vectorial2_type>( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+                M_materialProperties[property].setExprVectorial2( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
             else if ( nComp == 3 )
-                std::get<3>( M_materialProperties[property] ) = boost::optional<expr_vectorial3_type>( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-
+                M_materialProperties[property].setExprVectorial3( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
         }
     }
 }
@@ -233,13 +224,7 @@ ModelMaterial::setParameterValues( std::map<std::string,double> const& mp )
 {
     for ( auto & matPropPair : M_materialProperties )
     {
-        std::string const& matPropName = matPropPair.first;
-        if ( this->hasPropertyExprScalar( matPropName ) )
-            std::get<1>( matPropPair.second )->setParameterValues( mp );
-        if ( this->hasPropertyExprVectorial2( matPropName ) )
-            std::get<2>( matPropPair.second )->setParameterValues( mp );
-        if ( this->hasPropertyExprVectorial3( matPropName ) )
-            std::get<3>( matPropPair.second )->setParameterValues( mp );
+        matPropPair.second.setParameterValues( mp );
     }
 }
 

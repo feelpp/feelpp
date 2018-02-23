@@ -26,10 +26,8 @@
 
 
 #include <vector>
-#include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/ginac.hpp>
-
 #include <boost/property_tree/ptree.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel {
 
@@ -37,11 +35,11 @@ namespace pt =  boost::property_tree;
 
 struct FEELPP_EXPORT ModelMaterial
 {
-    static const uint16_type expr_order = 2;
-    typedef scalar_field_expression<expr_order> expr_scalar_type;
-    typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
-    typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
-    typedef std::tuple< boost::optional<double>, boost::optional<expr_scalar_type>, boost::optional<expr_vectorial2_type>,boost::optional<expr_vectorial3_type> > mat_property_expr_type;
+    typedef ModelExpression mat_property_expr_type;
+    static const uint16_type expr_order = mat_property_expr_type::expr_order;
+    typedef mat_property_expr_type::expr_scalar_type expr_scalar_type;
+    typedef mat_property_expr_type::expr_vectorial2_type expr_vectorial2_type;
+    typedef mat_property_expr_type::expr_vectorial3_type expr_vectorial3_type;
 
     ModelMaterial( WorldComm const& worldComm = Environment::worldComm() );
     ModelMaterial( ModelMaterial const& ) = default;
