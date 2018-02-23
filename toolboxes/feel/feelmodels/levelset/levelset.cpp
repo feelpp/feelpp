@@ -383,6 +383,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
         this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
         hasMeasureToExport = true;
     }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Position_COM ) )
+    {
+        auto com = this->positionCOM();
+        std::vector<double> vecCOM = { com(0,0) };
+        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
+        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
+        hasMeasureToExport = true;
+    }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Velocity_COM ) )
+    {
+        auto ucom = this->velocityCOM();
+        std::vector<double> vecUCOM = { ucom(0,0) };
+        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
+        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        hasMeasureToExport = true;
+    }
 
     if ( hasMeasureToExport )
     {
@@ -853,6 +871,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
                 this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
             if( o == "perimeter" || o == "all" )
                 this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Perimeter );
+            if( o == "position_com" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Position_COM );
+            if( o == "velocity_com" || o == "all" )
+                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Velocity_COM );
         }
     }
 
@@ -2399,6 +2421,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
         this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
         hasMeasureToExport = true;
     }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Position_COM ) )
+    {
+        auto com = this->positionCOM();
+        std::vector<double> vecCOM = { com(0,0) };
+        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
+        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
+        hasMeasureToExport = true;
+    }
+    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Velocity_COM ) )
+    {
+        auto ucom = this->velocityCOM();
+        std::vector<double> vecUCOM = { ucom(0,0) };
+        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
+        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        hasMeasureToExport = true;
+    }
 
     if( hasMeasureToExport )
     {
@@ -2447,6 +2487,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::perimeter() const
             ).evaluate()(0,0);
 
     return perimeter;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+auto
+LEVELSET_CLASS_TEMPLATE_TYPE::positionCOM() const
+{
+    auto com = integrate( 
+            _range=elements(this->mesh()), 
+            _expr=vf::P() * (1.-idv(this->H()))
+            ).evaluate();
+    com = com / this->volume();
+
+    return com;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+auto
+LEVELSET_CLASS_TEMPLATE_TYPE::velocityCOM() const
+{
+    auto ucom = integrate( 
+            _range=elements(this->mesh()), 
+            _expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
+            ).evaluate();
+    ucom /= this->volume();
+
+    return ucom;
 }
 
 //----------------------------------------------------------------------------//

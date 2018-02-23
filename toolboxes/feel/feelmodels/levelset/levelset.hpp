@@ -84,7 +84,7 @@ enum class LevelSetReinitMethod {FM, HJ};
 
 enum class LevelSetMeasuresExported
 {
-    Volume, Perimeter
+    Volume, Perimeter, Position_COM, Velocity_COM
 };
 enum class LevelSetFieldsExported
 {
@@ -527,6 +527,8 @@ public:
     // Physical quantities
     double volume() const;
     double perimeter() const;
+    auto positionCOM() const;
+    auto velocityCOM() const;
 
     //--------------------------------------------------------------------//
     // Utility functions
