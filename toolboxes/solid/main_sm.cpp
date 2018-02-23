@@ -135,7 +135,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 	po::options_description solidmecoptions( "application solid-mechanics options" );
-    solidmecoptions.add( feelmodels_options("solid") );
+    solidmecoptions.add( toolboxes_options("solid") );
     solidmecoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2 ")
         ("save-solution", Feel::po::value<bool>()->default_value(true), "save-solution")
