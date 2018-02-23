@@ -1,0 +1,27 @@
+{
+    "Name": "Drop3d",
+    "ShortName": "Drop3d",
+    "Model": "Navier-Stokes",
+
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Bottom":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Side":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    }
+}
