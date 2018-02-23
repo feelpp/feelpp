@@ -28,24 +28,6 @@
 namespace Feel
 {
 
-Feel::po::options_description envfeelmodels_options(std::string const& prefix)
-{
-    Feel::po::options_description envfsiOptions("Env FSI options");
-    envfsiOptions.add_options()
-        (prefixvm(prefix,"verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "true or false to view verbose")
-        (prefixvm(prefix,"evalpt-path").c_str(), Feel::po::value< std::string >(), "path of file containing set of point to evaluate")
-        (prefixvm(prefix,"comm.useNonStandartCompositeSpace").c_str(), Feel::po::value< bool >()->default_value( false ), "try old build of composite space")
-        (prefixvm(prefix,"rebuildOnlyAMeshPartion").c_str(), Feel::po::value< bool >()->default_value( false ), "only rebuild a mesh partition")
-        ;
-    envfsiOptions.add( Feel::gmsh_options("meshpartitioning") );
-    envfsiOptions.add_options()
-        (prefixvm(prefix,"meshpartitioning.gmsh.outputfilename").c_str(), Feel::po::value< std::string >(), "filename of partitioned mesh")
-        (prefixvm(prefix,"meshpartitioning.gmsh.partitions").c_str(), Feel::po::value< int >(), "number of partition")
-        ;
-
-    return envfsiOptions;
-}
-
 Feel::po::options_description modelbase_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
@@ -363,11 +345,7 @@ Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
 {
     Feel::po::options_description thermoElectricOptions("ThermoElectric options");
-    thermoElectricOptions.add_options()
-        // (prefixvm(prefix,"electric.electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
-        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
-        ;
-    thermoElectricOptions.add( heatTransfer_options( prefixvm(prefix,"thermo") ) );
+    thermoElectricOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
     thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
@@ -582,36 +560,33 @@ alemesh_options(std::string const& prefix)
 
 
 Feel::po::options_description
-feelmodels_options(std::string type)
+toolboxes_options(std::string const& type)
 {
-    Feel::po::options_description FSIoptions("FSI options");
-
-    FSIoptions.add( envfeelmodels_options("master") );
+    Feel::po::options_description toolboxesOptions("toolboxes options");
 
     if (type == "fluid")
-        FSIoptions.add(fluidMechanics_options("fluid"));
+        toolboxesOptions.add(fluidMechanics_options("fluid"));
     else if (type == "solid")
-        FSIoptions.add(solidMechanics_options("solid"));
+        toolboxesOptions.add(solidMechanics_options("solid"));
     else if ( type == "heat-transfer" )
-        FSIoptions.add( heatTransfer_options("heat-transfer") );
+        toolboxesOptions.add( heatTransfer_options("heat-transfer") );
     else if (type == "fsi")
-        FSIoptions
+        toolboxesOptions
             .add(fluidMechanics_options("fluid"))
             .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
     else if (type == "advection")
-        FSIoptions.add(advection_options("advection"));
+        toolboxesOptions.add(advection_options("advection"));
     else if (type == "levelset")
-        FSIoptions.add(levelset_options("levelset"));
+        toolboxesOptions.add(levelset_options("levelset"));
     else if (type == "multifluid")
-        FSIoptions.add(multifluid_options("multifluid"));
+        toolboxesOptions.add(multifluid_options("multifluid"));
     else if (type == "thermo-electric")
-        FSIoptions.add(thermoElectric_options("thermo-electric"));
+        toolboxesOptions.add(thermoElectric_options("thermo-electric"));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat-transfer, fsi, advection, levelset, multifluid, thermo-electric";
 
-    return FSIoptions
-        .add( Feel::feel_options() );
+    return toolboxesOptions;
 }
 
 

@@ -169,7 +169,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     bool useSubSolver = (M_solverName == "Linear");
 
-    M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"thermo"), false, this->worldComm(),
+    M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatTransferModel->modelPropertiesPtr() )
         M_heatTransferModel->setModelProperties( this->modelPropertiesPtr() );
