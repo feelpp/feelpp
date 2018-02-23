@@ -245,6 +245,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> co
             res.insert( "electric-potential" );
         if ( o == prefixvm(prefix,"electric-field") || o == prefixvm(prefix,"all") )
             res.insert( "electric-field" );
+        if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
+            res.insert( "conductivity" );
         if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
             res.insert( "pid" );
     }
@@ -372,6 +374,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
                                      *M_fieldElectricField );
         hasFieldToExport = true;
     }
+    if ( fields.find( "conductivity" ) != fields.end() )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"conductivity"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"conductivity")),
+                                     M_electricProperties->fieldElectricConductivity() );
+        hasFieldToExport = true;
+    }
     if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
@@ -470,13 +479,31 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
     //--------------------------------------------------------------------------------------------------//
 
-    auto sigma = idv(M_electricProperties->fieldElectricConductivity());
     if ( buildCstPart )
     {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= sigma*inner(gradt(v),grad(v)),
-                       _geomap=this->geomap() );
+        for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+            if ( electricConductivity.isConstant() )
+            {
+                double sigma = electricConductivity.value();
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto sigma = electricConductivity.expr();
+                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     // update source term
@@ -554,13 +581,34 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                                               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-    auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-    if ( buildCstPart )
+    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
     {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= sigma*inner(gradt(v),grad(v)),
-                       _geomap=this->geomap() );
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            if ( buildCstPart )
+            {
+                double sigma = electricConductivity.value();
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if ( buildCstPart )
+            {
+                auto sigma = electricConductivity.expr();
+                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     this->updateBCWeakJacobian( v,J,buildCstPart );
@@ -651,15 +699,36 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
 
-    auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-    if (!buildCstPart && !UseJacobianLinearTerms )
-    {
-        myLinearForm +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= sigma*inner(gradv(v),grad(v)),
-                       _geomap=this->geomap() );
-    }
 
+    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            if (!buildCstPart && !UseJacobianLinearTerms )
+            {
+                double sigma = electricConductivity.value();
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradv(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if (!buildCstPart && !UseJacobianLinearTerms )
+            {
+                auto sigma = electricConductivity.expr();
+                //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradv(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+    }
     // source term
     if ( buildCstPart )
     {

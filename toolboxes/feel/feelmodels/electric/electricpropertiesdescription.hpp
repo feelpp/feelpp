@@ -4,153 +4,164 @@
 #define FEELPP_MODELS_ELECTRICPROPERTIES_DESCRIPTION_H 1
 
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-    template<class SpaceType>
-    class ElectricPropertiesDescription
-    {
-        typedef ElectricPropertiesDescription<SpaceType> self_type;
-    public :
-        typedef SpaceType space_type;
-        typedef boost::shared_ptr<SpaceType> space_ptrtype;
-        typedef typename SpaceType::element_type element_type;
-        typedef boost::shared_ptr<element_type> element_ptrtype;
-        typedef typename space_type::mesh_type mesh_type;
-        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+template<class SpaceType>
+class ElectricPropertiesDescription
+{
+    typedef ElectricPropertiesDescription<SpaceType> self_type;
+public :
+    typedef SpaceType space_type;
+    typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef typename SpaceType::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-        static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
+    ElectricPropertiesDescription( std::string const& prefix )
+        :
+        M_isDefinedOnWholeMesh( true ),
+        M_electricConductivityDefaultValue( doption(_name="electric-conductivity",_prefix=prefix) )
+        {}
 
-        ElectricPropertiesDescription( std::string const& prefix )
-            :
-            M_isDefinedOnWholeMesh( true )
+    ElectricPropertiesDescription( ElectricPropertiesDescription const& ) = default;
+
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+        {
+            std::set<std::string> eltMarkersInMesh;
+            for (auto const& markPair : mesh->markerNames() )
             {
-                M_cstElectricConductivity[self_type::defaultMaterialName()] = doption(_name="electric-conductivity",_prefix=prefix);
+                std::string meshMarker = markPair.first;
+                if ( mesh->hasElementMarker( meshMarker ) )
+                    eltMarkersInMesh.insert( meshMarker );
             }
 
-        ElectricPropertiesDescription( ElectricPropertiesDescription const& app ) = default;
-
-        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+            std::map<std::string,std::set<std::string>> markersByMaterial;
+            M_markers.clear();
+            for( auto const& m : mats )
             {
-                std::set<std::string> eltMarkersInMesh;
-                for (auto const& markPair : mesh->markerNames() )
-                {
-                    std::string meshMarker = markPair.first;
-                    if ( mesh->hasElementMarker( meshMarker ) )
-                        eltMarkersInMesh.insert( meshMarker );
-                }
+                std::string const& matName = m.first;
+                auto const& mat = m.second;
+                if ( mat.hasPhysics() && !mat.hasPhysics( { "electric","thermo-electric" } ) )
+                    continue;
 
-                M_markers.clear();
-                for( auto const& m : mats )
+                for ( std::string const& matmarker : mat.meshMarkers() )
                 {
-                    auto const& mat = m.second;
-                    if ( mat.hasPhysics() && !mat.hasPhysics( { "electric","thermo-electric" } ) )
+                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
-
-                    for ( std::string const& matmarker : mat.meshMarkers() )
-                    {
-                        if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                            continue;
-                        M_markers.insert( matmarker );
-                    }
-                }
-
-                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-                if ( M_isDefinedOnWholeMesh )
-                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
-                else
-                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
-                M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
-
-                for( auto const& m : mats )
-                {
-                    auto const& mat = m.second;
-                    for ( std::string const& matmarker : mat.meshMarkers() )
-                    {
-                        if ( M_markers.find( matmarker ) == M_markers.end() )
-                            continue;
-
-                        if ( mat.hasPropertyExprScalar("sigma") )
-                            this->setElectricConductivity( mat.propertyExprScalar("sigma"),matmarker );
-                        else
-                            this->setCstElectricConductivity( mat.propertyConstant("sigma"), matmarker );
-                    }
+                    M_markers.insert( matmarker );
+                    markersByMaterial[matName].insert( matmarker );
                 }
             }
 
-        double cstElectricConductivity( std::string const& marker = "" ) const
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            auto itFindMarker = M_cstElectricConductivity.find( markerUsed );
-            CHECK( itFindMarker != M_cstElectricConductivity.end() ) << "invalid marker not registered " << markerUsed;
-            return itFindMarker->second;
-        }
+            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+            if ( M_isDefinedOnWholeMesh )
+                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+            else
+                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+            M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
 
-        std::set<std::string> const& markers() const { return M_markers; }
-
-        bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
-
-        element_type const& fieldElectricConductivity() const { return *M_fieldElectricConductivity; }
-        element_ptrtype const& fieldElectricConductivityPtr() const { return M_fieldElectricConductivity; }
-
-        void setCstElectricConductivity( double val, std::string const& marker = "", bool update = true )
-        {
-            std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-            M_cstElectricConductivity[markerUsed]=val;
-            if ( update )
-                this->updateElectricConductivity( cst(val), marker );
-        }
-        template < typename ExprT >
-        void setElectricConductivity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+            for( auto const& m : mats )
             {
-                this->updateElectricConductivity( vfexpr,marker);
-                if ( M_fieldElectricConductivity )
-                    this->setCstElectricConductivity( M_fieldElectricConductivity->min(), marker, false );
-            }
+                std::string const& matName = m.first;
+                auto const& mat = m.second;
+                auto itFindMat = markersByMaterial.find( matName );
+                if ( itFindMat == markersByMaterial.end() )
+                    continue;
+                if ( itFindMat->second.empty() )
+                    continue;
+                auto const& matmarkers = itFindMat->second;
+                auto range = markedelements( mesh,matmarkers );
+                M_rangeMeshElementsByMaterial[matName] = range;
 
-        template < typename ExprT >
-        void updateElectricConductivity(vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
-        {
-            if ( !M_fieldElectricConductivity ) return;
-            auto rangeEltUsed = (marker.empty())? markedelements( M_space->mesh(), M_markers ) : markedelements( M_space->mesh(),marker );
-            M_fieldElectricConductivity->on(_range=rangeEltUsed,_expr=__expr);
+                if ( mat.hasPropertyExprScalar("sigma") )
+                {
+                    auto const& expr = mat.propertyExprScalar("sigma");
+                    M_electricConductivityByMaterial[matName].setExpr( expr );
+                    M_electricConductivityByMaterial[matName].setValue( 0 );//TODO
+                    M_fieldElectricConductivity->on(_range=range,_expr=expr);
+                }
+                else
+                {
+                    double value = mat.propertyConstant("sigma");
+                    M_electricConductivityByMaterial[matName].setValue( value );
+                    M_fieldElectricConductivity->on(_range=range,_expr=cst(value));
+                }
+            }
         }
 
-        boost::shared_ptr<std::ostringstream>
-        getInfoMaterialParameters() const
+    std::set<std::string> const& markers() const { return M_markers; }
+    bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
+
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+
+    bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
+
+    std::map<std::string, ModelExpressionScalar> const& electricConductivityByMaterial() const { return M_electricConductivityByMaterial; }
+
+    double cstElectricConductivity( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_electricConductivityByMaterial.empty() )
+                    return M_electricConductivityDefaultValue;
+                else
+                    return M_electricConductivityByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_electricConductivityByMaterial.find( matName );
+            CHECK( itFindMat != M_electricConductivityByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
+        }
+
+    element_type const& fieldElectricConductivity() const { return *M_fieldElectricConductivity; }
+    element_ptrtype const& fieldElectricConductivityPtr() const { return M_fieldElectricConductivity; }
+
+    bool hasElectricConductivity( std::string const& matName ) const
+        {
+            return M_electricConductivityByMaterial.find( matName ) != M_electricConductivityByMaterial.end();
+        }
+    ModelExpressionScalar const& electricConductivity( std::string const& matName ) const
+        {
+            CHECK( this->hasElectricConductivity( matName ) ) << "material name not registered : " << matName;
+            return M_electricConductivityByMaterial.find( matName )->second;
+        }
+
+    boost::shared_ptr<std::ostringstream>
+    getInfoMaterialParameters() const
         {
             boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
             *ostr << "\n   Materials parameters";
-            std::set<std::string> matmarkerset = this->markers();
-            if (  matmarkerset.empty() ) matmarkerset.insert(std::string(""));
-            *ostr << "\n     -- number of materials : " << matmarkerset.size();
-            for ( std::string const& matmarker : matmarkerset)
+            std::set<std::string> matNames;
+            for ( auto const& matRange : M_rangeMeshElementsByMaterial)
+                matNames.insert( matRange.first );
+            // if ( matNames.empty() )
+            //     matNames.insert( std::string("") );
+            *ostr << "\n     -- number of materials : " << matNames.size();
+            for ( std::string const& matName : matNames)
             {
-                std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
-                *ostr << "\n     -- " << matmarkertag << "electric conductivity : " << this->cstElectricConductivity(matmarker);
+                *ostr << "\n     -- [" << matName << "] electric conductivity : ";
+                if ( this->electricConductivity(matName).isConstant() )
+                    *ostr << this->electricConductivity(matName).value();
+                else
+                    *ostr << str( this->electricConductivity(matName).expr().expression() );
             }
             return ostr;
         }
 
-    private :
-        std::map<std::string,double> M_cstElectricConductivity;// [ W/(m*K) ]
-        std::set<std::string> M_markers;
-        bool M_isDefinedOnWholeMesh;
-        space_ptrtype M_space;
-        element_ptrtype M_fieldElectricConductivity;
-    };
-
-
-    template<class SpaceType>
-    ElectricPropertiesDescription<SpaceType>
-    electricPropertiesDesc( boost::shared_ptr<SpaceType> const& space, std::string const& prefix )
-    {
-        ElectricPropertiesDescription<SpaceType> res(space,prefix);
-        return res;
-    }
+private :
+    std::set<std::string> M_markers;
+    bool M_isDefinedOnWholeMesh;
+    space_ptrtype M_space;
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    std::map<std::string, ModelExpressionScalar> M_electricConductivityByMaterial;
+    element_ptrtype M_fieldElectricConductivity;
+    double M_electricConductivityDefaultValue;
+};
 
 } // namespace FeelModels
 } // namespace Feel

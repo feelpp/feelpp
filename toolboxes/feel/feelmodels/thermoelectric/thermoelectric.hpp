@@ -101,7 +101,7 @@ public :
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
     heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
@@ -141,7 +141,9 @@ private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    // materials range
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     // physical parameter
     std::string M_modelName;

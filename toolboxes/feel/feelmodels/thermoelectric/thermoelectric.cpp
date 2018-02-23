@@ -189,10 +189,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_electricModel->init( useSubSolver );
 
 
+#if 0
     M_rangeMeshElements = ( M_heatTransferModel->thermalProperties()->isDefinedOnWholeMesh() && M_electricModel->electricProperties()->isDefinedOnWholeMesh() )?
         elements(this->mesh() ) :
         intersect( M_heatTransferModel->rangeMeshElements(), M_electricModel->rangeMeshElements() );
+#endif
 
+    for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        if ( !M_heatTransferModel->thermalProperties()->hasMaterial( matName ) )
+            continue;
+        M_rangeMeshElementsByMaterial[matName] = rangeData.second;
+    }
     // post-process
     this->initPostProcess();
 
@@ -406,49 +415,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-#if 0
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
-
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("ThermoElectric","updateLinearPDE", "start"+sc);
-    boost::mpi::timer thetimer;
-
-    auto mesh = this->mesh();
-    auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix() ,
-                                              _colstart=this->colStartInMatrix() );
-    auto myLinearForm = form1( _test=XhV, _vector=F,
-                               _rowstart=this->rowStartInVector() );
-
-    //--------------------------------------------------------------------------------------------------//
-
-    auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-    if ( buildCstPart )
-    {
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= sigma*inner(gradt(v),grad(v)),
-                       _geomap=this->geomap() );
-    }
-
-    // update source term
-    this->updateSourceTermLinearPDE(F, buildCstPart);
-
-    // update bc
-    this->updateWeakBCLinearPDE(A,F,buildCstPart);
-
-    if ( !buildCstPart && _doBCStrongDirichlet)
-    {
-        this->updateBCStrongDirichletLinearPDE(A,F);
-    }
-#endif
 }
 
 
@@ -463,12 +429,33 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
     auto const& v = M_electricModel->fieldElectricPotential();
     auto XhT = M_heatTransferModel->spaceTemperature();
     auto const& t = M_heatTransferModel->fieldTemperature();
-    auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
-    form1( _test=XhT,_vector=F,
-           _rowstart=M_heatTransferModel->rowStartInVector() ) +=
-        integrate( _range=M_rangeMeshElements,
-                       _expr= sigma*inner(gradv(v),gradv(v))*id(t),
-                       _geomap=this->geomap() );
+
+    auto myLinearForm = form1( _test=XhT,_vector=F,
+                               _rowstart=M_heatTransferModel->rowStartInVector() );
+
+    for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            double sigma = electricConductivity.value();
+            myLinearForm +=
+                integrate( _range=range,
+                           _expr= sigma*inner(gradv(v),gradv(v))*id(t),
+                           _geomap=this->geomap() );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
+            myLinearForm +=
+                integrate( _range=range,
+                           _expr= sigma*inner(gradv(v),gradv(v))*id(t),
+                           _geomap=this->geomap() );
+        }
+    }
 
     this->log("ThermoElectric","updateLinearPreAssemblyJouleLaw","finish" );
 }
@@ -509,15 +496,34 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         auto XhT = M_heatTransferModel->spaceTemperature();
         auto const& t = M_heatTransferModel->fieldTemperature();
 
-        auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
+        auto theBilinearForm = form2( _test=XhT,_trial=XhV,_matrix=J,
+                                      _pattern=size_type(Pattern::COUPLED),
+                                      _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
+                                      _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-        form2( _test=XhT,_trial=XhV,_matrix=J,
-               _pattern=size_type(Pattern::COUPLED),
-               _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential  ) +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
-                       _geomap=this->geomap() );
+        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            if ( electricConductivity.isConstant() )
+            {
+                double sigma = electricConductivity.value();
+                theBilinearForm +=
+                    integrate( _range=range,
+                               _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto sigma = electricConductivity.expr();
+                //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
+                theBilinearForm +=
+                    integrate( _range=range,
+                               _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     DataUpdateJacobian dataSubPhysics( data );
@@ -562,14 +568,32 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
         auto XhT = M_heatTransferModel->spaceTemperature();
         auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-        auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
         auto myLinearFormThermo = form1( _test=XhT, _vector=R,
                                          _rowstart=this->rowStartInVector() );
 
-        myLinearFormThermo +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
-                       _geomap=this->geomap() );
+        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            if ( electricConductivity.isConstant() )
+            {
+                double sigma = electricConductivity.value();
+                myLinearFormThermo +=
+                    integrate( _range=range,
+                               _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto sigma = electricConductivity.expr();
+                //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
+                myLinearFormThermo +=
+                    integrate( _range=range,
+                               _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     if ( !buildCstPart && doBCStrongDirichlet &&

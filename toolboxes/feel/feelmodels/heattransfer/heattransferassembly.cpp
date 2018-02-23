@@ -161,14 +161,34 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( buildCstPart )
+    for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
     {
-        //double kappa = this->thermalProperties()->cstThermalConductivity();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= kappa*inner(gradt(u),grad(v)),
-                       _geomap=this->geomap() );
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        if ( thermalConductivity.isConstant() )
+        {
+            if ( buildCstPart )
+            {
+                double kappa = thermalConductivity.value();
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if ( buildCstPart )
+            {
+                auto kappa = thermalConductivity.expr();
+                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
@@ -319,15 +339,34 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
-
-    if ( buildCstPart )
+    for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
     {
-        //double kappa = this->thermalProperties()->cstThermalConductivity();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= kappa*inner(gradt(u),grad(v)),
-                       _geomap=this->geomap() );
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        if ( thermalConductivity.isConstant() )
+        {
+            if ( buildCstPart )
+            {
+                double kappa = thermalConductivity.value();
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if ( buildCstPart )
+            {
+                auto kappa = thermalConductivity.expr();
+                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= kappa*inner(gradt(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
@@ -392,14 +431,34 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
 
-    if (!buildCstPart && !UseJacobianLinearTerms )
+    for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
     {
-        //double kappa = this->thermalProperties()->cstThermalConductivity();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        myLinearForm +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= kappa*inner(gradv(u),grad(v)),
-                       _geomap=this->geomap() );
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        if ( thermalConductivity.isConstant() )
+        {
+            if (!buildCstPart && !UseJacobianLinearTerms )
+            {
+                double kappa = thermalConductivity.value();
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= kappa*inner(gradv(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if (!buildCstPart && !UseJacobianLinearTerms )
+            {
+                auto kappa = thermalConductivity.expr();
+                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= kappa*inner(gradv(u),grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
     }
 
     if ( this->fieldVelocityConvectionIsUsedAndOperational() )
