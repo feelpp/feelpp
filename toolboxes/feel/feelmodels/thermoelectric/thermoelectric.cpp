@@ -152,6 +152,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->timerTool("Constructor").start();
 
     M_modelName = this->modelProperties().models().model("thermo-electric").equations();
+    if ( M_modelName.empty() )
+        M_modelName = "ThermoElectric";
 
     M_solverName = "Linear";
     if ( M_modelName == "ThermoElectric-linear" )
