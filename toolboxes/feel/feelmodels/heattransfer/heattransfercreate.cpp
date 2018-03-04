@@ -260,13 +260,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
-    {
-        // matrix graph of non zero
-        auto graph = this->buildBlockMatrixGraph()(0,0);
-        // tool for assembly and solver
-        M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend(),
-                                                                   graph, graph->mapRow().indexSplit() ) );
-    }
+        this->initAlgebraicFactory();
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -450,6 +444,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("HeatTransfer","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
+HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
+{
+    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+}
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
@@ -505,8 +505,9 @@ void
 HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     this->modelProperties().parameters().updateParameterValues();
-
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+
+    this->thermalProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
@@ -570,8 +571,10 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
-    //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vector() );
+    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_transfer_T" ) )
+        M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+    else
+        M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
 

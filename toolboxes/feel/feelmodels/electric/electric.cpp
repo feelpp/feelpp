@@ -174,13 +174,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
-    {
-        // matrix graph of non zero
-        auto graph = this->buildBlockMatrixGraph()(0,0);
-        // tool for assembly and solver
-        M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend(),
-                                                                   graph, graph->mapRow().indexSplit() ) );
-    }
+        this->initAlgebraicFactory();
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -281,6 +275,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("Electric","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
+{
+    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -417,8 +418,9 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     this->modelProperties().parameters().updateParameterValues();
-
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+
+    this->electricProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
@@ -599,9 +601,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         }
         else
         {
+            auto sigma = electricConductivity.expr();
+            if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+                continue;
             if ( buildCstPart )
             {
-                auto sigma = electricConductivity.expr();
                 //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
@@ -718,9 +722,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
         }
         else
         {
+            auto sigma = electricConductivity.expr();
+            if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+                continue;
             if (!buildCstPart && !UseJacobianLinearTerms )
             {
-                auto sigma = electricConductivity.expr();
                 //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
                 myLinearForm +=
                     integrate( _range=range,

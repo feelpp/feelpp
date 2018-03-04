@@ -130,6 +130,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                                      _pattern_block=patCoupling1,
                                                                      _diag_is_nonzero=false,_close=false)->graph();
 
+    if ( true )
+    {
+        BlocksStencilPattern patCoupling2(nBlockHeatTransfer,1,size_type(Pattern::ZERO));
+        patCoupling2(0,0) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock+nBlockHeatTransfer,indexBlock) = stencil(_test=M_electricModel->spaceElectricPotential(),
+                                                                         _trial=M_heatTransferModel->spaceTemperature(),
+                                                                         _pattern_block=patCoupling2,
+                                                                         _diag_is_nonzero=false,_close=false)->graph();
+    }
+
     indexBlock += nBlockHeatTransfer;
 
     int nBlockElectric = M_electricModel->nBlockMatrixGraph();
@@ -151,6 +161,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+#if 0
     M_modelName = this->modelProperties().models().model("thermo-electric").equations();
     if ( M_modelName.empty() )
         M_modelName = "ThermoElectric";
@@ -167,28 +178,37 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_solverName = "Newton";
     }
     CHECK( M_modelName == "ThermoElectric" ) << "invalid model name : " << M_modelName << "\n";
-
-
-    bool useSubSolver = (M_solverName == "Linear");
+#endif
+ 
 
     M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatTransferModel->modelPropertiesPtr() )
         M_heatTransferModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatTransferModel->loadMesh( this->mesh() );
-    M_heatTransferModel->init( useSubSolver );
-    if ( M_solverName == "Linear" )
-    {
-        M_heatTransferModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                   boost::ref( *this ), _1, _2 );
-    }
+    M_heatTransferModel->init( false );
 
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), false, this->worldComm(),
                                                    this->subPrefix(), this->repository() ) );
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
     M_electricModel->setMesh( this->mesh() );
-    M_electricModel->init( useSubSolver );
+    M_electricModel->init( false );
+
+    M_modelName = "ThermoElectric";
+    M_solverName = "Linear";
+    if ( M_electricModel->electricProperties()->hasElectricConductivityDependingOnSymbol( "heat_transfer_T" ) )
+        M_solverName = "Newton";
+
+    if ( M_solverName == "Linear" )
+    {
+        M_heatTransferModel->initAlgebraicFactory();
+        M_electricModel->initAlgebraicFactory();
+        M_heatTransferModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                                   boost::ref( *this ), _1, _2 );
+        M_heatTransferModel->algebraicFactory()->addFunctionResidualPreAssembly = boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
+                                                                                               boost::ref( *this ), _1, _2 );
+    }
 
 
 #if 0
@@ -235,13 +255,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
-        if ( !useSubSolver )
+        if ( M_solverName == "Newton" )
         {
-            // matrix graph of non zero
-            typename model_algebraic_factory_type::graph_ptrtype graph( new typename model_algebraic_factory_type::graph_type( this->buildBlockMatrixGraph() ) );
-            // tool for assembly and solver
-            M_algebraicFactoryMonolithic.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend(),
-                                                                                  graph, graph->mapRow().indexSplit() ) );
+            M_algebraicFactoryMonolithic.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
         }
     }
 
@@ -419,10 +435,22 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 {
 }
 
-
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+{
+    this->updateGenericPreAssemblyJouleLaw( F, false );
+}
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const
+{
+    this->updateGenericPreAssemblyJouleLaw( R, true );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const
 {
     this->log("ThermoElectric","updateLinearPreAssemblyJouleLaw","start" );
 
@@ -435,6 +463,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
     auto myLinearForm = form1( _test=XhT,_vector=F,
                                _rowstart=M_heatTransferModel->rowStartInVector() );
 
+    int sign = ( applyOnResidual )? -1 : 1;
     for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
     {
         std::string const& matName = rangeData.first;
@@ -442,7 +471,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
         auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
         if ( electricConductivity.isConstant() )
         {
-            double sigma = electricConductivity.value();
+            double sigma = sign*electricConductivity.value();
             myLinearForm +=
                 integrate( _range=range,
                            _expr= sigma*inner(gradv(v),gradv(v))*id(t),
@@ -450,7 +479,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matr
         }
         else
         {
-            auto sigma = electricConductivity.expr();
+            auto sigma = sign*electricConductivity.expr();
             //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
             myLinearForm +=
                 integrate( _range=range,
@@ -496,12 +525,25 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         auto XhV = M_electricModel->spaceElectricPotential();
         auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
         auto XhT = M_heatTransferModel->spaceTemperature();
-        auto const& t = M_heatTransferModel->fieldTemperature();
+        //auto const& t = M_heatTransferModel->fieldTemperature();
+        auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
 
-        auto theBilinearForm = form2( _test=XhT,_trial=XhV,_matrix=J,
-                                      _pattern=size_type(Pattern::COUPLED),
-                                      _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                                      _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
+        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=J,
+                             _pattern=size_type(Pattern::COUPLED),
+                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
+                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
+        auto mybfTV = form2( _test=XhT,_trial=XhV,_matrix=J,
+                             _pattern=size_type(Pattern::COUPLED),
+                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
+                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
+        auto mybfVV = form2( _test=XhV,_trial=XhV,_matrix=J,
+                             _pattern=size_type(Pattern::COUPLED),
+                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
+                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
+        auto mybfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
+                             _pattern=size_type(Pattern::COUPLED),
+                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
+                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
 
         for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
         {
@@ -511,19 +553,39 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             if ( electricConductivity.isConstant() )
             {
                 double sigma = electricConductivity.value();
-                theBilinearForm +=
+                mybfTV +=
                     integrate( _range=range,
                                _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
                                _geomap=this->geomap() );
             }
             else
             {
-                auto sigma = electricConductivity.expr();
-                //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
-                theBilinearForm +=
+                std::string symbolStr = "heat_transfer_T";
+                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
+                mybfTV +=
                     integrate( _range=range,
                                _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
                                _geomap=this->geomap() );
+
+                if ( sigma.expression().hasSymbol( symbolStr ) )
+                {
+                    auto sigmaDiff = diff( electricConductivity.expr(),symbolStr,1,"",this->worldComm(),this->repository().expr());
+                    auto sigmaDiffEval = expr( sigmaDiff, symbolStr, idv(t) );
+
+                    mybfTT +=
+                        integrate( _range=range,
+                                   _expr= -sigmaDiffEval*idt(t)*inner(gradv(v),gradv(v))*id( t ),
+                                   _geomap=this->geomap() );
+
+                    mybfVV +=
+                        integrate( _range=range,
+                                   _expr= sigma*inner(gradt(v),grad(v)),
+                                   _geomap=this->geomap() );
+                    mybfVT +=
+                        integrate( _range=range,
+                                   _expr= sigmaDiffEval*idt(t)*inner(gradv(v),grad(v)),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }
@@ -570,8 +632,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
         auto XhT = M_heatTransferModel->spaceTemperature();
         auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-        auto myLinearFormThermo = form1( _test=XhT, _vector=R,
-                                         _rowstart=this->rowStartInVector() );
+        auto mylfT = form1( _test=XhT, _vector=R,
+                            _rowstart=this->rowStartInVector()+startBlockIndexTemperature );
+        auto mylfV = form1( _test=XhV, _vector=R,
+                            _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
 
         for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
         {
@@ -581,19 +645,26 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             if ( electricConductivity.isConstant() )
             {
                 double sigma = electricConductivity.value();
-                myLinearFormThermo +=
+                mylfT +=
                     integrate( _range=range,
                                _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
                                _geomap=this->geomap() );
             }
             else
             {
-                auto sigma = electricConductivity.expr();
-                //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
-                myLinearFormThermo +=
+                std::string symbolStr = "heat_transfer_T";
+                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
+                mylfT +=
                     integrate( _range=range,
                                _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
                                _geomap=this->geomap() );
+                if ( sigma.expression().hasSymbol( symbolStr ) )
+                {
+                    mylfV +=
+                        integrate( _range=range,
+                                   _expr= sigma*inner(gradv(v),grad(v)),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }

@@ -328,11 +328,10 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    auto const& v = this->fieldTemperature();
-#if 0
+    //auto const& u = this->fieldTemperature();
     auto const u = Xh->element(XVec, this->rowStartInVector());
-#endif
+    auto const& v = this->fieldTemperature();
+
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -357,14 +356,35 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
         }
         else
         {
-            if ( buildCstPart )
+            auto kappa = thermalConductivity.expr();
+            std::string symbolStr = "heat_transfer_T";
+            if ( kappa.expression().hasSymbol( symbolStr ) )
             {
-                auto kappa = thermalConductivity.expr();
-                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= kappa*inner(gradt(u),grad(v)),
-                               _geomap=this->geomap() );
+                if ( buildNonCstPart )
+                {
+                    auto kappaEval = expr( kappa, symbolStr, idv(u) );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= kappaEval*inner(gradt(u),grad(v)),
+                                   _geomap=this->geomap() );
+                    auto kappaDiff = diff( kappa,symbolStr,1,"",this->worldComm(),this->repository().expr());
+                    auto kappaDiffEval = expr( kappaDiff, symbolStr, idv(u) );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= kappaDiffEval*idt(u)*inner(gradv(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else
+            {
+                if ( buildCstPart )
+                {
+                    //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= kappa*inner(gradt(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }
@@ -449,14 +469,29 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
         }
         else
         {
-            if (!buildCstPart && !UseJacobianLinearTerms )
+            auto kappa = thermalConductivity.expr();
+            std::string symbolStr = "heat_transfer_T";
+            if ( kappa.expression().hasSymbol( symbolStr ) )
             {
-                auto kappa = thermalConductivity.expr();
-                //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-                myLinearForm +=
-                    integrate( _range=range,
-                               _expr= kappa*inner(gradv(u),grad(v)),
-                               _geomap=this->geomap() );
+                if ( buildNonCstPart )
+                {
+                    auto kappaEval = expr( kappa, symbolStr, idv(u) );
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= kappaEval*inner(gradv(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else
+            {
+                if (!buildCstPart && !UseJacobianLinearTerms )
+                {
+                    //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= kappa*inner(gradv(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }

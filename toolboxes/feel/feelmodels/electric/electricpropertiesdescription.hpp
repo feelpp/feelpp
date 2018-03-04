@@ -153,6 +153,26 @@ public :
             return ostr;
         }
 
+    bool hasElectricConductivityDependingOnSymbol( std::string const& symbolStr ) const
+        {
+            for ( auto const& conductivityData : M_electricConductivityByMaterial )
+            {
+                auto const& electricConductivity = conductivityData.second;
+                if ( electricConductivity.isConstant() )
+                    continue;
+                if ( electricConductivity.expr().expression().hasSymbol( symbolStr ) )
+                    return true;
+            }
+            return false;
+        }
+
+    void setParameterValues( std::map<std::string,double> const& mp )
+        {
+            for ( auto & prop : M_electricConductivityByMaterial )
+                prop.second.setParameterValues( mp );
+        }
+
+
 private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
