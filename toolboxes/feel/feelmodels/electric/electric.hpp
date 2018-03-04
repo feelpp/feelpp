@@ -121,6 +121,7 @@ public :
     void init( bool buildModelAlgebraicFactory = true );
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     int nBlockMatrixGraph() const;
+    void initAlgebraicFactory();
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );

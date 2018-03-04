@@ -168,10 +168,25 @@ ModelAlgebraic::updatePreconditioner(const vector_ptrtype& X,
     }
 }
 
+BlocksBaseGraphCSR
+ModelAlgebraic::buildBlockMatrixGraph() const
+{
+    BlocksBaseGraphCSR myblockGraph(0,0);
+    return myblockGraph;
+
+}
+
 ModelAlgebraic::graph_ptrtype
 ModelAlgebraic::buildMatrixGraph() const
 {
-    return graph_ptrtype();
+    auto blockGraph = this->buildBlockMatrixGraph();
+    if ( blockGraph.nRow() == 0 || blockGraph.nCol() == 0 )
+        return graph_ptrtype();
+
+    if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
+        return blockGraph(0,0);
+    else
+        return graph_ptrtype( new graph_type( blockGraph ) );
 }
 
 void

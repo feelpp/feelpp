@@ -173,6 +173,7 @@ class HeatTransfer : public ModelNumerical,
         void initTimeStep();
         void initPostProcess();
     public :
+        void initAlgebraicFactory();
 
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }

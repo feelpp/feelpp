@@ -127,6 +127,8 @@ public :
     void updateLinearPDE( DataUpdateLinear & data ) const;
     //void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const;
+    void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;

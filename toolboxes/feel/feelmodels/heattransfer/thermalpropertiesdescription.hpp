@@ -286,6 +286,31 @@ public :
             return ostr;
         }
 
+    bool hasThermalConductivityDependingOnSymbol( std::string const& symbolStr ) const
+        {
+            for ( auto const& conductivityData : M_thermalConductivityByMaterial )
+            {
+                auto const& thermalConductivity = conductivityData.second;
+                if ( thermalConductivity.isConstant() )
+                    continue;
+                if ( thermalConductivity.expr().expression().hasSymbol( symbolStr ) )
+                    return true;
+            }
+            return false;
+        }
+
+    void setParameterValues( std::map<std::string,double> const& mp )
+        {
+            for ( auto & prop : M_thermalConductivityByMaterial )
+                prop.second.setParameterValues( mp );
+            for ( auto & prop : M_heatCapacityByMaterial )
+                prop.second.setParameterValues( mp );
+            for ( auto & prop : M_rhoByMaterial )
+                prop.second.setParameterValues( mp );
+            for ( auto & prop : M_thermalExpansionByMaterial )
+                prop.second.setParameterValues( mp );
+        }
+
 private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
