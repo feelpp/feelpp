@@ -69,6 +69,13 @@ public :
             M_exprVectorial3->setParameterValues( mp );
     }
 
+    template<typename ExprT>
+    Expr< GinacExVF<ExprT,expr_order> >
+    exprScalar( std::string const& symb, ExprT const& e ) const
+    {
+        return expr( this->exprScalar(), symb, e );
+    }
+
 private :
     std::map<int,double> M_values;
     boost::optional<expr_scalar_type> M_exprScalar;
@@ -80,6 +87,7 @@ class FEELPP_EXPORT ModelExpressionScalar : private ModelExpression
 {
     typedef ModelExpression super_type;
 public :
+    static const uint16_type expr_order = super_type::expr_order;
     typedef typename super_type::expr_scalar_type expr_scalar_type;
 
     ModelExpressionScalar() = default;
@@ -96,6 +104,14 @@ public :
     void setExpr( expr_scalar_type const& expr ) { this->setExprScalar( expr ); }
 
     void setParameterValues( std::map<std::string,double> const& mp ) { super_type::setParameterValues( mp ); }
+
+    template<typename ExprT>
+    Expr< GinacExVF<ExprT,expr_order> >
+    expr( std::string const& symb, ExprT const& e ) const
+    {
+        return this->exprScalar( symb,e );
+    }
+
 };
 
 } // namespace Feel
