@@ -670,8 +670,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     if ( buildNonCstPart && doBCStrongDirichlet )
     {
-        M_heatTransferModel->updateBCStrongDirichletJacobian( J,RBis );
-        M_electricModel->updateBCStrongDirichletJacobian( J,RBis );
+        M_heatTransferModel->updateJacobianStrongDirichletBC( J,RBis );
+        M_electricModel->updateJacobianStrongDirichletBC( J,RBis );
     }
     this->log("ThermoElectric","updateJacobian", "finish"+sc);
 }
@@ -753,8 +753,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
          ( M_heatTransferModel->hasMarkerDirichletBCelimination() || M_electricModel->hasMarkerDirichletBCelimination() ) )
     {
         R->close();
-        M_heatTransferModel->updateBCDirichletStrongResidual( R );
-        M_electricModel->updateBCDirichletStrongResidual( R );
+        M_heatTransferModel->updateResidualStrongDirichletBC( R );
+        M_electricModel->updateResidualStrongDirichletBC( R );
     }
     this->log("ThermoElectric","updateResidual", "finish"+sc);
 }

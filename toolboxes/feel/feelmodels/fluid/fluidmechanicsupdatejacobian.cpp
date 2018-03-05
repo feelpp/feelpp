@@ -339,7 +339,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
         if ( M_useHeatTransferModel && M_useGravityForce )
         {
-            M_heatTransferModel->updateBCStrongDirichletJacobian( J,RBis );
+            M_heatTransferModel->updateJacobianStrongDirichletBC( J,RBis );
         }
 
     }

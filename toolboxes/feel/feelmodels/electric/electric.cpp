@@ -525,11 +525,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 
     // update bc
-    this->updateWeakBCLinearPDE(A,F,buildCstPart);
+    this->updateLinearPDEWeakBC(A,F,buildCstPart);
 
     if ( !buildCstPart && _doBCStrongDirichlet)
     {
-        this->updateBCStrongDirichletLinearPDE(A,F);
+        this->updateLinearPDEStrongDirichletBC( A,F );
     }
 }
 
@@ -617,17 +617,17 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         }
     }
 
-    this->updateBCWeakJacobian( v,J,buildCstPart );
+    this->updateJacobianWeakBC( v,J,buildCstPart );
 
     if ( buildNonCstPart && _doBCStrongDirichlet )
     {
-        this->updateBCStrongDirichletJacobian( J,RBis );
+        this->updateJacobianStrongDirichletBC( J,RBis );
     }
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
@@ -654,7 +654,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletJacobian(sparse_matrix_ptrt
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakJacobian( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
@@ -751,20 +751,20 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     }
 
     // weak bc
-    this->updateBCWeakResidual( v,R,buildCstPart );
+    this->updateResidualWeakBC( v,R,buildCstPart );
 
     // strong Dirichlet bc
     if ( !buildCstPart && _doBCStrongDirichlet && this->hasMarkerDirichletBCelimination() )
     {
         R->close();
-        this->updateBCDirichletStrongResidual( R );
+        this->updateResidualStrongDirichletBC( R );
     }
     this->log("Electric","updateResidual", "finish"+sc);
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrtype& R ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
@@ -785,7 +785,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongResidual( vector_ptrtype& R
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const
 {
     if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
 
@@ -827,7 +827,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCWeakResidual( element_electricpotential_ex
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
@@ -854,7 +854,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptr
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const
 {
     if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
 

@@ -424,7 +424,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
 
         if ( M_useHeatTransferModel && M_useGravityForce )
-            M_heatTransferModel->updateBCDirichletStrongResidual( R );
+            M_heatTransferModel->updateResidualStrongDirichletBC( R );
     }
 
     //------------------------------------------------------------------------------------//
