@@ -1,0 +1,83 @@
+// -*- mode: javascript -*-
+{
+    "Name":"HL-31_H1",
+    "ShortName":"HL-31_H1",
+    "Parameters":
+    {
+        "sigma0":53e3,
+        "T0":290,
+        "alpha":3.6e-3,
+        "Lorentz":2.47e-8
+    },
+    "Materials":
+    {
+        "Cu":
+        {
+            //"k11":"0.370",//[ W/(m*K) ]
+            "k11":"sigma0*Lorentz*heat_transfer_T/(1+alpha*(heat_transfer_T-T0)):sigma0:alpha:T0:Lorentz:heat_transfer_T",
+            //"Cp":"1000.005", //[ J/(kg*K) ]
+            // "rho":"1.205", //[ kg/(m^3) ]
+            //"sigma":"53e3"
+            "sigma":"sigma0/(1+alpha*(heat_transfer_T-T0))+0*heat_transfer_T:sigma0:alpha:T0:heat_transfer_T"
+            //"sigma":"53000/(1+0.00036*(heat_transfer_T-290)):heat_transfer_T"
+            //"sigma":"53000+0*heat_transfer_T:heat_transfer_T"
+            //"sigma":"53000/(0.0003*(heat_transfer_T-292)):heat_transfer_T"
+            //"sigma":"sigma0/(1+alpha*(heat_transfer_T-T0)):sigma0:alpha:T0:heat_transfer_T"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Robin":
+            {
+                "Rint":
+                {
+                    "expr1":"0.085", // h
+                    "expr2":"290" // T_c
+                },
+                "Rext":
+                {
+                    "expr1":"0.085", // h
+                    "expr2":"290" // T_c
+                }
+            },
+            "Neumann":
+            {
+                "Interface":
+                {
+                    "expr":"0"
+                },
+                "GR_1_Interface":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "electric-potential":
+        {
+            "Dirichlet":
+            {
+                "V0":
+                {
+                    "expr":"0" // V_in
+                },
+                "V1":
+                {
+                    "expr":"9" // V_out
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "thermo-electric":
+        {
+            "Exports":
+            {
+                "fields":["heat-transfer.temperature","electric.electric-potential","electric.electric-field","heat-transfer.pid"]
+            }
+        }
+    }
+}
