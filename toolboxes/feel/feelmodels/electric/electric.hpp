@@ -152,6 +152,8 @@ public :
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
+    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
+    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
 
     //___________________________________________________________________________________//
     // apply assembly and solver

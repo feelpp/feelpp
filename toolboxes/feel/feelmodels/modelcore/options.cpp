@@ -345,6 +345,12 @@ Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
 {
     Feel::po::options_description thermoElectricOptions("ThermoElectric options");
+
+    thermoElectricOptions.add_options()
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-thermo-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-thermo-electric")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat-transfer").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat-transfer")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")
+        ;
     thermoElectricOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
     thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
