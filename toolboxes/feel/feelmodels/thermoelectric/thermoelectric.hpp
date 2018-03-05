@@ -130,6 +130,8 @@ public :
     void updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const;
     void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
 
+    void updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
@@ -149,7 +151,11 @@ private :
 
     // physical parameter
     std::string M_modelName;
+    bool M_modelUseJouleEffect;
+
+    // solver
     std::string M_solverName;
+    bool M_solverNewtonInitialGuessUseLinearThermoElectric,M_solverNewtonInitialGuessUseLinearHeatTransfer,M_solverNewtonInitialGuessUseLinearElectric;
 
     // algebraic data/tools
     backend_ptrtype M_backendMonolithic;

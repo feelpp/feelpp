@@ -499,6 +499,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
             else
             {
                 auto sigma = electricConductivity.expr();
+                if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+                    continue;
                 //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
@@ -689,7 +691,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
 
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
 
     size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
@@ -757,6 +759,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
         R->close();
         this->updateBCDirichletStrongResidual( R );
     }
+    this->log("Electric","updateResidual", "finish"+sc);
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
