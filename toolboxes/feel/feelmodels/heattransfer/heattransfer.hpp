@@ -202,20 +202,20 @@ class HeatTransfer : public ModelNumerical,
 
         void updateLinearPDE( DataUpdateLinear & data ) const;
         void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
-        void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-        void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-        void updateSourceTermLinearPDE(vector_ptrtype& F, bool buildCstPart) const;
+        void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
+        void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+        void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
         void updateJacobian( DataUpdateJacobian & data ) const;
+        void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+        void updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
         void updateResidual( DataUpdateResidual & data ) const;
-        void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
-        void updateBCNeumannResidual( vector_ptrtype& R, bool buildCstPart ) const;
-        void updateBCRobinResidual( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
-        void updateSourceTermResidual( vector_ptrtype& R, bool buildCstPart ) const;
-        void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
-        void updateBCRobinJacobian( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
+        void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
+        void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
+        void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
+        void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
