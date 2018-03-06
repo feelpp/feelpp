@@ -945,7 +945,6 @@ EIM<ModelType>::offline()
         }
 
         timer2.restart();
-        auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
         if( this->worldComm().isMasterRank() )
         {

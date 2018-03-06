@@ -10921,10 +10921,10 @@ CRB<TruthModelType>::buildSampling()
 
     std::string file_name = ( boost::format("SamplingWNmu") ).str();
     std::ifstream file ( file_name );
-    this->M_WNmu->clear();
 
     if ( use_predefined_WNmu ) // In this case we want to read the sampling
     {
+        this->M_WNmu->clear();
         if( ! file ) // The user forgot to give the sampling file
             throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
         else
@@ -10939,6 +10939,7 @@ CRB<TruthModelType>::buildSampling()
     }
     else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
+        this->M_WNmu->clear();
         if ( N_log_equi>0 )
         {
             this->M_WNmu->logEquidistribute( N_log_equi , true );
