@@ -58,12 +58,11 @@ main( int argc, char** argv )
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P1" )
         runApplicationThermoElectric<1>();
-#if FEELPP_INSTANTIATION_ORDER_MAX-1 == 2
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 2
     else if ( feapprox == "P2" )
         runApplicationThermoElectric<2>();
-#elif FEELPP_INSTANTIATION_ORDER_MAX-1 == 3
-    else if ( feapprox == "P2" )
-        runApplicationThermoElectric<2>();    
+#endif
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
     else if ( feapprox == "P3" )
         runApplicationThermoElectric<3>();
 #endif
