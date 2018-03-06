@@ -81,7 +81,7 @@ macro(crb_add_executable)
   if ( CRB_EXEC_MAN )
     feelpp_add_man( ${execname} ${CRB_EXEC_MAN} 1 )
   endif( CRB_EXEC_MAN )
-  
+
   if ( CRB_EXEC_TEST )
     add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
     set_property(TEST ${execname} PROPERTY LABELS crb)
@@ -254,14 +254,14 @@ int main( int argc, char** argv )
   if ( CRB_MODEL_TEST )
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
       ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
-      GEO ${CRB_MODEL_GEO} 
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
+      GEO ${CRB_MODEL_GEO}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} TEST )
   else()
     crb_add_executable(${CRB_MODEL_SHORT_NAME}app
-      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS} 
-      GEO ${CRB_MODEL_GEO} 
-      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES} 
+      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
+      GEO ${CRB_MODEL_GEO}
+      LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} )
   endif()
 

@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -192,7 +193,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     bool Build_TransientTerm = !BuildCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
 
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
     {
         bilinearForm_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
@@ -201,37 +202,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
 
     //--------------------------------------------------------------------------------------------------//
+    // user-defined additional terms
+    this->updateJacobianAdditional( J, _BuildCstPart );
+
+    //--------------------------------------------------------------------------------------------------//
     // define pressure cst
     if ( this->definePressureCst() )
     {
         if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
         {
             double beta = this->definePressureCstPenalisationBeta();
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr=beta*idt(p)*id(q),
-                           _geomap=this->geomap() );
+            for ( auto const& rangeElt : M_definePressureCstMeshRanges )
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=rangeElt,
+                               _expr=beta*idt(p)*id(q),
+                               _geomap=this->geomap() );
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" && BuildCstPart )
         {
             CHECK( this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startBlockIndexFieldsInMatrix().end() )
                 << " start dof index for define-pressure-cst-lm is not present\n";
             size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+            for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+            {
+                auto lambda = M_XhMeanPressureLM[k]->element();
+                form2( _test=Xh, _trial=M_XhMeanPressureLM[k], _matrix=J,
+                       _rowstart=this->rowStartInMatrix(),
+                       _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
+                    integrate( _range=M_definePressureCstMeshRanges[k],
+                               _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
+                               _geomap=this->geomap() );
 
-            auto lambda = M_XhMeanPressureLM->element();
-            form2( _test=Xh, _trial=M_XhMeanPressureLM, _matrix=J,
-                   _rowstart=this->rowStartInMatrix(),
-                   _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
-                           _geomap=this->geomap() );
-
-            form2( _test=M_XhMeanPressureLM, _trial=Xh, _matrix=J,
-                   _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM,
-                   _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= + idt(p)*id(lambda),
-                           _geomap=this->geomap() );
+                form2( _test=M_XhMeanPressureLM[k], _trial=Xh, _matrix=J,
+                       _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k,
+                       _colstart=this->colStartInMatrix() ) +=
+                    integrate( _range=M_definePressureCstMeshRanges[k],
+                               _expr= + idt(p)*id(lambda),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

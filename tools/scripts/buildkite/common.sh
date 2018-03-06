@@ -2,6 +2,18 @@
 
 set -eo pipefail
 
+FEELPP_DIR=${FEELPP_DIR:-/usr/local}
+if [ -d ${FEELPP_DIR}/share/feelpp/feel/cmake/modules/ ]; then 
+    FEELPP_CMAKE_DIR=${FEELPP_DIR}/share/feelpp/feel/cmake/modules;
+else
+    FEELPP_CMAKE_DIR=cmake/modules
+fi
+if [ -d ${FEELPP_DIR}/share/feelpp/scripts/ ]; then 
+    FEELPP_SCRIPTS_DIR=${FEELPP_DIR}/share/feelpp/scripts;
+else
+    FEELPP_SCRIPTS_DIR=tools/scripts/buildkite
+fi
+
 function get_field(){
     local fname="$1"
     local field="$2"
@@ -9,11 +21,7 @@ function get_field(){
     printf "%s" "${ret}"
 }
 function get_version() {
-    if [ -f cmake/modules/feelpp.version.cmake ]; then
-        vfile=cmake/modules/feelpp.version.cmake
-    else
-        vfile=$(dirname $0)/../feel/cmake/modules/feelpp.version.cmake
-    fi
+    vfile=${FEELPP_CMAKE_DIR}/feelpp.version.cmake
     IFS=''
     major=$(get_field "$vfile" "VERSION_MAJOR ")
     minor=$(get_field "$vfile" "VERSION_MINOR ")
@@ -27,7 +35,7 @@ tag_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
 
-    tools/scripts/buildkite/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
+    ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
         image=${tokens[0]}
         printf "%s" "${image}"
@@ -38,9 +46,9 @@ extratags_from_target() {
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
     
-    tools/scripts/buildkite/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
+    ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "$2-$3-${fromos}-${fromtag}"  | while read line ; do
         tokens=($line)
-        extratags=${tokens[@]:5}
+        extratags=${tokens[@]:1:3}
         printf "%s" "${extratags}" 
     done
 }

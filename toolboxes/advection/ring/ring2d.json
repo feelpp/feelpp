@@ -1,7 +1,7 @@
 {
     "Name": "Ring2d",
     "ShortName": "Ring2d",
-    "Model": "Advection",
+    "Model": "Advection-Diffusion-Reaction",
 
     "BoundaryConditions":
     {
@@ -24,6 +24,13 @@
                 "OuterCircle":
                 {
                     "expr":"0"
+                }
+            },
+            "Sources":
+            {
+                "":
+                {
+                    "expr":"1"
                 }
             }
         }

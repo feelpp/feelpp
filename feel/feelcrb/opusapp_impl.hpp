@@ -35,17 +35,9 @@ OpusApp<ModelType,RM,Model>::run()
 {
     bool export_solution = boption(_name=_o( this->about().appName(),"export-solution" ));
     int proc_number =  Environment::worldComm().globalRank();
-
     bool load_elements_db= boption(_name="crb.load-elements-database");
     bool rebuild_db= boption(_name="crb.rebuild-database");
-
     int exportNameSize = ioption(_name="crb.export-name-max-size"); //paraview reads max 49 characters
-
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
 
     //check options (does it make sens ?)
     bool option_checked=true;
@@ -227,30 +219,24 @@ OpusApp<ModelType,RM,Model>::run()
     if( n_eval_computational_time > 0 )
     {
         compute_fem = false;
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-        int size1 = eim_sc_vector.size();
-        int size2 = eim_sd_vector.size();
-        if( size1 + size2 == 0 )
-            throw std::logic_error( "[OpusApp] no eim object detected" );
 
         std::string appname = this->about().appName();
-        for(int i=0; i<size1; i++)
+
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+        for(int i=0; i<eim_sc_vector.size(); i++)
             eim_sc_vector[i]->computationalTimeStatistics(appname);
-        for(int i=0; i<size2; i++)
+        for(int i=0; i<eim_sd_vector.size(); i++)
             eim_sd_vector[i]->computationalTimeStatistics(appname);
 
         run_sampling_size = 0;
-    }
-    n_eval_computational_time = ioption(_name="crb.computational-time-neval");
-    if( n_eval_computational_time > 0 )
-    {
+
         if( ! boption(_name="crb.cvg-study") )
         {
             compute_fem = false;
             run_sampling_size = 0;
         }
-        std::string appname = this->about().appName();
+
         //in the case we don't do the offline step, we need the affine decomposition
         model->computeAffineDecomposition();
         crb->computationalTimeStatistics( appname );
@@ -716,6 +702,12 @@ OpusApp<ModelType,RM,Model>::run()
                         else
                             exportName = u_crb.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                         e->add( exportName, u_crb );
+
+                        if ( model->hasDisplacementField() )
+                        {
+                            auto warp_field = model->meshDisplacementField(mu);
+                            e->add( "warp"+mu.toString()+"-"+std::to_string(curpar), *warp_field );
+                        }
                     }
 
                     double relative_error = -1;

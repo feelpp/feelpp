@@ -135,20 +135,15 @@ private:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     // Reinit P1 operators
-    typedef boost::tuple<
-        boost::mpl::size_t<MESH_ELEMENTS>,
-        typename MeshTraits<mesh_type>::element_const_iterator,
-        typename MeshTraits<mesh_type>::element_const_iterator> range_visu_ho_type;
-
     typedef OperatorInterpolation<
         functionspace_type, // from space
-        functionspace_reinitP1_type, // to space
-        range_visu_ho_type> op_interpolation_to_P1_type;
+        functionspace_reinitP1_type // to space
+        > op_interpolation_to_P1_type;
 
     typedef OperatorInterpolation<
         functionspace_reinitP1_type, // from space
-        functionspace_type, // to space
-        range_visu_ho_type> op_interpolation_from_P1_type;
+        functionspace_type // to space
+        > op_interpolation_from_P1_type;
 
     typedef boost::shared_ptr<op_interpolation_to_P1_type> op_interpolation_to_P1_ptrtype;
     typedef boost::shared_ptr<op_interpolation_from_P1_type> op_interpolation_from_P1_ptrtype;

@@ -26,11 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-10-21
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE discontinuity testsuite
 // disable the main function creation, use our own
@@ -240,19 +236,3 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_disc, T, dim_types )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_disc.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-
-
-#endif

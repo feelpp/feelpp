@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+FEELPP_DIR=${FEELPP_DIR:-$PWD}
+
 source $(dirname $0)/common.sh
 
 ## Prints supported image combinations in the following format
@@ -18,6 +20,7 @@ UBUNTU_VERSIONS=(
     #16.04
     17.04
     16.10
+    16.04
 )
 
 LATEST_UBUNTU=${UBUNTU_VERSIONS[${#UBUNTU_VERSIONS[@]} - 1]}
@@ -54,17 +57,17 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
   feelpp_branch_version="${feelpp_branch}-${version}"
   feelpp_version="${feelpp_branch_version}"
   for os_version in ${DEBIAN_VERSIONS[*]} ; do
-    printf "%s-%s %s %s %s %s %s %s-%s" \
-      $(image_name "$feelpp_branch_version" "$distro") $os_version \
-      "n/a" \
-      $feelpp_branch_version $feelpp_version $distro $os_version  \
-      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
+    printf "%s-%s" \
+      $(image_name "$feelpp_branch_version" "$distro") $os_version 
+#      "n/a" \
+#      $feelpp_branch_version $feelpp_version $distro $os_version  \
+#      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
-    if [[ $os_version == $LATEST_DEBIAN ]] ; then
-      printf " %s" $(image_name "$feelpp_version" "$distro")
+#    if [[ $os_version == $LATEST_DEBIAN ]] ; then
+#      printf " %s" $(image_name "$feelpp_version" "$distro")
 
       #printf " %s" $(image_name "$feelpp_version" "$distro")
-    fi
+#    fi
 
     echo #newline
   done
@@ -77,11 +80,12 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
   feelpp_version="${feelpp_branch}"
 #  printf "%s %s %s %s %s\n" $(image_name "$feelpp_version" "$distro") "n/a" "$distro" "$feelpp_version" "$docker"
   for os_version in ${UBUNTU_VERSIONS[*]} ; do
-    printf "%s-%s %s %s %s %s %s %s-%s" \
-      $(image_name "$feelpp_branch_version" "$distro") $os_version \
-      $(image_name "$feelpp_branch_version" "$distro") \
-      $feelpp_branch_version $feelpp_version $distro $os_version  \
-      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
+      #    printf "%s-%s %s %s %s %s %s %s-%s" \
+      printf "%s-%s" \
+      $(image_name "$feelpp_branch_version" "$distro") $os_version 
+#      $(image_name "$feelpp_branch_version" "$distro") \
+#      $feelpp_branch_version $feelpp_version $distro $os_version  \
+#      $(image_name "$feelpp_branch_version" "$distro") $(docker_major_version $os_version)
 
     if [[ $os_version == $LATEST_UBUNTU ]] ; then
         # We also want to give the ubuntu distro the official
@@ -96,7 +100,7 @@ for feelpp_branch in ${FEELPP_BRANCHES[*]} ; do
             printf " %s" "${version}"
         fi
 
-        printf " %s" $(image_name "$feelpp_version" "$distro")
+#        printf " %s" $(image_name "$feelpp_version" "$distro")
     fi
 
     echo #newline
