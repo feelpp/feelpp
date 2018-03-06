@@ -536,7 +536,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateGenericPreAssemblyJouleLaw( vector_ptr
             double sigma = sign*electricConductivity.value();
             myLinearForm +=
                 integrate( _range=range,
-                           _expr= sigma*inner(gradv(v),gradv(v))*id(t),
+                           _expr= sigma*inner(gradv(v)/*,gradv(v)*/)*id(t),
                            _geomap=this->geomap() );
         }
         else
@@ -547,7 +547,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateGenericPreAssemblyJouleLaw( vector_ptr
             //auto sigma = idv(M_electricModel->electricProperties()->fieldElectricConductivity());
             myLinearForm +=
                 integrate( _range=range,
-                           _expr= sigma*inner(gradv(v),gradv(v))*id(t),
+                           _expr= sigma*inner(gradv(v)/*,gradv(v)*/)*id(t),
                            _geomap=this->geomap() );
         }
     }
@@ -646,7 +646,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                     {
                         mybfTT +=
                             integrate( _range=range,
-                                       _expr= -sigmaDiffEval*idt(t)*inner(gradv(v),gradv(v))*id( t ),
+                                       _expr= -sigmaDiffEval*idt(t)*inner(gradv(v)/*,gradv(v)*/)*id( t ),
                                        _geomap=this->geomap() );
                     }
 
@@ -723,7 +723,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                     double sigma = electricConductivity.value();
                     mylfT +=
                         integrate( _range=range,
-                                   _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
+                                   _expr= -sigma*inner(gradv(v)/*,gradv(v)*/)*id( t ),
                                    _geomap=this->geomap() );
                 }
             }
@@ -735,7 +735,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 {
                     mylfT +=
                         integrate( _range=range,
-                                   _expr= -sigma*inner(gradv(v),gradv(v))*id( t ),
+                                   _expr= -sigma*inner(gradv(v)/*,gradv(v)*/)*id( t ),
                                    _geomap=this->geomap() );
                 }
                 if ( sigma.expression().hasSymbol( symbolStr ) )
