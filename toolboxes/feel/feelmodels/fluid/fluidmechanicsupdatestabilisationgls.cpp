@@ -195,7 +195,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
         auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
 #endif
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(betaU),u, mpl::int_<StabGLSType>() );
-        if (!fluidmec.isStationary())
+        if (!fluidmec.isStationaryModel())
         {
             auto stab_residual_bilinear_u = residualTransientLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
@@ -249,7 +249,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
 #endif
 
         auto stab_test = -idv(rho)*trans(grad(p));
-        if ( !fluidmec.isStationary() )
+        if ( !fluidmec.isStationaryModel() )
         {
             auto stab_residual_bilinear_u = residualTransientLinearExpr_u( idv(rho),myViscosity,idv(betaU),u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
@@ -331,7 +331,7 @@ updateLinearPDEStabilizationGLSStokes( FluidMechanicsType const& fluidmec, Model
 #endif
 
     auto stab_test = -rho*trans(grad(p));
-    if ( !fluidmec.isStationary() )
+    if ( !fluidmec.isStationaryModel() )
     {
         if ( FluidMechanicsType::nOrderVelocity>1 )
         {
@@ -422,7 +422,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 #endif
         //auto stab_test = grad(u)*uconv - myViscosity*laplacian(u);
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
-        if (!fluidmec.isStationary())
+        if (!fluidmec.isStationaryModel())
         {
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
@@ -467,7 +467,7 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 #endif
 
         auto stab_test = -idv(rho)*trans(grad(p));
-        if ( !fluidmec.isStationary() )
+        if ( !fluidmec.isStationaryModel() )
         {
             auto const& rhsTimeDerivativeVP = fluidmec.timeStepBDF()->polyDeriv();
             auto rhsTimeDerivative = rhsTimeDerivativeVP.template element<0>();
@@ -542,7 +542,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterConvectionDiffusion(), uconv, myViscosity );
 #endif
         auto stab_test = stabGLStestLinearExpr_u( idv(rho),myViscosity,idv(u),u, mpl::int_<StabGLSType>() );
-        if (!fluidmec.isStationary())
+        if (!fluidmec.isStationaryModel())
         {
             auto stab_residual_bilinear_u = residualTransientJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
@@ -578,7 +578,7 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
         auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameterPressure(), uconv, myViscosity );
 #endif
         auto stab_test = -idv(rho)*trans(grad(p));
-        if ( !fluidmec.isStationary() )
+        if ( !fluidmec.isStationaryModel() )
         {
             auto stab_residual_bilinear_u = residualTransientJacobianExpr_u( idv(rho),myViscosity,u,fluidmec, mpl::int_<StabResidualType>() );
             bilinearForm_PatternCoupled +=
@@ -624,7 +624,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisationGLS( DataUpdateL
                 FluidMechanicsDetail::updateLinearPDEStabilizationGLS<1>( *this, data );
             }
         }
-        else if ( this->modelName() == "Stokes")
+        else if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
             CHECK( this->stabilizationGLSType() == "pspg" ) << "only pspg stab for Stokes";
             FluidMechanicsDetail::updateLinearPDEStabilizationGLSStokes( *this, data );
