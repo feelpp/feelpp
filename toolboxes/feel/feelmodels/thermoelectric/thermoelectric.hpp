@@ -27,8 +27,8 @@
    \date 2016-12-12
  */
 
-#ifndef FEELPP_THERMOELECTRIC_HPP
-#define FEELPP_THERMOELECTRIC_HPP 1
+#ifndef FEELPP_TOOLBOXES_THERMOELECTRIC_HPP
+#define FEELPP_TOOLBOXES_THERMOELECTRIC_HPP 1
 
 #include <feel/feelmodels/heattransfer/heattransfer.hpp>
 #include <feel/feelmodels/electric/electric.hpp>
@@ -41,9 +41,6 @@ namespace FeelModels
 
 template< typename HeatTransferType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
-                       public MarkerManagementDirichletBC,
-                       public MarkerManagementNeumannBC,
-                       public MarkerManagementRobinBC,
                        public boost::enable_shared_from_this< ThermoElectric<HeatTransferType,ElectricType> >
 {
 
@@ -172,4 +169,4 @@ private :
 } // namespace FeelModels
 } // namespace Feel
 
-#endif // INCLUDE_THERMOELECTRIC_HPP
+#endif // FEELPP_TOOLBOXES_THERMOELECTRIC_HPP
