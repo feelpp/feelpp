@@ -122,6 +122,7 @@ SER<CRBType>::run()
             tic();
             if( do_offline_eim && crb->offlineStep() ) //Continue to enrich EIM functionspace only is RB is not complete
             {
+                // Be careful if you have multiple EIMs to not overstep the bounds of the vectors when computing beqtQm (see #1130)
                 do_offline_eim = false; //re-init
                 for( auto eim_sc : eim_sc_vector )
                 {
