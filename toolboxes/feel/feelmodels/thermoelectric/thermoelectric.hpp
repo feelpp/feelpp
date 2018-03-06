@@ -121,19 +121,17 @@ public :
     // apply assembly and solver
     void solve();
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    //void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     void updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
     void updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const;
     void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
 
     void updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
 
+    void updateLinearPDE( DataUpdateLinear & data ) const;
+
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateBCStrongDirichletJacobian(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
     void updateResidual( DataUpdateResidual & data ) const;
-    void updateBCDirichletStrongResidual( vector_ptrtype& R ) const;
 
 private :
     heattransfer_model_ptrtype M_heatTransferModel;
