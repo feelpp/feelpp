@@ -100,7 +100,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
     ModelNumerical::updateTime(double t)
     {
         M_timeCurrent=t;
-        M_modelProps->parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
+        if ( M_modelProps )
+            M_modelProps->parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
     }
 
 
