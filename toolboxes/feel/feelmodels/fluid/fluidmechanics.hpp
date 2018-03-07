@@ -27,8 +27,8 @@
  \date 2011-07-17
  */
 
-#ifndef FEELPP_FLUIDMECHANICS_HPP
-#define FEELPP_FLUIDMECHANICS_HPP 1
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP 1
 
 
 #include <feel/feeldiscr/functionspace.hpp>
@@ -1061,7 +1061,7 @@ protected:
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
     //----------------------------------------------------
-    bool M_preconditionerAttachPMM;
+    bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
     //----------------------------------------------------
     bool M_useHeatTransferModel;
@@ -1269,6 +1269,6 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace Feel
 
 
-#endif /* FEELPP_FLUIDMECHANICS_HPP */
+#endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 
 
