@@ -745,9 +745,6 @@ Bdf<SpaceType>::saveCurrent()
         {
 #ifdef FEELPP_HAS_HDF5
             M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
-            // TODO REMOVE
-            std::cout <<  "save iter: " << iteration << ", time: "<< M_time
-                << ", path:" << (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string();
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -802,9 +799,6 @@ Bdf<SpaceType>::loadCurrent()
             LOG(INFO) << "BDF HDF5 load solution iteration " << iteration
                       << " time " << M_time
                       << " from " << fname.string();
-            // TODO REMOVE
-            std::cout <<  "save iter: " << iteration << ", time: "<< M_time
-                << ", path:" << (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string();
             if ( fs::exists( fname ) )
                 M_unknowns[0]->loadHDF5( fname.string() );
             else
