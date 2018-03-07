@@ -231,6 +231,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     // prec
     M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
     M_pmmNeedUpdate = false;
+    M_preconditionerAttachPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
 
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
@@ -1194,16 +1195,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                                fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_fluid->bdfOrder() %this->timeStep()).str() ) ) ).string() );
 
     // start or restart time step scheme
-    if (!this->doRestart())
+    if ( !this->doRestart() )
     {
-        if ( ( !this->startBySolveStokesStationary() ) ||
-             ( this->startBySolveStokesStationary() && this->hasSolveStokesStationaryAtKickOff() ) )
-        {
-            // start time step
-            M_bdf_fluid->start(*M_Solution);
-            // up current time
-            this->updateTime( M_bdf_fluid->time() );
-        }
+        // start time step
+        M_bdf_fluid->start(*M_Solution);
+        // up current time
+        this->updateTime( M_bdf_fluid->time() );
     }
     else
     {
@@ -1763,8 +1760,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
 
-    bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
-    if ( buildOperatorPCD )
+    if ( M_preconditionerAttachPCD )
     {
         BoundaryConditions bcPrecPCD;
         bcPrecPCD.clear();
@@ -1876,12 +1872,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 #endif
         //CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
 
-        if ( buildOperatorPCD )
-        {
-            boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
-            opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
-            this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
-        }
+        // build pcd operator
+        boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
+        opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+        this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
     }
 
 }

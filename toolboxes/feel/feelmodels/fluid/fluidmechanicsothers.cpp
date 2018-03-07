@@ -852,16 +852,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    CHECK( false ) << "TODO";
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
-{
-    this->log("FluidMechanics","solve", "start" );
-    this->timerTool("Solve").start();
-
     this->modelProperties().parameters().updateParameterValues();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -876,7 +866,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
-    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    if ( M_preconditionerAttachPCD && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
         boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
             boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
@@ -886,37 +876,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     if ( this->M_useHeatTransferModel && this->M_useGravityForce )
         this->M_heatTransferModel->updateParameterValues();
+}
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
+{
+    this->log("FluidMechanics","solve", "start" );
+    this->timerTool("Solve").start();
+
+    this->updateParameterValues();
 
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
-    if ( this->startBySolveStokesStationary() && !this->isStationary() &&
+    if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
         this->log("FluidMechanics","solve", "start by solve stokes stationary" );
 
         std::string saveStressTensorLawType = this->dynamicViscosityLaw();
         std::string savePdeType = this->modelName();
+        std::string saveSolverName = this->solverName();
+        bool saveIsStationary = this->isStationary();
         // prepare Stokes-stationary config
         this->setDynamicViscosityLaw( "newtonian" );
         this->setModelName( "Stokes" );
         this->setStationary( true );
-        // possibility to config a specific time which appear in bc
-        double timeUsed = doption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.time-value-used-in-bc");
-        this->updateTime( timeUsed );
-
-        this->solve();
+        //this->solve();
+        M_algebraicFactory->solve( "LinearSystem", this->blockVectorSolution().vectorMonolithic() );
         this->hasSolveStokesStationaryAtKickOff( true );
 
-        if ( boption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.do-export") )
-            this->exportResults(this->timeInitial());
+        //if ( boption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.do-export") )
+        //   this->exportResults(this->timeInitial());
         // revert parameters
         this->setDynamicViscosityLaw( saveStressTensorLawType );
         this->setModelName( savePdeType );
-        this->setStationary( false );
-
-        this->initTimeStep();
+        this->setSolverName( saveSolverName );
+        this->setStationary( saveIsStationary );
     }
 
     if ( this->startBySolveNewtonian() && this->densityViscosityModel()->dynamicViscosityLaw() != "newtonian" &&
@@ -1028,13 +1025,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
-                                                                     vector_ptrtype const& vecSol ) const
+                                                                 vector_ptrtype const& vecSol ) const
 {
     if ( this->algebraicFactory() )
     {
         if ( M_preconditionerAttachPMM )
             this->updateInHousePreconditionerPMM( mat, vecSol );
-        this->updateInHousePreconditionerPCD( mat,vecSol );
+        if ( M_preconditionerAttachPCD )
+            this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
 
@@ -1066,56 +1064,54 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
 {
-    if ( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
-    {
-        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
-            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
-        auto const& rho = this->densityViscosityModel()->fieldRho();
-        auto const& mu = this->densityViscosityModel()->fieldMu();
-        bool hasAlpha = !this->isStationaryModel();
-        double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
-        auto alpha = idv(rho)*coeffAlpha;
-        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
-        {
-            if (this->isMoveDomain() )
-            {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->update(idv(rho),idv(mu), -idv(rho)*idv(this->meshVelocity()), alpha, true, hasAlpha );
-#endif
-            }
-            else
-                myOpPCD->update(idv(rho),idv(mu), zero<nDim,1>(), alpha, false, hasAlpha );
-        }
-        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
-        {
-            auto BetaU = this->timeStepBDF()->poly();
-            auto betaU = BetaU.template element<0>();
-            if (this->isMoveDomain() )
-            {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->update(idv(rho),idv(mu), idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
-#endif
-            }
-            else
-                myOpPCD->update(idv(rho),idv(mu), idv(rho)*idv(betaU) , alpha, true, hasAlpha );
-        }
-        else if ( this->modelName() == "Navier-Stokes" )
-        {
-            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
-            auto u = U.template element<0>();
-            auto p = U.template element<1>();
-            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel());
-            if (this->isMoveDomain() )
-            {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
-#endif
-            }
-            else
-                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*idv(u) , alpha, true, hasAlpha );
-        }
-    }
+    CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
 
+    boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+        boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& mu = this->densityViscosityModel()->fieldMu();
+    bool hasAlpha = !this->isStationaryModel();
+    double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
+    auto alpha = idv(rho)*coeffAlpha;
+    if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+    {
+        if (this->isMoveDomain() )
+        {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            myOpPCD->update(idv(rho),idv(mu), -idv(rho)*idv(this->meshVelocity()), alpha, true, hasAlpha );
+#endif
+        }
+        else
+            myOpPCD->update(idv(rho),idv(mu), zero<nDim,1>(), alpha, false, hasAlpha );
+    }
+    else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
+    {
+        auto BetaU = this->timeStepBDF()->poly();
+        auto betaU = BetaU.template element<0>();
+        if (this->isMoveDomain() )
+        {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            myOpPCD->update(idv(rho),idv(mu), idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+        }
+        else
+            myOpPCD->update(idv(rho),idv(mu), idv(rho)*idv(betaU) , alpha, true, hasAlpha );
+    }
+    else if ( this->modelName() == "Navier-Stokes" )
+    {
+        auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
+        auto u = U.template element<0>();
+        auto p = U.template element<1>();
+        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel());
+        if (this->isMoveDomain() )
+        {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+        }
+        else
+            myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*idv(u) , alpha, true, hasAlpha );
+    }
 }
 
 
