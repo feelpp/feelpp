@@ -167,24 +167,14 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"hovisu").c_str(), Feel::po::value<bool>(), "true or false for high order visualisation")
         (prefixvm(prefix,"hovisu.space-used").c_str(), Feel::po::value<std::string>()->default_value( "velocity" ), "velocity , pressure, p1 ")
 
-        (prefixvm(prefix,"do_export_velocity").c_str(), Feel::po::value<bool>(), "doExportVelocity")
-        (prefixvm(prefix,"do_export_pressure").c_str(), Feel::po::value<bool>(), "doExportPressure")
-        (prefixvm(prefix,"do_export_displacement").c_str(), Feel::po::value<bool>(), "doExportDisplacement")
-        (prefixvm(prefix,"do_export_vorticity").c_str(), Feel::po::value<bool>(), "doExportVorticity")
-        (prefixvm(prefix,"do_export_normalstress").c_str(), Feel::po::value<bool>(), "doExportNormalStress")
-        (prefixvm(prefix,"do_export_wallshearstress").c_str(), Feel::po::value<bool>(), "doExportWallShearStress")
-        (prefixvm(prefix,"do_export_density").c_str(), Feel::po::value<bool>(), "doExportDensity")
-        (prefixvm(prefix,"do_export_viscosity").c_str(), Feel::po::value<bool>(), "doExportViscosity")
-        (prefixvm(prefix,"do_export_meshale").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshALE")
-        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
-
+#if 0
         (prefixvm(prefix,"periodicity.translate-x").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-x")
         (prefixvm(prefix,"periodicity.translate-y").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-y")
         (prefixvm(prefix,"periodicity.translate-z").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-z")
         (prefixvm(prefix,"periodicity.marker1").c_str(), Feel::po::value<std::string>(), "periodicity.marker1 ")
         (prefixvm(prefix,"periodicity.marker2").c_str(), Feel::po::value<std::string>(), "periodicity.marker2 ")
         (prefixvm(prefix,"periodicity.pressure-jump").c_str(), Feel::po::value<double>()->default_value(1.0), "periodicity.pressure-jump ")
-
+#endif
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
         (prefixvm(prefix,"preconditioner.attach-pmm").c_str(), Feel::po::value<bool>()->default_value(false), "attach pressure mass matrix")
