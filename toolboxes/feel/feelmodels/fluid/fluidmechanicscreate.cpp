@@ -7,7 +7,7 @@
 //#include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 //#include <feel/feelvf/inv.hpp>
-#include <feel/feelpde/preconditionerblockns.hpp>
+#include <feel/feelpde/operatorpcd.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
@@ -1763,9 +1763,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
 
-    bool buildPrecBlockns = ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" );
     bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
-    if ( buildPrecBlockns || buildOperatorPCD )
+    if ( buildOperatorPCD )
     {
         BoundaryConditions bcPrecPCD;
         bcPrecPCD.clear();
@@ -1875,24 +1874,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
             }
         }
 #endif
-        CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-
-        if ( buildPrecBlockns )
-        {
-            typedef space_fluid_type space_type;
-            typedef space_densityviscosity_type properties_space_type;
-            boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =
-                Feel::blockns( _space=this->functionSpace(),
-                               _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
-                               _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
-                               _bc=bcPrecPCD,
-                               _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
-                               _prefix="velocity",
-                               _mu=idv(this->densityViscosityModel()->fieldMu()),
-                               _rho=idv(this->densityViscosityModel()->fieldRho())
-                               /*_alpha=myalpha*/ );
-            this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
-        }
+        //CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
 
         if ( buildOperatorPCD )
         {

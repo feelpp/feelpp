@@ -19,7 +19,7 @@
 #include <feel/feelvf/mean.hpp>
 //#include <fsi/fsicore/variousfunctions.hpp>
 
-#include <feel/feelpde/preconditionerblockns.hpp>
+#include <feel/feelpde/operatorpcd.hpp>
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
@@ -876,15 +876,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
 
-    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
-    {
-        typedef space_fluid_type space_type;
-        typedef space_densityviscosity_type properties_space_type;
-
-        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
-        myPrecBlockNs->setParameterValues( paramValues );
-    }
     if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
         boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
@@ -1006,7 +997,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {
-    if ( this->definePressureCstMethod() == "algebraic" )
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
         auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
         auto pSol = upSol.template element<1>();
@@ -1039,7 +1030,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
                                                                      vector_ptrtype const& vecSol ) const
 {
-    if ( this->algebraicFactory() )// && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    if ( this->algebraicFactory() )
     {
         if ( M_preconditionerAttachPMM )
             this->updateInHousePreconditionerPMM( mat, vecSol );
@@ -1075,63 +1066,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
 {
-    if ( this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
-    {
-        this->log("FluidMechanics","updateInHousePreconditionerPCD", "start");
-
-        typedef space_fluid_type space_type;
-        typedef space_densityviscosity_type properties_space_type;
-
-        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
-            boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
-
-        if ( !this->isStationaryModel() )
-            myPrecBlockNs->setAlpha( idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0) );
-        myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
-        myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
-
-        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
-        {
-            myPrecBlockNs->update( mat );
-        }
-        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
-        {
-            auto BetaU = this->timeStepBDF()->poly();
-            auto betaU = BetaU.template element<0>();
-            auto const& rho = this->densityViscosityModel()->fieldRho();
-
-            if (this->isMoveDomain() )
-            {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-                myPrecBlockNs->update( mat, idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ) );
-#endif
-            }
-            else
-            {
-                myPrecBlockNs->update( mat, idv(rho)*idv(betaU) );
-            }
-        }
-        else if ( this->modelName() == "Navier-Stokes" )
-        {
-            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
-            auto u = U.template element<0>();
-            auto const& rho = this->densityViscosityModel()->fieldRho();
-
-            if (this->isMoveDomain() )
-            {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-                myPrecBlockNs->update( mat, idv(rho)*( idv(u)-idv(this->meshVelocity()) ) );
-#endif
-            }
-            else
-            {
-                myPrecBlockNs->update( mat, idv(rho)*idv(u) );
-            }
-        }
-
-        this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish");
-    }
-
     if ( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
     {
         boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
