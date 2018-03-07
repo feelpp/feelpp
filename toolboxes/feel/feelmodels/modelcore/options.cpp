@@ -126,7 +126,6 @@ fluidMechanics_options(std::string const& prefix)
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
-        ( prefixvm(prefix,"start-by-solve-stokes-stationary.time-value-used-in-bc").c_str(), Feel::po::value<double>()->default_value( 0. ), "time-value-used-in-bc")
         //(prefixvm(prefix,"strain_tensor.use-sym-tensor").c_str(), Feel::po::value< bool >()->default_value(true), "sym tensor or not ")
 
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
