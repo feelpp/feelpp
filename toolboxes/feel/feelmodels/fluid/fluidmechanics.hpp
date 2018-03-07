@@ -61,10 +61,6 @@ namespace Feel
 {
 namespace FeelModels
 {
-enum class FluidMechanicsPostProcessFieldExported
-{
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
-};
 
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
@@ -370,24 +366,27 @@ public:
 
     static std::string expandStringFromSpec( std::string const& expr );
 
-    void build();
-    void init( bool buildModelAlgebraicFactory=true );
-
-    void loadConfigBCFile();
-    void loadConfigMeshFile( std::string const& geofilename );
+private :
     void loadParameterFromOptionsVm();
-
-    void createWorldsComm();
-    void createALE();
-    void createMesh();
+    void initMesh();
     void createFunctionSpaces();
+    void createALE();
+    void initBoundaryConditions();
+    void initFluidInlet();
+    void initFluidOutlet();
+    void initUserFunctions();
+    void initPostProcess();
     void createPostProcessExporters();
+public :
+    void init( bool buildModelAlgebraicFactory=true );
+    void initAlgebraicFactory();
+
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
-    void createBCFluidInlet();
 
     void loadMesh(mesh_ptrtype __mesh );
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
     void updateMarkedZonesInMesh();
 
@@ -467,19 +466,21 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
     // init/update user functions defined in json
-    void initUserFunctions();
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
     // export post process results
-    void initPostProcess();
     //void restartPostProcess();
-    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
+
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
-    void exportResultsImpl( double time );
+    //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
     //___________________________________________________________________________________//
@@ -622,6 +623,8 @@ public :
     }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
+    void updateParameterValues();
+
     map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
     std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
     map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
@@ -664,7 +667,6 @@ public :
     void updateFluidInletVelocity();
     //___________________________________________________________________________________//
     // fluid outlets bc
-    void initFluidOutlet();
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
     bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
     bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
@@ -875,7 +877,7 @@ protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
+    bool M_isUpdatedForUse;
     //----------------------------------------------------
     
     //----------------------------------------------------
@@ -1006,7 +1008,7 @@ protected:
     bool M_useGravityForce;
     //----------------------------------------------------
     // post-process field exported
-    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessFieldExported;
     std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
