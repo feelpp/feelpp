@@ -368,60 +368,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     }
     //------------------------------------------------------------------------------------//
 
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( M_useHeatTransferModel && M_useGravityForce )
-        hasStrongDirichletBC = hasStrongDirichletBC || M_heatTransferModel->hasMarkerDirichletBCelimination();
-
-    if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
+    if (!BuildCstPart && _doBCStrongDirichlet && this->hasStrongDirichletBC() )
     {
         R->close();
 
-        auto resFeView = Xh->element(R,rowStartInVector);
-        auto resFeViewVelocity = resFeView.template element<0>();
-
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-        auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-        for ( size_type thedof : dofsWithValueImposedVelocity )
-            resFeViewVelocity.set( thedof,0. );
-        sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
-
-
-        if ( this->hasMarkerPressureBC() )
-        {
-#if 0
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                               _expr=vf::zero<1,1>() );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                                   _expr=vf::zero<1,1>() );
-            }
-#else
-            auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
-            auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            for ( size_type thedof : dofsWithValueImposedPressureBC )
-                lambdaPressure1.set( thedof,0. );
-            sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                for ( size_type thedof : dofsWithValueImposedPressureBC )
-                    lambdaPressure2.set( thedof,0. );
-                sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
-            }
-
-#endif
-        }
+        this->updateResidualStrongDirichletBC( R );
 
         if ( M_useHeatTransferModel && M_useGravityForce )
             M_heatTransferModel->updateResidualStrongDirichletBC( R );
@@ -560,6 +511,59 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
     }
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+{
+    auto Xh = this->spaceVelocityPressure();
+    size_type rowStartInVector = this->rowStartInVector();
+
+    auto resFeView = Xh->element(R,rowStartInVector);
+    auto resFeViewVelocity = resFeView.template element<0>();
+
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
+    auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedVelocity )
+        resFeViewVelocity.set( thedof,0. );
+    sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
+
+
+    if ( this->hasMarkerPressureBC() )
+    {
+#if 0
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                           _expr=vf::zero<1,1>() );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                               _expr=vf::zero<1,1>() );
+        }
+#else
+        auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
+        auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        for ( size_type thedof : dofsWithValueImposedPressureBC )
+            lambdaPressure1.set( thedof,0. );
+        sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            for ( size_type thedof : dofsWithValueImposedPressureBC )
+                lambdaPressure2.set( thedof,0. );
+            sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
+        }
+
+#endif
+    }
+
 }
 
 
