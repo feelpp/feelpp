@@ -399,6 +399,7 @@ public :
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
+    space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
     space_fluid_pressure_ptrtype const/*&*/ functionSpacePressure() const { return M_Xh->template functionSpace<1>(); }
 
@@ -704,6 +705,18 @@ public :
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
+
+    
+    bool hasStrongDirichletBC() const
+        {
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || this->hasMarkerPressureBC();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
+#endif
+            if ( M_useHeatTransferModel && M_useGravityForce )
+                hasStrongDirichletBC = hasStrongDirichletBC || M_heatTransferModel->hasMarkerDirichletBCelimination();
+            return hasStrongDirichletBC;
+        }
     //___________________________________________________________________________________//
 
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
@@ -852,6 +865,7 @@ public :
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
+    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
 
     virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
     virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
