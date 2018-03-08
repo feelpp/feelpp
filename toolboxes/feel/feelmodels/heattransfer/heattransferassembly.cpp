@@ -172,7 +172,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
             {
                 double kappa = thermalConductivity.value();
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=range,
                                _expr= kappa*inner(gradt(u),grad(v)),
                                _geomap=this->geomap() );
             }
@@ -184,7 +184,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
                 auto kappa = thermalConductivity.expr();
                 //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
                 bilinearForm_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
+                    integrate( _range=range,
                                _expr= kappa*inner(gradt(u),grad(v)),
                                _geomap=this->geomap() );
             }
@@ -200,7 +200,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
                        _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
                        _geomap=this->geomap() );
 
-
+#if 0
         //viscous dissipation
         if ( false/*true*/ )
         {
@@ -230,6 +230,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
                                _geomap=this->geomap() );
             }
         }
+#endif
     }
 
     if (!this->isStationary())
