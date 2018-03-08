@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2016-12-12
+       Date: 2018-03-06
 
-  Copyright (C) 2016 Feel++ Consortium
+  Copyright (C) 2018 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,11 +21,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file thermoelectric.cpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2016-12-12
- */
 
 #include <feel/feelmodels/heatfluid/heatfluid.hpp>
 
@@ -79,15 +74,17 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useNaturalConvection = false;//"Forced-Convection";
-    // M_solverNewtonInitialGuessUseLinearThermoElectric = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-thermo-electric");
-    // M_solverNewtonInitialGuessUseLinearHeatTransfer = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-heat-transfer");
-    // M_solverNewtonInitialGuessUseLinearElectric = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-electric");
-    // if ( M_solverNewtonInitialGuessUseLinearThermoElectric )
-    // {
-    //     M_solverNewtonInitialGuessUseLinearHeatTransfer = true;
-    //     M_solverNewtonInitialGuessUseLinearElectric = true;
-    // }
+    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");//"Forced-Convection";
+
+    M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
+    std::string gravityStr;
+    if ( Environment::vm().count(prefixvm(this->prefix(),"gravity-force").c_str()) )
+        gravityStr = soption(_name="gravity-force",_prefix=this->prefix());
+    else if (nDim == 2 )
+        gravityStr = "{0,-9.80665}";
+    else if (nDim == 3 )
+        gravityStr = "{0,0,-9.80665}";
+    M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->repository().expr() );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -212,9 +209,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     size_type currentStartIndex = 0;
-    M_startBlockIndexFieldsInMatrix["fluid"] = currentStartIndex;
+    /*M_startBlockIndexFieldsInMatrix["fluid"] = currentStartIndex;
     currentStartIndex += 2;// TODO!!!!!!
-    M_startBlockIndexFieldsInMatrix["heat-transfer"] = currentStartIndex;
+     M_startBlockIndexFieldsInMatrix["heat-transfer"] = currentStartIndex;*/
 
     // vector solution
     int nBlockFluid = M_fluidModel->blockVectorSolution().size();
@@ -287,9 +284,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << M_heatTransferModel->getInfo()->str();
     *_ostr << M_fluidModel->getInfo()->str();
 
-    std::string myexporterType = M_exporter->type();
-    int myexporterFreq = M_exporter->freq();
-
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -299,16 +293,27 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository();
-    //*_ostr << "\n   Physical Model"
-    //       << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    *_ostr << "\n   Physical Model"
+           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient" )
+           << "\n     -- natural convection  : " << std::string( (M_useNaturalConvection)? "ON":"OFF" );
     //*_ostr << "\n   Numerical Solver"
     //       << "\n     -- solver   : " << M_solverName;
-    *_ostr << "\n   Exporter"
-           << "\n     -- type            : " << myexporterType
-           << "\n     -- freq save       : " << myexporterFreq
-           << "\n     -- fields [heat-transfer] : TODO"// << doExport_str
-           << "\n     -- fields [electric] : TODO" //<< doExport_str
-           << "\n   Processors"
+    if ( M_exporter )
+    {
+        *_ostr << "\n   Exporter"
+               << "\n     -- type            : " << M_exporter->type()
+               << "\n     -- freq save       : " << M_exporter->freq();
+        std::string fieldExportedHeat;
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeatTransfert )
+            fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
+        std::string fieldExportedFluid;
+        for ( std::string const& fieldName : M_postProcessFieldExportedFluid )
+            fieldExportedFluid=(fieldExportedFluid.empty())? fieldName : fieldExportedFluid + " - " + fieldName;
+        *_ostr << "\n     -- fields [heat-transfer] : " << fieldExportedHeat
+               << "\n     -- fields [fluid] : " << fieldExportedFluid;
+    }
+
+    *_ostr << "\n   Processors"
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
 
@@ -335,6 +340,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
     this->log("HeatFluid","exportResults", "start");
@@ -385,6 +391,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         this->updateParameterValues();
 
+        M_fluidModel->setRowStartInMatrix( this->rowStartInMatrix() );
+        M_fluidModel->setColStartInMatrix( this->colStartInMatrix() );
+        M_fluidModel->setRowStartInVector( this->rowStartInVector() );
+
+        M_heatTransferModel->setRowStartInMatrix( this->rowStartInMatrix()+2 );//TO FIX!!!!!!!!
+        M_heatTransferModel->setColStartInMatrix( this->colStartInMatrix()+2 );
+        M_heatTransferModel->setRowStartInVector( this->rowStartInVector()+2 );
+
+        M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
+        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
+        M_blockVectorSolutionMonolithic.localize();
     }
 #if 0
     if ( M_solverName == "Linear" )
@@ -435,6 +452,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
 }
 
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    M_heatTransferModel->postSolveNewton( rhs, sol );
+    M_fluidModel->postSolveNewton( rhs, sol );
+}
+
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -455,7 +480,6 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
-#if 0
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
@@ -465,109 +489,76 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateJacobian", "start"+sc);
-    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    //size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
+    //size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
 
     auto mesh = this->mesh();
-
-    if ( !buildCstPart )
-    {
-        auto XhV = M_electricModel->spaceElectricPotential();
-        auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-        auto XhT = M_heatTransferModel->spaceTemperature();
-        //auto const& t = M_heatTransferModel->fieldTemperature();
-        auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-
-        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
-        auto mybfTV = form2( _test=XhT,_trial=XhV,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        auto mybfVV = form2( _test=XhV,_trial=XhV,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                             _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        auto mybfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
-
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            if ( electricConductivity.isConstant() )
-            {
-                if ( M_modelUseJouleEffect )
-                {
-                    double sigma = electricConductivity.value();
-                    mybfTV +=
-                        integrate( _range=range,
-                                   _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
-                                   _geomap=this->geomap() );
-                }
-            }
-            else
-            {
-                std::string symbolStr = "heat_transfer_T";
-                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
-                if ( M_modelUseJouleEffect )
-                {
-                    mybfTV +=
-                        integrate( _range=range,
-                                   _expr= -sigma*2*inner(gradt(v),gradv(v))*id( t ),
-                                   _geomap=this->geomap() );
-                }
-
-                if ( sigma.expression().hasSymbol( symbolStr ) )
-                {
-                    auto sigmaDiff = diff( electricConductivity.expr(),symbolStr,1,"",this->worldComm(),this->repository().expr());
-                    auto sigmaDiffEval = expr( sigmaDiff, symbolStr, idv(t) );
-
-                    if ( M_modelUseJouleEffect )
-                    {
-                        mybfTT +=
-                            integrate( _range=range,
-                                       _expr= -sigmaDiffEval*idt(t)*inner(gradv(v)/*,gradv(v)*/)*id( t ),
-                                       _geomap=this->geomap() );
-                    }
-
-                    mybfVV +=
-                        integrate( _range=range,
-                                   _expr= sigma*inner(gradt(v),grad(v)),
-                                   _geomap=this->geomap() );
-                    mybfVT +=
-                        integrate( _range=range,
-                                   _expr= sigmaDiffEval*idt(t)*inner(gradv(v),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
-        }
-    }
 
     DataUpdateJacobian dataSubPhysics( data );
     dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatTransferModel->updateJacobian( dataSubPhysics );
-    M_electricModel->updateJacobian( dataSubPhysics );
+    M_fluidModel->updateJacobian( dataSubPhysics );
+
+    if ( buildNonCstPart )
+    {
+        auto XhVP = M_fluidModel->spaceVelocityPressure();
+        auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
+        auto u = U.template element<0>();
+
+        auto XhT = M_heatTransferModel->spaceTemperature();
+        auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
+        auto const& thermalProperties = M_heatTransferModel->thermalProperties();
+
+        for ( auto const& rangeData : M_heatTransferModel->thermalProperties()->rangeMeshElementsByMaterial() ) //TO FIX!!!!!!!!!
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& rho = M_heatTransferModel->thermalProperties()->rho( matName );
+            auto const& rhoHeatCapacity = M_heatTransferModel->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& thermalExpansion = M_heatTransferModel->thermalProperties()->thermalExpansion( matName );
+            CHECK( rho.isConstant() && rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
+
+            double rhoHeatCapacityValue = rhoHeatCapacity.value();
+            double rhoValue = rho.value();
+            double beta = thermalExpansion.value();
+
+            form2( _test=XhT,_trial=XhT,_matrix=J,
+                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
+                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
+                integrate( _range=range,
+                           _expr= rhoHeatCapacityValue*(gradt(t)*idv(u))*id(t),
+                           _geomap=this->geomap() );
+
+            form2( _test=XhT,_trial=XhVP,_matrix=J,
+                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
+                   _colstart=M_fluidModel->colStartInMatrix() ) +=
+                integrate( _range=range,
+                           _expr= rhoHeatCapacityValue*(gradv(t)*idt(u))*id(t),
+                           _geomap=this->geomap() );
+
+            form2( _test=XhVP,_trial=XhT,_matrix=J,
+                   _rowstart=M_fluidModel->rowStartInMatrix(),
+                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
+                integrate( _range=range,
+                           _expr= rhoValue*beta*idt(t)*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+
+        }
+    }
 
     if ( buildNonCstPart && doBCStrongDirichlet )
     {
         M_heatTransferModel->updateJacobianStrongDirichletBC( J,RBis );
-        M_electricModel->updateJacobianStrongDirichletBC( J,RBis );
+        M_fluidModel->updateJacobianStrongDirichletBC( J,RBis );
     }
     this->log("HeatFluid","updateJacobian", "finish"+sc);
-#endif
+
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
-#if 0
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
     bool buildCstPart = data.buildCstPart();
@@ -578,74 +569,76 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateResidual", "start"+sc);
 
-    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    // size_type startBlockIndexTemperature = this->startBlockSpaceIndex("heat-transfer.temperature");
+    // size_type startBlockIndexVelocity = this->startBlockSpaceIndex( "fluid.velocity-pressure" );
 
     auto mesh = this->mesh();
 
     DataUpdateResidual dataSubPhysics( data );
     dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatTransferModel->updateResidual( dataSubPhysics );
-    M_electricModel->updateResidual( dataSubPhysics );
+    M_fluidModel->updateResidual( dataSubPhysics );
 
-    if ( !buildCstPart )
+    if ( buildNonCstPart )
     {
-        auto XhV = M_electricModel->spaceElectricPotential();
-        auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
-        auto XhT = M_heatTransferModel->spaceTemperature();
-        auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-        auto mylfT = form1( _test=XhT, _vector=R,
-                            _rowstart=this->rowStartInVector()+startBlockIndexTemperature );
-        auto mylfV = form1( _test=XhV, _vector=R,
-                            _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
+        auto XhVP = M_fluidModel->spaceVelocityPressure();
+        auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
+        auto u = U.template element<0>();
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        auto XhT = M_heatTransferModel->spaceTemperature();
+        auto const t = XhT->element(XVec, M_heatTransferModel->rowStartInVector()+0 );
+        auto mylfT = form1( _test=XhT, _vector=R,
+                            _rowstart=M_heatTransferModel->rowStartInVector()+0 );
+        auto mylfVP = form1( _test=XhVP, _vector=R,
+                             _rowstart=M_fluidModel->rowStartInVector()+0 );
+
+
+        for ( auto const& rangeData : M_heatTransferModel->thermalProperties()->rangeMeshElementsByMaterial() ) //TO FIX!!!!!!!!!
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
-            if ( electricConductivity.isConstant() )
+            auto const& rhoHeatCapacity = M_heatTransferModel->thermalProperties()->rhoHeatCapacity( matName );
+            if ( rhoHeatCapacity.isConstant() )
             {
-                if ( M_modelUseJouleEffect )
-                {
-                    double sigma = electricConductivity.value();
-                    mylfT +=
-                        integrate( _range=range,
-                                   _expr= -sigma*inner(gradv(v)/*,gradv(v)*/)*id( t ),
-                                   _geomap=this->geomap() );
-                }
+                double rhoHeatCapacityValue = rhoHeatCapacity.value();
+                mylfT +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityValue*(gradv(t)*idv(u))*id(t),
+                               _geomap=this->geomap() );
             }
             else
             {
-                std::string symbolStr = "heat_transfer_T";
-                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
-                if ( M_modelUseJouleEffect )
-                {
-                    mylfT +=
-                        integrate( _range=range,
-                                   _expr= -sigma*inner(gradv(v)/*,gradv(v)*/)*id( t ),
-                                   _geomap=this->geomap() );
-                }
-                if ( sigma.expression().hasSymbol( symbolStr ) )
-                {
-                    mylfV +=
-                        integrate( _range=range,
-                                   _expr= sigma*inner(gradv(v),grad(v)),
-                                   _geomap=this->geomap() );
-                }
+                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+                mylfT +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
+                               _geomap=this->geomap() );
             }
+            auto const& rho = M_heatTransferModel->thermalProperties()->rho( matName );
+            auto const& thermalExpansion = M_heatTransferModel->thermalProperties()->thermalExpansion( matName );
+            CHECK( rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
+            double rhoValue = rho.value();
+            double beta = thermalExpansion.value();
+            double T0 = M_BoussinesqRefTemperature;
+            mylfVP +=
+                integrate( _range=range,
+                           _expr= rhoValue*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
         }
+
     }
 
-    if ( !buildCstPart && doBCStrongDirichlet &&
-         ( M_heatTransferModel->hasMarkerDirichletBCelimination() || M_electricModel->hasMarkerDirichletBCelimination() ) )
+    if ( buildNonCstPart && doBCStrongDirichlet &&
+         ( M_heatTransferModel->hasMarkerDirichletBCelimination() || M_fluidModel->hasStrongDirichletBC() ) )
     {
         R->close();
-        M_heatTransferModel->updateResidualStrongDirichletBC( R );
-        M_electricModel->updateResidualStrongDirichletBC( R );
+        if ( M_heatTransferModel->hasMarkerDirichletBCelimination() )
+            M_heatTransferModel->updateResidualStrongDirichletBC( R );
+        if ( M_fluidModel->hasStrongDirichletBC() )
+            M_fluidModel->updateResidualStrongDirichletBC( R );
     }
     this->log("HeatFluid","updateResidual", "finish"+sc);
-#endif
+
 }
 
 
