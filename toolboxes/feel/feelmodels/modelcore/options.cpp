@@ -345,6 +345,14 @@ thermoElectric_options(std::string const& prefix)
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
 
+Feel::po::options_description
+heatFluid_options(std::string const& prefix)
+{
+    Feel::po::options_description heatFluidOptions("HeatFluid options");
+    heatFluidOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
+    heatFluidOptions.add( fluidMechanics_options( prefixvm(prefix,"fluid") ) );
+    return heatFluidOptions.add( modelnumerical_options( prefix ) );
+}
 
 Feel::po::options_description
 advection_options(std::string const& prefix)
@@ -578,6 +586,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(multifluid_options("multifluid"));
     else if (type == "thermo-electric")
         toolboxesOptions.add(thermoElectric_options("thermo-electric"));
+    else if (type == "heat-fluid")
+        toolboxesOptions.add(heatFluid_options("heat-fluid"));
     else
         CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat-transfer, fsi, advection, levelset, multifluid, thermo-electric";
 
