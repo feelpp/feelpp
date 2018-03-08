@@ -739,3 +739,57 @@ endmacro(genLibThermoElectric)
 #############################################################################
 #############################################################################
 #############################################################################
+
+macro( genLibHeatFluid )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;U_ORDER;P_ORDER;T_ORDER;GEO_ORDER;"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_T_ORDER OR FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_U_ORDER OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_T_ORDER OR FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(HEATFLUID_DIM ${FEELMODELS_APP_DIM})
+  set(HEATFLUID_U_ORDER ${FEELMODELS_APP_U_ORDER})
+  set(HEATFLUID_P_ORDER ${FEELMODELS_APP_P_ORDER})
+  set(HEATFLUID_T_ORDER ${FEELMODELS_APP_T_ORDER})
+  set(HEATFLUID_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  genLibHeatTransfer(
+    DIM     ${HEATFLUID_DIM}
+    T_ORDER ${HEATFLUID_T_ORDER}
+    GEO_ORDER ${HEATFLUID_ORDERGEO}
+    )
+  genLibFluidMechanics(
+    DIM     ${HEATFLUID_DIM}
+    U_ORDER ${HEATFLUID_U_ORDER}
+    P_ORDER ${HEATFLUID_P_ORDER}
+    GEO_ORDER ${HEATFLUID_ORDERGEO}
+    )
+
+  set(HEATFLUID_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${FLUIDMECHANICS_LIB_VARIANTS})
+  set(HEATFLUID_LIB_NAME feelpp_toolbox_heatfluid_lib_${HEATFLUID_LIB_VARIANTS})
+
+  if ( NOT TARGET ${HEATFLUID_LIB_NAME} )
+    # configure the lib
+    set(HEATFLUID_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heatfluid/${HEATFLUID_LIB_VARIANTS})
+    set(HEATFLUID_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp )
+    set(HEATFLUID_CODEGEN_SOURCES
+      ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp )
+    set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    set(HEATFLUID_LIB_DEPENDS ${HEATTRANSFER_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${HEATFLUID_LIB_NAME}
+      LIB_DIR ${HEATFLUID_LIB_DIR}
+      LIB_DEPENDS ${HEATFLUID_LIB_DEPENDS}
+      FILES_TO_COPY ${HEATFLUID_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${HEATFLUID_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidconfig.h.in
+      )
+  endif()
+
+endmacro(genLibHeatFluid)
