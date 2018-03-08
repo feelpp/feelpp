@@ -170,7 +170,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                            this->subPrefix(), this->repository() ) );
     if ( !M_heatTransferModel->modelPropertiesPtr() )
         M_heatTransferModel->setModelProperties( this->modelPropertiesPtr() );
-    M_heatTransferModel->loadMesh( this->mesh() );
+    M_heatTransferModel->setMesh( this->mesh() );
     M_heatTransferModel->init( false );
 
     M_fluidModel.reset( new fluid_model_type(prefixvm(this->prefix(),"fluid"), false, this->worldComm(),
