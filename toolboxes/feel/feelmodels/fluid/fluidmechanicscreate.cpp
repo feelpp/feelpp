@@ -989,7 +989,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
                                                          this->subPrefix(), this->repository() ) );
         M_heatTransferModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
-        M_heatTransferModel->loadMesh( this->mesh() );
+        M_heatTransferModel->setMesh( this->mesh() );
         M_heatTransferModel->init( !M_useGravityForce/*false*/ );
 
         M_rangeMeshElementsAeroThermal = intersect( M_rangeMeshElements, M_heatTransferModel->rangeMeshElements() );
