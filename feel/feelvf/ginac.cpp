@@ -153,11 +153,16 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     CHECK( fsize  > 0 ) << "bad expression format";
     std::string strexpr( fields[0] );
     std::vector<std::string> strsyms;
+#if 0
     if(fsize==1)
         strsyms.push_back("0"); // no symbols means constant expression
     else
         for( auto it=fields.begin()+1; it!=fields.end(); ++it )
             strsyms.push_back( *it );
+#else
+    for( auto it=fields.begin()+1; it!=fields.end(); ++it )
+        strsyms.push_back( *it );
+#endif
     std::vector<symbol> syms;
     std::for_each( strsyms.begin(), strsyms.end(),
                    [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
