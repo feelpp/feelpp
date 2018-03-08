@@ -742,6 +742,44 @@ diff( Expr<GinacEx<Order>> const& s, std::string const& diffVariable, int diffOr
                         s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
+
+template<int Order,int Order1,int Order2>
+inline
+Expr<GinacEx<Order> >
+expr_mult( Expr<GinacEx<Order1>> const& e1, Expr<GinacEx<Order2>> const& e2, std::string filename="",
+           WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    GiNaC::ex newex = e1.expression().expression()*e2.expression().expression();
+    std::string exprDesc = str( newex );
+    std::set<std::string> exprSymb;
+    for ( GiNaC::symbol const& s1 : e1.expression().symbols() )
+        exprSymb.insert( s1.get_name() );
+    for ( GiNaC::symbol const& s2 : e2.expression().symbols() )
+        exprSymb.insert( s2.get_name() );
+    for ( std::string const& s : exprSymb )
+        exprDesc += (":"+s);
+    return expr<Order>( exprDesc, filename, world, dirLibExpr );
+}
+
+template<int Order>
+inline
+Expr<GinacEx<Order> >
+expr_mult( Expr<GinacEx<Order>> const& e1, double e2, std::string filename="",
+           WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    GiNaC::ex newex = e1.expression().expression()*e2;
+    std::string exprDesc = str( newex );
+    std::set<std::string> exprSymb;
+    for ( GiNaC::symbol const& s1 : e1.expression().symbols() )
+        exprSymb.insert( s1.get_name() );
+    for ( std::string const& s : exprSymb )
+        exprDesc += (":"+s);
+    return expr<Order>( exprDesc, filename, world, dirLibExpr );
+}
+
+
+
+
 template<int Order=2>
 using scalar_field_expression=Expr<GinacEx<Order>>;
 
