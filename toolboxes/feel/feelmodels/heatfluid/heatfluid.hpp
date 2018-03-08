@@ -55,7 +55,7 @@ public:
     typedef typename fluid_model_type::mesh_type mesh_fluid_type;
     typedef mesh_fluid_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
+    static const uint16_type nDim = mesh_type::nDim;
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -106,6 +106,13 @@ public :
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
     BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
 
+    size_type startBlockSpaceIndex( std::string const& name )
+        {
+            auto itFind = M_startBlockSpaceIndex.find( name );
+            if ( itFind != M_startBlockSpaceIndex.end() )
+                return itFind->second;
+            return invalid_size_type_value;
+        }
     //___________________________________________________________________________________//
 
     boost::shared_ptr<TSBase> timeStepBase() { return this->heatTransferModel()->timeStepBase(); }
@@ -115,6 +122,8 @@ public :
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
+
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
 
@@ -135,6 +144,8 @@ private :
 
     // physical parameter
     bool M_useNaturalConvection;
+    double M_BoussinesqRefTemperature;
+    vector_field_expression<nDim,1,2> M_gravityForce;
     //bool M_modelUseJouleEffect;
 
     // solver
@@ -145,8 +156,7 @@ private :
     backend_ptrtype M_backendMonolithic;
     model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
     BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
-    // start dof index fields in matrix (temperature,electric-potential,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    std::map<std::string,size_type> M_startBlockSpaceIndex;
 
     // post-process
     export_ptrtype M_exporter;
