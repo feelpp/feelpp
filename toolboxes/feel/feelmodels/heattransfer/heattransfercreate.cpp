@@ -24,7 +24,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
                                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_thermalProperties( new thermalproperties_type( prefix ) )
+    M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("HeatTransfer","constructor", "start" );
 
@@ -42,38 +42,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build mesh, space, exporter,...
-    if ( buildMesh ) this->build();
+    // build mesh
+    if ( buildMesh )
+        this->initMesh();
     //-----------------------------------------------------------------------------//
     this->log("HeatTransfer","constructor", "finish");
 
 }
-
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::build()
-{
-    this->log("HeatTransfer","build", "start" );
-
-    // create or reload mesh
-    this->createMesh();
-
-    this->log("HeatTransfer","build", "finish" );
-}
-
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
-{
-    this->log("HeatTransfer","loadMesh", "start" );
-
-    CHECK( mesh ) << "mesh not init";
-    this->M_mesh = mesh;
-
-    this->log("HeatTransfer","loadMesh", "finish" );
-}
-
-
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -92,16 +67,16 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
 HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::createMesh()
+HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("HeatTransfer","createMesh", "start");
+    this->log("HeatTransfer","initMesh", "start");
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
-    double tElpased = this->timerTool("Constructor").stop("createMesh");
-    this->log("HeatTransfer","createMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    double tElpased = this->timerTool("Constructor").stop("initMesh");
+    this->log("HeatTransfer","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
@@ -114,7 +89,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
+    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials() );
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("HeatTransfer","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
@@ -213,6 +188,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     this->log("HeatTransfer","init", "start" );
     this->timerTool("Constructor").start();
+
+    if ( !M_mesh )
+        this->initMesh();
 
     this->initMaterialProperties();
 
