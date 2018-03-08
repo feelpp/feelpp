@@ -141,11 +141,17 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatTransfer","updateLinearPDE", "start"+sc);
-    boost::mpi::timer thetimer;
+    this->timerTool("Solve").start();
+
+    bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
+    bool BuildNonCstPart_Form1TransientTerm = buildNonCstPart;
+    if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+        BuildNonCstPart_Form2TransientTerm = buildCstPart;
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -189,18 +195,77 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
                                _geomap=this->geomap() );
             }
         }
+
+        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+        if ( rhoHeatCapacity.isConstant() )
+        {
+            double rhoHeatCapacityValue = rhoHeatCapacity.value();
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityValue*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+            if ( !this->isStationary() )
+            {
+                if ( BuildNonCstPart_Form2TransientTerm )
+                {
+                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idt(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+                if ( BuildNonCstPart_Form1TransientTerm )
+                {
+                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= rhoHeatCapacityValue*idv(rhsTimeStep)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+        else
+        {
+            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+            //auto rhoHeatCapacityExpr = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+            if ( !this->isStationary() )
+            {
+                if ( BuildNonCstPart_Form2TransientTerm )
+                {
+                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idt(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+                if ( BuildNonCstPart_Form1TransientTerm )
+                {
+                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
     }
 
+#if 0
     if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
     {
-        //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
-        auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
-                       _geomap=this->geomap() );
-
-#if 0
         //viscous dissipation
         if ( false/*true*/ )
         {
@@ -230,45 +295,10 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
                                _geomap=this->geomap() );
             }
         }
+    }
 #endif
-    }
-
-    if (!this->isStationary())
-    {
-        bool buildNonCstPart=!buildCstPart;
-        bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
-        bool BuildNonCstPart_Form1TransientTerm = buildNonCstPart;
-        if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
-        {
-            BuildNonCstPart_Form2TransientTerm = buildCstPart;
-        }
-
-        if (BuildNonCstPart_Form2TransientTerm)
-        {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= thecoeff*idt(u)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        if (BuildNonCstPart_Form1TransientTerm)
-        {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
-            auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= thecoeff*idv(rhsTimeStep)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
 
     //--------------------------------------------------------------------------------------------------//
-
-    // update source term
-    this->updateLinearPDESourceTerm( F, buildCstPart );
 
     // update stabilization gls
     if ( M_stabilizationGLS )
@@ -276,13 +306,15 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
         this->updateLinearPDEStabilizationGLS( data );
     }
 
+    // update source term
+    this->updateLinearPDESourceTerm( F, buildCstPart );
+
     // update bc
     this->updateLinearPDEWeakBC( A,F,buildCstPart );
     if ( !buildCstPart && _doBCStrongDirichlet)
         this->updateLinearPDEStrongDirichletBC( A,F );
 
-
-    double timeElapsed = thetimer.elapsed();
+    double timeElapsed = this->timerTool("Solve").stop();
     this->log("HeatTransfer","updateLinearPDE",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 }
@@ -324,8 +356,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
 
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatTransfer","updateJacobian", "start"+sc);
+
+    bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
+    if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+        BuildNonCstPart_Form2TransientTerm = buildCstPart;
+
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -388,37 +425,57 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
                 }
             }
         }
-    }
 
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() && !buildCstPart )
-    {
-        //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
-        auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= thecoeff*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
-                       _geomap=this->geomap() );
-    }
-
-    if ( !this->isStationary() )
-    {
-        bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
-        if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+        if ( rhoHeatCapacity.isConstant() )
         {
-            BuildNonCstPart_Form2TransientTerm = buildCstPart;
-        }
+            double rhoHeatCapacityValue = rhoHeatCapacity.value();
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityValue*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+            }
 
-        if (BuildNonCstPart_Form2TransientTerm)
+            if ( !this->isStationary() )
+            {
+                if ( BuildNonCstPart_Form2TransientTerm )
+                {
+                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idt(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+        else
         {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= thecoeff*idt(u)*id(v),
-                           _geomap=this->geomap() );
+            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+            //auto rhoHeatCapacityExpr = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
+
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityExpr*(gradt(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+            if ( !this->isStationary() )
+            {
+                if ( BuildNonCstPart_Form2TransientTerm )
+                {
+                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idt(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
         }
     }
-
 
     this->updateJacobianRobinBC( J,buildCstPart );
 
@@ -441,8 +498,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
 
-    std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatTransfer","updateResidual", "start"+sc);
+
+    bool Build_TransientTerm = buildNonCstPart;
+    if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+        Build_TransientTerm=buildNonCstPart && !UseJacobianLinearTerms;
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -459,7 +520,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
         if ( thermalConductivity.isConstant() )
         {
-            if (!buildCstPart && !UseJacobianLinearTerms )
+            if ( buildNonCstPart && !UseJacobianLinearTerms )
             {
                 double kappa = thermalConductivity.value();
                 myLinearForm +=
@@ -485,7 +546,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
             }
             else
             {
-                if (!buildCstPart && !UseJacobianLinearTerms )
+                if ( buildNonCstPart && !UseJacobianLinearTerms )
                 {
                     //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
                     myLinearForm +=
@@ -495,78 +556,76 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
                 }
             }
         }
-    }
 
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-    {
-        if ( !buildCstPart )
+        auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+        if ( rhoHeatCapacity.isConstant() )
         {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= thecoeff*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        //viscous dissipation
-        if ( false/*buildCstPart*/ )
-        {
-            double mu = 1.;
-            auto defv = sym(gradv( this->fieldVelocityConvection() ) );
-            auto defv2 = inner(defv,defv);
-
-            if ( !this->fieldVelocityConvectionIsIncompressible() )
+            double rhoHeatCapacityValue = rhoHeatCapacity.value();
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
             {
                 myLinearForm +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= -2*mu*defv2*id(v),
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityValue*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
                                _geomap=this->geomap() );
             }
-            else
+            if ( !this->isStationary() )
             {
-                auto incomp2 = pow( divv( this->fieldVelocityConvection() ),2 );
-                myLinearForm +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= -2*mu*(defv2-(1./3.)*incomp2)*id(v),
-                               _geomap=this->geomap() );
+                if ( Build_TransientTerm )
+                {
+                    double thecoeff = rhoHeatCapacityValue*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idv(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+                if (buildCstPart)
+                {
+                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= -rhoHeatCapacityValue*idv(rhsTimeStep)*id(v),
+                                   _geomap=this->geomap() );
+                }
             }
         }
-
+        else
+        {
+            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+            if ( buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
+            {
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= rhoHeatCapacityExpr*(gradv(u)*idv(this->fieldVelocityConvection()))*id(v),
+                               _geomap=this->geomap() );
+            }
+            if ( !this->isStationary() )
+            {
+                if ( Build_TransientTerm )
+                {
+                    auto thecoeff = rhoHeatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= thecoeff*idv(u)*id(v),
+                                   _geomap=this->geomap() );
+                }
+                if (buildCstPart)
+                {
+                    auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
+                    myLinearForm +=
+                        integrate( _range=range,
+                                   _expr= -rhoHeatCapacityExpr*idv(rhsTimeStep)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
     }
 
-    if (!this->isStationary())
-    {
-        bool Build_TransientTerm = !buildCstPart;
-        if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!buildCstPart && !UseJacobianLinearTerms;
-
-        if (Build_TransientTerm)
-        {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity()*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity())*this->timeStepBdfTemperature()->polyDerivCoefficient(0);
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= thecoeff*idv(u)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        if (buildCstPart)
-        {
-            //double thecoeff = this->thermalProperties()->cstRho()*this->thermalProperties()->cstHeatCapacity();
-            auto thecoeff = idv(this->thermalProperties()->fieldRho())*idv(this->thermalProperties()->fieldHeatCapacity());
-            auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -thecoeff*idv(rhsTimeStep)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
 
     this->updateResidualSourceTerm( R,buildCstPart ) ;
     this->updateResidualNeumannBC( R,buildCstPart );
     this->updateResidualRobinBC( u,R,buildCstPart );
 
-    if ( !buildCstPart && _doBCStrongDirichlet && this->hasMarkerDirichletBCelimination() )
+    if ( buildNonCstPart && _doBCStrongDirichlet && this->hasMarkerDirichletBCelimination() )
     {
         R->close();
         this->updateResidualStrongDirichletBC( R );

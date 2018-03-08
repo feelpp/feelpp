@@ -23,8 +23,9 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    ThermalPropertiesDescription( std::string const& prefix )
+    ThermalPropertiesDescription( std::string const& prefix, std::string const& exprRepository )
         :
+        M_exprRepository( exprRepository ),
         M_thermalConductivityDefaultValue( doption(_name="thermal-conductivity",_prefix=prefix) ),// [ W/(m*K) ]
         M_heatCapacityDefaultValue( doption(_name="heat-capacity",_prefix=prefix) ), // [ J/(kg*K) ]
         M_rhoDefaultValue( doption(_name="rho",_prefix=prefix) ),
@@ -33,7 +34,7 @@ public :
 
     ThermalPropertiesDescription( ThermalPropertiesDescription const& ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats )
         {
             std::set<std::string> eltMarkersInMesh;
             for (auto const& markPair : mesh->markerNames() )
@@ -63,9 +64,9 @@ public :
 
             M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
             if ( M_isDefinedOnWholeMesh )
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+                M_space = space_type::New(_mesh=mesh );
             else
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+                M_space = space_type::New(_mesh=mesh,_range=markedelements(mesh,M_markers) );
             M_fieldThermalConductivity = M_space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
             M_fieldHeatCapacity = M_space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
             M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
@@ -138,6 +139,33 @@ public :
                     double value = mat.propertyConstant("beta");
                     M_thermalExpansionByMaterial[matName].setValue( value );
                     M_fieldThermalExpansion->on(_range=range,_expr=cst(value));
+                }
+
+                // rho * Cp
+                if ( M_rhoByMaterial[matName].isConstant() )
+                {
+                    double rhoValue = M_rhoByMaterial[matName].value();
+                    if ( M_heatCapacityByMaterial[matName].isConstant() )
+                        M_rhoHeatCapacityByMaterial[matName].setValue( rhoValue*M_heatCapacityByMaterial[matName].value() );
+                    else
+                    {
+                        auto expr = expr_mult( M_heatCapacityByMaterial[matName].expr(),rhoValue,"",mesh->worldComm(),M_exprRepository );
+                        M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
+                    }
+                }
+                else
+                {
+                    auto rhoExpr = M_rhoByMaterial[matName].expr();
+                    if ( M_heatCapacityByMaterial[matName].isConstant() )
+                    {
+                        auto expr = expr_mult( rhoExpr,M_heatCapacityByMaterial[matName].value(),"",mesh->worldComm(),M_exprRepository );
+                        M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
+                    }
+                    else
+                    {
+                        auto expr = expr_mult<2>( rhoExpr,M_heatCapacityByMaterial[matName].expr(),"",mesh->worldComm(),M_exprRepository );
+                        M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
+                    }
                 }
             }
         }
@@ -252,6 +280,13 @@ public :
             return itFindMat->second.value();
         }
 
+    // rho * Cp
+    ModelExpressionScalar const& rhoHeatCapacity( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial( matName ) ) << "material name not registered : " << matName;
+            return M_rhoHeatCapacityByMaterial.find( matName )->second;
+        }
+
 
     boost::shared_ptr<std::ostringstream>
     getInfoMaterialParameters() const
@@ -312,12 +347,13 @@ public :
         }
 
 private :
+    std::string M_exprRepository;
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
     space_ptrtype M_space;
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
-    std::map<std::string, ModelExpressionScalar> M_thermalConductivityByMaterial, M_heatCapacityByMaterial, M_rhoByMaterial, M_thermalExpansionByMaterial;
+    std::map<std::string, ModelExpressionScalar> M_thermalConductivityByMaterial, M_heatCapacityByMaterial, M_rhoByMaterial, M_thermalExpansionByMaterial, M_rhoHeatCapacityByMaterial;
     element_ptrtype M_fieldThermalConductivity, M_fieldHeatCapacity, M_fieldRho, M_fieldThermalExpansion;
     double M_thermalConductivityDefaultValue, M_heatCapacityDefaultValue, M_rhoDefaultValue, M_thermalExpansionDefaultValue;
 };

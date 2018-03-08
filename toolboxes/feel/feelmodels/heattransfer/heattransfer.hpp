@@ -166,7 +166,7 @@ class HeatTransfer : public ModelNumerical,
         boost::shared_ptr<std::ostringstream> getInfo() const;
     private :
         void loadParameterFromOptionsVm();
-        void createMesh();
+        void initMesh();
         void initMaterialProperties();
         void initFunctionSpaces();
         void initBoundaryConditions();
@@ -174,6 +174,8 @@ class HeatTransfer : public ModelNumerical,
         void initPostProcess();
     public :
         void initAlgebraicFactory();
+
+        void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
         BlocksBaseGraphCSR buildBlockMatrixGraph() const;
         int nBlockMatrixGraph() const { return 1; }
@@ -189,9 +191,6 @@ class HeatTransfer : public ModelNumerical,
         bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
         void exportMeasures( double time );
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
-
-        void build();
-        void loadMesh( mesh_ptrtype mesh );
 
         void updateParameterValues();
 
