@@ -206,34 +206,37 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initPostProcess();
 
     // backend : use worldComm of Xh
-    M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
-    size_type currentStartIndex = 0;
-    /*M_startBlockIndexFieldsInMatrix["fluid"] = currentStartIndex;
-    currentStartIndex += 2;// TODO!!!!!!
-     M_startBlockIndexFieldsInMatrix["heat-transfer"] = currentStartIndex;*/
-
-    // vector solution
-    int nBlockFluid = M_fluidModel->blockVectorSolution().size();
-    int nBlockHeatTransfer = M_heatTransferModel->blockVectorSolution().size();
+    // block vector solution
+    auto blockVectorSolutionFluid = M_fluidModel->blockVectorSolution();
+    auto blockVectorSolutionHeat = M_heatTransferModel->blockVectorSolution();
+    int nBlockFluid = blockVectorSolutionFluid.size();
+    int nBlockHeatTransfer = blockVectorSolutionHeat.size();
     int nBlock = nBlockFluid + nBlockHeatTransfer;
-    M_blockVectorSolutionMonolithic.resize( nBlock );
+    M_blockVectorSolution.resize( nBlock );
     int indexBlock=0;
-    for ( int tk1=0;tk1<nBlockFluid ;++tk1 )
-        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_fluidModel->blockVectorSolution()(tk1);
+    for ( int k=0;k<nBlockFluid ;++k )
+        M_blockVectorSolution(indexBlock+k) = blockVectorSolutionFluid(k);
     indexBlock += nBlockFluid;
-    for ( int tk1=0;tk1<nBlockHeatTransfer ;++tk1 )
-        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_heatTransferModel->blockVectorSolution()(tk1);
+    for ( int k=0;k<nBlockHeatTransfer ;++k )
+        M_blockVectorSolution(indexBlock+k) = blockVectorSolutionHeat(k);
     indexBlock += nBlockHeatTransfer;
-    // init petsc vector associated to the block
-    M_blockVectorSolutionMonolithic.buildVector( this->backend() );
+    // init monolithic vector associated to the block vector
+    M_blockVectorSolution.buildVector( this->backend() );
+
+    std::cout << "FLUID numberOfDofIdToContainerId=" << blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    size_type currentStartBlockSpaceIndex = 0;
+    M_startBlockSpaceIndex["fluid"] = currentStartBlockSpaceIndex;
+    currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    M_startBlockSpaceIndex["heat-transfer"] = currentStartBlockSpaceIndex;
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
         if ( M_useNaturalConvection /*M_solverName == "Newton"*/ )
         {
-            M_algebraicFactoryMonolithic.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+            M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
         }
     }
 
@@ -317,8 +320,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
 
-    if ( M_algebraicFactoryMonolithic )
-        *_ostr << M_algebraicFactoryMonolithic->getInfo()->str();
+    if ( M_algebraicFactory )
+        *_ostr << M_algebraicFactory->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -391,54 +394,18 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         this->updateParameterValues();
 
-        M_fluidModel->setRowStartInMatrix( this->rowStartInMatrix() );
-        M_fluidModel->setColStartInMatrix( this->colStartInMatrix() );
-        M_fluidModel->setRowStartInVector( this->rowStartInVector() );
+        M_fluidModel->setRowStartInMatrix( this->startBlockSpaceIndex("fluid") );
+        M_fluidModel->setColStartInMatrix( this->startBlockSpaceIndex("fluid") );
+        M_fluidModel->setRowStartInVector( this->startBlockSpaceIndex("fluid") );
 
-        M_heatTransferModel->setRowStartInMatrix( this->rowStartInMatrix()+2 );//TO FIX!!!!!!!!
-        M_heatTransferModel->setColStartInMatrix( this->colStartInMatrix()+2 );
-        M_heatTransferModel->setRowStartInVector( this->rowStartInVector()+2 );
+        M_heatTransferModel->setRowStartInMatrix( this->startBlockSpaceIndex("heat-transfer") );
+        M_heatTransferModel->setColStartInMatrix( this->startBlockSpaceIndex("heat-transfer") );
+        M_heatTransferModel->setRowStartInVector( this->startBlockSpaceIndex("heat-transfer") );
 
-        M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
-        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
-        M_blockVectorSolutionMonolithic.localize();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+        M_blockVectorSolution.localize();
     }
-#if 0
-    if ( M_solverName == "Linear" )
-    {
-        M_electricModel->setRowStartInMatrix( 0 );
-        M_electricModel->setColStartInMatrix( 0 );
-        M_electricModel->setRowStartInVector( 0 );
-        M_electricModel->solve();
-        M_heatTransferModel->solve();
-    }
-    else if ( M_solverName == "Newton" )
-    {
-        // initial guess
-        if ( M_solverNewtonInitialGuessUseLinearElectric )
-        {
-            M_electricModel->setRowStartInMatrix( 0 );
-            M_electricModel->setColStartInMatrix( 0 );
-            M_electricModel->setRowStartInVector( 0 );
-            M_electricModel->solve();
-        }
-        if ( M_solverNewtonInitialGuessUseLinearHeatTransfer )
-            M_heatTransferModel->solve();
-
-        // solve non linear monolithic system
-        int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
-        M_electricModel->setRowStartInMatrix( nBlockHeatTransfer );
-        M_electricModel->setColStartInMatrix( nBlockHeatTransfer );
-        M_electricModel->setRowStartInVector( nBlockHeatTransfer );
-
-        M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
-        M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
-        M_blockVectorSolutionMonolithic.localize();
-
-        M_electricModel->updateElectricField();
-    }
-
-#endif
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -489,8 +456,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateJacobian", "start"+sc);
-    //size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
-    //size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
 
     auto mesh = this->mesh();
 
@@ -569,9 +534,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateResidual", "start"+sc);
 
-    // size_type startBlockIndexTemperature = this->startBlockSpaceIndex("heat-transfer.temperature");
-    // size_type startBlockIndexVelocity = this->startBlockSpaceIndex( "fluid.velocity-pressure" );
-
     auto mesh = this->mesh();
 
     DataUpdateResidual dataSubPhysics( data );
@@ -638,7 +600,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
             M_fluidModel->updateResidualStrongDirichletBC( R );
     }
     this->log("HeatFluid","updateResidual", "finish"+sc);
-
 }
 
 

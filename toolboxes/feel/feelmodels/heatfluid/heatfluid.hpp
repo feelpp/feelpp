@@ -102,9 +102,9 @@ public :
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
 
 
-    backend_ptrtype const& backend() const { return M_backendMonolithic; }
-    BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
-    BlocksBaseVector<double> & blockVectorSolutionMonolithic() { return M_blockVectorSolutionMonolithic; }
+    backend_ptrtype const& backend() const { return M_backend; }
+    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
+    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
 
     size_type startBlockSpaceIndex( std::string const& name )
         {
@@ -132,6 +132,7 @@ public :
     void updateResidual( DataUpdateResidual & data ) const;
 
 private :
+
     heattransfer_model_ptrtype M_heatTransferModel;
     fluid_model_ptrtype M_fluidModel;
 
@@ -146,16 +147,14 @@ private :
     bool M_useNaturalConvection;
     double M_BoussinesqRefTemperature;
     vector_field_expression<nDim,1,2> M_gravityForce;
-    //bool M_modelUseJouleEffect;
 
     // solver
     //std::string M_solverName;
-    //bool M_solverNewtonInitialGuessUseLinearThermoElectric,M_solverNewtonInitialGuessUseLinearHeatTransfer,M_solverNewtonInitialGuessUseLinearElectric;
 
     // algebraic data/tools
-    backend_ptrtype M_backendMonolithic;
-    model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
-    BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
+    backend_ptrtype M_backend;
+    model_algebraic_factory_ptrtype M_algebraicFactory;
+    BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,size_type> M_startBlockSpaceIndex;
 
     // post-process
