@@ -93,7 +93,6 @@ public :
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
-    //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
     heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
@@ -101,15 +100,16 @@ public :
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
 
+    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
 
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
 
-    size_type startBlockSpaceIndex( std::string const& name )
+    size_type startSubBlockSpaceIndex( std::string const& name )
         {
-            auto itFind = M_startBlockSpaceIndex.find( name );
-            if ( itFind != M_startBlockSpaceIndex.end() )
+            auto itFind = M_startSubBlockSpaceIndex.find( name );
+            if ( itFind != M_startSubBlockSpaceIndex.end() )
                 return itFind->second;
             return invalid_size_type_value;
         }
@@ -136,7 +136,7 @@ private :
     heattransfer_model_ptrtype M_heatTransferModel;
     fluid_model_ptrtype M_fluidModel;
 
-    //bool M_hasBuildFromMesh, M_isUpdatedForUse;
+    //bool M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
     //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
@@ -155,7 +155,7 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startBlockSpaceIndex;
+    std::map<std::string,size_type> M_startSubBlockSpaceIndex;
 
     // post-process
     export_ptrtype M_exporter;

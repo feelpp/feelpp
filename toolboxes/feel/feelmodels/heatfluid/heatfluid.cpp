@@ -189,23 +189,18 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->initAlgebraicFactory();
     }
 
-#if 0
-    M_rangeMeshElements = ( M_heatTransferModel->thermalProperties()->isDefinedOnWholeMesh() && M_electricModel->electricProperties()->isDefinedOnWholeMesh() )?
-        elements(this->mesh() ) :
-        intersect( M_heatTransferModel->rangeMeshElements(), M_electricModel->rangeMeshElements() );
-#endif
+    for ( auto const& rangeData : M_fluidModel->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        if ( !M_heatTransferModel->thermalProperties()->hasMaterial( matName ) )
+            continue;
+        M_rangeMeshElementsByMaterial[matName] = rangeData.second;
+    }
 
-    // for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
-    // {
-    //     std::string const& matName = rangeData.first;
-    //     if ( !M_heatTransferModel->thermalProperties()->hasMaterial( matName ) )
-    //         continue;
-    //     M_rangeMeshElementsByMaterial[matName] = rangeData.second;
-    // }
     // post-process
     this->initPostProcess();
 
-    // backend : use worldComm of Xh
+    // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     // block vector solution
@@ -225,11 +220,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init monolithic vector associated to the block vector
     M_blockVectorSolution.buildVector( this->backend() );
 
-    std::cout << "FLUID numberOfDofIdToContainerId=" << blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
     size_type currentStartBlockSpaceIndex = 0;
-    M_startBlockSpaceIndex["fluid"] = currentStartBlockSpaceIndex;
+    M_startSubBlockSpaceIndex["fluid"] = currentStartBlockSpaceIndex;
     currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
-    M_startBlockSpaceIndex["heat-transfer"] = currentStartBlockSpaceIndex;
+    M_startSubBlockSpaceIndex["heat-transfer"] = currentStartBlockSpaceIndex;
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -394,13 +388,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         this->updateParameterValues();
 
-        M_fluidModel->setRowStartInMatrix( this->startBlockSpaceIndex("fluid") );
-        M_fluidModel->setColStartInMatrix( this->startBlockSpaceIndex("fluid") );
-        M_fluidModel->setRowStartInVector( this->startBlockSpaceIndex("fluid") );
+        M_fluidModel->setRowStartInMatrix( this->startSubBlockSpaceIndex("fluid") );
+        M_fluidModel->setColStartInMatrix( this->startSubBlockSpaceIndex("fluid") );
+        M_fluidModel->setRowStartInVector( this->startSubBlockSpaceIndex("fluid") );
 
-        M_heatTransferModel->setRowStartInMatrix( this->startBlockSpaceIndex("heat-transfer") );
-        M_heatTransferModel->setColStartInMatrix( this->startBlockSpaceIndex("heat-transfer") );
-        M_heatTransferModel->setRowStartInVector( this->startBlockSpaceIndex("heat-transfer") );
+        M_heatTransferModel->setRowStartInMatrix( this->startSubBlockSpaceIndex("heat-transfer") );
+        M_heatTransferModel->setColStartInMatrix( this->startSubBlockSpaceIndex("heat-transfer") );
+        M_heatTransferModel->setRowStartInVector( this->startSubBlockSpaceIndex("heat-transfer") );
 
         M_blockVectorSolution.updateVectorFromSubVectors();
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
@@ -474,7 +468,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
         auto const& thermalProperties = M_heatTransferModel->thermalProperties();
 
-        for ( auto const& rangeData : M_heatTransferModel->thermalProperties()->rangeMeshElementsByMaterial() ) //TO FIX!!!!!!!!!
+        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
@@ -555,7 +549,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                              _rowstart=M_fluidModel->rowStartInVector()+0 );
 
 
-        for ( auto const& rangeData : M_heatTransferModel->thermalProperties()->rangeMeshElementsByMaterial() ) //TO FIX!!!!!!!!!
+        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
