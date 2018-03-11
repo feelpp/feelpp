@@ -59,9 +59,9 @@ public :
         }
     DensityViscosityModel( DensityViscosityModel const& app  ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
+    void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, bool useExtendedDofTable )
     {
-        super_type::updateForUse( mesh,mats,worldsComm,useExtendedDofTable );
+        super_type::updateForUse( mesh,mats,useExtendedDofTable );
 
         M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity( self_type::defaultMaterialName() ) ) );
         M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity( self_type::defaultMaterialName() ) ) );

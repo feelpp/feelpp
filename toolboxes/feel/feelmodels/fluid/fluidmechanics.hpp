@@ -52,9 +52,7 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
-
-
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 
 namespace Feel
@@ -340,12 +338,6 @@ public:
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // heat transfer coupling
-    typedef FeelModels::HeatTransfer< convex_type,
-                                      Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > heattransfer_model_type;
-    typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
@@ -396,7 +388,6 @@ public :
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
     space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
@@ -468,12 +459,10 @@ public :
 
     // init/update user functions defined in json
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-    // export post process results
-    //void restartPostProcess();
 
+    // post process
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
-
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void exportFields( double time );
@@ -527,9 +516,6 @@ public :
     bool hasSolveStokesStationaryAtKickOff() const { return M_hasSolveStokesStationaryAtKickOff; }
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
-    //___________________________________________________________________________________//
-    // heat transfer
-    heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
     //___________________________________________________________________________________//
     // fsi parameters
 
@@ -713,8 +699,6 @@ public :
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
 #endif
-            if ( M_useHeatTransferModel && M_useGravityForce )
-                hasStrongDirichletBC = hasStrongDirichletBC || M_heatTransferModel->hasMarkerDirichletBCelimination();
             return hasStrongDirichletBC;
         }
     //___________________________________________________________________________________//
@@ -892,8 +876,6 @@ protected:
     virtual int initBlockVector();
 
     bool M_isUpdatedForUse;
-    //----------------------------------------------------
-    
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -1077,11 +1059,6 @@ protected:
     //----------------------------------------------------
     bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
-    //----------------------------------------------------
-    bool M_useHeatTransferModel;
-    heattransfer_model_ptrtype M_heatTransferModel;
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
-    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 

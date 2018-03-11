@@ -209,8 +209,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_solverName;
-    if ( M_useHeatTransferModel )
-        *_ostr << M_heatTransferModel->getInfo()->str();
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -410,11 +408,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->exportResultsImplHO( time );
     }
 
-    if ( M_useHeatTransferModel /*&& !M_heatTransferModel->mesh()->isSameMesh( this->mesh() )*/ )
-    {
-        M_heatTransferModel->exportResults( time );
-    }
-
 
     this->exportMeasures( time );
 
@@ -546,13 +539,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
             hasFieldToExport = true;
         }
 #endif
-    }
-    if ( M_useHeatTransferModel && M_heatTransferModel->mesh()->isSameMesh( this->mesh() ) )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"temperature"),
-                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature")),
-                                     M_heatTransferModel->fieldTemperature() );
-        hasFieldToExport = true;
     }
 
     for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
@@ -872,10 +858,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
             boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->setParameterValues( paramValues );
     }
-
-
-    if ( this->M_useHeatTransferModel && this->M_useGravityForce )
-        this->M_heatTransferModel->updateParameterValues();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -966,12 +948,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         }
     }
     //--------------------------------------------------
-    // run heat transfer solver if not strong coupling
-    if ( M_useHeatTransferModel && !M_useGravityForce )
-    {
-        M_heatTransferModel->updateFieldVelocityConvection( idv(fieldVelocity()) );
-        M_heatTransferModel->solve();
-    }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -1271,8 +1247,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepBDF()
     if (this->isMoveDomain())
         M_meshALE->updateBdf();
 #endif
-    if ( M_useHeatTransferModel )
-        M_heatTransferModel->updateTimeStep();
 
     int currentTimeOrder = this->timeStepBDF()->timeOrder();
 
@@ -2017,8 +1991,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
-    if ( M_useHeatTransferModel && M_useGravityForce )
-        nBlock += M_heatTransferModel->nBlockMatrixGraph();
     return nBlock;
 }
 
@@ -2130,26 +2102,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                               _diag_is_nonzero=false,_close=false)->graph();
         }
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
-    }
-
-    if ( M_useHeatTransferModel && M_useGravityForce )
-    {
-        myblockGraph(indexBlock,indexBlock) = M_heatTransferModel->buildBlockMatrixGraph()(0,0);
-
-        BlocksStencilPattern patCoupling1(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCoupling1(0,0) = size_type(Pattern::COUPLED);
-        myblockGraph(indexBlock,0) = stencil(_test=M_heatTransferModel->spaceTemperature(),
-                                             _trial=this->functionSpace(),
-                                             _pattern_block=patCoupling1,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-
-        BlocksStencilPattern patCoupling2(space_fluid_type::nSpaces,1,size_type(Pattern::ZERO));
-        patCoupling2(0,0) = size_type(Pattern::COUPLED);
-        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),
-                                             _trial=M_heatTransferModel->spaceTemperature(),
-                                             _pattern_block=patCoupling2,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
     }
 
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );

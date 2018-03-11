@@ -337,45 +337,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     this->updateResidualWeakBC( data, U );
 
     //------------------------------------------------------------------------------------//
-    if ( M_useHeatTransferModel && M_useGravityForce )
-    {
-        DataUpdateResidual dataThermo( data );
-        dataThermo.setDoBCStrongDirichlet( false );
-        M_heatTransferModel->updateResidual( dataThermo );
-
-        if ( !BuildCstPart )
-        {
-            //auto const& t = M_heatTransferModel->fieldTemperature();
-            auto XhT = M_heatTransferModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
-            auto const& thermalProperties = M_heatTransferModel->thermalProperties();
-
-            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
-            form1( _test=M_heatTransferModel->spaceTemperature(), _vector=R,
-                   _pattern=size_type(Pattern::COUPLED),
-                   _rowstart=M_heatTransferModel->rowStartInVector() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= thecoeff*(gradv(t)*idv(u))*id(t),
-                           _geomap=this->geomap() );
-
-            double T0 = M_BoussinesqRefTemperature;
-            auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-        }
-    }
-    //------------------------------------------------------------------------------------//
 
     if (!BuildCstPart && _doBCStrongDirichlet && this->hasStrongDirichletBC() )
     {
         R->close();
 
         this->updateResidualStrongDirichletBC( R );
-
-        if ( M_useHeatTransferModel && M_useGravityForce )
-            M_heatTransferModel->updateResidualStrongDirichletBC( R );
     }
 
     //------------------------------------------------------------------------------------//
@@ -503,11 +470,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
                 pSol(dofId) += (meanPressureImposed - meanPressureCurrent);
         }
         sync( pSol, "=" );
-    }
-
-    if ( M_useHeatTransferModel && M_useGravityForce )
-    {
-        M_heatTransferModel->updateNewtonInitialGuess( U );
     }
 
     this->log("FluidMechanics","updateNewtonInitialGuess","finish");

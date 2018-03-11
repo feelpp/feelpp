@@ -224,10 +224,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->repository().expr() );
     M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
 
-    // heat transfer coupling
-    M_useHeatTransferModel = boption(_name="use-thermodyn",_prefix=this->prefix());
-    M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
-
     // prec
     M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
     M_pmmNeedUpdate = false;
@@ -310,19 +306,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // update rho, mu, nu,...
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_densityViscosityModel->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm(), hasExtendedDofTable );
+    M_densityViscosityModel->updateForUse( this->mesh(), this->modelProperties().materials(), hasExtendedDofTable );
 
     // fluid mix space : velocity and pressure
     if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_fluid_type::New( _mesh=M_mesh,// _worldscomm=this->worldComm(),
+        M_Xh = space_fluid_type::New( _mesh=M_mesh,
                                       _extended_doftable=extendedDT );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), M_densityViscosityModel->markers());
-        M_Xh = space_fluid_type::New( _mesh=M_mesh,// _worldscomm=this->worldComm(),
+        M_Xh = space_fluid_type::New( _mesh=M_mesh,
                                       _extended_doftable=extendedDT, _range=M_rangeMeshElements );
     }
 
@@ -983,17 +979,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update marker in mesh (mainly used with CIP stab)
     if ( (this->doCIPStabConvection() || this->doCIPStabDivergence() || this->doCIPStabPressure() ) && !this->applyCIPStabOnlyOnBoundaryFaces() )
         this->updateMarkedZonesInMesh();
-
-    if ( M_useHeatTransferModel )
-    {
-        M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
-                                                         this->subPrefix(), this->repository() ) );
-        M_heatTransferModel->setFieldVelocityConvectionIsUsed( !M_useGravityForce/*false*/ );
-        M_heatTransferModel->setMesh( this->mesh() );
-        M_heatTransferModel->init( !M_useGravityForce/*false*/ );
-
-        M_rangeMeshElementsAeroThermal = intersect( M_rangeMeshElements, M_heatTransferModel->rangeMeshElements() );
-    }
 
     //-------------------------------------------------//
     // init stabilization
@@ -1680,13 +1665,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     {
         M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
     }
-    if ( M_useHeatTransferModel && M_useGravityForce )
-    {
-        M_heatTransferModel->setRowStartInMatrix( currentStartIndex );
-        M_heatTransferModel->setColStartInMatrix( currentStartIndex );
-        M_heatTransferModel->setRowStartInVector( currentStartIndex );
-        ++currentStartIndex;
-    }
 
     return currentStartIndex;
 }
@@ -1733,11 +1711,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
             ++cptBlock;
         }
-    }
-    // heat transfer model
-    if ( M_useHeatTransferModel && M_useGravityForce )
-    {
-        M_blockVectorSolution(cptBlock++) = M_heatTransferModel->fieldTemperaturePtr();
     }
 
     return cptBlock;
