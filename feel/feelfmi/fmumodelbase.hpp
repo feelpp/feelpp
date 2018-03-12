@@ -25,7 +25,8 @@ public :
     virtual ~FmuModelBase()
     {}
 
-    void setExportList( var_list_ptrtype exp_list ) { M_export_list=exp_list; }
+    void setExportList( var_list_ptrtype exp_list ) { M_export_list = exp_list; }
+    void setExportDirectory( std::string const& path ) { M_export_directory=path; }
 
     int version() { return M_version; }
     std::string name() { return M_name; }
@@ -60,7 +61,7 @@ public :
 protected :
     callbacks_ptrtype M_callbacks;
     bool M_allocated_xml, M_allocated_dll, M_allocated_fmu, M_setup;
-    std::string M_name, M_guid, M_id, M_kind;
+    std::string M_name, M_guid, M_id, M_kind, M_export_directory;
     int M_version;
 
     var_list_ptrtype M_export_list;

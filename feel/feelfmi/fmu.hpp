@@ -44,6 +44,7 @@ public :
     void printModelInfo();
     void addExportedVariables( std::vector<std::string> const& var_list );
     void setExportedVariables( std::vector<std::string> const& var_list );
+    void setExportDirectory( std::string const& path );
 
     template <typename VariableType>
     void setValue( std::string var_name, VariableType value )
@@ -72,7 +73,7 @@ private :
 
 
 private :
-    std::string M_prefix, M_tmp_dir;
+    std::string M_prefix, M_tmp_dir, M_export_directory;
     bool M_verbose;
     callbacks_ptrtype M_callbacks;
     fmi_import_context_t* M_context;

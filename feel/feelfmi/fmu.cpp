@@ -26,11 +26,14 @@ FMU::FMU( std::string prefix ) :
     if ( !(boost::filesystem::exists(dir)) )
         boost::filesystem::create_directory(dir);
 
+    M_export_directory = soption( _name="fmu.export-directory", _prefix=M_prefix);
+    if ( M_export_directory!="" )
+        M_export_directory = Environment::expand( M_export_directory );
+
     if ( Environment::vm().count(prefixvm( M_prefix,"fmu.exported-variables" )) )
     {
         M_export_list = var_list_ptrtype( new var_list_type( option( _name="fmu.exported-variables", _prefix=M_prefix).template as<std::vector<std::string> >() ) );
     }
-
 }
 
 
@@ -65,7 +68,10 @@ int FMU::load( std::string _path )
     if ( boption(_name="fmu.display-variables-info", _prefix=M_prefix) )
         M_model->printVariablesInfo();
     if ( M_export_list )
+    {
         M_model->setExportList( M_export_list );
+        M_model->setExportDirectory( M_export_directory );
+    }
 
     return 1;
 }
@@ -137,6 +143,7 @@ void FMU::addExportedVariables( std::vector<std::string> const& var_list )
     {
         M_export_list->insert( M_export_list->end(), var_list.begin(), var_list.end() );
         M_model->setExportList( M_export_list );
+        M_model->setExportDirectory( M_export_directory );
     }
 }
 
@@ -144,6 +151,13 @@ void FMU::setExportedVariables( std::vector<std::string> const& var_list )
 {
     M_export_list = var_list_ptrtype( new var_list_type( var_list ) );
     M_model->setExportList( M_export_list );
+    M_model->setExportDirectory( M_export_directory );
+}
+
+void FMU::setExportDirectory( std::string const& path )
+{
+    M_export_directory = path;
+    M_model->setExportDirectory( M_export_directory );
 }
 
 double FMU::currentTime()
