@@ -106,13 +106,6 @@ public :
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
 
-    size_type startSubBlockSpaceIndex( std::string const& name )
-        {
-            auto itFind = M_startSubBlockSpaceIndex.find( name );
-            if ( itFind != M_startSubBlockSpaceIndex.end() )
-                return itFind->second;
-            return invalid_size_type_value;
-        }
     //___________________________________________________________________________________//
 
     boost::shared_ptr<TSBase> timeStepBase() { return this->heatTransferModel()->timeStepBase(); }
@@ -155,7 +148,6 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startSubBlockSpaceIndex;
 
     // post-process
     export_ptrtype M_exporter;

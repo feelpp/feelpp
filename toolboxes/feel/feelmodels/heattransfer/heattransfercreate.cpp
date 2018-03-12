@@ -547,6 +547,8 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::solve()
 
     this->updateParameterValues();
 
+    this->setStartBlockSpaceIndex( 0 );
+
     M_blockVectorSolution.updateVectorFromSubVectors();
 
     if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_transfer_T" ) )

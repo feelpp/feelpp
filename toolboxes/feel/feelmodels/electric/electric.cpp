@@ -437,6 +437,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 
     this->updateParameterValues();
 
+    this->setStartBlockSpaceIndex( 0 );
+
     M_blockVectorSolution.updateVectorFromSubVectors();
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
