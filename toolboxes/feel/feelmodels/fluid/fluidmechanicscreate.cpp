@@ -142,10 +142,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
-    std::string theFluidModel = this->modelProperties().models().model("fluid").equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        theFluidModel = soption(_name="model",_prefix=this->prefix());
-    this->setModelName( theFluidModel );
+        this->setModelName( soption(_name="model",_prefix=this->prefix()) );
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
@@ -959,6 +957,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
+
+    if ( M_modelName.empty() )
+    {
+        std::string theFluidModel = this->modelProperties().models().model("fluid").equations();
+        this->setModelName( theFluidModel );
+    }
 
     // functionSpaces and elements
     this->createFunctionSpaces();
