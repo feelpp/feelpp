@@ -87,19 +87,18 @@
     "PostProcess":
     {
         "use-model-name":1,
-        "fluid":
+        "heat-fluid":
         {
             "Exports":
             {
-                "fields":["velocity","pressure","temperature","pid"]
+                "fields":["fluid.velocity","fluid.pressure","heat-transfer.temperature","fluid.pid"]
             }
+        },
+        "fluid":
+        {
         },
         "heat-transfer":
         {
-            // "Exports":
-            // {
-            //     "fields":["temperature","pid"]
-            // }
         }
     }
 
