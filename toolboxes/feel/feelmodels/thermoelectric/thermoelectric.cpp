@@ -322,9 +322,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << M_heatTransferModel->getInfo()->str();
     *_ostr << M_electricModel->getInfo()->str();
 
-    std::string myexporterType = M_exporter->type();
-    int myexporterFreq = M_exporter->freq();
-
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -338,12 +335,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     //       << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
     *_ostr << "\n   Numerical Solver"
            << "\n     -- solver   : " << M_solverName;
-    *_ostr << "\n   Exporter"
-           << "\n     -- type            : " << myexporterType
-           << "\n     -- freq save       : " << myexporterFreq
-           << "\n     -- fields [heat-transfer] : TODO"// << doExport_str
-           << "\n     -- fields [electric] : TODO" //<< doExport_str
-           << "\n   Processors"
+    if ( M_exporter )
+    {
+        *_ostr << "\n   Exporter"
+               << "\n     -- type            : " << M_exporter->type()
+               << "\n     -- freq save       : " << M_exporter->freq();
+        std::string fieldExportedHeat;
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeatTransfert )
+            fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
+        std::string fieldExportedElectric;
+        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
+            fieldExportedElectric=(fieldExportedElectric.empty())? fieldName : fieldExportedElectric + " - " + fieldName;
+        *_ostr << "\n     -- fields [heat-transfer] : " << fieldExportedHeat
+               << "\n     -- fields [electric] : " << fieldExportedElectric;
+    }
+    *_ostr << "\n   Processors"
            << "\n     -- number of proc : " << this->worldComm().globalSize()
            << "\n     -- current rank : " << this->worldComm().globalRank();
 
