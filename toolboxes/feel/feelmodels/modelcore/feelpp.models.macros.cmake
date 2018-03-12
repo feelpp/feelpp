@@ -321,8 +321,6 @@ macro(genLibFluidMechanics)
     if (FEELPP_MODELS_ENABLE_MESHALE )
       set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
-    # heattransfer depend
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_heattransfer_lib_${FLUIDMECHANICS_DIM}dP${FLUIDMECHANICS_ORDERGEO}G${FLUIDMECHANICS_ORDERGEO} ${FLUIDMECHANICS_LIB_DEPENDS})
 
     # generate the lib target
     genLibBase(
