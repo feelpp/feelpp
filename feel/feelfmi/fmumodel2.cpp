@@ -143,6 +143,10 @@ void FmuModel2::initialize( double t_init )
         M_values["t"] = t;
         for( auto const& var : *M_export_list )
         {
+            auto it = M_v_map.find(var);
+            if ( it==M_v_map.end() )
+                Feel::cout << "WARNING: you asked to export the variable "<< var <<", but there is no corresponding variable.\n";
+
             std::vector<std::string> t = { strValue(var) };
             M_values[var] = t;
         }
@@ -193,12 +197,14 @@ void FmuModel2::printVariablesInfo()
     Feel::cout << "=================================================================\n";
 }
 
+
 void FmuModel2::exportValues()
 {
     if ( Environment::isMasterRank() && M_export_list )
     {
+        std::string path = M_export_directory=="" ? "fmu_values.csv": M_export_directory + "/fmu_values.csv";
         std::ofstream data;
-        data.open( "fmu_values.csv", std::ios::trunc );
+        data.open( path , std::ios::trunc );
         data << "t";
         for( auto const& var : *M_export_list )
             data << "," << var;
