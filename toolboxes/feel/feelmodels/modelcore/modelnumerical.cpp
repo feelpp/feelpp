@@ -49,9 +49,9 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_row_startInMatrix(0),
-        M_col_startInMatrix(0),
-        M_row_startInVector(0),
+        M_startBlockSpaceIndexMatrixRow(0),
+        M_startBlockSpaceIndexMatrixCol(0),
+        M_startBlockSpaceIndexVector(0),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
         M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldComm() )
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
