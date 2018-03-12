@@ -241,30 +241,30 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // backend : use worldComm of Xh
+    // backend
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
-    size_type currentStartIndex = 0;
-    M_startBlockIndexFieldsInMatrix["temperature"] = currentStartIndex;
-    currentStartIndex += M_heatTransferModel->nBlockMatrixGraph();
-    M_startBlockIndexFieldsInMatrix["potential-electric"] = currentStartIndex;
-
-    // vector solution
-    int nBlock = this->nBlockMatrixGraph();
+    // block vector solution
+    auto blockVectorSolutionHeat = M_heatTransferModel->blockVectorSolution();
+    auto blockVectorSolutionElectric = M_electricModel->blockVectorSolution();
+    int nBlockHeatTransfer = blockVectorSolutionHeat.size();
+    int nBlockElectric = blockVectorSolutionElectric.size();
+    int nBlock = nBlockHeatTransfer + nBlockElectric;
     M_blockVectorSolutionMonolithic.resize( nBlock );
     int indexBlock=0;
-
-    int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
-    for ( int tk1=0;tk1<nBlockHeatTransfer ;++tk1 )
-        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_heatTransferModel->blockVectorSolution()(tk1);
+    for ( int k=0;k<nBlockHeatTransfer ;++k )
+        M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionHeat(k);
     indexBlock += nBlockHeatTransfer;
-    int nBlockElectric = M_electricModel->nBlockMatrixGraph();
-    for ( int tk1=0;tk1<nBlockElectric ;++tk1 )
-        M_blockVectorSolutionMonolithic(indexBlock+tk1) = M_electricModel->blockVectorSolution()(tk1);
+    for ( int k=0;k<nBlockElectric ;++k )
+        M_blockVectorSolutionMonolithic(indexBlock+k) = blockVectorSolutionElectric(k);
     indexBlock += nBlockElectric;
-
-    // init petsc vector associated to the block
+    // init monolithic vector associated to the block vector
     M_blockVectorSolutionMonolithic.buildVector( this->backend() );
+
+    size_type currentStartBlockSpaceIndex = 0;
+    this->setStartSubBlockSpaceIndex( "heat-transfer", currentStartBlockSpaceIndex );
+    currentStartBlockSpaceIndex += blockVectorSolutionHeat.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    this->setStartSubBlockSpaceIndex( "electric", currentStartBlockSpaceIndex );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -363,6 +363,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
+    if ( !M_exporter ) return;
     if ( !M_exporter->doExport() ) return;
 
     this->log("ThermoElectric","exportResults", "start");
@@ -404,11 +405,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 
     this->updateParameterValues();
 
+    this->setStartBlockSpaceIndex( 0 );
+
     if ( M_solverName == "Linear" )
     {
-        M_electricModel->setRowStartInMatrix( 0 );
-        M_electricModel->setColStartInMatrix( 0 );
-        M_electricModel->setRowStartInVector( 0 );
         M_electricModel->solve();
         M_heatTransferModel->solve();
     }
@@ -416,28 +416,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     {
         // initial guess
         if ( M_solverNewtonInitialGuessUseLinearElectric )
-        {
-            M_electricModel->setRowStartInMatrix( 0 );
-            M_electricModel->setColStartInMatrix( 0 );
-            M_electricModel->setRowStartInVector( 0 );
             M_electricModel->solve();
-        }
         if ( M_solverNewtonInitialGuessUseLinearHeatTransfer )
             M_heatTransferModel->solve();
 
         // solve non linear monolithic system
-        int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
-        M_electricModel->setRowStartInMatrix( nBlockHeatTransfer );
-        M_electricModel->setColStartInMatrix( nBlockHeatTransfer );
-        M_electricModel->setRowStartInVector( nBlockHeatTransfer );
-
+        M_heatTransferModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat-transfer") );
+        M_electricModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("electric") );
         M_blockVectorSolutionMonolithic.updateVectorFromSubVectors();
         M_algebraicFactoryMonolithic->solve( "Newton", M_blockVectorSolutionMonolithic.vectorMonolithic() );
         M_blockVectorSolutionMonolithic.localize();
 
         M_electricModel->updateElectricField();
     }
-
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -579,8 +570,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateJacobian", "start"+sc);
-    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexTemperature = M_heatTransferModel->startBlockSpaceIndexVector()+0;
+    size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
 
     auto mesh = this->mesh();
 
@@ -690,8 +681,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateResidual", "start"+sc);
 
-    size_type startBlockIndexTemperature = M_startBlockIndexFieldsInMatrix.find( "temperature" )->second;
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexTemperature = M_heatTransferModel->startBlockSpaceIndexVector()+0;
+    size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
 
     auto mesh = this->mesh();
 

@@ -221,9 +221,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_blockVectorSolution.buildVector( this->backend() );
 
     size_type currentStartBlockSpaceIndex = 0;
-    M_startSubBlockSpaceIndex["fluid"] = currentStartBlockSpaceIndex;
+    this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
     currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
-    M_startSubBlockSpaceIndex["heat-transfer"] = currentStartBlockSpaceIndex;
+    this->setStartSubBlockSpaceIndex( "heat-transfer", currentStartBlockSpaceIndex );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -388,13 +388,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         this->updateParameterValues();
 
-        M_fluidModel->setRowStartInMatrix( this->startSubBlockSpaceIndex("fluid") );
-        M_fluidModel->setColStartInMatrix( this->startSubBlockSpaceIndex("fluid") );
-        M_fluidModel->setRowStartInVector( this->startSubBlockSpaceIndex("fluid") );
-
-        M_heatTransferModel->setRowStartInMatrix( this->startSubBlockSpaceIndex("heat-transfer") );
-        M_heatTransferModel->setColStartInMatrix( this->startSubBlockSpaceIndex("heat-transfer") );
-        M_heatTransferModel->setRowStartInVector( this->startSubBlockSpaceIndex("heat-transfer") );
+        M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
+        M_heatTransferModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat-transfer") );
 
         M_blockVectorSolution.updateVectorFromSubVectors();
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );

@@ -156,8 +156,6 @@ private :
     backend_ptrtype M_backendMonolithic;
     model_algebraic_factory_ptrtype M_algebraicFactoryMonolithic;
     BlocksBaseVector<double> M_blockVectorSolutionMonolithic;
-    // start dof index fields in matrix (temperature,electric-potential,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 
     // post-process
     export_ptrtype M_exporter;
