@@ -63,11 +63,14 @@ initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
 }
 }
 
-
+// Constructor.
 template<typename Shape, typename T, int Tag>
-Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
+Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm,
+                           const std::string& name )
     :
-    super(worldComm),
+    super( worldComm ),
+    M_instance_name( name ),
+    M_instance_number( MESH_INSTANCE_NUMBER ),
     M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( Feel::meshdetail::initGm1<type>( M_gm, mpl::bool_<nOrder==1>() ) ),
@@ -77,7 +80,12 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     //M_part(),
     M_tool_localization( new Localization() )
 {
-    VLOG(2) << "[Mesh] constructor called\n";
+    MESH_INSTANCE_NUMBER++;
+    if( boption("journal.enable") and boption("journal.enable.mesh") )
+    {
+        this->journalConnect();
+    }
+    VLOG(2) << "[Mesh] constructor instance number " << M_instance_number << "\n" ;
 }
 template<typename Shape, typename T, int Tag>
 void
