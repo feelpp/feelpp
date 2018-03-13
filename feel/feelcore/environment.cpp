@@ -268,7 +268,7 @@ fs::path scratchdir()
 
 
 
-
+//! Default constructor.
 Environment::Environment()
     :
 #if BOOST_VERSION >= 105500
@@ -282,6 +282,7 @@ Environment::Environment()
 
 
 
+//! Constructor
 Environment::Environment( int& argc, char**& argv )
     :
 #if BOOST_VERSION >= 105500
@@ -345,6 +346,7 @@ struct PythonArgs
 int PythonArgs::argc = 1;
 char** PythonArgs::argv = nullptr;
 
+// Constructor
 Environment::Environment( pybind11::list arg )
     :
 #if BOOST_VERSION >= 105500
@@ -354,6 +356,8 @@ Environment::Environment( pybind11::list arg )
 #endif
 {
 }
+
+// Constructor
 Environment::Environment( pybind11::list arg, po::options_description const& desc )
     :
 #if BOOST_VERSION >= 105500
@@ -412,7 +416,7 @@ Environment::initPetsc( int * argc, char *** argv )
 }
 #endif // FEELPP_HAS_PETSC_H
 
-
+// Constructor
 Environment::Environment( int argc, char** argv,
 #if BOOST_VERSION >= 105500
                           mpi::threading::level lvl,
@@ -486,6 +490,15 @@ Environment::Environment( int argc, char** argv,
     if ( !S_mongocxxInstance )
         S_mongocxxInstance = std::make_unique<mongocxx::instance>();
 #endif
+    if ( not S_hwSysInstance )
+    {
+#if defined(FEELPP_HAS_KWSYS )
+        // Use kwsys library.
+        S_hwSysInstance = std::make_unique<Sys::KWSys>();
+#else
+        S_hwSysInstance = std::make_unique<Sys::HWSys>();
+#endif
+    }
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -560,7 +573,7 @@ Environment::clearSomeMemory()
     Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 
-
+// Destructor.
 Environment::~Environment()
 {
     if ( boption( "display-stats" ) )
@@ -569,6 +582,14 @@ Environment::~Environment()
     double t = toc("env");
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
+
+    if( boption("journal.enable") )
+    {
+        // Merge simulation info (map) into one ptree.
+//        Environment::journalPull();
+//        // This will save the ptree into a json file.
+//        Environment::journalSave();
+    }
 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
@@ -2343,5 +2364,7 @@ TimerTable Environment::S_timers;
 #if defined(FEELPP_HAS_MONGOCXX )
 std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
 #endif
+
+std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
 }

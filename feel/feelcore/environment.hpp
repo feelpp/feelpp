@@ -65,8 +65,8 @@
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/feelcore/functors.hpp>
-#include <feel/feelobserver/siminfomanager.hpp>
 #include <feel/options.hpp>
+
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
 #endif
@@ -78,6 +78,9 @@
 #if defined(FEELPP_HAS_MONGOCXX )
 #include <mongocxx/instance.hpp>
 #endif
+
+#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelhwsys/hwsys.hpp>
 
 namespace Feel
 {
@@ -181,7 +184,7 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! 
 class FEELPP_EXPORT Environment
 :   boost::noncopyable,
-    public Observer::SimInfoManager
+    public Observer::JournalManager
 {
 public:
     //!
@@ -860,6 +863,9 @@ private:
 #if defined(FEELPP_HAS_MONGOCXX )
     static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;
 #endif
+
+    //! Hardware System information instance.
+    static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;
 };
 
 BOOST_PARAMETER_FUNCTION(
