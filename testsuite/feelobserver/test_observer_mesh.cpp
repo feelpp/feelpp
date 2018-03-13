@@ -31,18 +31,40 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( observers )
 
-BOOST_AUTO_TEST_CASE( siminfo_mesh )
+BOOST_AUTO_TEST_CASE( journal_mesh )
 {
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
+    auto mesh1 = loadMesh( _mesh=new Mesh<Simplex<1,1>>, _name="Mesh1" );
+    auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1>>, _name="Mesh2" );
+    auto mesh3 = loadMesh( _mesh=new Mesh<Simplex<3,1>>, _name="Mesh3" );
+    // Mesh 4 and 5 have no name. It will be saved as "undefined", mesh5
+    // overide info!
+    auto mesh4 = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
+    auto mesh5 = loadMesh( _mesh=new Mesh<Simplex<2,1>> );
+
+    auto mesh6 = loadMesh( _mesh=new Mesh<Simplex<3,1>> );
+    mesh6->setInstanceName( "Mesh6" );
     toc("loadMesh");
 
-    // Manual way (can be set via options).
-    // Not needed if simInfoAutoConnect( true );
-    mesh->simInfoConnect();
+    // By default, mesh is watchable. You can connect the mesh
+    // to be observed and its data will be retrieved by the observer
+    // manager (Environment class by default).
 
-    Environment::simInfoPull();
-    Environment::simInfoSave();
+    // only mesh1 and mesh3 will be observed.
+    mesh1->journalConnect();
+    mesh2->journalConnect();
+    mesh3->journalConnect();
+    mesh4->journalConnect();
+    mesh5->journalConnect();
+    mesh6->journalConnect();
+
+    // Mesh 2 won't be observed anymore.
+    mesh2->journalDisconnect();
+
+//    // This will merge simulation info (map) into one ptree.
+    Environment::journalPull();
+//    // This will save the ptree into a json file.
+    Environment::journalSave();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

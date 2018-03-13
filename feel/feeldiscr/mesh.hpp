@@ -104,6 +104,8 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
                                                               EXTRACTION_KEEP_FACES_IDS |
                                                               EXTRACTION_KEEP_VOLUMES_IDS );
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
+
+static uint16_type MESH_INSTANCE_NUMBER = 0;
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
 
@@ -158,7 +160,7 @@ class Mesh
                                                             mpl::identity<Mesh3D<GeoShape,T> > >::type>::type>::type::type,
         public boost::addable<Mesh<GeoShape,T,Tag> >,
         public boost::enable_shared_from_this< Mesh<GeoShape,T,Tag> >,
-        public Observer::SimInfoWatcher
+        public Observer::JournalWatcher
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape,T> >,
@@ -295,9 +297,13 @@ public:
     //!
      //!  Default mesh constructor
      //!
-    Mesh( WorldComm const& worldComm = Environment::worldComm() );
+    Mesh( WorldComm const& worldComm = Environment::worldComm(),
+          const std::string& name = ( "mesh-" + std::to_string(MESH_INSTANCE_NUMBER) ) );
 
-    ~Mesh() {}
+    ~Mesh() {
+            VLOG(2) << "Mesh destructor: Disconnect '" << M_instance_name << "' from journal.";
+            this->journalDisconnect();
+    }
 
     void clear()
         {
@@ -842,6 +848,12 @@ public:
      //!
     //! @{
 
+    //! Set mesh instance name.
+    void setInstanceName( std::string s )
+    {
+        M_instance_name = s;
+    }
+
     void setSubStructuring( bool s )
         {
             M_substructuring = s;
@@ -884,6 +896,10 @@ public:
     {
         return M_tool_localization;
     }
+
+    //! Get the name of the current mesh instance.
+    //! @return the name
+    std::string instanceName() const { return M_instance_name; }
 
     //!
      //!  @brief get the average h
@@ -1197,8 +1213,8 @@ public:
     void decode();
 
     //! Send a notification to the simulation info manager.
-    //! \see SimInfoWatcher SimInfoManager
-    const pt::ptree simInfoNotify() const override;
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
                                      save,
@@ -1935,6 +1951,10 @@ private:
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type & elt, face_type const& face, mpl::false_ );
 
 private:
+
+    //! Mesh name.
+    std::string M_instance_name;
+    uint16_type M_instance_number;
 
     //! ! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
@@ -2685,21 +2705,19 @@ Mesh<Shape, T, Tag>::exportVTK( bool exportMarkers, std::string const& vtkFieldN
 //! \return property tree with mesh properties
 template<typename Shape, typename T, int Tag>
 const pt::ptree
-Mesh<Shape, T, Tag>::simInfoNotify() const
+Mesh<Shape, T, Tag>::journalNotify() const
 {
     pt::ptree p;
-    p.put("typename", "Mesh" );
-    p.put("name", "Mesh1"); // TODO add a specific name per instance
-    p.put(".shape", Shape::name() );
-    p.put(".dim", dimension() );
-    p.put(".order", nOrder );
-    p.put(".h_min", hMin() );
-    p.put(".h_max", hMax() );
-    p.put(".h_average", hAverage() );
-    p.put(".n_points", numGlobalPoints() );
-    p.put(".n_edges", numGlobalEdges() );
-    p.put(".n_faces", numGlobalFaces() );
-    p.put(".n_vertices", numGlobalVertices() );
+    p.put("mesh."+ instanceName() + ".shape", Shape::name() );
+    p.put("mesh."+ instanceName() + ".dim", dimension() );
+    p.put("mesh."+ instanceName() + ".order", nOrder );
+    p.put("mesh."+ instanceName() + ".h_min", hMin() );
+    p.put("mesh."+ instanceName() + ".h_max", hMax() );
+    p.put("mesh."+ instanceName() + ".h_average", hAverage() );
+    p.put("mesh."+ instanceName() + ".n_points", numGlobalPoints() );
+    p.put("mesh."+ instanceName() + ".n_edges", numGlobalEdges() );
+    p.put("mesh."+ instanceName() + ".n_faces", numGlobalFaces() );
+    p.put("mesh."+ instanceName() + ".n_vertices", numGlobalVertices() );
     return p;
 }
 

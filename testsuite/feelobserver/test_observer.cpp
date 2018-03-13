@@ -33,32 +33,51 @@
 using namespace Feel;
 
 
-// Object used as simulation info manager.
-// This class will owns the signal where each watched object will send
-// notifications.
-class ManagerTest
-: virtual public Observer::SimInfoManager
+// This test shows how to feed the benchmark system.
+// One work here with the simulation info observer "Journal".
+// An observer is defined by its managers and its watchers.
+//
+//  JournalManager  JournalWatcher
+//   +-------+        +-------+
+//   |object1|        |object2|
+//   +-------+        +-------+
+//   | Sig1  +-------->slot1  |
+//   +-------+   |    +-------+
+//               |
+//               |    +-------+
+//               |    |object3|
+//               |    +-------+
+//               +---->slot1  |
+//                    +-------+
+//
+// One have to define one or several manager which can ask
+// to their watchers (to be defined also) to send their information.
+// A Journal observer
+
+
+// Object1 is defined as the simulation info manager.
+class Object1
+: virtual public Observer::JournalManager
 {
 };
 
-// Object observed. A simInfoNotify has to be defined to send notifications
+// Object2 is an object to be watched.
+// Note: A journalNotify has to be defined with the notifications to be send
 // to the simulation info manager.
-// Note that a "typename" and a "name" key has to be set in the property tree
-class ProbeTest1
-:   virtual public Observer::SimInfoWatcher // observe the simulation
+// Note that a "typename" and a "name" key are mandatory
+class Object2
+: virtual public Observer::JournalWatcher // observe the simulation
 {
     public:
-        ProbeTest1( std::string name = "default" ): M_name( name ) {}
+        Object2( std::string name = "default" ): M_name( name ) {}
 
-        // Notification for SimInfo observer.
-        const pt::ptree simInfoNotify() const
+        // Notification for Journal observer.
+        const pt::ptree journalNotify() const
         {
             pt::ptree p;
-            p.put("typename","ProbeTest1"); // required
-            p.put("name", M_name); // required
-            p.put("a","1");
-            p.put("b","2");
-            p.put("c.d","3");
+            p.put( M_name + ".a","1");
+            p.put( M_name + ".b","2");
+            p.put( M_name + ".c.d","3");
             return p;
         }
 
@@ -72,12 +91,12 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( observers )
 
-BOOST_AUTO_TEST_CASE( siminfo_basic )
+BOOST_AUTO_TEST_CASE( journal_basic )
 {
 
-    ManagerTest m;
-    ProbeTest1 p1( "p1" );
-    ProbeTest1 p2( "p2" );
+    Object1 m;
+    Object2 p1( "p1" );
+    Object2 p2( "p2" );
 
     // Example to show list of signals and list of slots.
     if( Environment::isMasterRank() )
@@ -87,22 +106,24 @@ BOOST_AUTO_TEST_CASE( siminfo_basic )
     }
     // Example how to retrieve a signal using signalhandler.
     // (The signals template arguments are required to cast into the proper signal.)
-    const auto& sigptr = ManagerTest::signalStatic< pt::ptree(), Observer::SimInfoMerge >( "simInfoManager" );
+    const auto& sigptr = Object1::signalStatic< pt::ptree(), Observer::JournalMerge >( "journalManager" );
     std::cout << "number of connected slot: " << sigptr->num_slots() << std::endl;
 
-    p1.simInfoConnect();
-    p2.simInfoConnect();
+    p1.journalConnect();
+    p2.journalConnect();
 
     std::cout << "number of connected slot: " << sigptr->num_slots() << std::endl;
 
     // Merge p1, p2 simulation info property tree into one using a call from
     // the manager.
 
-    const auto& res = ManagerTest::simInfoPull();
-    // This also works "m.simInfoPull();"
+    // Retrieve the merged property tree.
+    const auto& res = Object1::journalPull();
+    // This also works
+    // m.journalPull();
 
     // Save into a json file.
-    ManagerTest::simInfoSave();
+    Object1::journalSave();
 
     auto t = res.get_child( "ProbeTest1.p1" );
     auto a = t.get<int>("a");

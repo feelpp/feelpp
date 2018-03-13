@@ -66,6 +66,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
+      ( name,(std::string), "" ) // Mesh object instance name (for db/json save).
       ( format,         *, ioption(_prefix=prefix,_name="gmsh.format") )
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
       //( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
@@ -95,6 +96,8 @@ BOOST_PARAMETER_FUNCTION(
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
+    if( not name.empty() )
+        _mesh->setInstanceName( name );
 
     if ( worldcomm.isActive() )
     {
