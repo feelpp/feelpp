@@ -48,6 +48,10 @@ int main(int argc, char**argv )
 
     tic();
     auto Vh = Pch<2>( mesh );
+    auto Vh2 = Pdh<0>( mesh );
+
+    Environment::journalSave();
+
     auto u = Vh->element("u");
     auto mu = expr(soption(_name="functions.mu")); // diffusion term
     auto f = expr( soption(_name="functions.f"), "f" );
@@ -123,6 +127,22 @@ int main(int argc, char**argv )
 
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
+
+    double l2 = normL2( _range=elements(mesh), _expr=idv(u)-expr(checker().solution()) );
+    double h1 = normH1( _range=elements(mesh), _expr=idv(u)-expr(checker().solution() ), _grad_expr=gradv(u)-grad<2>(expr(checker().solution())) );
+
+    // tag::journal[]
+    // Add a watcher functor for the journal system.
+    Observer::JournalFeed mj{
+        {"error.norm.L2", l2},
+        {"error.norm.H1", h1}
+    };
+
+    //    // This will merge simulation info (map) into one ptree.
+    Environment::journalPull();
+    //    // This will save the ptree into a json file.
+    Environment::journalSave();
+    // end::journal[]
 
     // exit status = 0 means no error
     return !status;
