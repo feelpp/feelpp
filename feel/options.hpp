@@ -145,8 +145,8 @@ po::options_description fit_options( std::string const& prefix="" );
 po::options_description checker_options( std::string const& prefix="" );
 
 //!
-//! SimInfo observer class options (benchmark system).
+//! Journal observer class options (benchmark system).
 //!
-po::options_description siminfo_options( std::string const& prefix="" );
+po::options_description journal_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP

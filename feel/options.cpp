@@ -937,12 +937,16 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
-siminfo_options( std::string const& prefix )
+journal_options( std::string const& prefix )
 {
-    po::options_description _options( "SimInfo " + prefix + " options" );
+    po::options_description _options( "Journal " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"siminfo.enable" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable simulation info" )
-        ( prefixvm( prefix,"siminfo.filename" ).c_str(), Feel::po::value<std::string>()->default_value("simulation.info.json"), "name of the json file" )
+        ( prefixvm( prefix,"journal.enable" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
+        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>()->default_value("simulation.info.json"), "name of the json file" )
+        ( prefixvm( prefix,"journal.enable.mesh" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
+        ( prefixvm( prefix,"journal.enable.functionspace" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
+        ( prefixvm( prefix,"journal.enable.timer" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable timer stats" )
+        ( prefixvm( prefix,"journal.enable.hwsys" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable hardware info" )
         ;
     return _options;
 }
@@ -1046,7 +1050,7 @@ feel_options( std::string const& prefix  )
         .add( msi_options(prefix) )
         .add( fit_options(prefix) )
         .add( checker_options(prefix) )
-        .add( siminfo_options(prefix) )
+        .add( journal_options(prefix) )
         .add( fmu_options(prefix) )
         ;
 
