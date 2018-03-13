@@ -20,13 +20,13 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef FEELPP_SIMINFOWATCHER_HPP
-#define FEELPP_SIMINFOWATCHER_HPP 1
+#ifndef FEELPP_JOURNALWATCHER_HPP
+#define FEELPP_JOURNALWATCHER_HPP 1
 
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelevent/events.hpp>
-#include <feel/feelobserver/siminfomanager.hpp>
-#include <feel/feelobserver/functors/siminfomerge.hpp>
+#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelobserver/functors/journalmerge.hpp>
 
 // All Feel++ observers are defined here.
 
@@ -38,7 +38,7 @@ namespace Observer
 namespace pt =  boost::property_tree;
 
 // Watcher
-class SimInfoWatcher
+class JournalWatcher
     : public Event::SlotHandler
 {
 public:
@@ -46,7 +46,7 @@ public:
     using notify_type = pt::ptree;
 
     //! Watch child properties and notify the manager.
-    virtual const pt::ptree simInfoNotify() const = 0;
+    virtual const pt::ptree journalNotify() const = 0;
 
     //! Constructors
     //! @{
@@ -57,21 +57,21 @@ public:
     //! is connected a new simulation info slot is created and can be connected
     //! to the simulation info manager
     //!
-    //! \see SimInfoManager
-    SimInfoWatcher()
+    //! \see JournalManager
+    JournalWatcher()
     {
-        slotNew< notify_type () >( "simInfoWatcher", std::bind( &SimInfoWatcher::simInfoNotify, this) );
-        if( M_siminfo_autoconnect )
-            simInfoConnect();
+        slotNew< notify_type () >( "journalWatcher", std::bind( &JournalWatcher::journalNotify, this) );
+        if( M_journal_autoconnect )
+            journalConnect();
     }
 
     //! @}
 
     //! Setters
     //! @{
-    void simInfoAutoconnect( bool b = true )
+    void journalAutoconnect( bool b = true )
     {
-        M_siminfo_autoconnect = b;
+        M_journal_autoconnect = b;
     }
 
     //! @}
@@ -80,26 +80,28 @@ public:
     //! @{
 
     //! Connect the derived object to the simulation info manager.
-    void simInfoConnect()
+    void journalConnect()
     {
-        SimInfoManager::signalStaticConnect< notify_type (), SimInfoMerge >( "simInfoManager", *this, "simInfoWatcher" );
+        JournalManager::signalStaticConnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
     }
 
     //! Disconnect the derived object from the simulation info manager.
-    void simInfoDisConnect()
+    void journalDisconnect()
     {
-        SimInfoManager::signalStaticDisconnect< notify_type (), SimInfoMerge >( "simInfoManager", *this, "simInfoWatcher" );
+        JournalManager::signalStaticDisconnect< notify_type (), JournalMerge >( "journalManager", *this, "journalWatcher" );
     }
 private:
-    static bool M_siminfo_autoconnect;
+    static bool M_journal_autoconnect;
     //! @}
 };
 
 
-} // Observer namespace
+} // Observer namespace.
 } // Feel namespace.
 
-#endif // FEELPP_SIMINFOWATCHER_HPP
+#include <feel/feelobserver/detail/journalfeed.hpp>
+
+#endif // FEELPP_JOURNALWATCHER_HPP
 
 
 // MODELINES

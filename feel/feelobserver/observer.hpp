@@ -23,8 +23,8 @@
 #ifndef FEELPP_OBSERVER_HPP
 #define FEELPP_OBSERVER_HPP 1
 
-#include <feel/feelobserver/siminfomanager.hpp>
-#include <feel/feelobserver/siminfowatcher.hpp>
+#include <feel/feelobserver/journalmanager.hpp>
+#include <feel/feelobserver/journalwatcher.hpp>
 
 #endif // FEELPP_OBSERVER_HPP
 
