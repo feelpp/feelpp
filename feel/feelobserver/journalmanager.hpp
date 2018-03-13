@@ -20,12 +20,17 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef FEELPP_SIMINFOMANAGER_HPP
-#define FEELPP_SIMINFOMANAGER_HPP 1
+#ifndef FEELPP_JOURNALMANAGER_HPP
+#define FEELPP_JOURNALMANAGER_HPP 1
 
+#include <chrono>
+#include <ctime>
+#include <iomanip>
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelevent/events.hpp>
-#include <feel/feelobserver/functors/siminfomerge.hpp>
+#include <feel/feelobserver/functors/journalmerge.hpp>
+
+#define FEELPP_DB_JOURNAL_VERSION "0.1.0"
 
 namespace Feel
 {
@@ -35,7 +40,7 @@ namespace Observer
 namespace pt =  boost::property_tree;
 
 // Manager
-class SimInfoManager
+class JournalManager
    : public Event::SignalHandler
 {
     public:
@@ -48,11 +53,15 @@ class SimInfoManager
         //! Default constructor
         //! This constructor create a new signal waiting for simulation info
         //! watcher object to connect.
-        //! \see SimInfoWatcher
-        SimInfoManager()
+        //! \see JournalWatcher
+        JournalManager()
         {
+            std::time_t t = std::time(nullptr);
+            M_journal_ptree.put( "database.version", FEELPP_DB_JOURNAL_VERSION );
+            M_journal_ptree.put( "database.time.gm", std::put_time(std::gmtime(&t), "%c %Z") );
+            M_journal_ptree.put( "database.time.local", std::put_time(std::localtime(&t), "%c %Z") );
             // Create a signal for simulation info.
-            signalStaticNew< notify_type (), SimInfoMerge >( "simInfoManager" );
+            signalStaticNew< notify_type (), JournalMerge >( "journalManager" );
         }
 
         //! @}
@@ -61,9 +70,9 @@ class SimInfoManager
         //! @{
 
         //! Set JSON file name.
-        void SimInfoSetFilename( std::string name )
+        void JournalSetFilename( std::string name )
         {
-            M_siminfo_filename = name;
+            M_journal_filename = name;
         }
         //! @}
 
@@ -72,35 +81,43 @@ class SimInfoManager
 
         //! Fetch and merge notifications coming from all observed objects into
         //! a global property tree.
-        //! \see SimInfoWatcher
+        //! \see JournalWatcher
         static const notify_type
-        simInfoPull()
+        journalPull()
         {
-            M_siminfo_ptree = signalStaticPull< notify_type (), SimInfoMerge >( "simInfoManager" );
-            return M_siminfo_ptree;
+            //std::cout << "[Observer: Journal] Pull watcher information.";
+            const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
+            for( const auto& it : pt_merged )
+                M_journal_ptree.put_child( it.first, it.second );
+            return M_journal_ptree;
         }
 
         //! Save the simulation info global property tree into a json file.
         static void
-        simInfoSave()
+        journalSave( const std::string& filename = "journal.json" )
         {
-            if( not M_siminfo_ptree.empty() )
-                write_json( M_siminfo_filename , M_siminfo_ptree );
+            std::string fname = M_journal_filename;
+            if( filename != "journal.json" )
+                fname = filename;
+
+            //std::cout << "[Observer: Journal] generate report (JSON).";
+            if( not M_journal_ptree.empty() )
+                write_json( fname, M_journal_ptree );
         }
 
         //! @}
 
     private:
         //! JSON filename.
-        static std::string M_siminfo_filename;
+        static std::string M_journal_filename;
         //! Global property tree.
-        static pt::ptree M_siminfo_ptree;
+        static pt::ptree M_journal_ptree;
 };
 
 } // Observer namespace
 } // Feel namespace.
 
-#endif // FEELPP_SIMINFOMANAGER_HPP
+#endif // FEELPP_JOURNALMANAGER_HPP
 
 
 // MODELINES

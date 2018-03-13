@@ -20,16 +20,16 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#include <feel/feelobserver/siminfowatcher.hpp>
+#include <feel/feelobserver/journalmanager.hpp>
 
 namespace Feel
 {
 namespace Observer
 {
 
-// Init static variable.
-bool SimInfoWatcher::M_siminfo_autoconnect = false;
-
+// Init static variables.
+std::string JournalManager::M_journal_filename = "journal.json";
+pt::ptree JournalManager::M_journal_ptree;
 
 } // Observer namespace
 } // Feel namespace.
