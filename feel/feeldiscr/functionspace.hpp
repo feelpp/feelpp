@@ -4271,38 +4271,62 @@ public:
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
+                   const std::string& name = functionSpaceDefaultInstanceName() )
         :
         M_worldsComm( _worldsComm ),
         M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
+        FUNCTIONSPACE_INSTANCE_NUMBER++;
+        M_instance_name = name;
+        if( boption("journal.enable") and boption("journal.enable.functionspace") )
+        {
+            this->journalConnect();
+        }
         this->init( mesh, meshSupport, mesh_components, periodicity );
     }
 
+    // Constructor
     FunctionSpace( mesh_ptrtype const& mesh,
                    mesh_support_vector_type const& meshSupport,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
+                   const std::string& name = functionSpaceDefaultInstanceName() )
         :
         M_worldsComm( _worldsComm ),
         M_worldComm( new WorldComm( _worldsComm[0] ) ),
         M_extendedDofTableComposite( extendedDofTable ),
         M_extendedDofTable( extendedDofTable[0] )
     {
+        FUNCTIONSPACE_INSTANCE_NUMBER++;
+        M_instance_name = name;
+        if( boption("journal.enable") and boption("journal.enable.functionspace") )
+        {
+            this->journalConnect();
+        }
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
 
-    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm() )
+    // Constructor
+    FunctionSpace( WorldComm const& worldcomm = Environment::worldComm(),
+                   const std::string& name = functionSpaceDefaultInstanceName() )
         :
         M_worldsComm( std::vector<WorldComm>(nSpaces,worldcomm) ),
         M_worldComm( new WorldComm( worldcomm ) ),
         M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
         M_extendedDofTable( false )
-        {}
+    {
+       FUNCTIONSPACE_INSTANCE_NUMBER++;
+       M_instance_name = name;
+       if( boption("journal.enable") and boption("journal.enable.functionspace") )
+       {
+           this->journalConnect();
+       }
+    }
     // template<typename... FSpaceList>
     // FunctionSpace( FSpaceList... space_list )
     //     :
@@ -4441,6 +4465,8 @@ public:
     ~FunctionSpace()
         {
             VLOG(1) << "FunctionSpace Destructor...";
+            VLOG(1) << "Disconnect '" << M_instance_name << "' from journal.";
+            this->journalDisconnect();
             M_dof.reset();
             CHECK( M_dof.use_count() == 0 ) << "Invalid Dof Table shared_ptr";
             M_dofOnOff.reset();
@@ -4504,7 +4530,6 @@ public:
     /** @name Accessors
      */
     //@{
-
 
     /*
      * Get the real point matrix in a context
@@ -5215,9 +5240,15 @@ public:
         LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
 
+
+    //! Send a notification to the simulation info manager.
+    //! \see JournalWatcher JournalManager
+    const pt::ptree journalNotify() const override;
+
     //@}
 
 
+    // Copy constructor.
     FunctionSpace( FunctionSpace const& __fe )
         :
         M_worldsComm( __fe.M_worldsComm ),
@@ -5827,6 +5858,25 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
     //M_prof_find_points.pause();
     return false;
 }
+
+
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+const pt::ptree
+FunctionSpace<A0, A1, A2, A3, A4>::journalNotify() const
+{
+    pt::ptree p;
+    std::string prefix = "function_space." + instanceName();
+    p.put( prefix + ".mesh", mesh()->instanceName() );
+    p.put( prefix + ".component_number", qDim() );
+    p.put( prefix + ".global_dof_number", nDof() );
+    p.put( prefix + ".local_dof_number", nLocalDof() );
+    p.put( prefix + ".basis.name", basisName() );
+    p.put( prefix + ".basis.order", basisOrder() );
+    return p;
+}
+
+
 
 template<typename T,int M,int N>
 std::ostream&

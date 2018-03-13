@@ -29,8 +29,15 @@
 #ifndef __FunctionSpaceBase_H
 #define __FunctionSpaceBase_H 1
 
+#include <feel/feelobserver/observer.hpp>
+
 namespace Feel
 {
+
+// Incremented in child class constructors.
+static uint16_type FUNCTIONSPACE_INSTANCE_NUMBER = 0;
+
+static const std::string functionSpaceDefaultInstanceName() { return "function_space-" + std::to_string(FUNCTIONSPACE_INSTANCE_NUMBER); }
 
 /**
  * \class FunctionSpaceBase
@@ -40,6 +47,7 @@ namespace Feel
  * @see
  */
 class FEELPP_EXPORT FunctionSpaceBase
+: public Observer::JournalWatcher
 {
 public:
 
@@ -86,6 +94,17 @@ public:
      */
     //@{
 
+    // Get unique instance name.
+    const std::string& instanceName() const
+    {
+        return M_instance_name;
+    }
+
+    // Get unique instance number.
+    const uint16_type& instanceNumber() const
+    {
+        return M_instance_number;
+    }
 
     //@}
 
@@ -100,6 +119,8 @@ public:
      */
     //@{
 
+    // Simulation info observer notifications.
+    virtual const pt::ptree journalNotify() const override = 0;
 
     //@}
 
@@ -107,11 +128,13 @@ public:
 
 protected:
 
+    // Unique instance name.
+    std::string M_instance_name;
+    uint16_type M_instance_number;
+
 private:
- 
+
 };
-
-
 
 }
 #endif /* __FunctionSpaceBase_H */
