@@ -58,7 +58,17 @@ if( FEELPP_ENABLE_KWSYS )
 
     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} KWSys/Contrib" )
     set(FEELPP_HAS_KWSYS 1)
+
+    # install rules.
+    set(KWSYS_INSTALL_BIN_DIR bin)
+    set(KWSYS_INSTALL_LIB_DIR lib)
+    set(KWSYS_INSTALL_INCLUDE_DIR include)
+    set(KWSYS_INSTALL_COMPONENT_NAME_RUNTIME Runtime)
+    set(KWSYS_INSTALL_COMPONENT_NAME_DEVELOPMENT Development)
+    set(KWSYS_INSTALL_EXPORT_NAME feelpp-contrib-export-targets)
+
     list(INSERT FEELPP_LIBRARIES 0 feelpp_kwsys)
-  endif()
-endif()
+
+    endif() # Contrib prepare succeed
+endif() # kwsys enable
 
