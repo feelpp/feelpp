@@ -23,5 +23,10 @@
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "Fields": ["gradphi", "modgradphi"],
+        "PhysicalQuantities": ["volume", "perimeter","position_com","velocity_com"]
     }
 }
