@@ -131,7 +131,6 @@ public:
     bool hasInextensibility( uint16_type n = 0 ) const { return M_hasInextensibility.at(n); }
     std::string const& inextensibilityMethod( uint16_type n = 0 ) const { return M_inextensibilityMethod.at(n); }
     //--------------------------------------------------------------------//
-    bool hasSurfaceTension() const { return M_enableSurfaceTension; }
     bool hasInterfaceForces() const;
 
     void addInterfaceForce( interfaceforces_model_ptrtype model, std::string const& name = "" );
@@ -201,9 +200,7 @@ private:
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//
     // Forces
-    bool M_enableSurfaceTension;
     bool M_hasInterfaceForcesModel;
-    ublas::symmetric_matrix<double, ublas::upper> M_surfaceTensionCoeff;
 
     element_levelset_vectorial_ptrtype M_interfaceForces; 
 

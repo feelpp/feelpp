@@ -261,30 +261,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
     M_usePicardIterations = boption( _name="use-picard-iterations", _prefix=this->prefix() );
 
-    M_enableSurfaceTension = boption( _name="enable-surface-tension", _prefix=this->prefix() );
     M_hasInterfaceForcesModel = false;
 
-    if( M_enableSurfaceTension )
-    {
-        std::vector<double> sigma = Environment::vm()[prefixvm(this->prefix(),"surface-tension-coeff").c_str()].template as<std::vector<double> >();
-
-        CHECK( sigma.size() >= M_nFluids - 1 ) << sigma.size() << " surface tension coefficients found.\n"
-                                               << "You must at least provide the surface tension coefficients between the "
-                                               << M_nFluids - 1
-                                               << " levelset fluids and the surrounding fluid.\n";
-
-        M_surfaceTensionCoeff = ublas::symmetric_matrix<double, ublas::upper>(M_nFluids, M_nFluids);
-        uint16_type k = 0;
-        for( uint16_type i = 0; i < M_surfaceTensionCoeff.size1(); ++i )
-            for( uint16_type j = i+1; j < M_surfaceTensionCoeff.size2(); ++j )
-            {
-                if( k < sigma.size() )
-                    M_surfaceTensionCoeff(i,j) = sigma[k];
-                else
-                    M_surfaceTensionCoeff(i,j) = 0;
-                ++k;
-            }
-    }
 
     uint16_type nLevelSets = M_nFluids - 1;
 
@@ -355,14 +333,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n       * reinit every : " << this->M_levelsetReinitEvery[i];
     }
 
-    *_ostr << "\n   Forces Parameters"
-           << "\n     -- has surface tension  : " << std::boolalpha << this->M_enableSurfaceTension;
-    if( this->M_enableSurfaceTension )
-    {
-        for( uint16_type i = 0; i < M_surfaceTensionCoeff.size1(); ++i )
-            for( uint16_type j = i+1; j < M_surfaceTensionCoeff.size2(); ++j )
-    *_ostr << "\n       * surface tension (" << i << "," << j << ") : " << this->M_surfaceTensionCoeff(i,j);
-    }
+    *_ostr << "\n   Forces Parameters";
     *_ostr << "\n     -- has interface forces : " << std::boolalpha << this->M_hasInterfaceForcesModel;
     if( this->M_hasInterfaceForcesModel )
     {
@@ -467,7 +438,7 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 bool
 MULTIFLUID_CLASS_TEMPLATE_TYPE::hasInterfaceForces() const
 {
-    return this->hasSurfaceTension() || M_hasInterfaceForcesModel || (M_additionalInterfaceForcesModel.size() > 0);
+    return M_hasInterfaceForcesModel || (M_additionalInterfaceForcesModel.size() > 0);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -748,20 +719,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInterfaceForces()
 
     M_interfaceForces->zero();
 
-    if( this->hasSurfaceTension() )
-    {
-        this->timerTool("Solve").start();
-        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
-        {
-            *M_interfaceForces += vf::project( 
-                    this->functionSpaceLevelsetVectorial(),
-                    elements(this->mesh()),
-                    - M_surfaceTensionCoeff(0,n+1)*idv(M_levelsets[n]->K())*idv(M_levelsets[n]->N())*idv(M_levelsets[n]->D())
-                    );
-        }
-        double timeElapsedSurfaceTension = this->timerTool("Solve").stop();
-        this->log("MultiFluid", "updateInterfaceForces", "update surface tension forces in "+(boost::format("%1% s")%timeElapsedSurfaceTension).str() );
-    }
 
     if( M_hasInterfaceForcesModel )
     {
