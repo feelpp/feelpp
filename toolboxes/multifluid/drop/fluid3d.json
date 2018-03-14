@@ -23,5 +23,9 @@
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","density", "viscosity", "pid"]
     }
 }
