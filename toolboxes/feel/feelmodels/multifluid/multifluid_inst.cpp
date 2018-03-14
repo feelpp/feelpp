@@ -3,6 +3,7 @@
 
 #include <feel/feelmodels/multifluid/multifluid.cpp>
 
+#include <feel/feelmodels/multifluid/surfacetensionforcemodel.hpp>
 #include <feel/feelmodels/multifluid/helfrichforcemodel.hpp>
 #include <feel/feelmodels/multifluid/inextensibilityforcemodel.hpp>
 #include <feel/feelmodels/multifluid/linearelasticforcemodel.hpp>
@@ -15,6 +16,11 @@ namespace FeelModels {
 template class MULTIFLUID_CLASS_INSTANTIATION;
 
 // Register interface forces models
+const bool surfacetension_interfaceforcesmodel = 
+    MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
+            "surface-tension", 
+            &detail::createInterfaceForcesModel<SurfaceTensionForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
+
 const bool helfrich_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "helfrich", 

@@ -499,6 +499,7 @@ interfaceforces_options(std::string const& prefix)
 {
     Feel::po::options_description interfaceForcesOptions("InterfaceForces options");
     interfaceForcesOptions.add_options()
+        (prefixvm(prefix,"surface-tension.coeff").c_str(), Feel::po::value<double>()->default_value(0.), "Surface tension coefficient" )
         (prefixvm(prefix,"helfrich-bending-modulus").c_str(), Feel::po::value<double>()->default_value(0.), "Helfrich bending modulus k_B" )
         (prefixvm(prefix,"helfrich-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of Helfrich force" )
 
@@ -524,8 +525,6 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
 
         (prefixvm(prefix, "use-picard-iterations").c_str(), Feel::po::value<bool>()->default_value( false ), "solve NS-LS coupling with non-linear Picard iterations")
 
-        (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( false ), "enable surface tension between fluids")
-        (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
         ;
 
     multifluidOptions
