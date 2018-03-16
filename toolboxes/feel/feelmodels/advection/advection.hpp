@@ -38,16 +38,17 @@ namespace FeelModels {
 template< 
     typename ConvexType, typename BasisAdvectionType, 
     typename PeriodicityType = NoPeriodicity,
-    typename BasisDiffusionReactionType = BasisAdvectionType
+    typename BasisDiffusionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type,
+    typename BasisReactionCoeffType = typename detail::ChangeBasisPolySet<Scalar, BasisAdvectionType>::type
         >
 class Advection
-    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType>
-    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> >
+    : public AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType>
+    , public boost::enable_shared_from_this< Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
 {
 public:
-    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> super_type;
+    typedef AdvectionBase<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> super_type;
 
-    typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionReactionType> self_type;
+    typedef Advection<ConvexType, BasisAdvectionType, PeriodicityType, BasisDiffusionCoeffType, BasisReactionCoeffType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     typedef typename super_type::space_advection_type space_advection_type;
@@ -57,15 +58,6 @@ public:
 
     static const uint16_type nDim = super_type::nDim;
     static constexpr bool is_vectorial = super_type::is_vectorial;
-
-    //--------------------------------------------------------------------//
-    typedef map_scalar_field<2> map_scalar_field_type;
-    typedef map_vector_field<super_type::nDim, 1, 2> map_vector_field_type;
-    typedef typename mpl::if_< 
-        mpl::bool_<is_vectorial>,
-            map_vector_field_type,
-            map_scalar_field_type
-        >::type bc_map_field_type;
 
     //--------------------------------------------------------------------//
     // Constructor
@@ -83,6 +75,8 @@ public:
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
+    void setInitialValue();
+    virtual void loadConfigICFile();
     virtual void loadConfigBCFile();
     //--------------------------------------------------------------------//
     // Solve
@@ -91,7 +85,7 @@ public:
     // BC and source term assembly
     void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
-    void updateSourceTermLinearPDE(element_advection_ptrtype& fieldSource, bool buildCstPart) const;
+    void updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const;
 
     //--------------------------------------------------------------------//
     bool hasSourceTerm() const;
@@ -99,15 +93,6 @@ public:
     //--------------------------------------------------------------------//
     // BC management
     void addMarkerInflowBC( std::string const& markerName );
-
-protected:
-    // Boundary conditions
-    bc_map_field_type M_bcDirichlet;
-    bc_map_field_type M_bcNeumann;
-    //map_scalar_fields<2> M_bcRobin;
-    std::list<std::string> M_bcInflowMarkers;
-
-    bc_map_field_type M_sources;
 
 private:
     void loadPeriodicityFromOptionsVm();

@@ -515,6 +515,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
 
+    // prec
+    M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
+    M_pmmNeedUpdate = false;
+
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -1094,6 +1098,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 }
 
 
+namespace detail
+{
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( vec(Py(),-Px()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+    return userNullSpace;
+}
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( oneZ() );
+    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+    return userNullSpace;
+}
+
+}
+
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
@@ -1224,91 +1254,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
-    size_type currentStartIndex = 2;// velocity and pressure before
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {
-        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
-        currentStartIndex += M_XhMeanPressureLM.size();
-    }
-    if (this->hasMarkerDirichletBClm())
-    {
-        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
-    }
-    if ( this->hasMarkerPressureBC() )
-    {
-        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
-        if ( nDim == 3 )
-            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
-    }
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
-    }
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
-        M_thermodynModel->setColStartInMatrix( currentStartIndex );
-        M_thermodynModel->setRowStartInVector( currentStartIndex );
-        ++currentStartIndex;
-    }
+    this->initStartBlockIndexFieldsInMatrix();
     //-------------------------------------------------//
-    // prepare block vector
-    int nBlock = this->nBlockMatrixGraph();
-    M_blockVectorSolution.resize( nBlock );
-    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
-    int cptBlock=1;
-    // impose mean pressure by lagrange multiplier
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {
-        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
-            M_blockVectorSolution(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
-    }
-    // lagrange multiplier for Dirichlet BC
-    if (this->hasMarkerDirichletBClm())
-    {
-        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
-        ++cptBlock;
-    }
-    if ( this->hasMarkerPressureBC() )
-    {
-        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
-        if ( nDim == 3 )
-            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
-    }
-    // windkessel outel with implicit scheme
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
-        {
-            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
-            ++cptBlock;
-        }
-    }
-    // thermodynamics model
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
-    }
+    // build solution block vector
+    this->buildBlockVector();
 
-    // init vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
     //-------------------------------------------------//
     if ( buildModelAlgebraicFactory )
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
-#if 1
-        bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
-        if ( attachMassMatrix )
+
+        if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
         {
-            auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
-            auto const& u = this->fieldVelocity();
-            double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            if ( this->isStationary() ) coeff=1.;
-            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
-            massbf.matrixPtr()->close();
-            M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+            NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
+            M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
         }
-#endif
         this->initInHousePreconditioner();
     }
 
@@ -1853,12 +1813,113 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+size_type
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
+{
+    size_type currentStartIndex = 2;// velocity and pressure before
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
+        currentStartIndex += M_XhMeanPressureLM.size();
+    }
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        if ( nDim == 3 )
+            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+    }
+    if ( this->hasFluidOutletWindkesselImplicit() )
+    {
+        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
+    }
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_thermodynModel->setRowStartInMatrix( currentStartIndex );
+        M_thermodynModel->setColStartInMatrix( currentStartIndex );
+        M_thermodynModel->setRowStartInVector( currentStartIndex );
+        ++currentStartIndex;
+    }
+
+    return currentStartIndex;
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
+{
+    this->initBlockVector();
+    M_blockVectorSolution.buildVector( this->backend() );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+int
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
+{
+    int nBlock = this->nBlockMatrixGraph();
+    M_blockVectorSolution.resize( nBlock );
+    M_blockVectorSolution(0) = this->fieldVelocityPressurePtr();
+    int cptBlock=1;
+    // impose mean pressure by lagrange multiplier
+    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+    {
+        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
+            M_blockVectorSolution(cptBlock++) = this->backend()->newVector( M_XhMeanPressureLM[k] );
+    }
+    // lagrange multiplier for Dirichlet BC
+    if (this->hasMarkerDirichletBClm())
+    {
+        M_blockVectorSolution(cptBlock) = this->backend()->newVector( this->XhDirichletLM() );
+        ++cptBlock;
+    }
+    if ( this->hasMarkerPressureBC() )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
+        if ( nDim == 3 )
+            M_blockVectorSolution(cptBlock++) = M_fieldLagrangeMultiplierPressureBC2;
+    }
+    // windkessel outel with implicit scheme
+    if ( this->hasFluidOutletWindkesselImplicit() )
+    {
+        for (int k=0;k<this->nFluidOutletWindkesselImplicit();++k)
+        {
+            M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
+            ++cptBlock;
+        }
+    }
+    // thermodynamics model
+    if ( M_useThermodynModel && M_useGravityForce )
+    {
+        M_blockVectorSolution(cptBlock++) = M_thermodynModel->fieldTemperaturePtr();
+    }
+
+    return cptBlock;
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
-    if ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" )
+
+    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
+    if ( attachMassMatrix )
+    {
+        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+        auto const& u = this->fieldVelocity();
+        double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+        if ( this->isStationaryModel() ) coeff=1.;
+        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        massbf.matrixPtr()->close();
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+    }
+
+    bool buildPrecBlockns = ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" );
+    bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
+    if ( buildPrecBlockns || buildOperatorPCD )
     {
         BoundaryConditions bcPrecPCD;
         bcPrecPCD.clear();
@@ -1944,7 +2005,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         // TODO other bc (fsi,...)
 #if 1
-        if ( Environment::isMasterRank() )
+        if ( this->worldComm().isMasterRank() && this->verbose() )
         {
             for( auto const& s : bcPrecPCD )
             {
@@ -1969,28 +2030,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         }
 #endif
         CHECK( this->algebraicFactory()->preconditionerTool()->matrix() ) << "no matrix define in preconditionerTool";
-        // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
 
-        typedef space_fluid_type space_type;
-        typedef space_densityviscosity_type properties_space_type;
+        if ( buildPrecBlockns )
+        {
+            typedef space_fluid_type space_type;
+            typedef space_densityviscosity_type properties_space_type;
+            boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =
+                Feel::blockns( _space=this->functionSpace(),
+                               _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
+                               _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
+                               _bc=bcPrecPCD,
+                               _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
+                               _prefix="velocity",
+                               _mu=idv(this->densityViscosityModel()->fieldMu()),
+                               _rho=idv(this->densityViscosityModel()->fieldRho())
+                               /*_alpha=myalpha*/ );
+            this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+        }
 
-        boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns = Feel::blockns( _space=this->functionSpace(),
-                                        _properties_space=this->densityViscosityModel()->fieldDensityPtr()->functionSpace(),
-                                        _type=soption(_prefix=this->prefix(),_name="blockns.type"),//"PCD",
-                                        _bc=bcPrecPCD,
-                                        _matrix=this->algebraicFactory()->preconditionerTool()->matrix(),
-                                        _prefix="velocity",
-                                        _mu=idv(this->densityViscosityModel()->fieldMu()),
-                                        _rho=idv(this->densityViscosityModel()->fieldRho()),
-                                        _alpha=myalpha );
-        this->algebraicFactory()->preconditionerTool()->attachInHousePreconditioners("blockns",a_blockns);
+        if ( buildOperatorPCD )
+        {
+            boost::shared_ptr<OperatorPCD<space_fluid_type>> opPCD;
+            opPCD = boost::make_shared<OperatorPCD<space_fluid_type>>( this->functionSpace(),this->backend(),bcPrecPCD,"velocity",false,true);
+            this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd",opPCD);
+        }
     }
 
 }
-
-
-
 
 } // namespace FeelModels
 } // namespace Feel

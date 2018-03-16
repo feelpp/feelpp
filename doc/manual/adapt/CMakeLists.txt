@@ -29,7 +29,7 @@ if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-if(GMSH_ADAPTMESH_INCLUDE_DIR)
+if(FEELPP_HAS_GMSH_ADAPT_H)
   feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABELS doc )
 else()
   message(STATUS "doc_LShape: compilation cancelled. Some headers (Openfile.h Field.h) needed for meshadaptation are missing.")

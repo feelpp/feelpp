@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
@@ -235,7 +236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if (!this->isStationary())
+    if (!this->isStationaryModel())
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
@@ -258,6 +259,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _geomap=this->geomap() );
         }
     }
+
+    //--------------------------------------------------------------------------------------------------//
+    // user-defined additional terms
+    this->updateResidualAdditional( R, BuildCstPart );
 
     //------------------------------------------------------------------------------------//
     // define pressure cst
