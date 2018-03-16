@@ -1,7 +1,7 @@
 {
     "Name": "Square3d",
     "ShortName":"Square3d",
-    "Model":"Navier-Stokes",
+    "Model":"Stokes",
     "BoundaryConditions":
     {
         "velocity":

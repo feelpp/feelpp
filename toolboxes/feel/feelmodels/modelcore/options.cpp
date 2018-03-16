@@ -210,6 +210,10 @@ fluidMechanics_options(std::string const& prefix)
 
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
+        (prefixvm(prefix,"preconditioner.attach-pmm").c_str(), Feel::po::value<bool>()->default_value(false), "attach pressure mass matrix")
+        (prefixvm(prefix,"preconditioner.attach-pcd").c_str(), Feel::po::value<bool>()->default_value(false), "attach operator pcd")
+
+        (prefixvm(prefix,"use-velocity-near-null-space").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-near-null-space")
 
         (prefixvm(prefix,"fluid-outlet.type").c_str(), Feel::po::value<std::string>()->default_value( "free" ), "type : free, windkessel ")
         (prefixvm(prefix,"fluid-outlet.windkessel.coupling").c_str(), Feel::po::value<std::string>()->default_value( "implicit" ), "explicit, implicit ")
@@ -384,13 +388,18 @@ advection_options(std::string const& prefix)
         (prefixvm(prefix,"D").c_str(), Feel::po::value<double>()->default_value( 0 ), "diffusion coefficient [ m^2.s^-1 ]")
         (prefixvm(prefix,"R").c_str(), Feel::po::value<double>()->default_value( 0 ), "reaction coefficient [ s^-1 ]")
         (prefixvm(prefix,"advection-velocity").c_str(), Feel::po::value<std::string>(), "math expression")
-        (prefixvm(prefix,"advec-stab-method").c_str(), Feel::po::value<std::string>()->default_value( "GALS" ), "stabilization method")
-        (prefixvm(prefix,"advec-stab-coeff").c_str(), Feel::po::value<double>()->default_value( 1 ), "stabilization coefficient")
+        (prefixvm(prefix,"stabilization.method").c_str(), Feel::po::value<std::string>()->default_value( "GALS" ), "stabilization method")
+        (prefixvm(prefix,"stabilization-cip.coeff").c_str(), Feel::po::value<double>()->default_value( 1 ), "CIP stabilization coefficient")
         (prefixvm(prefix,"export-all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
         (prefixvm(prefix,"export-advection-velocity").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_advection_velocity")
         (prefixvm(prefix,"export-diffusion").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_diffusion_coeff")
         (prefixvm(prefix,"export-reaction").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_reaction_coeff")
         (prefixvm(prefix,"export-source").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_source_field")
+
+        (prefixvm(prefix,"stabilization-gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
         ;
     return advectionOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
@@ -412,8 +421,10 @@ reinitializer_hj_options(std::string const& prefix)
     Feel::po::options_description reinitializerHJOptions("ReinitializerHJ options");
     reinitializerHJOptions.add_options()
         (prefixvm(prefix,"tol").c_str(), Feel::po::value<double>()->default_value( 0.03 ), "tolerance on residual to \"distance function\" of HJ reinitialized level set")
+        (prefixvm(prefix,"time-step").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "time step used in HJ equation")
         (prefixvm(prefix,"max-iter").c_str(), Feel::po::value<int>()->default_value( 15 ), "maximum number of iterations for Hamilton-Jacobi reinitialization")
-        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Heaviside used to compute sign function)")
+        (prefixvm(prefix,"thickness-heaviside").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "thickness of the interface (support for Heaviside used to compute sign function)")
+        (prefixvm(prefix,"keep-volume").c_str(), Feel::po::value<bool>()->default_value( true ), "use constraint to conserve levelset volume")
         ;
 
     reinitializerHJOptions.add( advection_options( prefix ) );
@@ -427,20 +438,21 @@ levelset_options(std::string const& prefix)
     Feel::po::options_description levelsetOptions("Levelset options");
     levelsetOptions.add_options()
         //(prefixvm(prefix,"fm-use-markerdirac").c_str(), Feel::po::value<bool>()->default_value( false ), "use markerDirac to mark initially done elements in fast-marching")
-        (prefixvm(prefix,"fm-smooth-coeff").c_str(), Feel::po::value<double>()->default_value(-1.), "smoothing coefficient for interface local projection, if <0 nodal projection is done instead")
         (prefixvm(prefix,"use-regularized-phi").c_str(), Feel::po::value<bool>()->default_value( false ), "use grad(phi)/|grad(phi)| to evaluate Dirac and Heaviside functions")
         (prefixvm(prefix,"h-d-nodal-proj").c_str(), Feel::po::value<bool>()->default_value( true ), "use nodal projection to compute dirac and heaviside functions (if false, use L2 projection)")
         (prefixvm(prefix,"thickness-interface").c_str(), Feel::po::value<double>(), "thickness of the interface (support for Dirac and Heaviside functions)")
         (prefixvm(prefix,"use-adaptive-thickness").c_str(), Feel::po::value<bool>()->default_value( false ), "automatically adapt the thickness of Dirac and Heaviside")
+        (prefixvm(prefix,"thickness-interface-rectangular-function").c_str(), Feel::po::value<double>(), "thickness of the interface rectangular function")
         (prefixvm(prefix,"reinit-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset reinitialization method (fm: fast-marching, hj: hamilton-jacobi)")
         //(prefixvm(prefix,"use-smooth-reinit").c_str(), Feel::po::value<bool>()->default_value(false), "Use smooth reinitialization")
-        (prefixvm(prefix,"fm-init-first-elts-strategy").c_str(), Feel::po::value<int>()->default_value(1), "strategy to initialize the first elements before the fast marching:\n0 = do nothing\n1 = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \n2 = Hamilton Jacoby equation (with parameters given in options)")
+        (prefixvm(prefix,"fm-initialization-method").c_str(), Feel::po::value<std::string>()->default_value("ilp"), "strategy to initialize the first elements before the fast marching:\nnone = do nothing\nilp = interface local projection by nodal (phi) and smooth (|grad phi|) projections, smoothing coeff given by option fm-smooth-coeff \nhj = Hamilton Jacoby equation (with parameters given in options)")
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
+        (prefixvm(prefix,"smooth-gradient").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth gradient (with smoother-vec)")
         (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
-        (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
-        (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
+        (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
 
         (prefixvm(prefix,"use-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect modGradPhi independently")
         (prefixvm(prefix,"reinit-gradient-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Reinit modGradPhi when phi is reinitialized")
@@ -448,18 +460,30 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"use-stretch-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect stretch independently")
         (prefixvm(prefix,"reinit-stretch-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Reinit stretch when phi is reinitialized")
 
+        (prefixvm(prefix,"use-cauchy-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect additional backward characteristics to compute Cauchy tensor")
+        (prefixvm(prefix,"initial-backward-characteristics").c_str(), Feel::po::value<std::string>(), "Initial  backward characteristics value (default for material at rest is {x,y(,z)})")
+
+        (prefixvm(prefix,"fix-volume").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset volume after each iteration (using phi->phi+(V-Vi)/L)")
+
+        (prefixvm(prefix,"do_export_advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportAdvection")
         (prefixvm(prefix,"do_export_gradphi").c_str(), Feel::po::value<bool>(), "doExportGradPhi")
         (prefixvm(prefix,"do_export_modgradphi").c_str(), Feel::po::value<bool>(), "doExportModGradPhi")
         (prefixvm(prefix,"do_export_modgradphi-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportModGradPhi-Advection")
         (prefixvm(prefix,"do_export_stretch-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportStretch-Advection")
+        (prefixvm(prefix,"do_export_backward-characteristics-advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportBackwardCharacteristics-Advection")
+        (prefixvm(prefix,"do_export_backwardcharacteristics").c_str(), Feel::po::value<bool>(), "doExportCauchyGreenInvariant1")
+        (prefixvm(prefix,"do_export_cauchygreeninvariant1").c_str(), Feel::po::value<bool>(), "doExportCauchyGreenInvariant1")
+        (prefixvm(prefix,"do_export_cauchygreeninvariant2").c_str(), Feel::po::value<bool>(), "doExportCauchyGreenInvariant2")
         ;
 
     levelsetOptions
         .add( advection_options( prefix ) )
         .add( advection_options( prefixvm(prefix, "modgradphi-advection") ) )
         .add( advection_options( prefixvm(prefix, "stretch-advection") ) )
+        .add( advection_options( prefixvm(prefix, "backward-characteristics-advection") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2") ) )
         .add( backend_options( prefixvm(prefix, "projector-l2-vec") ) )
+        .add( backend_options( prefixvm(prefix, "projector-l2-tensor2symm") ) )
         .add( backend_options( prefixvm(prefix, "smoother") ) )
         .add( backend_options( prefixvm(prefix, "smoother-vec") ) )
         .add( backend_options( prefixvm(prefix, "smoother-fm") ) )
@@ -480,6 +504,12 @@ interfaceforces_options(std::string const& prefix)
 
         (prefixvm(prefix,"inextensibility-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Inextensibility force coefficient (Lambda)" )
         (prefixvm(prefix,"inextensibility-force-epsilon").c_str(), Feel::po::value<double>(), "Inextensibility force epsilon" )
+
+        (prefixvm(prefix,"elastic-stretch-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Linear elastic force stretch modulus" )
+        (prefixvm(prefix,"elastic-shear-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Linear elastic force shear modulus" )
+
+        (prefixvm(prefix,"skalak-stretch-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force stretch modulus" )
+        (prefixvm(prefix,"skalak-shear-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force shear modulus" )
         ;
 
     return interfaceForcesOptions;
@@ -494,7 +524,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
 
         (prefixvm(prefix, "use-picard-iterations").c_str(), Feel::po::value<bool>()->default_value( false ), "solve NS-LS coupling with non-linear Picard iterations")
 
-        (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( true ), "enable surface tension between fluids")
+        (prefixvm(prefix, "enable-surface-tension").c_str(), Feel::po::value<bool>()->default_value( false ), "enable surface tension between fluids")
         (prefixvm(prefix,"surface-tension-coeff").c_str(), po::value<std::vector<double> >()->multitoken(), "surface tension coefficients" )
         ;
 
@@ -515,6 +545,10 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
             (prefixvm(levelset_prefix,"reinit-smooth-every").c_str(), Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset smoothly every n iterations (needs to be <= reinit-every)" )
             // Interface forces model
             (prefixvm(levelset_prefix,"interface-forces-model").c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "models for interface forces (helfrich, ...)" )
+            // Inextensibility
+            (prefixvm(levelset_prefix, "enable-inextensibility").c_str(), Feel::po::value<bool>()->default_value( false ), "enable inextensibility of level set")
+            (prefixvm(levelset_prefix, "inextensibility-method").c_str(), Feel::po::value<std::string>()->default_value( "penalty" ), "method to impose level set inextensibility (penalty or lagrange-multiplier)")
+            (prefixvm(levelset_prefix, "inextensibility-gamma").c_str(), Feel::po::value<double>()->default_value( 5. ), "coeff for inextensibility by penalty method ")
             ;
     }
 
