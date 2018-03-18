@@ -91,6 +91,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( Environment::isMasterRank() )
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
     }
+    M_unit = M_p.get( "Unit", "m" );
     auto par = M_p.get_child_optional("Parameters");
     if ( par )
     {
