@@ -1355,6 +1355,12 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     int N1 = Ncur;
     int n_added0 = M_addSupremizer ? 2*number_of_added_elements:number_of_added_elements;
     int n_added1 = number_of_added_elements;
+    // in the case of SER we need to rebuild for the new EIM basis
+    if( ioption("ser.eim-frequency") != 0 )
+    {
+        n_added0 = N0;
+        n_added1 = N1;
+    }
 
     int QLhs = this->M_model->Qa();
     int QRhs = this->M_model->Ql(0);
