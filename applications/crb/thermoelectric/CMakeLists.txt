@@ -80,6 +80,9 @@ feelpp_add_application( electric-alpha-app
                         LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA}
                         EXEC ELECTRIC_ALPHA_APP
                         )
+feelpp_add_application( biotsavart-app
+                        SRCS thermoelectric-nonlinear.hpp biotsavart.hpp biotsavart_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 
 # feelpp_add_application( test SRCS test.cpp )
 
@@ -94,3 +97,4 @@ feelpp_add_application( electric-alpha-app
 # feelpp_add_testcase( crb-thermoelectric-linear CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
 feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
+feelpp_add_testcase( crb-biotsavart CATEGORY CRB)
