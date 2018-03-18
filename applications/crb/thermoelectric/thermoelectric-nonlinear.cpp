@@ -23,7 +23,7 @@
 //!
 //!
 
-//#include <feel/feelcrb/crbplugin.hpp>
+#include <feel/feelcrb/crbplugin.hpp>
 #include "thermoelectric-nonlinear.hpp"
 
 namespace Feel {
@@ -1468,5 +1468,5 @@ void ThermoElectric::computeTruthCurrentDensity( current_element_type& j, parame
     j = vf::project(Vh, elements(M_mesh), cst(-1.)*sigma*trans(gradv(V)) );
 }
 
-//FEELPP_CRBSADDLEPOINT_PLUGIN( ThermoElectric, thermoelectric )
+FEELPP_CRBSADDLEPOINT_PLUGIN( ThermoElectric, thermoelectric )
 }
