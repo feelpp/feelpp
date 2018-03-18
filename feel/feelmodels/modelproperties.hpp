@@ -63,6 +63,9 @@ public:
     std::string const& model() const {  return M_model; }
     void setModel( std::string const& t) { M_model = t; }
 
+    std::string const& unit() const {  return M_unit; }
+    void setUnit( std::string const& t) { M_unit = t; }
+
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
@@ -101,7 +104,7 @@ public:
 private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
-    std::string M_name, M_shortname, M_description, M_model;
+    std::string M_name, M_shortname, M_description, M_model, M_unit;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
