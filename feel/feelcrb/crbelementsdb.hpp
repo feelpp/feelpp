@@ -41,9 +41,13 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/fusion/algorithm.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelcore/hdf5.hpp>
 
 namespace Feel
 {
