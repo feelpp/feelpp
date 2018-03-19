@@ -515,6 +515,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useThermodynModel = boption(_name="use-thermodyn",_prefix=this->prefix());
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
 
+    // prec
+    M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
+    M_pmmNeedUpdate = false;
+
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -1094,6 +1098,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateFluidInletVelocity()
 }
 
 
+namespace detail
+{
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( vec(Py(),-Px()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+    return userNullSpace;
+}
+template <typename SpaceType>
+NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
+{
+    auto mode1 = space->element( oneX() );
+    auto mode2 = space->element( oneY() );
+    auto mode3 = space->element( oneZ() );
+    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+    return userNullSpace;
+}
+
+}
+
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
@@ -1234,6 +1264,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
+        if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
+        {
+            NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
+            M_algebraicFactory->attachNearNullSpace( 0,userNullSpace ); // for block velocity in fieldsplit
+        }
         this->initInHousePreconditioner();
     }
 
@@ -1876,23 +1911,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
         auto const& u = this->fieldVelocity();
         double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        if ( this->isStationary() ) coeff=1.;
+        if ( this->isStationaryModel() ) coeff=1.;
         massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
         massbf.matrixPtr()->close();
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
-
-    bool attachPressureMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
-    if ( attachPressureMassMatrix )
-    {
-        auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
-        auto const& p = this->fieldPressure();
-        auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
-        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(p),id(p) ) );
-        massbf.matrixPtr()->close();
-        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", massbf.matrixPtr() );
-    }
-
 
     bool buildPrecBlockns = ( soption(_prefix=this->prefix(),_name="pc-type" ) == "blockns" );
     bool buildOperatorPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
@@ -2010,8 +2033,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         if ( buildPrecBlockns )
         {
-            // auto myalpha = (this->isStationary())? 0 : this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-            //auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
             typedef space_fluid_type space_type;
             typedef space_densityviscosity_type properties_space_type;
             boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > a_blockns =
