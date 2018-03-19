@@ -516,6 +516,8 @@ public :
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
+    bool isStationaryModel() const;
+
     void setDynamicViscosityLaw( std::string const& type);
     std::string const& dynamicViscosityLaw() const;
 
@@ -611,6 +613,7 @@ public :
     void updateMu(double mu)
     {
         this->densityViscosityModel()->setCstDynamicViscosity(mu);
+        M_pmmNeedUpdate = true;
     }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
@@ -621,6 +624,7 @@ public :
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
         this->densityViscosityModel()->updateDynamicViscosity( __expr );
+        M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
@@ -835,6 +839,7 @@ public :
 
     void initInHousePreconditioner();
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//
@@ -1057,7 +1062,9 @@ protected:
     updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
-
+    //----------------------------------------------------
+    bool M_preconditionerAttachPMM;
+    mutable bool M_pmmNeedUpdate;
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;

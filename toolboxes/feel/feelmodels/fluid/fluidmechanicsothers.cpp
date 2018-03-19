@@ -258,6 +258,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         M_modelName="Stokes";
         M_solverName="LinearSystem";
     }
+    else if ( type == "StokesTransient" )
+    {
+        M_modelName="StokesTransient";
+        M_solverName="LinearSystem";
+    }
     else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
     {
         M_modelName="Navier-Stokes";
@@ -309,6 +314,18 @@ std::string const&
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solverName() const
 {
     return M_solverName;
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+bool
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
+{
+    if( this->modelName() == "Stokes" )
+        return true;
+    else
+        return this->isStationary();
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -1028,10 +1045,36 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_p
 {
     if ( this->algebraicFactory() )// && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
+        if ( M_preconditionerAttachPMM )
+            this->updateInHousePreconditionerPMM( mat, vecSol );
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol) const
+{
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
+        return;
+    sparse_matrix_ptrtype pmmMat;
+    if ( hasAlreadyBuiltPMM )
+        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+    else
+    {
+        pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+    }
+    CHECK( pmmMat ) << "pmmMat is not initialized";
+
+    auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
+    auto const& p = this->fieldPressure();
+    auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+    massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
+    pmmMat->close();
+    M_pmmNeedUpdate = false;
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
@@ -1046,12 +1089,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        if ( !this->isStationary() )
+        if ( !this->isStationaryModel() )
             myPrecBlockNs->setAlpha( idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0) );
         myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
         myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
 
-        if ( this->modelName() == "Stokes" )
+        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
             myPrecBlockNs->update( mat );
         }
@@ -1099,10 +1142,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         auto const& rho = this->densityViscosityModel()->fieldRho();
         auto const& mu = this->densityViscosityModel()->fieldMu();
-        bool hasAlpha = !this->isStationary();
-        double coeffAlpha = (this->isStationary())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
+        bool hasAlpha = !this->isStationaryModel();
+        double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
         auto alpha = idv(rho)*coeffAlpha;
-        if ( this->modelName() == "Stokes" )
+        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
             if (this->isMoveDomain() )
             {

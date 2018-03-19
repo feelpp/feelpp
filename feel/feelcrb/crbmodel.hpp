@@ -3663,7 +3663,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
             bool useAitkenRelaxation = M_fixedpointUseAitken;
             auto residual = Xh->element();
-            auto aitkenRelax = aitken( _space=Xh );
+            auto aitkenRelax = aitken( _space=Xh, _tolerance=increment_fixedpoint_tol );
             aitkenRelax.initialize( residual, u );
             aitkenRelax.restart();
             bool fixPointIsFinished = false;
