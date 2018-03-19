@@ -79,6 +79,10 @@ int FMU::load( std::string _path )
 
 void FMU::simulate( double t_init, double t_final, double tolerance )
 {
+    if ( t_init<0 )
+        t_init = doption( _name="fmu.time-initial", _prefix=M_prefix );
+    if ( t_init<0 )
+        t_final = doption( _name="fmu.time-final", _prefix=M_prefix );
     this->initialize( t_init, t_final, tolerance );
     M_solver->simulate();
 }
