@@ -69,7 +69,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::initModel()
     tic();
     M_teCrbModel = boost::make_shared<te_rb_model_type>(M_mesh);
     M_crbModel = boost::make_shared<crb_model_type>(M_teCrbModel, crb::stage::offline);
-    M_crb = boost::make_shared<crb_type>("biotsavartalphaelectro_crb", M_crbModel, crb::stage::offline);
+    M_crb = crb_type::New("biotsavartalphaelectro_crb", M_crbModel, crb::stage::offline);
     toc("constructor + eim");
 
     tic();
