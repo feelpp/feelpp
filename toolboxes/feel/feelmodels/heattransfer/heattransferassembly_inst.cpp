@@ -1,11 +1,11 @@
 
-#include "heattransferconfig.h"
-#include <feel/feelmodels/heattransfer/heattransferassembly.cpp>
+#include "heatconfig.h"
+#include <feel/feelmodels/heat/heatassembly.cpp>
 
 namespace Feel {
 namespace FeelModels {
 
-HEATTRANSFER_CLASS_INSTANTIATION
+HEAT_CLASS_INSTANTIATION
 
 }
 }

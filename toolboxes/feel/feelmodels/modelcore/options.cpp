@@ -201,7 +201,7 @@ fluidMechanics_options(std::string const& prefix)
     fluidOptions.add_options()
         (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
-    fluidOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
+    fluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
 
     return fluidOptions;
 }
@@ -298,10 +298,10 @@ fluidStructInteraction_options( std::string const& prefix )
 
 
 Feel::po::options_description
-heatTransfer_options(std::string const& prefix)
+heat_options(std::string const& prefix)
 {
-    Feel::po::options_description heatTransferOptions("HeatTransfert options");
-    heatTransferOptions.add_options()
+    Feel::po::options_description heatOptions("Heat options");
+    heatOptions.add_options()
         (prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
@@ -319,7 +319,7 @@ heatTransfer_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         ;
-    return heatTransferOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+    return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 Feel::po::options_description
 electricity_options(std::string const& prefix)
@@ -337,10 +337,10 @@ thermoElectric_options(std::string const& prefix)
 
     thermoElectricOptions.add_options()
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-thermo-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-thermo-electric")
-        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat-transfer").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat-transfer")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")
         ;
-    thermoElectricOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
+    thermoElectricOptions.add( heat_options( prefixvm(prefix,"heat") ) );
     thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
@@ -354,7 +354,7 @@ heatFluid_options(std::string const& prefix)
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
     ;
-    heatFluidOptions.add( heatTransfer_options( prefixvm(prefix,"heat-transfer") ) );
+    heatFluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
     heatFluidOptions.add( fluidMechanics_options( prefixvm(prefix,"fluid") ) );
     return heatFluidOptions.add( modelnumerical_options( prefix ) );
 }
@@ -576,8 +576,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(fluidMechanics_options("fluid"));
     else if (type == "solid")
         toolboxesOptions.add(solidMechanics_options("solid"));
-    else if ( type == "heat-transfer" )
-        toolboxesOptions.add( heatTransfer_options("heat-transfer") );
+    else if ( type == "heat" )
+        toolboxesOptions.add( heat_options("heat") );
     else if (type == "fsi")
         toolboxesOptions
             .add(fluidMechanics_options("fluid"))
@@ -594,7 +594,7 @@ toolboxes_options(std::string const& type)
     else if (type == "heat-fluid")
         toolboxesOptions.add(heatFluid_options("heat-fluid"));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat-transfer, fsi, advection, levelset, multifluid, thermo-electric";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
 
     return toolboxesOptions;
 }

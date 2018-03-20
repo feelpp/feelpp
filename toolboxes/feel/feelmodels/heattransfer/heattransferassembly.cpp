@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
+#include <feel/feelmodels/heat/heat.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -13,9 +13,9 @@ namespace FeelModels
 {
 
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -134,9 +134,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilizationGLS( DataUpdateLin
 
 
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -145,7 +145,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("HeatTransfer","updateLinearPDE", "start"+sc);
+    this->log("Heat","updateLinearPDE", "start"+sc);
     this->timerTool("Solve").start();
 
     bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
@@ -315,17 +315,17 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) con
         this->updateLinearPDEStrongDirichletBC( A,F );
 
     double timeElapsed = this->timerTool("Solve").stop();
-    this->log("HeatTransfer","updateLinearPDE",
+    this->log("Heat","updateLinearPDE",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
     if ( M_bcDirichlet.empty() ) return;
 
-    this->log("HeatTransfer","updateNewtonInitialGuess","start" );
+    this->log("Heat","updateNewtonInitialGuess","start" );
 
     auto mesh = this->mesh();
     auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
@@ -340,12 +340,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) 
     if ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )
         sync( u, "=", itFindDofsWithValueImposed->second );
 
-    this->log("HeatTransfer","updateNewtonInitialGuess","finish" );
+    this->log("Heat","updateNewtonInitialGuess","finish" );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
@@ -357,7 +357,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
     bool buildCstPart = _BuildCstPart;
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("HeatTransfer","updateJacobian", "start"+sc);
+    this->log("Heat","updateJacobian", "start"+sc);
 
     bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
     if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
@@ -395,7 +395,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
         else
         {
             auto kappa = thermalConductivity.expr();
-            std::string symbolStr = "heat_transfer_T";
+            std::string symbolStr = "heat_T";
             if ( kappa.expression().hasSymbol( symbolStr ) )
             {
                 if ( buildNonCstPart )
@@ -485,9 +485,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) co
     }
 
 }
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
@@ -499,7 +499,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
     bool buildCstPart = _BuildCstPart;
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("HeatTransfer","updateResidual", "start"+sc);
+    this->log("Heat","updateResidual", "start"+sc);
 
     bool Build_TransientTerm = buildNonCstPart;
     if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
@@ -532,7 +532,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
         else
         {
             auto kappa = thermalConductivity.expr();
-            std::string symbolStr = "heat_transfer_T";
+            std::string symbolStr = "heat_T";
             if ( kappa.expression().hasSymbol( symbolStr ) )
             {
                 if ( buildNonCstPart )
@@ -631,16 +631,16 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) co
         this->updateResidualStrongDirichletBC( R );
     }
 
-    this->log("HeatTransfer","updateResidual", "finish");
+    this->log("Heat","updateResidual", "finish");
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("HeatTransfer","updateBCDirichletStrongResidual","start" );
+    this->log("Heat","updateBCDirichletStrongResidual","start" );
 
     auto mesh = this->mesh();
     auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
@@ -650,12 +650,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtyp
         u.set( thedof,0. );
     sync( u, "=", dofsWithValueImposedTemperature );
 
-    this->log("HeatTransfer","updateBCDirichletStrongResidual","finish" );
+    this->log("Heat","updateBCDirichletStrongResidual","finish" );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const
 {
     if ( this->M_bcNeumann.empty() ) return;
 
@@ -678,9 +678,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualNeumannBC( vector_ptrtype& R, bo
 
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
@@ -709,9 +709,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualRobinBC( element_temperature_ext
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const
 {
     if ( this->M_volumicForcesProperties.empty() ) return;
 
@@ -732,13 +732,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, b
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("HeatTransfer","updateBCStrongDirichletJacobian","start" );
+    this->log("Heat","updateBCStrongDirichletJacobian","start" );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -755,13 +755,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC(sparse_matrix_
                 _element=u,_rhs=RBis,_expr=cst(0.) );
     }
 
-    this->log("HeatTransfer","updateBCStrongDirichletJacobian","finish" );
+    this->log("Heat","updateBCStrongDirichletJacobian","finish" );
 
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
@@ -785,13 +785,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& 
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("HeatTransfer","updateBCStrongDirichletLinearPDE","start" );
+    this->log("Heat","updateBCStrongDirichletLinearPDE","start" );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -808,12 +808,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC(sparse_matrix
                 _element=u,_rhs=F,_expr=expression(d) );
     }
 
-    this->log("HeatTransfer","updateBCStrongDirichletLinearPDE","finish" );
+    this->log("Heat","updateBCStrongDirichletLinearPDE","finish" );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart ) const
 {
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
     {
@@ -840,9 +840,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDESourceTerm( vector_ptrtype& F, 
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const
 {
     if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
 

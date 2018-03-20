@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
+#include <feel/feelmodels/heat/heat.hpp>
 //#include <feel/feelfilters/loadgmshmesh.hpp>
 //#include <feel/feelfilters/geotool.hpp>
 
@@ -16,28 +16,28 @@ namespace Feel
 namespace FeelModels
 {
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
-                                                bool buildMesh,
-                                                WorldComm const& worldComm,
-                                                std::string const& subPrefix,
-                                                ModelBaseRepository const& modelRep )
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
+                                bool buildMesh,
+                                WorldComm const& worldComm,
+                                std::string const& subPrefix,
+                                ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
     M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
-    this->log("HeatTransfer","constructor", "start" );
+    this->log("Heat","constructor", "start" );
 
-    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatTransferConstructor.data";
-    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatTransferSolve.data";
-    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatTransferPostProcessing.data";
-    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatTransferTimeStepping.data";
+    std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatConstructor.data";
+    std::string nameFileSolve = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatSolve.data";
+    std::string nameFilePostProcessing = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatPostProcessing.data";
+    std::string nameFileTimeStepping = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatTimeStepping.data";
     this->addTimerTool("Constructor",nameFileConstructor);
     this->addTimerTool("Solve",nameFileSolve);
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"HeatTransfer.info") );
+    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Heat.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -46,13 +46,13 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::HeatTransfer( std::string const& prefix,
     if ( buildMesh )
         this->initMesh();
     //-----------------------------------------------------------------------------//
-    this->log("HeatTransfer","constructor", "finish");
+    this->log("Heat","constructor", "finish");
 
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
+HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
         Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
@@ -65,26 +65,26 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMesh()
+HEAT_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("HeatTransfer","initMesh", "start");
+    this->log("Heat","initMesh", "start");
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
-    this->log("HeatTransfer","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Heat","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMaterialProperties()
+HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 {
-    this->log("HeatTransfer","initMaterialProperties", "start" );
+    this->log("Heat","initMaterialProperties", "start" );
     this->timerTool("Constructor").start();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -92,14 +92,14 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials() );
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
-    this->log("HeatTransfer","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
+HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    this->log("HeatTransfer","initFunctionSpaces", "start" );
+    this->log("Heat","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
     // functionspace
@@ -120,12 +120,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         this->updateForUseFunctionSpacesVelocityConvection();
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
-    this->log("HeatTransfer","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
+HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
 {
     if ( !M_XhVelocityConvection )
     {
@@ -148,9 +148,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
+HEAT_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
 {
     if ( M_exprVelocityConvection.get_ptr() == 0 )
         return;
@@ -163,9 +163,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWi
     M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+HEAT_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     int nBlock = this->nBlockMatrixGraph();
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
@@ -174,19 +174,19 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 size_type
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::nLocalDof() const
+HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     size_type res = this->spaceTemperature()->nLocalDofWithGhost();
     return res;
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
+HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
-    this->log("HeatTransfer","init", "start" );
+    this->log("Heat","init", "start" );
     this->timerTool("Constructor").start();
 
     if ( !M_mesh )
@@ -242,14 +242,14 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    this->log("HeatTransfer","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+    this->log("Heat","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initTimeStep()
+HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    this->log("HeatTransfer","initTimeStep", "start" );
+    this->log("Heat","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
     std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
@@ -289,12 +289,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initTimeStep()
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
-    this->log("HeatTransfer","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
+    this->log("Heat","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+HEAT_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
 {
     std::set<std::string> res;
     for ( auto const& o : ifields )
@@ -313,14 +313,14 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string
     return res;
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
+HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    this->log("HeatTransfer","initPostProcess", "start");
+    this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "heat-transfer";
+    std::string modelName = "heat";
     M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
@@ -419,25 +419,25 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
-    this->log("HeatTransfer","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("Heat","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
+HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 boost::shared_ptr<std::ostringstream>
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::getInfo() const
+HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
-           << "\n||----------Info : HeatTransfer---------------||"
+           << "\n||----------Info : Heat---------------||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -478,9 +478,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::getInfo() const
     return _ostr;
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateParameterValues()
+HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -492,9 +492,9 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_volumicForcesProperties.setParameterValues( paramValues );
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
+HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
     this->clearMarkerDirichletBC();
     this->clearMarkerNeumannBC();
@@ -538,11 +538,11 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::solve()
+HEAT_CLASS_TEMPLATE_TYPE::solve()
 {
-    this->log("HeatTransfer","solve", "start");
+    this->log("Heat","solve", "start");
     this->timerTool("Solve").start();
 
     this->updateParameterValues();
@@ -551,7 +551,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_transfer_T" ) )
+    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     else
         M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
@@ -565,16 +565,16 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::solve()
             this->timerTool("Solve").setAdditionalParameter("time",this->currentTime());
         this->timerTool("Solve").save();
     }
-    this->log("HeatTransfer","solve", (boost::format("finish in %1% s")%tElapsed).str() );
+    this->log("Heat","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportResults( double time )
+HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("HeatTransfer","exportResults", "start");
+    this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     this->exportFields( time );
@@ -588,20 +588,20 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportResults( double time )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("HeatTransfer","exportResults", "finish");
+    this->log("Heat","exportResults", "finish");
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportFields( double time )
+HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
     bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
         M_exporter->save();
 }
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 bool
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
+HEAT_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time )
 {
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
@@ -647,12 +647,12 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter,
     return hasFieldToExport;
 }
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
-    std::string modelName = "heat-transfer";
+    std::string modelName = "heat";
 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
@@ -715,11 +715,11 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 }
 
 
-HEATTRANSFER_CLASS_TEMPLATE_DECLARATIONS
+HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateBdf()
+HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
 {
-    this->log("HeatTransfer","updateBdf", "start");
+    this->log("Heat","updateBdf", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -741,7 +741,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateBdf()
     {
         if (!this->rebuildCstPartInLinearSystem())
         {
-            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".HeatTransfer","updateBdf", "do rebuildCstLinearPDE",
+            if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".Heat","updateBdf", "do rebuildCstLinearPDE",
                                                        this->worldComm(),this->verboseAllProc());
             M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
         }
@@ -749,7 +749,7 @@ HEATTRANSFER_CLASS_TEMPLATE_TYPE::updateBdf()
 
     this->timerTool("TimeStepping").stop("updateBdf");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("HeatTransfer","updateBdf", "finish");
+    this->log("Heat","updateBdf", "finish");
 }
 
 

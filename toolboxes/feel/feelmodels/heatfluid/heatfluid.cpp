@@ -108,7 +108,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 int
 HEATFLUID_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    int nBlock = M_heatTransferModel->nBlockMatrixGraph() + M_fluidModel->nBlockMatrixGraph();
+    int nBlock = M_heatModel->nBlockMatrixGraph() + M_fluidModel->nBlockMatrixGraph();
     return nBlock;
 }
 
@@ -121,7 +121,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
 
     int nBlockFluid = M_fluidModel->nBlockMatrixGraph();
-    int nBlockHeatTransfer = M_heatTransferModel->nBlockMatrixGraph();
+    int nBlockHeat = M_heatModel->nBlockMatrixGraph();
 
     int startIndexBlockFluid = 0;
     int startIndexBlockHeat = nBlockFluid;
@@ -133,7 +133,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     BlocksStencilPattern patCoupling1(1,M_fluidModel->functionSpace()->nSpaces,size_type(Pattern::ZERO));
     patCoupling1(0,0) = size_type(Pattern::COUPLED);
-    myblockGraph(startIndexBlockHeat,startIndexBlockFluid) = stencil(_test=M_heatTransferModel->spaceTemperature(),
+    myblockGraph(startIndexBlockHeat,startIndexBlockFluid) = stencil(_test=M_heatModel->spaceTemperature(),
                                                                      _trial=M_fluidModel->functionSpace(),
                                                                      _pattern_block=patCoupling1,
                                                                      _diag_is_nonzero=false,_close=false)->graph();
@@ -141,14 +141,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     BlocksStencilPattern patCoupling2(M_fluidModel->functionSpace()->nSpaces,1,size_type(Pattern::ZERO));
     patCoupling2(0,0) = size_type(Pattern::COUPLED);
     myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpace(),
-                                                                     _trial=M_heatTransferModel->spaceTemperature(),
+                                                                     _trial=M_heatModel->spaceTemperature(),
                                                                      _pattern_block=patCoupling2,
                                                                      _diag_is_nonzero=false,_close=false)->graph();
 
-    auto blockMatHeatTransfer = M_heatTransferModel->buildBlockMatrixGraph();
-    for (int tk1=0;tk1<nBlockHeatTransfer ;++tk1 )
-        for (int tk2=0;tk2<nBlockHeatTransfer ;++tk2 )
-            myblockGraph(startIndexBlockHeat+tk1,startIndexBlockHeat+tk2) = blockMatHeatTransfer(tk1,tk2);
+    auto blockMatHeat = M_heatModel->buildBlockMatrixGraph();
+    for (int tk1=0;tk1<nBlockHeat ;++tk1 )
+        for (int tk2=0;tk2<nBlockHeat ;++tk2 )
+            myblockGraph(startIndexBlockHeat+tk1,startIndexBlockHeat+tk2) = blockMatHeat(tk1,tk2);
 
     myblockGraph.close();
 
@@ -163,12 +163,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
-    M_heatTransferModel.reset( new heattransfer_model_type(prefixvm(this->prefix(),"heat-transfer"), false, this->worldComm(),
+    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), false, this->worldComm(),
                                                            this->subPrefix(), this->repository() ) );
-    if ( !M_heatTransferModel->modelPropertiesPtr() )
-        M_heatTransferModel->setModelProperties( this->modelPropertiesPtr() );
-    M_heatTransferModel->setMesh( this->mesh() );
-    M_heatTransferModel->init( false );
+    if ( !M_heatModel->modelPropertiesPtr() )
+        M_heatModel->setModelProperties( this->modelPropertiesPtr() );
+    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->init( false );
 
     M_fluidModel.reset( new fluid_model_type(prefixvm(this->prefix(),"fluid"), false, this->worldComm(),
                                              this->subPrefix(), this->repository() ) );
@@ -185,14 +185,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     if ( !M_useNaturalConvection )
     {
-        M_heatTransferModel->initAlgebraicFactory();
+        M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
     }
 
     for ( auto const& rangeData : M_fluidModel->densityViscosityModel()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
-        if ( !M_heatTransferModel->thermalProperties()->hasMaterial( matName ) )
+        if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
             continue;
         M_rangeMeshElementsByMaterial[matName] = rangeData.second;
     }
@@ -205,25 +205,25 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // block vector solution
     auto blockVectorSolutionFluid = M_fluidModel->blockVectorSolution();
-    auto blockVectorSolutionHeat = M_heatTransferModel->blockVectorSolution();
+    auto blockVectorSolutionHeat = M_heatModel->blockVectorSolution();
     int nBlockFluid = blockVectorSolutionFluid.size();
-    int nBlockHeatTransfer = blockVectorSolutionHeat.size();
-    int nBlock = nBlockFluid + nBlockHeatTransfer;
+    int nBlockHeat = blockVectorSolutionHeat.size();
+    int nBlock = nBlockFluid + nBlockHeat;
     M_blockVectorSolution.resize( nBlock );
     int indexBlock=0;
     for ( int k=0;k<nBlockFluid ;++k )
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionFluid(k);
     indexBlock += nBlockFluid;
-    for ( int k=0;k<nBlockHeatTransfer ;++k )
+    for ( int k=0;k<nBlockHeat ;++k )
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionHeat(k);
-    indexBlock += nBlockHeatTransfer;
+    indexBlock += nBlockHeat;
     // init monolithic vector associated to the block vector
     M_blockVectorSolution.buildVector( this->backend() );
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
     currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
-    this->setStartSubBlockSpaceIndex( "heat-transfer", currentStartBlockSpaceIndex );
+    this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -249,10 +249,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     std::string modelName = "heat-fluid";
     auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
-    M_postProcessFieldExportedHeatTransfert = M_heatTransferModel->postProcessFieldExported( exportsFields, "heat-transfer" );
+    M_postProcessFieldExportedHeatt = M_heatModel->postProcessFieldExported( exportsFields, "heat" );
     M_postProcessFieldExportedFluid = M_fluidModel->postProcessFieldExported( exportsFields, "fluid" );
 
-    if ( !M_postProcessFieldExportedHeatTransfert.empty() || !M_postProcessFieldExportedFluid.empty() )
+    if ( !M_postProcessFieldExportedHeatt.empty() || !M_postProcessFieldExportedFluid.empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -278,7 +278,7 @@ boost::shared_ptr<std::ostringstream>
 HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    *_ostr << M_heatTransferModel->getInfo()->str();
+    *_ostr << M_heatModel->getInfo()->str();
     *_ostr << M_fluidModel->getInfo()->str();
 
     *_ostr << "\n||==============================================||"
@@ -301,12 +301,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- type            : " << M_exporter->type()
                << "\n     -- freq save       : " << M_exporter->freq();
         std::string fieldExportedHeat;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeatTransfert )
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeatt )
             fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
         std::string fieldExportedFluid;
         for ( std::string const& fieldName : M_postProcessFieldExportedFluid )
             fieldExportedFluid=(fieldExportedFluid.empty())? fieldName : fieldExportedFluid + " - " + fieldName;
-        *_ostr << "\n     -- fields [heat-transfer] : " << fieldExportedHeat
+        *_ostr << "\n     -- fields [heat] : " << fieldExportedHeat
                << "\n     -- fields [fluid] : " << fieldExportedFluid;
     }
 
@@ -328,7 +328,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
-    this->heatTransferModel()->updateTimeStep();
+    this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
     this->updateTime( this->timeStepBase()->time() );
 }
@@ -343,12 +343,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExportHeatTransfer = M_heatTransferModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatTransfert,time );
+    bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
     bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
-    if ( hasFieldToExportHeatTransfer || hasFieldToExportFluid )
+    if ( hasFieldToExportHeat || hasFieldToExportFluid )
         M_exporter->save();
 
-    M_heatTransferModel->exportResults( time );
+    M_heatModel->exportResults( time );
     M_fluidModel->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -365,7 +365,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    M_heatTransferModel->updateParameterValues();
+    M_heatModel->updateParameterValues();
     M_fluidModel->updateParameterValues();
 }
 
@@ -380,16 +380,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     if ( !M_useNaturalConvection )
     {
         M_fluidModel->solve();
-        M_heatTransferModel->setFieldVelocityConvectionIsUsed( true );
-        M_heatTransferModel->updateFieldVelocityConvection( idv(M_fluidModel->fieldVelocity()) );
-        M_heatTransferModel->solve();
+        M_heatModel->setFieldVelocityConvectionIsUsed( true );
+        M_heatModel->updateFieldVelocityConvection( idv(M_fluidModel->fieldVelocity()) );
+        M_heatModel->solve();
     }
     else
     {
         this->updateParameterValues();
 
         M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
-        M_heatTransferModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat-transfer") );
+        M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
         M_blockVectorSolution.updateVectorFromSubVectors();
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
@@ -412,7 +412,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {
-    M_heatTransferModel->postSolveNewton( rhs, sol );
+    M_heatModel->postSolveNewton( rhs, sol );
     M_fluidModel->postSolveNewton( rhs, sol );
 }
 
@@ -428,7 +428,7 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
 {
     this->log("HeatFluid","updateNewtonInitialGuess","start" );
-    M_heatTransferModel->updateNewtonInitialGuess( U );
+    M_heatModel->updateNewtonInitialGuess( U );
     M_fluidModel->updateNewtonInitialGuess( U );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }
@@ -450,7 +450,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     DataUpdateJacobian dataSubPhysics( data );
     dataSubPhysics.setDoBCStrongDirichlet( false );
-    M_heatTransferModel->updateJacobian( dataSubPhysics );
+    M_heatModel->updateJacobian( dataSubPhysics );
     M_fluidModel->updateJacobian( dataSubPhysics );
 
     if ( buildNonCstPart )
@@ -459,17 +459,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
         auto u = U.template element<0>();
 
-        auto XhT = M_heatTransferModel->spaceTemperature();
-        auto t = XhT->element(XVec, M_heatTransferModel->rowStartInVector() );
-        auto const& thermalProperties = M_heatTransferModel->thermalProperties();
+        auto XhT = M_heatModel->spaceTemperature();
+        auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
+        auto const& thermalProperties = M_heatModel->thermalProperties();
 
         for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
-            auto const& rho = M_heatTransferModel->thermalProperties()->rho( matName );
-            auto const& rhoHeatCapacity = M_heatTransferModel->thermalProperties()->rhoHeatCapacity( matName );
-            auto const& thermalExpansion = M_heatTransferModel->thermalProperties()->thermalExpansion( matName );
+            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
+            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
             CHECK( rho.isConstant() && rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
 
             double rhoHeatCapacityValue = rhoHeatCapacity.value();
@@ -477,14 +477,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
             double beta = thermalExpansion.value();
 
             form2( _test=XhT,_trial=XhT,_matrix=J,
-                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
-                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
+                   _rowstart=M_heatModel->rowStartInMatrix(),
+                   _colstart=M_heatModel->colStartInMatrix() ) +=
                 integrate( _range=range,
                            _expr= rhoHeatCapacityValue*(gradt(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
 
             form2( _test=XhT,_trial=XhVP,_matrix=J,
-                   _rowstart=M_heatTransferModel->rowStartInMatrix(),
+                   _rowstart=M_heatModel->rowStartInMatrix(),
                    _colstart=M_fluidModel->colStartInMatrix() ) +=
                 integrate( _range=range,
                            _expr= rhoHeatCapacityValue*(gradv(t)*idt(u))*id(t),
@@ -492,7 +492,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
             form2( _test=XhVP,_trial=XhT,_matrix=J,
                    _rowstart=M_fluidModel->rowStartInMatrix(),
-                   _colstart=M_heatTransferModel->colStartInMatrix() ) +=
+                   _colstart=M_heatModel->colStartInMatrix() ) +=
                 integrate( _range=range,
                            _expr= rhoValue*beta*idt(t)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
@@ -502,7 +502,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     if ( buildNonCstPart && doBCStrongDirichlet )
     {
-        M_heatTransferModel->updateJacobianStrongDirichletBC( J,RBis );
+        M_heatModel->updateJacobianStrongDirichletBC( J,RBis );
         M_fluidModel->updateJacobianStrongDirichletBC( J,RBis );
     }
     this->log("HeatFluid","updateJacobian", "finish"+sc);
@@ -527,7 +527,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     DataUpdateResidual dataSubPhysics( data );
     dataSubPhysics.setDoBCStrongDirichlet( false );
-    M_heatTransferModel->updateResidual( dataSubPhysics );
+    M_heatModel->updateResidual( dataSubPhysics );
     M_fluidModel->updateResidual( dataSubPhysics );
 
     if ( buildNonCstPart )
@@ -536,10 +536,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
         auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
         auto u = U.template element<0>();
 
-        auto XhT = M_heatTransferModel->spaceTemperature();
-        auto const t = XhT->element(XVec, M_heatTransferModel->rowStartInVector()+0 );
+        auto XhT = M_heatModel->spaceTemperature();
+        auto const t = XhT->element(XVec, M_heatModel->rowStartInVector()+0 );
         auto mylfT = form1( _test=XhT, _vector=R,
-                            _rowstart=M_heatTransferModel->rowStartInVector()+0 );
+                            _rowstart=M_heatModel->rowStartInVector()+0 );
         auto mylfVP = form1( _test=XhVP, _vector=R,
                              _rowstart=M_fluidModel->rowStartInVector()+0 );
 
@@ -548,7 +548,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
-            auto const& rhoHeatCapacity = M_heatTransferModel->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
             if ( rhoHeatCapacity.isConstant() )
             {
                 double rhoHeatCapacityValue = rhoHeatCapacity.value();
@@ -565,8 +565,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                _expr= rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
                                _geomap=this->geomap() );
             }
-            auto const& rho = M_heatTransferModel->thermalProperties()->rho( matName );
-            auto const& thermalExpansion = M_heatTransferModel->thermalProperties()->thermalExpansion( matName );
+            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
+            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
             CHECK( rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
             double rhoValue = rho.value();
             double beta = thermalExpansion.value();
@@ -580,11 +580,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     }
 
     if ( buildNonCstPart && doBCStrongDirichlet &&
-         ( M_heatTransferModel->hasMarkerDirichletBCelimination() || M_fluidModel->hasStrongDirichletBC() ) )
+         ( M_heatModel->hasMarkerDirichletBCelimination() || M_fluidModel->hasStrongDirichletBC() ) )
     {
         R->close();
-        if ( M_heatTransferModel->hasMarkerDirichletBCelimination() )
-            M_heatTransferModel->updateResidualStrongDirichletBC( R );
+        if ( M_heatModel->hasMarkerDirichletBCelimination() )
+            M_heatModel->updateResidualStrongDirichletBC( R );
         if ( M_fluidModel->hasStrongDirichletBC() )
             M_fluidModel->updateResidualStrongDirichletBC( R );
     }

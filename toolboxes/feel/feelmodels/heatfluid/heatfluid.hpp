@@ -25,7 +25,7 @@
 #ifndef FEELPP_TOOLBOXES_HEATFLUID_HPP
 #define FEELPP_TOOLBOXES_HEATFLUID_HPP 1
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
+#include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 
@@ -34,24 +34,24 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename HeatTransferType, typename FluidType>
+template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
-                  public boost::enable_shared_from_this< HeatFluid<HeatTransferType,FluidType> >
+                  public boost::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
 
 public:
     typedef ModelNumerical super_type;
-    typedef HeatFluid<HeatTransferType,FluidType> self_type;
+    typedef HeatFluid<HeatType,FluidType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    typedef HeatTransferType heattransfer_model_type;
-    typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
+    typedef HeatType heat_model_type;
+    typedef boost::shared_ptr<heat_model_type> heat_model_ptrtype;
 
     typedef FluidType fluid_model_type;
     typedef boost::shared_ptr<fluid_model_type> fluid_model_ptrtype;
 
     // mesh
-    typedef typename heattransfer_model_type::mesh_type mesh_heattransfer_type;
+    typedef typename heat_model_type::mesh_type mesh_heat_type;
     typedef typename fluid_model_type::mesh_type mesh_fluid_type;
     typedef mesh_fluid_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -94,8 +94,8 @@ public :
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
 
-    heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
-    heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
+    heat_model_ptrtype const& heatModel() const { return M_heatModel; }
+    heat_model_ptrtype heatModel() { return M_heatModel; }
 
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
@@ -108,8 +108,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<TSBase> timeStepBase() { return this->heatTransferModel()->timeStepBase(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatTransferModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
     void updateTimeStep();
 
     //___________________________________________________________________________________//
@@ -126,7 +126,7 @@ public :
 
 private :
 
-    heattransfer_model_ptrtype M_heatTransferModel;
+    heat_model_ptrtype M_heatModel;
     fluid_model_ptrtype M_fluidModel;
 
     //bool M_isUpdatedForUse;
@@ -151,7 +151,7 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeatTransfert, M_postProcessFieldExportedFluid;
+    std::set<std::string> M_postProcessFieldExportedHeatt, M_postProcessFieldExportedFluid;
 };
 
 } // namespace FeelModels

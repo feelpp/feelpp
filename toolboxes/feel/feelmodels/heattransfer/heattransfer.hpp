@@ -22,14 +22,14 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file heattransfer.hpp
+   \file heat.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
    \date 2014-06-04
  */
 
 
-#ifndef FEELPP_TOOLBOXES_HEATTRANSFER_HPP
-#define FEELPP_TOOLBOXES_HEATTRANSFER_HPP 1
+#ifndef FEELPP_TOOLBOXES_HEAT_HPP
+#define FEELPP_TOOLBOXES_HEAT_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -41,7 +41,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/heattransfer/thermalpropertiesdescription.hpp>
+#include <feel/feelmodels/heat/thermalpropertiesdescription.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -51,15 +51,15 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisTemperatureType>
-class HeatTransfer : public ModelNumerical,
-                     public boost::enable_shared_from_this< HeatTransfer<ConvexType,BasisTemperatureType> >,
+class Heat : public ModelNumerical,
+                     public boost::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
                      public MarkerManagementDirichletBC,
                      public MarkerManagementNeumannBC,
                      public MarkerManagementRobinBC
     {
     public:
         typedef ModelNumerical super_type;
-        typedef HeatTransfer<ConvexType,BasisTemperatureType> self_type;
+        typedef Heat<ConvexType,BasisTemperatureType> self_type;
         typedef boost::shared_ptr<self_type> self_ptrtype;
         //___________________________________________________________________________________//
         // mesh
@@ -109,13 +109,13 @@ class HeatTransfer : public ModelNumerical,
         typedef boost::shared_ptr<context_temperature_type> context_temperature_ptrtype;
 
 
-        HeatTransfer( std::string const& prefix,
+        Heat( std::string const& prefix,
                       bool buildMesh = true,
                       WorldComm const& worldComm = Environment::worldComm(),
                       std::string const& subPrefix  = "",
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatTransferMesh.path"); }
+        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -282,4 +282,4 @@ class HeatTransfer : public ModelNumerical,
 } // namespace FeelModels
 } // namespace Feel
 
-#endif /* FEELPP_TOOLBOXES_HEATTRANSFER_HPP */
+#endif /* FEELPP_TOOLBOXES_HEAT_HPP */

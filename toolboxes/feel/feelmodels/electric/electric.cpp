@@ -501,7 +501,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
             else
             {
                 auto sigma = electricConductivity.expr();
-                if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+                if ( sigma.expression().hasSymbol( "heat_T" ) )
                     continue;
                 //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
                 bilinearForm_PatternCoupled +=
@@ -606,7 +606,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         else
         {
             auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+            if ( sigma.expression().hasSymbol( "heat_T" ) )
                 continue;
             if ( buildCstPart )
             {
@@ -727,7 +727,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
         else
         {
             auto sigma = electricConductivity.expr();
-            if ( sigma.expression().hasSymbol( "heat_transfer_T" ) )
+            if ( sigma.expression().hasSymbol( "heat_T" ) )
                 continue;
             if (!buildCstPart && !UseJacobianLinearTerms )
             {
