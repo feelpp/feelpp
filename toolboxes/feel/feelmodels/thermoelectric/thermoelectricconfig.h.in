@@ -1,15 +1,15 @@
 
-#include <feel/feelmodels/heattransfer/@HEATTRANSFER_LIB_VARIANTS@/heattransferconfig.h>
+#include <feel/feelmodels/heat/@HEAT_LIB_VARIANTS@/heatconfig.h>
 #include <feel/feelmodels/electric/@ELECTRIC_LIB_VARIANTS@/electricconfig.h>
 
 #define THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename HeatTransferType, typename ElectricType> \
+    template< typename HeatType, typename ElectricType> \
         /**/
 #define THERMOELECTRIC_CLASS_TEMPLATE_TYPE \
-    ThermoElectric<HeatTransferType,ElectricType>   \
+    ThermoElectric<HeatType,ElectricType>   \
         /**/
 #define THERMOELECTRIC_CLASS_TYPE \
-    ThermoElectric< HEATTRANSFER_CLASS_TYPE, ELECTRIC_CLASS_TYPE >  \
+    ThermoElectric< HEAT_CLASS_TYPE, ELECTRIC_CLASS_TYPE >  \
     /**/
 #define THERMOELECTRIC_CLASS_INSTANTIATION \
     template class THERMOELECTRIC_CLASS_TYPE ;  \

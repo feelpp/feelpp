@@ -50,7 +50,7 @@ public :
             {
                 std::string const& matName = m.first;
                 auto const& mat = m.second;
-                if ( mat.hasPhysics() && !mat.hasPhysics( { "heat-transfer","aerothermal","thermo-electric" } ) )
+                if ( mat.hasPhysics() && !mat.hasPhysics( { "heat","aerothermal","thermo-electric" } ) )
                     continue;
 
                 for ( std::string const& matmarker : mat.meshMarkers() )

@@ -30,7 +30,7 @@
 #ifndef FEELPP_TOOLBOXES_THERMOELECTRIC_HPP
 #define FEELPP_TOOLBOXES_THERMOELECTRIC_HPP 1
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
+#include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/electric/electric.hpp>
 
 
@@ -39,26 +39,26 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename HeatTransferType, typename ElectricType>
+template< typename HeatType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
-                       public boost::enable_shared_from_this< ThermoElectric<HeatTransferType,ElectricType> >
+                       public boost::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
 {
 
 public:
     typedef ModelNumerical super_type;
-    typedef ThermoElectric<HeatTransferType,ElectricType> self_type;
+    typedef ThermoElectric<HeatType,ElectricType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
-    typedef HeatTransferType heattransfer_model_type;
-    typedef boost::shared_ptr<heattransfer_model_type> heattransfer_model_ptrtype;
+    typedef HeatType heat_model_type;
+    typedef boost::shared_ptr<heat_model_type> heat_model_ptrtype;
 
     typedef ElectricType electric_model_type;
     typedef boost::shared_ptr<electric_model_type> electric_model_ptrtype;
 
     // mesh
-    typedef typename heattransfer_model_type::mesh_type mesh_heattransfer_type;
+    typedef typename heat_model_type::mesh_type mesh_heat_type;
     typedef typename electric_model_type::mesh_type mesh_electric_type;
-    typedef mesh_heattransfer_type mesh_type;
+    typedef mesh_heat_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     // exporter
@@ -100,8 +100,8 @@ public :
     mesh_ptrtype const& mesh() const { return M_mesh; }
     //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
-    heattransfer_model_ptrtype const& heatTransferModel() const { return M_heatTransferModel; }
-    heattransfer_model_ptrtype heatTransferModel() { return M_heatTransferModel; }
+    heat_model_ptrtype const& heatModel() const { return M_heatModel; }
+    heat_model_ptrtype heatModel() { return M_heatModel; }
 
     electric_model_ptrtype const& electricModel() const { return M_electricModel; }
     electric_model_ptrtype electricModel() { return M_electricModel; }
@@ -113,9 +113,9 @@ public :
 
     //___________________________________________________________________________________//
 
-    boost::shared_ptr<TSBase> timeStepBase() { return this->heatTransferModel()->timeStepBase(); }
-    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatTransferModel()->timeStepBase(); }
-    void updateTimeStep() {  this->heatTransferModel()->updateTimeStep(); }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
+    void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -134,7 +134,7 @@ public :
     void updateResidual( DataUpdateResidual & data ) const;
 
 private :
-    heattransfer_model_ptrtype M_heatTransferModel;
+    heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -150,7 +150,7 @@ private :
 
     // solver
     std::string M_solverName;
-    bool M_solverNewtonInitialGuessUseLinearThermoElectric,M_solverNewtonInitialGuessUseLinearHeatTransfer,M_solverNewtonInitialGuessUseLinearElectric;
+    bool M_solverNewtonInitialGuessUseLinearThermoElectric,M_solverNewtonInitialGuessUseLinearHeat,M_solverNewtonInitialGuessUseLinearElectric;
 
     // algebraic data/tools
     backend_ptrtype M_backendMonolithic;
@@ -159,7 +159,7 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeatTransfert, M_postProcessFieldExportedElectric;
+    std::set<std::string> M_postProcessFieldExportedHeat, M_postProcessFieldExportedElectric;
 };
 
 } // namespace FeelModels

@@ -64,7 +64,7 @@ endmacro(genLibBase)
 #############################################################################
 #############################################################################
 #############################################################################
-macro( genLibHeatTransfer )
+macro( genLibHeat )
   PARSE_ARGUMENTS(FEELMODELS_APP
     "DIM;T_ORDER;GEO_ORDER"
     ""
@@ -75,34 +75,34 @@ macro( genLibHeatTransfer )
     message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_T_ORDER OR  FEELMODELS_APP_GEO_ORDER")
   endif()
 
-  set(HEATTRANSFER_DIM ${FEELMODELS_APP_DIM})
-  set(HEATTRANSFER_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
-  set(HEATTRANSFER_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(HEAT_DIM ${FEELMODELS_APP_DIM})
+  set(HEAT_ORDERPOLY ${FEELMODELS_APP_T_ORDER})
+  set(HEAT_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
-  set(HEATTRANSFER_LIB_VARIANTS ${HEATTRANSFER_DIM}dP${HEATTRANSFER_ORDERPOLY}G${HEATTRANSFER_ORDERGEO} )
-  set(HEATTRANSFER_LIB_NAME feelpp_toolbox_heattransfer_lib_${HEATTRANSFER_LIB_VARIANTS})
+  set(HEAT_LIB_VARIANTS ${HEAT_DIM}dP${HEAT_ORDERPOLY}G${HEAT_ORDERGEO} )
+  set(HEAT_LIB_NAME feelpp_toolbox_heat_lib_${HEAT_LIB_VARIANTS})
 
-  if ( NOT TARGET ${HEATTRANSFER_LIB_NAME} )
+  if ( NOT TARGET ${HEAT_LIB_NAME} )
     # configure the lib
-    set(HEATTRANSFER_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heattransfer/${HEATTRANSFER_LIB_VARIANTS})
-    set(HEATTRANSFER_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransfercreate_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferassembly_inst.cpp )
-    set(HEATTRANSFER_CODEGEN_SOURCES
-      ${HEATTRANSFER_LIB_DIR}/heattransfercreate_inst.cpp
-      ${HEATTRANSFER_LIB_DIR}/heattransferassembly_inst.cpp )
-    set(HEATTRANSFER_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
+    set(HEAT_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heat/${HEAT_LIB_VARIANTS})
+    set(HEAT_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatcreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassembly_inst.cpp )
+    set(HEAT_CODEGEN_SOURCES
+      ${HEAT_LIB_DIR}/heatcreate_inst.cpp
+      ${HEAT_LIB_DIR}/heatassembly_inst.cpp )
+    set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} ) 
     # generate the lib target
     genLibBase(
-      LIB_NAME ${HEATTRANSFER_LIB_NAME}
-      LIB_DIR ${HEATTRANSFER_LIB_DIR}
-      LIB_DEPENDS ${HEATTRANSFER_LIB_DEPENDS}
-      FILES_TO_COPY ${HEATTRANSFER_CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${HEATTRANSFER_CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heattransfer/heattransferconfig.h.in
+      LIB_NAME ${HEAT_LIB_NAME}
+      LIB_DIR ${HEAT_LIB_DIR}
+      LIB_DEPENDS ${HEAT_LIB_DEPENDS}
+      FILES_TO_COPY ${HEAT_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${HEAT_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatconfig.h.in
       )
   endif()
-endmacro(genLibHeatTransfer)
+endmacro(genLibHeat)
 
 
 #############################################################################
@@ -697,7 +697,7 @@ macro( genLibThermoElectric )
   set(THERMOELECTRIC_P_ORDER ${FEELMODELS_APP_P_ORDER})
   set(THERMOELECTRIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
-  genLibHeatTransfer(
+  genLibHeat(
     DIM     ${THERMOELECTRIC_DIM}
     T_ORDER ${THERMOELECTRIC_T_ORDER}
     GEO_ORDER ${THERMOELECTRIC_ORDERGEO}
@@ -708,7 +708,7 @@ macro( genLibThermoElectric )
     GEO_ORDER ${THERMOELECTRIC_ORDERGEO}
     )
 
-  set(THERMOELECTRIC_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${ELECTRIC_LIB_VARIANTS})
+  set(THERMOELECTRIC_LIB_VARIANTS ${HEAT_LIB_VARIANTS}_${ELECTRIC_LIB_VARIANTS})
   set(THERMOELECTRIC_LIB_NAME feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_LIB_VARIANTS})
 
   if ( NOT TARGET ${THERMOELECTRIC_LIB_NAME} )
@@ -719,7 +719,7 @@ macro( genLibThermoElectric )
     set(THERMOELECTRIC_CODEGEN_SOURCES
       ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
     set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
-    set(THERMOELECTRIC_LIB_DEPENDS ${HEATTRANSFER_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
+    set(THERMOELECTRIC_LIB_DEPENDS ${HEAT_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
     # generate the lib target
     genLibBase(
       LIB_NAME ${THERMOELECTRIC_LIB_NAME}
@@ -755,7 +755,7 @@ macro( genLibHeatFluid )
   set(HEATFLUID_T_ORDER ${FEELMODELS_APP_T_ORDER})
   set(HEATFLUID_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
 
-  genLibHeatTransfer(
+  genLibHeat(
     DIM     ${HEATFLUID_DIM}
     T_ORDER ${HEATFLUID_T_ORDER}
     GEO_ORDER ${HEATFLUID_ORDERGEO}
@@ -767,7 +767,7 @@ macro( genLibHeatFluid )
     GEO_ORDER ${HEATFLUID_ORDERGEO}
     )
 
-  set(HEATFLUID_LIB_VARIANTS ${HEATTRANSFER_LIB_VARIANTS}_${FLUIDMECHANICS_LIB_VARIANTS})
+  set(HEATFLUID_LIB_VARIANTS ${HEAT_LIB_VARIANTS}_${FLUIDMECHANICS_LIB_VARIANTS})
   set(HEATFLUID_LIB_NAME feelpp_toolbox_heatfluid_lib_${HEATFLUID_LIB_VARIANTS})
 
   if ( NOT TARGET ${HEATFLUID_LIB_NAME} )
@@ -778,7 +778,7 @@ macro( genLibHeatFluid )
     set(HEATFLUID_CODEGEN_SOURCES
       ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp )
     set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
-    set(HEATFLUID_LIB_DEPENDS ${HEATTRANSFER_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
+    set(HEATFLUID_LIB_DEPENDS ${HEAT_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
     # generate the lib target
     genLibBase(
       LIB_NAME ${HEATFLUID_LIB_NAME}

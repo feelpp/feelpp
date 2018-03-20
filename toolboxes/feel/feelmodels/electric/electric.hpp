@@ -30,7 +30,7 @@
 #ifndef FEELPP_TOOLBOXES_ELECTRIC_HPP
 #define FEELPP_TOOLBOXES_ELECTRIC_HPP 1
 
-#include <feel/feelmodels/heattransfer/heattransfer.hpp>
+#include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
 
 
