@@ -234,25 +234,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         this->setNeedToRebuildCstPart(true);
 
     if ( type == "Stokes" )
-    {
         M_modelName="Stokes";
-        M_solverName="LinearSystem";
-    }
     else if ( type == "StokesTransient" )
-    {
         M_modelName="StokesTransient";
-        M_solverName="LinearSystem";
-    }
     else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
     {
         M_modelName="Navier-Stokes";
         M_solverName="Oseen";
     }
     else if ( type == "Navier-Stokes" )
-    {
         M_modelName="Navier-Stokes";
-        M_solverName="Newton";
-    }
     else
         CHECK( false ) << "invalid modelName "<< type << "\n";
 }
