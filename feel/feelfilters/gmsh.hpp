@@ -553,33 +553,22 @@ public:
             M_addmidpoint = add;
         }
 
-    //! \brief Modify an existing geo parameter.
-    //! If the parameter does not match any parameter, the function throws
-    //! an out_of_range exception.
+    //! \brief set a geo parameter.
     //!     \param _name Geo parameter name.
     //!     \param _value Geo parameter value.
     //! \return Return the current Gmsh object.
     void setGeoParameter( std::string const& _name, double _value )
         {
-            M_geoParamMap.at( _name ) = std::to_string( _value );
+            M_geoParamMap[ _name ] = std::to_string( _value );
         }
 
-    //! \brief Modify geo gmsh geometry parameters from a map of parameters.
-    //! If the parameter does not match any parameter, the function throws
-    //! an out_of_range exception.
+    //! \brief Add geo parameters from a map of parameters.
     //!     \param geomap A map containing the geo parameters (param,value).
-    void setGeoParameters( std::map<std::string, std::string> const& geomap, bool _update=1 )
+    void addGeoParameters( std::map<std::string, std::string> const& geomap )
         {
-            if( _update )
+            for( const auto& iter : geomap)
             {
-                for( const auto& iter : geomap)
-                {
-                    M_geoParamMap.at(iter.first) = iter.second;
-                }
-            }
-            else
-            {
-                M_geoParamMap = geomap;
+                M_geoParamMap[ iter.first ] = iter.second;
             }
         }
 
