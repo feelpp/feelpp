@@ -736,7 +736,7 @@ macro ( feelpp_add_fmu )
       file( APPEND ${FMU_SCRIPT_NAME} ${LOAD_CMD}\;\n )
       set( OMWRAPPER_SRCS_FULLPATH  ${OMWRAPPER_SRCS_FULLPATH} ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
     endforeach()
-    file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");"\n)
+    file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");\n")
 
     add_custom_target( feelpp_add_fmu_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
 
