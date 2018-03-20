@@ -963,6 +963,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         std::string theFluidModel = this->modelProperties().models().model("fluid").equations();
         this->setModelName( theFluidModel );
     }
+    if ( M_solverName.empty() )
+    {
+        if ( M_modelName == "Stokes" || M_modelName == "StokesTransient" )
+            M_solverName="LinearSystem";
+        else
+            M_solverName="Newton";
+    }
 
     // functionSpaces and elements
     this->createFunctionSpaces();
