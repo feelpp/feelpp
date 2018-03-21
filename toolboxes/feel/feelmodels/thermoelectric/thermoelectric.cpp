@@ -290,10 +290,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     std::string modelName = "thermo-electric";
     auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
-    M_postProcessFieldExportedHeatt = M_heatModel->postProcessFieldExported( exportsFields, "heat" );
+    M_postProcessFieldExportedHeat = M_heatModel->postProcessFieldExported( exportsFields, "heat" );
     M_postProcessFieldExportedElectric = M_electricModel->postProcessFieldExported( exportsFields, "electric" );
 
-    if ( !M_postProcessFieldExportedHeatt.empty() || !M_postProcessFieldExportedElectric.empty() )
+    if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -341,7 +341,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- type            : " << M_exporter->type()
                << "\n     -- freq save       : " << M_exporter->freq();
         std::string fieldExportedHeat;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeatt )
+        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
             fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
         std::string fieldExportedElectric;
         for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
@@ -375,7 +375,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeatt,time );
+    bool hasFieldToExportHeat = M_heatModel->updateExportedFields( M_exporter,M_postProcessFieldExportedHeat,time );
     bool hasFieldToExportElectric = M_electricModel->updateExportedFields( M_exporter,M_postProcessFieldExportedElectric,time );
     if ( hasFieldToExportHeat || hasFieldToExportElectric )
         M_exporter->save();
