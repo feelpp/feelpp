@@ -13,10 +13,10 @@
     {
         "Cu":
         {
-            "k11":"sigma0*Lorentz*heat_transfer_T/(1+alpha*(heat_transfer_T-T0)):sigma0:alpha:T0:Lorentz:heat_transfer_T",
+            "k11":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
             //"Cp":"1000.005", //[ J/(kg*K) ]
             // "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"sigma0/(1+alpha*(heat_transfer_T-T0))+0*heat_transfer_T:sigma0:alpha:T0:heat_transfer_T"
+            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
         }
     },
     "BoundaryConditions":
@@ -70,7 +70,7 @@
         {
             "Exports":
             {
-                "fields":["heat-transfer.temperature","electric.electric-potential","electric.electric-field","heat-transfer.pid"]
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","heat.pid"]
             }
         }
     }

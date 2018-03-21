@@ -8,11 +8,11 @@ runApplicationThermoElectric()
 {
     using namespace Feel;
 
-    typedef FeelModels::HeatTransfer< Simplex<FEELPP_DIM,1>,
-                                      Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_heattransfer_type;
+    typedef FeelModels::Heat< Simplex<FEELPP_DIM,1>,
+                                      Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_heat_type;
     typedef FeelModels::Electric< Simplex<FEELPP_DIM,1>,
                                   Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_electric_type;
-    typedef FeelModels::ThermoElectric< model_heattransfer_type,model_electric_type> model_type;
+    typedef FeelModels::ThermoElectric< model_heat_type,model_electric_type> model_type;
     boost::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
     thermoElectric->init();
     thermoElectric->printAndSaveInfo();
