@@ -318,7 +318,7 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisationgls_inst.cpp
       )
     set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES} )
-    if (FEELPP_MODELS_ENABLE_MESHALE )
+    if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
       set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     endif()
 
