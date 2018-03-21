@@ -3,10 +3,6 @@
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/feelmodelscoreconstconfig.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp )
 INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINATION include/feelpp/toolboxes/feel/feelmodels/modelcore COMPONENT Devel)
 
-include(feelpp.models.macros.cmake)
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
-
-
 #############################################################################
 #############################################################################
 
