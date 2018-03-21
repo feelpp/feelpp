@@ -187,7 +187,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         bilinearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= -idv(rho)*divt(u)*id(q),
+                       _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
     }
 
