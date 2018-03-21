@@ -91,13 +91,13 @@
         {
             "Exports":
             {
-                "fields":["fluid.velocity","fluid.pressure","heat-transfer.temperature","fluid.pid"]
+                "fields":["fluid.velocity","fluid.pressure","heat.temperature","fluid.pid"]
             }
         },
         "fluid":
         {
         },
-        "heat-transfer":
+        "heat":
         {
         }
     }
