@@ -32,5 +32,5 @@ Only the 2D specifications have been implemented.
 
 [source,sh]
 ----
-$ mpirun -np 4 /usr/local/bin/feelpp_toolbox_heat_transfer_2d --config-file thermo2dCase2.cfg
+$ mpirun -np 4 /usr/local/bin/feelpp_toolbox_heat_2d --config-file thermo2dCase2.cfg
 ----
