@@ -22,8 +22,8 @@
 #
 #
 
-SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
-SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
 
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
