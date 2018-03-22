@@ -58,6 +58,8 @@ file_options( std::string const& appname )
         ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ( "json-options", po::value<std::vector<std::string> >()->multitoken(), "specify a list of entries to modified in json. format= key:value " )
+
         ;
     return file;
 }
