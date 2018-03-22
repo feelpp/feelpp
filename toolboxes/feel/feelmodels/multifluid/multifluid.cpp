@@ -67,9 +67,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
             );
 
-    M_globalLevelset->build( this->mesh() );
-    //if( nLevelSets < 2 )
-    //    M_globalLevelset->getExporter()->setDoExport( false );
+    if( this->M_useLagrangeP1iso )
+    {
+        // Build Lagrange P1 iso-U mesh and build M_globalLevelset with it
+        M_opLagrangeP1iso = lagrangeP1( this->functionSpaceVelocity()->compSpace() );
+        M_globalLevelset->build( this->M_opLagrangeP1iso->mesh() );
+    }
+    else
+    {
+        // Else build from common mesh
+        M_globalLevelset->build( this->mesh() );
+    }
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
@@ -262,6 +270,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_usePicardIterations = boption( _name="use-picard-iterations", _prefix=this->prefix() );
 
     M_hasInterfaceForcesModel = false;
+
+    M_useLagrangeP1iso = boption( _name="use-ls-P1iso-mesh", _prefix=this->prefix() );
 
 
     uint16_type nLevelSets = M_nFluids - 1;

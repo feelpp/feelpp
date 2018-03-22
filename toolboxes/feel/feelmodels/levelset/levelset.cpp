@@ -2205,6 +2205,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- nb elt in mesh  : " << this->mesh()->numGlobalElements()//numElements()
          //<< "\n     -- nb elt in mesh  : " << this->mesh()->numElements()
          //<< "\n     -- nb face in mesh : " << this->mesh()->numFaces()
+           << "\n     -- hMin            : " << this->mesh()->hMin()
+           << "\n     -- hMax            : " << this->mesh()->hMax()
+           << "\n     -- hAverage        : " << this->mesh()->hAverage()
            << "\n     -- geometry order  : " << nOrderGeo
            << "\n     -- level set order : " << Order
            << "\n     -- nb dof          : " << this->functionSpace()->nDof() << " (" << this->functionSpace()->nLocalDof() << ")"

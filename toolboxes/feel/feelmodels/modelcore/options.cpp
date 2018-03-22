@@ -525,6 +525,7 @@ multifluid_options(std::string const& prefix, uint16_type nls = 1)
 
         (prefixvm(prefix, "use-picard-iterations").c_str(), Feel::po::value<bool>()->default_value( false ), "solve NS-LS coupling with non-linear Picard iterations")
 
+        (prefixvm(prefix, "use-ls-P1iso-mesh").c_str(), Feel::po::value<bool>()->default_value( false ), "use P1 iso-Pn(u) mesh for the levelset")
         ;
 
     multifluidOptions
