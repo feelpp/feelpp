@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 15 Mar 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -43,7 +43,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_postproc( world ),
     M_outputs( world )
 {
-    if ( !fs::exists( filename ) ) 
+    if ( !fs::exists( filename ) )
     {
         if ( Environment::isMasterRank() )
         {
@@ -64,9 +64,48 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-    
+
+
     std::istringstream istr( json_str_wo_comments );
     pt::read_json(istr, M_p);
+
+    if ( Environment::vm().count("json-options") )
+    {
+        std::vector<std::string> var_list = option( _name="json-options").template as<std::vector<std::string>>();
+
+        for ( auto s : var_list )
+        {
+            std::vector<std::string> splited;
+            boost::split( splited, s, boost::is_any_of(":"), boost::token_compress_on );
+            if ( splited.size()!=2 )
+            {
+                std::stringstream ss;
+                ss << "WARNING: syntax for the variable to be edited in the ptree is wrong, here is the parsed option:";
+                for ( auto s : splited)
+                    ss << s <<" ";
+                ss << std::endl;
+                CHECK(false) << ss.str();
+            }
+            else
+            {
+                std::string key = splited[0];
+                std::string value = splited[1];
+
+                try {
+                    M_p.get<std::string>( key );
+                }
+                catch ( pt::ptree_bad_path& e )
+                {
+                    LOG(INFO) << "No entry \""<<key <<"\" found in ptree, add new entry with value="<< value << std::endl;
+                }
+                M_p.put( key, value );
+                LOG(INFO)<< "ptree edition: entry "<< key <<" has new value "<< value <<std::endl;
+            }
+        }
+    }
+
+
+
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }
