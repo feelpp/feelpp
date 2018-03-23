@@ -591,6 +591,14 @@ public:
      */
     size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
+    size_type containerIdToDofId( int tag, size_type gpdof ) const
+    {
+        size_type dof_id = -1;
+        auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
+        if ( it !=M_dofIdToContainerId[tag].end() )
+            dof_id = std::distance( M_dofIdToContainerId[tag].begin(), it );
+        return dof_id;
+    }
     /**
      * \return the indexsplit description
      */
