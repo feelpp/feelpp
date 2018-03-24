@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE( onespace )
     std::vector<int> randoms;
     std::set<int> element_ids;
 
-    std::srand (time(NULL));
+    std::srand (std::time(NULL));
     if ( Environment::isMasterRank() )
         for ( int i=0; i<10; i++ )
             randoms.push_back( std::rand() % size );
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE( composite )
     std::set<int> element_ids;
 
     // build a random set of index in the range of the vector
-    std::srand (time(NULL));
+    std::srand (std::time(NULL));
     if ( Environment::isMasterRank() )
         for ( int i=0; i<10; i++ )
             randoms.push_back( std::rand() % size );
