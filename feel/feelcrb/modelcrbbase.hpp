@@ -54,7 +54,11 @@ enum {
     /** Coercive PDE */
     Coercive = 0,
     /** Inf-Sup PDE */
-    InfSup = 0x4
+    InfSup = 0x4,
+    /** Monolithic */
+    Mono = 0,
+    /** By block */
+    Block=0x8
 };
 
 class ModelCrbBaseBase {};
@@ -201,6 +205,7 @@ public :
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
     //static const bool is_linear = ((_Options&Linear)==Linear);
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
+    static const bool by_block = (_Options&Block)==Block;
 #endif
     static const int Options = _Options;
 
