@@ -40,6 +40,8 @@ struct FEELPP_EXPORT ModelMaterial
     typedef mat_property_expr_type::expr_scalar_type expr_scalar_type;
     typedef mat_property_expr_type::expr_vectorial2_type expr_vectorial2_type;
     typedef mat_property_expr_type::expr_vectorial3_type expr_vectorial3_type;
+    typedef mat_property_expr_type::expr_matrix22_type expr_matrix22_type;
+    typedef mat_property_expr_type::expr_matrix33_type expr_matrix33_type;
 
     ModelMaterial( WorldComm const& worldComm = Environment::worldComm() );
     ModelMaterial( ModelMaterial const& ) = default;
@@ -71,10 +73,28 @@ struct FEELPP_EXPORT ModelMaterial
     bool hasPropertyExprScalar( std::string const& prop ) const;
     bool hasPropertyExprVectorial2( std::string const& prop ) const;
     bool hasPropertyExprVectorial3( std::string const& prop ) const;
+    template <int M,int N>
+    bool hasPropertyExprMatrix( std::string const& prop ) const
+    {
+        auto itFindProp = M_materialProperties.find( prop );
+        if ( itFindProp == M_materialProperties.end() )
+            return false;
+        auto const& matProp = itFindProp->second;
+        return matProp.template hasExprMatrix<M,N>();
+    }
+
+    mat_property_expr_type const& property( std::string const& prop ) const;
     double propertyConstant( std::string const& prop ) const;
     expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;
     expr_vectorial2_type const& propertyExprVectorial2( std::string const& prop ) const;
     expr_vectorial3_type const& propertyExprVectorial3( std::string const& prop ) const;
+    template <int M,int N>
+    auto const& propertyExprMatrix( std::string const& prop ) const
+    {
+        bool hasProp = hasPropertyExprMatrix<M,N>( prop );
+        CHECK( hasProp ) << "no matrix expr";
+        return M_materialProperties.find( prop )->second.template exprMatrix<M,N>();
+    }
 
     bool hasPhysics() const { return !M_physics.empty(); }
     bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }

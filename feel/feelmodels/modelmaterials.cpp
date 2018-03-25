@@ -80,7 +80,7 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     }
 
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
-                                            "k11","k12","k13","k22","k23","k33",
+                                            "k","k11","k12","k13","k22","k23","k33",
                                             "E","nu","sigma","C","Cs","Cl","L",
                                             "Ks","Kl","Tsol","Tliq" };
     for ( std::string const& prop : matProperties )
@@ -132,6 +132,12 @@ ModelMaterial::hasPropertyExprVectorial3( std::string const& prop ) const
         return false;
     auto const& matProp = itFindProp->second;
     return matProp.hasExprVectorial3();
+}
+ModelMaterial::mat_property_expr_type const&
+ModelMaterial::property( std::string const& prop ) const
+{
+    CHECK( this->hasProperty( prop ) ) << "no prop";
+    return M_materialProperties.find( prop )->second;
 }
 double
 ModelMaterial::propertyConstant( std::string const& prop ) const
@@ -215,6 +221,10 @@ ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
                 M_materialProperties[property].setExprVectorial2( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
             else if ( nComp == 3 )
                 M_materialProperties[property].setExprVectorial3( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+            else if ( nComp == 4 )
+                M_materialProperties[property].setExprMatrix22( expr<2,2,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
+            else if ( nComp == 9 )
+                M_materialProperties[property].setExprMatrix33( expr<3,3,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
         }
     }
 }
