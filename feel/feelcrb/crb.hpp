@@ -2897,7 +2897,7 @@ CRB<TruthModelType>::offline()
         }
         if ( M_model->hasDeim() )
         {
-            M_model->updateRbInDeim( this->wn() );
+            M_model->updateRbInDeim();
         }
 
 

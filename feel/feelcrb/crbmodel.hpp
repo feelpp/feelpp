@@ -1238,15 +1238,15 @@ public:
     {
         return M_model->mdeimVector();
     }
-    void updateRbInDeim( typename rbfunctionspace_type::rb_basis_type const& wn )
+    void updateRbInDeim()
     {
         auto deim_vector = this->deimVector();
         auto mdeim_vector = this->mdeimVector();
 
         for ( auto deim : deim_vector )
-            deim->updateRb(wn);
+            deim->updateRb( rBFunctionSpace() );
         for ( auto mdeim : mdeim_vector )
-            mdeim->updateRb(wn);
+            mdeim->updateRb( rBFunctionSpace() );
     }
 
     struct ComputeNormL2InCompositeCase

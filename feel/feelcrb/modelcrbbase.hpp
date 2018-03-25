@@ -137,7 +137,7 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<space_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
@@ -947,7 +947,8 @@ public :
 
         this->setupSpecificityModel( ptree, dbDir );
 
-        XN->setModel( this->shared_from_this() );
+        XN->setFunctionSpace( this->functionSpace() );
+        //XN->setModel( this->shared_from_this() );
 
         this->setInitialized( true );
     }
@@ -2024,7 +2025,8 @@ public:
     virtual void setFunctionSpaces( functionspace_ptrtype const& Vh )
     {
         Xh = Vh;
-        XN->setModel( this->shared_from_this() );
+        XN->setFunctionSpace( Xh );
+        //XN->setModel( this->shared_from_this() );
     }
 
     /**
