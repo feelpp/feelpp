@@ -205,7 +205,7 @@ public :
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
     //static const bool is_linear = ((_Options&Linear)==Linear);
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
-    static const bool by_block = (_Options&Block)==Block;
+    static const bool by_block = (_Options&Feel::Block)==Feel::Block;
 #endif
     static const int Options = _Options;
 
