@@ -35,20 +35,27 @@
 #include <iostream>
 #include <fstream>
 
+#include <Eigen/Core>
+
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <feel/feelcrb/parameterspace.hpp>
+
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelalg/topetsc.hpp>
-#include <Eigen/Core>
+
+#include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
+
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+
+#include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feeldiscr/twospacesmap.hpp>
 
 
 namespace Feel
@@ -110,13 +117,35 @@ public :
     typedef SpaceType space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef ReducedBasisSpace<space_type> rbspace_type;
+    typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
     typedef std::map<int,tensor_ptrtype> solutionsmap_type;
 
     typedef CRBBase<space_type,parameterspace_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef TwoSpacesMap<space_type> spaces_map_type;
+    typedef boost::shared_ptr<spaces_map_type> spaces_map_ptrtype;
+
+
+    static const int n_spaces = space_type::nSpaces;
+    template< int T >
+    using sub_space = typename space_type::template sub_functionspace_type<T>;
+    typedef typename mpl::range_c< int, 0, n_spaces > rangespace_type;
+    template < typename  T >
+    struct SubElementVec
+    {
+        typedef std::vector<typename sub_space<T::value>::element_ptrtype> type;
+    };
+    typedef typename mpl::transform< rangespace_type, SubElementVec<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type block_rb_basis_type;
+    template <int T>
+    using sub_rb_type = typename fusion::result_of::at_c<block_rb_basis_type,T>::type;
+
 
     //! Default Constructor
     DEIMBase()
@@ -147,13 +176,12 @@ public :
         M_store_tensors( false ),
         M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
         M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
-        M_optimized_online( boption( prefixvm( this->M_prefix, "deim.optimized-online") ) ),
         M_crb_built( false ),
         M_offline_step( true ),
         M_restart( true ),
         M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
         M_ser_use_rb( false ),
-        M_online_model_updated( false )
+        M_map( new spaces_map_type )
     {
         using Feel::cout;
 
@@ -359,6 +387,9 @@ public :
         }
         M_solutions.clear();
 
+
+        updateSubMesh();
+
         this->saveDB();
 
         cout <<"===========================================\n";
@@ -433,7 +464,7 @@ public :
         M_crb_built=true;
     }
 
-    virtual void updateRb( std::vector<boost::shared_ptr<element_type>> const& wn )=0;
+    virtual void updateRb( rbspace_ptrtype const& XN )=0;
 
     void setOfflineStep( bool b ) { M_offline_step = b; }
     bool offlineStep() const { return M_offline_step; }
@@ -455,6 +486,12 @@ public :
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
 
+
+    template<int T>
+    sub_rb_type<T>& subRb()
+    {
+        return fusion::at_c<T>( M_block_rb );
+    }
 
 protected :
     //! add a new Tensor in the base, evaluated for parameter \p mu
@@ -487,8 +524,6 @@ protected :
         for ( int i=0; i<M_M-1; i++ )
             M_B(i, M_M-1) = evaluate( M_bases[M_M-1], M_index[i] );
 
-        if ( M_optimized_online )
-            updateSubMesh();
         //this->saveDB();
         LOG(INFO) << this->name() + " : addNewVector() end";
         toc( this->name() +" : Add new vector" );
@@ -610,7 +645,6 @@ protected :
     //! Compute the beta coefficients for a assembled tensor \p T
     vectorN_type computeCoefficient( tensor_ptrtype T, bool online=true, int M = -1 )
     {
-        bool optimized = online && this->M_optimized_online;
         if( (M < 0) || (M > M_M) )
             M = M_M;
         vectorN_type rhs (M);
@@ -618,7 +652,7 @@ protected :
         if ( M > 0 )
         {
             for ( int i=0; i<M; i++ )
-                rhs(i) = evaluate( T, optimized ? M_indexR[i]:M_index[i], optimized );
+                rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
             coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
         }
 
@@ -765,15 +799,16 @@ protected :
 
     bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions;
     std::string M_write_nl_directory;
-    bool M_optimized_online; // to be removed when optimized is ok
 
     crb_ptrtype M_crb;
     bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
     int M_ser_frequency;
 
-    std::vector<element_type> M_rb_basis;
-    bool M_online_model_updated;
+    std::vector<element_ptrtype> M_rb;
+    block_rb_basis_type M_block_rb;
     space_ptrtype Rh;
+
+    spaces_map_ptrtype M_map;
 };
 
 
@@ -785,6 +820,7 @@ class DEIMModel :
                         TensorType>
 {
 public :
+    typedef DEIMModel<ModelType,TensorType> self_type;
     typedef DEIMBase<typename ModelType::parameterspace_type, typename ModelType::space_type, TensorType> super_type;
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
@@ -794,9 +830,13 @@ public :
     typedef typename super_type::sampling_ptrtype sampling_ptrtype;
     typedef typename super_type::tensor_ptrtype tensor_ptrtype;
     typedef typename super_type::element_type element_type;
+    typedef typename super_type::element_type element_ptrtype;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
+    typedef typename super_type::rbspace_ptrtype rbspace_ptrtype;
+    typedef typename super_type::rangespace_type rangespace_type;
 
+    static const bool by_block = model_type::by_block;
 
     DEIMModel() :
         super_type()
@@ -809,13 +849,8 @@ public :
                     prefix, dbfilename, dbdirectory ),
         M_model( model )
     {
-        if ( this->M_optimized_online )
-        {
-            this->M_online_model = model_ptrtype( new model_type() );
-            this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
-        }
-        else
-            this->M_online_model = M_model;
+        this->M_online_model = model_ptrtype( new model_type() );
+        this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
 
         if ( Rh )
             M_online_model->setFunctionSpaces( Rh );
@@ -886,7 +921,7 @@ public :
 
                     if ( M_write_nl_solutions )
                     {
-                        LOG(INFO) << this->name() + " : Wrting solution on disk in directory "
+                        LOG(INFO) << this->name() + " : Writing solution on disk in directory "
                                   << M_write_nl_directory << ", for parameter : " << mu.toString()
                                   <<" / " << mu.key();
                         u.save( _path=M_write_nl_directory,
@@ -907,53 +942,140 @@ public :
         return modelAssemble(mu,u,online);
     }
 
-    void updateRb( std::vector<boost::shared_ptr<element_type>> const& wn ) override
+    void updateRb( rbspace_ptrtype const& XN ) override
     {
-        if ( this->M_optimized_online )
-        {
-            // if the interpolation space has been updated we have to reproject
-            // all the rb basis vectors on the new interpolation space
-            if ( this->M_online_model_updated )
-            {
-                for ( int i=0; i<M_rb_basis.size(); i++ )
-                {
-                    M_rb_basis[i] = Rh->element();
-                    M_rb_basis[i].on( elements(Rh->mesh()), idv(wn[i]) );
-                }
-
-                this->M_online_model_updated=false;
-            }
-
-            // we now project the new basis vector on the interpolation space and we stock them.
-            for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
-            {
-                M_rb_basis.push_back( Rh->element() );
-                M_rb_basis[i].on( elements(Rh->mesh()), idv(wn[i]) );
-            }
-        }
-        else // to be removed when optimized is fixed
-            for ( int i=M_rb_basis.size(); i<wn.size(); i++ )
-                M_rb_basis.push_back( *wn[i] );
-
-        this->M_n_rb = M_rb_basis.size();
+        return updateRb( XN, mpl::bool_<by_block>() );
     }
 
-    void gatherContributions( element_type& u )
+    void updateRb( rbspace_ptrtype const& XN, mpl::false_ )
     {
+        auto wn = XN->primalRB();
+        M_rb.resize( wn.size() );
 
+        for ( int i=0; i<wn.size(); i++ )
+        {
+            M_rb[i] = Rh->elementPtr();
+            this->M_map->project( *M_rb[i], *wn[i] );
+        }
+        this->M_n_rb = M_rb.size();
+    }
+
+    void updateRb( rbspace_ptrtype const& XN, mpl::true_ )
+    {
+        BOOST_STATIC_ASSERT( space_type::is_composite );//<< "Use of CBR block but space is not composite\n";
+
+        rangespace_type range;
+        auto builder = UpdateRbByBlock( this, XN );
+        boost::fusion::for_each( range, builder );
     }
 
     element_type deimExpansion( vectorN_type const& urb ) override
     {
+        return deimExpansion( urb, mpl::bool_<by_block>() );
+    }
+
+    element_type deimExpansion( vectorN_type const& urb, mpl::false_  )
+    {
         int N = urb.size();
-        FEELPP_ASSERT( N <= M_rb_basis.size() )( N )( M_rb_basis.size() ).error( "invalid expansion size ( N and M_rb_basis ) ");
-        return Feel::expansion( M_rb_basis, urb, N );
+
+        FEELPP_ASSERT( N <= M_rb.size() )( N )( M_rb.size() ).error( "invalid expansion size ( N and M_rb ) ");
+
+        return Feel::expansion( M_rb, urb, N );
+    }
+
+    element_type deimExpansion( vectorN_type const& urb, mpl::true_  )
+    {
+        BOOST_STATIC_ASSERT( space_type::is_composite );//<< "Use of CBR block but space is not composite\n";
+
+        rangespace_type range;
+        auto builder = ExpansionByBlock( this, urb );
+        boost::fusion::for_each( range, builder );
+        return builder.field();
     }
 
     model_ptrtype & onlineModel()
     {
         return M_online_model;
     }
+
+    model_ptrtype & model()
+    {
+        return M_model;
+    }
+
+private :
+    struct UpdateRbByBlock
+    {
+        UpdateRbByBlock( self_type* deim,  rbspace_ptrtype const& XN ):
+            m_deim( deim ),
+            m_XN( XN )
+        {}
+
+        template <typename T>
+        void operator()( T const& t ) const
+        {
+            auto subXN = m_XN->template functionSpace<T::value>();
+            auto subRh = m_deim->Rh->template functionSpace<T::value>();
+            auto wn = subXN->pribalRB();
+
+            m_deim->template subRb<T::value>().resize( wn.size() );
+            for( int i=0; i<wn.size(); i++ )
+            {
+                m_deim->template subRb<T::value>()[i] = subRh->elementPtr();
+                m_deim->M_map->template project<T::value>( *(m_deim->template subRb<T::value>()[i]), *wn[i] );
+            }
+        }
+
+    private :
+        self_type* m_deim;
+        rbspace_ptrtype m_XN;
+    };
+
+    struct ExpansionByBlock
+    {
+        ExpansionByBlock( self_type* deim, vectorN_type const& urb ) :
+            m_deim( deim ),
+            m_urb( urb ),
+            U( m_deim->model()->functionSpace() )
+        {
+            int size0 = m_deim->template subRb<0>().size();
+            int size1 = m_deim->template subRb<1>().size();
+            m_supremizer = size0==2*size1;
+            int size_urb = urb.size();
+            int n = space_type::nSpaces;
+            if ( m_supremizer )
+                n++;
+            N = size_urb/n;
+            CHECK( N*n==size_urb ) <<"Error trying to split urb\n";
+        }
+
+        template <typename T>
+        void operator()( T const& t ) const
+        {
+            int Nwn = N;
+            int n = T::value;
+            if ( m_supremizer && (n==0) )
+                Nwn = 2*N;
+            else if ( m_supremizer )
+                n++;
+
+            CHECK( Nwn<=m_deim->template subRb<T::value>().size() ) <<"Unvalid expansion size\n";
+
+            auto coeff = m_urb.segment( n*Nwn, (n+1)*Nwn-1 );
+            auto u = U.template element<T::value>();
+            u = Feel::expansion( m_deim->template subRb<T::value>(), coeff, Nwn ).container();
+        }
+
+        element_type& field() { return U; }
+
+    private :
+        self_type* m_deim;
+        vectorN_type m_urb;
+        bool m_supremizer;
+        int N;
+        mutable element_type U;
+    };
+
 
 protected :
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
@@ -964,13 +1086,12 @@ protected :
 
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
-    using super_type::M_rb_basis;
+    using super_type::M_rb;
     using super_type::Rh;
 };
 
 
-template <typename ModelType,
-          typename TestSpace=typename ModelType::space_type>
+template <typename ModelType>
 class DEIM :
         public DEIMModel<ModelType,typename Backend<typename ModelType::value_type>::vector_type>
 {
@@ -986,18 +1107,15 @@ public :
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
-    typedef TestSpace testspace_type;
-    typedef boost::shared_ptr<testspace_type> testspace_ptrtype;
 
     DEIM() :
         super_type()
     {}
 
-    DEIM( model_ptrtype model, testspace_ptrtype test_space,
+    DEIM( model_ptrtype model,
           sampling_ptrtype sampling, std::string prefix,
           std::string const& dbfilename, std::string const& dbdirectory ) :
-        super_type( model, sampling, prefix, dbfilename, dbdirectory ),
-        Teh( test_space )
+        super_type( model, sampling, prefix, dbfilename, dbdirectory )
     {
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
         this->init();
@@ -1025,87 +1143,55 @@ private :
 private :
     virtual void updateSubMesh() override
     {
-        // Last added index
-        auto index = this->M_index.back();
-        //auto Xh = this->M_model->functionSpace();
-        auto mesh = Teh->mesh();
-        int proc_n = Teh->dof()->procOnGlobalCluster(index);
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
 
-        // recover the elements which share this index
-        std::set<int> pts_ids;
-        int ldof=-1;
+        this->M_elts_ids.clear();
 
-        if ( Environment::worldComm().globalRank()==proc_n )
+        for ( auto index : this->M_index )
         {
-            for ( auto const& dof : Teh->dof()->globalDof(index-Teh->dof()->firstDofGlobalCluster()))
+            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
+            if ( boost::get<0>( searchGpDof ) )
             {
-                this->M_elts_ids.insert( dof.second.elementId() );
-                if (ldof==-1)
+                size_type gpdof = boost::get<1>( searchGpDof );
+                for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
                 {
-                    ldof = dof.second.localDof();
-                    auto elt = mesh->element( dof.second.elementId() );
-                    for ( int p=0; p<elt.nPoints(); p++ )
-                        pts_ids.insert( elt.point(p).id()+1 );
+                    size_type eltId = dof.second.elementId();
+                    if ( mesh->element( eltId ).isGhostCell() )
+                        continue;
+                    this->M_elts_ids.insert( eltId );
                 }
             }
         }
-        else
-        {
-            auto e = Teh->dof()->searchGlobalProcessDof( index );
-            if ( e.template get<0>() )
-            {
-                auto process_dof = e.template get<1>();
-                for ( auto const& dof : Teh->dof()->globalDof( process_dof) )
-                    this->M_elts_ids.insert( dof.second.elementId() );
-            }
-        }
 
-        // store the information in all proc !
-        boost::mpi::broadcast( Environment::worldComm(), pts_ids, proc_n );
-        boost::mpi::broadcast( Environment::worldComm(), ldof, proc_n );
-        this->M_ldofs.push_back( ldof );
-        this->M_ptsset.push_back( pts_ids );
-
-        // create new submesh with the new elements and reread it in sequential
         auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
         saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
+        Environment::worldComm().barrier();
+
         auto seqmesh = loadMesh( _mesh=new mesh_type,
                                  _filename=this->name(true)+"-submesh.msh",
                                  _worldcomm= Environment::worldCommSeq() );
+
         Rh = space_type::New( seqmesh,
                               _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
-        testspace_ptrtype RTeh = testspace_type::New( seqmesh,
-                                                      _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
 
-        // create map between points id and elements id
-        std::map<std::set<int>,int> elts_map;
-        for ( auto const& eltWrap : elements(seqmesh) )
-        {
-            auto const& elt = unwrap_ref( eltWrap );
-            std::set<int> pts_id;
-            for ( int p=0; p<elt.nPoints(); p++ )
-                pts_id.insert( elt.point(p).id() );
-            elts_map[pts_id] = elt.id();
-        }
 
-        // on each proc : store the new indexR corresponding to the reduced space
+        this->M_map->init( Rh, Xh );
+
         this->M_indexR.clear();
-        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        for ( int i=0; i<this->M_index.size(); i++ )
         {
-            auto map_it = elts_map.find( this->M_ptsset[i] );
-            CHECK( map_it!=elts_map.end() ) <<this->name() + " : elt id not found in map, on proc : "
-                                            <<Environment::worldComm().globalRank() << std::endl;
-            int elt_idR = map_it->second;
-            this->M_indexR.push_back( RTeh->dof()->localToGlobalId( elt_idR, this->M_ldofs[i] ) );
+            auto index = this->M_index[i];
+            int index_r = this->M_map->clusterToSequential( index );
+            CHECK( index_r>=0 )<< "No matching reduced index in the map for Xh index "
+                               << index <<std::endl;
+            this->M_indexR.push_back( index_r );
         }
 
         this->M_online_model->setFunctionSpaces( Rh );
-
-        this->M_online_model_updated = true;
     }
 
 private :
-    testspace_ptrtype Teh;
     using super_type::Rh;
 };
 
@@ -1127,6 +1213,7 @@ public :
     typedef typename super_type::element_type element_type;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
+
 
     MDEIM() :
         super_type()
@@ -1161,86 +1248,43 @@ private :
 private :
     void updateSubMesh() override
     {
-        auto index = this->M_index.back();
-        int i1 = index.first;
-        int i2 = index.second;
         auto Xh = this->M_model->functionSpace();
         auto mesh = Xh->mesh();
-        bool is_same = (i1==i2);
 
-        int proc_n1 = Xh->dof()->procOnGlobalCluster(i1);
-        int proc_n2 = Xh->dof()->procOnGlobalCluster(i2);
-
-        std::set<int> pts_ids1, pts_ids2;
-        int ldof1=-1;
-        int ldof2=-1;
-
-
-        if ( Environment::worldComm().globalRank()==proc_n1 )
+        for ( auto index : this->M_index )
         {
-            for ( auto const& dof : Xh->dof()->globalDof(i1-Xh->dof()->firstDofGlobalCluster()) )
+            int i1 = index.first;
+            int i2 = index.second;
+            bool is_same = (i1==i2);
+
+            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( i1 );
+            if ( boost::get<0>( searchGpDof ) )
             {
-                this->M_elts_ids.insert( dof.second.elementId() );
-                if ( ldof1==-1 )
+                size_type gpdof = boost::get<1>( searchGpDof );
+                for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
                 {
-                    ldof1 = dof.second.localDof();
-                    auto elt = mesh->element(dof.second.elementId() );
-                    for ( int p=0; p<elt.nPoints(); p++ )
-                        pts_ids1.insert( elt.point(p).id()+1 );
+                    size_type eltId = dof.second.elementId();
+                    if ( Xh->mesh()->element( eltId ).isGhostCell() )
+                        continue;
+                    this->M_elts_ids.insert( eltId );
                 }
             }
-        }
-        else
-        {
-            auto e = Xh->dof()->searchGlobalProcessDof( i1 );
-            if ( e.template get<0>() )
+            if ( !is_same )
             {
-                auto process_dof = e.template get<1>();
-                for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
-                    this->M_elts_ids.insert( dof.second.elementId() );
-            }
-        }
-
-        boost::mpi::broadcast( Environment::worldComm(), pts_ids1, proc_n1 );
-        boost::mpi::broadcast( Environment::worldComm(), ldof1, proc_n1 );
-
-        if ( is_same )
-        {
-            pts_ids2 = pts_ids1;
-            ldof2 = ldof1;
-        }
-        else
-        {
-            if ( Environment::worldComm().globalRank()==proc_n2 )
-            {
-                for ( auto const& dof : Xh->dof()->globalDof(i2-Xh->dof()->firstDofGlobalCluster()) )
+                searchGpDof = Xh->dof()->searchGlobalProcessDof( i2 );
+                if ( boost::get<0>( searchGpDof ) )
                 {
-                    this->M_elts_ids.insert( dof.second.elementId() );
-                    if ( ldof2==-1 )
+                    size_type gpdof = boost::get<1>( searchGpDof );
+                    for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
                     {
-                        ldof2 = dof.second.localDof();
-                        auto elt = mesh->element(dof.second.elementId() );
-                        for ( int p=0; p<elt.nPoints(); p++ )
-                            pts_ids2.insert( elt.point(p).id()+1 );
+                        size_type eltId = dof.second.elementId();
+                        if ( Xh->mesh()->element( eltId ).isGhostCell() )
+                            continue;
+                        this->M_elts_ids.insert( eltId );
                     }
                 }
             }
-            else
-            {
-                auto e = Xh->dof()->searchGlobalProcessDof( i2 );
-                if ( e.template get<0>() )
-                {
-                    auto process_dof = e.template get<1>();
-                    for ( auto const& dof : Xh->dof()->globalDof( process_dof) )
-                        this->M_elts_ids.insert( dof.second.elementId() );
-                }
-            }
-            boost::mpi::broadcast( Environment::worldComm(), pts_ids2, proc_n2 );
-            boost::mpi::broadcast( Environment::worldComm(), ldof2, proc_n2 );
         }
-
-        this->M_ldofs.push_back( std::make_pair(ldof1,ldof2) );
-        this->M_ptsset.push_back( std::make_pair(pts_ids1,pts_ids2) );
 
         // create new submesh with the new elements and reread it in sequential
         auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
@@ -1251,48 +1295,24 @@ private :
         Rh = space_type::New( seqmesh,
                               _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
 
-        // create map between points id and elements id
-        std::map<std::set<int>,int> elts_map;
-        for ( auto const& eltWrap : elements(seqmesh) )
-        {
-            auto const& elt = unwrap_ref( eltWrap );
-            std::set<int> pts_id;
-            for ( int p=0; p<elt.nPoints(); p++ )
-                pts_id.insert( elt.point(p).id() );
-            elts_map[pts_id] = elt.id();
-        }
-
+        this->M_map->init( Rh, Xh );
 
         // on each proc : store the new indexR corresponding to the reduced space
         this->M_indexR.clear();
-        for ( int i=0; i<this->M_ptsset.size(); i++ )
+        for ( int i=0; i<this->M_index.size(); i++ )
         {
-            auto ptsset1 = this->M_ptsset[i].first;
-            auto ptsset2 = this->M_ptsset[i].second;
+            auto i1 = this->M_index[i].first;
+            auto i2 = this->M_index[i].second;
 
-            auto map_it = elts_map.find( ptsset1 );
-            CHECK( map_it!=elts_map.end() ) << this->name()+" : elt id not found in map, on proc : "
-                                            << Environment::worldComm().globalRank() << std::endl;
+            int ir1 = this->M_map->clusterToSequential( i1 );
+            int ir2 = this->M_map->clusterToSequential( i2 );
+            CHECK( ir1>=0 )<< "No matching reduced index in the map for Xh index "<< i1 <<std::endl;
+            CHECK( ir2>=0 )<< "No matching reduced index in the map for Xh index "<< i2 <<std::endl;
 
-            int elt_idR1 = map_it->second;
-            int elt_idR2 = elt_idR1;
-            if ( ptsset1!=ptsset2 )
-            {
-                map_it = elts_map.find( ptsset2 );
-                CHECK( map_it!=elts_map.end() ) << this->name()+" : elt id not found in map, on proc : "
-                                                << Environment::worldComm().globalRank() << std::endl;
-                elt_idR2 = map_it->second;
-            }
-
-            auto indexR1 = Rh->dof()->localToGlobalId( elt_idR1, this->M_ldofs[i].first );
-            auto indexR2 = Rh->dof()->localToGlobalId( elt_idR2, this->M_ldofs[i].second );
-
-            this->M_indexR.push_back( std::make_pair(indexR1, indexR2) );
+            this->M_indexR.push_back( std::make_pair(ir1, ir2) );
         }
-
         this->M_online_model->setFunctionSpaces( Rh );
 
-        this->M_online_model_updated = true;
     }
 
 private :
@@ -1323,19 +1343,19 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
 
     if ( Archive::is_loading::value )
     {
-        if ( M_rb_basis.size()==0 && Rh )
+        if ( M_rb.size()==0 && Rh )
         {
             for(int i = 0; i < M_n_rb; i++ )
-                M_rb_basis.push_back( Rh->element() );
+                M_rb.push_back( Rh->elementPtr() );
             for( int i = 0; i < M_n_rb; ++ i )
-                __ar & BOOST_SERIALIZATION_NVP( M_rb_basis[i] );
-            DVLOG(2) << "M_rb_basis saved/loaded\n";
+                __ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(M_rb[i]) );
+            DVLOG(2) << "M_rb saved/loaded\n";
         }
     }
     else
     {
         for( int i = 0; i < M_n_rb; ++ i )
-            __ar & BOOST_SERIALIZATION_NVP( M_rb_basis[i] );
+            __ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(M_rb[i]) );
     }
 
 }
@@ -1407,7 +1427,6 @@ struct compute_deim_return
 {
     typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test, typename model_type::space_ptrtype>::type>::type::element_type test_type;
 
     typedef DEIM<model_type> type;
     typedef boost::shared_ptr<type> ptrtype;
@@ -1435,14 +1454,13 @@ BOOST_PARAMETER_FUNCTION(
                          ( optional
                            ( sampling, *, nullptr )
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                           ( test, *, model->functionSpace() )
                            ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
-    return boost::make_shared<deim_type>( model,test, sampling, prefix, filename, directory );
+    return boost::make_shared<deim_type>( model, sampling, prefix, filename, directory );
 }
 
 
