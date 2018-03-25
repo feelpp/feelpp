@@ -172,7 +172,19 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
-        if ( thermalConductivity.isConstant() )
+        if ( thermalConductivity.isMatrix() )
+        {
+            if ( buildCstPart )
+            {
+                auto kappa = thermalConductivity.template exprMatrix<nDim,nDim>();
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               //_expr= inner(trans(kappa*trans(gradt(u))),grad(v)),
+                               _expr= grad(v)*(kappa*trans(gradt(u))),
+                               _geomap=this->geomap() );
+            }
+        }
+        else if ( thermalConductivity.isConstant() )
         {
             if ( buildCstPart )
             {
