@@ -45,6 +45,7 @@ public :
     typedef DeimTest<POrder,IsVectorial,IsMatricial> self_type;
     static const bool is_vect = IsVectorial;
     static const bool is_mat = IsMatricial;
+    static const bool by_block = false;
 
     typedef double value_type;
     typedef Mesh<Simplex<2> > mesh_type;
@@ -316,41 +317,15 @@ private :
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( deim_suite )
 
-BOOST_AUTO_TEST_CASE( test_1 )
-{
-    boost::shared_ptr<DeimTest<1>> m( new DeimTest<1> );
-    m->run();
-}
-
-
-BOOST_AUTO_TEST_CASE( test_2 )
-{
-    boost::shared_ptr<DeimTest<2>> m( new DeimTest<2> );
-    m->run();
-}
-
 BOOST_AUTO_TEST_CASE( test_3 )
 {
     boost::shared_ptr<DeimTest<3>> m( new DeimTest<3> );
     m->run();
 }
 
-BOOST_AUTO_TEST_CASE( test_1v )
-{
-    boost::shared_ptr<DeimTest<1,true>> m( new DeimTest<1,true> );
-    m->run();
-}
-
-
 BOOST_AUTO_TEST_CASE( test_2v )
 {
     boost::shared_ptr<DeimTest<2,true>> m( new DeimTest<2,true> );
-    m->run();
-}
-
-BOOST_AUTO_TEST_CASE( test_3v )
-{
-    boost::shared_ptr<DeimTest<3,true>> m( new DeimTest<3,true> );
     m->run();
 }
 
@@ -360,35 +335,9 @@ BOOST_AUTO_TEST_CASE( test_m1 )
     m->run();
 }
 
-
-BOOST_AUTO_TEST_CASE( test_m2 )
-{
-    boost::shared_ptr<DeimTest<2,false,true>> m( new DeimTest<2,false,true> );
-    m->run();
-}
-
-BOOST_AUTO_TEST_CASE( test_m3 )
-{
-    boost::shared_ptr<DeimTest<3,false,true>> m( new DeimTest<3,false,true> );
-    m->run();
-}
-
 BOOST_AUTO_TEST_CASE( test_m1v )
 {
     boost::shared_ptr<DeimTest<1,true,true>> m( new DeimTest<1,true,true> );
-    m->run();
-}
-
-
-BOOST_AUTO_TEST_CASE( test_m2v )
-{
-    boost::shared_ptr<DeimTest<2,true,true>> m( new DeimTest<2,true,true> );
-    m->run();
-}
-
-BOOST_AUTO_TEST_CASE( test_m3v )
-{
-    boost::shared_ptr<DeimTest<3,true,true>> m( new DeimTest<3,true,true> );
     m->run();
 }
 
