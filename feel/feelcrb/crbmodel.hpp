@@ -368,13 +368,16 @@ public:
             //in this case, we use linear part of bilinear form a
             //as the inner product
             auto muref = this->refParameter();
-            auto betaqm = computeBetaLinearDecompositionA( muref );
             M_inner_product_matrix = this->newMatrix();
             M_inner_product_matrix->zero();
-            for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
+            if ( M_linearAqm.size() )
             {
-                for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
-                    M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
+                auto betaqm = computeBetaLinearDecompositionA( muref );
+                for ( size_type q = 0; q < M_QLinearDecompositionA; ++q )
+                {
+                    for(size_type m = 0; m < mMaxLinearDecompositionA(q); ++m )
+                        M_inner_product_matrix->addMatrix( betaqm[q][m], M_linearAqm[q][m] );
+                }
             }
 
             //check that the matrix is filled, else we take energy matrix
@@ -1502,7 +1505,7 @@ public:
                     }
                 }
 
-                if( M_has_eim )
+                if( M_has_eim && !is_linear )
                 {
                     M_linearAqm = M_model->computeLinearDecompositionA();
                     M_QLinearDecompositionA = M_linearAqm.size();
