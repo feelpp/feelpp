@@ -1464,7 +1464,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
             __ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(M_rb[i]) );
     }
 
-    serializeByBlock<Archive,space_ptrtype,block_rb_basis_type>( __ar, M_n_block_rb, Rh, M_block_rb );
+    if ( M_n_block_rb.size() )
+        serializeByBlock<Archive,space_ptrtype,block_rb_basis_type>( __ar, M_n_block_rb, Rh, M_block_rb );
 
 }
 
