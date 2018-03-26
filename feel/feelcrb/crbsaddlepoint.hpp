@@ -1699,9 +1699,10 @@ double
 CRBSaddlePoint<TruthModelType>::onlineResidual( int Ncur, parameter_type const& mu,
                                                 vectorN_type Un ) const
 {
+    tic();
     double res0 = onlineResidualSP<0>( Ncur, mu, Un );
     double res1 = onlineResidualSP<1>( Ncur, mu, Un );
-
+    toc("online rez");
     return std::sqrt( res0 + res1 );
 }
 
@@ -1735,12 +1736,12 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
     }
     else
     {
-        // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
-        //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-        //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-        // else
-        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-            this->M_model->computeBetaQm( this->expansion( Un, Ncur ), mu );
+        if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                this->M_model->computeBetaQm( Un, mu/*, N*/ );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                this->M_model->computeBetaQm( this->expansion( Un, Ncur ), mu );
     }
 
     beta_vector_type betaLhs = betaAqm;
