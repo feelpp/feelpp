@@ -387,7 +387,6 @@ public :
         }
         M_solutions.clear();
 
-
         updateSubMesh();
 
         this->saveDB();
@@ -418,6 +417,7 @@ public :
             M_M++;
         }
         M_solutions.clear();
+        rebuildMap();
         cout <<"===========================================\n";
         cout << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
         toc( name() + " : Reassemble "+std::to_string(M_M)+" basis" );
@@ -494,6 +494,8 @@ public :
     }
 
 protected :
+    virtual void rebuildMap()=0;
+
     //! add a new Tensor in the base, evaluated for parameter \p mu
     void addNewVector( parameter_type const& mu )
     {
@@ -794,6 +796,7 @@ protected :
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
     std::vector<ptsset_type> M_ptsset;
     std::set<int> M_elts_ids;
+    std::vector<int> M_n_block_rb;
 
     solutionsmap_type M_solutions;
 
@@ -833,6 +836,7 @@ public :
     typedef typename super_type::element_type element_ptrtype;
     typedef typename super_type::mesh_type mesh_type;
     typedef typename super_type::space_type space_type;
+    typedef typename super_type::space_ptrtype space_ptrtype;
     typedef typename super_type::rbspace_ptrtype rbspace_ptrtype;
     typedef typename super_type::rangespace_type rangespace_type;
 
@@ -963,6 +967,8 @@ public :
     void updateRb( rbspace_ptrtype const& XN, mpl::true_ )
     {
         BOOST_STATIC_ASSERT( space_type::is_composite );//<< "Use of CBR block but space is not composite\n";
+        if ( !this->M_n_block_rb.size() )
+            this->M_n_block_rb.resize( space_type::nSpaces );
 
         rangespace_type range;
         auto builder = UpdateRbByBlock( this, XN );
@@ -1004,6 +1010,11 @@ public :
     }
 
 private :
+    void rebuildMap() override
+    {
+        this->M_map->init( Rh, M_model->functionSpace() );
+    }
+
     struct UpdateRbByBlock
     {
         UpdateRbByBlock( self_type* deim,  rbspace_ptrtype const& XN ):
@@ -1014,9 +1025,9 @@ private :
         template <typename T>
         void operator()( T const& t ) const
         {
-            auto subXN = m_XN->template functionSpace<T::value>();
+            auto subXN = m_XN->template rbFunctionSpace<T::value>();
             auto subRh = m_deim->Rh->template functionSpace<T::value>();
-            auto wn = subXN->pribalRB();
+            auto wn = subXN->primalRB();
 
             m_deim->template subRb<T::value>().resize( wn.size() );
             for( int i=0; i<wn.size(); i++ )
@@ -1024,6 +1035,8 @@ private :
                 m_deim->template subRb<T::value>()[i] = subRh->elementPtr();
                 m_deim->M_map->template project<T::value>( *(m_deim->template subRb<T::value>()[i]), *wn[i] );
             }
+
+            m_deim->M_n_block_rb[T::value] = wn.size();
         }
 
     private :
@@ -1080,6 +1093,86 @@ private :
 protected :
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, bool online=false )=0;
     virtual tensor_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false )=0;
+
+    struct UdpateEltsIdComposite
+    {
+        UdpateEltsIdComposite( space_ptrtype const& Xh, std::vector<int> const& index ) :
+            m_Xh( Xh ),
+            m_index( index )
+        {}
+
+        template <typename T>
+        void operator()( T const& t ) const
+        {
+            auto subXh = m_Xh->template functionSpace<T::value>();
+            auto mesh = m_Xh->mesh();
+            for ( auto index : m_index )
+            {
+                auto searchGpDof = m_Xh->dof()->searchGlobalProcessDof( index );
+                if (  boost::get<0>( searchGpDof ) )
+                {
+                    size_type gpdof = boost::get<1>( searchGpDof );
+                    int space = m_Xh->dof()->databaseIndexFromContainerId( gpdof );
+                    if ( space==T::value )
+                    {
+                        gpdof = m_Xh->dof()->containerIdToDofId( space, gpdof );
+                        CHECK( gpdof!=invalid_size_type_value ) <<"Dof not found\n";
+                        for ( auto const& dof : subXh->dof()->globalDof( gpdof ) )
+                        {
+                            size_type eltId = dof.second.elementId();
+                            if ( mesh->element( eltId ).isGhostCell() )
+                                continue;
+                            this->m_elts_ids.insert( eltId );
+                        }
+                    }
+                }
+            }
+        }
+
+        std::set<int> elts() { return m_elts_ids; }
+
+    private:
+        space_ptrtype m_Xh;
+        std::vector<int> m_index;
+        mutable std::set<int> m_elts_ids;
+    };
+
+    void updateEltsId( std::vector<int> const& index_list )
+    {
+        this->M_elts_ids.clear();
+        return updateEltsId( index_list, mpl::bool_<space_type::is_composite>() );
+    }
+
+    void updateEltsId( std::vector<int> const& index_list, mpl::true_ )
+    {
+        UdpateEltsIdComposite builder( this->M_model->functionSpace(), index_list );
+        rangespace_type range;
+        boost::fusion::for_each( range, builder );
+        this->M_elts_ids = builder.elts();
+    }
+    void updateEltsId( std::vector<int> const& index_list, mpl::false_ )
+    {
+        auto Xh = this->M_model->functionSpace();
+        auto mesh = Xh->mesh();
+
+        for ( auto index : index_list )
+        {
+            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
+            if ( boost::get<0>( searchGpDof ) )
+            {
+                size_type gpdof = boost::get<1>( searchGpDof );
+                for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
+                {
+                    size_type eltId = dof.second.elementId();
+                    if ( mesh->element( eltId ).isGhostCell() )
+                        continue;
+                    this->M_elts_ids.insert( eltId );
+                }
+            }
+        }
+    }
+
+
 
 protected :
     model_ptrtype M_model, M_online_model;
@@ -1141,28 +1234,13 @@ private :
 
 
 private :
+
     virtual void updateSubMesh() override
     {
         auto Xh = this->M_model->functionSpace();
         auto mesh = Xh->mesh();
 
-        this->M_elts_ids.clear();
-
-        for ( auto index : this->M_index )
-        {
-            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-            if ( boost::get<0>( searchGpDof ) )
-            {
-                size_type gpdof = boost::get<1>( searchGpDof );
-                for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
-                {
-                    size_type eltId = dof.second.elementId();
-                    if ( mesh->element( eltId ).isGhostCell() )
-                        continue;
-                    this->M_elts_ids.insert( eltId );
-                }
-            }
-        }
+        this->updateEltsId( this->M_index );
 
         auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
         saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
@@ -1251,40 +1329,14 @@ private :
         auto Xh = this->M_model->functionSpace();
         auto mesh = Xh->mesh();
 
+        std::vector<int> my_index;
         for ( auto index : this->M_index )
         {
-            int i1 = index.first;
-            int i2 = index.second;
-            bool is_same = (i1==i2);
-
-            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( i1 );
-            if ( boost::get<0>( searchGpDof ) )
-            {
-                size_type gpdof = boost::get<1>( searchGpDof );
-                for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
-                {
-                    size_type eltId = dof.second.elementId();
-                    if ( Xh->mesh()->element( eltId ).isGhostCell() )
-                        continue;
-                    this->M_elts_ids.insert( eltId );
-                }
-            }
-            if ( !is_same )
-            {
-                searchGpDof = Xh->dof()->searchGlobalProcessDof( i2 );
-                if ( boost::get<0>( searchGpDof ) )
-                {
-                    size_type gpdof = boost::get<1>( searchGpDof );
-                    for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
-                    {
-                        size_type eltId = dof.second.elementId();
-                        if ( Xh->mesh()->element( eltId ).isGhostCell() )
-                            continue;
-                        this->M_elts_ids.insert( eltId );
-                    }
-                }
-            }
+            my_index.push_back( index.first );
+            if ( index.first!=index.second )
+                my_index.push_back( index.second );
         }
+        this->updateEltsId( my_index );
 
         // create new submesh with the new elements and reread it in sequential
         auto submesh = createSubmesh( mesh, idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()) );
@@ -1320,6 +1372,58 @@ private :
 };
 
 
+template<class Archive, class SpaceType, typename RbType >
+struct SerializeByBlock
+{
+    SerializeByBlock( Archive & ar, std::vector<int> const& n,  SpaceType const& Rh, RbType& rb  ) :
+        m_ar( ar ),
+        m_n( n ),
+        m_Rh( Rh ),
+        m_rb( rb )
+        {}
+
+    template <typename T>
+    void operator()( T const& t ) const
+    {
+        if ( Archive::is_loading::value )
+        {
+            if ( fusion::at_c<T::value>( m_rb ).size()!=m_n[T::value] )
+            {
+                auto subRh = m_Rh->template functionSpace<T::value>();
+                for ( int i=0; i<m_n[T::value]; i++ )
+                    fusion::at_c<T::value>( m_rb ).push_back( subRh->elementPtr() );
+                for ( int i=0; i<m_n[T::value]; i++ )
+                    m_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(fusion::at_c<T::value>( m_rb )[i]) );
+            }
+        }
+        else
+            for ( int i=0; i<m_n[T::value]; i++ )
+                m_ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(fusion::at_c<T::value>( m_rb )[i]) );
+    }
+
+
+private :
+    Archive& m_ar;
+    std::vector<int> const& m_n;
+    SpaceType const& m_Rh;
+    RbType& m_rb;
+
+};
+
+template<class Archive, class SpaceType, typename RbType >
+void
+serializeByBlock( Archive & ar, std::vector<int> const& n,  SpaceType const& Rh, RbType& rb, typename std::enable_if<SpaceType::element_type::is_composite>::type* = nullptr  )
+{
+    SerializeByBlock<Archive,SpaceType,RbType> s( ar, n, Rh, rb );
+    mpl::range_c< int, 0, SpaceType::element_type::nSpaces > range;
+    fusion::for_each( range, s );
+}
+template<class Archive, class SpaceType, typename RbType >
+void
+serializeByBlock( Archive & ar, std::vector<int> const& n,  SpaceType const& Rh, RbType& rb, typename std::enable_if<!SpaceType::element_type::is_composite>::type* = nullptr  )
+{}
+
+
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 template<class Archive>
@@ -1340,10 +1444,12 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
     DVLOG(2) << "M_n_rb saved/loaded\n";
     __ar & BOOST_SERIALIZATION_NVP( M_mus );
     DVLOG(2) << "M_mus saved/loaded\n";
+    __ar & BOOST_SERIALIZATION_NVP( M_n_block_rb );
+    DVLOG(2) << "M_n_block_rb saved/loaded\n";
 
     if ( Archive::is_loading::value )
     {
-        if ( M_rb.size()==0 && Rh )
+        if ( M_rb.size()!=M_n_rb  )
         {
             for(int i = 0; i < M_n_rb; i++ )
                 M_rb.push_back( Rh->elementPtr() );
@@ -1357,6 +1463,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::serialize(Archive & __ar, con
         for( int i = 0; i < M_n_rb; ++ i )
             __ar & BOOST_SERIALIZATION_NVP( unwrap_ptr(M_rb[i]) );
     }
+
+    serializeByBlock<Archive,space_ptrtype,block_rb_basis_type>( __ar, M_n_block_rb, Rh, M_block_rb );
 
 }
 
