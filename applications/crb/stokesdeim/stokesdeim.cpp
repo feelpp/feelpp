@@ -64,13 +64,19 @@ void StokesDeim::initModel()
     this->M_Aqm.resize(1);
     this->M_Aqm[0] = this->mdeim()->q();
 
-    this->M_betaFqm.resize(1);
+    this->M_betaFqm.resize(2);
     this->M_betaFqm[0].resize(1);
     this->M_betaFqm[0][0].resize(1);
-    this->M_Fqm.resize(1);
+    this->M_betaFqm[1].resize(1);
+    this->M_betaFqm[1][0].resize(1);
+    this->M_Fqm.resize(2);
     this->M_Fqm[0].resize(1);
     this->M_Fqm[0][0].resize(1);
     this->M_Fqm[0][0][0]=backend()->newVector(Xh);
+    this->M_Fqm[1].resize(1);
+    this->M_Fqm[1][0].resize(1);
+    this->M_Fqm[1][0][0]=backend()->newVector(Xh);
+
 
     auto U = Xh->element();
     auto V = Xh->element();
@@ -80,18 +86,19 @@ void StokesDeim::initModel()
     auto q = V.template element<1>();
 
     auto f0 = form1( _test=Xh, _vector=this->M_Fqm[0][0][0] );
+    auto f1 = form1( _test=Xh, _vector=this->M_Fqm[1][0][0] );
 
     auto energy = form2( _trial=Xh, _test=Xh );
     energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f0, _element=u,
                   _expr=4*Py()*(1-Py())*oneX() );
 
-    auto f = form1( _test=Xh );
     energy = integrate( elements(mesh), inner(gradt(u),grad(v))
                         + inner(idt(p),id(q)) );
-    energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f, _element=u,
+    energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f1, _element=u,
                   _expr=4*Py()*(1-Py())*oneX(), _type="elimination_symmetric" );
-
     this->addEnergyMatrix( energy );
+
+    f1 = integrate( markedfaces(mesh,"midflux"), inner(oneX(),id(u)) );
 }
 
 StokesDeim::beta_type
@@ -103,6 +110,7 @@ StokesDeim::computeBetaQm( parameter_type const& mu )
         M_betaAqm[0][m] = Acoeff(m);
 
     M_betaFqm[0][0][0]=1;
+    M_betaFqm[1][0][0]=1./(1.-mu[1]);
 
     return boost::make_tuple( this->M_betaAqm, M_betaFqm );
 }
@@ -174,10 +182,15 @@ StokesDeim::output( int output_index, parameter_type const& mu ,
 {
     double output = 0.0;
     auto mesh = this->functionSpace()->mesh();
+    auto u0 = u.template element<0>();
 
     if ( output_index==0 )
     {
 
+    }
+    else if ( output_index==1 )
+    {
+        output = 1./(.1-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
     }
 
     return output;
