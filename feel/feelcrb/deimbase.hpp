@@ -204,10 +204,9 @@ public :
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu and a FE solution \p u
     vectorN_type beta( parameter_type const& mu, element_type const& u, int M = -1 )
         {
-            // in this case the given element_type u is //
-            // so we cannot use the online model to assemble
-            // this function should not be called online !
-            return computeCoefficient( mu, u, false, M );
+            auto ur = Rh->element();
+            M_map->project( ur, u );
+            return computeCoefficient( mu, ur, true, M );
         }
 
     //! \Return the basis tensors \f$ T^m\f$ of the affine approximation
