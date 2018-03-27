@@ -194,6 +194,7 @@ public :
                 M_last_beta=computeCoefficient( mu, M );
             }
             return M_last_beta;
+            //return computeCoefficient( mu, M );
         }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu and a RB solution \p urb
@@ -461,7 +462,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_restart( true ),
     M_use_ser( ioption(_name="ser.eim-frequency") || ioption(_name="ser.rb-frequency") ),
     M_ser_use_rb( false ),
-    M_map( new spaces_map_type )
+    M_map( new spaces_map_type ),
+    M_last_mu( Dmu->element() )
 {
     using Feel::cout;
     LOG(INFO) <<"DEIMBase constructor begin\n";
