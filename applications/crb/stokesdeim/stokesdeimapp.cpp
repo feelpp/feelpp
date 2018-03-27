@@ -1,5 +1,5 @@
 /* this file is generated automatically */
-#include <stokesdeim.hpp>
+#include "stokesdeim.hpp"
 #include <feel/feelcrb/opusapp.hpp>
 
 int main( int argc, char** argv )
