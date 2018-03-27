@@ -59,8 +59,8 @@ public :
 
     DEIM( model_ptrtype model,
           sampling_ptrtype sampling, std::string prefix,
-          std::string const& dbfilename, std::string const& dbdirectory ) :
-        super_type( model, sampling, prefix, dbfilename, dbdirectory )
+          std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
+        super_type( model, sampling, prefix, dbfilename, dbdirectory, tag )
     {
         this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
         this->init();
@@ -73,15 +73,15 @@ private :
     vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
         if ( online )
-            return this->M_online_model->assembleForDEIM(mu);
-       return this->M_model->assembleForDEIM(mu);
+            return this->M_online_model->assembleForDEIM(mu,this->M_tag);
+        return this->M_model->assembleForDEIM(mu,this->M_tag);
     }
 
     vector_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
     {
         if ( online )
-            return this->M_online_model->assembleForDEIMnl(mu,u);
-        return this->M_model->assembleForDEIMnl(mu,u);
+            return this->M_online_model->assembleForDEIMnl(mu,u,this->M_tag);
+        return this->M_model->assembleForDEIMnl(mu,u,this->M_tag);
     }
 
     virtual void updateSubMesh() override
@@ -149,11 +149,12 @@ BOOST_PARAMETER_FUNCTION(
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( tag, *( boost::is_convertible<mpl::_,int> ), 0 )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_deim_return<Args>::type deim_type;
-    return boost::make_shared<deim_type>( model, sampling, prefix, filename, directory );
+    return boost::make_shared<deim_type>( model, sampling, prefix, filename, directory, tag );
 }
 
 

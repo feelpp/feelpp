@@ -721,23 +721,23 @@ public :
         return M_mdeims;
     }
 
-    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
     {
         return nullptr;
     }
 
-    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return nullptr;
     }
 
 
-    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu )
+    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
     {
         return nullptr;
     }
 
-    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u )
+    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return nullptr;
     }

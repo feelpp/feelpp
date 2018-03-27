@@ -36,7 +36,7 @@ class FEELPP_EXPORT StokesDeim :
     void initModel() override;
     beta_type computeBetaQm( parameter_type const& mu ) override;
     value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
-    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu ) override;
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
 };
 
 
