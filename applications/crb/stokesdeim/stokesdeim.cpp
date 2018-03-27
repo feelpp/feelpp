@@ -54,7 +54,7 @@ void StokesDeim::initModel()
     }
 
     auto d = ::Feel::mdeim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
-                    _sampling=Pset );
+                            _sampling=Pset, _tag=0 );
     this->addMdeim( d );
     this->mdeim()->run();
 
@@ -103,7 +103,7 @@ StokesDeim::computeBetaQm( parameter_type const& mu )
 
 
 StokesDeim::sparse_matrix_ptrtype
-StokesDeim::assembleForMDEIM( parameter_type const& mu )
+StokesDeim::assembleForMDEIM( parameter_type const& mu, int const& tag )
 {
     tic();
     double nu = 1;

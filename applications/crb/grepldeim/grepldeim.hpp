@@ -118,7 +118,7 @@ public :
 
     void assemble();
 
-    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         vector_ptrtype V = this->M_backend->newVector(Xh);
         auto temp = Xh->element(V,0);

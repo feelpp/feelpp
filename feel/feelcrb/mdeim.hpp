@@ -58,8 +58,8 @@ public :
         {}
 
     MDEIM( model_ptrtype model, sampling_ptrtype sampling, std::string prefix,
-           std::string const& dbfilename, std::string const& dbdirectory ) :
-        super_type( model, sampling, prefix, dbfilename, dbdirectory )
+           std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
+        super_type( model, sampling, prefix, dbfilename, dbdirectory, tag )
         {
             this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-matrices") );
             this->init();
@@ -72,15 +72,15 @@ private :
     sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
         {
             if ( online )
-                return this->M_online_model->assembleForMDEIM(mu);
-            return this->M_model->assembleForMDEIM(mu);
+                return this->M_online_model->assembleForMDEIM( mu, this->M_tag );
+            return this->M_model->assembleForMDEIM( mu, this->M_tag );
         }
 
     sparse_matrix_ptrtype modelAssemble( parameter_type const& mu, element_type const& u, bool online=false ) override
         {
             if ( online )
-                return this->M_online_model->assembleForMDEIMnl(mu,u);
-            return this->M_model->assembleForMDEIMnl(mu,u);
+                return this->M_online_model->assembleForMDEIMnl(mu,u,this->M_tag);
+            return this->M_model->assembleForMDEIMnl(mu,u,this->M_tag);
         }
 
     void updateSubMesh() override
@@ -159,11 +159,12 @@ BOOST_PARAMETER_FUNCTION(
                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( filename, *( boost::is_convertible<mpl::_,std::string> ), "" )
                            ( directory, *( boost::is_convertible<mpl::_,std::string> ), "" )
+                           ( tag, *( boost::is_convertible<mpl::_,int> ), 0 )
                            ) // optionnal
                          )
 {
     typedef typename Feel::detail::compute_mdeim_return<Args>::type mdeim_type;
-    return boost::make_shared<mdeim_type>( model, sampling, prefix, filename, directory );
+    return boost::make_shared<mdeim_type>( model, sampling, prefix, filename, directory, tag );
 }
 
 

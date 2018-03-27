@@ -72,7 +72,7 @@ public :
 
     //! Constructor from model
     DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix,
-               std::string const& dbfilename, std::string const& dbdirectory);
+               std::string const& dbfilename, std::string const& dbdirectory, int tag );
 
     //! Destructor
     virtual ~DEIMModel() {}
@@ -138,6 +138,7 @@ protected :
 
 protected :
     model_ptrtype M_model, M_online_model;
+    int M_tag;
     using super_type::M_write_nl_solutions;
     using super_type::M_write_nl_directory;
     using super_type::M_rb;
@@ -266,11 +267,12 @@ private :
 
 
 template <typename ModelType, typename TensorType>
-DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory) :
+DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
     super_type( model->functionSpace(), model->parameterSpace(),
                 sampling, model->uuid(), model->modelName(),
                 prefix, dbfilename, dbdirectory ),
-    M_model( model )
+    M_model( model ),
+    M_tag( tag )
 {
     this->M_online_model = model_ptrtype( new model_type() );
     this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
