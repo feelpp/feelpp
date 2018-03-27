@@ -1,6 +1,6 @@
 #include <feel/feelcrb/crbsaddlepointplugin.hpp>
 
-#include <stokesdeim.hpp>
+#include "stokesdeim.hpp"
 
 namespace Feel
 {
@@ -80,11 +80,17 @@ void StokesDeim::initModel()
     auto q = V.template element<1>();
 
     auto f0 = form1( _test=Xh, _vector=this->M_Fqm[0][0][0] );
+
     auto energy = form2( _trial=Xh, _test=Xh );
+    energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f0, _element=u,
+                  _expr=4*Py()*(1-Py())*oneX() );
+
+    auto f = form1( _test=Xh );
     energy = integrate( elements(mesh), inner(gradt(u),grad(v))
                         + inner(idt(p),id(q)) );
+    energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f, _element=u,
+                  _expr=4*Py()*(1-Py())*oneX(), _type="elimination_symmetric" );
 
-    energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f0, _element=u, _expr=4*Py()*(1-Py())*oneX() );
     this->addEnergyMatrix( energy );
 }
 

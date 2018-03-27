@@ -28,6 +28,7 @@ install(FILES stokesdeim.hpp DESTINATION include/feelpp/crb/stokesdeim COMPONENT
 set(FEELPP_CRB_STOKESDEIM_LIBRARIES ${CRB_LIB_STOKESDEIM} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_STKOKESDEIM_LIBRARIES PARENT_SCOPE)
 
-crb_add_model(stokesdeim StokesDeim HDRS stokesdeim.hpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
+#crb_add_model(stokesdeim StokesDeim HDRS stokesdeim.hpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
+feelpp_add_application( stokesdeimapp SRCS stokesdeimapp.cpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
 
 feelpp_add_testcase(stokesdeim PREFIX feelpp_crb CATEGORY CRB)
