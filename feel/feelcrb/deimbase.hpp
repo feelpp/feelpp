@@ -187,7 +187,14 @@ public :
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu
     vectorN_type beta( parameter_type const& mu, int M = -1 )
-        { return computeCoefficient( mu, M ); }
+        {
+            if ( mu!=M_last_mu )
+            {
+                M_last_mu=mu;
+                M_last_beta=computeCoefficient( mu, M );
+            }
+            return M_last_beta;
+        }
 
     //! \return the \f$ \beta^m(\mu)\f$ for a specific parameter \p mu and a RB solution \p urb
     vectorN_type beta( parameter_type const& mu, vectorN_type urb, int M=-1 )
@@ -423,6 +430,8 @@ protected :
     space_ptrtype Rh;
 
     spaces_map_ptrtype M_map;
+    parameter_type M_last_mu;
+    vectorN_type M_last_beta;
 
 }; // Class DEIMBase
 
