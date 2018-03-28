@@ -690,7 +690,7 @@ crbOptions( std::string const& prefix )
         ;
 
     crboptions
-        .add( crbSCMOptions() );
+        .add( crbSCMOptions() ).add(deimOptions(prefix));
 
     return crboptions;
 }
