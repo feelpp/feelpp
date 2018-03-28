@@ -146,14 +146,14 @@ public :
             double norm=0;
             if ( is_mat )
             {
-                assembleForMDEIM(mu);
+                assembleForMDEIM(mu,0);
                 for ( int i=0; i<m; i++ )
                     add( -coeff(i), base[i] );
                 norm = M->linftyNorm();
             }
             else
             {
-                assembleForDEIM(mu);
+                assembleForDEIM(mu,0);
                 for ( int i=0; i<m; i++ )
                     add( -coeff(i), base[i] );
                 norm = V->linftyNorm();
@@ -203,7 +203,7 @@ public :
     }
 
 
-    vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
     {
         return assembleForDEIM( mu, mpl::bool_<is_vect>() );
     }
@@ -232,7 +232,7 @@ public :
         return V;
     }
 
-    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu)
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
     {
         auto mesh = Xh->mesh();
         auto u = Xh->element();
@@ -247,12 +247,12 @@ public :
         return M;
     }
 
-    // These 3 functions are only needed for compilation
-    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    // These functions are only needed for compilation
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return V;
     }
-    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u)
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return M;
     }
