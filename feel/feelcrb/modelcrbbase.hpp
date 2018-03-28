@@ -385,6 +385,10 @@ public :
         M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
     }
 
+    //! functions call by deim to init specific part of the model when online.
+    virtual void initOnlineModel()
+    {}
+
     //!
     //! unique id for CRB Model
     //!
