@@ -279,6 +279,7 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
 
     if ( Rh )
         M_online_model->setFunctionSpaces( Rh );
+    this->M_online_model->initOnlineModel();
 } //DEIMModel
 
 
