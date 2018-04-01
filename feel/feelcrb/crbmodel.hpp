@@ -437,7 +437,7 @@ public:
     //@{
 
 
-    virtual bool useMonolithicRbSpace() { return true; }
+    virtual bool useMonolithicRbSpace() { return !model_type::by_block; }
 
     //!
     //! world communicator
