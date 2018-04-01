@@ -142,7 +142,7 @@ public:
                 this->resize( e.size() );
                 super::operator=( e );
                 M_space = e.M_space;
-                
+
                 return *this;
             }
 
@@ -207,7 +207,7 @@ public:
 
         void check() const
             {
-#if !defined(NDEBUG)
+#if O// !defined(NDEBUG)
                 if ( !M_space->check() )
                 {
                     LOG(INFO) << "No need to check element since parameter space is no valid (yet)\n";
