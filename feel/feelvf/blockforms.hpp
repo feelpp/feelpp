@@ -442,7 +442,9 @@ public :
             cout << " . starting Solve" << std::endl;
 
             auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
-
+=======
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
+>>>>>>> origin/develop
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 

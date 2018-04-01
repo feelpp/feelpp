@@ -32,6 +32,8 @@
 #include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelcrb/crb_trilinear.hpp>
+#include <feel/feelcrb/crbsaddlepoint.hpp>
+#include <feel/feelcrb/crbmodelsaddlepoint.hpp>
 
 
 namespace Feel {
@@ -122,9 +124,9 @@ public:
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
-        M_crb( boost::make_shared<method_t>(name,crb::stage::online) ),
         M_load( crb::load::none )
         {
+            M_crb = method_t::New(name, crb::stage::online);
         }
 
     std::string const& name() const override
@@ -317,6 +319,28 @@ public:                                                                 \
     BOOST_PP_CAT(classname,Plugin)()                                    \
         :                                                               \
         CRBPlugin<classname,CRBModelTrilinear,CRBTrilinear>( BOOST_PP_STRINGIZE( strname ) ) \
+        {}                                                              \
+                                                                        \
+    /* Factory method */                                                \
+    static boost::shared_ptr<this_t> create()                           \
+        {                                                               \
+            return boost::shared_ptr<this_t>( new this_t() );           \
+        }                                                               \
+};                                                                      \
+                                                                        \
+                                                                        \
+BOOST_DLL_ALIAS( Feel::BOOST_PP_CAT(classname,Plugin)::create, BOOST_PP_CAT(create_crbplugin_,strname) )
+
+
+#define FEELPP_CRBSADDLEPOINT_PLUGIN( classname, strname )              \
+    class FEELPP_EXPORT BOOST_PP_CAT( classname, Plugin ) :             \
+        public CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>  \
+{                                                                       \
+public:                                                                 \
+    using this_t = BOOST_PP_CAT(classname,Plugin);                      \
+    BOOST_PP_CAT(classname,Plugin)()                                    \
+        :                                                               \
+        CRBPlugin<classname,CRBModelSaddlePoint,CRBSaddlePoint>( BOOST_PP_STRINGIZE( strname ) ) \
         {}                                                              \
                                                                         \
     /* Factory method */                                                \

@@ -1487,14 +1487,15 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
     //auto myelts = make_elements_wrapper<MeshType>();
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
-
+    std::unordered_set<size_type> eltIdsDone;
     for( auto it = begin; it != end; ++ it )
     {
-        auto elt = *it;
-        if ( mesh.hasElement( elt ) )
-        {
-            myelts->push_back( boost::cref( mesh.element( elt ) ) );
-        }
+        size_type eltId = *it;
+        if ( eltIdsDone.find( eltId ) != eltIdsDone.end() )
+            continue;
+        eltIdsDone.insert( eltId );
+        if ( mesh.hasElement( eltId ) )
+            myelts->push_back( boost::cref( mesh.element( eltId ) ) );
     }
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),

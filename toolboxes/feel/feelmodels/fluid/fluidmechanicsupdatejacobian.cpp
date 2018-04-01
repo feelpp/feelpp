@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -192,13 +193,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     bool Build_TransientTerm = !BuildCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
 
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
     {
         bilinearForm_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
                        _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
                        _geomap=this->geomap() );
     }
+
+    //--------------------------------------------------------------------------------------------------//
+    // user-defined additional terms
+    this->updateJacobianAdditional( J, _BuildCstPart );
 
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst

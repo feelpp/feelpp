@@ -164,11 +164,16 @@ template<typename ErrorFn, typename ErrorRate>
 int
 Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 {
-    if ( M_check )
+    if ( !M_check )
+        return true;
+
+    auto err = fn( M_solution );
+    std::vector<bool> checkSucces;
+    for( auto const& e : err )
     {
-        
-        auto err = fn( M_solution );
-        for( auto const& e : err )
+        //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
+        checkSucces.push_back( false );
+        try
         {
             //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
             try
@@ -206,11 +211,39 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
             }
             catch( std::exception const& ex )
             {
-                cout << tc::red << "Caught exception " << ex.what() << tc::reset << std::endl;
+            case Checks::NONE:
+                cout << tc::yellow << "[no checks]" << metric << e.first << "=" << e.second << tc::reset << std::endl;
+                break;
+            case Checks::EXACT:
+                cout << tc::green << "[exact verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
+                break;
+            case Checks::CONVERGENCE_ORDER:
+                cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
+                break;
             }
+            checkSucces.back() = true;
+        }
+        catch( CheckerConvergenceFailed const& ex )
+        {
+            cout << tc::red
+                 << "Checker convergence order verification failed for " << metric << e.first << std::endl
+                 << " Computed order " << ex.computedOrder() << std::endl
+                 << " Expected order " << ex.expectedOrder() << std::endl
+                 << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+        }
+        catch( CheckerExactFailed const& ex )
+        {
+            cout << tc::red
+                 << "Checker exact verification failed for " << metric << e.first << std::endl
+                 << " Computed error " << ex.computedError() << std::endl
+                 << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+        }
+        catch( std::exception const& ex )
+        {
+            cout << tc::red << "Caught exception " << ex.what() << tc::reset << std::endl;
         }
     }
-    return 0;
+    return ( std::find(checkSucces.begin(),checkSucces.end(), false ) == checkSucces.end() );
 }
 
 //!

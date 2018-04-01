@@ -23,10 +23,14 @@
 //!
 //!
 
+#if defined THERMOELECTRIC_SADDLEPOINT
 #include <feel/feelcrb/crbsaddlepoint.hpp>
 #include <feel/feelcrb/crbmodelsaddlepoint.hpp>
+#endif
 
 #include "thermoelectric-linear.hpp"
+#include <feel/feelcrb/ser.hpp>
+
 
 using namespace Feel;
 
@@ -37,7 +41,9 @@ int main( int argc, char** argv)
                      _desc=opt.add(makeThermoElectricOptions())
                      .add(crbOptions())
                      .add(crbSEROptions())
+#if defined THERMOELECTRIC_SADDLEPOINT
                      .add(crbSaddlePointOptions())
+#endif
                      .add(eimOptions())
                      .add(podOptions())
                      .add(backend_options("backend-primal"))
@@ -47,12 +53,24 @@ int main( int argc, char** argv)
 
     using rb_model_type = ThermoElectric;
     using rb_model_ptrtype = boost::shared_ptr<rb_model_type>;
-    // using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
+
+#if defined THERMOELECTRIC_SADDLEPOINT
+    using crb_model_type = CRBModelSaddlePoint<rb_model_type>;
+#else
     using crb_model_type = CRBModel<rb_model_type>;
+#endif
     using crb_model_ptrtype = boost::shared_ptr<crb_model_type>;
-    // using crb_type = CRBSaddlePoint<crb_model_type>;
+
+#if defined THERMOELECTRIC_SADDLEPOINT
+    using crb_type = CRBSaddlePoint<crb_model_type>;
+#else
     using crb_type = CRB<crb_model_type>;
+#endif
     using crb_ptrtype = boost::shared_ptr<crb_type>;
+
+    using ser_type = SER<crb_type>;
+    using ser_ptrtype = boost::shared_ptr<ser_type>;
+
     using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
     using export_vector_wn_type = typename crb_type::export_vector_wn_type;
@@ -63,53 +81,110 @@ int main( int argc, char** argv)
                           _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES);
 
     // init
+    crb::stage stage = crb::stage::offline;
     rb_model_ptrtype model = boost::make_shared<rb_model_type>(mesh);
-    crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model, crb::stage::offline);
-    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric", crbModel, crb::stage::offline);
+    crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model, stage);
+    crb_ptrtype crb = crb_type::New(model->modelName(), crbModel, stage );
+    ser_ptrtype ser = boost::make_shared<ser_type>( crb, crbModel );
 
     // offline
-    crb->offline();
+    ser->run();
 
     // online
     auto mu = model->paramFromProperties();
     int N = crb->dimension();
     int timeSteps = 1;
-    std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
-    std::vector<double> outputs(timeSteps, 0);
+
+    int output_index = ioption("crb.output-index");
 
     auto e = exporter(mesh, _name="thermoelectric");
 
     auto VTFE = model->solve(mu);
+    double truthOutput = 0;
+    if( output_index != 0 )
+        truthOutput = model->output( output_index, mu, VTFE, false);
+
     auto VFE = VTFE.template element<0>();
     auto TFE = VTFE.template element<1>();
-    auto normV = normL2( elements(model->mesh()), idv(VFE) );
-    auto normT = normL2( elements(model->mesh()), idv(TFE) );
+    auto normV = normL2( VFE.functionSpace()->template rangeElements<0>(), idv(VFE) );
+    auto normT = normL2( TFE.functionSpace()->template rangeElements<0>(), idv(TFE) );
 
-    boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
+    boost::format fmter;
+    if( output_index == 0 )
+        fmter = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
+    else
+        fmter = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6%\n");
     std::string fileName = (boost::format("cvg_%1%.dat") % model->mMaxJoule() ).str();
     fs::ofstream file( fileName );
     if( file && Environment::isMasterRank() )
     {
-        file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
-        Feel::cout << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
+        if( output_index == 0 )
+        {
+            file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
+            Feel::cout << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";
+        }
+        else
+        {
+            file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT" % "errOutput";
+            Feel::cout << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT" % "errOutput";
+        }
     }
+
+    // export basis
+    // auto exp = exporter( mesh, _name="basis" );
+    // auto wn = crb->wn();
+    // exp->add("base0", *wn[0]);
+    // auto wnmu = crb->wnmu();
+    // for( int i = 0; i < wn.size(); ++i )
+    // {
+    //     auto mun = wnmu->at(i);
+    //     std::string name = "basis";
+    //     for( int j = 0; j < mun.size(); ++j )
+    //         name = name + (boost::format("_%1%") %mun[i] ).str();
+    //     exp->add(name, unwrap_ptr(wn[i]));
+    // }
+    // exp->save();
+
+    std::vector<vectorN_type> uNs(timeSteps), uNolds(timeSteps), uNdus(timeSteps), uNduolds(timeSteps);
+    // std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
+    // std::vector<vectorN_type> uNdus(timeSteps, vectorN_type(N)),uNduolds(timeSteps, vectorN_type(N));
+    std::vector<double> outputs(timeSteps, 0);
 
     for(int n = 1; n <= N; ++n)
     {
-        crb->fixedPointPrimal(n, mu, uNs, uNolds, outputs);
+        uNs[0].setZero(n);
+        uNolds[0].setZero(n);
+        uNdus[0].setZero(n);
+        uNduolds[0].setZero(n);
+        crb->fixedPoint(n, mu, uNs, uNdus, uNolds, uNduolds, outputs, 0, boption("crb.print-rb-matrix"));
         vectorN_type uN = uNs[0];
+        double output = 0;
+        if( output_index > 0)
+            output = outputs[0];
+
         auto VTRB = crb->expansion( uN, n );
         auto VRB = VTRB.template element<0>();
         auto TRB = VTRB.template element<1>();
 
-        auto errVRB = normL2( elements(model->mesh()), idv(VRB)-idv(VFE) );
+        auto errVRB = normL2( VFE.functionSpace()->template rangeElements<0>(), idv(VRB)-idv(VFE) );
         auto errRelV = errVRB/normV;
-        auto errTRB = normL2( elements(model->mesh()), idv(TRB)-idv(TFE) );
+        auto errTRB = normL2( TFE.functionSpace()->template rangeElements<0>(), idv(TRB)-idv(TFE) );
         auto errRelT = errTRB/normT;
+        double errOutput = 0;
+        if( output_index > 0 )
+            errOutput = std::abs(output-truthOutput);
 
         if( Environment::isMasterRank() )
-            file << fmter % n % errVRB % errRelV % errTRB % errRelT;
-        Feel::cout << fmter % n % errVRB % errRelV % errTRB % errRelT;
+        {
+            if( output_index == 0 )
+                file << fmter % n % errVRB % errRelV % errTRB % errRelT;
+            else
+                file << fmter % n % errVRB % errRelV % errTRB % errRelT % errOutput;
+        }
+        if( output_index == 0 )
+            Feel::cout << fmter % n % errVRB % errRelV % errTRB % errRelT;
+        else
+            Feel::cout << fmter % n % errVRB % errRelV % errTRB % errRelT % errOutput;
 
         e->step(n)->add("TFE", TFE);
         e->step(n)->add("TRB", TRB);

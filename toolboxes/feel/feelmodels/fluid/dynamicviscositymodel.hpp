@@ -85,49 +85,69 @@ public :
     DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
 
     void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
+    {
+        std::set<std::string> eltMarkersInMesh;
+        for (auto const& markPair : mesh->markerNames() )
         {
-            std::set<std::string> eltMarkersInMesh;
-            for (auto const& markPair : mesh->markerNames() )
-            {
-                std::string meshMarker = markPair.first;
-                if ( mesh->hasElementMarker( meshMarker ) )
-                    eltMarkersInMesh.insert( meshMarker );
-            }
-
-            M_markers.clear();
-            for( auto const& m : mat )
-            {
-                auto const& matmarker = m.first;
-                if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                    continue;
-                auto const& mat = m.second;
-                std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physic();
-                if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
-                    continue;
-                M_markers.insert( matmarker );
-            }
-
-            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-            if ( M_isDefinedOnWholeMesh )
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm, _extended_doftable=useExtendedDofTable );
-            else
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
-            M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
-
-            for( auto const& m : mat )
-            {
-                auto const& mat = m.second;
-                auto const& matmarker = m.first;
-                if ( M_markers.find( matmarker ) == M_markers.end() )
-                    continue;
-
-                if ( mat.hasPropertyExprScalar("mu") )
-                    this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
-                else
-                    this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
-            }
+            std::string meshMarker = markPair.first;
+            if ( mesh->hasElementMarker( meshMarker ) )
+                eltMarkersInMesh.insert( meshMarker );
         }
 
+        M_markers.clear();
+        for( auto const& m : mat )
+        {
+            auto const& matmarker = m.first;
+            if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                continue;
+            auto const& mat = m.second;
+            std::string matphysics = ( mat.physics().empty() )? "fluid" : mat.physic();
+            if ( ( matphysics != "fluid" ) && ( matphysics != "aerothermal" ) )
+                continue;
+            M_markers.insert( matmarker );
+        }
+
+        if( M_markers.size() > 0 )
+            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+        else
+            M_isDefinedOnWholeMesh = true;
+        if ( M_isDefinedOnWholeMesh )
+            M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm, _extended_doftable=useExtendedDofTable );
+        else
+            M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
+
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            if ( M_markers.find( matmarker ) == M_markers.end() )
+                continue;
+
+            if ( mat.hasPropertyExprScalar("mu") )
+                this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
+            else
+                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+        }
+    }
+    void updateForUse( space_ptrtype const& space, ModelMaterials const& mat )
+    {
+        M_isDefinedOnWholeMesh = true;
+        M_space = space;
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
+
+        M_markers.clear();
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            M_markers.insert( matmarker );
+            if ( mat.hasPropertyExprScalar("mu") )
+                this->setDynamicViscosity( mat.propertyExprScalar("mu"), matmarker );
+            else
+                this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+        }
+    }
 
     bool checkDynamicViscosityLaw() const
     {

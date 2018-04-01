@@ -27,7 +27,8 @@ getReferenceTriangleMesh()
     R.setMarker(_type="line",_name="Neumann",_marker3=true);
     R.setMarker(_type="line",_name="Dirichlet",_marker1=true,_marker2=true);
     R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeq()),_name= "domainRef" );
+    return R.createMesh(_mesh=new Mesh<Simplex<2,O,2>>(Environment::worldCommSeq()),
+                        _name= (boost::format("domainRef_p%1%")%Environment::worldComm().rank()).str() );
 }
 
 template<int O=1>

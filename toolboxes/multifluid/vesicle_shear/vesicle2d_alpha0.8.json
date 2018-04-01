@@ -7,8 +7,8 @@
     {
         "x0": "0.",
         "y0": "0.",
-        "a0": "1.0108701938192626",
-        "b0": "0.9786090268746284"
+        "a0": "1.485836479448006",
+        "b0": "0.6730215698894606"
     },
 
     "InitialConditions":
@@ -24,9 +24,20 @@
             }
         }
     },
+    "BoundaryConditions":
+    {
+	"multifluid.levelset1":
+	{
+	    "inflow":
+	    {
+		"UpperLeft": { "expr":"0" },
+		"LowerRight": { "expr":"0" }
+	    }
+	}
+    },
     "PostProcess":
     {
-        "Fields": ["modgradphi"],
+        "Fields": ["modgradphi", "gradphi"],
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }
