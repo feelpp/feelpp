@@ -1,11 +1,7 @@
 {
-    "Name": "Square2d",
-    "ShortName":"Square2d",
+    "Name": "Square3d",
+    "ShortName":"Square3d",
     "Model":"Navier-Stokes",
-    "Parameters":
-    {
-        "ubar":"0.2"
-    },
     "BoundaryConditions":
     {
         "velocity":
@@ -14,25 +10,27 @@
             {
                 "Left":
                 {
-                    "expr":"{ ubar*(1-(y-0.5)*(y-0.5)/(0.5*0.5)),0}:ubar:y"
+                    "expr":"{0,0,0}"
                 },
                 "Top":
                 {
-                    "expr":"{0,0}"
+                    "expr":"{0,0,0}"
                 },
                 "Bottom":
                 {
-                    "expr":"{0,0}"
-                }
-            }
-        },
-        "fluid":
-        {
-            "outlet":
-            {
+                    "expr":"{0,0,0}"
+                },
                 "Right":
                 {
-                    "expr":"0" 
+                    "expr":"{0,0,0}"
+                },
+                "Front":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Back":
+                {
+                    "expr":"{0,0,0}"
                 }
             }
         }

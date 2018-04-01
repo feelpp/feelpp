@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -257,6 +258,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         M_modelName="Stokes";
         M_solverName="LinearSystem";
     }
+    else if ( type == "StokesTransient" )
+    {
+        M_modelName="StokesTransient";
+        M_solverName="LinearSystem";
+    }
     else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
     {
         M_modelName="Navier-Stokes";
@@ -308,6 +314,18 @@ std::string const&
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solverName() const
 {
     return M_solverName;
+}
+
+//---------------------------------------------------------------------------------------------------------//
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+bool
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
+{
+    if( this->modelName() == "Stokes" )
+        return true;
+    else
+        return this->isStationary();
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -871,6 +889,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
         myPrecBlockNs->setParameterValues( paramValues );
     }
+    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    {
+        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        myOpPCD->setParameterValues( paramValues );
+    }
+
 
     if ( this->M_useThermodynModel && this->M_useGravityForce )
         this->M_thermodynModel->updateParameterValues();
@@ -1018,12 +1043,38 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( sparse_matrix_ptrtype const& mat,
                                                                      vector_ptrtype const& vecSol ) const
 {
-    if ( this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
+    if ( this->algebraicFactory() )// && this->algebraicFactory()->preconditionerTool()->hasInHousePreconditioners( "blockns" ) )
     {
+        if ( M_preconditionerAttachPMM )
+            this->updateInHousePreconditionerPMM( mat, vecSol );
         this->updateInHousePreconditionerPCD( mat,vecSol );
     }
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& /*mat*/,vector_ptrtype const& vecSol) const
+{
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
+        return;
+    sparse_matrix_ptrtype pmmMat;
+    if ( hasAlreadyBuiltPMM )
+        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+    else
+    {
+        pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
+        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+    }
+    CHECK( pmmMat ) << "pmmMat is not initialized";
+
+    auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
+    auto const& p = this->fieldPressure();
+    auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+    massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
+    pmmMat->close();
+    M_pmmNeedUpdate = false;
+}
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat,vector_ptrtype const& vecSol) const
@@ -1038,12 +1089,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         boost::shared_ptr< PreconditionerBlockNS<space_type, properties_space_type> > myPrecBlockNs =
             boost::dynamic_pointer_cast< PreconditionerBlockNS<space_type, properties_space_type> >( this->algebraicFactory()->preconditionerTool()->inHousePreconditioners( "blockns" ) );
 
-        auto myalpha = (!this->isStationary())*idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0);
-        myPrecBlockNs->setAlpha( myalpha );
+        if ( !this->isStationaryModel() )
+            myPrecBlockNs->setAlpha( idv(this->densityViscosityModel()->fieldRho())*this->timeStepBDF()->polyDerivCoefficient(0) );
         myPrecBlockNs->setMu( idv(this->densityViscosityModel()->fieldMu()) );
         myPrecBlockNs->setRho( idv(this->densityViscosityModel()->fieldRho()) );
 
-        if ( this->modelName() == "Stokes" )
+        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
         {
             myPrecBlockNs->update( mat );
         }
@@ -1066,10 +1117,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         }
         else if ( this->modelName() == "Navier-Stokes" )
         {
-            auto U = this->functionSpace()->element();
-            // copy vector values in fluid element
-            for ( size_type k=0;k<this->functionSpace()->nLocalDofWithGhost();++k )
-                U(k) = vecSol->operator()(/*rowStartInVector+*/k);
+            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
             auto u = U.template element<0>();
             auto const& rho = this->densityViscosityModel()->fieldRho();
 
@@ -1087,6 +1135,57 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 
         this->log("FluidMechanics","updateInHousePreconditionerPCD", "finish");
     }
+
+    if ( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") )
+    {
+        boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
+            boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
+        auto const& rho = this->densityViscosityModel()->fieldRho();
+        auto const& mu = this->densityViscosityModel()->fieldMu();
+        bool hasAlpha = !this->isStationaryModel();
+        double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
+        auto alpha = idv(rho)*coeffAlpha;
+        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+        {
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),idv(mu), -idv(rho)*idv(this->meshVelocity()), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),idv(mu), zero<nDim,1>(), alpha, false, hasAlpha );
+        }
+        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
+        {
+            auto BetaU = this->timeStepBDF()->poly();
+            auto betaU = BetaU.template element<0>();
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),idv(mu), idv(rho)*( idv(betaU)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),idv(mu), idv(rho)*idv(betaU) , alpha, true, hasAlpha );
+        }
+        else if ( this->modelName() == "Navier-Stokes" )
+        {
+            auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
+            auto u = U.template element<0>();
+            auto p = U.template element<1>();
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel());
+            if (this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*( idv(u)-idv(this->meshVelocity()) ), alpha, true, hasAlpha );
+#endif
+            }
+            else
+                myOpPCD->update(idv(rho),myViscosity/*idv(mu)*/, idv(rho)*idv(u) , alpha, true, hasAlpha );
+        }
+    }
+
 }
 
 
@@ -2127,7 +2226,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
-    myblockGraph.close();
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;
@@ -2140,6 +2238,8 @@ typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
     if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
         return blockGraph(0,0);
     else

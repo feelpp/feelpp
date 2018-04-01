@@ -612,13 +612,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     fs::path gp = __geoname;
     std::string _name = gp.stem().string();
 
-    static bool gmshIsInit =false;
-
-    if ( ! gmshIsInit )
-    {
-        gmshIsInit=true;
-        GmshInitialize();
-    }
+    CTX _backup = *(CTX::instance());
     LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::numberOfProcessors() << "\n";
     LOG(INFO) << "[Gmsh::generate] env.part: " <<  Environment::worldComm().size() << "\n";
     LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
@@ -699,6 +693,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
         }
 
     }
+    // copy context (in order to allow multiple calls)
+    *(CTX::instance()) = _backup ;
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
@@ -723,6 +719,8 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         if ( !fs::exists(directory) )
             fs::create_directories( directory );
 
+        CTX _backup = *(CTX::instance());
+
         M_gmodel=boost::make_shared<GModel>();
         M_gmodel->readMSH( nameMshInput );
 
@@ -745,6 +743,9 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         M_gmodel->writeMSH( nameMshOutput, 2.2, CTX::instance()->mesh.binary );
 
         M_gmodel->destroy();
+
+        // copy context (in order to allow multiple calls)
+        *(CTX::instance()) = _backup ;
     }
 
     if ( mpi::environment::initialized() )

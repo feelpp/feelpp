@@ -60,25 +60,44 @@ public :
     DensityViscosityModel( DensityViscosityModel const& app  ) = default;
 
     void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm, bool useExtendedDofTable )
+    {
+        super_type::updateForUse( mesh,mat,worldsComm,useExtendedDofTable );
+
+        M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity( self_type::defaultMaterialName() ) ) );
+        M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity( self_type::defaultMaterialName() ) ) );
+
+        for( auto const& m : mat )
         {
-            super_type::updateForUse( mesh,mat,worldsComm,useExtendedDofTable );
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            if ( this->markers().find( matmarker ) == this->markers().end() )
+                continue;
 
-            M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity( self_type::defaultMaterialName() ) ) );
-            M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity( self_type::defaultMaterialName() ) ) );
-
-            for( auto const& m : mat )
-            {
-                auto const& mat = m.second;
-                auto const& matmarker = m.first;
-                if ( this->markers().find( matmarker ) == this->markers().end() )
-                    continue;
-
-                if ( mat.hasPropertyExprScalar("rho") )
-                    this->setDensity( mat.propertyExprScalar("rho"),matmarker );
-                else
-                    this->setCstDensity( mat.propertyConstant("rho"),matmarker );
-            }
+            if ( mat.hasPropertyExprScalar("rho") )
+                this->setDensity( mat.propertyExprScalar("rho"),matmarker );
+            else
+                this->setCstDensity( mat.propertyConstant("rho"),matmarker );
         }
+    }
+    void updateForUse( space_ptrtype const& space, ModelMaterials const& mat )
+    {
+        super_type::updateForUse( space, mat );
+        M_fieldDensity = this->dynamicViscositySpace()->elementPtr( cst( this->cstDensity( self_type::defaultMaterialName() ) ) );
+        M_fieldCinematicViscosity = this->dynamicViscositySpace()->elementPtr( cst( this->cstCinematicViscosity( self_type::defaultMaterialName() ) ) );
+
+        for( auto const& m : mat )
+        {
+            auto const& mat = m.second;
+            auto const& matmarker = m.first;
+            if ( this->markers().find( matmarker ) == this->markers().end() )
+                continue;
+
+            if ( mat.hasPropertyExprScalar("rho") )
+                this->setDensity( mat.propertyExprScalar("rho"),matmarker );
+            else
+                this->setCstDensity( mat.propertyConstant("rho"),matmarker );
+        }
+    }
 
     double cstRho( std::string const& marker = "" ) const { return this->cstDensity(marker); }
     double cstDensity( std::string const& marker = "" ) const

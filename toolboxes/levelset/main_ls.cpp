@@ -12,7 +12,7 @@ runLevelsetApplication()
 
     typedef FeelModels::LevelSet< 
         Simplex<FEELPP_DIM,1>,
-        OrderLevelset
+        Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>
         > model_type;
     
     auto LS = model_type::New("levelset");

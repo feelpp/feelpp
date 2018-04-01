@@ -1776,7 +1776,7 @@ public:
      */
     bool hasEim()
     {
-        return M_has_eim;
+        return M_has_eim || hasDeim();
     }
 
     bool hasDeim()
@@ -2832,6 +2832,11 @@ public:
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu,mpl::bool_<false> ) {};
 
 
+    typename model_type::displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
+    {
+        return M_model->meshDisplacementField(mu);
+    }
+    bool hasDisplacementField() const { return M_model->hasDisplacementField(); }
     //@}
 
 
@@ -3658,7 +3663,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
             bool useAitkenRelaxation = M_fixedpointUseAitken;
             auto residual = Xh->element();
-            auto aitkenRelax = aitken( _space=Xh );
+            auto aitkenRelax = aitken( _space=Xh, _tolerance=increment_fixedpoint_tol );
             aitkenRelax.initialize( residual, u );
             aitkenRelax.restart();
             bool fixPointIsFinished = false;

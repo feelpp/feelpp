@@ -174,16 +174,27 @@ public:
         return M_time;
     }
 
-    //! return the iteration number
+    //! return the current iteration
     int iteration() const
     {
         return M_iteration;
     }
 
+    //! return the number of iteration
+    const int iterationNumber() const
+    {
+        if( M_dt == 0)
+            return 0;
+        return static_cast<int>( std::abs((M_Tf-M_Ti)/M_dt) );
+    }
+
     //! return the real time in seconds spent in the iteration
     double realTimePerIteration() const
     {
-        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
+        CHECK( state() == TS_RUNNING )
+            << "TSBase::realTimePerIteration(): invalid Time Stepping state for '" << M_name
+            <<"', it should be " << TS_RUNNING
+            << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         return M_real_time_per_iteration;
     }
@@ -214,7 +225,6 @@ public:
         ++M_iteration;
         return M_Ti;
     }
-
 
     //! return true if Bdf is finished, false otherwise
     bool isFinished() const
@@ -250,7 +260,10 @@ public:
      */
     virtual double next() const
     {
-        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
+        CHECK( state() == TS_RUNNING )
+            << "TSBase::next(): invalid Time Stepping state for '"<< M_name
+            <<"', it should be " << TS_RUNNING
+            << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
         if ( boption(prefixvm(M_prefix,"ts.display-stats")) )
@@ -265,6 +278,7 @@ public:
         M_time_values_map.push_back( this->time() );
         //update();
     }
+
     virtual void update()
     {
         double tn = M_time_values_map[M_iteration];
@@ -279,6 +293,28 @@ public:
     TSState state() const
     {
         return M_state;
+    }
+
+    bool isStopped() const
+    {
+        return (state() == TS_STOPPED);
+    }
+
+    bool isRunning() const
+    {
+        return (state() == TS_RUNNING);
+    }
+
+    //! return the reverse time loop state.
+    bool isReverse() const
+    {
+        return M_reverse;
+    }
+
+    //! return the reverse time loop state.
+    bool isReverseLoad() const
+    {
+        return M_reverseLoad;
     }
 
     //! return the relative path where the bdf data is stored
@@ -352,6 +388,41 @@ public:
             M_Tf=1e30;
         }
     }
+    //! Reverse time (iteration always start at 0!)
+    void setReverse( bool reverse=false )
+    {
+        CHECK( state() != TS_RUNNING )
+            << "TSBase::setReverse(): invalid Time Stepping state for '" << M_name
+            << "', it should be " << TS_STOPPED
+            << " (TS_STOPPED) and it is " << state();
+
+        bool doReverse = ( ((not isReverse()) and (reverse==true))
+                           or (isReverse() and (reverse==false)) );
+        M_reverse=reverse;
+
+        // Don't reverse if already reversed.
+        if( doReverse )
+        {
+            LOG(INFO) << "BDF do reverse time.";
+            double Tf=M_Tf;
+            M_Tf = M_Ti;
+            M_Ti = Tf;
+            M_dt = -M_dt;
+        }
+    }
+
+    //! Load saved unknown beginning from last iteration.
+    //! In bdf, solutions are saved from Ti (iter 0) ->Tf (iter N) in hdf5 files
+    //! indexed by the iteration.
+    //! If we reverse bdf, it runs from Tf (iter 0) -> Ti (iter N).
+    //! To read hdf5 solution from files, we have to load the file N at Ti.
+    //! Therefore reversing iteration index to load the correct file.
+    //! Note: it is not required if the solution has to be saved.
+    void setReverseLoad( bool reverseLoad = false )
+    {
+        M_reverseLoad=reverseLoad;
+    }
+
     void setRestart( bool doRestart )
     {
         M_restart=doRestart;
@@ -402,7 +473,7 @@ protected:
 
     //! is steady
     bool M_steady;
-    
+
     //! initial time to start
     double M_Ti;
 
@@ -414,6 +485,12 @@ protected:
 
     //! state of the time stepping algorithm
     mutable TSState M_state;
+
+    //! is reversed
+    bool M_reverse;
+
+    //! is file load from reverse
+    bool M_reverseLoad;
 
     //! restart
     int M_n_restart;

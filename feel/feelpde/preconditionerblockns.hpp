@@ -29,9 +29,6 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
-#if FEELPP_HAS_PETSC
-#include <feel/feelalg/backendpetsc.hpp>
-#endif
 #include <feel/feeldiscr/pdh.hpp>
 
 namespace Feel
@@ -84,8 +81,8 @@ public:
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef boost::shared_ptr<op_mat_type> op_mat_ptrtype;
 
-    typedef typename OperatorPCD<space_type, properties_space_type>::type op_pcd_type;
-    typedef typename OperatorPCD<space_type, properties_space_type>::ptrtype op_pcd_ptrtype;
+    typedef typename OperatorPCD<space_type>::type op_pcd_type;
+    typedef typename OperatorPCD<space_type>::ptrtype op_pcd_ptrtype;
     typedef OperatorBase<value_type> op_type;
     typedef boost::shared_ptr<op_type> op_ptrtype;
 
@@ -278,7 +275,7 @@ private:
 
     property_ptrtype M_mu, M_alpha, M_rho;
 
-    sparse_matrix_ptrtype M_helm, G, M_div, M_F, /*M_B,*/ M_Bt, M_mass, M_massv_inv;
+    sparse_matrix_ptrtype /*M_helm, G, M_div*/ M_F, /*M_B,*/ M_Bt, M_mass/*, M_massv_inv*/;
     bool M_updatePMM;
     op_mat_ptrtype divOp, helmOp;
 
@@ -315,11 +312,7 @@ PreconditionerBlockNS( std::string t,
     M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
     M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( properties_space_type::New(Xh->mesh()) ),
-    M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
-    G( M_b->newMatrix( M_Vh, M_Vh ) ),
-    M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
-    M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
     M_updatePMM( false ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
@@ -373,11 +366,7 @@ PreconditionerBlockNS( std::string t,
     M_Vh_indices( A->mapRow().dofIdToContainerId( 0 ) ),
     M_Qh_indices( A->mapRow().dofIdToContainerId( 1 ) ),
     M_Ph( Ph ),
-    M_helm ( M_b->newMatrix( M_Vh, M_Vh ) ),
-    G( M_b->newMatrix( M_Vh, M_Vh ) ),
-    M_div ( M_b->newMatrix( _trial=M_Vh, _test=M_Qh ) ),
     M_mass( M_b->newMatrix( _trial=M_Qh, _test=M_Qh) ),
-    M_massv_inv( M_b->newMatrix( _trial=M_Vh, _test=M_Vh) ),
     M_updatePMM( false ),
     M_rhs( M_b->newVector( M_Vh )  ),
     M_aux( M_b->newVector( M_Vh )  ),
@@ -478,7 +467,8 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
     case PCD:
     case PCD_ACCELERATION:
         tic();
-        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_Bt, M_b, M_bcFlags, M_prefix, M_mu, M_rho, M_alpha, M_type==PCD_ACCELERATION );
+        pcdOp = boost::make_shared<op_pcd_type>( M_Xh, M_b, M_bcFlags, M_prefix, M_type==PCD_ACCELERATION );
+        pcdOp->setBt( M_Bt );
         this->setSide( super::RIGHT );
 
         toc( "Preconditioner::setType " + typeStr(), FLAGS_v > 0 );
@@ -529,7 +519,8 @@ update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
     if ( type() == PCD || type() == PCD_ACCELERATION )
     {
         tic();
-        pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
+        bool hasAlpha = ( M_alpha->linftyNorm() > 1e-15 );
+        pcdOp->update( idv(M_rho), idv(M_mu), expr_b, g, idv(M_alpha), hasConvection, hasAlpha, tn, tn1 );
         toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
     if ( type() == PMM && M_updatePMM )
@@ -557,7 +548,8 @@ update( sparse_matrix_ptrtype A,
     if ( type() == PCD || type() == PCD_ACCELERATION )
     {
         tic();
-        pcdOp->update( expr_b, g, hasConvection, tn, tn1 );
+        bool hasAlpha = ( M_alpha->linftyNorm() > 1e-15 );
+        pcdOp->update( idv(M_rho), idv(M_mu), expr_b, g, idv(M_alpha), hasConvection, hasAlpha, tn, tn1 );
         toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
     }
     if ( type() == PMM && M_updatePMM )
@@ -682,10 +674,11 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
     auto YUblas = M_Xh->element( Y );
     auto voutUblas = YUblas.template element<0>();
     auto poutUblas = YUblas.template element<1>();
-    auto vin = toPETScPtr( vinUblas );
-    auto pin = toPETScPtr( pinUblas );
-    auto vout = toPETScPtr( voutUblas );
-    auto pout = toPETScPtr( poutUblas );
+
+    auto vin = M_b->toBackendVectorPtr( vinUblas );
+    auto pin = M_b->toBackendVectorPtr( pinUblas );
+    auto vout = M_b->toBackendVectorPtr( voutUblas );
+    auto pout = M_b->toBackendVectorPtr( poutUblas );
 
     *M_aux = *vin;
 

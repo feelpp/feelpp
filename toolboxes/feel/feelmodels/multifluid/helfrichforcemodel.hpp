@@ -33,7 +33,9 @@ public:
     HelfrichForceModel() = default;
     HelfrichForceModel( HelfrichForceModel const& i ) = default;
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
+
+    boost::shared_ptr<std::ostringstream> getInfo() const override;
 
     void loadParametersFromOptionsVm();
     //--------------------------------------------------------------------//
@@ -44,8 +46,8 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F );
-    void addHelfrichForce( element_ptrtype & F, int impl );
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const override;
+    void addHelfrichForce( element_ptrtype & F, int impl ) const;
 
     //--------------------------------------------------------------------//
     double M_helfrichBendingModulus;
@@ -57,6 +59,14 @@ private:
     bool M_exporterInitDone;
 #endif
 };
+
+template<typename LevelSetType>
+void
+HelfrichForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+{
+    super_type::build( prefix, ls );
+    this->loadParametersFromOptionsVm();
+}
 
 template<typename LevelSetType>
 boost::shared_ptr<std::ostringstream> 
@@ -90,14 +100,14 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
 
 template<typename LevelSetType>
 void
-HelfrichForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
+HelfrichForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
     this->addHelfrichForce( F, M_forceImpl );
 }
 
 template<typename LevelSetType>
 void
-HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl )
+HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl ) const
 {
 #ifdef DEBUG_HELFRICHFORCEMODEL
     if( !M_exporterInitDone )
@@ -164,7 +174,7 @@ HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int imp
                     _expr=idv(Fb_global) * idv(this->levelset()->D())
                     );
 
-            *F += Fb;
+            *F = Fb;
 
 #ifdef DEBUG_HELFRICHFORCEMODEL
             M_exporter->step(this->levelset()->time())->add(

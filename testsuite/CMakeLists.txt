@@ -49,9 +49,9 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir core python math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit)
+foreach( testdir core python math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit fmi)
+
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 
 endforeach()
-

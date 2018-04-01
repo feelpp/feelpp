@@ -1,8 +1,8 @@
 h = 0.1;
-xmin = -4.5;
-xmax = 4.5;
-ymin = -4;
-ymax = 4;
+xmin = -1;
+xmax = 9;
+ymin = -1;
+ymax = 1;
 Point(1) = {xmin,ymin,0.0,h};
 Point(2) = {xmax,ymin,0.0,h};
 Point(3) = {xmax,ymax,0.0,h};
@@ -13,17 +13,6 @@ Line(3) = {2,3};
 Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
-
-Field[1] = Box;
-Field[1].VIn = h/5;
-Field[1].VOut = h;
-Field[1].XMin = -1.5;
-Field[1].XMax = 1.5;
-Field[1].YMin = -1.5;
-Field[1].YMax = 1.5;
-Field[1].ZMin = 0.;
-Field[1].ZMax = 0.;
-Background Field = 1;
 
 Physical Line("Left") = {1};
 Physical Line("Bottom") = {2};

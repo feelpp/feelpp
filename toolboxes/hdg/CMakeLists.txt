@@ -59,12 +59,12 @@ foreach(D 2 3)
 endforeach()
 
 foreach(D 3)
-    foreach(P 1 ) #3
-        feelpp_add_application( poroelastic-model_${D}DP${P}
-                                SRCS poroelastic_main.cpp ${FEELPP_HDG_PATH}/options.cpp
-                                LINK_LIBRARIES feelpp_modelcore
-                                DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_MODELS_HDG_NOEXTERN
-                                INSTALL )
+  foreach(P 1 ) #3
+    feelpp_add_application( poroelastic-model_${D}DP${P}
+      SRCS poroelastic_main.cpp ${FEELPP_HDG_PATH}/options.cpp
+      LINK_LIBRARIES feelpp_modelcore
+      DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_MODELS_HDG_NOEXTERN
+      INSTALL )
   endforeach()
 endforeach()
 
@@ -72,4 +72,14 @@ endforeach()
 feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(poroelasticity PREFIX hdg CATEGORY HDG )
+
+
+feelpp_add_testcase(bitter CATEGORY hdg)
+#feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
+#feelpp_add_testcase(eye2brain_level2 CATEGORY hdg)
+feelpp_add_testcase(cylinder CATEGORY hdg )
+feelpp_add_testcase(testDarcy CATEGORY hdg )
+feelpp_add_testcase(mixed-poisson CATEGORY hdg )
+feelpp_add_testcase(mixed-elasticity CATEGORY hdg )
+feelpp_add_testcase(mp-red CATEGORY hdg )
 

@@ -212,7 +212,7 @@ public:
     crb_ptrtype newCRB( int level=0 )
         {
             model = boost::make_shared<crbmodel_type>(crb::stage::offline,level);
-            return boost::make_shared<crb_type>( model->model()->modelName(), model, crb::stage::offline );
+            return crb_type::New(model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }

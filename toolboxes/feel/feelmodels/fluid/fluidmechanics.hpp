@@ -449,14 +449,15 @@ public:
     backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backend() const { return  M_backend; }
     typename super_type::block_pattern_type blockPattern() const;
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
-    int nBlockMatrixGraph() const;
+    virtual int nBlockMatrixGraph() const;
     indexsplit_ptrtype buildIndexSplit() const;
     model_algebraic_factory_ptrtype algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    size_type nLocalDof() const;
+    virtual size_type nLocalDof() const;
     std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
+    void buildBlockVector();
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
@@ -514,6 +515,8 @@ public :
     void setModelName( std::string const& type );
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
+
+    bool isStationaryModel() const;
 
     void setDynamicViscosityLaw( std::string const& type);
     std::string const& dynamicViscosityLaw() const;
@@ -610,6 +613,7 @@ public :
     void updateMu(double mu)
     {
         this->densityViscosityModel()->setCstDynamicViscosity(mu);
+        M_pmmNeedUpdate = true;
     }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
@@ -620,6 +624,7 @@ public :
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
         this->densityViscosityModel()->updateDynamicViscosity( __expr );
+        M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
@@ -834,6 +839,7 @@ public :
 
     void initInHousePreconditioner();
     void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
+    void updateInHousePreconditionerPMM( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
     void updateInHousePreconditionerPCD( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
     //___________________________________________________________________________________//
@@ -851,6 +857,9 @@ public :
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
 
+    virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
+    virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
+
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
@@ -861,12 +870,16 @@ public :
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
+    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
+
     //___________________________________________________________________________________//
 
 private :
     void updateBoundaryConditionsForUse();
 
 protected:
+    virtual size_type initStartBlockIndexFieldsInMatrix();
+    virtual int initBlockVector();
 
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
     //----------------------------------------------------
@@ -1049,7 +1062,9 @@ protected:
     updateSourceTermLinearPDE_function_type M_overwritemethod_updateSourceTermLinearPDE;
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
-
+    //----------------------------------------------------
+    bool M_preconditionerAttachPMM;
+    mutable bool M_pmmNeedUpdate;
     //----------------------------------------------------
     bool M_useThermodynModel;
     thermodyn_model_ptrtype M_thermodynModel;

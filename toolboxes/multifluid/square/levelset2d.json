@@ -5,9 +5,9 @@
 
     "Parameters":
     {
-        "x0": "0.2",
-        "y0": "0.5",
-        "r0": "0.15"
+        "x0": "0.",
+        "y0": "0.",
+        "r0": "0.2"
     },
 
     "InitialConditions":
@@ -23,19 +23,19 @@
             }
         }
     },
-    "BoundaryConditions":
-    {
-        "levelset":
-        {
-            "inflow":
-            {
-                "Left":
-                {
-                    "expr":"0"
-                }
-            }
-        }
-    },
+    //"BoundaryConditions":
+    //{
+        //"levelset":
+        //{
+            //"inflow":
+            //{
+                //"Left":
+                //{
+                    //"expr":"0"
+                //}
+            //}
+        //}
+    //},
     "PostProcess":
     {
         "PhysicalQuantities": ["volume", "perimeter"]

@@ -1,5 +1,5 @@
 
-feelpp_add_application( application_levelset_2d SRCS main_ls.cpp
+feelpp_add_application( levelset_2d SRCS main_ls.cpp
   LINK_LIBRARIES
   feelpp_model_levelset2dP1G1
   feelpp_model_levelset2dP2G1
@@ -8,12 +8,6 @@ feelpp_add_application( application_levelset_2d SRCS main_ls.cpp
   #feelpp_model_fluidmec2dP1P1cG1DVP0c
   DEFS FEELPP_DIM=2
 )
-
-#feelpp_add_application( application_fluid_3d SRCS main_fm.cpp
-  #LINK_LIBRARIES
-  #feelpp_model_fluidmec3dP2P1G1
-  #DEFS FEELPP_DIM=3
-#)
 
 feelpp_add_testcase(square PREFIX feelpp_levelset CATEGORY levelset )
 feelpp_add_testcase(tube PREFIX feelpp_levelset CATEGORY levelset )
