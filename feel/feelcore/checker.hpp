@@ -173,43 +173,12 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
     {
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         checkSucces.push_back( false );
+        //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         try
         {
-            //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
-            try
-            {
-                Checks c = rate(M_solution, e, M_otol, M_etol);
-                
-                switch( c ) 
-                {
-                case Checks::NONE:
-                    cout << tc::yellow << "[no checks]" << metric << e.first << "=" << e.second << tc::reset << std::endl;
-                    break;
-                case Checks::EXACT:
-                    cout << tc::green << "[exact verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
-                    break;
-                case Checks::CONVERGENCE_ORDER:
-                    cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
-                    break;
-                }
-                return 1;
-            }
-            catch( CheckerConvergenceFailed const& ex )
-            {
-                cout << tc::red
-                     << "Checker convergence order verification failed for " << metric << e.first << std::endl
-                     << " Computed order " << ex.computedOrder() << std::endl
-                     << " Expected order " << ex.expectedOrder() << std::endl
-                     << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
-            }
-            catch( CheckerExactFailed const& ex )
-            {
-                cout << tc::red
-                     << "Checker exact verification failed for " << metric << e.first << std::endl
-                     << " Computed error " << ex.computedError() << std::endl
-                     << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
-            }
-            catch( std::exception const& ex )
+            Checks c = rate(M_solution, e, M_otol, M_etol);
+            
+            switch( c ) 
             {
             case Checks::NONE:
                 cout << tc::yellow << "[no checks]" << metric << e.first << "=" << e.second << tc::reset << std::endl;
@@ -221,7 +190,7 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
                 cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
                 break;
             }
-            checkSucces.back() = true;
+            return 1;
         }
         catch( CheckerConvergenceFailed const& ex )
         {
