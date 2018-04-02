@@ -43,7 +43,7 @@ main( int argc, char** argv )
     using namespace Feel;
 
 	po::options_description fsioptions( "application fsi options" );
-    fsioptions.add( Feel::feelmodels_options("fsi") );
+    fsioptions.add( Feel::toolboxes_options("fsi") );
     fsioptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
         ;
