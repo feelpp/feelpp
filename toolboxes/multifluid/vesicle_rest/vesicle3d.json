@@ -27,7 +27,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["gradphi", "modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"],
+        "Exports":
+        {
+            "fields": ["gradphi", "modgradphi", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2"]
+        },
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }

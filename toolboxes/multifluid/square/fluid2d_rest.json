@@ -1,7 +1,10 @@
 {
     "Name": "Square2d",
     "ShortName":"Square2d",
-    "Model":"Navier-Stokes",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
         "ubar":"0.2"
@@ -33,7 +36,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 
 }

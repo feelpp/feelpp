@@ -1,8 +1,10 @@
 {
     "Name": "Drop2d",
     "ShortName": "Drop2d",
-    "Model": "Navier-Stokes",
-
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "BoundaryConditions":
     {
         "velocity":
@@ -26,6 +28,9 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 }

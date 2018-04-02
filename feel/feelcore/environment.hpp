@@ -631,7 +631,11 @@ public:
     //! the application directory, application results are stored there
     //! the directory is controlled by changeRepository
     static std::string appRepository();
-    
+
+    //! the application directory without np, application results are stored there
+    //! the directory is controlled by changeRepository
+    static std::string appRepositoryWithoutNumProc();
+
     //! the expressions repository is typically a sub-directory of the \c
     //! appRepository() that contains the expressions generated using Ginac
     static std::string exprRepository();
@@ -852,6 +856,7 @@ private:
     static std::vector<fs::path> S_paths;
 
     static fs::path S_appdir;
+    static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;

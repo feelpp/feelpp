@@ -1,12 +1,16 @@
 {
     "Name": "Square2d",
     "ShortName":"Square2d",
-    "Model": "Stokes",
+    "Models":
+    {
+        "equations":"Stokes"
+    },
+        
     "Parameters":
     {
         "gammaDot": { "value":"2" },
-	"yMax": { "value":"4." },
-	"yMin": { "value":"-4." }
+	    "yMax": { "value":"4." },
+	    "yMin": { "value":"-4." }
     },
     "BoundaryConditions":
     {
@@ -43,7 +47,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 
 }
