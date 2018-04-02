@@ -1,12 +1,14 @@
 // -*- mode: javascript -*-
 {
-    "Name": "Fluid Mechanics",
-    "ShortName":"Fluid",
-    "Model":"Navier-Stokes",
+    "Name": "lid-driven-cavity",
+    "ShortName":"lid-driven-cavity",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Materials":
     {
         "Fluid":{
-            "name":"myFluidMat",
             "rho":"1",
             "mu":"1e-5"
         }
@@ -19,7 +21,7 @@
             {
                 "moving-wall":
                 {
-                    "expr":"{ 1,0}"
+                    "expr":"{1,0}"
                 },
                 "noslip-wall":
                 {
@@ -30,7 +32,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"]
+        }
     }
 
 }

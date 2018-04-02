@@ -122,36 +122,21 @@ public:
             Feel::vf::detail::ginacBuildLibrary( exprs, syml, M_exprDesc, M_filename, world, M_cfun );
         }
 
-    GinacExVF( GinacExVF const & fun )
-    :
-        super( fun ),
-        M_fun( fun.M_fun ),
-        M_expr( fun.M_expr ),
-        M_cfun( fun.M_cfun ),
-        M_filename( fun.M_filename ),
-        M_exprDesc( fun.M_exprDesc )
-        {
-            if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
-            {
-                DVLOG(2) << "Ginac copy constructor : compile object file \n";
-                GiNaC::lst exprs({M_fun});
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
+    explicit GinacExVF( ginac_expression_type const & fun,
+                        std::vector<GiNaC::symbol> const& syms,
+                        GiNaC::FUNCP_CUBA const& cfun,
+                        std::vector< std::pair<GiNaC::symbol, expression_type> >const& expr,
+                        std::string const& exprDesc )
+        :
+        super( syms ),
+        M_fun( fun ),
+        M_expr( expr ),
+        M_cfun( new GiNaC::FUNCP_CUBA( cfun ) ),
+        M_exprDesc( exprDesc )
+        {}
 
-            }
-            else
-            {
-#if 0
-                DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
-                boost::mpi::communicator world;
-                // std::string pid = boost::lexical_cast<std::string>(world.rank());
-                // std::string filenameWithSuffix = M_filename + pid + ".so";
-                std::string filenameWithSuffix = M_filename + ".so";
-                GiNaC::link_ex(filenameWithSuffix, *M_cfun);
-#endif
-            }
-        }
+    GinacExVF( GinacExVF const & fun ) = default;
+    GinacExVF( GinacExVF && fun ) = default;
 
     //@}
 
@@ -159,6 +144,8 @@ public:
      */
     //@{
 
+    this_type& operator=( this_type const& ) = default;
+    this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -333,7 +320,8 @@ public:
             if ( M_is_zero ) return;
 
             for(int i=0; i<M_t_expr.size(); i++)
-                M_t_expr[i].update( geom, fev, feu );
+                if ( M_t_expr_index[i] != -1 )
+                    M_t_expr[i].update( geom, fev, feu );
             updateFun( geom );
 
         }
@@ -342,7 +330,8 @@ public:
                 if ( M_is_zero ) return;
 
                 for(int i=0; i<M_t_expr.size(); i++)
-                    M_t_expr[i].update( geom, fev );
+                    if ( M_t_expr_index[i] != -1 )
+                        M_t_expr[i].update( geom, fev );
                 updateFun( geom );
             }
         void update( Geo_t const& geom )
@@ -350,7 +339,8 @@ public:
                 if ( M_is_zero ) return;
 
                 for(int i=0; i<M_t_expr.size(); i++)
-                    M_t_expr[i].update( geom );
+                    if ( M_t_expr_index[i] != -1 )
+                        M_t_expr[i].update( geom );
                 updateFun( geom );
             }
 
@@ -359,7 +349,8 @@ public:
                 if ( M_is_zero ) return;
 
                 for(int i=0; i<M_t_expr.size(); i++)
-                    M_t_expr[i].update( geom, face );
+                    if ( M_t_expr_index[i] != -1 )
+                        M_t_expr[i].update( geom, face );
                 updateFun( geom );
             }
 

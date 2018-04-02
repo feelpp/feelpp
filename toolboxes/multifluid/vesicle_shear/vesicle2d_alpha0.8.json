@@ -1,7 +1,10 @@
 {
     "Name": "Vesicle2d",
     "ShortName": "Vesicle2d",
-    "Model": "Levelset",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
 
     "Parameters":
     {
@@ -37,7 +40,10 @@
     },
     "PostProcess":
     {
-        "Fields": ["modgradphi", "gradphi"],
+        "Exports":
+        {
+            "fields": ["modgradphi", "gradphi"]
+        },
         "PhysicalQuantities": ["volume", "perimeter"]
     }
 }

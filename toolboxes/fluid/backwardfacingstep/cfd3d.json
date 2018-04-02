@@ -1,7 +1,10 @@
 {
-    "Name": "Fluid Mechanics",
-    "ShortName":"Fluid",
-    "Model":"Navier-Stokes",
+    "Name": "Backward Facing Step 3d",
+    "ShortName":"backwardfacingstep3d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Materials":
     {
         "fluid":{
@@ -42,7 +45,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"]
+        }
     }
 
 }
