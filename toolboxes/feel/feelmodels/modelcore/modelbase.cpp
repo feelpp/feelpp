@@ -33,18 +33,37 @@ namespace Feel {
 
 namespace FeelModels {
 
+ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
+{
+    if ( rootDirWithoutNumProc.empty() )
+    {
+        M_rootRepositoryWithoutNumProc = Environment::appRepositoryWithoutNumProc();
+        M_rootRepositoryWithNumProc = Environment::appRepository();
+        M_exprRepository = Environment::exprRepository();
+    }
+    else
+    {
+        M_rootRepositoryWithoutNumProc = Environment::expand( rootDirWithoutNumProc );
+        if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
+            M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
+        std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
+        M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+        M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
+    }
+
+}
 
 ModelBase::ModelBase( std::string const& prefix,
                       WorldComm const& worldComm,
                       std::string const& subPrefix,
-                      std::string const& rootRepository )
+                      ModelBaseRepository const& modelRep )
     :
     M_worldComm(worldComm),
     M_worldsComm( std::vector<WorldComm>(1,worldComm) ),
     M_localNonCompositeWorldsComm( std::vector<WorldComm>(1,worldComm) ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
-    M_rootRepositoryWithoutNumProc( rootRepository ),
+    M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
     M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"appli.info")) ),
@@ -57,18 +76,10 @@ ModelBase::ModelBase( std::string const& prefix,
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
 {
-    if ( M_rootRepositoryWithoutNumProc.empty() )
-        M_rootRepositoryWithoutNumProc = ModelBase::rootRepositoryByDefault();
-    M_rootRepositoryWithoutNumProc = Environment::expand( M_rootRepositoryWithoutNumProc );
-    if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
-        M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
-    std::string npSubDir = (boost::format( "np_%1%" ) % this->worldComm().localSize() ).str();
-    M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
-
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
     else
-        M_scalabilityPath = this->rootRepositoryWithoutNumProc();
+        M_scalabilityPath = this->repository().rootWithoutNumProc();
 
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-filename")))
         M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
@@ -96,18 +107,8 @@ ModelBase::prefix() const { return M_prefix; }
 std::string const&
 ModelBase::subPrefix() const { return M_subPrefix; }
 
-po::variables_map const&
-ModelBase::vm() const { return Environment::vm(); }
-
 std::string const&
-ModelBase::rootRepository() const { return this->rootRepositoryWithNumProc(); }
-std::string const&
-ModelBase::rootRepositoryWithoutNumProc() const { return M_rootRepositoryWithoutNumProc; }
-std::string const&
-ModelBase::rootRepositoryWithNumProc() const { return M_rootRepositoryWithNumProc; }
-
-std::string
-ModelBase::rootRepositoryByDefault() { return soption(_name="exporter.directory"); }
+ModelBase::rootRepository() const { return M_modelRepository.root(); }
 
 // verbose
 bool

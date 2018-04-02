@@ -1,7 +1,10 @@
 {
     "Name": "VesicleRest2d",
     "ShortName": "VesicleRest2d",
-    "Model": "Levelset",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
 
     "Parameters":
     {

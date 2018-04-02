@@ -1,24 +1,15 @@
-#undef THERMOELECTRIC_DIM
-#undef THERMOELECTRIC_ORDERGEO
-#undef THERMOELECTRIC_ORDERPOLY
 
-#define THERMOELECTRIC_DIM @THERMOELECTRIC_DIM@
-#define THERMOELECTRIC_ORDERGEO @THERMOELECTRIC_ORDERGEO@
-#define THERMOELECTRIC_ORDERPOLY @THERMOELECTRIC_ORDERPOLY@
-
-
-#define THERMOELECTRIC_TEMPERATURE_INTERPOLATIONPOINTS PointSetFekete
+#include <feel/feelmodels/heat/@HEAT_LIB_VARIANTS@/heatconfig.h>
+#include <feel/feelmodels/electric/@ELECTRIC_LIB_VARIANTS@/electricconfig.h>
 
 #define THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisTemperatureType> \
+    template< typename HeatType, typename ElectricType> \
         /**/
 #define THERMOELECTRIC_CLASS_TEMPLATE_TYPE \
-    ThermoElectric<ConvexType,BasisTemperatureType> \
+    ThermoElectric<HeatType,ElectricType>   \
         /**/
 #define THERMOELECTRIC_CLASS_TYPE \
-    ThermoElectric< Simplex<THERMOELECTRIC_DIM,THERMOELECTRIC_ORDERGEO,THERMOELECTRIC_DIM>, \
-        Lagrange<THERMOELECTRIC_ORDERPOLY, Scalar,Continuous,THERMOELECTRIC_TEMPERATURE_INTERPOLATIONPOINTS > \
-        >                                                              \
+    ThermoElectric< HEAT_CLASS_TYPE, ELECTRIC_CLASS_TYPE >  \
     /**/
 #define THERMOELECTRIC_CLASS_INSTANTIATION \
     template class THERMOELECTRIC_CLASS_TYPE ;  \

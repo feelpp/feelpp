@@ -1,7 +1,7 @@
 {
     "Name": "HDG-Mixed-Poisson",
     "ShortName":"MP",
-    "Model":"hdg",
+    "Models": { "equations":"hdg"},
     "Materials":
     {
         "omega":
@@ -70,7 +70,10 @@
      },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
     }
 }
 

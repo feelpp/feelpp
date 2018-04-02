@@ -8,8 +8,11 @@ runApplicationThermoElectric()
 {
     using namespace Feel;
 
-    typedef FeelModels::ThermoElectric< Simplex<FEELPP_DIM,1>,
-                                        Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
+    typedef FeelModels::Heat< Simplex<FEELPP_DIM,1>,
+                                      Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_heat_type;
+    typedef FeelModels::Electric< Simplex<FEELPP_DIM,1>,
+                                  Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_electric_type;
+    typedef FeelModels::ThermoElectric< model_heat_type,model_electric_type> model_type;
     boost::shared_ptr<model_type> thermoElectric( new model_type("thermo-electric") );
     thermoElectric->init();
     thermoElectric->printAndSaveInfo();
@@ -41,7 +44,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
     po::options_description thermoelectricoptions( "application thermo-electric options" );
-    thermoelectricoptions.add( feelmodels_options("thermo-electric") );
+    thermoelectricoptions.add( toolboxes_options("thermo-electric") );
     thermoelectricoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2,P3 ")
         ;
@@ -55,12 +58,11 @@ main( int argc, char** argv )
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P1" )
         runApplicationThermoElectric<1>();
-#if FEELPP_INSTANTIATION_ORDER_MAX-1 == 2
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 2
     else if ( feapprox == "P2" )
         runApplicationThermoElectric<2>();
-#elif FEELPP_INSTANTIATION_ORDER_MAX-1 == 3
-    else if ( feapprox == "P2" )
-        runApplicationThermoElectric<2>();    
+#endif
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
     else if ( feapprox == "P3" )
         runApplicationThermoElectric<3>();
 #endif
