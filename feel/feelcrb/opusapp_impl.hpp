@@ -702,6 +702,12 @@ OpusApp<ModelType,RM,Model>::run()
                         else
                             exportName = u_crb.name().substr(0,exportNameSize) + "-l" + std::to_string(ser_level) + "-" + std::to_string(curpar);
                         e->add( exportName, u_crb );
+
+                        if ( model->hasDisplacementField() )
+                        {
+                            auto warp_field = model->meshDisplacementField(mu);
+                            e->add( "warp"+mu.toString()+"-"+std::to_string(curpar), *warp_field );
+                        }
                     }
 
                     double relative_error = -1;

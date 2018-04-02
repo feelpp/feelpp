@@ -21,7 +21,7 @@ FUNCTION(feelpp_expand OUTPUT INPUT)
   ENDWHILE()
   SET("${OUTPUT}" "${INPUT}" PARENT_SCOPE)
 ENDFUNCTION()
-  
+
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -84,7 +84,7 @@ macro(feelpp_add_testcase )
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
       DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc 
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
         DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     endif()
     #add_dependencies(install-testcase ${target})
@@ -198,7 +198,7 @@ macro(feelpp_add_application)
           if ( FEELPP_ENABLE_VERBOSE_CMAKE )
             message(STATUS "[feelpp] ${execname} adding test ${TEST_NAME} : ${TEST}")
           endif()
-          
+
           # user name of the test in the app test name
           IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
             add_test(NAME ${execname}-${TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} ${MPIEXEC_POSTFLAGS} )
@@ -209,14 +209,14 @@ macro(feelpp_add_application)
             add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST})
             list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-1)
           endif()
-    
+
         endforeach()
       else()
         message(WARNING "${CMAKE_CURRENT_SOURCE_DIR}/.tests.${FEELPP_APP_NAME} does not exist to generate tests. Remove TESTS for ${FEELPP_APP_NAME}")
 
         IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
           add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
-        
+
           list(APPEND APP_TESTS ${execname}-np-${NProcs2})
         endif()
 
@@ -224,15 +224,15 @@ macro(feelpp_add_application)
           add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
           list(APPEND APP_TESTS ${execname}-np-1)
         endif()
-    
+
       endif()
     endif(FEELPP_APP_TESTS)
-  
+
   foreach(APP_TEST ${APP_TESTS})
     # disable leak detection for now
     set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/tools/lsan/suppressions.txt")
   endforeach()
-  
+
   #add_dependencies(crb ${execname})
   # add TIMEOUT to test
   if ( FEELPP_APP_TIMEOUT )
@@ -257,7 +257,7 @@ macro(feelpp_add_application)
   if ( FEELPP_APP_MAN )
     feelpp_add_man( ${execname} ${FEELPP_APP_MAN} 1 )
   endif( FEELPP_APP_MAN )
-  
+
   # include schedulers
   include( feelpp.schedulers )
 
@@ -446,6 +446,10 @@ macro(feelpp_add_test)
         endif(DEFINED ENV{FEELPP_WORKDIR})
       endforeach()
     endif(FEELPP_TEST_GEO)
+
+    if ( FEELPP_APP_DEPS )
+      add_dependencies( feelpp_test_${FEELPP_TEST_NAME} ${FEELPP_APP_DEPS})
+    endif()
 
 endmacro(feelpp_add_test)
 
@@ -668,7 +672,7 @@ macro (feelpp_add_man NAME MAN SECT)
         add_dependencies(${NAME} ${NAME}.${SECT})
       endif()
       install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
-      
+
 
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
@@ -693,7 +697,7 @@ macro (feelpp_add_man NAME MAN SECT)
         add_dependencies(${NAME} ${NAME}.${SECT}.html)
 
       endif()
-      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)      
+      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
         DESTINATION ${CMAKE_INSTALL_DOCDIR}
@@ -705,6 +709,84 @@ endmacro (feelpp_add_man)
 
 # CRB cmake macros
 include(feelpp.macros.crb)
+
+# OM cmake macros
+macro ( feelpp_add_fmu )
+  if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
+    PARSE_ARGUMENTS( OM_MODEL
+      "SRCS;CLASS;VERS;TYPE;CATEGORY" "" ${ARGN} )
+
+    car( OMWRAPPER_NAME ${OM_MODEL_DEFAULT_ARGS} )
+    set( OMWRAPPER_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMWRAPPER_NAME} )
+    set( FMU_SCRIPT_NAME ${OMWRAPPER_LIBDIR}/${OMWRAPPER_NAME}_tofmu.mos )
+    find_path( OMWRAPPER_MACRO_DIR feelpp.macros.om.cmake
+      PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
+
+    if( NOT DEFINED OM_MODEL_VERS )
+      set( OM_MODEL_VERS "2.0")
+    endif()
+    if( NOT DEFINED OM_MODEL_TYPE )
+      set( OM_MODEL_TYPE "cs" )
+    endif()
+
+    file( MAKE_DIRECTORY ${OMWRAPPER_LIBDIR} )
+    file( REMOVE ${FMU_SCRIPT_NAME} )
+    foreach( srcs ${OM_MODEL_SRCS} )
+      set( LOAD_CMD "loadFile(\"${CMAKE_CURRENT_SOURCE_DIR}/${srcs}\" )" )
+      file( APPEND ${FMU_SCRIPT_NAME} ${LOAD_CMD}\;\n )
+      set( OMWRAPPER_SRCS_FULLPATH  ${OMWRAPPER_SRCS_FULLPATH} ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
+    endforeach()
+    file( APPEND ${FMU_SCRIPT_NAME} "translateModelFMU(className=${OM_MODEL_CLASS},version=\"${OM_MODEL_VERS}\",fmuType=\"${OM_MODEL_TYPE}\",fileNamePrefix=\"${OMWRAPPER_NAME}\");\n")
+
+    add_custom_target( feelpp_add_fmu_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
+
+    add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
+      COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
+  endif()
+endmacro( feelpp_add_fmu )
+
+macro( feelpp_add_omc )
+  if ( FEELPP_HAS_OMC )
+    PARSE_ARGUMENTS( OM_MODEL
+      "SRCS;CLASS;CATEGORY" "" ${ARGN} )
+
+    car( OMC_NAME ${OM_MODEL_DEFAULT_ARGS} )
+    set( OMC_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${OMC_NAME} )
+    file( MAKE_DIRECTORY ${OMC_OUTDIR} )
+    set( OMC_CLASS ${OM_MODEL_CLASS} )
+
+    find_path( OMC_MACRO_DIR feelpp.macros.omc.cmake
+      PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH )
+
+    foreach( srcs ${OM_MODEL_SRCS} )
+      list( APPEND OMC_SRCS_FULLPATH  ${CMAKE_CURRENT_SOURCE_DIR}/${srcs} )
+    endforeach()
+
+    add_custom_target( feelpp_add_omc_${OMC_NAME}  ALL COMMENT "Compiling model"  )
+
+    set( TMP_DIR "${OMC_OUTDIR}/tmp" )
+
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      PRE_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      COMMAND ${OMC_COMPILER} -s -q ${OMC_SRCS_FULLPATH}
+      COMMAND make -f ${OMC_CLASS}.makefile CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+      WORKING_DIRECTORY ${TMP_DIR}
+      )
+    add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E rename ${TMP_DIR}/${OMC_CLASS} ${OMC_OUTDIR}/${OMC_NAME}.app
+      COMMAND ${CMAKE_COMMAND} -E rename "${TMP_DIR}/${OMC_CLASS}_init.xml" "${OMC_OUTDIR}/${OMC_CLASS}_init.xml"
+      COMMAND ${CMAKE_COMMAND} -E remove_directory ${TMP_DIR}
+      )
+
+    if( OM_MODEL_CATEGORY )
+
+    endif()
+  endif()
+endmacro( feelpp_add_omc )
+
 
 
 # feelppContribPrepare( submodulename )
@@ -783,3 +865,42 @@ macro( feelpp_message )
     endforeach()
   endif()
 endmacro()
+
+
+# get link libraries of a target
+function(feelpp_get_link_libraries OUTPUT_LIST TARGET)
+  if ( NOT TARGET ${TARGET} )
+    unset(OUTPUT_LIST PARENT_SCOPE)
+    return()
+  endif()
+  feelpp_get_link_libraries_impl(OUTPUT_LIST_ ${TARGET})
+  list(REMOVE_DUPLICATES OUTPUT_LIST_)
+  set(${OUTPUT_LIST} ${OUTPUT_LIST_} PARENT_SCOPE)
+endfunction()
+# get link libraries of a target (recursive function)
+function(feelpp_get_link_libraries_impl OUTPUT_LIST TARGET)
+  list(APPEND VISITED_TARGETS ${TARGET})
+  get_target_property(IMPORTED ${TARGET} IMPORTED)
+  if (IMPORTED)
+    get_target_property(LIBS ${TARGET} INTERFACE_LINK_LIBRARIES)
+  else()
+    get_target_property(LIBS ${TARGET} LINK_LIBRARIES)
+  endif()
+  if (LIBS)
+    set(LIB_FILES "")
+    foreach(LIB ${LIBS})
+      list(FIND VISITED_TARGETS ${LIB} VISITED)
+      if (${VISITED} EQUAL -1)
+        if (TARGET ${LIB})
+          get_target_property(LIB_FILE ${LIB} LOCATION)
+          feelpp_get_link_libraries_impl(LINK_LIB_FILES ${LIB})
+          list(APPEND LIB_FILES ${LIB_FILE} ${LINK_LIB_FILES})
+        else()
+          list(APPEND LIB_FILES ${LIB} )
+        endif()
+      endif()
+    endforeach()
+  endif()
+    set(VISITED_TARGETS ${VISITED_TARGETS} PARENT_SCOPE)
+  set(${OUTPUT_LIST} ${LIB_FILES} PARENT_SCOPE)
+endfunction()

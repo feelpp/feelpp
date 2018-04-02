@@ -452,8 +452,11 @@ public :
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
             toc("ReducedBasisSpace::setup : load mesh",FLAGS_v>0);
             tic();
+            auto spaceMeshSupport = (this->model())? this->model()->functionspaceMeshSupport(mesh) : typename functionspace_type::mesh_support_vector_type();
             auto feSpace = functionspace_type::New( _mesh=mesh,
-                                                    _worldscomm=this->worldsComm() );//std::vector<WorldComm>(functionspace_type::nSpaces,this->worldComm()) );
+                                                    _worldscomm=this->worldsComm(),
+                                                    _range=spaceMeshSupport
+                                                    );
             this->setFunctionSpace( feSpace );
             toc("ReducedBasisSpace::setup : init spaces",FLAGS_v>0);
         }

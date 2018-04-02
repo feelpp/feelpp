@@ -129,6 +129,18 @@ public:
                 M_sc->block( row, col );
             return this->shared_from_this();
         }
+    void zero() override
+        {
+            if ( staticCondensation() )
+                M_sc->zeroMatrix();
+            else
+                super::zero();
+        }
+    void zero( int n1, int n2 )
+        {
+            if ( staticCondensation() )
+                M_sc->zero( n1, n2 );
+        }
 private:
     sc_ptrtype M_sc;
     solve::strategy M_strategy;

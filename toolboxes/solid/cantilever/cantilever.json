@@ -1,54 +1,59 @@
 {
     "Name": "Solid Mechanics ",
-        "ShortName":"Solid",
-        "Model":"Elasticity",
-        "Materials":
+    "ShortName":"Solid",
+    "Models":
+    {
+        "equations":"Elasticity"
+    },
+    "Materials":
+    {
+        "cantilever":
         {
-            "cantilever":
+            "E":"206.84277e9", //N/m^2
+            "nu":"0.3",
+            "rho":"7870" // kg/m^3
+        }
+    },
+    "BoundaryConditions":
+    {
+        "displacement":
+        {
+            "Dirichlet":
             {
-                "name":"solid",
-                "E":"206.84277e9", //N/m^2
-                "nu":"0.3",
-                "rho":"7870" // kg/m^3
+                "fixed":
+                {
+                    "expr":"{0,0,0}"
+                }
             }
         },
-        "BoundaryConditions":
+        "displacement":
         {
-            "displacement":
+            "Neumann_vectorial":
             {
-                "Dirichlet":
+                "load":
                 {
-                    "fixed":
-                    {
-                        "expr":"{0,0,0}"
-                    }
-                }
-            },
-            "displacement":
-            {
-                "Neumann_vectorial":
-                {
-                    "load":
-                    {
-                        "expr":"{0,-10000/0.02,0}"	// F/A
+                    "expr":"{0,-10000/0.02,0}"	// F/A
 
-                    }
-                }
-            }
-        },
-        "PostProcess":
-        {
-            "Fields":["displacement","Von-Mises","tresca","principal-stresses"], //"sigma_xx"
-            "Measures":
-            {
-                "Maximum":
-                {
-                    "beam":
-                    {
-			            "markers":"",
-                        "fields":["displacement"]
-                    }
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["displacement","Von-Mises","tresca","principal-stresses"] //"sigma_xx"
+        },
+        "Measures":
+        {
+            "Maximum":
+            {
+                "beam":
+                {
+			        "markers":"",
+                    "fields":["displacement"]
+                }
+            }
+        }
+    }
 }

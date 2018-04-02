@@ -559,6 +559,7 @@ if (0) # BUILD_TESTING)
 endif (0) #BUILD_TESTING)
 
 install (TARGETS feelpp_glog
+  EXPORT feelpp-contrib-export-targets
   #EXPORT glog-targets
   RUNTIME DESTINATION bin
   PUBLIC_HEADER DESTINATION include/feelpp/glog

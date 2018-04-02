@@ -1,0 +1,49 @@
+{
+    "Name": "Square3d",
+    "ShortName":"Square3d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Left":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Front":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Back":
+                {
+                    "expr":"{0,0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
+    }
+
+}

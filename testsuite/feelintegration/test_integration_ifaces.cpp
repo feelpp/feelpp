@@ -27,11 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-08-25
  */
-#define USE_BOOST_TEST 1
-// Boost.Test
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE 3D integration testsuite
 // disable the main function creation, use our own
@@ -367,25 +363,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration_ifaces.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
-
-#if 0
 #if defined(USE_BOOST_TEST)
 boost::shared_ptr<Feel::Application> mpi;
 test_suite*
 init_unit_test_suite( int argc, char** argv )
 {
     mpi = boost::shared_ptr<Feel::Application>( new Feel::Application( argc, argv, makeAbout(), makeOptions() ) );
-    Feel::Assert::setLog( "test_integration.assert" );
+
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
     test->add( BOOST_TEST_CASE( ( test_integration_internal_faces<double>( mpi->vm()["hsize"].as<double>() ) ) ) );
@@ -397,7 +381,6 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration_ifaces.assert" );
 
     test_integration_internal_faces<double> c ( mpi.vm()["hsize"].as<double>() );
     c();

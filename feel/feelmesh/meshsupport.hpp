@@ -25,6 +25,7 @@
 #if !defined(FEELPP_MESH_SUPPORT_HPP)
 #define FEELPP_MESH_SUPPORT_HPP 1
 
+#include <feel/feelmesh/meshsupportbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -36,9 +37,10 @@ namespace Feel
  * A function space can use this object for built a space in a part of the mesh
  */
 template<typename MeshType>
-class MeshSupport
+class MeshSupport : public MeshSupportBase
 {
 public :
+    using super_type = MeshSupportBase;
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
     using mesh_ptrtype = boost::shared_ptr<mesh_type>;
     using range_elements_type = elements_reference_wrapper_t<mesh_type>;
@@ -67,8 +69,8 @@ public :
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
         }
 
-    bool isFullSupport() const { return M_isFullSupport; }
-    bool isPartialSupport() const { return !M_isFullSupport; }
+    bool isFullSupport() const override { return M_isFullSupport; }
+    bool isPartialSupport() const override { return !M_isFullSupport; }
 
     range_elements_type const& rangeElements() const { return M_rangeElements; }
     range_faces_type const& rangeInterProcessFaces() const { return M_rangeInterProcessFaces; }
@@ -114,21 +116,21 @@ public :
             return rangeExtendedElements;
         }
 
-    size_type numElements() const
+    size_type numElements() const override
         {
             if ( M_isFullSupport )
                 return M_mesh->numElements();
             else
                 return M_rangeMeshElementsIdsPartialSupport.size();
         }
-    bool hasElement( size_type eltId ) const
+    bool hasElement( size_type eltId ) const override
         {
             if ( M_isFullSupport )
                 return M_mesh->hasElement( eltId );
             else
                 return M_rangeMeshElementsIdsPartialSupport.find( eltId ) != M_rangeMeshElementsIdsPartialSupport.end();
         }
-    bool hasGhostElement( size_type eltId ) const
+    bool hasGhostElement( size_type eltId ) const override
         {
             if ( M_isFullSupport )
             {
@@ -164,8 +166,8 @@ public :
             }
         }
 
-    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const { return M_rangeMeshElementsIdsPartialSupport; }
-    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const { return M_rangeMeshElementsGhostIdsPartialSupport; }
+    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const override { return M_rangeMeshElementsIdsPartialSupport; }
+    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const override { return M_rangeMeshElementsGhostIdsPartialSupport; }
 
     void updateParallelData()
         {

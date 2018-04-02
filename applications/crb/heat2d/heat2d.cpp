@@ -29,6 +29,18 @@
 
 namespace Feel {
 
+Heat2D::super::betaq_type
+Heat2D::computeBetaQ( parameter_type const& mu )
+{
+    for (int k = 0;k<2;++k)
+        this->M_betaAq[k] = mu(k);
+    for (int k = 0;k<2;++k)
+        this->M_betaFq[0][k] = mu(k);
+    this->M_betaFq[1][0] = 1.;
+    return boost::make_tuple( this->M_betaAq, this->M_betaFq );
+}
+
+
 
 /// [initmodel]
 void
@@ -52,6 +64,11 @@ Heat2D::initModel()
     mu_max << 20, 20;
     Dmu->setMax( mu_max );
     /// [parameters]
+
+    this->M_betaAq.resize( 2 );
+    this->M_betaFq.resize( 2 );
+    this->M_betaFq[0].resize( 2 );
+    this->M_betaFq[1].resize( 1 );
 
     auto u = Xh->element();
     auto v = Xh->element();

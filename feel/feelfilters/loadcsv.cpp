@@ -78,10 +78,6 @@ loadXYFromCSV( std::string const& filename,
         data.insert( std::make_pair( std::stod(vec[i_abs]), std::stod(vec[i_ord]) ) );
     }
     LOG(INFO) << "done reading CSV file " << filename;
-    for( auto const& d : data )
-    {
-        std::cout << d.first << " " << d.second << std::endl;
-    }
     return data;
 }
 

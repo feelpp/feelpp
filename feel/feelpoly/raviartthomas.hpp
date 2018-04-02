@@ -573,10 +573,28 @@ public:
         return M_refconvex;
     }
 
-    std::string familyName() const
+    std::string familyName() const override
     {
         return "raviartthomas";
     }
+
+    //! \return the component of a local dof
+    uint16_type component( uint16_type localDofId ) const override
+        {
+            return 0;
+        }
+
+    //! \return a parent local dof id for each component (for example, the first component)
+    uint16_type dofParent( uint16_type localDofId ) const override
+        {
+            return localDofId;
+        }
+
+    //! \return the type of a local dof
+    uint16_type dofType( uint16_type localDofId ) const override
+        {
+            return 1;
+        }
 
     //@}
 

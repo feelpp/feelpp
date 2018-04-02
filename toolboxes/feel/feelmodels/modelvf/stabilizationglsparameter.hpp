@@ -10,12 +10,15 @@ namespace vf
 namespace FeelModels
 {
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ShapeType,typename ExprType>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ExprType, bool HasConvectionExpr, bool HasCoeffDiffusionExpr >
 struct tensorStabGLSParameterEigenValue : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,ShapeType,typename ExprType::value_type >
 {
     typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,ShapeType,typename ExprType::value_type> super_type;
-    typedef tensorStabGLSParameterEigenValue<Geo_t,Basis_i_t,Basis_j_t,ShapeType,ExprType> self_type;
+    typedef tensorStabGLSParameterEigenValue<Geo_t,Basis_i_t,Basis_j_t,ShapeType,ExprType,HasConvectionExpr,HasCoeffDiffusionExpr> self_type;
     typedef ExprType expr_type;
+    static const bool has_convection_expr = HasConvectionExpr;
+    static const bool has_coeffdiffusion_expr = HasCoeffDiffusionExpr;
+
     typedef typename ExprType::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
 
@@ -32,7 +35,7 @@ struct tensorStabGLSParameterEigenValue : public tensorBase<Geo_t,Basis_i_t,Basi
 
     void update( Geo_t const& geom )
         {
-            this->update( geom, mpl::bool_<expr_type::has_convection_expr>(), mpl::bool_<expr_type::has_coeffdiffusion_expr>() );
+            this->update( geom, mpl::bool_<has_convection_expr>(), mpl::bool_<has_coeffdiffusion_expr>() );
         }
     void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
 
@@ -109,6 +112,9 @@ private :
             }
         }
 
+    void update( Geo_t const& geom, mpl::false_, mpl::false_ )
+        {}
+
 private :
     expr_type const& M_expr;
     tensor_convection_type M_tensorConvection;
@@ -116,12 +122,15 @@ private :
     std::vector<matrix_shape_type> M_localMatrixInGeoContext;
 };
 
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ShapeType,typename ExprType>
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ExprType, bool HasConvectionExpr, bool HasCoeffDiffusionExpr>
 struct tensorStabGLSParameterDoublyAsymptoticApproximation : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,ShapeType,typename ExprType::value_type >
 {
     typedef tensorBase<Geo_t,Basis_i_t,Basis_j_t,ShapeType,typename ExprType::value_type> super_type;
-    typedef tensorStabGLSParameterDoublyAsymptoticApproximation<Geo_t,Basis_i_t,Basis_j_t,ShapeType,ExprType> self_type;
+    typedef tensorStabGLSParameterDoublyAsymptoticApproximation<Geo_t,Basis_i_t,Basis_j_t,ShapeType,ExprType,HasConvectionExpr,HasCoeffDiffusionExpr> self_type;
     typedef ExprType expr_type;
+    static const bool has_convection_expr = HasConvectionExpr;
+    static const bool has_coeffdiffusion_expr = HasCoeffDiffusionExpr;
+
     typedef typename ExprType::value_type value_type;
     typedef typename super_type::matrix_shape_type matrix_shape_type;
 
@@ -138,7 +147,7 @@ struct tensorStabGLSParameterDoublyAsymptoticApproximation : public tensorBase<G
 
     void update( Geo_t const& geom )
         {
-            this->update( geom, mpl::bool_<expr_type::has_convection_expr>(), mpl::bool_<expr_type::has_coeffdiffusion_expr>() );
+            this->update( geom, mpl::bool_<has_convection_expr>(), mpl::bool_<has_coeffdiffusion_expr>() );
         }
     void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
 
@@ -214,6 +223,9 @@ private :
                     M_localMatrixInGeoContext[q](0,0) = 0.;
             }
         }
+    void update( Geo_t const& geom, mpl::false_, mpl::false_ )
+        {}
+
 private :
     expr_type const& M_expr;
     tensor_convection_type M_tensorConvection;
@@ -224,18 +236,18 @@ private :
 
 
 
-template<typename StabilizationGLSParameterType, typename ExprConvectionType, typename ExprCoeffDiffusionType,
-         bool HasConvectionExpr,bool HasCoeffDiffusionExpr,int QuadOrder>
+template<typename StabilizationGLSParameterType, typename ExprConvectionType, typename ExprCoeffDiffusionType, int QuadOrder>
 class StabilizationGLSParameterExpr
 {
 public:
 
-    typedef StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,HasConvectionExpr,HasCoeffDiffusionExpr,QuadOrder> this_type;
+    typedef StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,QuadOrder> this_type;
     typedef ExprConvectionType expression_convection_type;
     typedef ExprCoeffDiffusionType expression_coeffdiffusion_type;
     typedef StabilizationGLSParameterType stabilization_glsparameter_type;
-    static const bool has_convection_expr = HasConvectionExpr;
-    static const bool has_coeffdiffusion_expr = HasCoeffDiffusionExpr;
+    // need to upgrade this when dynamic quadrature formula will be available
+    static const bool has_convection_expr = true;//HasConvectionExpr;
+    static const bool has_coeffdiffusion_expr = true;//HasCoeffDiffusionExpr;
 
     static const size_type context = ExprConvectionType::context|ExprCoeffDiffusionType::context;
     static const bool is_terminal = true;
@@ -262,16 +274,22 @@ public:
 
     StabilizationGLSParameterExpr( stabilization_glsparameter_type const& stabGLSParameter,
                                    expression_convection_type const& exprConvection,
-                                   expression_coeffdiffusion_type const& exprCoeffDiffusion )
+                                   expression_coeffdiffusion_type const& exprCoeffDiffusion,
+                                   bool hasConvection = true,
+                                   bool hasCoeffDiffusion = true )
         :
         M_stabGLSParameter( stabGLSParameter ),
         M_exprConvection( exprConvection ),
-        M_exprCoeffDiffusion( exprCoeffDiffusion )
+        M_exprCoeffDiffusion( exprCoeffDiffusion ),
+        M_hasConvection( hasConvection ),
+        M_hasCoeffDiffusion( hasCoeffDiffusion )
         {}
 
     stabilization_glsparameter_type const& stabGLSParameter() const { return M_stabGLSParameter; }
     expression_convection_type const& exprConvection() const { return M_exprConvection; }
     expression_coeffdiffusion_type const& exprCoeffDiffusion() const { return M_exprCoeffDiffusion; }
+    bool hasConvection() const { return M_hasConvection; }
+    bool hasCoeffDiffusion() const { return M_hasCoeffDiffusion; }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -303,17 +321,31 @@ public:
             {}
         tensor( this_type const& expr, Geo_t const& geom )
             {
-                if ( expr.stabGLSParameter().method() == "eigenvalue" )
-                    M_tensorbase.reset( new tensorStabGLSParameterEigenValue<Geo_t, Basis_i_t, Basis_j_t, shape, this_type>(expr,geom) );
-                else if ( expr.stabGLSParameter().method() == "doubly-asymptotic-approximation" )
-                    M_tensorbase.reset( new tensorStabGLSParameterDoublyAsymptoticApproximation<Geo_t, Basis_i_t, Basis_j_t, shape, this_type>(expr,geom) );
+                if ( expr.hasConvection() && expr.hasCoeffDiffusion() )
+                    this->initTensorBase<true,true>( expr, geom );
+                else if ( expr.hasConvection() )
+                    this->initTensorBase<true,false>( expr, geom );
+                else if ( expr.hasCoeffDiffusion() )
+                    this->initTensorBase<false,true>( expr, geom );
                 else
-                    CHECK( false ) << "invalid method " << expr.stabGLSParameter().method();
+                    this->initTensorBase<false,false>( expr, geom );
             }
         tensor( tensor const& t )
             :
             M_tensorbase( t.M_tensorbase )
             {}
+
+        template<bool HasConvec,bool HasCoeffDiff>
+        void
+        initTensorBase( this_type const& expr, Geo_t const& geom )
+            {
+                if ( expr.stabGLSParameter().method() == "eigenvalue" )
+                    M_tensorbase.reset( new tensorStabGLSParameterEigenValue<Geo_t, Basis_i_t, Basis_j_t, shape, this_type,HasConvec,HasCoeffDiff>(expr,geom) );
+                else if ( expr.stabGLSParameter().method() == "doubly-asymptotic-approximation" )
+                    M_tensorbase.reset( new tensorStabGLSParameterDoublyAsymptoticApproximation<Geo_t, Basis_i_t, Basis_j_t, shape, this_type,HasConvec,HasCoeffDiff>(expr,geom) );
+                else
+                    CHECK( false ) << "invalid method " << expr.stabGLSParameter().method();
+            }
 
         template<typename IM>
         void init( IM const& im )
@@ -378,19 +410,23 @@ private :
     stabilization_glsparameter_type const& M_stabGLSParameter;
     expression_convection_type const& M_exprConvection;
     expression_coeffdiffusion_type const& M_exprCoeffDiffusion;
+    bool M_hasConvection;
+    bool M_hasCoeffDiffusion;
 
 
 };
 
-template<bool HasConvectionExpr=true,bool HasCoeffDiffusionExpr=true,int QuadOrder=-1,typename StabilizationGLSParameterType,typename ExprConvectionType, typename ExprCoeffDiffusionType >
+template<int QuadOrder = -1, typename StabilizationGLSParameterType, typename ExprConvectionType, typename ExprCoeffDiffusionType >
 inline
-Expr< StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,HasConvectionExpr,HasCoeffDiffusionExpr,QuadOrder > >
+Expr< StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,QuadOrder > >
 stabilizationGLSParameterExpr( StabilizationGLSParameterType const& stabilizationGLSParameter,
                                ExprConvectionType const& exprConvection,
-                               ExprCoeffDiffusionType const& exprCoeffDiffusion )
+                               ExprCoeffDiffusionType const& exprCoeffDiffusion,
+                               bool hasConvection = true,
+                               bool hasCoeffDiffusion = true)
 {
-    typedef StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,HasConvectionExpr,HasCoeffDiffusionExpr,QuadOrder> expr_stabgls_parameter_t;
-    return Expr< expr_stabgls_parameter_t >(  expr_stabgls_parameter_t( stabilizationGLSParameter,exprConvection,exprCoeffDiffusion ) );
+    typedef StabilizationGLSParameterExpr<StabilizationGLSParameterType,ExprConvectionType,ExprCoeffDiffusionType,QuadOrder> expr_stabgls_parameter_t;
+    return Expr< expr_stabgls_parameter_t >(  expr_stabgls_parameter_t( stabilizationGLSParameter,exprConvection,exprCoeffDiffusion,hasConvection,hasCoeffDiffusion ) );
 }
 
 

@@ -1,72 +1,53 @@
 steps:
- - name: ':ubuntu: 16.10,clang-3.9'
+ - name: ':ubuntu: 16.04,clang-4.0'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
-     ubuntu: "16.10"
+     ubuntu: "16.04"
    env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
+     CXX: clang++-4.0
+     CC: clang-4.0
+     TARGET: ubuntu:16.04
  # - name: ':mac: using homebrew :beer:'
  #   command: tools/scripts/buildkite/build-osx.sh
  #   branches: develop
  #   agents:
  #     osx: true
  - wait
- - name: ':ubuntu: 16.10,clang-3.9  feelpp-base :hammer:'
+ - name: ':ubuntu: 16.04,clang-4.0  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
-     ubuntu: "16.10"
+     ubuntu: "16.04"
    env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
+     CXX: clang++-4.0
+     CC: clang-4.0
+     TARGET: ubuntu:16.04
  - wait
- - name: ':ubuntu: 16.10,clang-3.9 feelpp-crb :hammer:'
-   command: tools/scripts/buildkite/install-feelpp.sh crb
-   agents:
-     docker: true
-     ubuntu: "16.10"
-   env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
- - wait
- - name: ':ubuntu: 16.10,clang-3.9 feelpp-toolboxes :hammer:'
+ - name: ':ubuntu: 16.04,clang-4.0 feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
-     ubuntu: "16.10"
+     ubuntu: "16.04"
    env:
-     CXX: clang++-3.9
-     CC: clang-3.9
-     TARGET: ubuntu:16.10
+     CXX: clang++-4.0
+     CC: clang-4.0
+     TARGET: ubuntu:16.04
+ - wait
+ - name: ':ubuntu: 16.04,clang-4.0 feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     CXX: clang++-4.0
+     CC: clang-4.0
+     TARGET: ubuntu:16.04
  - wait
  - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.10"
+     ubuntu: "16.04"
    env:
-     TARGET: ubuntu:16.10
-# - trigger: "feelpp-singularity"
-#   label: ":singularity: generate images"
-#   branches: "develop"
-#   async: true
-#   build:
-#     branch: "develop"
-#     env:
-#       TARGET: ubuntu:16.10
-# - wait: ~
-#   continue_on_failure: true
-## Require buildkite agent >= 3
-# - trigger: "feelpp-singularity"
-#   label: ":singularity: generate images"
-#   branches: "master develop feature/*"
-#   async: true
-#   build:
-#     branch: "${BUILDKITE_BRANCH}"
-#     env:
-#       TARGET: ubuntu:16.10
+     TARGET: ubuntu:16.04

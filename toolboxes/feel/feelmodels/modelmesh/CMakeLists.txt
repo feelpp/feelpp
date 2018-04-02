@@ -18,7 +18,7 @@ set_property(TARGET feelpp_modelmesh PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
 endif()
-INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT Libs)
+INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 #######################################################
 # meshale lib
@@ -57,7 +57,7 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES}
     )
   set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
-  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs)
+  INSTALL(TARGETS feelpp_modelmeshale DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
   
 endif( FEELPP_MODELS_HAS_MESHALE )
 

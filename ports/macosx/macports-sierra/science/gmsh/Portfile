@@ -15,7 +15,7 @@ PortGroup           mpi 1.0
 # svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh
-version             2.14.1
+version             2.16.0
 categories          science
 platforms           darwin
 maintainers         feelpp.org:christophe.prudhomme
@@ -32,13 +32,13 @@ master_sites        http://www.geuz.org/gmsh/src/
 distname            gmsh-${version}-source
 extract.suffix      .tgz
 
-checksums           rmd160  ad7b98a67f02bcd9b06419fbfbe02e1192a9ba8d \
-                    sha256  27f44fd47b0629a1eedf209f0f21e482545a6ffae18e8527f2356b230fb95def
+checksums           rmd160  d682f35f9ce07e2f0c60d1932c5e0c66416efafb \
+                    sha256  e829eaf32ea02350a385202cc749341f2a3217c464719384b18f653edd028eea
 
 #worksrcdir          trunk
 conflicts           gmsh-devel
 
-patchfiles     gmsh.patch
+patchfiles     gmsh.patch patch-bamg.diff
 patch.dir      ${worksrcpath}
 
 #worksrcdir	build
@@ -47,27 +47,35 @@ patch.dir      ${worksrcpath}
 #configure.cmd       cmake
 cmake.out_of_source yes
 
+# mpi.enforce_variant   petsc
+# mpi.enforce_variant   slepc
+mpi.setup
+
+default_variants +atlas
+
 #configure.pre_args
+pre-configure {
 configure.args-append \
     -DCMAKE_INSTALL_PREFIX=${prefix}\
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=OFF \
     -DCMAKE_COLOR_MAKEFILE=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
-    -DENABLE_OS_SPECIFIC_INSTALL=OFF\
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF \
     -DCMAKE_CXX_COMPILER=${configure.cxx} \
     -DCMAKE_C_COMPILER=${configure.cc} \
-    -DENABLE_BUILD_LIB=OFF\
-    -DENABLE_BUILD_SHARED=ON\
-    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
+    -DENABLE_BUILD_LIB=OFF \
+    -DENABLE_BUILD_SHARED=ON \
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF \
     -DENABLE_OCC:BOOL=OFF \
-    -DENABLE_FLTK:BOOL=ON\
-    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_FLTK:BOOL=ON \
+    -DENABLE_GRAPHICS:BOOL=ON \
     -DENABLE_METIS=ON \
     -DENABLE_TAUCS=OFF \
     -DSEARCH_ANN_IN_SYSTEM=OFF
+}
 
 build.target all shared
 
@@ -86,11 +94,6 @@ depends_lib  \
     port:libANN
 
 
-# mpi.enforce_variant   petsc
-# mpi.enforce_variant   slepc
-mpi.setup
-
-default_variants +atlas +slepc
 
 
 

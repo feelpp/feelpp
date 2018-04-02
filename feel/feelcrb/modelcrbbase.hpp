@@ -189,6 +189,11 @@ public :
     typedef vf::detail::BilinearForm<functionspace_type, functionspace_type,VectorUblas<value_type>> form2_type;
     typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
 
+    typedef Pchv_type<mesh_type,1> displacement_space_type;
+    typedef boost::shared_ptr<displacement_space_type> displacement_space_ptrtype;
+    typedef typename displacement_space_type::element_type displacement_field_type;
+    typedef typename boost::shared_ptr<displacement_field_type> displacement_field_ptrtype;
+
 #if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
     static const bool is_linear = FunctionSpaceDefinition::is_linear;
@@ -291,7 +296,8 @@ public :
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
         M_crbModelDb( name, uid ),
-        M_is_initialized( false )
+        M_is_initialized( false ),
+        M_has_displacement_field( false )
     {
 
         bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
@@ -924,7 +930,7 @@ public :
             k=0;
             for( auto const& item : ptreeAffineDecomposition->get_child("betaFqm") )
             {
-                int sizeSubBetaFqm = ptreeAffineDecomposition->get_child("").size();
+                int sizeSubBetaFqm = item.second.get_child("").size();
                 M_betaFqm[k].resize( sizeSubBetaFqm );
                 int k2=0;
                 for ( auto const& item2 : item.second.get_child("") )
@@ -2036,6 +2042,13 @@ public:
         return Xh;
     }
 
+    virtual
+    typename functionspace_type::mesh_support_vector_type
+    functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+        {
+            return typename functionspace_type::mesh_support_vector_type();
+        }
+
     /**
      * \brief Returns the reduced basis function space
      */
@@ -2051,11 +2064,26 @@ public:
         return Dmu;
     }
 
+
+    //! Return a P1 vector field to warp the domain if we want to visualize the
+    //! the effect of geometric parameters.
+    virtual displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
+    {
+        CHECK( false ) << "Error : the function fieldForWarp() has been called without beeing rewrite.\n";
+
+        displacement_field_ptrtype u;
+        return u;
+    }
+
+    bool hasDisplacementField() const { return M_has_displacement_field; }
+    void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
+
+
+protected :
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
 
-protected :
     backend_ptrtype M_backend;
 
     CRBModelDB M_crbModelDb;
@@ -2065,7 +2093,7 @@ protected :
 
     deim_vector_type M_deims;
     mdeim_vector_type M_mdeims;
-    bool M_is_initialized;
+    bool M_is_initialized, M_has_displacement_field;
 
     sparse_matrix_ptrtype M;
     sparse_matrix_ptrtype M_energy_matrix;

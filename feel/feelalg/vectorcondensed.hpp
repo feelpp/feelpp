@@ -133,6 +133,18 @@ public:
                 M_sc->block( row );
             return this->shared_from_this();
         }
+    void zero() override
+        {
+            if ( staticCondensation() )
+                M_sc->zeroVector();
+            else
+                super::zero();
+        }
+    void zero( int n1 )
+        {
+            if ( staticCondensation() )
+                M_sc->zero( n1 );
+        }
 protected:
     void getFuture() const
         {

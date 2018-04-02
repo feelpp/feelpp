@@ -1,7 +1,7 @@
 #ifndef _INEXTENSIBILITYFORCEMODEL_HPP
 #define _INEXTENSIBILITYFORCEMODEL_HPP 1
 
-#define DEBUG_INEXTENSIBILITYFORCEMODEL
+//#define DEBUG_INEXTENSIBILITYFORCEMODEL
 
 #include <feel/feelmodels/multifluid/interfaceforcesmodel.hpp>
 
@@ -33,12 +33,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Construction
-    InextensibilityForceModel() {}
+    InextensibilityForceModel() = default;
     InextensibilityForceModel( InextensibilityForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
 
-    boost::shared_ptr<std::ostringstream> getInfo() const;
+    boost::shared_ptr<std::ostringstream> getInfo() const override;
 
     void loadParametersFromOptionsVm();
 
@@ -46,7 +46,7 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
 private:
-    void updateInterfaceForcesImpl( element_ptrtype & F );
+    void updateInterfaceForcesImpl( element_ptrtype & F ) const override;
 
     void updateInterfaceRectangularFunction();
 
@@ -69,6 +69,7 @@ void
 InextensibilityForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
 {
     super_type::build( prefix, ls );
+    this->loadParametersFromOptionsVm();
 
     M_levelsetModGradPhi.reset( new element_levelset_type(this->levelset()->functionSpace(), "ModGradPhi") );
 }
@@ -143,7 +144,7 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
 
 template<typename LevelSetType>
 void
-InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F )
+InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     if( !M_exporterInitDone )
@@ -197,22 +198,28 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
     //auto Ep = *M_levelsetModGradPhi;
     //Ep.add (-1.);
     //auto Ep = this->levelset()->stretch();
-    auto Ep = this->levelset()->smoother()->project(
-            _expr=idv(this->levelset()->stretch())
-            );
+    //auto Ep = this->levelset()->smoother()->project(
+            //_expr=idv(this->levelset()->stretch())
+            //);
     //auto EpRaw = this->levelset()->stretch();
     //auto Ep = this->levelset()->smoother()->project(
             //_expr=max(idv(EpRaw), 0.)
             //);
+    auto EpRaw = this->levelset()->stretch();
+    auto Ep = vf::project(
+            _space=this->levelset()->functionSpace(),
+            _range=elements(this->levelset()->mesh()),
+            _expr=max(idv(EpRaw), 0)
+            );
     //auto EpN = this->levelset()->projectorL2Vectorial()->project(
             //_expr=idv(Ep)*idv(N)
             //);
-    auto GradEp = this->levelset()->smootherVectorial()->project(
-            _expr=trans(gradv(Ep))
-            );
-    //auto GradEp = this->levelset()->projectorL2Vectorial()->project(
+    //auto GradEp = this->levelset()->smootherVectorial()->project(
             //_expr=trans(gradv(Ep))
             //);
+    auto GradEp = this->levelset()->projectorL2Vectorial()->project(
+            _expr=trans(gradv(Ep))
+            );
     //auto DivEpNtN = this->levelset()->smootherVectorial()->project(
             //_expr=divv(EpN)*idv(N)
             //);
@@ -227,10 +234,13 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
             //_range=elements(this->levelset()->mesh()),
             //_expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             //);
-    auto Fe = this->levelset()->smootherVectorial()->project(
+    //auto Fe = this->levelset()->smootherVectorial()->project(
+            //_expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
+            //);
+    auto Fe = this->levelset()->projectorL2Vectorial()->project(
             _expr=M_inextensibilityForceCoefficient*( (Id-NxN)*idv(GradEp)-idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
-    *F += Fe;
+    *F = Fe;
 
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     M_exporter->step(this->levelset()->time())->add(
@@ -239,16 +249,12 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrt
             "Ep", "Ep", Ep );
     M_exporter->step(this->levelset()->time())->add(
             "inextensibility-force", "inextensibility-force", Fe );
-    auto Fe_ortho = vf::project(
-            _space=this->levelset()->functionSpaceVectorial(),
-            _range=elements(this->levelset()->mesh()),
+    auto Fe_ortho = this->levelset()->projectorL2Vectorial()->project(
             _expr=( (Id-NxN)*idv(GradEp) )*idv(this->levelset()->D())
             );
     M_exporter->step(this->levelset()->time())->add(
             "inextensibility-force-ortho", "inextensibility-force-ortho", Fe_ortho );
-    auto Fe_par = vf::project(
-            _space=this->levelset()->functionSpaceVectorial(),
-            _range=elements(this->levelset()->mesh()),
+    auto Fe_par = this->levelset()->projectorL2Vectorial()->project(
             _expr=( -idv(Ep)*idv(K)*idv(N) )*idv(this->levelset()->D())
             );
     M_exporter->step(this->levelset()->time())->add(

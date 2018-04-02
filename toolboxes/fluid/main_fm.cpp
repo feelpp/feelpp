@@ -52,7 +52,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 	po::options_description fluidmecoptions( "application fluid-mechanics options" );
-    fluidmecoptions.add( feelmodels_options("fluid") );
+    fluidmecoptions.add( toolboxes_options("fluid") );
     fluidmecoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
         ;

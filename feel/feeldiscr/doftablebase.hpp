@@ -26,6 +26,7 @@
 
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feeldiscr/dof.hpp>
+#include <feel/feelmesh/meshsupportbase.hpp>
 
 namespace Feel
 {
@@ -80,6 +81,7 @@ class DofTableBase : public DataMap
 public:
     typedef Dof global_dof_type;
     typedef FaceDof global_dof_fromface_type;
+    typedef std::shared_ptr<MeshSupportBase> mesh_support_base_ptrtype;
 
     DofTableBase( WorldComm const& _worldComm )
         :
@@ -99,6 +101,8 @@ public:
     virtual global_dof_fromface_type const& faceLocalToGlobal( const size_type ElId,
                                                                const uint16_type localNode,
                                                                const uint16_type c = 0 ) const = 0;
+
+    virtual mesh_support_base_ptrtype meshSupportBase() const = 0;
 
 };
 

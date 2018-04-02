@@ -409,6 +409,7 @@ endif(FEELPP_ENABLE_MKL)
 
 option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
+  set(HDF5_PREFER_PARALLEL TRUE)
   find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND )
     if( HDF5_IS_PARALLEL )
@@ -417,8 +418,6 @@ if ( FEELPP_ENABLE_HDF5 )
         INCLUDE_DIRECTORIES( ${HDF5_INCLUDE_DIRS} )
         set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
         set(FEELPP_HAS_HDF5 1)
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
-
         # check HDF5 version
         if(NOT HDF5_VERSION)
           set( HDF5_VERSION "" )
@@ -454,6 +453,9 @@ if ( FEELPP_ENABLE_HDF5 )
         IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
           MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
         ENDIF()
+        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5/${HDF_VERSION_REF}" )
+
+
       else(HDF5_IS_PARALLEL)
         MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
       endif( HDF5_IS_PARALLEL)
@@ -469,7 +471,7 @@ endif(FEELPP_ENABLE_HDF5)
 find_package(XDMF QUIET)
 if (XDMF_FOUND)
     INCLUDE_DIRECTORIES( ${XDMF_INCLUDE_DIRS} )
-    set(FEELPP_LIBRARIES ${XDMF_LIBRARIES})
+    set(FEELPP_LIBRARIES ${XDMF_LIBRARIES} ${FEELPP_LIBRARIES})
     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} XDMF" )
     message(STATUS "Found Xdmf." )
 else()
@@ -1270,7 +1272,7 @@ include( contrib.dependencies )
 
 #
 # Acusim
-# 
+#
 include(feelpp.module.altair)
 
 # Asciidoctor
@@ -1295,6 +1297,17 @@ option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTA
 if( FEELPP_ENABLE_CLING_INTERPRETER )
   include(feelpp.module.cling.interpreter)
 endif()
+
+option( FEELPP_ENABLE_OMC "Enable OpemModelica in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_OMC )
+  include( feelpp.module.omc )
+endif()
+
+option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if( FEELPP_ENABLE_FMILIB )
+  include( feelpp.module.fmilib )
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
@@ -1405,7 +1418,7 @@ set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
 foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
   string(TOUPPER ${_c} _BOOST_LIB)
-  set(FEELPP_BOOST_TEXT 
+  set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}
     set(Boost_${_BOOST_LIB}_FOUND \"${Boost_${_BOOST_LIB}_FOUND}\")
     set(Boost_${_BOOST_LIB}_LIBRARY \"${Boost_${_BOOST_LIB}_LIBRARY}\")

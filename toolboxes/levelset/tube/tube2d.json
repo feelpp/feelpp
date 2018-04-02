@@ -1,7 +1,10 @@
 {
-    "Name": "Square2d",
-    "ShortName": "Square2d",
-    "Model": "Levelset",
+    "Name": "Tube2d",
+    "ShortName": "Tube2d",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
 
     "InitialConditions":
     {

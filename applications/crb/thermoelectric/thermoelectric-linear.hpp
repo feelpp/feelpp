@@ -38,13 +38,15 @@ makeThermoElectricOptions()
 {
     po::options_description options( "Thermoelectric" );
     options.add_options()
+        ( "thermoelectric.basename", Feel::po::value<std::string>()->default_value("thermoelectric_linear"),
+          "name of the database" )
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
-        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e4 ), "penalisation term" )
-        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(40), "size of the eim trainset" )
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
+        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(10), "size of the eim trainset" )
         ( "thermoelectric.export-FE", po::value<bool>()->default_value(true), "export FE solution" )
-        ( "thermoelectric.picard.maxit", po::value<int>()->default_value(5), "maximum number of iterations for Picard" )
-        ( "thermoelectric.picard.tol", po::value<double>()->default_value(1e-8), "tolerance for Picard" )
+        ( "thermoelectric.picard.maxit", po::value<int>()->default_value(15), "maximum number of iterations for Picard" )
+        ( "thermoelectric.picard.tol", po::value<double>()->default_value(1e-5), "tolerance for Picard" )
         ;
     options.add(backend_options("thermo-electro") );
     return options;
@@ -128,6 +130,7 @@ public:
     using J_space_type = FunctionSpaceDefinition::J_space_type;
     using J_space_ptrtype = boost::shared_ptr<J_space_type>;
     using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
+    using q_sigma_space_ptrtype = boost::shared_ptr<q_sigma_space_type>;
     using q_sigma_element_type = q_sigma_space_type::element_type;
     using V_view_type = typename element_type::template sub_element_type<0>;
     using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
@@ -138,11 +141,13 @@ public:
 
     using prop_type = ModelProperties;
     using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using mat_type = ModelMaterial;
+    using map_mat_type = std::map<std::string, mat_type>;
 
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
     using beta_vector_type = typename super_type::beta_vector_type;
-    using beta_type = boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >;
+    using beta_type = boost::tuple<beta_vector_type, std::vector<beta_vector_type> >;
     using affine_decomposition_type = typename super_type::affine_decomposition_type;
 
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
@@ -150,6 +155,10 @@ public:
 private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
+    map_mat_type M_materials;
+    map_mat_type M_elecMaterials;
+    map_mat_type M_therMaterials;
+
     std::vector< std::vector< element_ptrtype > > M_initialGuess;
 
     element_ptrtype M_VT;
@@ -173,6 +182,7 @@ public:
     ThermoElectric();
     ThermoElectric( mesh_ptrtype mesh );
 
+    int indexOfMat(std::string mat ) const { return std::distance(M_materials.begin(),M_materials.find(mat)); }
     // Size of the decomposition
     int Qa() const;
     int Nl() const;
@@ -180,6 +190,8 @@ public:
     int mMaxA( int q ) const;
     int mMaxL( int l, int q ) const;
     int mMaxCompliant( int q ) const;
+    int QIntensity() const;
+    int QAverageTemp() const;
     int mMaxIntensity( int q ) const;
     int mMaxAverageTemp( int q ) const;
     int QInitialGuess() const override;
@@ -194,8 +206,11 @@ public:
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
+    // mesh support of functionspace
+    functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
+
     // Decomposition
-    void decomposition();
+    void assemble() override;
     affine_decomposition_type computeAffineDecomposition() override;
     std::vector<std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
     std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
@@ -215,10 +230,11 @@ public:
     // Scalar product
     double scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y );
     double scalarProduct( vector_type const& x, vector_type const& y );
+    sparse_matrix_ptrtype energyMatrix() override;
 
     // Output
     value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
 
     // BiotSavart API
     int mMaxJoule();

@@ -1,8 +1,11 @@
 // -*- mode: javascript -*-
 {
-    "Name": "Fluid Mechanics",
-    "ShortName":"Fluid",
-    "Model":"Navier-Stokes",
+    "Name": "Turek-Hron cfd3",
+    "ShortName":"cfd3",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
     "Parameters":
     {
         "ubar":"2",
@@ -11,7 +14,6 @@
     "Materials":
     {
         "Fluid":{
-            "name":"myFluidMat",
             "rho":"1.0e3",
             "mu":"1.0"
         }
@@ -49,7 +51,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","pid"],
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid"]
+        },
         "Measures":
         {
             "Forces":"wall2",
