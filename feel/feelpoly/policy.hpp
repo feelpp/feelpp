@@ -328,7 +328,7 @@ struct Tensor2 : public Tensor2Base
     }
 };
 
-struct Tensor2SymmBase {};
+struct Tensor2SymmBase : Tensor2Base {};
 
 /**
  * Policy for symmetric rank 2 tensor polynomials or polynomial sets of

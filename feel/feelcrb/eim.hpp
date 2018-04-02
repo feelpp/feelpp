@@ -497,7 +497,7 @@ EIM<ModelType>::errorEstimationLinf( parameter_type const & mu, model_solution_t
     auto projected_expression = M_model->operator()( solution  , mu );
     auto eim_approximation = this->operator()(mu, solution, M);
     auto diff = idv( projected_expression ) - idv( eim_approximation );
-    auto norm = normLinf( _range=elements( M_model->mesh()), _pset=_Q<0>(), _expr= diff );
+    auto norm = normLinf( _range=M_model->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= diff );
     double error = norm.template get<0>();
     return error;
 }
@@ -744,7 +744,7 @@ EIM<ModelType>::offline()
         DVLOG( 2 )<<"add the interpolation point : \n"<<t;
         DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
 
-        auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0.) );
+        auto zero = vf::project( _space=M_model->functionSpace(), _range=M_model->functionSpace()->template rangeElements<0>(), _expr=cst(0.) );
         if( expression_expansion )
         {
             M_model->addZ( zero );
@@ -945,7 +945,6 @@ EIM<ModelType>::offline()
         }
 
         timer2.restart();
-        auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
         if( this->worldComm().isMasterRank() )
         {
@@ -2322,12 +2321,12 @@ public:
                 sol = this->solve( mu ); //FEM
             auto eimexpr = this->expr( mu, sol );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
-            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
+            return vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         }
     element_type operator()( model_solution_type const& T, parameter_type const&  mu ) override
         {
             auto eimexpr = this->expr( mu, T );
-            return vf::project( _space=this->functionSpace(), _expr=eimexpr );
+            return vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         }
 
     vector_type operator()( geometricspace_context_type const& ctx, parameter_type const& mu , int M )
@@ -2450,7 +2449,7 @@ public:
         // auto residual_projected_expr = idv(proj_g)-idv(z);
         if ( !this->M_computeExpansionOfExpression || ( this->M_normUsedForResidual == super::ResidualNormType::LinftyVec ) )
         {
-            this->M_internalModelFeFunc->on(_range=elements(this->functionSpace()->mesh()),_expr=residual_expr );
+            this->M_internalModelFeFunc->on(_range=this->functionSpace()->template rangeElements<0>(),_expr=residual_expr );
             // this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=M_expr );
             // this->M_internalModelFeFunc->add(-1., z );
         }
@@ -2461,17 +2460,17 @@ public:
         case super::ResidualNormType::Linfty:
         {
             if( this->M_computeExpansionOfExpression )
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= residual_expr );
             else
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_projected_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= residual_projected_expr );
         }
         break;
         case super::ResidualNormType::L2:
         {
             if( this->M_computeExpansionOfExpression )
-                max = normL2( _range=elements( this->mesh()), _expr=residual_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=residual_expr );
             else
-                max = normL2( _range=elements( this->mesh()), _expr=residual_projected_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=residual_projected_expr );
         }
         break;
         case super::ResidualNormType::LinftyVec:
@@ -2493,7 +2492,7 @@ public:
         auto eimexpr = this->expr( mu, solution );
 #if 1
         if ( !this->M_computeExpansionOfExpression || ( this->M_normUsedForResidual == super::ResidualNormType::LinftyVec ) )
-            this->M_internalModelFeFunc->on(_range=elements(this->mesh()),_expr=eimexpr );
+            this->M_internalModelFeFunc->on(_range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
         auto projected_expr = idv( this->M_internalModelFeFunc );
 
         switch ( this->M_normUsedForResidual )
@@ -2501,17 +2500,17 @@ public:
         case super::ResidualNormType::Linfty:
         {
             if( this->M_computeExpansionOfExpression )
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= eimexpr );
             else
-                boost::tie( max, node ) = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= projected_expr );
+                boost::tie( max, node ) = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= projected_expr );
         }
         break;
         case super::ResidualNormType::L2:
         {
             if( this->M_computeExpansionOfExpression )
-                max = normL2( _range=elements( this->mesh()), _expr=eimexpr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
             else
-                max = normL2( _range=elements( this->mesh()), _expr=projected_expr );
+                max = normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=projected_expr );
         }
         break;
         case super::ResidualNormType::LinftyVec:
@@ -2522,7 +2521,7 @@ public:
         }
 
 #else
-        auto proj_g = vf::project( _space=this->functionSpace(),_expr=eimexpr/*M_expr*/ );
+        auto proj_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr/*M_expr*/ );
         auto projected_expr = idv( proj_g );
 
         std::string norm_used = soption(_name="eim.norm-used-for-residual");
@@ -2533,13 +2532,13 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= eimexpr );
+                auto exprmax = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr= eimexpr );
                 max = exprmax.template get<0>();
                 node = exprmax.template get<1>();
             }
             else
             {
-                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr=projected_expr);
+                auto exprmax = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<0>(), _expr=projected_expr);
                 max = exprmax.template get<0>();
                 node = exprmax.template get<1>();
             }
@@ -2549,12 +2548,12 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
+                double norm = math::sqrt( integrate( _range=this->functionSpace()->template rangeElements<0>() ,_expr=eimexpr*eimexpr).evaluate()( 0,0 ) );
                 max = norm;
             }
             else
             {
-                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=projected_expr*projected_expr).evaluate()( 0,0 ) );
+                double norm = math::sqrt( integrate( _range=this->functionSpace()->template rangeElements<0>() ,_expr=projected_expr*projected_expr).evaluate()( 0,0 ) );
                 max = norm;
             }
         }
@@ -2563,13 +2562,13 @@ public:
             check_name_norm=true;
             if( boption(_name="eim.compute-expansion-of-expression") )
             {
-                auto projection = vf::project( _space=this->functionSpace(),_expr=eimexpr );
+                auto projection = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
                 double norm = projection.linftyNorm();
                 max = norm ;
             }
             else
             {
-                auto projection = vf::project( _space=this->functionSpace(),_expr=projected_expr );
+                auto projection = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=projected_expr );
                 double norm = projection.linftyNorm();
                 max = norm ;
             }
@@ -2617,7 +2616,7 @@ public:
         else
         {
             auto eimexpr = this->expr( M_mu );//, *M_u );
-            auto projected_g = vf::project( _space=this->functionSpace(),_expr=eimexpr );
+            auto projected_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(),_expr=eimexpr );
 
             auto projected_g_evaluated = evaluateFromContext( _context=*M_ctxFeBasisEim, _expr=idv( projected_g ) );
             double eval = projected_g_evaluated(0);
@@ -2705,19 +2704,19 @@ public:
             {
                 expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=eimexpr );
                 double eval = expression_evaluated( 0 );
-                res = vf::project( _space=this->functionSpace(), _expr=eimexpr/eval );
+                res = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr/eval );
             }
             else
             {
                 expression_evaluated = evaluateFromContext( _context=interpolation_point , _expr=residual );
                 double eval = expression_evaluated( 0 );
-                res = vf::project( _space=this->functionSpace(), _expr=residual/eval );
+                res = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=residual/eval );
             }
             return res;
         }
         else
         {
-            auto residual = vf::project(_space=this->functionSpace(), _expr=idv(M_eimFeSpaceDb.g(m)) - idv( z ) );
+            auto residual = vf::project(_space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(M_eimFeSpaceDb.g(m)) - idv( z ) );
             auto t = M_t[m];
             residual.scale( 1./residual(t)(0,0,0) );
             return residual;
@@ -2738,7 +2737,7 @@ public:
 
         auto eimexpr = this->expr( M_mu );//, *M_u );
 
-        auto element_zero = project( _space=this->functionSpace(), _expr=cst(0) );
+        auto element_zero = project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=cst(0) );
         auto example_of_q = ( eimexpr - idv(element_zero) )/1.0;
 
         typedef decltype( example_of_q ) expression_type ;
@@ -2916,7 +2915,7 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        return normL2( _range=elements( mesh ), _expr=eimexpr );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
     }
 
     //Let geim the eim expansion of g
@@ -2926,7 +2925,7 @@ public:
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
         auto difference = eimexpr - idv(eim_expansion);
-        return normL2( _range=elements( mesh ), _expr=difference );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=difference );
     }
 
 
@@ -2936,8 +2935,8 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
-        return normL2( _range=elements( mesh ), _expr=idv(pi_g) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(pi_g) );
     }
 
     //here is computed || \pi_g - geim ||_L2
@@ -2945,9 +2944,9 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
-        return normL2( _range=elements( mesh ), _expr=idv(diff) );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=idv(diff) );
     }
 
     //here is computed || \pi_g - geim ||_Linf
@@ -2955,9 +2954,9 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto diff = pi_g - eim_expansion;
-        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
+        auto linf = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<5>(), _expr=idv(diff) );
         return linf.template get<0>();
     }
 
@@ -2966,8 +2965,8 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->functionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
-        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(pi_g) );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
+        auto linf = normLinf( _range=this->functionSpace()->template rangeElements<0>(), _pset=_Q<5>(), _expr=idv(pi_g) );
         return linf.template get<0>();
     }
 
@@ -2975,9 +2974,9 @@ public:
     {
         auto eimexpr = this->expr( mu, T );
         auto mesh = this->modelFunctionSpace()->mesh();
-        auto pi_g = vf::project( _space=this->functionSpace(), _expr=eimexpr );
+        auto pi_g = vf::project( _space=this->functionSpace(), _range=this->functionSpace()->template rangeElements<0>(), _expr=eimexpr );
         auto difference = eimexpr - idv(pi_g);
-        return normL2( _range=elements( mesh ), _expr=difference );
+        return normL2( _range=this->functionSpace()->template rangeElements<0>(), _expr=difference );
     }
 
     void computationalTimeStatistics( std::string appname ) override

@@ -29,24 +29,12 @@ foreach(_DIM 2 3)
     feelpp_max( MAX_ORDER 1 ${_POLY_ORDER})
   message(STATUS "[feelpp] ADVECTION ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _POLY_ORDER RANGE 1 ${MAX_ORDER} )
-      genLibAdvection(
+    genLibAdvection(
       DIM     ${_DIM}
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER 1
-      #USE_PERIODICITY
-      POINT_SET EquiSpaced 
-      ADD_CMAKE_INSTALL
       )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
-      genLibAdvection(
-      DIM     ${_DIM}
-      POLY_ORDER ${_POLY_ORDER}
-      GEO_ORDER 1
-      #USE_PERIODICITY
-      POINT_SET Fekete 
-      ADD_CMAKE_INSTALL
-      )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -56,24 +44,12 @@ foreach(_DIM 2 3)
     feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_POLY_ORDER})
   message(STATUS "[feelpp] ADVECTION ${_DIM}D PNGN N=2..${MAX_ORDER}")
   foreach( _POLY_ORDER RANGE 2 ${MAX_ORDER} )
-      genLibAdvection(
+    genLibAdvection(
       DIM     ${_DIM}
       POLY_ORDER ${_POLY_ORDER}
       GEO_ORDER ${_POLY_ORDER}
-      POINT_SET EquiSpaced 
-      #USE_PERIODICITY
-      ADD_CMAKE_INSTALL
       )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
-      genLibAdvection(
-      DIM     ${_DIM}
-      POLY_ORDER ${_POLY_ORDER}
-      GEO_ORDER ${_POLY_ORDER}
-      POINT_SET Fekete 
-      #USE_PERIODICITY
-      ADD_CMAKE_INSTALL
-      )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME} )
+    set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME} )
   endforeach()
 endforeach()
 
@@ -88,23 +64,15 @@ foreach(_DIM 2 3)
       POLY_ORDER ${_POLY_ORDER}
       POLY_SET Vectorial
       GEO_ORDER 1
-      #USE_PERIODICITY
-      POINT_SET EquiSpaced 
-      ADD_CMAKE_INSTALL
       )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
-      genLibAdvection(
-      DIM     ${_DIM}
-      POLY_ORDER ${_POLY_ORDER}
-      POLY_SET Vectorial
-      GEO_ORDER 1
-      #USE_PERIODICITY
-      POINT_SET Fekete 
-      ADD_CMAKE_INSTALL
-      )
-  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${LIBBASE_NAME}  )
+  set(FEELPP_MODELS_LIBRARIES_ADVECTION  ${FEELPP_MODELS_LIBRARIES_ADVECTION} ${ADVECTION_LIB_NAME}  )
   endforeach()
 endforeach()
 
-add_library(feelpp_model_advection SHARED libadvection.cpp )
-target_link_libraries(feelpp_model_advection ${FEELPP_MODELS_LIBRARIES_ADVECTION})
+add_library(feelpp_toolbox_advection_lib SHARED libadvection.cpp )
+target_link_libraries(feelpp_toolbox_advection_lib ${FEELPP_MODELS_LIBRARIES_ADVECTION})
+set_property(TARGET feelpp_toolbox_advection_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_advection_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+
+FILE(GLOB files "*.hpp")
+INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/advection COMPONENT Devel)

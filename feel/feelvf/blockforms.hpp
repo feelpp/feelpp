@@ -197,6 +197,10 @@ public :
         {
             M_matrix->zero();
         }
+    void zero(int n1, int n2 )
+        {
+            M_matrix->zero( n1, n2 );
+        }
     void syncLocalMatrix()
         {
             int s = M_ps.numberOfSpaces();
@@ -304,22 +308,11 @@ public :
             auto& e1 = solution(0_c);
 
             auto sc = M_matrix->sc();
-#if 0
-            this->matrixPtr()->printMatlab("A.m");
-            rhs.vectorPtr()->printMatlab("F.m");
-#endif
 
-#if 0
-            auto S = backend(_name="sc",_rebuild=true)->newMatrix( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::EXTENDED)  );
-            auto V = backend(_name="sc")->newVector( _test=e3.functionSpace() );
-#else
             auto S = form2( _test=e3.functionSpace(), _trial=e3.functionSpace(), _pattern=size_type(Pattern::HDG)  );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto V = form1( _test=e3.functionSpace() );
 
-#endif
-
-            //e3.printMatlab("phat.m");
             tic();
             this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
@@ -328,7 +321,8 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            // auto r = backend(_name=name+".sc",_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
+            auto r = backend(_name=prefixvm(name,"sc"),_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
             //auto r = backend(_name="sc",_rebuild=rebuild)->solve( _matrix=S, _rhs=V, _solution=e3);
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
@@ -383,7 +377,7 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            auto r = S.solve( _solution=U, _rhs=V, _name="sc",_rebuild=true );//, _condense=true );
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
@@ -530,6 +524,8 @@ public :
      * set linear form to 0
      */
     void zero() { M_vector->zero(); }
+
+    void zero( int n1 ) { M_vector->zero( n1 ); }
 
     BlockLinearForm& operator+=( BlockLinearForm const& l )
         {

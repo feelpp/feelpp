@@ -36,16 +36,22 @@ namespace Feel
 namespace FeelModels
 {
 
-template<class SpaceType>
-class DiffusionReactionModel 
+template<class DiffusionSpaceType, class ReactionSpaceType = DiffusionSpaceType>
+class DiffusionReactionModel
 {
-    typedef DiffusionReactionModel<SpaceType> self_type;
+    typedef DiffusionReactionModel<DiffusionSpaceType, ReactionSpaceType> self_type;
 public :
-    typedef SpaceType space_type;
-    typedef boost::shared_ptr<SpaceType> space_ptrtype;
-    typedef typename SpaceType::element_type element_type;
-    typedef boost::shared_ptr<element_type> element_ptrtype;
-    typedef typename space_type::mesh_type mesh_type;
+    typedef DiffusionSpaceType space_diffusion_type;
+    typedef boost::shared_ptr<space_diffusion_type> space_diffusion_ptrtype;
+    typedef typename space_diffusion_type::element_type element_diffusion_type;
+    typedef boost::shared_ptr<element_diffusion_type> element_diffusion_ptrtype;
+
+    typedef ReactionSpaceType space_reaction_type;
+    typedef boost::shared_ptr<space_reaction_type> space_reaction_ptrtype;
+    typedef typename space_reaction_type::element_type element_reaction_type;
+    typedef boost::shared_ptr<element_reaction_type> element_reaction_ptrtype;
+
+    typedef typename space_diffusion_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     
     static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
@@ -59,20 +65,24 @@ public :
 
     void initFromMesh( mesh_ptrtype const& mesh, bool useExtendedDofTable )
     {
-        M_space = space_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+        M_spaceDiffusion = space_diffusion_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
                                    _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
-        M_fieldDiffusionCoeff = this->functionSpace()->elementPtr( cst( this->cstDiffusionCoeff() ) );
-        M_fieldReactionCoeff = this->functionSpace()->elementPtr( cst( this->cstReactionCoeff() ) );
+        M_spaceReaction = space_reaction_type::New( _mesh=mesh, _worldscomm=std::vector<WorldComm>(1,mesh->worldComm()),
+                                   _extended_doftable=std::vector<bool>(1,useExtendedDofTable) );
+        M_fieldDiffusionCoeff = this->functionSpaceDiffusion()->elementPtr( cst( this->cstDiffusionCoeff() ) );
+        M_fieldReactionCoeff = this->functionSpaceReaction()->elementPtr( cst( this->cstReactionCoeff() ) );
     }
 
-    void initFromSpace( space_ptrtype const& space )
+    void initFromSpace( space_diffusion_ptrtype const& spaceDiffusion, space_reaction_ptrtype const& spaceReaction )
     {
-        M_space = space;
-        M_fieldDiffusionCoeff = this->functionSpace()->elementPtr( cst( this->cstDiffusionCoeff() ) );
-        M_fieldReactionCoeff = this->functionSpace()->elementPtr( cst( this->cstReactionCoeff() ) );
+        M_spaceDiffusion = spaceDiffusion;
+        M_spaceReaction = spaceReaction;
+        M_fieldDiffusionCoeff = this->functionSpaceDiffusion()->elementPtr( cst( this->cstDiffusionCoeff() ) );
+        M_fieldReactionCoeff = this->functionSpaceReaction()->elementPtr( cst( this->cstReactionCoeff() ) );
     }
 
-    space_ptrtype const& functionSpace() const { return M_space; }
+    space_diffusion_ptrtype const& functionSpaceDiffusion() const { return M_spaceDiffusion; }
+    space_reaction_ptrtype const& functionSpaceReaction() const { return M_spaceReaction; }
 
     double cstDiffusionCoeff( std::string const& marker = "" ) const
     {
@@ -87,8 +97,8 @@ public :
         M_cstDiffusionCoeff[markerUsed]=d;
         this->updateDiffusionCoeff( cst(d),marker);
     }
-    element_type const& fieldDiffusionCoeff() const { return *M_fieldDiffusionCoeff; }
-    element_ptrtype const& fieldDiffusionCoeffPtr() const { return M_fieldDiffusionCoeff; }
+    element_diffusion_type const& fieldDiffusionCoeff() const { return *M_fieldDiffusionCoeff; }
+    element_diffusion_ptrtype const& fieldDiffusionCoeffPtr() const { return M_fieldDiffusionCoeff; }
 
     double cstReactionCoeff( std::string const& marker = "" ) const
     {
@@ -103,8 +113,8 @@ public :
         M_cstReactionCoeff[markerUsed]=d;
         this->updateReactionCoeff(cst(d),marker);
     }
-    element_type const& fieldReactionCoeff() const { return *M_fieldReactionCoeff; }
-    element_ptrtype const& fieldReactionCoeffPtr() const { return M_fieldReactionCoeff; }
+    element_reaction_type const& fieldReactionCoeff() const { return *M_fieldReactionCoeff; }
+    element_reaction_ptrtype const& fieldReactionCoeffPtr() const { return M_fieldReactionCoeff; }
 
 
     template < typename ExprT >
@@ -138,14 +148,14 @@ public :
         //}
     //}
 
-
 private :
-    space_ptrtype M_space;
+    space_diffusion_ptrtype M_spaceDiffusion;
+    space_reaction_ptrtype M_spaceReaction;
 
     std::map<std::string,double> M_cstDiffusionCoeff;// D
-    element_ptrtype M_fieldDiffusionCoeff;// D
+    element_diffusion_ptrtype M_fieldDiffusionCoeff;// D
     std::map<std::string,double> M_cstReactionCoeff;// R
-    element_ptrtype M_fieldReactionCoeff;// R
+    element_reaction_ptrtype M_fieldReactionCoeff;// R
 
 };
 

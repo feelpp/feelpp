@@ -27,10 +27,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelfunctions.hpp>
+#include <feel/feelmodels/modeloutputs.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 
 
@@ -59,8 +61,8 @@ public:
     std::string const& description() const {  return M_description; }
     void setDescription( std::string const& t) { M_description = t; }
 
-    std::string const& model() const {  return M_model; }
-    void setModel( std::string const& t) { M_model = t; }
+    ModelModels & models() { return M_models; }
+    ModelModels const& models() const { return M_models; }
 
     ModelParameters const& parameters() const {  return M_params; }
     ModelMaterials const& materials() const {  return M_mat; }
@@ -76,6 +78,9 @@ public:
 
     ModelFunctions & functions() { return M_functions; }
     ModelFunctions const& functions() const { return M_functions; }
+
+    ModelOutputs & outputs() { return M_outputs; }
+    ModelOutputs const& outputs() const { return M_outputs; }
 
     std::string getEntry(std::string &s);
 
@@ -97,13 +102,15 @@ public:
 private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
-    std::string M_name, M_shortname, M_description, M_model;
+    std::string M_name, M_shortname, M_description;
+    ModelModels M_models;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
     BoundaryConditions M_ic; // Initial conditions
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;
+    ModelOutputs M_outputs;
 };
 
 
