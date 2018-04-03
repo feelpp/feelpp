@@ -52,7 +52,7 @@ public:
      */
     //@{
 
-    typedef GeoElement0D<nDim,SubFaceOfNone,T> point_type;
+    typedef GeoElement0D<nDim,SubFaceOfNone<0>,T> point_type;
 
     typedef std::unordered_map<size_type,point_type> points_type;
 
