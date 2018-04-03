@@ -46,7 +46,7 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
@@ -182,15 +182,15 @@ public:
 
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
-                    WorldComm const& _worldComm = Environment::worldComm(),
-                    std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                  WorldComm const& _worldComm = Environment::worldComm(),
+                  std::string const& subPrefix = "",
+                  ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -265,10 +265,10 @@ public:
 
 template<int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
-                                                    WorldComm const& worldComm,
-                                                    std::string const& subPrefix,
-                                                    std::string const& rootRepository )
-    : super_type( prefix, worldComm, subPrefix, rootRepository ),
+                                                          WorldComm const& worldComm,
+                                                          std::string const& subPrefix,
+                                                          ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep ),
       M_useUserIBC(false)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
@@ -300,10 +300,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& pre
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                               WorldComm const& worldComm, std::string const& subPrefix,
+                                               ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -465,7 +465,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
     else
         M_integralCondition = M_IBCList.size();
 
-    if ( boost::icontains(modelProperties().model(),"picard") )
+    if ( boost::icontains(modelProperties().models().model().equations(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;
@@ -1200,11 +1200,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
                 d = exAtMarker.data(0.1);
 
 			// Scale entries if necessary
-    		auto postProcess = modelProperties().postProcess();
-    		auto itField = postProcess.find( "Fields");
-    		if ( itField != postProcess.end() )
     		{
-        		for ( auto const& field : (*itField).second )
+                for ( auto const& field : modelProperties().postProcess().exports().fields() )
         		{
             		if ( field == "scaled_flux" )
 					{
@@ -1524,11 +1521,8 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
     }
 
     // Export computed solutions
-    auto postProcess = modelProperties().postProcess();
-    auto itField = postProcess.find( "Fields");
-    if ( itField != postProcess.end() )
     {
-        for ( auto const& field : (*itField).second )
+        for ( auto const& field : modelProperties().postProcess().exports().fields() )
         {
             if ( field == "flux" )
             {
