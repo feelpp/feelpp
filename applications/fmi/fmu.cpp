@@ -8,4 +8,6 @@ int main( int argc, char* argv[] )
     FMU my_fmu;
     my_fmu.load();
     my_fmu.printModelInfo();
+
+    my_fmu.simulate();
 }
