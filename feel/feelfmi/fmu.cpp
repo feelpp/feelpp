@@ -6,7 +6,9 @@ namespace Feel
 FMU::FMU( std::string prefix ) :
     M_prefix( prefix ),
     M_verbose( boption(_name="fmu.verbose", _prefix=M_prefix) ),
-    M_callbacks( new callbacks_type )
+    M_callbacks( new callbacks_type ),
+    M_option_tinit( doption( _name="fmu.time-initial", _prefix=M_prefix ) ),
+    M_option_tfinal( doption( _name="fmu.time-final", _prefix=M_prefix ) )
 {
     M_callbacks->malloc = malloc;
     M_callbacks->calloc = calloc;
@@ -32,7 +34,7 @@ FMU::FMU( std::string prefix ) :
 
     if ( Environment::vm().count(prefixvm( M_prefix,"fmu.exported-variables" )) )
     {
-        M_export_list = var_list_ptrtype( new var_list_type( option( _name="fmu.exported-variables", _prefix=M_prefix).template as<std::vector<std::string> >() ) );
+        M_export_list = make_shared<var_list_type>( option( _name="fmu.exported-variables", _prefix=M_prefix).template as<std::vector<std::string> >() );
     }
 }
 
@@ -80,9 +82,9 @@ int FMU::load( std::string _path )
 void FMU::simulate( double t_init, double t_final, double tolerance )
 {
     if ( t_init<0 )
-        t_init = doption( _name="fmu.time-initial", _prefix=M_prefix );
+        t_init = M_option_tinit;
     if ( t_init<0 )
-        t_final = doption( _name="fmu.time-final", _prefix=M_prefix );
+        t_final = M_option_tfinal;
     this->initialize( t_init, t_final, tolerance );
     M_solver->simulate();
 }
@@ -153,7 +155,7 @@ void FMU::addExportedVariables( std::vector<std::string> const& var_list )
 
 void FMU::setExportedVariables( std::vector<std::string> const& var_list )
 {
-    M_export_list = var_list_ptrtype( new var_list_type( var_list ) );
+    M_export_list = make_shared<var_list_type>( var_list );
     M_model->setExportList( M_export_list );
     M_model->setExportDirectory( M_export_directory );
 }
