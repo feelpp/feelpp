@@ -170,7 +170,7 @@ void Thermoelectric::initModel()
     auto eim_gradgrad = eim( _model=boost::dynamic_pointer_cast<Thermoelectric>(this->shared_from_this() ),
                              _element=*M_V,
                              _parameter=M_mu,
-                             _expr=M_mu.parameterNamed("sigma")*inner(gradv(*M_V)),
+                             _expr=cst_ref(M_mu.parameterNamed("sigma"))*inner(gradv(*M_V)),
                              _space=JspaceEim,
                              _name="eim_gradgrad",
                              _sampling=Pset );

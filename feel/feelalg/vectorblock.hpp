@@ -33,13 +33,14 @@
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/block.hpp>
-
+#include <feel/feelalg/products.hpp>
 
 namespace Feel
 {
 
 
 template<typename T> class Backend;
+
 
 
 template <typename T=double>
@@ -57,7 +58,7 @@ public :
                      backend_ptr_t<T> b = backend() )
         :
         super_type(nr,1),
-        M_backend( b ) 
+        M_backend( b )
     {}
 
     BlocksBaseVector(self_type const & b) = default;
@@ -67,6 +68,54 @@ public :
         super_type(b),
         M_backend( backend() )
     {}
+
+    template<typename PS>
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+                      std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+        :
+        super_type( ps.numberOfSpaces(), 1 ),
+        M_backend( b )
+        {
+            int n = 0;
+            hana::for_each( ps, [&]( auto const& e )
+                            {
+
+                                hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
+                                          [&]( auto&& x )
+                                          {
+                                              for( int i = 0; i < x->numberOfSpaces(); ++i, ++n )
+                                              {
+                                                  cout << "creating dyn vector block (" << n << "," << i  << ")\n";
+                                                  (*this)(n,0) = (*x)[i]->elementPtr();
+                                              }
+
+                                          },
+                                          [&]( auto&& x )
+                                          {
+                                              cout << "creating vector block (" << n  << ")\n";
+                                              (*this)(n,0) = x->elementPtr();
+                                              ++n;
+                                          } )(e);
+
+                            });
+
+
+        }
+
+    template<typename PS>
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+                      std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+        :
+        super_type( ps.numberOfSpaces(), 1 ),
+        M_backend( b )
+        {
+            for( int i = 0; i < ps.numberOfSpaces(); ++i )
+            {
+                cout << "creating dyn vector block (" << i  << ")\n";
+                (*this)(i,0) = ps[i]->elementPtr();
+            }
+
+        }
 
     /**
      * push_back method
@@ -110,7 +159,7 @@ public :
     vector_ptrtype const& vector() const { return M_vector; }
 
     /**
-     * termination function to fill 
+     * termination function to fill
      */
     void fill( int r  ) {}
 
@@ -124,7 +173,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
+    fillWithNewVector( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = M_backend->newBlockVector( arg1 );
             // do submatrix (n+1,n+1)
@@ -136,7 +185,7 @@ public :
      */
     template<typename Arg1, typename ...Args>
     void
-    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args ) 
+    fill( int n, const boost::shared_ptr<Arg1>& arg1, const boost::shared_ptr<Args>&... args )
         {
             this->operator()( n ) = arg1;
             // do submatrix (n+1,n+1)
@@ -180,39 +229,44 @@ public :
  */
 
 template< typename T>
-class VectorBlockBase
+class VectorBlockBase: public Vector<T>
 {
-    //typedef Vector<T> super;
+
 public:
 
     /** @name Typedefs
      */
     //@{
 
+    using super = Vector<T>;
     typedef VectorBlockBase<T> self_type;
-    typedef T value_type;
-
+    using value_type = typename super::value_type;
+    using real_type = typename super::real_type;
+    
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
-
+    using clone_ptrtype = typename super::clone_ptrtype;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
-
+    VectorBlockBase() = default;
+    VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
+                     backend_ptrtype backend,
+                     bool copy_values=true )
+        :VectorBlockBase( blockVec, *backend, copy_values )
+        {}
     VectorBlockBase( vf::BlocksBase<vector_ptrtype > const & blockVec,
                      backend_type &backend,
                      bool copy_values=true );
 
 
-    VectorBlockBase( VectorBlockBase const & vb )
-        :
-        M_vec( vb.M_vec )
-    {}
+    VectorBlockBase( VectorBlockBase const & vb ) = default;
+    VectorBlockBase( VectorBlockBase && vb ) = default;
 
     ~VectorBlockBase()
     {}
@@ -223,16 +277,13 @@ public:
      */
     //@{
 
-    VectorBlockBase operator=( VectorBlockBase const& vb )
-    {
-        if ( this != &vb )
-        {
-            M_vec = vb.M_vec;
-        }
+    VectorBlockBase& operator=( VectorBlockBase const& vb ) = default;
+    VectorBlockBase& operator=( VectorBlockBase && vb ) = default;
 
-        return *this;
-    }
-
+    virtual T& operator() ( const size_type i ) override { return M_vec->operator()( i ); }
+    virtual T operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
+    virtual Vector<T> & operator += ( const Vector<value_type> &V ) override { return M_vec->operator+=( V ); }
+    virtual Vector<T> & operator -= ( const Vector<value_type> &V ) override { return M_vec->operator-=( V ); }
     //@}
 
     /** @name Accessors
@@ -248,7 +299,20 @@ public:
      */
     //@{
 
+    virtual void set ( const size_type i, const value_type& value ) override { M_vec->set( i, value ); }
+    virtual void setVector ( int* i, int n, value_type* v ) override { M_vec->setVector( i, n, v ); }
+    virtual void add ( const size_type i, const value_type& value ) override { M_vec->add( i, value ); }
+    virtual void add ( const value_type& s ) override { M_vec->add( s ); }
+    virtual void add ( const Vector<value_type>& V ) override { M_vec->add( V ); }
+    virtual void add ( const value_type& a, const Vector<value_type>& v ) override { M_vec->add( a, v ); }
+    virtual void addVector ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( v, dof_indices ); }
+    virtual void addVector ( const Vector<T>& V_in, const MatrixSparse<T>& A_in ) override { M_vec->addVector( V_in, A_in ); }
+    virtual void addVector ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->addVector( V, dof_indices ); }
 
+    virtual void insert ( const std::vector<T>& v, const std::vector<size_type>& dof_indices ) override { M_vec->insert( v, dof_indices ); }
+    virtual void insert ( const Vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
+    virtual void insert ( const ublas::vector<T>& V, const std::vector<size_type>& dof_indices ) override { M_vec->insert( V, dof_indices ); }
+    virtual void scale ( const T factor ) override { M_vec->scale( factor ); }
     //@}
 
     /** @name  Methods
@@ -257,6 +321,44 @@ public:
 
     void updateBlockVec( vector_ptrtype const & m, size_type start_i );
 
+    //!
+    //! add local vector to global vector
+    //!
+    virtual void addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 ) override;
+
+    //!
+    //! close the block vector
+    //!
+    virtual void close() override { M_vec->close(); }
+
+    //!
+    //! zero out the vector
+    //!
+    virtual void zero() override { M_vec->zero(); }
+
+    virtual void zero ( size_type start,  size_type stop ) override { return M_vec->zero( start, stop ); }
+
+    virtual void setConstant( value_type v ) override { return M_vec->setConstant( v ); }
+
+    virtual clone_ptrtype clone () const override
+        {
+            clone_ptrtype v = boost::make_shared<VectorBlockBase<value_type>>( *this );
+            return v;
+        } 
+    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const override
+        {
+            M_vec->printMatlab( name, renumber );
+        }
+    virtual value_type sum() const override { return M_vec->sum(); }
+
+    virtual real_type min () const override { return M_vec->min(); }
+    virtual real_type max () const override { return M_vec->max(); }
+
+    virtual real_type l1Norm () const override { return M_vec->l1Norm(); }
+    virtual real_type l2Norm () const override { return M_vec->l2Norm(); }
+    virtual real_type linftyNorm () const override { return M_vec->linftyNorm(); }
+
+    virtual value_type dot( Vector<T> const& v ) const override { return M_vec->dot( v ); }
     //@}
 
 
@@ -284,11 +386,12 @@ public:
     typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
     typedef vf::BlocksBase<vector_ptrtype> blocksbase_type;
 
+    template<typename BackendT>
     VectorBlock(  blocksbase_type const & blockVec,
-                  backend_type &backend,
+                  BackendT &&b,
                   bool copy_values=true )
         :
-        super_type( blockVec,backend,copy_values )
+        super_type( blockVec,std::forward<BackendT>(b),copy_values )
     {}
 
     VectorBlock( VectorBlock const & vb )
@@ -339,12 +442,107 @@ newVectorBlocks( const Arg1& arg1, const Args&... args )
  */
 template<typename Arg1, typename ...Args>
 BlocksBaseVector<typename decay_type<Arg1>::value_type>
-vectorBlocks( const Arg1& arg1, const Args&... args )
+vectorBlocks( const Arg1& arg1, const Args&... args,
+              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<Arg1>>::value>* = nullptr )
 {
     const int size = sizeof...(Args)+1;
     BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
     int n = 0;
     g.fill( n, arg1, args... );
+    return g;
+}
+
+template<typename Arg>
+BlocksBaseVector<typename decay_type<Arg>::value_type>
+vectorBlocks( const Arg& arg,
+              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<Arg>>::value>* = nullptr )
+{
+    BlocksBaseVector<typename decay_type<Arg>::value_type> g( arg.numberOfSpaces(), backend() );
+    for( int i = 0; i < arg.numberOfSpaces(); ++i )
+        g(i) = arg.elementPtr();
+    return g;
+}
+
+/**
+ * Build blocks of CSR graphs with function spaces \p
+ * (args1,args2,argn). Variadic template is used to handle an arbitrary number of
+ * function spaces.
+ * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
+ *
+ */
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockVector( PS && ps, backend_ptrtype b = backend(),
+             std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    const int size = ps.numberOfSpaces();
+    //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
+    BlocksBaseVector<double> g( size, b );
+
+    int n = 0;
+    hana::for_each( ps, [&]( auto const& e )
+                    {
+
+                        hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
+                                  [&] (auto&& x) {
+                                      for( int i = 0; i < x->numberOfSpaces(); ++i, ++n  )
+                                      {
+                                          cout << "creating dyn vector block (" << n  << ")\n";
+                                          g(n,0) = b->newVector( (*x)[i] );
+                                      }
+                                  },
+                                  [&] (auto&& x){
+                                      cout << "creating vector block (" << n  << ")\n";
+                                      g(n++,0) = b->newVector( x );
+                                  })(e);
+                    });
+    return g;
+}
+
+template<typename PS>
+BlocksBaseVector<double>
+blockVector( PS && ps, backend_ptrtype b = backend(),
+             std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+
+    for( int i = 0; i < ps.numberOfSpaces(); ++i )
+        g(i,0) = b->newVector( ps[i] );
+    return g;
+}
+
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockElement( PS && ps, backend_ptrtype b = backend(),
+              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    const int size = hana::size(ps);
+    //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
+    BlocksBaseVector<double> g( size, b );
+
+    int n = 0;
+    hana::for_each( ps, [&]( auto const& e )
+                    {
+                        cout << "creating vector element (" << n  << ")\n";
+                        g(n,0) = e->elementPtr();
+                        ++n;
+                    });
+    return g;
+}
+
+template<typename PS>
+//BlocksBaseVector<typename decay_type<PS>::value_type>
+BlocksBaseVector<double>
+blockElement( PS && ps, backend_ptrtype b = backend(),
+              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
+    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+
+    int n = 0;
+    for( int i = 0;i < ps.numberOfSpaces(); ++i )
+        g(i,0) = ps[i]->elementPtr();
     return g;
 }
 

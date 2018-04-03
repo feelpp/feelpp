@@ -214,6 +214,15 @@ class Mesh3D
         return super_elements::element_type::numLocalFaces;
     }
 
+    //! 
+    //! the number of topological faces per element
+    //! @return the number of topological faces per element
+    //!
+    uint16_type numLocalTopologicalFaces() const
+        {
+            return super_elements::element_type::numTopologicalFaces;
+        }
+
     /**
  * \return the number of edges in an element
  */

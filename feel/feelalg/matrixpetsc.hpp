@@ -30,9 +30,13 @@
 #ifndef __MatrixPetsc_H
 #define __MatrixPetsc_H 1
 
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
 #include <feel/feelconfig.h>
 
 #if defined(FEELPP_HAS_PETSC_H)
+
+#include <Eigen/Core>
 
 
 #include <feel/feelcore/application.hpp>
@@ -368,7 +372,9 @@ public:
      */
     void addMatrix ( int* rows, int nrows,
                      int* cols, int ncols,
-                     value_type* data );
+                     value_type* data,
+                     size_type K = 0,
+                     size_type K2 = invalid_size_type_value);
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -661,6 +667,8 @@ protected:
      */
     Mat M_mat;
 
+
+
 private:
 
 
@@ -744,7 +752,7 @@ public :
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_size_type_value );
 
     void addMatrix( const T a, MatrixSparse<T> const&X );
 

@@ -1,0 +1,123 @@
+{
+    "Name": "HDG-Mixed-Poisson for lamina cribrosa",
+    "ShortName":"MP_LC",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+	        "k":"1",
+            // ODE parameters:                                                                  
+            "CC":"1",
+            "RR":"1",                                                               
+	        "C1":"1",                                                                           
+            "C2":"1",        
+            "C3":"1",
+   	        "R12":"1",
+	        "R23":"1",                                                                          
+            "Rout":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+			"InitialSolution":
+			{
+				"omega":
+				{
+					"expr":"4 + y^2:x:y:z"
+				}	
+			},
+            "SourceTerm":
+            {
+                "omega":
+                {
+                   "expr":"-2:x:y:z"
+                }
+            },
+            "Dirichlet":
+	        {
+	    	    "in":
+        	    {
+                     "expr":"4 + y^2:x:y:z"
+               	},
+	    	    "R":
+        	    {
+                     "expr":"4 + y^2:x:y:z"
+               	}
+	        },
+            "Neumann":
+            {
+                "bottom":
+                {
+                     "expr":"0.0"
+                },
+                "top":
+                {
+                     "expr":"0.0"
+                }
+            }
+	    },
+	    "flux":
+	    {
+	        "Integral_coupled_with_0d":
+	        {
+        	    "out":
+                {
+		            "expr":"0.0"
+                }
+ 	        }
+    	},
+	    "Exact solution":
+	    {
+	        "p_exact":
+	        {
+		        "omega":
+		        {
+                     "expr":"4 + y^2:x:y:z"
+		        }
+	        }
+	    },
+		"CircuitModel":
+		{
+			"Piout":
+			{
+				"out":
+				{
+					"expr":"8.0"
+				}
+			},
+			"Pi1_exact":
+			{
+				"out":
+				{
+					"expr":"4.0"
+				}
+			},
+			"Pi2_exact":
+			{
+				"out":
+				{
+					"expr":"4.0"
+				}
+			},
+			"Pi3_exact":
+			{
+				"out":
+				{
+					"expr":"4.0"
+				}
+			}
+		}
+    },
+    "PostProcess":
+    {
+        "Fields":["potential","flux","state variable"]
+    }
+}
+
+
+
+

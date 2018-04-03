@@ -1,0 +1,86 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{3*sin(x),3*cos(y)}:x:y" // "{60*x^3,60*y^3}:x:y"
+				}
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+          		"int":
+                {
+					"expr":"{sin(x),cos(y)}:x:y" // "{x^5,y^5}:x:y"
+                },
+          		"in":
+                {
+					"expr":"{sin(x),cos(y)}:x:y" // "{x^5,y^5}:x:y"
+                },
+          		"ext":
+                {	
+					"expr":"{sin(x),cos(y)}:x:y" // "{x^5,y^5}:x:y"
+                },
+          		"out":
+                {
+					"expr":"{sin(x),cos(y)}:x:y" // "{x^5,y^5}:x:y"
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{	
+			"u_exact":
+			{
+				"omega":
+				{
+					"expr":"{sin(x),cos(y)}:x:y" // "{x^5,y^5}:x:y"
+				}
+			}
+		},
+		"GeometricalTest":
+		{
+            "force_F":
+            {
+                "ext":
+                {
+                    "expr":"{1.511751368699094152,4.526205830750336}" // "{288,288}" 
+                }
+            }/*,
+            "force_F_2":
+            {
+                "ext":
+                {
+                    "expr":"{3,0,0,1}:x:y" 
+                }
+            }*/
+            
+		}
+     },
+    "PostProcess":
+    {
+        "Fields":["stress","displacement"]
+    }
+}
+
+
+
+

@@ -90,6 +90,7 @@
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
+#include <boost/hana.hpp>
 #include <boost/ref.hpp>
 
 #include <cmath>
@@ -150,6 +151,8 @@ namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
 namespace lambda = boost::lambda;
 namespace po = boost::program_options;
+namespace hana=boost::hana;
+using namespace boost::hana::literals;
 
 // bring boost.mpi into Feel realm
 namespace mpi=boost::mpi;

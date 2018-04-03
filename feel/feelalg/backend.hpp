@@ -450,9 +450,9 @@ public:
         return m;
     }
 
-    /**
-     * instantiate a new block matrix sparse
-     */
+    //!
+    //! create a new block Matrix from a set of blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseSparseMatrix<value_type> const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
@@ -474,6 +474,9 @@ public:
         return mb->getSparseMatrix();
     }
 
+    //!
+    //! create a new block Matrix from a set of graph blocks
+    //!
     sparse_matrix_ptrtype newBlockMatrixImpl( BlocksBaseGraphCSR const & b,
                                               bool copy_values=true,
                                               bool diag_is_nonzero=true )
@@ -520,9 +523,8 @@ public:
     vector_ptrtype newBlockVectorImpl( vf::BlocksBase<BlockType> const & b,
                                        bool copy_values=true )
     {
-        typedef VectorBlockBase<typename BlockType::element_type::value_type> vector_block_type;
-        boost::shared_ptr<vector_block_type> mb( new vector_block_type( b, *this, copy_values ) );
-        return mb->getVector();
+        using vector_block_type = VectorBlockBase<typename decay_type<BlockType>::value_type>;
+        return boost::make_shared<vector_block_type>( b, *this, copy_values );
     }
 
     /**

@@ -403,6 +403,10 @@ namespace FeelModels
         auto R = this->backend()->newVector(X->mapPtr());
 
         J->zero();
+
+        if ( this->addFunctionJacobianPreAssembly != NULL )
+            this->addFunctionJacobianPreAssembly( X, J );
+
         if (this->application()->useCstMatrix())
             {
                 J->addMatrix(1.0, M_CstJ );
@@ -413,6 +417,7 @@ namespace FeelModels
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
                 this->application()->updateJacobian( dataJacobianCst );
             }
+
         //M_appli->updateJacobian(X,J,R,false, M_Extended,false);
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
         M_appli->updateJacobian( dataJacobianNonCst );
@@ -430,6 +435,10 @@ namespace FeelModels
         this->application()->timerTool("Solve").start();
 
         R->zero();
+
+        if ( this->addFunctionResidualPreAssembly != NULL )
+            this->addFunctionResidualPreAssembly( X, R );
+
         if (this->application()->useCstVector())
             {
                 R->add(1.0, M_CstR );

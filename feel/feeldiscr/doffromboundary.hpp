@@ -154,6 +154,19 @@ public:
             addFaceBoundaryDof( face, useConnection0, lcFace );
         }
 
+    void add( face_type const& face, uint8_type connectionId )
+        {
+            bool useConnection0 = (connectionId == 0);
+
+            uint16_type lcVertex = 0;
+            uint16_type lcEdge = 0;
+            uint16_type lcFace = 0;
+
+            addVertexBoundaryDof( face, useConnection0, lcVertex );
+            addEdgeBoundaryDof( face, useConnection0, lcEdge );
+            addFaceBoundaryDof( face, useConnection0, lcFace );
+        }
+
     //@}
 
 protected:

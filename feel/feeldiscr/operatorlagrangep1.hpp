@@ -324,7 +324,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                                     bool parallelBuild )
     :
     super( space,
-           dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
+           dual_image_space_ptrtype( dual_image_space_type::New( _mesh=image_mesh_ptrtype( new image_mesh_type ) ) ),
            backend,
            false ),
     M_mesh( new image_mesh_type(space->worldComm()) ),

@@ -191,6 +191,21 @@ namespace Feel
 {
 namespace vf
 {
+
+// return the number of components
+inline
+int nbComp( std::string expression )
+{
+    auto parseExpr = GiNaC::parse(expression);
+
+    auto ginacEvalm = parseExpr.first.evalm();
+    bool isLst = GiNaC::is_a<GiNaC::lst>(  ginacEvalm );
+    int nComp = 1;
+    if ( isLst )
+        nComp = ginacEvalm.nops();
+    return nComp;
+}
+
 inline
 Expr< GinacEx<2> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="",

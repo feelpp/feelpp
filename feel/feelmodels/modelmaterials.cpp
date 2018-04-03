@@ -41,6 +41,9 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr )
 {
+    if( boost::optional<std::string> itphyisic = p.get_optional<std::string>( "physics" ) )
+        M_physics = *itphyisic;
+
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
                                             "k11","k12","k13","k22","k23","k33",
                                             "E","nu","sigma","C","Cs","Cl","L",

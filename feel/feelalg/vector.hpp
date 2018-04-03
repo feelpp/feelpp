@@ -55,7 +55,7 @@ template <typename T> class MatrixShell;
  * @author Christophe Prud'homme 2005
  */
 template <typename T>
-class FEELPP_EXPORT Vector
+class FEELPP_EXPORT Vector : public boost::enable_shared_from_this<Vector<T> >
 {
 public:
 
@@ -68,6 +68,8 @@ public:
 
     typedef DataMap datamap_type;
     typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+    using vector_ptrtype = boost::shared_ptr<Vector<T>>;
+
     /**
      *  Dummy-Constructor. Dimension=0
      */
@@ -421,7 +423,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    virtual void addVector ( int* i, int n, value_type* v ) = 0;
+    virtual void addVector ( int* i, int n, value_type* v, size_type K, size_type K2 ) = 0;
 
     /**
      * \f$U(0-DIM)+=s\f$.
@@ -579,12 +581,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const
-    {
-        std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
-        std::cerr << "ERROR writing MATLAB file " << name << std::endl;
-        FEELPP_ASSERT( 0 ).error( "invalid call" );
-    }
+    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const = 0;
 
     /**
      * Creates the subvector "subvector" from the indices in the
@@ -633,7 +630,6 @@ public:
 
     virtual void load( std::string filename="default_archive_name", std::string format="binary" )
     {}
-
 
 protected:
 

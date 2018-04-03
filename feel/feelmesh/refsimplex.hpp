@@ -119,6 +119,11 @@ public:
         M_vertices *= 0;
         M_points *= 0;
 
+        if ( nDim == 0 )
+        {
+            M_vertices( 0, 0 ) = 0.0;
+            M_points(0,0) = 0.0;
+        }
         if ( nDim == 1 )
         {
             M_vertices( 0, 0 ) = -1.0;
@@ -259,17 +264,17 @@ public:
         std::map<uint16_type, std::vector<uint16_type> > permLines{
             {line_permutations::IDENTITY, {0,1} },
             {line_permutations::REVERSE_PERMUTATION, {1,0} } };
-        
+
         DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
-        
+
         for ( int i = 0; i < numVertices; ++i )
         {
             const int iperm = permLines.find( __p )->second[ i ];
             ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
         }
-        
+
         M_points = make_line_points();
-        
+
         computeBarycenters();
         computeMeasure();
     }
@@ -1083,6 +1088,7 @@ const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::num
 
 
 
+template<typename T> class Entity<SHAPE_POINT, T>: public Reference<Simplex<0, 1, 1>,0,1, 1, T> {};
 template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1, 1>,1,1, 1, T> {};
 template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2, 1, 2>,2,1, 2, T> {};
 template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 1, 3>,3,1, 3, T> {};

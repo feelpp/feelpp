@@ -54,5 +54,19 @@ struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type {};
 template<typename T>
 using is_matrix_polynomial = is_tensor2_polynomial<T>;
 
+template<typename T>
+using local_interpolant_t = typename T::local_interpolant_type;
+template<typename T>
+struct local_interpolant
+{
+    using type = local_interpolant_t<T>;
+};
+template<typename T>
+using local_interpolants_t = typename T::local_interpolants_type;
+template<typename T>
+struct local_interpolants
+{
+    using type = local_interpolants_t<T>;
+};
 } // Feel
 #endif /* __Traits_H */

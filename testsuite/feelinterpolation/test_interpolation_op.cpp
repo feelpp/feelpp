@@ -107,7 +107,7 @@ struct test_interpolation_op
 
     typedef fusion::vector<Lagrange<Order+2+GeoOrder-1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
-    boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+    auto Xh = space_type::New( _mesh=mesh );
 
     typename space_type::element_type u( Xh, "u" );
 
@@ -119,7 +119,7 @@ struct test_interpolation_op
 
     typedef fusion::vector<Lagrange<Order+GeoOrder-1, Scalar> > imagebasis_type;
     typedef FunctionSpace<mesh1_type, imagebasis_type> imagespace_type;
-    boost::shared_ptr<imagespace_type> Yh( new imagespace_type( mesh1 ) );
+    auto Yh = imagespace_type::New( _mesh=mesh1 );
     typename imagespace_type::element_type v( Yh, "v" );
     BOOST_MESSAGE(  "[test_interpolation_op] functionspace allocated\n" );
 

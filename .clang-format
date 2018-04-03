@@ -4,7 +4,7 @@ BreakBeforeBraces: Allman
 AlignTrailingComments: true
 IndentWidth: 4
 UseTab: Never
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: true
 # Force pointers to the type for C++.
 DerivePointerAlignment: false
 PointerAlignment: Left

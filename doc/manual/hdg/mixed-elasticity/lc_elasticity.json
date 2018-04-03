@@ -1,0 +1,61 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Model":"hdg",
+    "Materials":
+    {
+        "Lamina": 
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"58.8",			// [N/cm^2]		// [5.88 MPa]
+	    	"mu":"1.2"				// [N/cm^2]		// [0.12 Mpa]
+        }
+	},
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "Lamina": 
+                {
+					"expr":"{0,0,0}"
+                }
+            },
+            "Neumann":
+            {
+                "Hole":   // -IOP
+                {
+                     "expr":"{-46.66,0,0, 0,-46.66,0, 0,0,-46.66}" // -33.33		// -46.66			[kg/cm/s^2]
+                },
+                "Lateral": 	// -RLTp 
+                {
+                     "expr":"{-10,0,0, 0,-10,0, 0,0,-10}"  // between -9.33 and -13.33		[kg/cm/s^2]
+                }
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"In":
+                {
+		     		"expr":"{0,0,0}" 		// [cm]
+                },
+        		"Out":
+                {
+		     		"expr":"{0,0,0}" 		// [cm]
+                }
+ 	    	}
+    	}
+	},
+    "PostProcess":
+    {
+        "Fields":["stress","displacement"]
+    }
+}
+
+
+
+

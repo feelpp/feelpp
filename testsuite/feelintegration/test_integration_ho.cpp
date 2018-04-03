@@ -412,7 +412,7 @@ struct test_integration_circle
         typedef typename imesh<value_type,2,Order>::type mesh_type;
         typedef fusion::vector<Lagrange<Order+1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New( _mesh=mesh );
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
@@ -504,7 +504,7 @@ struct test_integration_sin
 
         typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx

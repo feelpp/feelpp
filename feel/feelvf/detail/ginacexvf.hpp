@@ -134,7 +134,7 @@ public:
             if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
             {
                 DVLOG(2) << "Ginac copy constructor : compile object file \n";
-                GiNaC::lst exprs(M_fun);
+                GiNaC::lst exprs({M_fun});
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
                 GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);

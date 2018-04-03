@@ -42,6 +42,7 @@
 
 namespace Feel
 {
+using namespace std::string_literals;
 template<typename T> class Vector;
 
 //
@@ -50,7 +51,8 @@ template<typename T> class Vector;
 template<typename X1, typename X2>
 inline
 vf::detail::BilinearForm<X1, X2>
-form( boost::shared_ptr<X1> const& __X1,
+form( std::string name,
+      boost::shared_ptr<X1> const& __X1,
       boost::shared_ptr<X2> const& __X2,
       boost::shared_ptr<MatrixSparse<double> > __M,
       size_type rowstart = 0,
@@ -60,20 +62,21 @@ form( boost::shared_ptr<X1> const& __X1,
       typename X1::value_type threshold = type_traits<double>::epsilon(),
       size_type pattern  = Pattern::COUPLED )
 {
-    return vf::detail::BilinearForm<X1, X2>( __X1, __X2, __M, rowstart, colstart, init, do_threshold, threshold, pattern );
+    return vf::detail::BilinearForm<X1, X2>( name, __X1, __X2, __M, rowstart, colstart, init, do_threshold, threshold, pattern );
 }
 
 template<typename X1, typename RepType>
 inline
 vf::detail::LinearForm<X1, RepType, RepType>
-form( boost::shared_ptr<X1> const& __X1,
+form( std::string name,
+      boost::shared_ptr<X1> const& __X1,
       boost::shared_ptr<RepType> __M,
       size_type rowstart = 0,
       bool init = false,
       bool do_threshold = false,
       typename X1::value_type threshold = type_traits<typename RepType::value_type>::epsilon() )
 {
-    return vf::detail::LinearForm<X1, RepType, RepType>( __X1, __M, rowstart, init, do_threshold, threshold );
+    return vf::detail::LinearForm<X1, RepType, RepType>( name, __X1, __M, rowstart, init, do_threshold, threshold );
 }
 
 
@@ -119,6 +122,7 @@ BOOST_PARAMETER_FUNCTION(
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
       ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
       ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+      ( name,            ( std::string ), std::string("linearform.f"))
     )
 )
 {
@@ -127,7 +131,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
     //return form( test, *vector, init, false, 1e-16 );
-    return form( test, vector, rowstart, init, do_threshold, threshold );
+    return form( name, test, vector, rowstart, init, do_threshold, threshold );
 } // form
 
 BOOST_PARAMETER_FUNCTION(
@@ -194,6 +198,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                              ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) )
                              ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
                              ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
+                             ( name,            ( std::string ), std::string("bilinearform.a"))
                                ) // optional
                               ) // deduced
                         )
@@ -205,7 +210,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
     //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
     double threshold = 1e-16;
-    return form( test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
+    return form( name, test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //

@@ -250,6 +250,9 @@ public:
      */
     static uint32_type polyDims( int n )
     {
+        if ( nDim == 0 )
+            return (n>0)?0:1;
+
         if ( nDim == 1 )
             return std::max( 0, n + 1 );
 
@@ -259,7 +262,7 @@ public:
         if ( nDim == 3 )
             return std::max( 0, ( n+1 )*( n+2 )*( n+3 )/6 );
 
-        BOOST_STATIC_ASSERT( nDim == 1 || nDim == 2 || nDim == 3 );
+        BOOST_STATIC_ASSERT( nDim == 0 || nDim == 1 || nDim == 2 || nDim == 3 );
         return uint32_type( -1 );
     }
 

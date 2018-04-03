@@ -238,7 +238,7 @@ public:
         Environment( args[_argc],
                      args[_argv],
 #if BOOST_VERSION >= 105500
-                     args[_threading|mpi::threading::single],
+                     args[_threading|mpi::threading::multiple],
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],

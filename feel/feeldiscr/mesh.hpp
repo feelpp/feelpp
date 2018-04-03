@@ -1,4 +1,4 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 //!
 //! This file is part of the Feel++ library
 //!
@@ -18,10 +18,7 @@
 //!
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
-//! @date 2005-07-05
-//! @copyright 2005,2006 EPFL
-//! @copyright 2006-2012 Université Joseph Fourier (Grenoble I)
+//! @date 21 May 2011
 //! @copyright 2011-2017 Feel++ Consortium
 //!
 #ifndef FEELPP_MESH_HPP
@@ -134,19 +131,19 @@ std::vector<MeshMarkerName> markerMap( int Dim );
 
 
 
-// partitioner class
+//!  partitioner class
 template<typename Mesh> class Partitioner;
 
-/**
- * @brief unifying mesh class
- * @details This structure is an aggregation of elements, faces,
- * edges(3D) and points data structures and provides a unified
- * interface with respect to the dimension.
- *
- * @tparam GeoShape Geometric entities type
- * @tparam T numerical type for coordinates
- * @tparam Tag = 0 to discriminate between meshes of the same type
- */
+//!
+//!  @brief unifying mesh class
+//!  @details This structure is an aggregation of elements, faces,
+//!  edges(3D) and points data structures and provides a unified
+//!  interface with respect to the dimension.
+//!
+//!  @tparam GeoShape Geometric entities type
+//!  @tparam T numerical type for coordinates
+ //!  @tparam Tag = 0 to discriminate between meshes of the same type
+ //!
 template <typename GeoShape, typename T = double, int Tag = 0>
 class Mesh
     :
@@ -170,9 +167,9 @@ class Mesh
 public:
 
 
-    /** @name Constants
-     */
-    //@{
+    //!  @name Constants
+     //!
+    //! @{
 
     static const uint16_type nDim = GeoShape::nDim;
     static const uint16_type nRealDim = GeoShape::nRealDim;
@@ -180,10 +177,10 @@ public:
     static const uint16_type nOrder = GeoShape::nOrder;
     static const uint16_type tag = Tag;
 
-    //@}
-    /** @name Typedefs
-     */
-    //@{
+    //! @}
+    //!  @name Typedefs
+     //!
+    //! @{
     typedef Mesh<GeoShape,T,Tag> type;
     typedef boost::shared_ptr<type> ptrtype;
 
@@ -236,8 +233,8 @@ public:
 
     typedef typename element_type::template reference_convex<T>::type reference_convex_type;
 
-    //typedef Partitioner<self_type> partitioner_type;
-    //typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;
+    //! typedef Partitioner<self_type> partitioner_type;
+    //! typedef boost::shared_ptr<partitioner_type> partitioner_ptrtype;
 
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
@@ -248,6 +245,19 @@ public:
                                            mpl::identity< Mesh< Hypercube<GeoShape::nDim,1,GeoShape::nRealDim>,value_type, Tag > > >::type::type ;
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
+
+    template<int TheTag>
+    struct parent_mesh
+    {
+        static const int d = (GeoShape::nDim==GeoShape::nRealDim-1)?GeoShape::nDim+1:GeoShape::nDim;
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity< Mesh< Simplex< d,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<d,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef boost::shared_ptr<const type> const_ptrtype;
+    };
+    using parent_mesh_type = typename parent_mesh<Tag>::type;
+    using parent_mesh_ptrtype = typename parent_mesh<Tag>::ptrtype;
 
     template<int TheTag>
     struct trace_mesh
@@ -278,11 +288,11 @@ public:
     typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
 
 
-    //@}
+    //! @}
 
-    /**
-     * Default mesh constructor
-     */
+    //!
+     //!  Default mesh constructor
+     //!
     Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
     ~Mesh() {}
@@ -295,10 +305,10 @@ public:
             M_tool_localization.reset();
             super::clear();
         }
-    /**
-     * @brief allocate a new Mesh
-     * @return the Mesh shared pointer
-     */
+    //!
+     //!  @brief allocate a new Mesh
+     //!  @return the Mesh shared pointer
+     //!
     static mesh_ptrtype New()
         {
             return mesh_ptrtype(new mesh_type);
@@ -306,14 +316,14 @@ public:
 
     self_type& operator+=( self_type const& m );
 
-    /** @name Accessors
-     */
-    //@{
+    //!  @name Accessors
+     //!
+    //! @{
 
-    /**
-     * @brief get the number of active elements,faces,edges,points for each partition
-     * @return the number of active elements
-     */
+    //!
+     //!  @brief get the number of active elements,faces,edges,points for each partition
+     //!  @return the number of active elements
+     //!
     size_type statNumElementsActive( rank_type p = invalid_rank_type_value ) const { return std::get<0>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
     size_type statNumElementsAll( rank_type p = invalid_rank_type_value ) const {    return std::get<1>( M_statElements[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
     size_type statNumFacesActive( rank_type p = invalid_rank_type_value ) const {    return std::get<0>( M_statFaces[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
@@ -325,74 +335,74 @@ public:
     size_type statNumPointsMarkedAll( rank_type p = invalid_rank_type_value ) const { return std::get<2>( M_statPoints[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ] ); }
     size_type statNumVerticesAll(rank_type p = invalid_rank_type_value ) const { return M_statVertices[ ( ( p!=invalid_rank_type_value )? p : this->worldComm().localRank() ) ]; }
 
-    /**
-     * @brief get the global number of elements
-     * @details it requires communication in parallel to
-     * retrieve and sum the number of elements in each subdomain.
-     * @return the global number of elements
-     */
+    //!
+     //!  @brief get the global number of elements
+     //!  @details it requires communication in parallel to
+     //!  retrieve and sum the number of elements in each subdomain.
+     //!  @return the global number of elements
+     //!
     size_type numGlobalElements() const { return M_numGlobalElements; }
 
-    /**
-     * @return the maximum number of elements over all subdomains
-     */
+    //!
+     //!  @return the maximum number of elements over all subdomains
+     //!
     size_type maxNumElements() const { return M_maxNumElements; }
 
-    /**
-     * @brief get the global number of faces
-     * @details it requires communication in parallel to
-     * retrieve and sum the number of faces in each subdomain.
-     * @return the global number of faces
-     */
+    //!
+     //!  @brief get the global number of faces
+     //!  @details it requires communication in parallel to
+     //!  retrieve and sum the number of faces in each subdomain.
+     //!  @return the global number of faces
+     //!
     size_type numGlobalFaces() const { return M_numGlobalFaces; }
 
-    /**
-     * @return the maximum number of faces over all subdomains
-     */
+    //!
+     //!  @return the maximum number of faces over all subdomains
+     //!
     size_type maxNumFaces() const { return M_maxNumFaces; }
 
-    /**
-     * @brief get the global number of edges
-     * @details it requires communication in parallel to
-     * retrieve and sum the number of edges in each subdomain.
-     * @return the global number of edges
-     */
+    //!
+     //!  @brief get the global number of edges
+     //!  @details it requires communication in parallel to
+     //!  retrieve and sum the number of edges in each subdomain.
+     //!  @return the global number of edges
+     //!
     size_type numGlobalEdges() const { return M_numGlobalEdges; }
 
-    /**
-     * @return the maximum number of edges over all subdomains
-     */
+    //!
+     //!  @return the maximum number of edges over all subdomains
+     //!
     size_type maxNumEdges() const { return M_maxNumEdges; }
 
-    /**
-     * @brief get the global number of points
-     * @details it requires communication in parallel to
-     * retrieve and sum the number of points in each subdomain.
-     * @return the global number of points
-     */
+    //!
+     //!  @brief get the global number of points
+     //!  @details it requires communication in parallel to
+     //!  retrieve and sum the number of points in each subdomain.
+     //!  @return the global number of points
+     //!
     size_type numGlobalPoints() const { return M_numGlobalPoints; }
 
-    /**
-     * @return the maximum number of edges over all subdomains
-     */
+    //!
+     //!  @return the maximum number of edges over all subdomains
+     //!
     size_type maxNumPoints() const { return M_maxNumPoints; }
 
-    /**
-     * @brief get the global number of vertices
-     * @details it requires communication in parallel to
-     * retrieve and sum the number of vertices in each subdomain.
-     * @return the global number of vertices
-     */
+    //!
+     //!  @brief get the global number of vertices
+     //!  @details it requires communication in parallel to
+     //!  retrieve and sum the number of vertices in each subdomain.
+     //!  @return the global number of vertices
+     //!
     size_type numGlobalVertices() const { return M_numGlobalVertices; }
 
-    /**
-     * @return the maximum number of vertices over all subdomains
-     */
+    //!
+     //!  @return the maximum number of vertices over all subdomains
+     //!
     size_type maxNumVertices() const { return M_maxNumVertices; }
 
-    /**
-     * set the global number of points, edges, faces and elements in the mesh
-     */
+    //!
+     //!  set the global number of points, edges, faces and elements in the mesh
+     //!
     void setNumGlobalElements( std::vector<size_type> I )
         {
             CHECK(I.size()==4) << "Invalid information data on elements: num points, num edges, num faces, num elements ";
@@ -402,7 +412,6 @@ public:
             M_numGlobalElements = I[3];
 
         }
-
 
     struct UpdateNumGlobalEntitiesForAllReduce : public std::binary_function< boost::tuple<std::vector<size_type>,std::vector<size_type> >,
                                                                               boost::tuple<std::vector<size_type>,std::vector<size_type> >,
@@ -429,11 +438,11 @@ public:
             }
     };
 
-    /**
-     * @brief compute the global number of elements,faces,points and vertices
-     * @details it requires communications in parallel to
-     * retrieve and sum the contribution of each subdomain.
-     */
+    //!
+    //!  @brief compute the global number of elements,faces,points and vertices
+    //!  @details it requires communications in parallel to
+    //!  retrieve and sum the contribution of each subdomain.
+    //!
     template<typename MT>
     void updateNumGlobalElements( typename std::enable_if<is_3d<MT>::value>::type* = nullptr )
     {
@@ -604,6 +613,7 @@ public:
         size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),[]( auto const& theface ) { return theface.second.hasMarker(); } );
         //size_type nfmarkedall = std::count_if( this->beginFace(),this->endFace(),
         //                                       [this]( face_type const& theface ) { return theface.marker().isOn() && this->hasFaceMarker( this->markerName( theface.marker().value() ) ) ; } );
+
         size_type nedmarkedall = 0;
         size_type npmarkedall = std::count_if( this->beginPoint(),this->endPoint(), []( auto const& thepoint ) { return thepoint.second.hasMarker(); } );
 
@@ -709,58 +719,78 @@ public:
     }
 
 
-    /**
-     * @return the topological dimension
-     */
-    uint16_type dimension() const
+    //! !
+    //! ! @return the topological dimension
+    //! ! @code
+    //! ! auto mesh = new Mesh<Simplex<2>>;
+    //! ! CHECK( mesh->dimension() == 2 ); // true
+    //! ! auto mesh2 = new Mesh<Simplex<2,1,3>>;
+    //! ! CHECK( mesh2->dimension() == 2 ); // true
+    //! ! @endcode
+    //! !
+    constexpr uint16_type dimension() const noexcept
     {
         return nDim;
     }
 
-    /**
-     * @return geometric mapping
-     */
+    //! !
+    //! ! @return the real space dimension
+    //! ! @code
+    //! ! auto mesh = new Mesh<Simplex<2>>;
+    //! ! CHECK( mesh->realDimension() == 2 ); // true
+    //! ! auto mesh2 = new Mesh<Simplex<2,1,3>>;
+    //! ! CHECK( mesh2->realDimension() == 3 ); // true
+    //! ! @endcode
+    //! !
+    constexpr uint16_type realDimension() const noexcept
+        {
+            return nRealDim;
+        }
+
+    //!
+     //!  @return geometric mapping
+     //!
     gm_ptrtype const& gm() const
     {
         return M_gm;
     }
 
-    /**
-         * @return geometric mapping of order 1
-         */
+    //!
+         //!  @return geometric mapping of order 1
+         //!
     gm1_ptrtype const& gm1() const
     {
         return M_gm1;
     }
 
-    /**
-     * @return the geometric mapping
-     */
+    //!
+     //!  @return the geometric mapping
+     //!
     gm_ptrtype& gm()
     {
         return M_gm;
     }
 
-    /**
-        * @return the geometric mapping of order 1
-        */
+    //!
+        //!  @return the geometric mapping of order 1
+        //!
     gm1_ptrtype& gm1()
     {
         return M_gm1;
     }
 
-    /**
-     * @return the reference convex associated with the element of the
-     * mesh
-     */
+    //!
+     //!  @return the reference convex associated with the element of the
+     //!  mesh
+     //!
     reference_convex_type referenceConvex() const
     {
         return reference_convex_type();
     }
 
-    /**
-     * @return the face index of the face \p n in the element \p e
-     */
+    //!
+     //!  @return the face index of the face \p n in the element \p e
+     //!
     FEELPP_DEPRECATED
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
@@ -768,9 +798,9 @@ public:
         return M_e2f.find(std::make_pair(e.id(),n))->second;
     }
 
-    /**
-     * @return the face index of the face \p n in the element \p e
-     */
+    //!
+     //!  @return the face index of the face \p n in the element \p e
+     //!
     FEELPP_DEPRECATED
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
@@ -778,9 +808,9 @@ public:
         return M_e2f.find(std::make_pair(e,n))->second;
     }
 #if 0
-    /**
-     * @return the world comm
-     */
+    //!
+     //!  @return the world comm
+     //!
     WorldComm const& worldComm() const
     {
         return M_worldComm;
@@ -797,35 +827,35 @@ public:
     }
 #endif
 
-    /**
-     * \return true if the mesh is substructured, false otherwise
-     */
+    //!
+     //!  \return true if the mesh is substructured, false otherwise
+     //!
     bool subStructuring() const
         {
             return M_substructuring;
         }
-    //@}
+    //! @}
 
-    /** @name  Mutators
-     */
-    //@{
+    //!  @name  Mutators
+     //!
+    //! @{
 
     void setSubStructuring( bool s )
         {
             M_substructuring = s;
         }
 
-    /**
-     * set the partitioner to \p partitioner
-     */
+    //!
+     //!  set the partitioner to \p partitioner
+     //!
     void setPartitioner( std::string partitioner )
     {
-        //M_part = partitioner_ptrtype( partitioner_type::New( partitioner ) );
+        //! M_part = partitioner_ptrtype( partitioner_type::New( partitioner ) );
     }
 
-    /**
-     * @return the face index of the face \p n in the element \p e
-     */
+    //!
+     //!  @return the face index of the face \p n in the element \p e
+     //!
     FEELPP_DEPRECATED
     face_processor_type& localFaceId( element_type const& e,
                                       size_type const n )
@@ -833,9 +863,9 @@ public:
         return M_e2f[std::make_pair(e.id(),n)];
     }
 
-    /**
-     * @return the face index of the face \p n in the element \p e
-     */
+    //!
+     //!  @return the face index of the face \p n in the element \p e
+     //!
     FEELPP_DEPRECATED
     face_processor_type& localFaceId( size_type const e,
                                       size_type const n )
@@ -844,36 +874,36 @@ public:
     }
 
 
-    /**
-     * @return a localization tool
-     */
+    //!
+     //!  @return a localization tool
+     //!
     struct Localization;
     boost::shared_ptr<typename self_type::Localization> tool_localization()
     {
         return M_tool_localization;
     }
 
-    /**
-     * @brief get the average h
-     * @return the average h
-     */
+    //!
+     //!  @brief get the average h
+     //!  @return the average h
+     //!
     value_type hAverage() const { return M_h_avg; }
 
-    /**
-     * @brief get the min h
-     * @return the min h
-     */
+    //!
+     //!  @brief get the min h
+     //!  @return the min h
+     //!
     value_type hMin() const { return M_h_min; }
 
-    /**
-     * @brief get the max h
-     * @return the max h
-     */
+    //!
+     //!  @brief get the max h
+     //!  @return the max h
+     //!
     value_type hMax() const { return M_h_max; }
 
-    /**
-     * @return the measure of the mesh (sum of the measure of the elements)
-     */
+    //!
+     //!  @return the measure of the mesh (sum of the measure of the elements)
+     //!
     value_type measure( bool parallel = true ) const
     {
         if ( parallel )
@@ -881,73 +911,73 @@ public:
         return M_local_meas;
     }
 
-    /**
-     * @return the measure of the mesh (sum of the measure of the elements)
-     */
+    //!
+     //!  @return the measure of the mesh (sum of the measure of the elements)
+     //!
     value_type measureBoundary() const
     {
         return M_measbdy;
     }
 
-    //@}
+    //! @}
 
-    /**
-     * set the periodic entities
-     */
+    //!
+     //!  set the periodic entities
+     //!
     void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
 
-    /**
-     * @return true if the mesh has periodic entities
-     */
+    //!
+     //!  @return true if the mesh has periodic entities
+     //!
     bool isPeriodic() const { return M_periodic_entities.empty() == false; }
 
-    /** @name  Methods
-     */
-    //@{
+    //!  @name  Methods
+     //!
+    //! @{
 
 
 
-    /**
-     * erase element at position \p position
-     *
-     * @param position \p position is a valid dereferenceable iterator of the index.
-     * @param modify if true, update mesh data structure and in particular faces
-     *
-     * @return An iterator pointing to the element immediately
-     * following the one that was deleted, or \c end() if no such element
-     * exists.
-     */
+    //!
+     //!  erase element at position \p position
+     //!
+     //!  @param position \p position is a valid dereferenceable iterator of the index.
+     //!  @param modify if true, update mesh data structure and in particular faces
+     //!
+     //!  @return An iterator pointing to the element immediately
+     //!  following the one that was deleted, or \c end() if no such element
+     //!  exists.
+     //!
     element_iterator eraseElement( element_iterator position, bool modify=true );
 
-    /**
-     * @brief compute the trace mesh
-     * @details compute the trace mesh associated to the
-     * range \p range and tag \p TheTag. The \p range provides
-     * the iterators over the boundary faces of the mesh.
-     * \@code
-     * auto trace_mesh1 = mesh->trace(boundaryfaces(mesh));
-     * auto trace_mesh2 = mesh->trace(markedfaces(mesh,"marker"));
-     * @endcode
-     *
-     * @param range iterator range
-     * @return the computed trace mesh
-     */
+    //!
+     //!  @brief compute the trace mesh
+     //!  @details compute the trace mesh associated to the
+     //!  range \p range and tag \p TheTag. The \p range provides
+     //!  the iterators over the boundary faces of the mesh.
+     //!  \@code
+     //!  auto trace_mesh1 = mesh->trace(boundaryfaces(mesh));
+     //!  auto trace_mesh2 = mesh->trace(markedfaces(mesh,"marker"));
+     //!  @endcode
+     //!
+     //!  @param range iterator range
+     //!  @return the computed trace mesh
+     //!
     template<typename RangeT, int TheTag>
     typename trace_mesh<TheTag>::ptrtype
     trace( RangeT const& range, mpl::int_<TheTag> ) const;
 
-    /**
-     * creates a mesh by iterating over the elements between
-     * \p begin_elt and and \p end_elt and adding them the the mesh
-     * \p mesh
-     *
-     * \param mesh new mesh to construct
-     * \param begin_elt begin iterator
-     * \param begin_elt end iterator
-     * \param extraction_policies not in use yet
-     *
-     * \todo make use of \c extraction_policies
-     */
+    //!
+     //!  creates a mesh by iterating over the elements between
+     //!  \p begin_elt and and \p end_elt and adding them the the mesh
+     //!  \p mesh
+     //!
+     //!  \param mesh new mesh to construct
+     //!  \param begin_elt begin iterator
+     //!  \param begin_elt end iterator
+     //!  \param extraction_policies not in use yet
+     //!
+     //!  \todo make use of \c extraction_policies
+     //!
     template<int TheTag=Tag>
     typename trace_mesh<TheTag>::ptrtype
     trace() const
@@ -982,13 +1012,13 @@ public:
                         Iterator const& end_elt,
                         size_type extraction_policies = EXTRACTION_KEEP_ALL_IDS ) const;
 
-    /**
-     * A special case of \p createSubmesh() : it creates a mesh by
-     * iterating over all elements having the process id \p pid
-     *
-     * \param mesh new mesh to construct
-     * \param pid process id that will select the elements to add
-     */
+    //!
+     //!  A special case of \p createSubmesh() : it creates a mesh by
+     //!  iterating over all elements having the process id \p pid
+     //!
+     //!  \param mesh new mesh to construct
+     //!  \param pid process id that will select the elements to add
+     //!
     void createSubmeshByProcessId( self_type& mesh, uint16_type pid ) const
     {
         this->createSubmesh( mesh,
@@ -996,9 +1026,9 @@ public:
                              this->endElementWithProcessId( pid ) );
     }
 
-    /**
-     * Create a P1 mesh from the HO mesh
-     */
+    //!
+     //!  Create a P1 mesh from the HO mesh
+     //!
     P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) const;
 
 #if defined(FEELPP_HAS_VTK)
@@ -1008,11 +1038,11 @@ public:
     typename MeshBase::vtk_export_type exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const;
 #endif // FEELPP_HAS_VTK
 
-    /**
-     * update the Marker2 with a range of elements or faces
-     * if elements -> update marker2 for this elements
-     * if faces -> update marker2 for this faces
-     */
+    //!
+    //!  update the Marker2 with a range of elements or faces
+    //!  if elements -> update marker2 for this elements
+    //!  if faces -> update marker2 for this faces
+    //!
     template<typename IteratorRange>
     void updateMarker2WithRange( IteratorRange const& range,flag_type flag )
     {
@@ -1020,9 +1050,9 @@ public:
         this->updateMarker2WithRange( range,flag,mpl::int_<iDim>() );
     }
 
-    /**
-     * sub method of updateMarker2WithRange : MESH_ELEMENTS
-     */
+    //!
+     //!  sub method of updateMarker2WithRange : MESH_ELEMENTS
+     //!
     template<typename IteratorRange>
     void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/ )
     {
@@ -1030,20 +1060,20 @@ public:
         this->updateMarker2WithRangeElements( range,flag );
     }
 
-    /**
-     * sub method of updateMarker2WithRange : MESH_FACES
-     */
+    //!
+     //!  sub method of updateMarker2WithRange : MESH_FACES
+     //!
     template<typename IteratorRange>
     void updateMarker2WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES>/**/ )
     {
         this->updateMarker2WithRangeFaces( range,flag );
     }
 
-    /**
-     * update the Marker3 with a range of elements or faces
-     * if elements -> update marker3 for this elements
-     * if faces -> update marker3 for this faces
-     */
+    //!
+     //!  update the Marker3 with a range of elements or faces
+     //!  if elements -> update marker3 for this elements
+     //!  if faces -> update marker3 for this faces
+     //!
     template<typename IteratorRange>
     void updateMarker3WithRange( IteratorRange const& range,flag_type flag )
     {
@@ -1051,37 +1081,37 @@ public:
         this->updateMarker3WithRange( range,flag,mpl::int_<iDim>() );
     }
 
-    /**
-     * sub method of updateMarker3WithRange : MESH_ELEMENTS
-     */
+    //!
+     //!  sub method of updateMarker3WithRange : MESH_ELEMENTS
+     //!
     template<typename IteratorRange>
     void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_ELEMENTS>/**/ )
     {
         this->updateMarker3WithRangeElements( range,flag );
     }
 
-    /**
-     * sub method of updateMarker3WithRange : MESH_FACES
-     */
+    //!
+     //!  sub method of updateMarker3WithRange : MESH_FACES
+     //!
     template<typename IteratorRange>
     void updateMarker3WithRange( IteratorRange const& range,flag_type flag, mpl::int_<MESH_FACES> /**/ )
     {
         this->updateMarker3WithRangeFaces( range,flag );
     }
 
-    /**
-     * Call the default partitioner (currently \p metis_partition()).
-     */
+    //!
+     //!  Call the default partitioner (currently \p metis_partition()).
+     //!
     void partition ( const uint16_type n_parts = 1 );
 
-    /**
-     * After loading/defining a mesh, we want to have as much locality
-     * as possible (elements/faces/nodes to be contiguous). In order
-     * to do that the mesh elements/faces/nodes are renumbered. That
-     * will be then most helpful when generating the \p Dof table.
-     * This procedure should work also with
-     * \p comm().size() == 1
-     */
+    //!
+     //!  After loading/defining a mesh, we want to have as much locality
+     //!  as possible (elements/faces/nodes to be contiguous). In order
+     //!  to do that the mesh elements/faces/nodes are renumbered. That
+     //!  will be then most helpful when generating the \p Dof table.
+     //!  This procedure should work also with
+     //!  \p comm().size() == 1
+     //!
     void renumber()
     {
         renumber( mpl::bool_<( nDim > 1 )>() );
@@ -1090,28 +1120,28 @@ public:
     void renumber( std::vector<size_type> const& node_map, mpl::int_<2> );
     void renumber( std::vector<size_type> const& node_map, mpl::int_<3> );
 
-    /**
-     * This function only take sense in the 3D modal case with a simplex mesh.
-     * In order to construct a global C^0 expansion, we need to assure that
-     * two contiguous elements share the same top vertex !
-     * This can be achieve by a local renumbering of the vertex.
-     */
+    //!
+     //!  This function only take sense in the 3D modal case with a simplex mesh.
+     //!  In order to construct a global C^0 expansion, we need to assure that
+     //!  two contiguous elements share the same top vertex !
+     //!  This can be achieve by a local renumbering of the vertex.
+     //!
 
     void localrenumber();
 
-    /**
-     * check elements permutation and fix it if needed
-     */
+    //!
+    //!  check elements permutation and fix it if needed
+    //!
     //void checkAndFixPermutation();
 
-    /**
-     * send the mesh data structure to processor \p p with  \p tag
-     */
+    //!
+    //!  send the mesh data structure to processor \p p with  \p tag
+    //!
     void send( int p, int tag );
 
-    /**
-     * receive the mesh data structure to processor \p p with  \p tag
-     */
+    //!
+     //!  receive the mesh data structure to processor \p p with  \p tag
+     //!
     void recv( int p, int tag );
 
     void saveMD(std::ostream &out)
@@ -1129,38 +1159,38 @@ public:
       out << "| nVertices              |" << this->numVertices() << "|\n\n";
     }
 #if defined(FEELPP_HAS_HDF5)
-    /**
-     * load mesh in hdf5
-     */
+    //!
+     //!  load mesh in hdf5
+     //!
     void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES ) { ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate ); }
 
-    /**
-     * save mesh in hdf5
-     */
+    //!
+     //!  save mesh in hdf5
+     //!
     void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
 #endif
 
 
 private:
 #if defined(FEELPP_HAS_HDF5)
-    /**
-     * save mesh in hdf5
-     */
+    //!
+    //!  save mesh in hdf5
+    //!
     FEELPP_NO_EXPORT void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
 public:
-    /**
-     * encode the mesh data structure into a tighter data structure and to avoid
-     * pointers in order to serialize it for saving/loading and
-     * sending/receiving the mesh
-     */
+    //!
+     //!  encode the mesh data structure into a tighter data structure and to avoid
+     //!  pointers in order to serialize it for saving/loading and
+     //!  sending/receiving the mesh
+     //!
     void encode();
 
-    /**
-     * decode the mesh data structure from a tighter data structure and to avoid
-     * pointers in order to serialize it for saving/loading and
-     * sending/receiving the mesh
-     */
+    //!
+     //!  decode the mesh data structure from a tighter data structure and to avoid
+     //!  pointers in order to serialize it for saving/loading and
+     //!  sending/receiving the mesh
+     //!
     void decode();
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
@@ -1203,8 +1233,8 @@ public:
 
             else if ( type == "xml" )
             {
-                //boost::archive::xml_oarchive oa(ofs);
-                //oa << *this;
+                //! boost::archive::xml_oarchive oa(ofs);
+                //! oa << *this;
             }
         }
     BOOST_PARAMETER_MEMBER_FUNCTION(
@@ -1268,8 +1298,8 @@ public:
 
             else if ( type == "xml" )
             {
-                //boost::archive::xml_iarchive ia(ifs);
-                //ia >> *this;
+                //! boost::archive::xml_iarchive ia(ifs);
+                //! ia >> *this;
             }
             if ( update )
             {
@@ -1287,41 +1317,41 @@ public:
 
 
     FEELPP_DEFINE_VISITABLE();
-    //@}
+    //! @}
 
-    //private:
+    //! private:
 
-    /**
-     * Finds all the processors that may contain
-     * elements that neighbor my elements.  This list
-     * is guaranteed to include all processors that border
-     * any of my elements, but may include additional ones as
-     * well.  This method computes bounding boxes for the
-     * elements on each processor and checks for overlaps.
-     */
-    //void findNeighboringProcessors();
+    //!
+     //!  Finds all the processors that may contain
+     //!  elements that neighbor my elements.  This list
+     //!  is guaranteed to include all processors that border
+     //!  any of my elements, but may include additional ones as
+     //!  well.  This method computes bounding boxes for the
+     //!  elements on each processor and checks for overlaps.
+     //!
+    //! void findNeighboringProcessors();
 
-    /**
-     * This function checks if the local numbering of the mesh elements
-     * is anticlockwise oriented. For the time being, this function
-     * only applies to tetrahedra meshes
-     */
+    //!
+     //!  This function checks if the local numbering of the mesh elements
+     //!  is anticlockwise oriented. For the time being, this function
+     //!  only applies to tetrahedra meshes
+     //!
     void checkLocalPermutation( mpl::bool_<false> ) const {}
     void checkLocalPermutation( mpl::bool_<true> ) const;
 
 
-    /**
-     * update the mesh data structure before using it
-     *
-     * by default if the number of processors if > 1, we partition
-     * the mesh. A different behaviour is controlled by setting
-     * properly \p setComponents(), \p components()
-     */
+    //!
+     //!  update the mesh data structure before using it
+     //!
+     //!  by default if the number of processors if > 1, we partition
+     //!  the mesh. A different behaviour is controlled by setting
+     //!  properly \p setComponents(), \p components()
+     //!
     void updateForUse();
 
-    /**
-     * update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
-     */
+    //!
+     //!  update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
+     //!
     void updateMeasures();
 
     void meshModified()
@@ -1439,14 +1469,14 @@ public:
             return M_ref_coords;
         }
 
-        /**
-         * distribute the points of the mesh in a kdtree
-         *
-         * extrapolation = false : Only the points inside the mesh are distributed.
-         * extrapolation = true  : Try to project the exterior points.
-         * \todo : for extrapolation, verify that all the points have been taken
-         *        into account, else test them on the frontiere convexes.
-         */
+        //!
+         //!  distribute the points of the mesh in a kdtree
+         //!
+         //!  extrapolation = false : Only the points inside the mesh are distributed.
+         //!  extrapolation = true  : Try to project the exterior points.
+         //!  \todo : for extrapolation, verify that all the points have been taken
+         //!         into account, else test them on the frontiere convexes.
+         //!
         void distribute( bool extrapolation = false );
 
 
@@ -1455,7 +1485,7 @@ public:
         boost::shared_ptr<self_type> M_mesh;
         boost::unordered_map<size_type, boost::unordered_map<size_type,uint16_type > > M_pts_cvx;
         typedef typename std::map<size_type, uint16_type >::const_iterator map_iterator;
-        //typedef typename node<value_type>::type node_type;
+        //! typedef typename node<value_type>::type node_type;
         boost::unordered_map<size_type,node_type> M_ref_coords;
         boost::unordered_map<size_type,double> M_dist;
         boost::unordered_map<size_type,size_type> M_cvx_pts;
@@ -1475,18 +1505,18 @@ public:
         typedef KDTree kdtree_type;
         typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
 
-        // a node x => a list of id elt which contain the node x
+        //!  a node x => a list of id elt which contain the node x
         typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
 
         typedef typename std::list<boost::tuple<size_type,node_type> > container_output_type;
         typedef typename std::list<boost::tuple<size_type,node_type> >::iterator container_output_iterator_type;
-        //map between element id and list of node described in the reference elt
-        //typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type
+        //! map between element id and list of node described in the reference elt
+        //! typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type
         typedef std::map<size_type, container_output_type > container_search_type;
         typedef typename container_search_type::const_iterator container_search_const_iterator_type;
         typedef typename container_search_type::iterator container_search_iterator_type;
 
-        // geomap inverse
+        //!  geomap inverse
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                                   mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
                                   mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type gm_inverse_type;
@@ -1497,13 +1527,13 @@ public:
                                   mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type gm1_inverse_type;
         typedef typename gm1_inverse_type::gic_type gmc1_inverse_type;
 
-        // reference convex
+        //!  reference convex
         typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
         typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
 
-        /**--------------------------------------------------------------
-         * Constructors
-         */
+        //! --------------------------------------------------------------
+         //!  Constructors
+         //!
         Localization() :
             M_mesh (),
             M_kd_tree( new kdtree_type() ),
@@ -1553,9 +1583,9 @@ public:
             M_barycentersWorld( L.M_barycentersWorld )
         {}
 
-        /*--------------------------------------------------------------
-         * Define the mesh whith or not init
-         */
+        //! --------------------------------------------------------------
+         //!  Define the mesh whith or not init
+         //!
         void
         setMesh( boost::shared_ptr<self_type> m,bool b=true )
         {
@@ -1569,36 +1599,36 @@ public:
             M_resultAnalysis.clear();
         }
 
-        /*--------------------------------------------------------------
-         * Define if necessary to use extrapolation
-         */
+        //! --------------------------------------------------------------
+         //!  Define if necessary to use extrapolation
+         //!
         void
         setExtrapolation( bool b )
         {
             M_doExtrapolation = b;
         }
 
-        /*--------------------------------------------------------------
-         * Run the init function if necessary
-         */
+        //! --------------------------------------------------------------
+         //!  Run the init function if necessary
+         //!
         void updateForUse()
         {
             if ( !this->isInit() )
                 this->init();
         }
 
-        /*--------------------------------------------------------------
-         * Run the init function if necessary
-         */
+        //! --------------------------------------------------------------
+         //!  Run the init function if necessary
+         //!
         void updateForUseBoundaryFaces()
         {
             if ( !this->isInitBoundaryFaces() )
                 this->initBoundaryFaces();
         }
 
-        /*--------------------------------------------------------------
-         * Access
-         */
+        //! --------------------------------------------------------------
+         //!  Access
+         //!
         bool isInit() const
         {
             return M_isInit;
@@ -1669,20 +1699,20 @@ public:
             return M_resultAnalysis.end();
         }
 
-        /*---------------------------------------------------------------
-         * True if the node p is in mesh->element(id)
-         */
+        //! ---------------------------------------------------------------
+         //!  True if the node p is in mesh->element(id)
+         //!
         boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt ) const;
         boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt, const matrix_node_type & setPoints, mpl::int_<1> /**/ ) const;
         boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
-        /*---------------------------------------------------------------
-         * Research only one element wich contains the node p
-         */
+        //! ---------------------------------------------------------------
+         //!  Research only one element wich contains the node p
+         //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
-        /*---------------------------------------------------------------
-         * Research only one element wich contains the node p
-         */
+        //! ---------------------------------------------------------------
+         //!  Research only one element wich contains the node p
+         //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
                                                               const matrix_node_type & setPoints,
                                                               mpl::int_<0> /**/ )
@@ -1690,29 +1720,29 @@ public:
             return searchElement( p );
         }
 
-        /*---------------------------------------------------------------
-         * Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
-         */
+        //! ---------------------------------------------------------------
+         //!  Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
+         //!
         boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
                                                                const matrix_node_type & setPoints,
                                                                mpl::int_<1> /**/ );
 
-        /*---------------------------------------------------------------
-         * Research all elements wich contains the node p
-         */
+        //! ---------------------------------------------------------------
+         //!  Research all elements wich contains the node p
+         //!
         boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements( const node_type & p );
 
-        /*---------------------------------------------------------------
-         * Research the element wich contains the node p, forall p in the
-         * matrix_node_type m. The result is save by this object
-         */
+        //! ---------------------------------------------------------------
+         //!  Research the element wich contains the node p, forall p in the
+         //!  matrix_node_type m. The result is save by this object
+         //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical);
 
-        /*---------------------------------------------------------------
-         * Research the element wich contains the node p, forall p in the
-         * matrix_node_type m. The result is save by this object
-         */
+        //! ---------------------------------------------------------------
+         //!  Research the element wich contains the node p, forall p in the
+         //!  matrix_node_type m. The result is save by this object
+         //!
         boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
                                                                  const size_type & eltHypothetical,
                                                                  const matrix_node_type & setPoints,
@@ -1721,18 +1751,18 @@ public:
             return run_analysis( m,eltHypothetical );
         }
 
-        /*---------------------------------------------------------------
-         * Research the element wich contains the node p, forall p in the
-         * matrix_node_type m. The result is save by this object
-         */
+        //! ---------------------------------------------------------------
+         //!  Research the element wich contains the node p, forall p in the
+         //!  matrix_node_type m. The result is save by this object
+         //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical,
                                                                 const matrix_node_type & setPoints,
                                                                 mpl::int_<1> /**/);
 
-        /*---------------------------------------------------------------
-         * Reset all data
-         */
+        //! ---------------------------------------------------------------
+         //!  Reset all data
+         //!
         void reset()
         {
             M_isInit=false;
@@ -1749,25 +1779,25 @@ public:
 
     private :
 
-        /*---------------------------------------------------------------
-         *initializes the kd tree and the map between node and list elements(all elements)
-         */
+        //! ---------------------------------------------------------------
+        //! initializes the kd tree and the map between node and list elements(all elements)
+        //!
         FEELPP_NO_EXPORT void init();
 
-        /*---------------------------------------------------------------
-         *initializes the kd tree and the map between node and list elements(only on boundary)
-         */
+        //! ---------------------------------------------------------------
+        //! initializes the kd tree and the map between node and list elements(only on boundary)
+        //!
         FEELPP_NO_EXPORT void initBoundaryFaces();
 
-        /*---------------------------------------------------------------
-         *search near elt in kd tree and get a sorted list
-         */
+        //! ---------------------------------------------------------------
+        //! search near elt in kd tree and get a sorted list
+        //!
         FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
                                               std::list< std::pair<size_type, uint> > & listTri );
 
-        /*---------------------------------------------------------------
-         * computed barycenter
-         */
+        //! ---------------------------------------------------------------
+        //!  computed barycenter
+        //!
         FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<1> /**/) const;
         FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<2> /**/) const;
         FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<3> /**/) const;
@@ -1776,7 +1806,7 @@ public:
 
         mesh_ptrtype M_mesh;
         kdtree_ptrtype M_kd_tree;
-        //map between node and list elements
+        //! map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
         bool M_isInit,M_isInitBoundaryFaces;
         container_search_type M_resultAnalysis;
@@ -1793,14 +1823,14 @@ public:
     };
 
 
-    /** @name  Signals
-     */
-    //@{
+    //!  @name  Signals
+     //!
+    //! @{
 
 #if !defined( __INTEL_COMPILER )
-    /**
-     * mesh changed its connectivity
-     */
+    //!
+     //!  mesh changed its connectivity
+     //!
     boost::signals2::signal<void ( MESH_CHANGES )> meshChanged;
 
     template<typename Observer>
@@ -1823,24 +1853,24 @@ public:
     std::set<rank_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
     void addFaceNeighborSubdomain( rank_type p ) { M_face_neighbor_processors.insert( p ); }
 
-    //@}
+    //! @}
 
 protected:
-    /**
-     * update the adjacency graph elements (usefull if coDimensionOne not updated)
-     */
+    //!
+     //!  update the adjacency graph elements (usefull if coDimensionOne not updated)
+     //!
     void updateAdjacencyElements();
 
-    /**
-     * Update connectivity of entities of codimension 1
-     */
+    //!
+     //!  Update connectivity of entities of codimension 1
+     //!
     void updateEntitiesCoDimensionOne();
     void updateEntitiesCoDimensionOne(mpl::bool_<true>);
     void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
-    /**
-     * Update connectivity of entities of codimension 1. Done only for marked entities and ghost faces
-     */
+    //!
+    //!  Update in ghost cells of entities of codimension 1. Done only for marked entities and ghost faces
+    //!
     void updateEntitiesCoDimensionOneMinimal();
     /**
      * Update in ghost cells of entities of codimension 1
@@ -1848,22 +1878,22 @@ protected:
     void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
     void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
-    /**
-     * check mesh connectivity
-     */
+    //!
+     //!  check mesh connectivity
+     //!
     void check() const;
 
 
 private:
 
-    /**
-     * \sa renumber()
-     */
+    //!
+    //!  \sa renumber()
+    //!
     FEELPP_NO_EXPORT void renumber( mpl::bool_<false> ) {}
 
-    /**
-     * \sa renumber()
-     */
+    //!
+    //!  \sa renumber()
+    //!
     FEELPP_NO_EXPORT void renumber( mpl::bool_<true> );
 
     /**
@@ -1886,9 +1916,9 @@ private:
      */
     FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> );
 
-    /**
-     * update entities on boundary (point, edge, face and element)
-     */
+    //!
+    //!  update entities on boundary (point, edge, face and element)
+    //!
     FEELPP_NO_EXPORT void updateOnBoundary();
 
     /**
@@ -1899,7 +1929,7 @@ private:
 
 private:
 
-    //! communicator
+    //! ! communicator
     size_type M_numGlobalElements, M_numGlobalFaces, M_numGlobalEdges, M_numGlobalPoints, M_numGlobalVertices;
     size_type M_maxNumElements, M_maxNumFaces, M_maxNumEdges, M_maxNumPoints, M_maxNumVertices;
     std::vector<std::tuple<size_type,size_type> > M_statElements; // ( actives,all )
@@ -1917,58 +1947,58 @@ private:
     value_type M_h_max;
 
 
-    //! measure of the mesh
+    //! ! measure of the mesh
     value_type M_meas, M_local_meas;
 
-    //! measure of the boundary of the mesh
+    //! ! measure of the boundary of the mesh
     value_type M_measbdy, M_local_measbdy;
 
-    //!sub structuring
+    //! !sub structuring
     bool M_substructuring;
 
-    /**
-     * The processors who neighbor the current
-     * processor
-     */
-    //std::vector<uint16_type> M_neighboring_processors;
+    //!
+     //!  The processors who neighbor the current
+     //!  processor
+     //!
+    //! std::vector<uint16_type> M_neighboring_processors;
     std::set<rank_type> M_neighbor_processors;
     std::set<rank_type> M_face_neighbor_processors;
 
-    //partitioner_ptrtype M_part;
+    //! partitioner_ptrtype M_part;
 
-    /**
-     * Arrays containing the global ids of Faces of each element
-     */
+    //!
+     //!  Arrays containing the global ids of Faces of each element
+     //!
     boost::unordered_map<std::pair<int,int>,face_processor_type> M_e2f;
 
-    /**
-     * Arrays containing the global ids of edges of each element
-     */
+    //!
+     //!  Arrays containing the global ids of edges of each element
+     //!
     boost::multi_array<element_edge_type,2> M_e2e;
 
-    /**
-     * periodic entities
-     */
+    //!
+     //!  periodic entities
+     //!
     std::vector<PeriodicEntity> M_periodic_entities;
 
-    /**
-     * to encode points coordinates
-     */
+    //!
+     //!  to encode points coordinates
+     //!
     std::map<uint64_type, boost::tuple<bool, std::vector<int>, std::vector<double> > > M_enc_pts;
 
-    /**
-     * to encode elements
-     */
+    //!
+     //!  to encode elements
+     //!
     std::map<uint64_type, std::vector<int> > M_enc_faces;
 
-    /**
-     * to encode elements
-     */
+    //!
+     //!  to encode elements
+     //!
     std::map<uint64_type, std::vector<int> > M_enc_elts;
 
-    /**
-     * tool for localize point in the mesh
-     */
+    //!
+     //!  tool for localize point in the mesh
+     //!
     boost::shared_ptr<Localization> M_tool_localization;
 
 };
@@ -2039,9 +2069,9 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     Context policies( extraction_policies );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] start\n";
-    // make sure it is all empty
+    //!  make sure it is all empty
     new_mesh.clear();
-    // inherit all the markers
+    //!  inherit all the markers
     new_mesh.M_markername = this->markerNames();
     BOOST_FOREACH( auto marker, new_mesh.M_markername )
     {
@@ -2050,12 +2080,12 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                   << " geoe: " << marker.second[1] << "\n";
 
     }
-    // How the nodes on this mesh will be renumbered to nodes
-    // on the new_mesh.
+    //!  How the nodes on this mesh will be renumbered to nodes
+    //!  on the new_mesh.
     std::vector<size_type> new_node_numbers ( this->numPoints(), invalid_size_type_value );
     std::vector<size_type> new_vertex ( this->numPoints(), 0 );
 
-    // the number of nodes on the new mesh, will be incremented
+    //!  the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
     unsigned int n_new_elem  = 0;
     size_type n_new_faces = 0;
@@ -2065,10 +2095,10 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 
         element_type const& old_elem = *it;
 
-        // copy element so that we can modify it
+        //!  copy element so that we can modify it
         element_type new_elem = old_elem;
 
-        // Loop over the nodes on this element.
+        //!  Loop over the nodes on this element.
         for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
         {
             FEELPP_ASSERT ( old_elem.point( n ).id() < new_node_numbers.size() ).error( "invalid point id()" );
@@ -2082,12 +2112,12 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                 point_type pt( old_elem.point( n ) );
                 pt.setId( n_new_nodes );
 
-                // Add this node to the new mesh
+                //!  Add this node to the new mesh
                 new_mesh.addPoint ( pt );
 
                 DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh.numPoints() << "\n";
 
-                // Increment the new node counter
+                //!  Increment the new node counter
                 n_new_nodes++;
 
                 if ( n < element_type::numVertices )
@@ -2097,7 +2127,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                 }
             }
 
-            // Define this element's connectivity on the new mesh
+            //!  Define this element's connectivity on the new mesh
             FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh.numPoints() ).error( "invalid connectivity" );
 
             DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
@@ -2108,18 +2138,18 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 
         }
 
-        // set id of element
+        //!  set id of element
         new_elem.setId ( n_new_elem );
 
-        // increment the new element counter
+        //!  increment the new element counter
         n_new_elem++;
 
 
-        // Add an equivalent element type to the new_mesh
+        //!  Add an equivalent element type to the new_mesh
         new_mesh.addElement( new_elem );
 
 
-        // Maybe add faces for this element
+        //!  Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
         {
             if ( !old_elem.facePtr( s ) ) continue;
@@ -2128,26 +2158,26 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
             std::cout << "local face id: " << s
                       << " global face id: " << old_elem.face( s ).id() << "\n";
 #endif
-            // only add face on the boundary: they have some data
-            // (boundary ids) which cannot be retrieved otherwise
-            //if ( old_elem.neighbor(s) == invalid_size_type_value )
+            //!  only add face on the boundary: they have some data
+            //!  (boundary ids) which cannot be retrieved otherwise
+            //! if ( old_elem.neighbor(s) == invalid_size_type_value )
             size_type global_face_id = old_elem.face( s ).id();
 
             if ( this->hasFace( global_face_id ) )
             {
 
-                //std::cout << "found face " << global_face_id << "\n";
-                // get the corresponding face
+                //! std::cout << "found face " << global_face_id << "\n";
+                //!  get the corresponding face
                 face_type const& old_face = old_elem.face( s );
                 face_type new_face = old_face;
 
-                // disconnect from elements of old mesh,
-                // the connection will be redone in
-                // \c updateForUse()
+                //!  disconnect from elements of old mesh,
+                //!  the connection will be redone in
+                //!  \c updateForUse()
                 new_face.disconnect();
 
-                //std::cout << "disconnect face\n";
-                // update points info
+                //! std::cout << "disconnect face\n";
+                //!  update points info
                 for ( uint16_type p = 0; p < new_face.nPoints(); ++p )
                 {
 #if 0
@@ -2166,7 +2196,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                           << " old marker1 : " << old_face.marker()
                           << "\n";
 #endif
-                // add it to the list of faces
+                //!  add it to the list of faces
                 new_mesh.addFace( new_face );
             }
         }
@@ -2175,7 +2205,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     new_mesh.setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
-    // Prepare the new_mesh for use
+    //!  Prepare the new_mesh for use
     new_mesh.components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     new_mesh.updateForUse();
 
@@ -2196,27 +2226,27 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type( this->worldComm() ) );
 
-    // How the nodes on this mesh will be renumbered to nodes on the new_mesh.
+    //!  How the nodes on this mesh will be renumbered to nodes on the new_mesh.
     boost::unordered_map<size_type,size_type> new_node_numbers;
     boost::unordered_map<size_type,int> new_vertex;
     std::vector<size_type> new_element_numbers ( this->numElements(), invalid_size_type_value );
 
     const int nProc = new_mesh->worldComm().localSize();
 
-    // the number of nodes on the new mesh, will be incremented
+    //!  the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
     unsigned int n_new_elem  = 0;
     size_type n_new_faces = 0;
 
-    // inherit the table of markersName
+    //!  inherit the table of markersName
     BOOST_FOREACH( auto itMark, this->markerNames() )
     {
         new_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
-    // data usefull for parallism
+    //!  data usefull for parallism
     std::map< int, std::set<boost::tuple<size_type,size_type> > > memoryGhostId;
-    //std::set< int > setOfRecvProc;
+    //! std::set< int > setOfRecvProc;
     std::vector<int> nbMsgToRecv( nProc , 0 );
 
     auto it = this->beginElement();
@@ -2225,9 +2255,9 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
     {
         element_type const& old_elem = it->second;
 
-        // create a new element
+        //!  create a new element
         typename P1_mesh_type::element_type new_elem;
-        // set id of element
+        //!  set id of element
         new_elem.setId ( n_new_elem );
         new_element_numbers[old_elem.id()]= n_new_elem;
         // set element markers
@@ -2237,12 +2267,12 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         new_elem.setProcessId(old_elem.processId());
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
-        // Loop over the P1 nodes on this element.
+        //!  Loop over the P1 nodes on this element.
         for ( uint16_type n=0; n < element_type::numVertices; n++ )
             {
                 auto const& old_point = old_elem.point( n );
 
-                //if ( !new_node_numbers[old_point.id()] )
+                //! if ( !new_node_numbers[old_point.id()] )
                 if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
                     {
                         new_node_numbers[old_point.id()] = n_new_nodes;
@@ -2252,51 +2282,51 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                         pt.setProcessId(old_point.processId());
                         pt.clearElementsGhost();
 
-                        // Add this node to the new mesh
+                        //!  Add this node to the new mesh
                         new_mesh->addPoint( pt );
                         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
-                        // Increment the new node counter
+                        //!  Increment the new node counter
                         n_new_nodes++;
                         FEELPP_ASSERT( !new_vertex[old_point.id()] ).error( "already seen this point?" );
                         new_vertex[old_point.id()]=1;
                     }
-            // Define this element's connectivity on the new mesh
-                //FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
+            //!  Define this element's connectivity on the new mesh
+                //! FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
             DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_point.id()
                           << ") as point new(" << new_node_numbers[old_point.id()]
                           << ") in element " << new_elem.id() << "\n";
-            // add point in element
+            //!  add point in element
             new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_point.id()] ) );
         } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
-        // Add an equivalent element type to the new_mesh
+        //!  Add an equivalent element type to the new_mesh
         auto const& e = new_mesh->addElement( new_elem );
         if ( keepMeshRelation )
             smd->bm.insert( typename SubMeshData::bm_type::value_type( e.id(), old_elem.id() ) );
 
-        // increment the new element counter
+        //!  increment the new element counter
         n_new_elem++;
 
 #if 0
-        // Maybe add faces for this element
+        //!  Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
         {
             if ( !old_elem.facePtr( s ) ) continue;
-            // only add face on the boundary: they have some data
-            // (boundary ids) which cannot be retrieved otherwise
+            //!  only add face on the boundary: they have some data
+            //!  (boundary ids) which cannot be retrieved otherwise
             const size_type global_face_id = old_elem.face( s ).id();
             if ( this->hasFace( global_face_id ) )
             {
-                // get the corresponding face
+                //!  get the corresponding face
                 face_type const& old_face = old_elem.face( s );
-                //if ( old_face.marker().isOff() ) continue;
+                //! if ( old_face.marker().isOff() ) continue;
                 typename P1_mesh_type::face_type new_face;
-                // disconnect from elements of old mesh,
-                // the connection will be redone in updateForUse()
+                //!  disconnect from elements of old mesh,
+                //!  the connection will be redone in updateForUse()
                 new_face.disconnect();
-                // is on boundary
+                //!  is on boundary
                 new_face.setOnBoundary( old_face.isOnBoundary() );
-                // set id of face
+                //!  set id of face
                 new_face.setId( n_new_faces );
                 // set face markers
                 new_face.setMarkers( old_face.markers() );
@@ -2305,15 +2335,15 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 new_face.setProcessId(old_face.processId());
                 new_face.clearIdInOthersPartitions();
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
-                // update P1 points info
+                //!  update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
                 {
-                    //new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+                    //! new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
                     new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
                 }
-                // add it to the list of faces
+                //!  add it to the list of faces
                 new_mesh->addFace( new_face );
-                // increment the new face counter
+                //!  increment the new face counter
                 ++n_new_faces;
             } // if ( this->hasFace( global_face_id ) )
         } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
@@ -2343,7 +2373,7 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         }
     } // end for it
 
-    // add marked faces in P1 mesh
+    //!  add marked faces in P1 mesh
     auto face_it = this->beginFace();
     auto face_en = this->endFace();
     for ( ; face_it!=face_en ; ++face_it )
@@ -2352,9 +2382,9 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         if ( !old_face.hasMarker() ) continue;
 
         typename P1_mesh_type::face_type new_face;
-        // is on boundary
+        //!  is on boundary
         new_face.setOnBoundary( old_face.isOnBoundary() );
-        // set id of face
+        //!  set id of face
         new_face.setId( n_new_faces );
         // set face markers
         new_face.setMarkers( old_face.markers() );
@@ -2363,15 +2393,15 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
         new_face.setProcessId(old_face.processId());
         new_face.clearIdInOthersPartitions();
         new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
-        // update P1 points info
+        //!  update P1 points info
         for ( uint16_type p = 0; p < face_type::numVertices; ++p )
         {
-            //new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+            //! new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
             new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
         }
-        // add it to the list of faces
+        //!  add it to the list of faces
         new_mesh->addFace( new_face );
-        // increment the new face counter
+        //!  increment the new face counter
         ++n_new_faces;
     }
 
@@ -2457,11 +2487,11 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                 ++nbMsgToSend[procToSend];
                 memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
             }
-            //CHECK( nbMsgToSend[procToSend] == sizeMsgToSend ) << "invalid data to send\n";
+            //! CHECK( nbMsgToSend[procToSend] == sizeMsgToSend ) << "invalid data to send\n";
         }
 
 #if !defined( NDEBUG )
-        // check nbMsgToRecv computation
+        //!  check nbMsgToRecv computation
         std::vector<int> nbMsgToRecv2( nProc , 0 );
         mpi::all_to_all( new_mesh->worldComm().localComm(),
                          nbMsgToSend,
@@ -2473,12 +2503,12 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                                                            << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
 #endif
 
-        // recv dof asked and re-send dof in this proc
+        //!  recv dof asked and re-send dof in this proc
         for ( int procToRecv=0; procToRecv<nProc; ++procToRecv )
         {
             for ( int cpt=0; cpt<nbMsgToRecv[procToRecv]; ++cpt )
             {
-                //recv
+                //! recv
                 size_type idEltRecv;
                 new_mesh->worldComm().localComm().recv( procToRecv, cpt, idEltRecv );
 
@@ -2519,10 +2549,10 @@ Mesh<Shape, T, Tag>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpd
                                                } ) );
 #endif
 
-    // Prepare the new_mesh for use
+    //!  Prepare the new_mesh for use
     new_mesh->components().reset();
     new_mesh->components().set ( ctxMeshUpdate );//MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    // run intensive job
+    //!  run intensive job
     new_mesh->updateForUse();
 
     if ( keepMeshRelation )
@@ -2674,16 +2704,16 @@ struct MeshPoints
 
 };
 
-/**
- * Builds information around faces/elements for exporting data
- * @param mesh The mesh from which data is extracted
- * @param it Starting iterator over the faces/elements
- * @param en Ending iterator over the faces/elements
- * @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
- * @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
- * @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
- * @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
- */
+//!
+ //!  Builds information around faces/elements for exporting data
+ //!  @param mesh The mesh from which data is extracted
+ //!  @param it Starting iterator over the faces/elements
+ //!  @param en Ending iterator over the faces/elements
+ //!  @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
+ //!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
+ //!  @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
+ //!  @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
+ //!
 template<typename T>
 template<typename MeshType, typename IteratorType>
 MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill, const int startIndex )
@@ -2692,8 +2722,8 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     size_type p = 0;
     auto elt_it = it;
 
-    /* Gather all the vertices of which the elements are made up with into a std::set */
-    /* build up correspondance arrays between index in nodeset and previous id */
+    //!  Gather all the vertices of which the elements are made up with into a std::set */
+    //!  build up correspondance arrays between index in nodeset and previous id */
     for( auto eit = it ; eit != en; ++eit )
     {
         auto const& elt = boost::unwrap_ref( *eit );
@@ -2707,11 +2737,11 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                 { ids.push_back( p + startIndex ); }
                 else
                 { ids.push_back( pid ); }
-                /* old id -> new id */
+                //!  old id -> new id */
                 old2new[pid]=ids[p];
-                /* old id -> new id */
+                //!  old id -> new id */
                 new2old[ids[p]]=pid;
-                /* old id -> index of the new id */
+                //!  old id -> index of the new id */
                 nodemap[pid] = p;
                 ++p;
             }
@@ -2724,16 +2754,16 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
 
     auto pit = ids.begin();
     auto pen = ids.end();
-    //for( auto i = 0; i < nv; ++i )
+    //! for( auto i = 0; i < nv; ++i )
 
-    /* put coords of each point into the coords array */
-    /* if outer is true, the coords are placed like: x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn */
-    /* otherwise, the coords are placed like: x1 y1 z1 x2 y2 z2 ... xn yn zn */
+    //!  put coords of each point into the coords array */
+    //!  if outer is true, the coords are placed like: x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn */
+    //!  otherwise, the coords are placed like: x1 y1 z1 x2 y2 z2 ... xn yn zn */
     for( int i = 0; pit != pen; ++pit, ++i )
     {
-        //CHECK( *pit > 0 ) << "invalid id " << *pit;
-        //LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
-        //int pid = (renumber)?nodemap[*pit]+1:*pit;
+        //! CHECK( *pit > 0 ) << "invalid id " << *pit;
+        //! LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
+        //! int pid = (renumber)?nodemap[*pit]+1:*pit;
         int pid = *pit;
 
         auto const& p = mesh->point( new2old[*pit] );
@@ -2749,7 +2779,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             else
             { coords[3*i+1] = ( T )( p.node()[1] ); }
         }
-        /* Fill 2nd components with 0 if told to do so */
+        //!  Fill 2nd components with 0 if told to do so */
         else
         {
             if(fill)
@@ -2768,7 +2798,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             else
             { coords[3*i+2] = ( T )( p.node()[2] ); }
         }
-        /* Fill 3nd components with 0 if told to do so */
+        //!  Fill 3nd components with 0 if told to do so */
         else
         {
             if(fill)
@@ -2781,34 +2811,34 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         }
     }
 
-    /* number of local elements */
+    //!  number of local elements */
     int __ne = std::distance( it, en );
 
-    /* only do this resize if we have at least one element in the iterator */
-    /* otherwise it will segfault */
+    //!  only do this resize if we have at least one element in the iterator */
+    //!  otherwise it will segfault */
     if(it != en)
     {
         elem.resize( __ne * MeshType::element_type::numPoints );
-        //elem.resize( __ne*mesh->numLocalVertices() );
+        //! elem.resize( __ne*mesh->numLocalVertices() );
         elemids.resize( __ne );
     }
 
     int tcount = 0;
 
-    /* build the array containing the id of each vertex for each element */
+    //!  build the array containing the id of each vertex for each element */
     elt_it = it;
     size_type e=0;
     for (  ; elt_it != en; ++elt_it, ++e )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
         elemids[e] = elt.id()+1;
-        //std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
-        //for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
+        //! std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
+        //! for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
         for ( size_type j = 0; j < MeshType::element_type::numPoints ; j++ )
         {
-            //std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
-            //std::cout << elt.point( j ).id() << std::endl;
-            // ensight id start at 1
+            //! std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
+            //! std::cout << elt.point( j ).id() << std::endl;
+            //!  ensight id start at 1
             elem[e * MeshType::element_type::numPoints + j] = old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
@@ -2825,8 +2855,8 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                    { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << nv; } );
 #endif
 
-    //size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
-    //size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
+    //! size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
+    //! size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
 #if 0
     size_type offset_pts = coords.size()*sizeof(float);
     size_type offset_elts = elem.size()*sizeof(int);
@@ -2835,22 +2865,22 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     size_type offset_elts = __ne;
 #endif
 
-    /* gather the number of points and elements fo each process */
+    //!  gather the number of points and elements fo each process */
     std::vector<int> ost{nv, __ne};
     std::vector<std::vector<int>> ospe;
 
     mpi::all_gather( worldComm.comm(), ost, ospe );
 
-    /* copy information about number of points/elements
-     * per process in a local array */
+    //!  copy information about number of points/elements
+     //!  per process in a local array */
     for( size_type i = 0; i < ospe.size(); i++)
     {
         numberOfPoints.push_back(ospe[i][0]);
         numberOfElements.push_back(ospe[i][1]);
     }
 
-    /* compute offsets to shift the point and element ids */
-    /* regarding to the processor rank */
+    //!  compute offsets to shift the point and element ids */
+    //!  regarding to the processor rank */
     offsets_pts = 0;
     global_offsets_pts = 0;
     offsets_elts = 0;
@@ -2868,18 +2898,18 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     global_npts = global_offsets_pts;
     global_nelts = global_offsets_elts;
 
-    //
-    //std::cout << "local offset pts : " << offsets_pts << std::endl;
-    //std::cout << "local offset elts : " << offsets_elts << std::endl;
-    //std::cout << "global offset pts : " << global_offsets_pts << std::endl;
-    //std::cout << "global offset elts : " << global_offsets_elts << std::endl;
-    //std::cout << "done with offsets" << std::endl;
+    //!
+    //! std::cout << "local offset pts : " << offsets_pts << std::endl;
+    //! std::cout << "local offset elts : " << offsets_elts << std::endl;
+    //! std::cout << "global offset pts : " << global_offsets_pts << std::endl;
+    //! std::cout << "global offset elts : " << global_offsets_elts << std::endl;
+    //! std::cout << "done with offsets" << std::endl;
 }
 
-/**
- * Translate the list of points ids to the new global layout
- * @param ids Array of local point ids to be translated
- */
+//!
+ //!  Translate the list of points ids to the new global layout
+ //!  @param ids Array of local point ids to be translated
+ //!
 template<typename T>
 int MeshPoints<T>::translatePointIds(std::vector<int32_t> & ptids)
 {
@@ -2891,10 +2921,10 @@ int MeshPoints<T>::translatePointIds(std::vector<int32_t> & ptids)
     return 0;
 }
 
-/**
- * Translate the list of element ids to the new global layout
- * @param ids Array of local point ids to be translated
- */
+//!
+ //!  Translate the list of element ids to the new global layout
+ //!  @param ids Array of local point ids to be translated
+ //!
 template<typename T>
 int MeshPoints<T>::translateElementIds(std::vector<int32_t> & elids)
 {
@@ -2931,10 +2961,10 @@ constexpr int realdim( boost::shared_ptr<MeshType> m,
 } // Feel
 
 
-//#if !defined(FEELPP_INSTANTIATION_MODE)
+//! #if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
 # include <feel/feeldiscr/meshio.hpp>
-//#endif //
+//! #endif //
 
 
 #endif /* FEELPP_MESH_HPP */

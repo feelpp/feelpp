@@ -59,18 +59,18 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( DataUpdateJacobian 
         {
 #if 1
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= inner(Sigmat_newtonian,grad(v)),
                            _geomap=this->geomap() );
 #else
             //auto StressTensorExprJac = Feel::vf::FSI::fluidMecNewtonianStressTensorJacobian(u,p,viscosityModel,false/*true*/);
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= 2*idv(mu)*inner(deft,grad(v)),
                            //_expr= inner( StressTensorExprJac, grad(v) ),
                            _geomap=this->geomap() );
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -idt(p)*div(v),
                            _geomap=this->geomap() );
 #endif
@@ -81,7 +81,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( DataUpdateJacobian 
     {
         if ( _BuildCstPart )
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            _expr= -idt(p)*div(v),
                            _geomap=this->geomap() );
 
@@ -89,7 +89,7 @@ FLUIDMECHANICSBASE_CLASS_TEMPLATE_TYPE::updateJacobianModel( DataUpdateJacobian 
         {
             auto StressTensorExprJac = Feel::vf::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
             bilinearForm_PatternCoupled +=
-                integrate( _range=elements(mesh),
+                integrate( _range=M_rangeMeshElements,
                            //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),
                            _expr= inner( StressTensorExprJac,grad(v) ),
                            _geomap=this->geomap() );

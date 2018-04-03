@@ -247,7 +247,7 @@ ElectroThermal<Dim, OrderP>::run()
     double I_error_last = I_error ;
     double I_In = 0.5*I_error ;
 
-#if 0
+#if 1
     assemble_A_and_F( A, F, Vh, Wh, Mh, Ch, Xh, up, pp, Tp );
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
     hdg_sol.localize(U);
