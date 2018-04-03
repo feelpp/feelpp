@@ -29,6 +29,13 @@
 
 namespace Feel {
 
+enum class Checks
+{
+    NONE=0,
+    EXACT,
+    CONVERGENCE_ORDER
+};
+
 namespace rate {
 
 class FEELPP_EXPORT hp
@@ -42,7 +49,7 @@ public:
     //!
     //! 
     //!
-    bool operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol = 1e-1, double etol=1e-15 );
+    Checks operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol = 1e-1, double etol=1e-15 );
 private:
     struct FEELPP_NO_EXPORT data
     {
@@ -79,7 +86,40 @@ private:
     std::map<std::string,std::map<int, data>> M_data;
 };
 
-}
+} // rate
+
+struct CheckerConvergenceFailed : public std::logic_error
+{
+    CheckerConvergenceFailed() = delete;
+    
+    CheckerConvergenceFailed( double expected, double got, double tol )
+        :
+        std::logic_error( "Checker convergence order  verification failed" ),
+        M_expected_order( expected ),
+        M_got_order( got ),
+        M_tol( tol )
+        {}
+    double expectedOrder() const { return M_expected_order; }
+    double computedOrder() const { return M_got_order; }
+    double tolerance() const { return M_tol; }
+private:
+    double M_expected_order, M_got_order, M_tol;
+};
+struct CheckerExactFailed : public std::logic_error
+{
+    CheckerExactFailed() = delete;
+    CheckerExactFailed( double got, double tol )
+        :
+        std::logic_error( "Checker exact verification failed" ),
+        M_got_error( got ),
+        M_tol( tol )
+        {}
+    double computedError() const { return M_got_error; }
+    double tolerance() const { return M_tol; }
+private:
+    double M_got_error, M_tol;
+};
+
 //!
 //! Checker class
 //!
@@ -106,7 +146,7 @@ public:
     
     template<typename ErrorFn, typename ErrorLaw>
     int
-    runOnce( ErrorFn fn, ErrorLaw law );
+    runOnce( ErrorFn fn, ErrorLaw law, std::string metric = "||u-u_h_" );
 
 private:
     bool M_check;
@@ -117,30 +157,56 @@ private:
 
 template<typename ErrorFn, typename ErrorRate>
 int
-Checker::runOnce( ErrorFn fn, ErrorRate rate )
+Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 {
-    if ( M_check )
-    {
-        
-        auto err = fn( M_solution );
-        bool status = true;
-        for( auto const& e : err )
-        {
-            cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
-            if ( rate(M_solution, e, M_otol, M_etol) )
-            {
-                cout << tc::green << e.first << " error norm check successful: " << e.second << tc::reset << std::endl;
-            }
-            else
-            {
-                cout << tc::red << e.first <<  " error norm check failed: " << e.second << tc::reset << std::endl;
-                status = false;
-            }
-        }
-        return status;
-    }
+    if ( !M_check )
+        return true;
 
-    return 0;
+    auto err = fn( M_solution );
+    std::vector<bool> checkSucces;
+    for( auto const& e : err )
+    {
+        //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
+        checkSucces.push_back( false );
+        try
+        {
+            Checks c = rate(M_solution, e, M_otol, M_etol);
+
+            switch( c )
+            {
+            case Checks::NONE:
+                cout << tc::yellow << "[no checks]" << metric << e.first << "=" << e.second << tc::reset << std::endl;
+                break;
+            case Checks::EXACT:
+                cout << tc::green << "[exact verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
+                break;
+            case Checks::CONVERGENCE_ORDER:
+                cout << tc::green << "[convergence order verification success]" << metric << e.first <<  "=" << e.second << tc::reset << std::endl;
+                break;
+            }
+            checkSucces.back() = true;
+        }
+        catch( CheckerConvergenceFailed const& ex )
+        {
+            cout << tc::red
+                 << "Checker convergence order verification failed for " << metric << e.first << std::endl
+                 << " Computed order " << ex.computedOrder() << std::endl
+                 << " Expected order " << ex.expectedOrder() << std::endl
+                 << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+        }
+        catch( CheckerExactFailed const& ex )
+        {
+            cout << tc::red
+                 << "Checker exact verification failed for " << metric << e.first << std::endl
+                 << " Computed error " << ex.computedError() << std::endl
+                 << " Tolerance " << ex.tolerance()  << tc::reset << std::endl;
+        }
+        catch( std::exception const& ex )
+        {
+            cout << tc::red << "Caught exception " << ex.what() << tc::reset << std::endl;
+        }
+    }
+    return ( std::find(checkSucces.begin(),checkSucces.end(), false ) == checkSucces.end() );
 }
 
 //!

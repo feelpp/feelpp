@@ -1033,9 +1033,7 @@ public:
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
-                                                                                          _worldcomm=this->comm() ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
                                        ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitKSP/*1000*/ )
@@ -1068,7 +1066,22 @@ public:
                              _constant_null_space=constant_null_space,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
 
-        this->attachPreconditioner( prec );
+        // preconditioner
+        if ( !prec )
+        {
+            if ( !M_preconditioner )
+                M_preconditioner = Feel::preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
+                                                         _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
+                                                         _worldcomm=this->comm() );
+            else
+            {
+                M_preconditioner->setType( this->pcEnumType() );
+                M_preconditioner->setMatSolverPackageType( this->matSolverPackageEnumType() );
+                M_preconditioner->setMatrix( matrix );
+            }
+        }
+        else
+            this->attachPreconditioner( prec );
 
         // attach null space (or near null space for multigrid) in backend
         auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
@@ -1113,17 +1126,19 @@ public:
             *_sol = Feel::detail::ref( solution );
             needToCopySolution = true;
         }
+        vector_ptrtype _rhs( this->toBackendVectorPtr( rhs ) );
+        CHECK( _rhs ) << "converstion to backend vector of rhs fails";
 
         this->setTranspose( transpose );
         solve_return_type ret;
 
         if ( reuse_prec == false )
         {
-            ret = solve( matrix, matrix, _sol, rhs );
+            ret = solve( matrix, matrix, _sol, _rhs );
         }
 
         else
-            ret = solve( matrix, matrix, _sol, rhs, reuse_prec );
+            ret = solve( matrix, matrix, _sol, _rhs, reuse_prec );
 
         _sol->close();
 
@@ -1196,8 +1211,7 @@ public:
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), Feel::preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
                                        ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
                                        ( maxit,( size_type ), M_maxitSNES/*50*/ )
@@ -1230,6 +1244,22 @@ public:
         auto dm = Feel::detail::datamap( solution );
         this->setDataMap( dm );
 
+        // preconditioner
+        if ( !prec )
+        {
+            if ( !M_preconditioner )
+                M_preconditioner = Feel::preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,
+                                                         _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
+                                                         _worldcomm=this->comm() );
+            else
+            {
+                M_preconditioner->setType( this->pcEnumType() );
+                M_preconditioner->setMatSolverPackageType( this->matSolverPackageEnumType() );
+            }
+        }
+        else
+            this->attachPreconditioner( prec );
+
         vector_ptrtype _sol( this->toBackendVectorPtr( solution ) );
         bool needToCopySolution = false;
         if( !_sol )
@@ -1243,12 +1273,12 @@ public:
         this->setTranspose( transpose );
         solve_return_type ret;
 
-        // this is done with nonlinerarsolver
+        // residual vector
+        vector_ptrtype _res;
         if ( !residual )
-        {
-            residual = this->newVector( dm );
-            //this->nlSolver()->residual( _sol, residual );
-        }
+            _res = this->newVector( dm );
+        else
+            _res = this->toBackendVectorPtr( residual );
 
         //this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
@@ -1257,8 +1287,8 @@ public:
             jacobian->close();
         }
 
-        if ( prec && !this->nlSolver()->initialized() )
-            this->nlSolver()->attachPreconditioner( prec );
+        if ( !this->nlSolver()->initialized() )
+            this->nlSolver()->attachPreconditioner( M_preconditioner );
 
         // attach null space (or near null space for multigrid) in backend
         auto mynullspace = boost::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);
@@ -1281,7 +1311,7 @@ public:
         //if ( reuse_prec == false && reuse_jac == false )
         //    ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit );
         //else
-        ret = nlSolve( jacobian, _sol, residual, rtolerance, maxit, reuse_prec, reuse_jac );
+        ret = nlSolve( jacobian, _sol, _res, rtolerance, maxit, reuse_prec, reuse_jac );
         _sol->close();
 
         if ( needToCopySolution )
@@ -1341,8 +1371,8 @@ public:
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
     {
-        if ( M_preconditioner && M_preconditioner != preconditioner )
-            M_preconditioner->clear();
+        // if ( M_preconditioner && M_preconditioner != preconditioner )
+        //     M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
 

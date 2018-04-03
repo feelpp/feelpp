@@ -42,6 +42,8 @@ TSBase::TSBase()
     M_Tf( 1.0 ),
     M_dt( 1.0 ),
     M_state( TS_UNITIALIZED ),
+    M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( false ),
     M_restartPath( "" ),
@@ -64,6 +66,8 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_Tf( doption(_prefix=prefix,_name="ts.time-final") ),
     M_dt( doption(_prefix=prefix,_name="ts.time-step") ),
     M_state( TS_UNITIALIZED ),
+    M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( boption(_prefix=prefix,_name="ts.restart") ),
     M_restartPath( soption(_prefix=prefix,_name="ts.restart.path") ),
@@ -76,6 +80,7 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_worldComm( worldComm ),
     M_prefix( prefix )
 {}
+
 TSBase::TSBase( std::string name, WorldComm const& worldComm )
     :
     M_name( name ),
@@ -85,6 +90,8 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_Tf( 1.0 ),
     M_dt( 1.0 ),
     M_state( TS_UNITIALIZED ),
+    M_reverse( false ),
+    M_reverseLoad( false ),
     M_n_restart( 0 ),
     M_restart( false ),
     M_restartPath( "" ),
@@ -106,6 +113,8 @@ TSBase::TSBase( TSBase const& b )
     M_Tf( b.M_Tf ),
     M_dt( b.M_dt ),
     M_state( b.M_state ),
+    M_reverse( b.M_reverse ),
+    M_reverseLoad( b.M_reverseLoad ),
     M_n_restart( b.M_n_restart ),
     M_restart( b.M_restart ),
     M_restartPath( b.M_restartPath ),
@@ -133,6 +142,8 @@ TSBase::operator=( TSBase const& b )
         M_dt = b.M_dt;
         M_n_restart = b.M_n_restart;
         M_state = b.M_state;
+        M_reverse = b.M_reverse;
+        M_reverseLoad = b.M_reverseLoad;
         M_restart = b.M_restart;
         M_restartPath = b.M_restartPath;
         M_restartStepBeforeLastSave = b.M_restartStepBeforeLastSave;
@@ -149,7 +160,6 @@ TSBase::operator=( TSBase const& b )
     return *this;
 }
 
-
 void
 TSBase::init()
 {
@@ -163,36 +173,35 @@ TSBase::init()
 
     if ( this->saveInFile() )
     {
-        // if directory does not exist, create it
+        // If directory does not exist, create it.
         if ( this->worldComm().isMasterRank() && !fs::exists( M_path_save ) )
             fs::create_directories( M_path_save );
-        // be sure that all process can find the path after
+        // Be sure that all process can find the path after.
         this->worldComm().barrier();
     }
 
     if ( M_restart )
     {
-        //fs::ifstream ifs;
         fs::path thepath;
+        if ( not this->restartPath().empty() )
+        {   // Default metadata path.
+            thepath=this->restartPath()/this->path()/"metadata";
+        }
+        else
+        {   // Restart metadata path.
+            thepath=this->path()/"metadata";
+        }
 
-        if ( this->restartPath().empty() ) thepath=this->path()/"metadata";//   ifs.open(this->path()/"metadata");
-
-        else thepath=this->restartPath()/this->path()/"metadata"; //ifs.open(this->restartPath()/this->path()/"metadata");
-
-        // read the saved bdf data
-        if ( fs::exists( thepath/* this->restartPath() / this->path() / "metadata" )*/ ) )
+        // Read the saved bdf metadata.
+        if ( fs::exists( thepath ) )
         {
-            DVLOG(2) << "[Bdf] loading metadata from " << M_path_save.string() << "\n";
+            DVLOG(2) << "[TSBase::init()] loading metadata from " << M_path_save.string() << "\n";
 
-            //fs::ifstream ifs( this->restartPath() / this->path() / "metadata")
             fs::ifstream ifs( thepath );
-
-
             boost::archive::text_iarchive ia( ifs );
             ia >> BOOST_SERIALIZATION_NVP( *this );
-            DVLOG(2) << "[Bdf::init()] metadata loaded\n";
-            //TSBaseMetadata bdfloader( *this );
-            //bdfloader.load();
+
+            DVLOG(2) << "[TSBase::init()] metadata loaded\n";
 
             // modify Ti with last saved time
             if ( this->doRestartAtLastSave() )
@@ -203,45 +212,38 @@ TSBase::init()
             {
                 const int nbTimeStep = M_time_values_map.size();
                 CHECK( nbTimeStep-1-this->restartStepBeforeLastSave() >=0 ) << "error with restartStepBeforeLastSave " << this->restartStepBeforeLastSave()
-                                                                            << "must be less to " << nbTimeStep << std::endl;
+                    << "must be less to " << nbTimeStep << std::endl;
                 M_Ti =  M_time_values_map[ nbTimeStep-1-this->restartStepBeforeLastSave() ];
             }
 
-            M_iteration = 0;
-            // look for M_ti in the time values
+            int iteration = 0;
+            // Determine if Ti is found in map.
             bool found = false;
+
+            // Determine current iteration.
             BOOST_FOREACH( auto time, M_time_values_map )
             {
                 if ( math::abs( time-M_Ti ) < 1e-10 )
                 {
-                    //M_iteration = time.first;
-                    //std::cout << "time found " << time << std::endl;
                     found = true;
                     break;
                 }
-
-                ++M_iteration;
-            }
-            //std::cout << "M_iteration " << M_iteration << std::endl;
-
-            if ( !found )
-            {
-                DVLOG(2) << "[Bdf] intial time " << M_Ti << " not found\n";
-                M_Ti = 0.0;
-                M_iteration = 0;
-                M_time_values_map.clear();
-                return;
+                ++iteration;
             }
 
-            else
+            if ( found )
             {
+                M_iteration = iteration;
+                if( this->isReverse() )
+                {
+                    M_iteration = this->iterationNumber() - iteration;
+                }
                 if (this->saveFreq()==1)
                 {
                     M_time_values_map.resize( M_iteration+1 );
                 }
-                else
+                else // saveFreq != 1.
                 {
-                    //std::cout << "[Bdf::init()] file index: " << M_iteration << "\n";
                     int nItBack = M_iteration % this->saveFreq();
                     M_iteration-=nItBack;
 
@@ -249,42 +251,38 @@ TSBase::init()
                     M_Ti = M_time_values_map.back();
                 }
             }
-
-            DVLOG(2) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
-
-            DVLOG(2) << "[Bdf::init()] file index: " << M_iteration << "\n";
-
+            else // M_Ti not found.
+            {
+                DVLOG(2) << "[TSBase::init()] initial time " << M_Ti << " not found\n";
+                M_time_values_map.clear();
+            }
+            DVLOG(2) << "[TSBase::init()] initial time is Ti=" << M_Ti << "\n";
+            DVLOG(2) << "[TSBase::init()] file index: " << M_iteration << "\n";
         }
-
-        else
+        else // Metadata path does not exist.
         {
-            M_Ti = 0.0;
             M_time_values_map.clear();
         }
-    }
-
+    } // restart
 } // init
-
-
-
-
-
-
 
 void
 TSBaseMetadata::load()
 {
     fs::ifstream ifs;
 
-    if ( M_ts.restartPath().empty() ) ifs.open( M_ts.path()/"metadata" );
-
-    else ifs.open( M_ts.restartPath()/M_ts.path()/"metadata" );
-
-    //fs::ifstream ifs( M_ts.path() / "metadata");
+    if ( M_ts.restartPath().empty() )
+    {   // Default metadata path.
+        ifs.open( M_ts.path()/"metadata" );
+    }
+    else
+    {   // Restart metadata path.
+        ifs.open( M_ts.restartPath()/M_ts.path()/"metadata" );
+    }
 
     boost::archive::text_iarchive ia( ifs );
     ia >> BOOST_SERIALIZATION_NVP( M_ts );
-    DVLOG(2) << "[Bdf::init()] metadata loaded\n";
+    DVLOG(2) << "[TSBaseMetadata::init()] metadata loaded\n";
 }
 
 void
@@ -299,13 +297,11 @@ TSBaseMetadata::save()
 
         boost::archive::text_oarchive oa( ofs );
         oa << BOOST_SERIALIZATION_NVP( ( TSBase const& )M_ts );
-        DVLOG(2) << "[Bdf::init()] metadata saved\n";
+        DVLOG(2) << "[TSBaseMetadata::init()] metadata saved\n";
     }
     // to be sure that all process can read the metadata file
     M_ts.worldComm().barrier();
 }
-
-
 
 
 } // namespace Feel

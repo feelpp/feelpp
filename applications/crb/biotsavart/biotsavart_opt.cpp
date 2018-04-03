@@ -27,7 +27,7 @@
 #include <feel/feelopt/nlopt.hpp>
 
 #include "biotsavart.hpp"
-#include <thermoelectric.hpp>
+#include <thermoelectric-linear.hpp>
 
 int iter=0;
 
@@ -51,7 +51,7 @@ int main(int argc, char**argv )
     nloptoptions.add(backend_options("backend-dual"));
     nloptoptions.add(backend_options("backend-l2"));
     nloptoptions.add(bdf_options("ThermoElectricCRB"));
-    nloptoptions.add(makeOptions());
+    nloptoptions.add(makeThermoElectricOptions());
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=nloptoptions,
@@ -68,7 +68,7 @@ int main(int argc, char**argv )
         ("LD_MMA", ::nlopt::LD_MMA )
         ("LD_SLSQP", ::nlopt::LD_SLSQP );
 
-    BiotSavartCRB<Thermoelectric> BS = BiotSavartCRB<Thermoelectric>();
+    BiotSavartCRB<ThermoElectric> BS = BiotSavartCRB<ThermoElectric>();
     BS.offline();
     int N = BS.nbParameters();
 

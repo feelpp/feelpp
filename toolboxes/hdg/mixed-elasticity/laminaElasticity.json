@@ -1,7 +1,7 @@
 {
     "Name": "HDG-Mixed-Linear-Elasticity",
     "ShortName":"ME",
-    "Model":"hdg",
+    "Models": { "equations":"hdg"},
     "Materials":
     {
         "Lamina":
@@ -62,7 +62,10 @@
      },
     "PostProcess":
     {
-        "Fields":["stress","displacement"]
+        "Exports":
+        {
+            "fields":["stress","displacement"]
+        }
     }
 }
 

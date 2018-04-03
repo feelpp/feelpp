@@ -53,6 +53,7 @@ public :
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
 
+    typedef backend_type::graph_type graph_type;
     typedef backend_type::graph_ptrtype graph_ptrtype;
     typedef backend_type::indexsplit_type indexsplit_type;
     typedef backend_type::indexsplit_ptrtype indexsplit_ptrtype;
@@ -177,7 +178,7 @@ public :
     ModelAlgebraic( std::string _theprefix,
                     WorldComm const& _worldComm=Environment::worldComm(),
                     std::string const& subPrefix="",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;
 
@@ -236,6 +237,7 @@ public :
 
     virtual void updateInHousePreconditioner( sparse_matrix_ptrtype const& mat, vector_ptrtype const& vecSol ) const;
 
+    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     virtual graph_ptrtype buildMatrixGraph() const;
 
     //----------------------------------------------------------------------------------//

@@ -32,7 +32,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <thermoelectric.hpp>
+#include <thermoelectric-linear.hpp>
 
 namespace Feel
 {
@@ -170,15 +170,20 @@ public:
     void saveIntegrals();
     void computeIntegrals(int M = 0, int N = 0);
     void online( parameter_type & mu );
-    void computeB( vectorN_type & uN, eigen_vector_type & betaMu );
+    void computeUn( parameter_type &mu, int N);
+    void computeB( vectorN_type & uN );
     void computeFE( parameter_type & mu );
     void exportResults();
 
     parameter_type newParameter() { return M_teCrbModel->newParameter(); }
     int nbParameters() const { return M_crbModel->parameterSpace()->dimension();  }
     auto parameterSpace() const { return M_crbModel->parameterSpace(); }
+    int nMax() const { return M_N; }
+    vectorN_type uN() const { return M_uN; }
     element_type potentialTemperature() const { return M_VT; }
+    element_type potentialTemperatureFE() const { return M_VTFe; }
     vec_element_type magneticFlux() const { return M_B; }
+    vec_element_type magneticFluxFE() const { return M_BFe; }
     mesh_ptrtype meshCond() const { return M_meshCond; }
     mesh_ptrtype meshMgn() const { return M_meshMgn; }
 
@@ -195,6 +200,7 @@ protected:
     space_ptrtype M_Xh;
     vec_space_ptrtype M_XhMgn;
     element_type M_VT;
+    element_type M_VTFe;
     vec_element_type M_B;
     current_element_type M_j;
     vec_element_type M_BFe;
@@ -210,7 +216,7 @@ protected:
 }; // class BiotSavartCRB
 
 #if !defined(FEELPP_INSTANTIATE_BIOTSAVART_THERMOELECTRIC)
-extern template class FEELPP_EXPORT BiotSavartCRB<Thermoelectric>;
+extern template class FEELPP_EXPORT BiotSavartCRB<ThermoElectric>;
 #endif
 } // namespace Feel
 

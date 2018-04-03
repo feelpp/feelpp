@@ -441,6 +441,22 @@ const size_type invalid_size_type_value = size_type( -1 );
 
 //@}
 
+//!
+//! get the underlying value of an enum class entry
+//!
+template <typename E>
+constexpr auto to_underlying(E e) noexcept
+{
+    return static_cast<std::underlying_type_t<E>>(e);
+}
+template< typename E , typename T>
+constexpr inline typename std::enable_if< std::is_enum<E>::value &&
+                                          std::is_integral<T>::value, E
+                                          >::type 
+to_enum( T value ) noexcept 
+{
+    return static_cast<E>( value );
+}
 } // end namespace Feel
 
 #include <boost/program_options.hpp>

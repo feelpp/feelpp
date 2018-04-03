@@ -5,6 +5,9 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/advection/advectionbasestabilisation.cpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -15,8 +18,10 @@ const std::map<std::string, AdvectionStabMethod>
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
     {"NONE", AdvectionStabMethod::NONE},
     {"GALS", AdvectionStabMethod::GALS},
+    {"gls", AdvectionStabMethod::GALS},
     {"CIP", AdvectionStabMethod::CIP},
     {"SUPG", AdvectionStabMethod::SUPG},
+    {"supg", AdvectionStabMethod::SUPG},
     {"SGS", AdvectionStabMethod::SGS}
 };
 
@@ -29,9 +34,9 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::AdvectionBase(
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 :
-    super_type( prefix, worldComm, subPrefix, rootRepository ),
+    super_type( prefix, worldComm, subPrefix, modelRep ),
     M_isBuilt(false),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
@@ -124,7 +129,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::build( space_advection_ptrtype const& space)
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::appli_ptrtype const& app )
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_algebraic_factory_type::model_ptrtype const& app )
 {
     //if ( M_isUpdatedForUse ) return;
 
@@ -134,22 +139,36 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::init(bool buildModelAlgebraicFactory, model_a
     if( !M_isBuilt )
         this->build();
 
+
+    if ( this->hasAdvection() )
+    {
+        if( (this->stabilizationMethod() == AdvectionStabMethod::GALS) ||
+                (this->stabilizationMethod() == AdvectionStabMethod::SUPG) )
+        {
+            typedef StabilizationGLSParameter<mesh_type, nOrder> stab_gls_parameter_impl_type;
+            M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+            M_stabilizationGLSParameter->init();
+        }
+        if( this->stabilizationMethod() == AdvectionStabMethod::CIP )
+        {
+            M_stabilizationCIPCoefficient = doption( _name="stabilization-cip.coeff", _prefix=this->prefix() );
+        }
+    }
+
     // Vector solution
-    M_blockVectorSolution.resize(1);
-    M_blockVectorSolution(0) = this->fieldSolutionPtr();
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->buildVectorSolution();
+
 
     // Time step
     this->initTimeStep();
     // Post-process
     this->initPostProcess();
-    
+
     // Algebraic factory
     if( buildModelAlgebraicFactory )
     {
         // matrix sparsity graph
         auto graph = this->buildMatrixGraph();
-        
         M_algebraicFactory.reset( new model_algebraic_factory_type( app, this->backend(), graph, graph->mapRow().indexSplit() ) );
     }
 
@@ -207,15 +226,20 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     
     M_hasSourceAdded = false;
 
+    // Model
+    std::string advection_model = this->modelProperties().models().model().equations();
+    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
+        advection_model = soption(_name="model",_prefix=this->prefix());
+    if( !advection_model.empty() )
+        this->setModelName( advection_model );
     // Solver
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
     // Stabilization method
-    const std::string stabmeth = soption( _name="advec-stab-method", _prefix=this->prefix() );
+    const std::string stabmeth = soption( _name="stabilization.method", _prefix=this->prefix() );
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
-    M_stabCoeff = doption( _name="advec-stab-coeff", _prefix=this->prefix() );
 
     M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
     M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
@@ -322,7 +346,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     // Load the field velocity convection from a math expr
     if ( Environment::vm().count(prefixvm(this->prefix(),"advection-velocity").c_str()) )
     {
-        std::string pathGinacExpr = this->directoryLibSymbExpr() + "/advection-velocity";
+        std::string pathGinacExpr = this->repository().expr() + "/advection-velocity";
         M_exprAdvectionVelocity = expr<nDim,1>( soption(_prefix=this->prefix(),_name="advection-velocity"),
                                                                  this->modelProperties().parameters().toParameterValues(), pathGinacExpr );
         //this->updateFieldVelocityConvection();
@@ -333,6 +357,25 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createOthers()
     M_fieldSource.reset( new element_advection_type(M_Xh, "SourceAdded") );
     // Diffusion-reaction model
     M_diffusionReactionModel->initFromMesh( this->mesh(), this->useExtendedDofTable() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+int
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockVectorSolution()
+{
+    int nBlock = this->nBlockMatrixGraph();
+    M_blockVectorSolution.resize(nBlock);
+    M_blockVectorSolution(0) = this->fieldSolutionPtr();
+    int cptBlock=1;
+    return cptBlock;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildVectorSolution()
+{
+    this->buildBlockVectorSolution();
+    M_blockVectorSolution.buildVector( this->backend() );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -351,14 +394,14 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::createExporters()
     this->log("Advection","createExporters", "start");
     this->timerTool("Constructor").start();
 
-    std::string geoExportType="static";//change_coords_only, change, static
+    std::string geoExportType = this->geoExportType();//change_coords_only, change, static
     M_exporter = exporter( _mesh=this->mesh(),
                            _name="Export",
                            _geo=geoExportType,
                            _path=this->exporterPath() );
 
-    double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElpased).str() );
+    double tElapsed = this->timerTool("Constructor").stop("createExporters");
+    this->log("Advection","createExporters",(boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
@@ -392,22 +435,46 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
         M_modelName = "Advection-Diffusion-Reaction";
         M_solverName = "LinearSystem";
     }
+    else if ( type == "Diffusion" )
+    {
+        M_modelName = "Diffusion";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Diffusion-Reaction" )
+    {
+        M_modelName = "Diffusion-Reaction";
+        M_solverName = "LinearSystem";
+    }
+    else if ( type == "Reaction" )
+    {
+        M_modelName = "Reaction";
+        M_solverName = "LinearSystem";
+    }
     else
         CHECK( false ) << "invalid modelName " << type << "\n";
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasAdvection() const
+{
+    return (this->modelName() == "Advection" || this->modelName() == "Advection-Diffusion" ||
+            this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
+}
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasDiffusion() const
 {
-    return (this->modelName() == "Advection-Diffusion" || this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Diffusion" || this->modelName() == "Advection-Diffusion" ||
+            this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::hasReaction() const
 {
-    return (this->modelName() == "Advection-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
+    return (this->modelName() == "Reaction" || this->modelName() == "Advection-Reaction" ||
+            this->modelName() == "Diffusion-Reaction" || this->modelName() == "Advection-Diffusion-Reaction");
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -466,15 +533,45 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::matrixPattern() const
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+int
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
+{
+    int nBlock = 1;
+    return nBlock;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+{
+    this->log("AdvectionBase","buildBlockMatrixGraph", "start" );
+    int nBlock = this->nBlockMatrixGraph();
+
+    BlocksBaseGraphCSR blockGraph(nBlock,nBlock);
+    int indexBlock=0;
+
+    blockGraph(indexBlock, indexBlock) = stencil( 
+            _test=this->functionSpace(), _trial=this->functionSpace(),
+            _pattern=this->matrixPattern(),
+            _diag_is_nonzero=(nBlock==1),
+            _close=(nBlock==1)
+            )->graph();
+
+    this->log("Advectionbase","buildBlockMatrixGraph", "finish" );
+    return blockGraph;
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 typename ADVECTIONBASE_CLASS_TEMPLATE_TYPE::graph_ptrtype
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
-    return stencil( 
-            _test=this->functionSpace(), _trial=this->functionSpace(),
-            _pattern=this->matrixPattern(),
-            //_diag_is_nonzero=true,
-            _close=true
-            )->graph();
+    auto blockGraph = this->buildBlockMatrixGraph();
+    blockGraph.close();
+
+    if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
+        return blockGraph(0,0);
+    else
+        return graph_ptrtype( new graph_type( blockGraph ) );
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -575,14 +672,8 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     bool build_AdvectiveTerm = BuildNonCstPart;
     bool build_DiffusionTerm = BuildNonCstPart;
     bool build_ReactionTerm = BuildNonCstPart;
-    bool build_Form2TransientTerm = BuildNonCstPart;
-    bool build_Form1TransientTerm = BuildNonCstPart;
     //bool build_SourceTerm = BuildNonCstPart;
     //bool build_BoundaryNeumannTerm = BuildNonCstPart;
-    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
-    {
-        build_Form2TransientTerm=BuildCstPart;
-    }
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Advection","updateLinearPDE", "start"+sc );
@@ -601,7 +692,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     auto linearForm = form1( _test=space, _vector=F );
 
     // Advection
-    if(build_AdvectiveTerm)
+    if(this->hasAdvection() && build_AdvectiveTerm)
     {
         this->timerTool("Solve").start();
         
@@ -624,7 +715,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=idv(D)*inner(gradt(phi),grad(psi)),
+                _expr=inner(trans(gradt(phi)),idv(D)*trans(grad(psi))),
                 _geomap=this->geomap()
                 );
 
@@ -641,7 +732,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
         
         bilinearForm += integrate(
                 _range=elements(mesh),
-                _expr=idv(R)*inner(idt(phi), id(psi)),
+                _expr=inner(idv(R)*idt(phi), id(psi)),
                 _geomap=this->geomap()
                 );
 
@@ -653,52 +744,29 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
     if (!this->isStationary())
     {
         this->timerTool("Solve").start();
-        
-        if (build_Form2TransientTerm)
-        {
-            bilinearForm += integrate( 
-                    _range=elements(mesh),
-                    _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
-                    _geomap=this->geomap() 
-                    );
-        }
-        if (build_Form1TransientTerm)
-        {
-            linearForm += integrate(
-                    _range=elements(mesh),
-                    _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
-                    _geomap=this->geomap() 
-                    );
-        }
+       
+        this->updateLinearPDETransient( A, F, BuildCstPart ); 
         
         double timeElapsedTransient = this->timerTool("Solve").stop();
         this->log("Advection","updateLinearPDE","assembly transient terms in "+(boost::format("%1% s") %timeElapsedTransient).str() );
     }
 
     // Source term
-    if( this->hasSourceTerm() )
+    this->updateSourceTermLinearPDE( data );
+    if( this->hasSourceAdded() && !BuildCstPart )
     {
-        if( !this->hasSourceAdded() )
-            M_fieldSource->zero();
-        this->updateSourceTermLinearPDE(const_cast<element_advection_ptrtype&>(M_fieldSource), BuildCstPart);
+        linearForm +=
+            integrate( _range=elements(mesh),
+                       _expr= inner(idv(M_fieldSource),id(psi)),
+                       _geomap=this->geomap() );
     }
 
-    if( BuildNonCstPart && (this->hasSourceAdded() || this->hasSourceTerm()) )
-    {
-        this->timerTool("Solve").start();
-
-        linearForm += integrate( 
-                _range=elements(mesh),
-                _expr= inner(idv(*M_fieldSource),id(psi)),
-                _geomap=this->geomap() 
-                );
-
-        double timeElapsedSource = this->timerTool("Solve").stop();
-        this->log("Advection","updateLinearPDE","assembly source terms in "+(boost::format("%1% s") %timeElapsedSource).str() );
-    }
+    // User-defined additional terms
+    this->updateLinearPDEAdditional( A, F, BuildCstPart );
 
     // Stabilization
-    this->updateLinearPDEStabilization(A, F, BuildCstPart);
+    if ( this->hasAdvection() )
+        this->updateLinearPDEStabilization( data );
 
     // Boundary conditions
     this->updateWeakBCLinearPDE(A, F, BuildCstPart);
@@ -711,152 +779,113 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) co
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization(sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart) const
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & data ) const
 {
-    using namespace Feel::vf;
-
-    bool Build_StabTerm = !BuildCstPart;
-
+    bool BuildCstPart = data.buildCstPart();
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Advection","updateLinearPDEStabilization", "start"+sc );
     this->timerTool("Solve").start();
+
+    uint16_type adrt = ADREnum::Advection;
+    if( this->hasReaction() ) adrt |= ADREnum::Reaction;
+    if( this->hasDiffusion() && nOrder >= 2 ) adrt |= ADREnum::Diffusion;
+    ADREnum adrtype = static_cast<ADREnum>( adrt );
     
-    auto mesh = this->mesh();
-    auto space = this->functionSpace();
-
-    auto const& phi = this->fieldSolution();
-    auto const& psi = this->fieldSolution();
-
-    double stabCoeff = this->stabilizationCoefficient();
-
-    // Forms
-    auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
-    auto bilinearForm_PatternExtended = form2( _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) );
-    auto linearForm = form1( _test=space, _vector=F, _rowstart=this->rowStartInVector() );
-
-    if(Build_StabTerm)
+    switch ( this->stabilizationMethod() )
     {
-        double sigma = this->isStationary() ? 0: M_bdf->polyDerivCoefficient(0);
-        auto beta = idv(this->fieldAdvectionVelocity());
-        auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
-        auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
-        auto beta_norm = vf::sqrt(trans(beta)*beta);
-        auto polyDeriv = M_bdf->polyDeriv();
+        case AdvectionStabMethod::NONE : { break; } // remove -Wswitch warning
 
-        auto f = (!this->isStationary()) * idv(polyDeriv) // transient rhs
-            + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*M_fieldSource) // source
-            ;
-        
-        switch ( this->stabilizationMethod() )
+        case AdvectionStabMethod::GALS :
         {
-            case AdvectionStabMethod::NONE : { break; } // remove -Wswitch warning
+            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::Advection>( *this, data );
+            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionDiffusion>( *this, data );
+            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionReaction>( *this, data );
+            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationGLS<ADRTypes::AdvectionDiffusionReaction>( *this, data );
+        } //GALS
+        break ;
 
-            case AdvectionStabMethod::GALS :
-            {
-                auto coeff  = val( stabCoeff /
-                        ( 2*beta_norm*nOrder/h() + std::abs(sigma) ));
+        case AdvectionStabMethod::SUPG :
+        {
+            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::Advection>( *this, data );
+            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionDiffusion>( *this, data );
+            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionReaction>( *this, data );
+            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationSUPG<ADRTypes::AdvectionDiffusionReaction>( *this, data );
+        } //SUPG
+        break;
 
-                //auto L_op = grad(psi)*beta + sigma*id(psi);
-                //auto L_opt = gradt(phi)*beta + sigma*idt(phi);
+        case AdvectionStabMethod::SGS :
+        {
+            if( adrtype == Advection ) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::Advection>( *this, data );
+            if( adrtype == AdvectionDiffusion) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionDiffusion>( *this, data );
+            if( adrtype == AdvectionReaction) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionReaction>( *this, data );
+            if( adrtype == AdvectionDiffusionReaction) ADRDetails::updateLinearPDEStabilizationSGS<ADRTypes::AdvectionDiffusionReaction>( *this, data );
+        } //SGS
+        break;
 
-                auto L_op = grad(psi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
-                    + (this->hasReaction()) * (idv(R))*id(psi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
-                    ;
-                auto L_opt = gradt(phi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
-                    ;
+        case AdvectionStabMethod::CIP :
+        {
+            auto mesh = this->mesh();
+            auto space = this->functionSpace();
+            auto const& phi = this->fieldSolution();
+            sparse_matrix_ptrtype & A = data.matrix();
 
-                bilinearForm += integrate(
-                        _range=elements(mesh),
-                        _expr=coeff * inner(L_op, L_opt),
-                        _geomap=this->geomap() );
+            auto beta = idv(this->fieldAdvectionVelocity());
+            auto beta_norm = vf::sqrt(trans(beta)*beta);
+            double stabCoeff = this->M_stabilizationCIPCoefficient;
+            auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
 
-                linearForm += integrate(
-                        _range=elements(mesh),
-                        _expr=coeff * inner(L_op, f),
-                        _geomap=this->geomap() );
+            auto bilinearForm_PatternExtended = form2( 
+                    _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) 
+                    );
+            bilinearForm_PatternExtended += integrate(
+                    _range=internalfaces(mesh),
+                    _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
+                    );
 
-                break ;
-            } //GALS
-
-            case AdvectionStabMethod::SUPG :
-            {
-                auto coeff = val(vf::h() / (2 * beta_norm + 0.001));
-
-                auto L_op = grad(psi) * val(beta);
-                //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
-
-                auto L_opt = gradt(phi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
-                    ;
-
-                bilinearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, L_opt) 
-                        );
-
-                linearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, f) 
-                        );
-
-                break;
-            } //SUPG
-
-            case AdvectionStabMethod::SGS :
-            {
-                auto coeff = val(1. / ( (2 * beta_norm) / vf::h()  + vf::abs(sigma) ) );
-
-                //auto L_op = grad(psi) * val(beta) - val(sigma) * id(psi);
-                //auto L_opt = gradt(phi) * val(beta) + val(sigma) * idt(phi);
-                
-                auto L_op = grad(psi) * beta // advection term
-                    - (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*id(psi) // transient term
-                    - (this->hasReaction()) * (idv(R))*id(psi) // reaction term
-                    - (this->hasDiffusion() && nOrder >= 2) * (-idv(D))*laplacian(psi) // diffusion term
-                    ;
-                auto L_opt = gradt(phi) * beta // advection term
-                    + (!this->isStationary()) * M_bdf->polyDerivCoefficient(0)*idt(phi) // transient term
-                    + (this->hasReaction()) * (idv(R))*idt(phi) // reaction term
-                    + (this->hasDiffusion() && nOrder >= 2 ) * (-idv(D))*laplaciant(phi) // diffusion term
-                    ;
-
-                bilinearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, L_opt)
-                        );
-
-                linearForm += integrate(
-                        _range=elements(M_mesh),
-                        _expr=coeff * inner(L_op, f)
-                        );
-
-                break;
-            } //SGS
-
-            case AdvectionStabMethod::CIP :
-            {
-                auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
-
-                bilinearForm_PatternExtended += integrate(
-                        _range=internalfaces(M_mesh),
-                        _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
-                        );
-
-                break;
-            } //CIP
-
-        } //switch
-    }
+        } //CIP
+        break;
+    } //switch
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Advection","updateLinearPDEStabilization","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart ) const
+{
+    auto const& mesh = this->mesh();
+    auto const& space = this->functionSpace();
+    auto const& phi = this->fieldSolution();
+    auto const& psi = this->fieldSolution();
+    // Forms
+    auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
+    auto linearForm = form1( _test=space, _vector=F );
+
+    bool BuildNonCstPart = !BuildCstPart;
+    bool build_Form2TransientTerm = BuildNonCstPart;
+    bool build_Form1TransientTerm = BuildNonCstPart;
+    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    {
+        build_Form2TransientTerm = BuildCstPart;
+    }
+
+    if (build_Form2TransientTerm)
+    {
+        bilinearForm += integrate( 
+                _range=elements(mesh),
+                _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
+                _geomap=this->geomap() 
+                );
+    }
+    if (build_Form1TransientTerm)
+    {
+        linearForm += integrate(
+                _range=elements(mesh),
+                _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
+                _geomap=this->geomap() 
+                );
+    }
 }
 
 ADVECTIONBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -877,7 +906,7 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     std::string algebraicSolverType = "LinearSystem";
-    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vector() ); 
+    M_algebraicFactory->solve( algebraicSolverType, M_blockVectorSolution.vectorMonolithic() ); 
     
     M_blockVectorSolution.localize();
 
@@ -958,14 +987,14 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     }
     M_exporter->save();
 
-    this->timerTool("PostProcessing").stop("exportResults");
+    double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
         if ( !this->isStationary() )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("Advection","exportResults", "finish");
+    this->log("Advection","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
 } // namespace FeelModels

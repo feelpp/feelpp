@@ -25,7 +25,7 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2012-05-07
  */
-#include <feel/feel.hpp>
+//#include <feel/feel.hpp>
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
@@ -34,6 +34,7 @@
 
 #include <feel/feeldiscr/elementdiv.hpp>
 #include <feel/feelmesh/meshadaptation.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -290,8 +291,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                          _desc = createLShapeGeo( meshSize, Lx, Ly, Lz ),
                                          _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
 
-    element_type u; //solution
-    element_type v; //test function
+    // element_type u; //solution
+    // element_type v; //test function
 
     // Loop for calculation and mesh adaptation
     int adapt_iter = 0; //current iteration
@@ -299,6 +300,8 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double tol = doption("tolerance"); //tolerance for stop criterion
     int max_iter = ioption("max_iterations");
     std::string meshadapt_type = soption("meshadapt_type");
+    bool weak_dirichlet = ioption("weakdir");
+    value_type penaldir = doption("penaldir");
 
     // Mesh adaptation stop criterion
     boost::tuple<double, double, p0_element_type> estimator_U;
@@ -306,40 +309,34 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     double criterion_U; // Relative error
     bool criterion = true;
 
+    auto theexporter = exporter(_mesh=mesh,_geo="change");
     MeshAdapt mesh_adaptation;
     do{
         space_ptrtype Xh = space_type::New( mesh );
-        u = Xh->element();
-        v = Xh->element();
+        auto u = Xh->element();
+        auto v = Xh->element();
 
         // print some information (number of local/global dof in logfile)
         Xh->printInfo();
-
-        value_type pi = M_PI;
 
         //! Resolve -\Delta u = 1 on \Omega, with u = 0 on \delta \Omega
         auto f = cst(1.);
         auto g = cst(0.);
 
-        bool weak_dirichlet = ioption("weakdir");
-        value_type penaldir = doption("penaldir");
-
         //! Define right hand side :
         // \int_{\Omega} fv
         auto F = M_backend->newVector( Xh );
-        form1( _test=Xh, _vector=F, _init=true ) =
+        form1( _test=Xh, _vector=F ) =
             integrate( _range=elements( mesh ), _expr=f*id(v));
 
         //! Weak Dirichlet boundary conditions treatment :
         // \int_{d\Omega} \frac{\gamma}{h} gv - \int_{d\Omega} (\nabla v \cdot n) g
         if ( weak_dirichlet )
-            {
-                form1( _test=Xh, _vector=F ) +=
-                    integrate( _range=markedfaces( mesh,"boundary" ),
-                               _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
-            }
-
-        F->close();
+        {
+            form1( _test=Xh, _vector=F ) +=
+                integrate( _range=markedfaces( mesh,"boundary" ),
+                           _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+        }
 
         //! Define left hand side
         auto D = M_backend->newMatrix( _test=Xh, _trial=Xh  );
@@ -357,13 +354,10 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
                                _expr= ( -( gradt( u )*vf::N() )*id( v )
                                         -( grad( v )*vf::N() )*idt( u )
                                         +penaldir*id( v )*idt( u )/hFace() ) );
-                D->close();
-
             }
         else
             {
                 // Set u = 0 on \delta \Omega
-                D->close();
                 form2( _test=Xh, _trial=Xh, _matrix=D ) +=
                     on( _range=markedfaces( mesh, "boundary" ),
                         _element=u, _rhs=F, _expr=g );
@@ -373,25 +367,20 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         backend_type::build(soption("backend"))->solve( _matrix=D, _solution=u, _rhs=F );
 
         //! Exportation of results
-        export_ptrtype exporter( export_type::New( this->vm(),
-                                                   ( boost::format( "%1%-%2%-%3%" )
-                                                     % this->about().appName()
-                                                     % shape
-                                                     % Dim ).str() ) );
-
-        if ( exporter->doExport() )
+        if ( theexporter->doExport() )
             {
                 LOG(INFO) << "exportResults starts\n";
-                exporter->step( 0 )->setMesh( mesh );
-                exporter->step( 0 )->add( "u", u );
-                exporter->save();
+                theexporter->step( adapt_iter )->setMesh( mesh );
+                theexporter->step( adapt_iter )->add( "u", u );
+                theexporter->save();
                 LOG(INFO) << "exportResults done\n";
             }
 
         // ****** Mesh adaptation for Potential and Temperature ****** ///
 
-        auto norm2_U = integrate( elements(mesh), idv(u)*idv(u) ).evaluate()(0,0);
-        auto norm_U = math::sqrt( norm2_U );
+        // auto norm2_U = integrate( elements(mesh), idv(u)*idv(u) ).evaluate()(0,0);
+        // auto norm_U = math::sqrt( norm2_U );
+        double norm_U = normL2(_range=elements(mesh),_expr=idv(u) );
 
         estimator_U = zz_estimator(u, mesh);
         criterion_U = math::abs( estimator_U.template get<0>() - norm_U  )/norm_U;
@@ -449,7 +438,7 @@ main( int argc, char** argv )
     /**
      * register the simgets
      */
-    switch (app.vm()["nDim"].as<int>()) {
+    switch ( ioption(_name="nDim") ) {
     case(2) : {
         app.add( new LShape<2>() );
         break;

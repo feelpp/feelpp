@@ -34,9 +34,9 @@ foreach(D 3)
   endforeach()
 endforeach()
 
-foreach(D 2 3)
-  foreach(P  RANGE 0 4 0) #3 
-	foreach (N RANGE 1 2 1)
+foreach(D 3)
+  foreach(P RANGE 0 4 0) #3 
+	foreach (N 1)
 	  feelpp_add_application( mixed-elasticity-model_${D}DP${P}_G${N} 
 							SRCS mixedelasticity_main.cpp 
 							DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} FEELPP_GEO_ORDER=${N}
@@ -58,8 +58,20 @@ foreach(D 2 3)
   endforeach()
 endforeach()
 
+foreach(D 3)
+  foreach(P RANGE 1 1 1) #3 
+    feelpp_add_application( poroelasticHDG_${D}DP${P}
+                            SRCS poroelastic_main.cpp
+                            DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P}
+                            LINK_LIBRARIES feelpp_modelcore
+                            INSTALL
+                            )
+  endforeach()
+endforeach()
 
 feelpp_add_testcase(bitter CATEGORY hdg)
+#feelpp_add_testcase(eye2brain_level1 CATEGORY hdg)
+#feelpp_add_testcase(eye2brain_level2 CATEGORY hdg)
 feelpp_add_testcase(cylinder CATEGORY hdg )
 feelpp_add_testcase(testDarcy CATEGORY hdg )
 feelpp_add_testcase(mixed-poisson CATEGORY hdg )
