@@ -129,7 +129,6 @@ public :
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
             }
-#if !defined(FEELPP_DISABLE_COMPILE_FAILURE)
             tic();
             auto mid = mat<3,3>( cst(1.), cst(0.), cst(0.),
                                  cst(0.), cst(1.), cst(0.),
@@ -145,9 +144,6 @@ public :
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
             }
-#else
-#warning disabling compile failure in test_vf_integrals
-#endif
         }
 };
 

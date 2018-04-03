@@ -46,16 +46,25 @@ endif()
 #
 # Laplacian
 #
-feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/circle/circle-dirichlet.cfg")
-feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL NO_TEST )# TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/feelpp3d/feelpp3d.cfg")
+feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
+feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
 feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D}  )
 add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} )
- 
+
+
+#
+# HDG Laplacian
+#
+#feelpp_add_application( hdg_laplacian_2d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_2D INSTALL TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/circle/circle-dirichlet.cfg")
+#feelpp_add_application( hdg_laplacian_3d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_3D INSTALL TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/laplacian/tetrahedron/tetrahedron.cfg" "--gmsh.hsize" "4")
+#add_dependencies(quickstart ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D}  )
+#add_dependencies(check ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D} )
+
 #
 # ADR
 #
-feelpp_add_application( adr_2d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ADR_2D INSTALL TEST "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/adr/square/square.cfg")
+feelpp_add_application( adr_2d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ADR_2D INSTALL TESTS)
 feelpp_add_application( adr_3d SRCS qs_adr.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ADR_3D INSTALL NO_TEST)
 feelpp_add_testcase( adr PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_ADR_2D} ${QS_ADR_3D}  )
@@ -64,10 +73,18 @@ add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 #
 # Stokes
 #
-feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TEST  "--config-file" "${CMAKE_CURRENT_SOURCE_DIR}/stokes/feelpp2d/feelpp2d.cfg")
+feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TESTS)
+feelpp_add_application( stokes_3d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_STOKES_3D INSTALL TESTS)
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
-add_dependencies(quickstart ${QS_STOKES_2D} )
-add_dependencies(check ${QS_STOKES_2D} )
+add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D})
+add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D})
+
+#
+# Linear elasticity
+#
+feelpp_add_application( elasticity_2d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_2D INSTALL )
+feelpp_add_application( elasticity_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_3D INSTALL )
+
 
 add_custom_target(install-quickstart
   DEPENDS

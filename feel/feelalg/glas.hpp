@@ -33,8 +33,12 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <unordered_map>
 
+#include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Core>
+#include <Eigen/StdVector>
+#include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_int.hpp>
@@ -149,6 +153,9 @@ struct node
     typedef ublas::vector<T>  type;
 };
 
+template <typename T = double, uint16_type S = 3>
+using node_t = typename node<T,S>::type;
+
 /*!
   hessian type
 */
@@ -182,6 +189,47 @@ using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dyna
 template<typename T = double>
 using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
 
+//!
+//! Tensor map to a ublas_type
+//!
+template<typename value_type=double>
+using tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const value_type,2>> ;
+
+using d_tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const double,2>> ;
+
+template<int Dim,typename T=double>
+using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
+
+template<int Dim,typename T=double>
+using vector_eigen_vector_type = std::vector<eigen_vector_type<Dim,T>,Eigen::aligned_allocator<eigen_vector_type<Dim,T>>>;
+
+template<int N, int P,typename T=double>
+using eigen_matrix_type = Eigen::Matrix<T,N,P>;
+
+template<int N, int P,typename T=double>
+using vector_eigen_matrix_type = std::vector<eigen_matrix_type<N,P,T>,Eigen::aligned_allocator<eigen_matrix_type<N,P,T>>>;
+
+template<typename Key, int N, int P, typename T = double>
+using allocator_matrix_t = Eigen::aligned_allocator<std::pair<const Key, eigen_matrix_type<N,P,T>> >;
+
+template<typename Key, int N, int P, typename T = double>
+using unordered_map_eigen_matrix_type = std::unordered_map<Key,eigen_matrix_type<N,P,T>,boost::hash<Key>, std::equal_to<Key>, allocator_matrix_t<Key,N,P,T>>;
+
+//!
+//! Tensor Maps
+//!
+template<int M,int N,typename value_type=double>
+using tensor_map_fixed_size_matrix_t = Eigen::TensorMap<Eigen::TensorFixedSize<const value_type,Eigen::Sizes<M,N>>>;
+
+template<int M,int N,typename value_type=double>
+using em_fixed_size_matrix_t = Eigen::Map<Eigen::Matrix<value_type,M,N>>;
+template<int M,int N,typename value_type=double>
+using em_fixed_size_cmatrix_t = Eigen::Map<const Eigen::Matrix<value_type,M,N>>;
+
+//!
+//! dimension array for Eigen::Tensor
+//!
+using dimpair_t = Eigen::IndexPair<int>;
 
 inline FEELPP_DEPRECATED
 DebugStream&

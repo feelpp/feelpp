@@ -1,0 +1,36 @@
+{
+    "Name": "Drop2d",
+    "ShortName": "Drop2d",
+    "Models":
+    {
+        "equations":"Navier-Stokes"
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Bottom":
+                {
+                    "expr":"{0,0}"
+                },
+                "Left":
+                {
+                    "expr":"{0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
+    }
+}

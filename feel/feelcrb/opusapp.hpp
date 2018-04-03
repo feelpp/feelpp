@@ -188,29 +188,6 @@ public:
             try
             {
                 M_current_path = fs::current_path();
-
-                std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                    std::cout << this->about().appName() << std::endl;
-                LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
-
-                // Check if user have given a name for result files repo
-                // Note : this name is also use for database storage
-                std::string results_repo_name;
-                if( this->vm().count("crb.results-repo-name") )
-                    results_repo_name = soption(_name="crb.results-repo-name");
-                else
-                    results_repo_name = "default_repo";
-
-                LOG(INFO) << "Name for results repo : " << results_repo_name << "\n";
-                this->changeRepository( boost::format( "%1%/%2%/" )
-                                        % this->about().appName()
-                                        % results_repo_name
-                                        );
-
-                LOG(INFO) << "[OpusApp] ch repo" << "\n";
-                this->setLogs();
-                LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
 
                 crb = newCRB();
@@ -235,7 +212,7 @@ public:
     crb_ptrtype newCRB( int level=0 )
         {
             model = boost::make_shared<crbmodel_type>(crb::stage::offline,level);
-            return boost::make_shared<crb_type>( model->model()->modelName(), model, crb::stage::offline );
+            return crb_type::New(model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }

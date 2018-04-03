@@ -108,11 +108,12 @@ BoundaryConditions::setup()
                 }
                 if ( bcdatatype == "expression" )
                 {
+                    std::string mat = c.second.get("material", "");
                     try
                     {
                         auto e= c.second.get<std::string>("expr");
                         LOG(INFO) << "adding boundary " << c.first << " with expression " << e << " to " << k;
-                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), std::string("") ) );
+                        this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e, std::string(""), mat ) );
                     }
                     catch( ... )
                     {
@@ -121,12 +122,12 @@ BoundaryConditions::setup()
                             auto e1= c.second.get<std::string>("expr1");
                             auto e2= c.second.get<std::string>("expr2");
                             LOG(INFO) << "adding boundary " << c.first << " with expressions " << e1 << " and " << e2 << " to " << k;
-                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, std::string("") ) );
+                            this->operator[](t)[f.first].push_back( std::make_tuple( bcdatatype, c.first, e1, e2, mat ) );
                         }
                         catch( ... )
                         {
                             LOG(INFO) << "adding boundary " << c.first << " without expression" << " to " << k;
-                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), std::string("") ) );
+                            this->operator[]( t )[f.first].push_back( std::make_tuple( bcdatatype, c.first, std::string(""), std::string(""), mat ) );
                         }
                     }
                 }

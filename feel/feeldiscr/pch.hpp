@@ -80,7 +80,28 @@ Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
-                                                    _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                    _extended_doftable=buildExtendedDofTable );
+}
+
+/**
+ * \fn Pch<k,MeshType>
+ *
+ * build a function space of continuous function which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         typename MeshType,
+         int Tag = 0>
+inline
+Pch_ptrtype<MeshType,Order,T,Pts,Tag>
+Pch( boost::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false )
+{
+    return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
+                                                    _range=rangeElt,
+                                                    _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                    _extended_doftable=buildExtendedDofTable );
 }
 
 

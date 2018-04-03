@@ -40,6 +40,9 @@ class CMakeBuild(build_ext):
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DPYTHON_EXECUTABLE=' + sys.executable]
 
+        if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
+            cmake_args += @PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS@
+
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -56,7 +59,7 @@ class CMakeBuild(build_ext):
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
                                                               self.distribution.get_version())
         self.build_temp=self.build_temp+"-"+ext.name
-        print self.build_temp
+        print(self.build_temp)
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
@@ -70,12 +73,10 @@ setup(
     description='Python bindings for Feel++',
     long_description='',
     package_dir={ 'pyfeelpp': '@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp' },
-    packages=['pyfeelpp','pyfeelpp.core','pyfeelpp.crb'],
+    packages=['pyfeelpp'],
     #packages=['pyfeelpp','pyfeelpp.core' ],
 #    ext_modules=[Extension('pyfeelpp',['pyfeelpp/python.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
-    ext_modules=[CMakeExtension('pyfeelpp._pyfeelpp','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp'),
-                 CMakeExtension('pyfeelpp.core._core','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/core'),
-                 CMakeExtension('pyfeelpp.crb._crb','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/crb'),
+    ext_modules=[CMakeExtension('pyfeelpp.pyfeelpp','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp'),
     ],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,

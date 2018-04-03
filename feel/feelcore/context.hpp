@@ -39,10 +39,19 @@ template<size_type Contextv, size_type Value>
 using has_value = mpl::bool_<( Contextv & Value ) != 0>;
 
 template<size_type Contextv, size_type Value>
-using set_value = mpl::bool_<( Contextv | Value )>;
+constexpr bool has_value_v = has_value<Contextv,Value>::value;
 
 template<size_type Contextv, size_type Value>
-using clear_value = mpl::bool_<Contextv & ( ~Value )>;
+using set_value = mpl::size_t<( Contextv | Value )>;
+
+template<size_type Contextv, size_type Value>
+constexpr size_type set_value_v = set_value<Contextv,Value>::value;
+
+template<size_type Contextv, size_type Value>
+using clear_value = mpl::size_t<Contextv & ( ~Value )>;
+
+template<size_type Contextv, size_type Value>
+constexpr size_type clear_value_v = clear_value<Contextv,Value>::value;
 
 namespace meta
 {

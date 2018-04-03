@@ -39,13 +39,13 @@ template< class Convex >
 MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
                          std::string const& prefix, WorldComm const& worldcomm,
                          bool moveGhostEltFromExtendedStencil,
-                         std::string const& rootRepository )
+                         ModelBaseRepository const& modelRep )
     :
-    super_type( prefixvm(prefix,"alemesh"),worldcomm,"",rootRepository ),
+    super_type( prefixvm(prefix,"alemesh"),worldcomm,"",modelRep ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
     M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
-    M_aleFactory( ale_map_type::build(M_referenceMesh ,this->prefix(), this->worldComm(), moveGhostEltFromExtendedStencil ) ),
+    M_aleFactory( ale_map_type::build(M_referenceMesh ,this->prefix(), this->worldComm(), moveGhostEltFromExtendedStencil,modelRep ) ),
     M_Xhref( M_aleFactory->functionSpace() ),
     M_Xhmove(ale_map_functionspace_type::New(_mesh=M_movingMesh,
                                              _worldscomm=std::vector<WorldComm>(1,worldcomm),

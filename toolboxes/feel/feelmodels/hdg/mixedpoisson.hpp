@@ -46,8 +46,8 @@ makeMixedPoissonOptions( std::string prefix = "mixedpoisson" )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
-    mpOptions.add ( backend_options( "sc" ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
+    mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
 
@@ -182,15 +182,15 @@ public:
 
     // constructor
     MixedPoisson( std::string const& prefix = "mixedpoisson",
-                    WorldComm const& _worldComm = Environment::worldComm(),
-                    std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                  WorldComm const& _worldComm = Environment::worldComm(),
+                  std::string const& subPrefix = "",
+                  ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -208,7 +208,7 @@ public:
     int tau_order() const { return M_tau_order; }
     backend_ptrtype get_backend() { return M_backend; }
 	product2_space_ptrtype getPS() const { return M_ps; }
-	vector_ptrtype getF() { return M_F; }
+	condensed_vector_ptr_t<value_type> getF() { return M_F; }
 
     // time step scheme
     virtual void createTimeDiscretization() ;
@@ -257,7 +257,7 @@ public:
     // u.n + g1.p = g2
     template<typename ExprT> void assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker);
     void assembleIBC(int i, std::string marker = "");
-	void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
+	virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
 	virtual void solve();
 
@@ -265,10 +265,10 @@ public:
 
 template<int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
-                                                    WorldComm const& worldComm,
-                                                    std::string const& subPrefix,
-                                                    std::string const& rootRepository )
-    : super_type( prefix, worldComm, subPrefix, rootRepository ),
+                                                          WorldComm const& worldComm,
+                                                          std::string const& subPrefix,
+                                                          ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep ),
       M_useUserIBC(false)
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
@@ -300,10 +300,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& pre
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                               WorldComm const& worldComm, std::string const& subPrefix,
+                                               ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -389,7 +389,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
             }
             Feel::cout << std::endl;
         }
-        
+
 		itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
@@ -465,7 +465,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
     else
         M_integralCondition = M_IBCList.size();
 
-    if ( boost::icontains(modelProperties().model(),"picard") )
+    if ( boost::icontains(modelProperties().models().model().equations(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;
@@ -500,7 +500,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
 		ibc_markers.push_back(M_IBCList[i].marker());
 	}
 
-    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );	
+    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
     M_Ch = Pch<0>( ibc_mesh, true );
 
     Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
@@ -526,7 +526,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces()
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else
     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps)); 
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
 #endif
 }
@@ -563,11 +563,11 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     Feel::cout << "Start solving" << std::endl;
     bbf.solve(_solution=U, _rhs=blf, _condense=boption(prefixvm(prefix(), "use-sc")), _name=prefix());
     toc("MixedPoisson : static condensation");
-    
-    toc("solve");
-    
 
-    
+    toc("solve");
+
+
+
     M_up = U(0_c);
     M_pp = U(1_c);
 
@@ -579,7 +579,9 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::solve()
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleAll()
 {
-    this->assembleCstPart();
+	M_A_cst->zero();
+	M_F->zero();
+	this->assembleCstPart();
     this->assembleNonCstPart();
 }
 
@@ -763,7 +765,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm( bool isNL)
                                       _expr=(trans(idt(u))*id(v))/cond );
         }
     }
-    
+
 	// (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
         bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
@@ -774,16 +776,16 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm( bool isNL)
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRHS()
 {
-    // (p_old,w)_Omega	
+    // (p_old,w)_Omega
     if ( !this->isStationary() )
 	{
 		auto bdf_poly = M_bdf_mixedpoisson->polyDeriv();
         this->assemblePotentialRHS( idv(bdf_poly) , "");
 	}
-	
+
     auto itField = modelProperties().boundaryConditions().find( "potential");
     if ( itField != modelProperties().boundaryConditions().end() )
     {
@@ -883,7 +885,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
                 this->assembleNeumann( marker);
             }
         }
-        
+
 		itType = mapField.find( "Neumann_exact" );
         if ( itType != mapField.end() )
         {
@@ -922,11 +924,11 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleBoundaryCond()
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
 {
 
-    
+
     auto itField = modelProperties().boundaryConditions().find( "potential");
     if ( itField != modelProperties().boundaryConditions().end() )
     {
@@ -986,7 +988,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                     /*
 	                auto blf = blockform1( *M_ps, M_F );
                     auto l = M_Mh->element( "lambda" );
-    
+
 	                // <g_N,mu>_Gamma_N
                     blf(2_c) += integrate(_range=markedfaces(M_mesh, marker),
                                           _expr=trans(g)*N() * id(l));
@@ -1007,7 +1009,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                 auto gradp_ex = expr(grad<Dim>(p_ex)) ;
                 if ( !this->isStationary() )
                 	gradp_ex.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
-	
+
                 for( auto const& pairMat : modelProperties().materials() )
                 {
                 	auto material = pairMat.second;
@@ -1019,7 +1021,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                 }
             }
         }
-		/*	
+		/*
         itType = mapField.find( "Robin" );
         if ( itType != mapField.end() )
         {
@@ -1028,18 +1030,18 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
                 std::string marker = exAtMarker.marker();
                 auto g1 = expr<expr_order>(exAtMarker.expression1());
                 auto g2 = expr<expr_order>(exAtMarker.expression2());
-                
+
 				if ( !this->isStationary() )
                 {
                     g1.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                     g2.setParameterValues( { {"t", M_bdf_mixedpoisson->time()} } );
                 }
-				
+
                 this->assembleRhsRobin(g1, g2, marker);
             }
         }
 		*/
-		
+
     }
 
 
@@ -1070,7 +1072,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsBoundaryCond()
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> expr, std::string marker)
 {
     auto blf = blockform1( *M_ps, M_F );
@@ -1083,13 +1085,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> ex
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr, std::string marker)
 {
-    
+
 	auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
-    
+
 	// <g_N,mu>_Gamma_N
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr);
@@ -1097,13 +1099,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker)
 {
-    
+
 	auto blf = blockform1( *M_ps, M_F );
     auto l = M_Mh->element( "lambda" );
-    
+
 	// <g_interface,mu>_Gamma_N
     blf(2_c) += integrate(_quad=_Q<expr_order>(),  _range=markedelements(M_Mh->mesh(), marker),
                           _expr=id(l)*expr);
@@ -1157,7 +1159,6 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsRobin( Expr<ExprT> e
 template<int Dim, int Order, int G_Order, int E_Order>
 void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::string markerOpt, double intjn )
 {
-
     auto blf = blockform1( *M_ps, M_F );
     auto u = M_Vh->element( "u" );
     auto p = M_Wh->element( "p" );
@@ -1167,7 +1168,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
 
     std::string marker;
     Expr<GinacEx<expr_order> > g;
-    
+
     if ( !markerOpt.empty())
     {
         marker = markerOpt;
@@ -1198,6 +1199,21 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
             else
                 d = exAtMarker.data(0.1);
 
+			// Scale entries if necessary
+    		{
+                for ( auto const& field : modelProperties().postProcess().exports().fields() )
+        		{
+            		if ( field == "scaled_flux" )
+					{
+            			for( auto const& pairMat : modelProperties().materials() )
+            			{
+                			auto material = pairMat.second;
+                			double kk = material.getDouble( "scale_integral_file" );
+							d = kk*d;
+						}
+					}
+				}
+			}
             LOG(INFO) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 
@@ -1208,7 +1224,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
     }
 
     double meas = integrate( _quad=_Q<expr_order>(),  _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
-    
+
     // <I_target,m>_Gamma_I
     blf(3_c,i) += integrate( _quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker), _expr=g*id(nu)/meas );
 
@@ -1217,7 +1233,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleDirichlet( std::string marker)
 {
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -1232,7 +1248,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleDirichlet( std::string marke
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
 {
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -1268,7 +1284,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleNeumann( std::string marker)
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Expr<ExprT> expr2, std::string marker)
 {
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -1308,7 +1324,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT> expr1, Ex
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string markerOpt )
 {
 
@@ -1337,7 +1353,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
 
     std::string marker;
     auto exAtMarker = M_IBCList[i];
-    
+
     if ( !markerOpt.empty())
     {
         marker = markerOpt;
@@ -1346,10 +1362,10 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
     {
         marker = exAtMarker.marker();
     }
-    
+
     // Feel::cout << "Matrix marker integral: " << marker << " with line " << i << std::endl;
-  
- 
+
+
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr= idt(uI) * (trans(id(u))*N()) );
@@ -1370,12 +1386,12 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr=-tau_constant * id(nu) *idt(uI)* (pow(idv(H),M_tau_order)) );
 
-    
+
 }
 
 
 template<int Dim, int Order, int G_Order, int E_Order>
-void 
+void
 MixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
 {
         // start or restart time step scheme
@@ -1411,7 +1427,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
 				}
 			}
 		}
- 
+
         M_bdf_mixedpoisson -> start( M_pp );
         // up current time
         this->updateTime( M_bdf_mixedpoisson -> time() );
@@ -1505,22 +1521,19 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
     }
 
     // Export computed solutions
-    auto postProcess = modelProperties().postProcess();
-    auto itField = postProcess.find( "Fields");
-    if ( itField != postProcess.end() )
     {
-        for ( auto const& field : (*itField).second )
+        for ( auto const& field : modelProperties().postProcess().exports().fields() )
         {
             if ( field == "flux" )
             {
                 LOG(INFO) << "exporting flux at time " << time;
-            
-                M_exporter->step( time )->add(prefixvm(prefix(), "flux"),
-                                              Idhv?(*Idhv)( M_up):M_up );
+
+                M_exporter->step( time )->add(prefixvm(prefix(), "flux"), Idhv?(*Idhv)( M_up):M_up );
                 if (M_integralCondition)
                 {
                     double meas = 0.0;
                     double j_integral = 0;
+
                     for( auto exAtMarker : this->M_IBCList)
                     {
                         auto marker = exAtMarker.marker();
@@ -1534,6 +1547,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     }
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralFlux"), j_integral);
                     M_exporter->step( time )->add(prefixvm(prefix(), "integralVelocity"), j_integral/meas);
+
                 }
             }
             else if (field == "scaled_flux" )
@@ -1556,21 +1570,23 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                 LOG(INFO) << "exporting potential at time " << time;
                 M_exporter->step( time )->add(prefixvm(prefix(), "potential"),
                                               Idh?(*Idh)(M_pp):M_pp);
+
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
-                    LOG(INFO) << "exporting IBC potential " << i << " at time "
-                              << time << " value " << (M_mup[i])[0];
-                    M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"),
-                                                  (M_mup[i])[0] );
-                    Feel::cout << "Integral value of potential(mup) on "
-                               << M_IBCList[i].marker() << " : \t " << (M_mup[i])[0] << std::endl;
-					
-					auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-					auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                    double export_mup = M_mup[i].max();
 
-                    Feel::cout << "Integral value of potential(from pp) on "
-                      		       << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
-                    
+					LOG(INFO) << "exporting IBC potential " << i << " at time "
+                             << time << " value " << export_mup;
+
+					M_exporter->step( time )->add(prefixvm(prefix(), "cstPotential_1"), export_mup );
+
+                    Feel::cout << "Integral value of potential(mup) on "
+                               << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
+
+                    // auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                    // auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                    //Feel::cout << "Integral value of potential(from pp) on " << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
+
                 }
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
@@ -1583,7 +1599,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         {
                             if (exAtMarker.isExpression() )
                             {
-							
                                 auto p_exact = expr(exAtMarker.expression()) ;
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
@@ -1593,25 +1608,24 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
                                 }
-                                auto gradp_exact = expr(grad<Dim>(p_exact)) ;
+                                auto gradp_exact = grad<Dim>(p_exact) ;
                                 if ( !this->isStationary() )
                                     gradp_exact.setParameterValues( { {"t", time } } );
-                                auto u_exact = expr(-K* trans(gradp_exact)) ;
-                                
-	
+                                auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
+
 								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
 								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
-                                
 								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
-								
-								
-                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= u_exact - idv(M_up) );
-                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+
+                                // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
+                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
+								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
-								
+
 
                                 auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
                                 auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
@@ -1630,8 +1644,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         }
                     }
                 }
-            
-            } 
+            }
             else if (field == "scaled_potential" )
             {
                 auto scaled_potential = M_Wh->element("scaled_potential");
@@ -1650,21 +1663,22 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
 
                 for( int i = 0; i < M_integralCondition; i++ )
                 {
-                    auto scaled_ibc = M_mup[i];
+
+                    auto scaled_ibc = M_mup[i].max();
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
                         auto kk_ibc = expr(material.getScalar( "scale_potential" ) ).evaluate();
-                        scaled_ibc.scale(kk_ibc);
-                    }                    
-                    
+                        scaled_ibc = scaled_ibc * kk_ibc;
+                    }
+
                     LOG(INFO) << "exporting IBC scaled potential " << i << " at time "
-                              << time << " value " << scaled_ibc[0];
+                              << time << " value " << scaled_ibc;
                     M_exporter->step( time )->add(prefixvm(prefix(), "scaled_cstPotential_1"),
-                                                  scaled_ibc[0] );
-                    Feel::cout << "Integral value of potential(mup) on "
-                               << M_IBCList[i].marker() << " : \t " << scaled_ibc[0] << std::endl;
-                    
+                                                  scaled_ibc );
+                    Feel::cout << "Integral scaled value of potential(mup) on "
+                               << M_IBCList[i].marker() << " : \t " << scaled_ibc << std::endl;
+
                 }
             }
             else if ( field != "state variable" )
@@ -1717,20 +1731,6 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
         }
     }
 
-    /*
-    double Ui_mean = 0;
-    double meas = 0;
-    for( auto marker : this->M_integralMarkersList)
-    {
-        Ui_mean += integrate(_range=markedfaces(this->mesh(),marker),_expr=idv(*M_pp) ).evaluate()(0,0);
-    meas += integrate(_range=markedfaces(M_mesh,marker),_expr=cst(1.0)).evaluate()(0,0);
-    }
-    if (M_integralCondition)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.front() << " : \t " << (*M_mup)[0] << std::endl;
-    if ( M_integralCondition == 2)
-    Feel::cout << "Integral value of potential(mup) on " << M_integralMarkersList.back() << " : \t " << (*M_mup2)[0] << std::endl;
-    // Feel::cout << "Integral value of potential(mean u): \t " << Ui_mean/meas << std::endl;
-    */
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

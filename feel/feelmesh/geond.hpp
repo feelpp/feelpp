@@ -1078,7 +1078,18 @@ private:
             DVLOG(2) << "  - base class...\n";
             ar & boost::serialization::base_object<super>( *this );
             DVLOG(2) << "  - points...\n";
-            ar & M_points;
+            //ar & M_points;
+            for ( uint16_type i=0;i<numPoints;++i )
+            {
+                if ( Archive::is_loading::value )
+                {
+                    // WARNING ! a memory leak is introduce here
+                    // we need to register in M_commonData for example : in the mesh if exist else in this struct
+                    if ( !M_points[i] )
+                        M_points[i] = new point_type;
+                }
+                ar & *(M_points[i]);
+            }
             // DVLOG(2) << "  - G...\n";
             // ar & M_G;
             DVLOG(2) << "  - measures...\n";

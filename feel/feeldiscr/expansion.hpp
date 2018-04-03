@@ -40,16 +40,14 @@ namespace Feel {
  */
 template<typename ElementType, typename CoeffType>
 void
-expansion( std::vector<ElementType> const& b, CoeffType const& c, Vector<typename ElementType::value_type> & res, int M = -1 )
+expansion( std::vector<ElementType> const& b, CoeffType const& c, Vector<typename Feel::remove_shared_ptr_type<ElementType>::value_type> & res, int M = -1 )
 {
     res.zero();
     if ( ( M == -1 ) || M > c.size() ) M = c.size() ;
-    CHECK( (c.size() <= M) )
-        << "Invalid coefficient or basis function elements "
-        << "M=" << M << " coeff: " << b.size() << " elements: " << c.size();
+    if ( M > b.size() ) M = b.size() ;
     for( int i = 0; i < M; ++i )
     {
-        res.add( c[i], b[i] );
+        res.add( c[i], unwrap_ptr( b[i] ) );
     }
 }
 
@@ -61,10 +59,10 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, Vector<typenam
    The last argument \p M allows to build only a subset of the expansion
  */
 template<typename ElementType, typename CoeffType>
-ElementType
+Feel::remove_shared_ptr_type<ElementType>
 expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
 {
-    auto res = b[0].functionSpace()->element();
+    auto res = unwrap_ptr( b[0] ).functionSpace()->element();
     Feel::expansion( b,c,res,M );
     return res;
 }

@@ -50,9 +50,11 @@ hp::hp( double h, int p )
             for( auto it = fn.second.begin(); it != fn.second.end(); ++it )
             {
                 auto const& v = *it;
+                
                 int order = boost::lexical_cast<int>(v.first);
-
+                
                 M_data[fn.first][order].exact = v.second.get("exact",false);
+                
                 if ( M_data[fn.first][order].exact == false )
                 {
                     std::vector<double> hs;
@@ -97,29 +99,36 @@ hp::hp( double h, int p )
 
 }
 
-bool
+Checks
 hp::operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol, double etol )
 {
     // check that we have some data on solution for the specific order
-    if ( M_data.count(solution) && M_data.at(solution).count(M_p) && M_data.at(solution).at(M_p).errors.count(r.first) )
+    if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {
         hp::data d = M_data.at(solution).at(M_p);
+        
         if ( d.exact )
         {
-            return r.second < etol;
+            
+            if ( r.second < etol )
+                return Checks::EXACT;
+            throw CheckerExactFailed( r.second, etol );
+            
         }
         else
         {
-            if ( d.hs.size() >= 1 )
+            if ( d.hs.size() > 1 )
             {
                 d.hs.push_back(M_h);
                 d.errors.at(r.first).values.push_back(r.second);
                 auto c = polyfit( log(d.hs), log(d.errors.at(r.first).values), 1 );
                 LOG(INFO) << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
                 std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
-                return c[1]>=d.errors.at(r.first).order - otol;
+                if (  c[1]>=d.errors.at(r.first).order - otol )
+                    return Checks::CONVERGENCE_ORDER;
+                throw CheckerConvergenceFailed( d.errors.at(r.first).order, c[1], otol );
             }
-            return true;
+            return Checks::NONE;
         }
 
     }
@@ -139,7 +148,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
     pt::write_json(soption("checker.name")+".json", fnode);
     pt::write_json(std::cout, node);
 #endif
-    return true;
+    return Checks::NONE;
 }
 
 

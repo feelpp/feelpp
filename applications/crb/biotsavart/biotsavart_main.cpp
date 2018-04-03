@@ -24,7 +24,7 @@
 //!
 
 #include "biotsavart.hpp"
-#include "thermoelectric.hpp"
+#include "thermoelectric-linear.hpp"
 
 using namespace Feel;
 
@@ -40,10 +40,71 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-dual"))
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("ThermoElectricCRB"))
-                     .add(makeOptions()) );
+                     .add(makeThermoElectricOptions()) );
 
-    BiotSavartCRB<Thermoelectric> bs = BiotSavartCRB<Thermoelectric>();
-    bs.runBS();
+    BiotSavartCRB<ThermoElectric> bs = BiotSavartCRB<ThermoElectric>();
+    //bs.runBS();
+
+    auto mu = bs.paramFromOption();
+
+    bs.offline();
+
+    auto eC = Exporter<Mesh<Simplex<3> > >::New("conductor");
+    eC->setMesh(bs.meshCond());
+    auto eM = Exporter<Mesh<Simplex<3> > >::New("magneto");
+    eM->setMesh(bs.meshMgn());
+
+    bs.computeFE(mu);
+    auto VTFe = bs.potentialTemperatureFE();
+    auto VFe = VTFe.template element<0>();
+    auto normV = normL2( elements(bs.meshCond()), idv(VFe) );
+    auto TFe = VTFe.template element<1>();
+    auto normT = normL2( elements(bs.meshCond()), idv(TFe) );
+    auto BFe = bs.magneticFluxFE();
+    auto normB = normL2( elements(bs.meshMgn()), idv(BFe) );
+
+    int N = bs.nMax();
+    std::vector<double> errV(N-1), errT(N-1), errB(N-1), relErrV(N-1), relErrT(N-1), relErrB(N-1);
+    for( int n = 1; n < N; ++n )
+    {
+        bs.computeUn(mu, n);
+        auto uN = bs.uN();
+        bs.computeB(uN);
+        auto VT = bs.potentialTemperature();
+        auto V = VT.template element<0>();
+        auto T = VT.template element<1>();
+        auto B = bs.magneticFlux();
+        errV[n-1] = normL2( elements(bs.meshCond()), idv(VFe)-idv(V) );
+        relErrV[n-1] = errV[n-1]/normV;
+        errT[n-1] = normL2( elements(bs.meshCond()), idv(TFe)-idv(T) );
+        relErrT[n-1] = errT[n-1]/normT;
+        errB[n-1] = normL2( elements(bs.meshMgn()), idv(BFe)-idv(B) );
+        relErrB[n-1] = errB[n-1]/normB;
+
+        eC->step(n)->add("VFE", VFe);
+        eC->step(n)->add("TFE", TFe);
+        eC->step(n)->add("V", V);
+        eC->step(n)->add("T", T);
+        eM->step(n)->add("BFe", BFe);
+        eM->step(n)->add("B", B);
+    }
+
+    eC->save();
+    eM->save();
+
+    boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6% %|84t|%7%\n");
+    fs::ofstream file( "cvg.dat" );
+    if( file && Environment::isMasterRank() )
+    {
+        file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT" % "errB" % "relErrB";
+        Feel::cout << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT" % "errB" % "relErrB";
+        for( int n = 0; n < N-1; ++n )
+        {
+            file << fmter % (n+1) % errV[n] % relErrV[n] % errT[n] % relErrT[n] % errB[n] % relErrB[n];
+            Feel::cout << fmter % (n+1) % errV[n] % relErrV[n] % errT[n] % relErrT[n] % errB[n] % relErrB[n];
+        }
+    }
+
 
     return 0;
 }

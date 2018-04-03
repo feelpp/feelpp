@@ -9,13 +9,6 @@ if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
     docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
 fi
 
-FEELPP_DIR=@CMAKE_INSTALL_PREFIX@
-
-if [ -f ${FEELPP_DIR}/share/feelpp/scripts/list.sh ]; then 
-    LIST=${FEELPP_DIR}/share/feelpp/scripts/list.sh;
-else
-    LIST=tools/scripts/buildkite/list.sh
-fi
     
 
 build="$(basename "$0")"

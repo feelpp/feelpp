@@ -478,3 +478,5 @@ include(feelpp.directive)
 set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/cmake/modules/Feel++Config.cmake )
 configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
 configure_file(${FEELPP_SOURCE_DIR}/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/cmake/modules/feelpp.install.config.cmake @ONLY)
+
+feelpp_message( INFO ${FEELPP_MESSAGE_INFO_END} )

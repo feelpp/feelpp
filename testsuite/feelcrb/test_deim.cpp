@@ -4,6 +4,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelcrb/deim.hpp>
@@ -17,7 +18,8 @@ po::options_description makeOptions()
     po::options_description options( "Test DEIM Options" );
 
     options.add( feel_options() )
-        .add(deimOptions());
+        .add(deimOptions())
+        .add(crbSEROptions());
     return options;
 }
 
@@ -35,50 +37,74 @@ makeAbout()
     return about;
 }
 
+template <int POrder,bool IsVectorial=false,bool IsMatricial=false>
 class DeimTest :
-    public boost::enable_shared_from_this<DeimTest>
+    public boost::enable_shared_from_this<DeimTest<POrder,IsVectorial,IsMatricial>>
 {
 public :
-    typedef DeimTest self_type;
+    typedef DeimTest<POrder,IsVectorial,IsMatricial> self_type;
+    static const bool is_vect = IsVectorial;
+    static const bool is_mat = IsMatricial;
+    static const bool by_block = false;
 
     typedef double value_type;
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
+    typedef Pch_type<mesh_type,POrder> scalarspace_type;
+    typedef Pchv_type<mesh_type,POrder> vectorialspace_type;
+    typedef typename mpl::if_< mpl::bool_<is_vect>,
+                               vectorialspace_type,
+                               scalarspace_type>::type space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+
     typedef Backend<double> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
+    typedef backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef typename mpl::if_<mpl::bool_<is_mat>,
+                              sparse_matrix_type,
+                              vector_type >::type tensor_type;
+    typedef boost::shared_ptr<tensor_type> tensor_ptrtype;
 
     typedef ParameterSpace<2> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef boost::shared_ptr<sampling_type> sampling_ptrtype;
     typedef parameterspace_type::element_type parameter_type;
 
-    typedef DEIM<self_type> deim_type;
+    typedef DEIMBase<parameterspace_type,space_type,tensor_type> deim_type;
     typedef boost::shared_ptr<deim_type> deim_ptrtype;
 
+
     DeimTest() :
-        Dmu( parameterspace_type::New(2) )
+        M_backend( backend() ),
+        Dmu( parameterspace_type::New(2) ),
+        M_uuid( Environment::randomUUID( true ) )
     {
         auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
-        auto Xh = Pch<1>( mesh );
-        auto u = Xh->element();
-        V = backend()->newVector( Xh );
-        V1 = backend()->newVector( Xh );
-        V2 = backend()->newVector( Xh );
-        V3 = backend()->newVector( Xh );
-
-        auto f1 = form1( _test=Xh, _vector=V1 );
-        f1 = integrate( markedelements(mesh,"Omega1"), id(u) );
-
-        auto f2 = form1( _test=Xh, _vector=V2 );
-        f2 = integrate( markedelements(mesh,"Omega2"), id(u) );
-
-        auto f3 = form1( _test=Xh, _vector=V3 );
-        f3 = integrate( markedfaces(mesh,"Gamma1"), id(u) );
+        Xh = space_type::New( mesh );
+        setFunctionSpaces(Xh);
     }
 
-    uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    void setModelOnlineDeim( std::string name )
+    {
+        M_backend = backend( _name=name, _kind="eigen_dense", _worldcomm=Environment::worldCommSeq() );
+    }
+
+    void setFunctionSpaces( space_ptrtype Rh )
+    {
+        Xh = Rh;
+        if ( is_mat )
+            M = M_backend->newMatrix(Xh,Xh);
+        else
+            V = M_backend->newVector(Xh);
+    }
+
+    uuids::uuid uuid() const { return M_uuid; }
+    parameterspace_ptrtype parameterSpace() { return Dmu;}
 
     void run()
     {
@@ -95,58 +121,225 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        deim_ptrtype M_deim ( new deim_type( Dmu, this->uuid(), Pset ) );
-        M_deim->assemble = boost::bind( &DeimTest::assemble, boost::ref(*this), _1  );
+        Environment::setOptionValue("deim.rebuild-database", true );
+        initDeim( Pset );
 
         M_deim->run();
         int m = M_deim->size();
+        int real_m = is_mat? 4:3;
 
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Number of mode in DEIM : " << m );
-        BOOST_CHECK( m==3 );
+        BOOST_CHECK( m==real_m );
 
+        Pset = Dmu->sampling();
+        Pset->randomize( 100 , true , "deim_test_sampling" );
 
-        Ne[0] = 100;
-        Ne[1] = 100;
-        Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
-
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Compare expansion with monolithic" );
         auto base = M_deim->q();
         for ( auto const& mu : *Pset )
         {
             auto coeff = M_deim->beta(mu);
+            betas.push_back( coeff );
 
-            assemble(mu);
+            double norm=0;
+            if ( is_mat )
+            {
+                assembleForMDEIM(mu,0);
+                for ( int i=0; i<m; i++ )
+                    add( -coeff(i), base[i] );
+                norm = M->linftyNorm();
+            }
+            else
+            {
+                assembleForDEIM(mu,0);
+                for ( int i=0; i<m; i++ )
+                    add( -coeff(i), base[i] );
+                norm = V->linftyNorm();
+            }
 
-            for ( int i=0; i<m; i++ )
-                V->add( -coeff(i), base[i] );
-
-            double norm = V->linftyNorm();
             BOOST_CHECK_SMALL( norm, 1e-9 );
         }
 
+
+        // We rebuild a new DEIM object with same uuid so he will reload the db
+        Environment::setOptionValue("deim.rebuild-database", false );
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Rebuild and check" );
+        initDeim( Pset );
+
+        // Here we check if the betas are well computed without rebuilding the basis tensors
+        int i = 0;
+        for ( auto const& mu : *Pset )
+        {
+            auto coeff = M_deim->beta(mu);
+            for ( int k=0; k<coeff.size(); k++)
+                BOOST_CHECK_CLOSE( coeff(k), betas[i](k) , 1e-9 );
+            i++;
+        }
+
+        // Now we rebuild the basis tensors from the data in the db
+        // and we check if the new basis tensors are the equal to the previous.
+        // We also recheck the coeff after the rebuild
+        if ( Environment::rank() == 0 )
+            BOOST_TEST_MESSAGE( "Reassemble and check" );
+        M_deim->run();
+        auto base2 = M_deim->q();
+        for ( int m=0; m<base.size(); m++ )
+        {
+            add(  -1, base2[m], base[m] );
+            double norm = base[m]->linftyNorm();
+            BOOST_CHECK_SMALL( norm, 1e-9 );
+        }
+        i = 0;
+        for ( auto const& mu : *Pset )
+        {
+            auto coeff = M_deim->beta(mu);
+            for ( int k=0; k<coeff.size(); k++)
+                BOOST_CHECK_CLOSE( coeff(k), betas[i](k) , 1e-9 );
+            i++;
+        }
     }
 
-    vector_ptrtype assemble( parameter_type mu)
+
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
     {
-        V->zero();
-        V->add( mu[0], V1 );
-        V->add( mu[1], V2 );
-        V->add( mu[1]*mu[0], V3 );
+        return assembleForDEIM( mu, mpl::bool_<is_vect>() );
+    }
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<false> )
+    {
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+
+        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
+        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*id(u) );
+        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*id(u) );
+        f += integrate( markedfaces(mesh,"Gamma1"), math::exp(mu[0])*mu[1]*id(u) );
+
+        return V;
+    }
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<true> )
+    {
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+
+        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
+        f = integrate( markedelements(mesh,"Omega1"), math::cos(mu[0])*trans(id(u))*oneX() );
+        f += integrate( markedelements(mesh,"Omega2"), math::sin(mu[1])*trans(id(u))*oneY() );
+        f += integrate( markedfaces(mesh,"Gamma1"),math::exp( mu[0])*mu[1]*trans(id(u))*N() );
+
         return V;
     }
 
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
+    {
+        auto mesh = Xh->mesh();
+        auto u = Xh->element();
+        auto v = Xh->element();
+
+        auto f = form2( _test=Xh, _trial=Xh, _backend=M_backend, _matrix=M );
+        f = integrate( markedelements(mesh,"Omega1"), mu[0]*inner(id(u),idt(v)) );
+        f += integrate( markedelements(mesh,"Omega2"), mu[1]*inner(grad(u),gradt(v)) );
+        f += integrate( markedfaces(mesh,"Gamma2"), (mu[1]*mu[0] + mu[0]*mu[0])*inner(grad(u)*N(),idt(v)) );
+        f += integrate( markedfaces(mesh,"Gamma1"), (mu[1]*mu[1])*inner(id(u),idt(v)) );
+
+        return M;
+    }
+
+    // These functions are only needed for compilation
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    {
+        return V;
+    }
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    {
+        return M;
+    }
+    space_ptrtype functionSpace()
+    {
+        return Xh;
+    }
+    element_type solve( parameter_type const& mu )
+    {
+        return Xh->element();
+    }
+    std::string modelName()
+    {
+        return "test_deim";
+    }
+    void initOnlineModel()
+    {}
+
+ private :
+    void initDeim( sampling_ptrtype Pset )
+    {
+        return initDeim( Pset, mpl::bool_<is_mat>() );
+    }
+    void initDeim( sampling_ptrtype Pset, mpl::bool_<true> )
+    {
+        M_deim = mdeim( _model=this->shared_from_this(),
+                        _sampling=Pset );
+    }
+    void initDeim( sampling_ptrtype Pset, mpl::bool_<false> )
+    {
+        M_deim = deim( _model=this->shared_from_this(),
+                       _sampling=Pset );
+    }
+
+    //! evaluate V= V+a*vec
+    void add( double const& a, vector_ptrtype vec, vector_ptrtype v=nullptr )
+    {
+        if ( !v )
+            V->add( a, vec );
+        else
+            v->add( a, vec );
+    }
+    //! evaluate M= M+a*mat
+    void add(  double const& a, sparse_matrix_ptrtype mat, sparse_matrix_ptrtype m=nullptr )
+    {
+        if ( !m )
+            M->addMatrix( a, mat );
+        else
+            m->addMatrix( a, mat );
+    }
 private :
-    vector_ptrtype V, V1, V2, V3;
+    space_ptrtype Xh;
+    backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
+    vector_ptrtype V;
+    sparse_matrix_ptrtype M;
+
+    uuids::uuid M_uuid;
+    deim_ptrtype M_deim;
+    std::vector<vectorN_type> betas;
 
 };
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( deim_suite )
 
-BOOST_AUTO_TEST_CASE( test_0 )
+BOOST_AUTO_TEST_CASE( test_3 )
 {
-    boost::shared_ptr<DeimTest> m( new DeimTest );
+    boost::shared_ptr<DeimTest<3>> m( new DeimTest<3> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_2v )
+{
+    boost::shared_ptr<DeimTest<2,true>> m( new DeimTest<2,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_m1 )
+{
+    boost::shared_ptr<DeimTest<1,false,true>> m( new DeimTest<1,false,true> );
+    m->run();
+}
+
+BOOST_AUTO_TEST_CASE( test_m1v )
+{
+    boost::shared_ptr<DeimTest<1,true,true>> m( new DeimTest<1,true,true> );
     m->run();
 }
 

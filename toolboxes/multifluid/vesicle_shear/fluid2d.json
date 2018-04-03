@@ -1,11 +1,16 @@
 {
     "Name": "Square2d",
     "ShortName":"Square2d",
+    "Models":
+    {
+        "equations":"Stokes"
+    },
+        
     "Parameters":
     {
-        "gammaDot": { "value":"1." },
-	"yMax": { "value":"4." },
-	"yMin": { "value":"-4." }
+        "gammaDot": { "value":"2" },
+	    "yMax": { "value":"4." },
+	    "yMin": { "value":"-4." }
     },
     "BoundaryConditions":
     {
@@ -13,11 +18,19 @@
         {
             "Dirichlet":
             {
-                "Left":
+                "UpperLeft":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
                 },
-                "Right":
+                "LowerLeft":
+                {
+                    "expr":"{gammaDot*y,0}:gammaDot:y"
+                },
+                "UpperRight":
+                {
+                    "expr":"{gammaDot*y,0}:gammaDot:y"
+                },
+                "LowerRight":
                 {
                     "expr":"{gammaDot*y,0}:gammaDot:y"
                 },
@@ -34,7 +47,10 @@
     },
     "PostProcess":
     {
-        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+        "Exports":
+        {
+            "fields":["velocity","pressure","density", "viscosity", "pid"]
+        }
     }
 
 }

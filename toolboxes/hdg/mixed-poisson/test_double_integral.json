@@ -1,7 +1,7 @@
 {
     "Name": "HDG-Mixed-Poisson for lamina cribrosa",
     "ShortName":"MP_LC",
-    "Model":"hdg",
+    "Models": { "equations":"hdg"},
     "Materials":
     {
         "omega":
@@ -69,7 +69,10 @@
      },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
     }
 }
 

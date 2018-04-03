@@ -131,7 +131,7 @@ public:
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef Eigen::VectorXd vectorN_type;
@@ -157,6 +157,7 @@ public:
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
     typedef CRBTrilinear self_type;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
@@ -166,8 +167,28 @@ public:
     typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
     typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
+    static self_ptrtype New( crb::stage stage = crb::stage::online )
+        {
+            return New( "noname", boost::make_shared<truth_model_type>(stage), stage );
+        }
+
+    static self_ptrtype New( std::string const& name, crb::stage stage = crb::stage::online )
+        {
+            return New( name, boost::make_shared<truth_model_type>(stage), stage );
+        }
+
+    static self_ptrtype New( std::string const& name,
+                             truth_model_ptrtype const& model,
+                             crb::stage stage = crb::stage::online,
+                             std::string const& prefixElt = "" )
+        {
+            auto crb = boost::shared_ptr<self_type>( new self_type(name, model, stage, prefixElt ));
+            crb->init();
+            return crb;
+        }
     //@}
 
+protected:
     /** @name Constructors, destructor
      */
     //@{
@@ -184,9 +205,10 @@ public:
         }
     CRBTrilinear( std::string const& name,
                   truth_model_ptrtype const & model,
-                  crb::stage stage = crb::stage::online )
+                  crb::stage stage = crb::stage::online,
+                  std::string const& prefixExt = "" )
         :
-        super_crb( name, model, stage )
+        super_crb( name, model, stage, prefixExt )
         {}
     //! default constructor
     FEELPP_DEPRECATED CRBTrilinear( std::string const& name = "defaultname_crb",
@@ -227,6 +249,7 @@ public:
         super_crb( o )
     {}
 
+public:
     //! destructor
     ~CRBTrilinear()
     {}

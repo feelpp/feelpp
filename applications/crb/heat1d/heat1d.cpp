@@ -138,6 +138,6 @@ Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bo
 }
 
 
-FEELPP_CRB_PLUGIN( Heat1D, "heat1d" )
+FEELPP_CRB_PLUGIN( Heat1D, heat1d )
 }
 

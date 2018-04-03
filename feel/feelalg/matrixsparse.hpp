@@ -909,11 +909,11 @@ public:
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 ).error( "invalid call" );
     }
-    
-    virtual void save( std::string filename="default_archive_name", std::string format="binary" )
+
+    virtual void save( std::string const& filename="default_archive_name", std::string const& format="binary" )
     {}
 
-    virtual void load( std::string filename="default_archive_name", std::string format="binary" )
+    virtual void load( std::string const& filename="default_archive_name", std::string const& format="binary" )
     {}
 
 protected:
@@ -1129,6 +1129,7 @@ bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
 
 } // Feel
 
+#if 0
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::MatrixSparse)
 
 namespace boost {
@@ -1173,6 +1174,6 @@ FEELPP_EXPORT void serialize(Archive & ar, Feel::MatrixSparse<T> & m, const unsi
 
 } // namespace serialization
 } // namespace boost
-
+#endif
 
 #endif // #ifndef __sparse_matrix_h__

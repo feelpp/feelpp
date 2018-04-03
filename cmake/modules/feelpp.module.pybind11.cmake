@@ -25,36 +25,15 @@
 #
 # PyBind11
 #
-OPTION( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
+option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
 
 if ( FEELPP_ENABLE_PYBIND11 )
-  if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/pybind11 )
-    if ( GIT_FOUND  AND EXISTS ${CMAKE_SOURCE_DIR}/.git )
-      execute_process(
-        COMMAND git submodule update --init --recursive contrib/pybind11
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_FILE git.pybind11.log
-        ERROR_FILE git.pybind11.log
-        RESULT_VARIABLE ERROR_CODE
-        )
-      if(ERROR_CODE EQUAL "0")
-        MESSAGE(STATUS "[feelpp] Git submodule contrib/pybind11 updated.")
-      else()
-        MESSAGE(WARNING "Git submodule contrib/pybind11 failed to be updated. Possible cause: No internet access, firewalls ...")
-      endif()
-    else()
-      if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/pybind11/ )
-        message( WARNING "Please make sure that git submodule contrib/pybind11 is available")
-        message( WARNING "  run `git submodule update --init --recursive contrib/pybind11`")
-      endif()
-    endif()
-    
+  feelppContribPrepare( pybind11 )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    #add_subdirectory(pybind11)
+    include_directories(${FEELPP_SOURCE_DIR}/contrib/pybind11/include)
+    set(FEELPP_HAS_PYBIND11 1)
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" )
+    #add_definitions( -DFEELPP_HAS_PYBIND11 )
   endif()
-
-
-  #add_subdirectory(pybind11)
-  include_directories(${FEELPP_SOURCE_DIR}/contrib/pybind11/include)
-  SET(FEELPP_HAS_PYBIND11 1)
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PyBind11" )
-  ADD_DEFINITIONS( -DFEELPP_HAS_PYBIND11 )
 endif()

@@ -759,7 +759,7 @@ BOOST_SERIALIZATION_ASSUME_ABSTRACT(Feel::Vector)
 
 namespace boost {
     namespace serialization {
-    
+
     template<typename T, class Archive>
     FEELPP_EXPORT void save(Archive & ar, const Feel::Vector<T> & v, const unsigned int version)
     {

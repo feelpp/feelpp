@@ -31,8 +31,7 @@ namespace Eigen {
   *
   * \sa Tensor
   */
-// no need for this and clang 4.0 does not accept it
-//template<typename T, typename Dimensions, int Options_> class TensorStorage;
+template<typename T, typename Dimensions, int Options> class TensorStorage;
 
 
 // Pure fixed-size storage
@@ -67,7 +66,7 @@ class TensorStorage
 
 
 // pure dynamic
-template<typename T, int Options_, typename IndexType, int NumIndices_>
+template<typename T, typename IndexType, int NumIndices_, int Options_>
 class TensorStorage<T, DSizes<IndexType, NumIndices_>, Options_>
 {
   public:
@@ -127,7 +126,7 @@ class TensorStorage<T, DSizes<IndexType, NumIndices_>, Options_>
 	}
 	else 
           m_data = 0;
-        EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN
+        EIGEN_INTERNAL_DENSE_STORAGE_CTOR_PLUGIN({})
       }
       m_dimensions = nbDimensions;
     }

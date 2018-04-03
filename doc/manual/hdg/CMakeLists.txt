@@ -29,12 +29,11 @@ feelpp_add_application( electro-thermal SRCS et_main.cpp INCLUDE_IN_ALL CFG et.c
 feelpp_add_application( electro-thermal-2 SRCS et2_main.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 feelpp_add_application( electro-thermal-errchk SRCS et_main_errchk.cpp INCLUDE_IN_ALL CFG et.cfg DEFS FEELPP_DIM=2 LINK_LIBRARIES feelpp_modelcore)
 
-#foreach(D 3)
-#   foreach(P RANGE 1 1 1)
-	#configure_file(lc_main_model.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/lc${D}DP${P}_main.cpp )
-#	feelpp_add_application( lamina-poisson-elasticity_${D}DP${P} SRCS laminaPoissonElasticity_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
-#   endforeach()
-#endforeach()
+foreach(D 3)
+   foreach(P RANGE 1 1 1)
+	feelpp_add_application( mixed-poisson-elasticity_${D}DP${P} SRCS mixedpoissonelasticity_main.cpp INCLUDE_IN_ALL LINK_LIBRARIES feelpp_modelcore DEFS FEELPP_DIM=${D} FEELPP_ORDER=${P} )
+   endforeach()
+endforeach()
 
 #foreach(D 3)
 #   foreach(P RANGE 1 1 1)
@@ -49,3 +48,4 @@ feelpp_add_application( mixed-stokes SRCS mixedstokes.cpp DEFS FEELPP_DIM=2 FEEL
 feelpp_add_testcase(quarter-turn)
 feelpp_add_testcase(lamina-cribrosa)
 feelpp_add_testcase(kovasznay)
+feelpp_add_testcase(eye2brain_doc)

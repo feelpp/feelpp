@@ -28,19 +28,8 @@
    \date 2006-08-25
  */
 
-#define USE_BOOST_TEST 1
-#define BOOST_TEST_MAIN
-#if 0
-// Boost.Test
-
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
-#else
+#define BOOST_TEST_MODULE integration_ho testsuite
 #include <testsuite.hpp>
-#endif
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <feel/options.hpp>
@@ -574,7 +563,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ho, T, order_types )
 {
     std::cout << "============================================================\n";
     Feel::Application mpi;
-    Feel::Assert::setLog( "test_integration_ho.assert" );
     std::cout << "Order=" << T::value << "/5,"
               << " hsize=" << mpi.vm()["hsize"].as<double>() << ","
               << " straighten=" << mpi.vm()["straighten"].as<int>() << ","
@@ -591,7 +579,6 @@ int
 main( int argc, char** argv )
 {
     Feel::Application mpi( argc, argv, makeAbout(), makeOptions() );
-    Feel::Assert::setLog( "test_integration.assert" );
 
     std::cout << "Order = " << mpi.vm()["order"].as<int>() << " / " << FEELPP_MESH_MAX_ORDER << "\n";
 

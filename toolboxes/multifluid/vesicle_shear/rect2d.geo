@@ -1,0 +1,27 @@
+h = 0.1;
+xmin = -8;
+xmax = 8;
+ymin = -4;
+ymax = 4;
+Point(1) = {xmin,ymin,0.0,h};
+Point(2) = {xmax,ymin,0.0,h};
+Point(3) = {xmax,ymax,0.0,h};
+Point(4) = {xmin,ymax,0.0,h};
+Point(14) = {xmin,0,0.0,h};
+Point(23) = {xmax,0,0.0,h};
+Line(11) = {4,14};
+Line(12) = {14,1};
+Line(2) = {1,2};
+Line(31) = {2,23};
+Line(32) = {23,3};
+Line(4) = {3,4};
+Line Loop(5) = {11,12,2,31,32,4};
+Plane Surface(6) = {5};
+
+Physical Line("UpperLeft") = {11};
+Physical Line("LowerLeft") = {12};
+Physical Line("Bottom") = {2};
+Physical Line("LowerRight") = {31};
+Physical Line("UpperRight") = {32};
+Physical Line("Top") = {4};
+Physical Surface("Omega") = {6};

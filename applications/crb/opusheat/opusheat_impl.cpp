@@ -32,7 +32,7 @@ makeOpusHeatAbout( std::string const& str )
 template<bool IsStationary>
 OpusHeat<IsStationary>::OpusHeat()
     :
-    super_type((IsStationary)?"OpusHeat-stationary":"OpusHeat")
+    super_type((IsStationary)?"OpusHeat_stationary":"OpusHeat")
 {}
 
 template<bool IsStationary>
@@ -352,7 +352,7 @@ OpusHeat<IsStationary>::assembleData()
 
 template<bool IsStationary>
 double
-OpusHeat<IsStationary>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve , bool export_outputs )
+OpusHeat<IsStationary>::output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve )
 {
     using namespace vf;
 

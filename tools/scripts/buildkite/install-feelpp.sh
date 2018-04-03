@@ -19,8 +19,10 @@ echo "--- Building feelpp-${component}:${tag}"
 
 if [ "${component}" = "base" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-libs:${tag}" > docker/feelpp-${component}/dockerfile.tmp
-else
+elif [ "${component}" = "toolboxes" ] ; then
     dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-base:${tag}" > docker/feelpp-${component}/dockerfile.tmp
+else
+    dockerfile_from "docker/feelpp-${component}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/feelpp-${component}/dockerfile.tmp
 fi    
 docker build \
        --tag=feelpp/feelpp-${component}:${tag} \

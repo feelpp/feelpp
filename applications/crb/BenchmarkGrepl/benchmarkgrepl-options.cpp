@@ -4,7 +4,6 @@
 
 namespace Feel
 {
-
 po::options_description
 makeBenchmarkGreplLinearEllipticOptions()
 {
@@ -42,6 +41,7 @@ makeBenchmarkGreplNonlinearEllipticOptions()
         ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "hsize")
         ( "trainset-eim-size", Feel::po::value<int>()->default_value( 15 ), "EIM trainset is built using a equidistributed grid 15*15 by default")
         ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "use-deim", Feel::po::value<bool>()->default_value( false ), "use deim or eim if false (default)" )
         ;
     return bgoptions;
 }

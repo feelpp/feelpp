@@ -24,18 +24,7 @@
 OPTION( FEELPP_ENABLE_CEREAL "Enable Cereal (A C++11 Serialization library)" OFF )
 
 if ( FEELPP_ENABLE_CEREAL )
-  if ( GIT_FOUND )
-    execute_process(
-      COMMAND git submodule update --init --recursive contrib/cereal
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      )
-    MESSAGE(STATUS "Git submodule contrib/cereal updated.")
-  else()
-    if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/contrib/cereal/ )
-      message( FATAL_ERROR "Please make sure that git submodule contrib/cereal is available")
-      message( FATAL_ERROR "  run `git submodule update --init --recursive contrib/cereal`")
-    endif()
-  endif()
+  feelppContribPrepare( cereal )
 
   FILE(GLOB_RECURSE files "${CMAKE_SOURCE_DIR}/contrib/cereal/include/*")
   FOREACH(fl IN LISTS files)
