@@ -122,7 +122,7 @@ public :
             //std::string exportName="ExportMeshALE",
             WorldComm const& worldcomm=Environment::worldComm(),
             bool moveGhostEltFromExtendedStencil=false,
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     void init();
 
@@ -346,7 +346,7 @@ BOOST_PARAMETER_FUNCTION(
       ( prefix,            (std::string), std::string("") )
       ( worldcomm,         (WorldComm), Environment::worldComm() )
       ( extended_doftable, (bool), true )
-      ( directory,         (std::string),  fs::current_path().string() )
+      ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
       ) // optionnal
                          )
 {

@@ -949,6 +949,12 @@ fmu_options( std::string const& prefix )
 
         ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
         ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+
+        ( prefixvm( prefix,"fmu.exported-variables" ).c_str(), po::value<std::vector<std::string>>()->multitoken(), "List of variables which have to be exported" )
+        ( prefixvm( prefix,"fmu.export-directory" ).c_str(), po::value<std::string>()->default_value(""), "Location of the exported data. Default is the app directory." )
+
+        ( prefixvm( prefix,"fmu.time-initial" ).c_str(), Feel::po::value<double>()->default_value(-1), "inital time for the simulation. Default is taken from the model" )
+        ( prefixvm( prefix,"fmu.time-final" ).c_str(), Feel::po::value<double>()->default_value(-1), "Final time for the simulation. Default is taken from the model" )
         ;
     return _options;
 }

@@ -27,8 +27,8 @@
  \date 2011-07-17
  */
 
-#ifndef FEELPP_FLUIDMECHANICS_HPP
-#define FEELPP_FLUIDMECHANICS_HPP 1
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP 1
 
 
 #include <feel/feeldiscr/functionspace.hpp>
@@ -52,26 +52,19 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
-#include <feel/feelmodels/thermodyn/thermodynamics.hpp>
-
-
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 
 namespace Feel
 {
 namespace FeelModels
 {
-enum class FluidMechanicsPostProcessFieldExported
-{
-    Velocity = 0, Pressure, Displacement, Pid, Vorticity, NormalStress, WallShearStress, Density, Viscosity, ALEMesh, LagrangeMultiplierPressureBC
-};
 
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
-          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/>,
-          bool UsePeriodicity=false>
+          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
 class FluidMechanics : public ModelNumerical,
-                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity> >,
+                       public boost::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementALEMeshBC,
@@ -81,7 +74,7 @@ class FluidMechanics : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
 
-    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType,UsePeriodicity > self_type;
+    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -111,11 +104,7 @@ public:
     typedef bases<basis_fluid_u_type,basis_fluid_p_type> basis_fluid_type;
     //___________________________________________________________________________________//
     // function space
-    typedef FunctionSpace<mesh_type, basis_fluid_type, Periodicity< Periodic<>, NoPeriodicity > > space_fluid_periodic_type;
-    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_nonperiodic_type;
-    typedef typename mpl::if_< mpl::bool_<UsePeriodicity>,
-                               space_fluid_periodic_type,
-                               space_fluid_nonperiodic_type >::type space_fluid_type;
+    typedef FunctionSpace<mesh_type, basis_fluid_type> space_fluid_type;
     typedef boost::shared_ptr<space_fluid_type> space_fluid_ptrtype;
     typedef typename space_fluid_type::element_type element_fluid_type;
     typedef boost::shared_ptr<element_fluid_type> element_fluid_ptrtype;
@@ -349,51 +338,47 @@ public:
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // thermo dynamics coupling
-    typedef FeelModels::ThermoDynamics< convex_type,
-                                        Lagrange<nOrderGeo, Scalar,Continuous,PointSetFekete> > thermodyn_model_type;
-    typedef boost::shared_ptr<thermodyn_model_type> thermodyn_model_ptrtype;
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
     // constructor
     FluidMechanics( std::string const& prefix,
-                        bool __buildMesh = true,
-                        WorldComm const& _worldComm = Environment::worldComm(),
-                        std::string const& subPrefix = "",
-                        std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                    bool __buildMesh = true,
+                    WorldComm const& _worldComm = Environment::worldComm(),
+                    std::string const& subPrefix = "",
+                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
                              bool buildMesh = true,
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     //___________________________________________________________________________________//
 
     static std::string expandStringFromSpec( std::string const& expr );
 
-    void build();
-    void init( bool buildModelAlgebraicFactory=true );
-
-    void loadConfigBCFile();
-    void loadConfigPostProcess();
-    void loadConfigMeshFile( std::string const& geofilename );
+private :
     void loadParameterFromOptionsVm();
-
-    void createWorldsComm();
-    void createALE();
-    void createMesh();
+    void initMesh();
     void createFunctionSpaces();
+    void createALE();
+    void initBoundaryConditions();
+    void initFluidInlet();
+    void initFluidOutlet();
+    void initUserFunctions();
+    void initPostProcess();
     void createPostProcessExporters();
+public :
+    void init( bool buildModelAlgebraicFactory=true );
+    void initAlgebraicFactory();
+
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
-    void createBCFluidInlet();
 
     void loadMesh(mesh_ptrtype __mesh );
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
     void updateMarkedZonesInMesh();
 
@@ -403,9 +388,9 @@ public:
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsAeroThermal() const { return M_rangeMeshElementsAeroThermal; }
 
     space_fluid_ptrtype const& functionSpace() const { return M_Xh; }
+    space_fluid_ptrtype const& spaceVelocityPressure() const { return M_Xh; }
     space_fluid_velocity_ptrtype const/*&*/ functionSpaceVelocity() const { return M_Xh->template functionSpace<0>(); }
     space_fluid_pressure_ptrtype const/*&*/ functionSpacePressure() const { return M_Xh->template functionSpace<1>(); }
 
@@ -473,19 +458,19 @@ public:
     void updateTimeStep() { this->updateTimeStepBDF(); }
 
     // init/update user functions defined in json
-    void initUserFunctions();
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-    // export post process results
-    void initPostProcess();
-    //void restartPostProcess();
-    bool hasPostProcessFieldExported( FluidMechanicsPostProcessFieldExported const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
+    // post process
+    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    void exportFields( double time );
+    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
     void exportMeasures( double time );
 private :
-    void exportResultsImpl( double time );
+    //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
     //___________________________________________________________________________________//
@@ -531,9 +516,6 @@ public :
     bool hasSolveStokesStationaryAtKickOff() const { return M_hasSolveStokesStationaryAtKickOff; }
     void hasSolveStokesStationaryAtKickOff( bool b ) { M_hasSolveStokesStationaryAtKickOff=b; }
 
-    //___________________________________________________________________________________//
-    // thermo dyn
-    thermodyn_model_ptrtype const& thermodynModel() const { return M_thermodynModel; }
     //___________________________________________________________________________________//
     // fsi parameters
 
@@ -628,6 +610,8 @@ public :
     }
     //___________________________________________________________________________________//
     // boundary conditions + body forces
+    void updateParameterValues();
+
     map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
     std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
     map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
@@ -670,7 +654,6 @@ public :
     void updateFluidInletVelocity();
     //___________________________________________________________________________________//
     // fluid outlets bc
-    void initFluidOutlet();
     bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
     bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
     bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
@@ -708,6 +691,16 @@ public :
     trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
     space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
 
+
+    
+    bool hasStrongDirichletBC() const
+        {
+            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || this->hasMarkerPressureBC();
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
+#endif
+            return hasStrongDirichletBC;
+        }
     //___________________________________________________________________________________//
 
     boost::shared_ptr<typename space_fluid_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ const& velocityDiv() const { return M_velocityDiv; }
@@ -856,6 +849,7 @@ public :
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
+    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
 
     virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
     virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
@@ -881,9 +875,7 @@ protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-    //----------------------------------------------------
-    
+    bool M_isUpdatedForUse;
     //----------------------------------------------------
     // mesh
     mesh_ptrtype M_mesh;
@@ -1012,7 +1004,7 @@ protected:
     bool M_useGravityForce;
     //----------------------------------------------------
     // post-process field exported
-    std::set<FluidMechanicsPostProcessFieldExported> M_postProcessFieldExported;
+    std::set<std::string> M_postProcessFieldExported;
     std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
@@ -1048,6 +1040,8 @@ protected:
     // post-process measure forces (lift,drag) and flow rate
     std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
     std::vector< ModelMeasuresFlowRate > M_postProcessMeasuresFlowRate;
+    // post-process measure fields
+    std::map<std::string,std::string> M_postProcessMeasuresFields;
     //----------------------------------------------------
     //----------------------------------------------------
     // algebraic data/tools
@@ -1063,13 +1057,8 @@ protected:
     typedef boost::function<void ( vector_ptrtype& R )> updateSourceTermResidual_function_type;
     updateSourceTermResidual_function_type M_overwritemethod_updateSourceTermResidual;
     //----------------------------------------------------
-    bool M_preconditionerAttachPMM;
+    bool M_preconditionerAttachPMM, M_preconditionerAttachPCD;
     mutable bool M_pmmNeedUpdate;
-    //----------------------------------------------------
-    bool M_useThermodynModel;
-    thermodyn_model_ptrtype M_thermodynModel;
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElementsAeroThermal;
-    double M_BoussinesqRefTemperature;
 
 }; // FluidMechanics
 
@@ -1271,6 +1260,6 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace Feel
 
 
-#endif /* FEELPP_FLUIDMECHANICS_HPP */
+#endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
 
 
