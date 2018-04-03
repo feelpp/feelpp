@@ -39,6 +39,22 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 }
 
 void
+ModelPostprocessExports::setup( pt::ptree const& p )
+{
+    auto fields = p.get_child_optional("fields");
+    if ( fields )
+    {
+        for ( std::string const& fieldName : as_vector<std::string>(p, "fields"))
+        {
+            M_fields.insert( fieldName );
+            LOG(INFO) << "add to postprocess field  " << fieldName;
+        }
+    }
+    if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
+        M_format = *formatOpt;
+}
+
+void
 ModelPostprocessPointPosition::setup( std::string const& name )
 {
 
@@ -160,16 +176,29 @@ ModelPostprocessExtremum::setup( std::string const& name )
 
 ModelPostprocess::ModelPostprocess( WorldComm const& world )
     :
-    M_worldComm( world )
+    M_worldComm( world ),
+    M_useModelName( false )
 {}
 
 ModelPostprocess::ModelPostprocess(pt::ptree const& p, WorldComm const& world )
     :
-    M_worldComm( world )
+    M_worldComm( world ),
+    M_useModelName( false )
 {}
 
 ModelPostprocess::~ModelPostprocess()
 {}
+
+pt::ptree
+ModelPostprocess::pTree( std::string const& name ) const
+{
+    if ( !M_useModelName )
+        return M_p;
+    else if ( auto ptreeWithName = M_p.get_child_optional( name ) )
+        return *ptreeWithName;
+    pt::ptree ptree;
+    return ptree;
+}
 
 void
 ModelPostprocess::setPTree( pt::ptree const& p )
@@ -178,9 +207,27 @@ ModelPostprocess::setPTree( pt::ptree const& p )
     setup();
 }
 
+
 void
 ModelPostprocess::setup()
 {
+    if ( auto useModelName = M_p.get_optional<bool>("use-model-name") )
+        M_useModelName = *useModelName;
+
+    if ( M_useModelName )
+    {
+        for( auto const& p1 : M_p )
+        {
+            this->setup( p1.first,p1.second );
+        }
+    }
+    else
+        this->setup( "", M_p );
+}
+void
+ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
+{
+#if 0
     auto fields = M_p.get_child_optional("Fields");
     if ( fields )
     {
@@ -216,9 +263,16 @@ ModelPostprocess::setup()
         }
         
     }
+#endif
+    if ( auto exports = p.get_child_optional("Exports") )
+    {
+        ModelPostprocessExports ppexports;
+        ppexports.setup( *exports );
+        if ( !ppexports.fields().empty() )
+            M_exports[name] = ppexports;
+    }
 
-    auto measures = M_p.get_child_optional("Measures");
-    if ( measures )
+    if ( auto measures = p.get_child_optional("Measures") )
     {
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
@@ -229,10 +283,8 @@ ModelPostprocess::setup()
                 myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
                 myPpPtPos.setPTree( evalPoint.second, evalPoint.first );
                 if ( !myPpPtPos.fields().empty() )
-                    M_measuresPoint.push_back( myPpPtPos );
+                    M_measuresPoint[name].push_back( myPpPtPos );
             }
-            if ( !M_measuresPoint.empty() )
-                this->operator[]("Measures").push_back( "Points" );
         }
 
         for ( std::string const& extremumType : std::vector<std::string>( { "Maximum","Minimum" } ) )
@@ -250,20 +302,19 @@ ModelPostprocess::setup()
                     myPpExtremum.setDirectoryLibExpr( M_directoryLibExpr );
                     myPpExtremum.setPTree( measureExtremum.second, measureExtremum.first );
                     if ( !myPpExtremum.fields().empty() )
-                        M_measuresExtremum.push_back( myPpExtremum );
+                        M_measuresExtremum[name].push_back( myPpExtremum );
                 }
-                if ( !M_measuresPoint.empty() )
-                    this->operator[]("Measures").push_back( "Maximum" );
             }
         }
     }
-
-
 }
+
+
 
 void
 ModelPostprocess::saveMD(std::ostream &os)
 {
+#if 0
   os << "### PostProcess\n";
   os << "|Kind | data |\n";
   os << "|---|---|\n";
@@ -275,14 +326,66 @@ ModelPostprocess::saveMD(std::ostream &os)
       os << "<li>" << *iit << "</li>";
     os << "</ul>|\n";
   }
+#endif
 }
 
 void
 ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
 {
     for( auto & p : M_measuresPoint )
-        p.setParameterValues( mp );
+        for( auto & p2 : p.second )
+            p2.setParameterValues( mp );
 }
+
+bool
+ModelPostprocess::hasExports( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_exports.find( nameUsed ) != M_exports.end();
+}
+bool
+ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_measuresPoint.find( nameUsed ) != M_measuresPoint.end();
+}
+bool
+ModelPostprocess::hasMeasuresExtremum( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_measuresExtremum.find( nameUsed ) != M_measuresExtremum.end();
+}
+ModelPostprocessExports const&
+ModelPostprocess::exports( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasExports( nameUsed ) ) << "no exports with name:"<<name;
+    if ( this->hasExports( nameUsed ) )
+        return M_exports.find( nameUsed )->second;
+    else
+        return M_emptyExports;
+}
+std::vector<ModelPostprocessPointPosition> const&
+ModelPostprocess::measuresPoint( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasMeasuresPoint( nameUsed ) ) << "no measures point with name:"<<name;
+    if ( this->hasMeasuresPoint( nameUsed ) )
+        return M_measuresPoint.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresPoint;
+}
+std::vector<ModelPostprocessExtremum> const&
+ModelPostprocess::measuresExtremum( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasMeasuresExtremum( nameUsed ) ) << "no measures extremum with name:"<<name;
+    if ( this->hasMeasuresExtremum( nameUsed ) )
+        return M_measuresExtremum.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresExtremum;
+}
+
 
 
 }

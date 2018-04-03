@@ -228,7 +228,7 @@ public :
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     AdvectionBase( self_type const& A ) = default;
 

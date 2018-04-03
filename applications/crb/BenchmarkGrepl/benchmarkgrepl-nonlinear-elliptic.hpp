@@ -33,16 +33,8 @@
 #ifndef FEELPP_BENCHMARKGREPLNONLINEARELLIPTIC_HPP
 #define FEELPP_BENCHMARKGREPLNONLINEARELLIPTIC_HPP 1
 
-#include <boost/timer.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include <feel/options.hpp>
-#include <feel/feelalg/backend.hpp>
-
 #include <feel/feelfilters/gmsh.hpp>
-
 #include <feel/feelcrb/modelcrbbase.hpp>
-
 #include <BenchmarkGrepl/benchmarkgrepl-options.hpp>
 
 namespace Feel
@@ -50,13 +42,13 @@ namespace Feel
 
 namespace BenchmarkGreplNonlinearElliptic_Definition
 {
-
 class ParameterDefinition
 {
 public :
     //static const uint16_type ParameterSpaceDimension = 2;
     typedef ParameterSpace</*ParameterSpaceDimension*/> parameterspace_type;
 };
+
 
 template<int Order, int Dim>
 class FunctionSpaceDefinition
@@ -120,16 +112,15 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
         public ModelCrbBase< BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
                              BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>,
                              NonLinear,
-                             BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                                                                                       BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > >
+                             BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > >
 {
-public:
-
     typedef ModelCrbBase<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
                          BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim>,
                          NonLinear,
-                         BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,
-                                                                                   BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > > super_type;
+                         BenchmarkGreplNonlinearElliptic_Definition::EimDefinition<BenchmarkGreplNonlinearElliptic_Definition::ParameterDefinition,BenchmarkGreplNonlinearElliptic_Definition::FunctionSpaceDefinition<Order,Dim> > > super_type;
+    typedef BenchmarkGreplNonlinearElliptic<Order,Dim> self_type;
+
+ public :
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -158,7 +149,7 @@ public:
     using super_type::computeBetaQm;
     typedef boost::tuple<beta_vector_type,  std::vector<beta_vector_type> > beta_type;
 
-    typedef BenchmarkGreplNonlinearElliptic<Order,Dim> self_type;
+
 
     BenchmarkGreplNonlinearElliptic();
 
@@ -167,6 +158,17 @@ public:
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir );
 
     //@}
+
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    {
+        auto Xh = this->Xh;
+        vector_ptrtype V = this->M_backend->newVector(Xh);
+        auto temp = Xh->element(V,0);
+        mesh = Xh->mesh();
+        temp.on( elements(mesh), cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
+        return V;
+    }
+
 
     virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
     {
@@ -187,13 +189,21 @@ public:
     beta_type
     computeBetaQm( element_type const& T,parameter_type const& mu )
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        vectorN_type beta_g = eim_g->beta( mu , T );
-
         std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
+        if ( M_use_deim )
+        {
+            auto beta = this->deim()->beta(mu,T);
+            betas.push_back( &beta );
+        }
+
+        else
+        {
+            auto beta = this->scalarContinuousEim()[0]->beta( mu , T );
+            betas.push_back( &beta );
+        }
 
         fillBetaQm(betas, mu);
+
         if( M_use_newton )
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
@@ -203,13 +213,21 @@ public:
     beta_type
     computeBetaQm( vectorN_type const& urb, parameter_type const& mu )
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        vectorN_type beta_g = eim_g->beta( mu , urb );
-
         std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
+        if ( M_use_deim )
+        {
+            auto beta = this->deim()->beta(mu,urb);
+            betas.push_back( &beta );
+        }
+
+        else
+        {
+            auto beta = this->scalarContinuousEim()[0]->beta( mu ,urb );
+            betas.push_back( &beta );
+        }
 
         fillBetaQm(betas, mu);
+
         if( M_use_newton )
             return boost::make_tuple( this->M_betaJqm, this->M_betaRqm);
         else
@@ -219,11 +237,18 @@ public:
     beta_type
     computeBetaQm( parameter_type const& mu )
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        vectorN_type beta_g = eim_g->beta( mu );
-
         std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
+        if ( M_use_deim )
+        {
+            auto beta = this->deim()->beta(mu);
+            betas.push_back( &beta );
+        }
+
+        else
+        {
+            auto beta = this->scalarContinuousEim()[0]->beta(mu);
+            betas.push_back( &beta );
+        }
 
         fillBetaQm(betas, mu);
 
@@ -236,11 +261,18 @@ public:
     beta_type
     computePicardBetaQm( element_type const& T,parameter_type const& mu )
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        vectorN_type beta_g = eim_g->beta( mu , T );
-
         std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
+        if ( M_use_deim )
+        {
+            auto beta = this->deim()->beta(mu,T);
+            betas.push_back( &beta );
+        }
+
+        else
+        {
+            auto beta = this->scalarContinuousEim()[0]->beta(mu,T);
+            betas.push_back( &beta );
+        }
 
         fillBetaQm(betas, mu);
         return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
@@ -250,11 +282,18 @@ public:
     beta_type
     computePicardBetaQm( parameter_type const& mu )
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        vectorN_type beta_g = eim_g->beta( mu );
-
         std::vector<vectorN_type*> betas;
-        betas.push_back(&beta_g);
+        if ( M_use_deim )
+        {
+            auto beta = this->deim()->beta(mu);
+            betas.push_back( &beta );
+        }
+
+        else
+        {
+            auto beta = this->scalarContinuousEim()[0]->beta(mu);
+            betas.push_back( &beta );
+        }
 
         fillBetaQm(betas, mu);
         return boost::make_tuple( this->M_betaAqm, this->M_betaFqm);
@@ -292,8 +331,11 @@ public:
 
     void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
     {
-        auto eim_g = this->scalarContinuousEim()[0];
-        int M = eim_g->mMax();
+        int M;
+        if ( M_use_deim )
+            M = this->deim()->size();
+        else
+            M = this->scalarContinuousEim()[0]->mMax();
 
         auto beta_g=*betas[0];
 
@@ -400,6 +442,8 @@ private:
     bool M_useSerErrorEstimation;
 
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
+
+    bool M_use_deim;
 
 };
 

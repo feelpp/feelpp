@@ -68,11 +68,12 @@ BOOST_AUTO_TEST_CASE( test_materials )
 
     ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto mats = model_props.materials();
-    for ( auto matPair : mats )
+    for ( auto const& matPair : mats )
     {
         auto mat = matPair.second;
         auto physics = mat.physics();
-        auto name = mat.getString("name");
+        auto name = mat.name();
+        auto meshMarkers = mat.meshMarkers();
         auto rhoInt = mat.getInt("rho");
         auto etaDouble = mat.getDouble("eta");
 
@@ -92,12 +93,16 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
 
-#if 0
+#if 1
         Feel::cout << "properties for " << matPair.first << std::endl;
         Feel::cout << "\t" << name << std::endl;
         Feel::cout << "\thas " << physics.size() << " physics:" << std::endl;
         for( auto const& p : physics )
             Feel::cout << "\t\t" << p << std::endl;
+        Feel::cout << "\thas " << meshMarkers.size() << " markers:" << std::endl;
+        for( auto const& p : meshMarkers )
+            Feel::cout << "\t\t" << p << std::endl;
+
         Feel::cout << "\t" << rhoInt << std::endl;
         Feel::cout << "\t" << etaDouble << std::endl;
         Feel::cout << "\t" << rho << std::endl;

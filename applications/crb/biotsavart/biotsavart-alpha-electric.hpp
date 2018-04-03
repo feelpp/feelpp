@@ -177,7 +177,7 @@ class FEELPP_EXPORT BiotSavartAlphaElectricCRB
     parameter_type paramFromProperties() const;
     void runBS();
     void setupCommunicatorsBS();
-    vector_ptrtype assembleForDEIM( parameter_type const& mu );
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag );
     vectorN_type beta( parameter_type& mu, int M = -1 ) { return M_deim->beta(mu, M); }
     std::vector<vector_ptrtype> q() { return M_deim->q(); }
     void online( parameter_type & mu, int M = -1 );
