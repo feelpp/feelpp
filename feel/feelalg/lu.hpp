@@ -40,6 +40,14 @@ namespace mpl = boost::mpl;
 
 namespace details
 {
+
+template<typename Matrix>
+inline typename Matrix::value_type
+det( Matrix const& M, mpl::int_<0> )
+{
+    return 0;
+}
+
 template<typename Matrix>
 inline typename Matrix::value_type
 det( Matrix const& M, mpl::int_<0> )

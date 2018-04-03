@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
-#ifndef __THERMALPROPERTIES_DESCRIPTION_H
-#define __THERMALPROPERTIES_DESCRIPTION_H 1
+#ifndef FEELPP_TOOLBOXES_THERMALPROPERTIES_DESCRIPTION_H
+#define FEELPP_TOOLBOXES_THERMALPROPERTIES_DESCRIPTION_H 1
 
 #include <feel/feelvf/cst.hpp>
 
@@ -19,15 +19,10 @@ namespace FeelModels
         typedef boost::shared_ptr<SpaceType> space_ptrtype;
         typedef typename SpaceType::element_type element_type;
         typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef typename space_type::mesh_type mesh_type;
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
         static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
-        ThermalPropertiesDescription( space_ptrtype const& space, std::string const& prefix )
-            {
-                M_cstThermalConductivity[self_type::defaultMaterialName()] = doption(_name="thermal-conductivity",_prefix=prefix);
-                M_cstHeatCapacity[self_type::defaultMaterialName()] = doption(_name="heat-capacity",_prefix=prefix);
-                M_cstRho[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);
-                M_cstThermalExpansion[self_type::defaultMaterialName()] = doption(_name="thermal-expansion",_prefix=prefix);
-                this->initFromSpace( space );
-            }
 
         ThermalPropertiesDescription( std::string const& prefix )
             {
@@ -39,14 +34,67 @@ namespace FeelModels
 
         ThermalPropertiesDescription( ThermalPropertiesDescription const& app  ) = default;
 
-        void initFromSpace( space_ptrtype const& space )
-        {
-            M_space = space;
-            M_fieldThermalConductivity = space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
-            M_fieldHeatCapacity = space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
-            M_fieldRho = space->elementPtr( vf::cst( this->cstRho() ) );
-            M_fieldThermalExpansion = space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
-        }
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mat, std::vector<WorldComm> const& worldsComm )
+            {
+                std::set<std::string> eltMarkersInMesh;
+                for (auto const& markPair : mesh->markerNames() )
+                {
+                    std::string meshMarker = markPair.first;
+                    if ( mesh->hasElementMarker( meshMarker ) )
+                        eltMarkersInMesh.insert( meshMarker );
+                }
+
+                M_markers.clear();
+                for( auto const& m : mat )
+                {
+                    auto const& matmarker = m.first;
+                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                        continue;
+                    auto const& mat = m.second;
+                    std::string matphysics = ( mat.physics().empty() )? "heat-transfert" : mat.physics();
+                    if ( ( matphysics != "heat-transfert" ) && ( matphysics != "aerothermal" ) && ( matphysics != "thermo-electric" ) )
+                        continue;
+                    M_markers.insert( matmarker );
+                }
+
+                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+                if ( M_isDefinedOnWholeMesh )
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+                else
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+                M_fieldThermalConductivity = M_space->elementPtr( vf::cst( this->cstThermalConductivity() ) );
+                M_fieldHeatCapacity = M_space->elementPtr( vf::cst( this->cstHeatCapacity() ) );
+                M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho() ) );
+                M_fieldThermalExpansion = M_space->elementPtr( vf::cst( this->cstThermalExpansion() ) );
+
+                for( auto const& m : mat )
+                {
+                    auto const& mat = m.second;
+                    auto const& matmarker = m.first;
+                    if ( M_markers.find( matmarker ) == M_markers.end() )
+                        continue;
+
+                    if ( mat.hasPropertyExprScalar("rho") )
+                        this->setRho( mat.propertyExprScalar("rho"),matmarker );
+                    else
+                        this->setCstRho( mat.propertyConstant("rho"), matmarker );
+
+                    if ( mat.hasPropertyExprScalar("k11") )
+                        this->setRho( mat.propertyExprScalar("k11"),matmarker );
+                    else
+                        this->setCstThermalConductivity( mat.propertyConstant("k11"), matmarker );
+
+                    if ( mat.hasPropertyExprScalar("Cp") )
+                        this->setRho( mat.propertyExprScalar("Cp"),matmarker );
+                    else
+                        this->setCstHeatCapacity( mat.propertyConstant("Cp"), matmarker );
+
+                    if ( mat.hasPropertyExprScalar("beta") )
+                        this->setRho( mat.propertyExprScalar("beta"),matmarker );
+                    else
+                        this->setCstThermalExpansion( mat.propertyConstant("beta"), matmarker );
+                }
+            }
 
         double cstThermalConductivity( std::string const& marker = "" ) const
         {
@@ -78,6 +126,8 @@ namespace FeelModels
         }
 
         std::set<std::string> const& markers() const { return M_markers; }
+
+        bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
         element_type const& fieldThermalConductivity() const { return *M_fieldThermalConductivity; }
         element_type const& fieldHeatCapacity() const { return *M_fieldHeatCapacity; }
@@ -235,19 +285,12 @@ namespace FeelModels
         std::map<std::string,double> M_cstRho;
         std::map<std::string,double> M_cstThermalExpansion;// [ 1/K ]
         std::set<std::string> M_markers;
+        bool M_isDefinedOnWholeMesh;
         space_ptrtype M_space;
         element_ptrtype M_fieldThermalConductivity, M_fieldHeatCapacity, M_fieldRho;
         element_ptrtype M_fieldThermalExpansion;
     };
 
-
-    template<class SpaceType>
-    ThermalPropertiesDescription<SpaceType>
-    thermalPropertiesDesc( boost::shared_ptr<SpaceType> const& space, std::string const& prefix )
-    {
-        ThermalPropertiesDescription<SpaceType> res(space,prefix);
-        return res;
-    }
 
 } // namespace FeelModels
 } // namespace Feel

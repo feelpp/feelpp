@@ -81,7 +81,7 @@ struct FactoryDefaultError
         std::string M_ex;
     };
 
-    static AbstractProduct* onUnknownType( IdentifierType id )
+    static std::unique_ptr<AbstractProduct> onUnknownType( IdentifierType id )
     {
         throw Exception( id );
     }
@@ -96,13 +96,11 @@ struct FactoryDefaultError
 
   @author Christophe Prud'homme
 */
-template
-<
-class AbstractProduct,
-      typename IdentifierType,
-      typename ProductCreator = std::function<AbstractProduct*()>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+template<class AbstractProduct,
+         typename IdentifierType,
+         typename ProductCreator = std::function<std::unique_ptr<AbstractProduct>()>,
+         template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+         >
 class Factory
     :
 public FactoryErrorPolicy<IdentifierType,AbstractProduct>
@@ -166,7 +164,7 @@ public:
      *
      * @return the object associate with \c id
      */
-    product_type* createObject( const identifier_type& id )
+    std::unique_ptr<product_type> createObject( const identifier_type& id )
     {
         typename id_to_product_type::const_iterator i = M_associations.find( id );
 
@@ -198,11 +196,10 @@ private:
 
   \author Christophe Prud'homme
 */
-template <
-class AbstractProduct,
-      class ProductCreator = std::function<AbstractProduct* ( const AbstractProduct* )>,
-      template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
-      >
+template <class AbstractProduct,
+          class ProductCreator = boost::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
+          template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
+          >
 class FactoryClone
     :
 public FactoryErrorPolicy<TypeInfo, AbstractProduct>
@@ -259,7 +256,7 @@ public:
         return M_associations.erase( id ) == 1;
     }
 
-    AbstractProduct* createObject( const AbstractProduct* model )
+    std::unique_ptr<AbstractProduct> createObject( const AbstractProduct* model )
     {
         if ( model == 0 ) return 0;
 

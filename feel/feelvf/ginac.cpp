@@ -186,7 +186,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         table[param.get_name()] = param;
+                         table.insert({param.get_name(), param});
                      } );
 
     LOG(INFO) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
@@ -194,7 +194,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
-                         table[param.get_name()] = param;
+                         table.insert({param.get_name(), param});
                      } );
 #if 0
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
@@ -226,7 +226,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     }
 
     LOG(INFO) << "e=" << e << "\n";
-    return std::make_pair(e,syms);
+    return {e,syms};
 }
 
 matrix

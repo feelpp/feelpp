@@ -44,6 +44,8 @@
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#warnings"
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+
 #endif
 #if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic push
@@ -147,18 +149,18 @@ public:
     typedef vtkUnstructuredGridWriter vtkoutwriter_type;
 
     /* Compute face type from mesh parameters */
-    typedef typename 
+    typedef typename
     /* face type */
     /* if (Mdim == 1) */
     mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<1> >,
         mpl::identity<vtkVertex>,
         /* if (Mdim == 2) */
         typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2> >,
-            /* if(MShape == SHAPE_TRIANGLE) */    
+            /* if(MShape == SHAPE_TRIANGLE) */
             mpl::identity<vtkLine>,
             /* if (Mdim == 3) */
             typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-                /* if(MShape == SHAPE_TETRA) */    
+                /* if(MShape == SHAPE_TETRA) */
                 typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TETRA> >,
                     mpl::identity<vtkTriangle>,
                     mpl::identity<vtkQuad>
@@ -171,20 +173,20 @@ public:
     >::type::type vtkface_type;
 
     /* Compute element type from the parameters */
-    typedef typename 
+    typedef typename
     /* if (Mdim == 1) */
     mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<1> >,
         mpl::identity<vtkLine>,
         /* if (Mdim == 2) */
         typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2> >,
-            /* if(MShape == SHAPE_TRIANGLE) */    
+            /* if(MShape == SHAPE_TRIANGLE) */
             typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TRIANGLE> >,
                 mpl::identity<vtkTriangle>,
                 mpl::identity<vtkQuad>
             >::type,
             /* if (Mdim == 3) */
             typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-                /* if(MShape == SHAPE_TETRA) */    
+                /* if(MShape == SHAPE_TETRA) */
                 typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TETRA> >,
                     mpl::identity<vtkTetra>,
                     mpl::identity<vtkHexahedron>
@@ -257,9 +259,9 @@ public:
      */
     void save() const;
 
-    /** 
-     * Returns a VTK structure representing the last timestep 
-     */ 
+    /**
+     * Returns a VTK structure representing the last timestep
+     */
     vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
 
     /**
@@ -287,14 +289,14 @@ public:
 
 
     /**
-     * Build a multi block structure based on the data gathered 
+     * Build a multi block structure based on the data gathered
      * on the different processes.
      */
     vtkSmartPointer<vtkMultiBlockDataSet>
         buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const;
 
     /**
-     * Actual write of the dataset into a file 
+     * Actual write of the dataset into a file
      */
     void write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 

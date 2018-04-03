@@ -418,49 +418,49 @@ if ( FEELPP_ENABLE_HDF5 )
         set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
         set(FEELPP_HAS_HDF5 1)
         set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
-    else()
-        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
-    endif()
 
-    # check HDF5 version
-    if(NOT HDF5_VERSION)
-      set( HDF5_VERSION "" )
-      foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
-        foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
-          if( EXISTS "${_hdr}" )
-    	    #MESSAGE(STATUS "_hdr=${_hdr}")
-            file( STRINGS "${_hdr}"
-                HDF5_VERSION_DEFINE
-                REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+" )
-	        #MESSAGE(STATUS "HDF5_VERSION_DEFINE=${HDF5_VERSION_DEFINE}")
-            if( "${HDF5_VERSION_DEFINE}" MATCHES
-                "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)(-patch([0-9]+))?\"" )
-	          set( HDF5_VERSION "${CMAKE_MATCH_1}" )
-              if( CMAKE_MATCH_3 )
-                set( HDF5_VERSION ${HDF5_VERSION}.${CMAKE_MATCH_3})
+        # check HDF5 version
+        if(NOT HDF5_VERSION)
+          set( HDF5_VERSION "" )
+          foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
+            foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
+              if( EXISTS "${_hdr}" )
+    	        #MESSAGE(STATUS "_hdr=${_hdr}")
+                file( STRINGS "${_hdr}"
+                  HDF5_VERSION_DEFINE
+                  REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+" )
+	            #MESSAGE(STATUS "HDF5_VERSION_DEFINE=${HDF5_VERSION_DEFINE}")
+                if( "${HDF5_VERSION_DEFINE}" MATCHES
+                    "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)(-patch([0-9]+))?\"" )
+	              set( HDF5_VERSION "${CMAKE_MATCH_1}" )
+                  if( CMAKE_MATCH_3 )
+                    set( HDF5_VERSION ${HDF5_VERSION}.${CMAKE_MATCH_3})
+                  endif()
+                endif()
+	            #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+                unset(HDF5_VERSION_DEFINE)
               endif()
-            endif()
-	        #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
-            unset(HDF5_VERSION_DEFINE)
-          endif()
-        endforeach()
-      endforeach()
-    endif(NOT HDF5_VERSION)
+            endforeach()
+          endforeach()
+        endif(NOT HDF5_VERSION)
 
-    STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
-    # MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
-    LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
-    LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
-    LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
-    SET(HDF_VERSION_REF "${HDF5_VERSION}")
+        STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
+        MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+        LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
+        LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
+        LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
+        SET(HDF_VERSION_REF "${HDF5_VERSION}")
 
-    IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
-      MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
-    ENDIF()
+        IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+          MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
+        ENDIF()
+      else(HDF5_IS_PARALLEL)
+        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+      endif( HDF5_IS_PARALLEL)
 
-  else()
+  else(HDF5_FOUND)
     MESSAGE(STATUS "[feelpp] no HDF5 found")
-  endif()
+  endif( HDF5_FOUND)
 
 endif(FEELPP_ENABLE_HDF5)
 
@@ -570,7 +570,7 @@ SET(FEELPP_LIBRARIES ${Boost_LIBRARIES} ${FEELPP_LIBRARIES})
 
 #INCLUDE_DIRECTORIES(BEFORE contrib/)
 
-#FIND_PACKAGE(GINAC)
+include(feelpp.module.hana)
 #IF( GINAC_FOUND )
 #  set( FEELPP_HAS_GINAC 1 )
 #  INCLUDE_DIRECTORIES( GINAC_INCLUDE_DIRS )
@@ -579,14 +579,6 @@ SET(FEELPP_LIBRARIES ${Boost_LIBRARIES} ${FEELPP_LIBRARIES})
 #ENDIF()
 
 #add_definitions(-DHAVE_LIBDL)
-
-
-if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
-
-
-
-endif()
-
 
 option( FEELPP_ENABLE_FFTW "Enable fftw Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_FFTW)
@@ -633,8 +625,6 @@ if ( FEELPP_ENABLE_EXODUS )
   set(FEELPP_HAS_EXODUS 1)
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Exodus" )
 endif()
-
-
 
 #
 # Ann
