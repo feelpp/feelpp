@@ -23,7 +23,7 @@
  */
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -33,7 +33,7 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
     :
     M_worldComm( world ),
     M_params( world ),
@@ -41,7 +41,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_bc( world, false ),
     M_ic( world, false ),
     M_postproc( world ),
-    M_outputs( world )
+    M_outputs( world ),
+    M_prefix( prefix )
 {
     if ( !fs::exists( filename ) )
     {
@@ -69,42 +70,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     std::istringstream istr( json_str_wo_comments );
     pt::read_json(istr, M_p);
 
-    if ( Environment::vm().count("json-options") )
-    {
-        std::vector<std::string> var_list = option( _name="json-options").template as<std::vector<std::string>>();
-
-        for ( auto s : var_list )
-        {
-            std::vector<std::string> splited;
-            boost::split( splited, s, boost::is_any_of(":"), boost::token_compress_on );
-            if ( splited.size()!=2 )
-            {
-                std::stringstream ss;
-                ss << "WARNING: syntax for the variable to be edited in the ptree is wrong, here is the parsed option:";
-                for ( auto s : splited)
-                    ss << s <<" ";
-                ss << std::endl;
-                CHECK(false) << ss.str();
-            }
-            else
-            {
-                std::string key = splited[0];
-                std::string value = splited[1];
-
-                try {
-                    M_p.get<std::string>( key );
-                }
-                catch ( pt::ptree_bad_path& e )
-                {
-                    LOG(INFO) << "No entry \""<<key <<"\" found in ptree, add new entry with value="<< value << std::endl;
-                }
-                M_p.put( key, value );
-                LOG(INFO)<< "ptree edition: entry "<< key <<" has new value "<< value <<std::endl;
-            }
-        }
-    }
-
-
+    editPtreeFromOptions( M_p, M_prefix );
 
     try {
         M_name  = M_p.get<std::string>( "Name"  );
