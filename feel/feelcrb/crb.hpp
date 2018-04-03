@@ -928,6 +928,9 @@ public:
      */
     void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
 
+
+    virtual void offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field );
+
     /*
      * newton for primal problem ( offline step )
      * \param mu : current parameter
@@ -1035,6 +1038,8 @@ public:
     matrix_info_tuple fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                    std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                    std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput = true ) const;
+
+    virtual matrix_info_tuple onlineSolve(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu, std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput = true ) const;
 
     /**
      * computation of the conditioning number of a given matrix
@@ -2126,6 +2131,49 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     return udu;
 }//offline fixed point
 
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter_type& mu, element_ptrtype & dual_initial_field )
+{
+    if ( M_model->isSteady()  )
+    {
+        if( ! M_use_newton )
+        {
+            tic();
+            u = offlineFixedPointPrimal( mu );//, A  );
+            toc("Solve primal problem");
+
+            if( M_solve_dual_problem )
+            {
+                tic();
+                udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
+                toc("Solve dual problem");
+            }
+        }
+        else
+        {
+            tic();
+            u = offlineNewtonPrimal( mu );
+            toc("Solve primal problem");
+        }
+    }//steady
+    else
+    {
+        tic();
+        u = offlineFixedPointPrimal( mu  );
+        toc("Solve primal problem");
+
+        if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        {
+            tic();
+            udu = offlineFixedPointDual( mu , dual_initial_field );
+            toc("Solve dual problem");
+        }
+    }//transient
+}
+
+
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
@@ -2574,71 +2622,13 @@ CRB<TruthModelType>::offline()
 
         double tpr=0,tdu=0;
 
-        if ( M_model->isSteady()  )
-        {
-            if( ! M_use_newton )
-            {
-                timer2.restart();
-                u = offlineFixedPointPrimal( mu );//, A  );
-                tpr=timer2.elapsed();
-                if( M_solve_dual_problem )
-                {
-                    timer2.restart();
-                    udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
-                    tdu=timer2.elapsed();
-                }
-
-                if( boption( _name="crb.print-iterations-info") )
-                    this->printRbPicardIterations();
-            }
-            else
-            {
-                timer2.restart();
-                //auto o = M_model->solve( mu );
-                u = offlineNewtonPrimal( mu );
-                // u = M_model->solve( mu );
-                // if( this->worldComm().isMasterRank() )
-                //     std::cout<<"============================================= start"<<std::endl;
-                // auto    u_fem = M_model->solve( mu );
-                // if( this->worldComm().isMasterRank() )
-                //     std::cout<<"============================================= finish"<<std::endl;
-
-                tpr=timer2.elapsed();
-                LOG(INFO) << "  -- primal problem solved in " << tpr << "s";
-                timer2.restart();
-            }
-        }//steady
-        else
-        {
-            timer2.restart();
-            u = offlineFixedPointPrimal( mu  );
-            tpr=timer2.elapsed();
-
-            if ( M_solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-            {
-                timer2.restart();
-                udu = offlineFixedPointDual( mu , dual_initial_field );
-                tdu=timer2.elapsed();
-            }
-        }//transient
-
+        this->offlineSolve( u, udu, mu, dual_initial_field );
 
         if( ! use_predefined_WNmu )
             M_WNmu->push_back( mu, index );
-
-        timer2.restart();
         M_WNmu_complement = M_WNmu->complement();
-        double time=timer2.elapsed();
-
-        if( this->worldComm().isMasterRank() )
-        {
-            std::cout<<" -- primal problem solved in "<<tpr<<" s"<<std::endl;
-            std::cout<<" -- dual problem solved in "<<tdu<<" s"<<std::endl;
-            std::cout<<" -- complement of M_WNmu built in "<<time<<" s"<<std::endl;
-        }
 
         bool norm_zero = false;
-
         timer2.restart();
         timer3.restart();
         if ( M_model->isSteady() )
@@ -2841,16 +2831,10 @@ CRB<TruthModelType>::offline()
                 }
             }
 
-            time = timer3.elapsed();
 
         }//end of transient case
 
-        if( this->worldComm().isMasterRank() && !M_model->isSteady() )
-        {
-            std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
-            std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
-            std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-        }
+
 
         //in the case of transient problem, we can add severals modes for a same mu
         //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
@@ -2959,7 +2943,7 @@ CRB<TruthModelType>::offline()
         {
             timer2.restart();
             boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
-            time=timer2.elapsed();
+            auto time=timer2.elapsed();
             M_current_mu = mu;
 
             if( this->worldComm().isMasterRank() )
@@ -5677,6 +5661,16 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 }
 #endif
 
+template<typename TruthModelType>
+typename CRB<TruthModelType>::matrix_info_tuple
+CRB<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu, std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
+{
+    if( M_use_newton )
+        return newton( N , mu , uN[0], output_vector[0] );
+    else
+        return fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
+}
+
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
@@ -5774,12 +5768,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     uN[0].setOnes(N);
 
-    if( M_use_newton )
-        boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
-    else
-        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
-
-    auto matrix_info = boost::make_tuple( conditioning, determinant );
+    auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -9306,17 +9295,17 @@ CRB<TruthModelType>::runWithExpansion( parameter_type const& mu , int N , int ti
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     int size = uN.size();
 
-    FEELPP_ASSERT( N <= M_model->rBFunctionSpace()->size() )( N )( M_model->rBFunctionSpace()->size() ).error( "invalid expansion size ( N and RB size ) ");
-
     element_type ucrb;
     if( time_index == -1 )
     {
-        ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[size-1] , Nwn);
+        ucrb = expansion( uN[size-1], Nwn );
+        //ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[size-1] , Nwn);
     }
     else
     {
         CHECK( time_index < size )<<" call crb::expansion with a wrong value of time index : "<<time_index<<" or size of uN vector is only "<<size;
-        ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[time_index] , Nwn);
+        ucrb = expansion( uN[time_index], Nwn );
+        //ucrb = Feel::expansion( M_model->rBFunctionSpace()->primalRB(), uN[time_index] , Nwn);
     }
     return ucrb;
 }
