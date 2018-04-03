@@ -55,3 +55,4 @@ if ( FEELPP_HAS_HARTS OR FEELPP_HAS_OPENMP )
 endif()
 
 feelpp_add_test(serialization)
+feelpp_add_test(ptree_options CFG test_ptree_options.json test_ptree_options.cfg )
