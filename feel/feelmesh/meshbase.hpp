@@ -453,6 +453,27 @@ public:
             return invalid_size_type_value;
         }
 
+    //! \return ids in sub mesh given the ids in the parent mesh
+    std::pair<std::vector<size_type>,bool> meshToSubMesh( std::vector<size_type> const& p, bool add_invalid_indices = false ) const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            std::vector<size_type> sid;//(std::distance(p.first,p.second) );
+            bool has_invalid_values = false;
+            std::for_each( p.begin(), p.end(), [&]( auto const& id ){
+                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                        sid.push_back( M_smd->bm.right.find( id )->second );
+                    else
+                    {
+                        if ( add_invalid_indices )
+                            sid.push_back( invalid_size_type_value );
+                        has_invalid_values = true;
+                    }
+                    // the submesh element id has not been found, return invalid value
+                    //return invalid_size_type_value;
+                });
+            return std::make_pair(sid,has_invalid_values);
+        }
+
     //! \return id in parent mesh given the id in the sub mesh
     size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
         {
@@ -533,6 +554,16 @@ public:
     hasMarker( std::string const& marker ) const
         {
             return markerName( marker ) != invalid_size_type_value;
+        }
+
+    /**
+     * @return true if \p marker exists and topological dimension of the entity
+     * associated is Dim, false otherwise
+     */
+    bool
+    hasElementMarker( std::string const& marker ) const
+        {
+            return hasMarker( marker ) && ( markerDim( marker ) == M_topodim );
         }
 
     /**

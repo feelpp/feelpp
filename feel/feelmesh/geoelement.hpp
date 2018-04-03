@@ -500,6 +500,7 @@ public:
 
     static const uint16_type nDim = 0;
     static const uint16_type nRealDim = Dim;
+    static const bool is_simplex = true;
 
     typedef Geo0D<Dim,T> geo0d_type;
     typedef typename geo0d_type::node_type node_type;
@@ -510,12 +511,12 @@ public:
     typedef GeoElement0D<Dim,SubFace,T> self_type;
 #if 0
     using element_type = typename mpl::if_<mpl::bool_<SubFace::nDim==0>,
-                                           mpl::identity<self_type>, 
+                                           mpl::identity<self_type>,
                                            mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type ;
 #else
     using element_type = self_type;
-    using gm_type = boost::none_t;
-    using gm1_type = boost::none_t;
+    using gm_type = GT_Lagrange<0, 1, nRealDim, Simplex, T>;
+    using gm1_type = gm_type;
 #endif
     typedef self_type point_type;
 
@@ -566,7 +567,7 @@ public:
 
     GeoElement0D & operator = ( GeoElement0D const& g ) = default;
     GeoElement0D & operator = ( GeoElement0D && g ) = default;
-    
+
     template<typename SF>
     GeoElement0D & operator = ( GeoElement0D<Dim,SF,T> const & g )
     {
@@ -928,7 +929,15 @@ public:
     {
         return edge_permutation_type();
     }
-
+    //!
+    //! @return true if GeoElement1D is connected to a face 
+    //!
+    bool hasFace( uint16_type i ) const
+        {
+            if ( i >= numLocalFaces )
+                return false;
+            return M_vertices[i] != nullptr;
+        }
     point_type const& edge( uint16_type i ) const
     {
         return *M_vertices[i];
@@ -972,7 +981,13 @@ public:
     {
         return std::make_pair( M_vertices.begin(), M_vertices.end() );
     }
-
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_vertices.begin(), M_vertices.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     /**
      * \sa edgePermutation(), permutation()
      */
@@ -1326,6 +1341,13 @@ public:
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_edges.begin(), M_edges.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
     void disconnectSubEntities()
     {
         for(unsigned int i = 0; i<numLocalEdges;++i)
@@ -1680,6 +1702,13 @@ public:
     {
         return std::make_pair( M_faces.begin(), M_faces.end() );
     }
+    std::vector<size_type> facesId() const
+        {
+            std::vector<size_type> fid;
+            std::for_each( M_faces.begin(), M_faces.end(),
+                           [&fid]( auto const& f ) { fid.push_back(f->id()); } );
+            return fid;
+        }
 private:
 
     friend class boost::serialization::access;
@@ -1727,6 +1756,6 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag )
     }
     return false;
 }
-    
+
 } // Feel
 #endif

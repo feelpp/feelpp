@@ -71,6 +71,26 @@ public:
     virtual void loadDBLast ( crb::last last = crb::last::modified,
                               crb::load load = crb::load::rb,
                               std::string const& root = Environment::rootRepository() ) = 0;
+
+    //!
+    //! return true if some data from the DB is loaded, false otherwise
+    //!
+    virtual bool isDBLoaded() const = 0;
+
+    //!
+    //! return true if  the Reduced basis DB is loaded
+    //!
+    virtual bool isReducedBasisModelDBLoaded() const = 0;
+
+    //!
+    //! return true if the Finite Element DB is loaded
+    //!
+    virtual bool isFiniteElementModelDBLoaded() const = 0;
+
+    //!
+    //! return true if all the DB data is loaded
+    //!
+    virtual bool isAllLoaded() const = 0;
     
     //!
     //! @return the parameter space

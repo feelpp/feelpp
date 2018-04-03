@@ -19,6 +19,6 @@ RUN bash -c "echo" ${PROJECT} "-" ${URL} "-"  ${BRANCH} "-"  ${BUILD_JOBS} "-" $
 RUN bash -c "source $HOME/feelpp_build.sh && feelpp_build ${PROJECT} ${URL} ${BRANCH} ${BUILD_JOBS} \"${CMAKE_FLAGS}\" \"${MAKE_FLAGS}\""
 
 # COPY WELCOME $HOME/WELCOME
-USER feelpp
+USER root
 #ENTRYPOINT ["/sbin/my_init","--quiet","--","sudo","-u","feelpp","/bin/sh","-c"]
-CMD ["/bin/bash"]
+CMD ["/usr/local/bin/start.sh"]

@@ -625,6 +625,34 @@ struct evaluate_expression_g
     const uint16_type M_index;
     mutable int M_current;
 };
+
+
+template<typename... TheExpr>
+struct initialize_lambda_expression
+{
+    template<typename Sig>
+    struct result;
+
+    template<typename ExprT>
+    struct result<initialize_lambda_expression( ExprT )>
+    {
+        typedef typename boost::remove_reference<ExprT>::type::template Lambda<TheExpr...>::type type;
+    };
+
+    initialize_lambda_expression( TheExpr... e )
+        :
+        M_e( e... )
+        {}
+
+    template <typename ExprT>
+    typename ExprT::template Lambda<TheExpr...>::type
+    operator()( ExprT const& expr ) const
+        {
+            return typename ExprT::template Lambda<TheExpr...>::type( expr( M_e ) );
+        }
+
+    std::tuple<TheExpr...> M_e;
+};
 /**
  * \class Vec
  * \brief class that represents a matrix in the language
@@ -673,6 +701,27 @@ public:
     typedef value_type evaluate_type;
 
     static const uint16_type vector_size =  fusion::result_of::size<expression_vector_type>::type::value;
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        template<typename CompExprType>
+        struct GetComponentExpr
+        {
+            typedef typename CompExprType::template Lambda<TheExpr...>::type type;
+        };
+        typedef typename mpl::transform<expression_vector_type,
+                                        GetComponentExpr<mpl::_1>,
+                                        mpl::back_inserter<fusion::vector<> > >::type the_fusionvector_type;
+        typedef Vec<the_fusionvector_type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  )
+        {
+            return typename Lambda<TheExpr...>::type( fusion::transform( this->expression(), initialize_lambda_expression<TheExpr...>( e... ) ) );
+        }
 
     //@}
 
@@ -944,6 +993,30 @@ public:
                           ( mpl::int_<M>, mpl::int_<N>, mpl::int_<M*N>,
                             mpl::int_<fusion::result_of::size<expression_matrix_type>::type::value> ) );
 #endif
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        template<typename CompExprType>
+        struct GetLambdaComponentExpr
+        {
+            typedef typename CompExprType::template Lambda<TheExpr...>::type type;
+        };
+
+        typedef typename mpl::transform< expression_matrix_type,
+                                         GetLambdaComponentExpr<mpl::_1>,
+                                        mpl::back_inserter<fusion::vector<> > >::type the_fusionvector_type;
+        typedef Mat<M,N,the_fusionvector_type> type;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  )
+        {
+            return typename Lambda<TheExpr...>::type( fusion::transform( this->expression(), initialize_lambda_expression<TheExpr...>( e... ) ) );
+        }
+
+
     //@}
 
     /** @name Constructors, destructor

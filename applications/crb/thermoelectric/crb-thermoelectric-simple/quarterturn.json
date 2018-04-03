@@ -1,0 +1,92 @@
+{
+    "Name": "Thermoelectric",
+    "ShortName": "Thermoelectric",
+    "Model": "thermoelectric-crb",
+    "Materials":
+    {
+        "omega":
+        {
+            "name": "copper",
+            "physics": "thermoelectric",
+            "sigmaKey": "sigma",
+            "kKey": "k"
+        }
+    },
+    "Parameters":
+    {
+        "sigma":
+        {
+            "value":50e+3,
+            "min":48e+3,
+            "max":52e+3
+        },
+        "current":
+        {
+            "value":-0.14,
+            "min":-0.25,
+            "max":-0.1
+        },
+        "k":
+        {
+            "value":0.38,
+            "min":0.35,
+            "max":0.4
+        },
+        "h":
+        {
+            "value":0.08,
+            "min":0.05,
+            "max":0.1
+        },
+        "Tw":
+        {
+            "value":300,
+            "min":290,
+            "max":310
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "in":
+                {
+                    "expr":"current:current",
+                    "material":"omega"
+                },
+                "out":
+                {
+                    "expr":"0",
+                    "material":"omega"
+                }
+            }
+        },
+        "temperature":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+                    "expr1":"sigma:sigma",
+                    "expr2":"(0.3/(2*Pi))^2*1/(x^2+y^2):x:y:z",
+                    "material":"omega"
+                }
+            },
+            "Robin":
+            {
+                "Rext":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                },
+                "Rint":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                }
+            }
+        }
+    }
+}

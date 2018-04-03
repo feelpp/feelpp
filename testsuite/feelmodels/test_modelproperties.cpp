@@ -21,30 +21,59 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#define BOOST_TEST_MODULE model properties testsuite
+
+#include <testsuite.hpp>
+
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-int main( int argc, char** argv )
-{
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv );
+using namespace Feel;
 
+inline
+po::options_description
+makeOptions()
+{
+    po::options_description modelopt( "test model properties options" );
+    modelopt.add_options()
+        ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/test.feelpp" ),
+         "json file" )
+        ;
+    return  modelopt.add( Feel::feel_options() ) ;
+}
+
+inline
+AboutData
+makeAbout()
+{
+    AboutData about( "test_modelproperties",
+                     "test_modelproperties" );
+    return about;
+
+}
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+
+BOOST_AUTO_TEST_SUITE( modelproperties )
+
+BOOST_AUTO_TEST_CASE( test_materials )
+{
     auto mesh = loadMesh(new Mesh<Simplex<3> >);
     auto Xh = Pch<1>(mesh);
     auto g = Xh->element();
     auto d = Xh->element();
 
-    ModelProperties model_props( "test.feelpp" );
-
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto mats = model_props.materials();
-    for ( auto matPair : mats )
+    for ( auto const& matPair : mats )
     {
-        Feel::cout << "properties for " << matPair.first << std::endl;
         auto mat = matPair.second;
-        auto name = mat.getString("name");
+        auto physics = mat.physics();
+        auto name = mat.name();
+        auto meshMarkers = mat.meshMarkers();
         auto rhoInt = mat.getInt("rho");
         auto etaDouble = mat.getDouble("eta");
 
@@ -64,7 +93,16 @@ int main( int argc, char** argv )
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
 
+#if 1
+        Feel::cout << "properties for " << matPair.first << std::endl;
         Feel::cout << "\t" << name << std::endl;
+        Feel::cout << "\thas " << physics.size() << " physics:" << std::endl;
+        for( auto const& p : physics )
+            Feel::cout << "\t\t" << p << std::endl;
+        Feel::cout << "\thas " << meshMarkers.size() << " markers:" << std::endl;
+        for( auto const& p : meshMarkers )
+            Feel::cout << "\t\t" << p << std::endl;
+
         Feel::cout << "\t" << rhoInt << std::endl;
         Feel::cout << "\t" << etaDouble << std::endl;
         Feel::cout << "\t" << rho << std::endl;
@@ -75,17 +113,68 @@ int main( int argc, char** argv )
         Feel::cout << "\t" << chi << std::endl;
         Feel::cout << "\t" << xhiPair << std::endl;
         Feel::cout << "\t" << xhiMap << std::endl;
+#endif
     }
+#if 0
+    Feel::cout << mats.materialWithPhysic("electro").size() << " materials with electro physic" << std::endl;
+    Feel::cout << mats.materialWithPhysic("thermo").size() << " materials with thermo physic" << std::endl;
+#endif
+    BOOST_CHECK_EQUAL(mats.materialWithPhysic("electro").size(), 2);
+    BOOST_CHECK_EQUAL(mats.materialWithPhysic("thermo").size(), 1);
 
+}
+
+BOOST_AUTO_TEST_CASE( test_parameters )
+{
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
     auto param = model_props.parameters();
     for ( auto const& pp : param )
     {
         auto p = pp.second;
+        if( p.name() == "Um" )
+        {
+            BOOST_CHECK_CLOSE( p.value(), 0.3, 10e-8);
+            BOOST_CHECK_CLOSE( p.min(), 1e-4, 10e-8);
+            BOOST_CHECK_EQUAL( p.max(), 10);
+        }
+        else if( p.name() == "H" )
+        {
+            BOOST_CHECK_CLOSE( p.value(), 0.41, 10e-8 );
+        }
+#if 0
         Feel::cout << p.name() << std::endl
                    << "\tvalue : " << p.value() << std::endl
                    << "\tmin   : " << p.min() << std::endl
                    << "\tmax   : " << p.max() << std::endl;
         if ( p.hasExpression() )
             Feel::cout << "\texpr  : " << p.expression() << std::endl;
+#endif
     }
 }
+
+BOOST_AUTO_TEST_CASE( test_outputs )
+{
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    auto outputs = model_props.outputs();
+    for( auto const& out : outputs )
+    {
+        auto output = out.second;
+        if( output.name() == "myoutput" )
+        {
+            BOOST_CHECK_EQUAL( output.type(), "average");
+            BOOST_CHECK_EQUAL( output.range().size(), 2);
+            BOOST_CHECK_EQUAL( output.dim(), 3 );
+        }
+        else if( output.type() == "flux" )
+        {
+            BOOST_CHECK_EQUAL( output.type(), "flux");
+            BOOST_CHECK_EQUAL( output.range().size(), 1);
+            BOOST_CHECK_EQUAL( output.dim(), 2 );
+        }
+#if 0
+        std::cout << output;
+#endif
+    }
+}
+
+BOOST_AUTO_TEST_SUITE_END()

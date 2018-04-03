@@ -1,13 +1,15 @@
 {
     "Name": "Square2d",
     "ShortName": "Square2d",
-    "Model": "Levelset",
-
+    "Models":
+    {
+        "equations":"Levelset"
+    },
     "Parameters":
     {
-        "x0": "0.2",
-        "y0": "0.2",
-        "r0": "0.1"
+        "x0": "-0.3",
+        "y0": "-0.3",
+        "r0": "0.08"
     },
 
     "InitialConditions":
@@ -26,15 +28,15 @@
                 "drop1":
                 {
                     "shape": "sphere",
-                    "xc": "0.4",
-                    "yc": "0.45",
+                    "xc": "-0.1",
+                    "yc": "-0.05",
                     "radius": "0.16"
                 },
                 "drop2":
                 {
                     "shape": "sphere",
-                    "xc": "0.25",
-                    "yc": "0.8",
+                    "xc": "-0.25",
+                    "yc": "0.3",
                     "radius": "0.05"
                 }
             }

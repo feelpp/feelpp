@@ -1,4 +1,4 @@
-h = 0.1;
+h = 0.16;
 xmin = -4;
 xmax = 4;
 ymin = -4;
@@ -13,6 +13,15 @@ Line(3) = {2,3};
 Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
+
+Field[1] = Box;
+Field[1].VIn = h/4;
+Field[1].VOut = h;
+Field[1].XMin = -1;
+Field[1].XMax = 1;
+Field[1].YMin = -3;
+Field[1].YMax = 3;
+Background Field = 1;
 
 Physical Line("Left") = {1};
 Physical Line("Bottom") = {2};

@@ -24,6 +24,7 @@ endif()
 
 if(METIS_INSTALL)
   install(TARGETS feelpp_metis
+    EXPORT feelpp-contrib-export-targets
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION lib
     ARCHIVE DESTINATION lib)

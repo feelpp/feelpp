@@ -473,7 +473,7 @@ public:
      * @brief set the GMsh GModel object
      * @param gmodel GMsh GModel object
      */
-    void setGModel( GModel* gmodel ) { M_gmodel = gmodel; }
+    void setGModel( boost::shared_ptr<GModel> gmodel ) { M_gmodel = gmodel; }
 #endif
 
     //@}
@@ -542,7 +542,7 @@ private:
     //std::map<int,int> itoii;
     //std::vector<int> ptseen;
 #if defined( FEELPP_HAS_GMSH_H )
-    GModel* M_gmodel;
+    boost::shared_ptr<GModel> M_gmodel;
 #endif
 };
 
@@ -2078,7 +2078,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
 
 // Gmsh reader factory
 #if defined( FEELPP_HAS_GMSH_H )
-using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,GModel*>(std::string)> > >;
+using GmshReaderFactory = Feel::Singleton< std::map< std::string, std::function<std::pair<int,boost::shared_ptr<GModel>>(std::string)> > >;
 #endif
 
 

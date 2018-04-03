@@ -20,9 +20,23 @@
     },
     "Materials":
     {
-        "fluid":
+        "myfluid":
         {
-            "name":"fluid",
+            "markers":["fluid1","fluid2"],
+            "physics": "electro",
+            "rho": "2", // density
+            "eta": "0.001", // dynamic_viscosity
+            "mu": "{1,t}:t",
+            "nu": "{1,2,x*y}:x:y:z",
+            "chi": "{1,2,x,y}:x:y",
+            "xhi": "{1,2,3,4,5,6,7,8,t}:t",
+            "f" : "2*g:g",
+            "h" : "2*g+t:g:t"
+        },
+	    "mycopper":
+        {
+            "markers":"copper",
+            "physics":["electro","thermo"],
             "rho": "1", // density
             "eta": "0.001", // dynamic_viscosity
             "mu": "{1,t}:t",
@@ -70,6 +84,21 @@
         {
             "x1":"{0.15,0.2}",
             "x2":"{0.25,0.2}"
+        }
+    },
+    "Outputs":
+    {
+        "myoutput":
+        {
+            "type":"average",
+            "range":["marker1","marker2"],
+            "topodim":3
+        },
+        "flux":
+        {
+            "type":"flux",
+            "range":"face1",
+            "topodim":2
         }
     }
 }

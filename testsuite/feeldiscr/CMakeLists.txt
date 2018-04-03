@@ -14,6 +14,8 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
+feelpp_add_test( space_0d SKIP_TEST )
+
 
 feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
 feelpp_add_test( hdiv_oneelt CFG test_hdiv_oneelt.cfg NO_MPI_TEST )
@@ -45,11 +47,14 @@ feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project NO_MPI_TEST)
 feelpp_add_test( projector CLI "--pc-type=gasm --gmsh.hsize=0.2" ) # avoid destructor issue with LU-mumps in //
 feelpp_add_test( spaces )
+
 feelpp_add_test( stencil )
+
 feelpp_add_test( makemesh )
 feelpp_add_test( submesh )
 feelpp_add_test( trace )
 feelpp_add_test( element_component )
+feelpp_add_test( element_component_3d )
 feelpp_add_test( matrixfield )
 
 if ( FEELPP_HAS_FFTW )
@@ -80,6 +85,14 @@ feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO marke
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
+feelpp_add_test( productspaces CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
+feelpp_add_test( space_cst )
+# feelpp_add_test( element0D )
+feelpp_add_test( space_on_range )
+
 feelpp_add_test( idelements)
+
+feelpp_add_test( twospacesmap )
+
 #! not functional yet
 # feelpp_add_test( element0D )

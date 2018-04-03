@@ -235,7 +235,7 @@ Heat3d::updateFieldsExported( SourceCrbInterface * pvsource, element_type & feFi
 }
 #endif
 
-FEELPP_CRB_PLUGIN( Heat3d, "heat3d" )
+FEELPP_CRB_PLUGIN( Heat3d, heat3d )
 /*
 include <boost/python.hpp>
 using namespace boost::python;

@@ -32,7 +32,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_pyfeelpp,m)
+PYBIND11_MODULE(pyfeelpp,m)
 {
     m.doc()=R"pbdoc(
         PyFeelpp Module plugin

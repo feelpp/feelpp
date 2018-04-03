@@ -457,8 +457,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         uint16_type __face_id = faceForInit.pos_first();
         gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id ) );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        t_expr_type expr( M_expr, mapgmc );
+        // map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        // t_expr_type expr( M_expr, mapgmc );
 
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
@@ -480,6 +480,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
         auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
+        bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
+
+
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
@@ -500,21 +503,42 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
-            if ( theface.isGhostFace() )
+            if ( hasMeshSupportPartial )
+            {
+                if ( __dof->meshSupport()->isGhostFace( theface ) )
+                    continue;
+            }
+            else if ( theface.isGhostFace() )
             {
                 LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
                 continue;
             }
 
-            DVLOG(2) << "FACE_ID = " << theface.id()
-                     << " element id= " << theface.ad_first()
-                     << " pos in elt= " << theface.pos_first()
-                     << " marker: " << theface.marker() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
-
             uint16_type __face_id = theface.pos_first();
-            __c->update( theface.element( 0 ), __face_id );
+            uint16_type faceConnectionId = 0;
+            if ( hasMeshSupportPartial )
+            {
+                auto const& elt0 = theface.element( 0 );
+                if ( !__dof->meshSupport()->hasElement( elt0.id() ) || elt0.isGhostCell() )
+                {
+                    __face_id = theface.pos_second();
+                    faceConnectionId = 1;
+                }
+                DCHECK( __dof->meshSupport()->hasElement( theface.element( faceConnectionId ).id() ) ) << "element not present in partial support";
+                DCHECK( !theface.element( faceConnectionId ).isGhostCell() ) << "face connection to a ghost element is forbidden";
+            }
+            else if ( theface.element( 0 ).isGhostCell() )
+            {
+                DCHECK( theface.isConnectedTo1() ) << "invalid face, no other connection";
+                __face_id = theface.pos_second();
+                faceConnectionId = 1;
+            }
+            __c->update( theface.element( faceConnectionId ), __face_id );
 
+            DVLOG(2) << "FACE_ID = " << theface.id()
+                     << " element id= " << ((faceConnectionId==0)? theface.ad_first() : theface.ad_second())
+                     << " pos in elt= " << ((faceConnectionId==0)? theface.pos_first() : theface.pos_second());
+            DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
             DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
 
@@ -824,7 +848,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         {
             pt_it = lit.template get<1>();
             pt_en = lit.template get<2>();
-            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " with marker " << boost::unwrap_ref( *pt_it ).marker() << " nb: " << std::distance(pt_it,pt_en);
+            DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " nb: " << std::distance(pt_it,pt_en);
             
             if ( pt_it == pt_en )
                 continue;

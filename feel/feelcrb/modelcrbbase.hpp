@@ -30,7 +30,9 @@
 #define ModelCrbBase_H 1
 
 //#include <feel/feel.hpp>
+#include <feel/feelcrb/crbmodeldb.hpp>
 #include <feel/feelcrb/eim.hpp>
+#include <feel/feelcrb/deim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
@@ -52,9 +54,14 @@ enum {
     /** Coercive PDE */
     Coercive = 0,
     /** Inf-Sup PDE */
-    InfSup = 0x4
+    InfSup = 0x4,
+    /** Monolithic */
+    Mono = 0,
+    /** By block */
+    UseBlock=0x8
 };
 
+class ModelCrbBaseBase {};
 
 class ParameterDefinitionBase
 {
@@ -134,7 +141,7 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<space_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
@@ -171,13 +178,25 @@ public :
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
-    //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
+    typedef DEIMBase<parameterspace_type,space_type,vector_type> deim_type;
+    typedef boost::shared_ptr<deim_type> deim_ptrtype;
+    typedef DEIMBase<parameterspace_type,space_type,sparse_matrix_type> mdeim_type;
+    typedef boost::shared_ptr<mdeim_type> mdeim_ptrtype;
 
+    typedef std::vector<deim_ptrtype> deim_vector_type;
+    typedef std::vector<mdeim_ptrtype> mdeim_vector_type;
+
+    //static const uint16_type ParameterSpaceDimension = ParameterDefinition::ParameterSpaceDimension ;
     typedef std::vector< std::vector< double > > beta_vector_type;
     typedef std::vector< double > beta_vector_light_type;
 
     typedef vf::detail::BilinearForm<functionspace_type, functionspace_type,VectorUblas<value_type>> form2_type;
     typedef vf::detail::LinearForm<functionspace_type,vector_type,vector_type> form1_type;
+
+    typedef Pchv_type<mesh_type,1> displacement_space_type;
+    typedef boost::shared_ptr<displacement_space_type> displacement_space_ptrtype;
+    typedef typename displacement_space_type::element_type displacement_field_type;
+    typedef typename boost::shared_ptr<displacement_field_type> displacement_field_ptrtype;
 
 #if 0
     static const bool is_time_dependent = FunctionSpaceDefinition::is_time_dependent;
@@ -186,6 +205,7 @@ public :
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
     //static const bool is_linear = ((_Options&Linear)==Linear);
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
+    static const bool by_block = (_Options&UseBlock)==UseBlock;
 #endif
     static const int Options = _Options;
 
@@ -271,7 +291,7 @@ public :
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name, WorldComm const& worldComm = Environment::worldComm() )
+    ModelCrbBase( std::string const& name,  WorldComm const& worldComm = Environment::worldComm() )
         :
         ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
         {}
@@ -279,34 +299,107 @@ public :
         :
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
-        M_uuid( uid ),
-        M_name( algorithm::to_lower_copy(name) ),
-        M_is_initialized( false )
-    {}
+        M_backend( backend() ),
+        M_crbModelDb( name, uid ),
+        M_is_initialized( false ),
+        M_has_displacement_field( false )
+    {
+
+        bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
+        if ( !rebuilddb )
+        {
+            int loadmode = ioption( _name="crb.db.load" );
+            switch ( loadmode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            }
+        }
+        else
+        {
+            int updatemode = ioption( _name="crb.db.update" );
+            switch ( updatemode )
+            {
+            case 0 :
+                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                break;
+            case 1:
+                M_crbModelDb.updateIdFromDBLast( crb::last::created );
+                break;
+            case 2:
+                M_crbModelDb.updateIdFromDBLast( crb::last::modified );
+                break;
+            case 3:
+                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                break;
+            default:
+                // don't do anything and let the system pick up a new unique id
+                break;
+            }
+        }
+
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::path modeldir = M_crbModelDb.dbRepository();
+            if ( !fs::exists( modeldir ) )
+                fs::create_directories( modeldir );
+            boost::property_tree::ptree ptree;
+            ptree.add( "name", this->modelName() );
+            ptree.add( "uuid", uuids::to_string(this->uuid()) );
+            std::string jsonpath = (modeldir / M_crbModelDb.jsonFilename()).string();
+            write_json( jsonpath, ptree );
+        }
+        this->worldComm().barrier();
+
+    }
 
     virtual ~ModelCrbBase() {}
 
     /**
      * \return the name of the model
      */
-    std::string const& modelName() const { return M_name; }
+    std::string const& modelName() const { return M_crbModelDb.name(); }
 
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_name = algorithm::to_lower_copy(name); }
+    void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
+
+
+    /**
+     * Define the model as an online (sequential) model
+     * used for the computation of coefficient during the online phase
+     */
+    void setModelOnlineDeim( std::string name )
+    {
+        M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
+    }
+
+    //! functions call by deim to init specific part of the model when online.
+    virtual void initOnlineModel()
+    {}
 
     //!
     //! unique id for CRB Model
     //!
-    uuids::uuid  uuid() const { return M_uuid; }
+    uuids::uuid  uuid() const { return M_crbModelDb.uuid(); }
 
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
-    //! CRB type object is created because they use the id 
+    //! CRB type object is created because they use the id
     //!
-    void setId( uuids::uuid const& i ) { M_uuid = i; }
+    void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
 
     /**
      * \return the mpi communicators
@@ -599,6 +692,61 @@ public :
         return M_funs_d;
     }
 
+    void addDeim( deim_ptrtype const& deim )
+    {
+        M_deims.push_back( deim );
+    }
+    void addMdeim( mdeim_ptrtype const& mdeim )
+    {
+        M_mdeims.push_back( mdeim);
+    }
+
+    deim_ptrtype deim( int const& i=0 ) const
+    {
+        return M_deims[i];
+    }
+
+    mdeim_ptrtype mdeim( int const& i=0 ) const
+    {
+        return M_mdeims[i];
+    }
+
+    bool hasDeim() const
+    {
+        return M_deims.size() || M_mdeims.size();
+    }
+
+    deim_vector_type deimVector() const
+    {
+        return M_deims;
+    }
+    mdeim_vector_type mdeimVector() const
+    {
+        return M_mdeims;
+    }
+
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
+    {
+        return nullptr;
+    }
+
+    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    {
+        return nullptr;
+    }
+
+
+    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
+    {
+        return nullptr;
+    }
+
+    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+    {
+        return nullptr;
+    }
+
+
     /**
      * \brief update model description in property_tree
      * \param ptree to update
@@ -638,6 +786,65 @@ public :
             ptreeEim.add_child( eimObject->name(), ptreeEimObject );
         }
         ptree.add_child( "eim", ptreeEim );
+
+        boost::property_tree::ptree ptreeDeim;
+        for ( auto const& deimObject : this->deimVector() )
+        {
+            boost::property_tree::ptree ptreeDeimObject;
+            ptreeDeimObject.add("database-filename", deimObject->dbRelativePath() );
+            ptreeDeim.add_child( deimObject->name(), ptreeDeimObject );
+        }
+        for ( auto const& mdeimObject : this->mdeimVector() )
+        {
+            boost::property_tree::ptree ptreeMdeimObject;
+            ptreeMdeimObject.add("database-filename", mdeimObject->dbRelativePath() );
+            ptreeDeim.add_child( mdeimObject->name(), ptreeMdeimObject );
+        }
+        ptree.add_child( "deim", ptreeDeim );
+
+
+        boost::property_tree::ptree ptree_betaFq;
+        for (int k=0;k<M_betaFq.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFq_value;
+            ptree_betaFq_value.put( "",M_betaFq[k].size() );
+            ptree_betaFq.push_back( std::make_pair("", ptree_betaFq_value) );
+        }
+        boost::property_tree::ptree ptree_betaAqm;
+        for (int k=0;k<M_betaAqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaAqm_value;
+            ptree_betaAqm_value.put( "",M_betaAqm[k].size() );
+            ptree_betaAqm.push_back( std::make_pair("", ptree_betaAqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaMqm;
+        for (int k=0;k<M_betaMqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaMqm_value;
+            ptree_betaMqm_value.put( "",M_betaMqm[k].size() );
+            ptree_betaMqm.push_back( std::make_pair("", ptree_betaMqm_value) );
+        }
+        boost::property_tree::ptree ptree_betaFqm;
+        for (int k=0;k<M_betaFqm.size();++k )
+        {
+            boost::property_tree::ptree ptree_betaFqm_sub;
+            for (int k2=0;k2<M_betaFqm[k].size();++k2 )
+            {
+                boost::property_tree::ptree ptree_betaFqm_sub_value;
+                ptree_betaFqm_sub_value.put( "",M_betaFqm[k][k2].size() );
+                ptree_betaFqm_sub.push_back( std::make_pair("", ptree_betaFqm_sub_value) );
+            }
+            ptree_betaFqm.push_back( std::make_pair("", ptree_betaFqm_sub) );
+        }
+
+        boost::property_tree::ptree ptreeAffineDecomposition;
+        ptreeAffineDecomposition.add( "betaAq", M_betaAq.size() );
+        ptreeAffineDecomposition.add( "betaMq", M_betaMq.size() );
+        ptreeAffineDecomposition.add_child( "betaFq", ptree_betaFq );
+        ptreeAffineDecomposition.add_child( "betaAqm", ptree_betaAqm );
+        ptreeAffineDecomposition.add_child( "betaMqm", ptree_betaMqm );
+        ptreeAffineDecomposition.add_child( "betaFqm", ptree_betaFqm );
+        ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
 
         boost::property_tree::ptree ptreeSpecificityOfModel;
         this->updateSpecificityModel( ptreeSpecificityOfModel );
@@ -693,9 +900,64 @@ public :
                 this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
             }
 
+        auto ptreeAffineDecomposition = ptree.get_child_optional( "affine-decomposition" );
+        if ( ptreeAffineDecomposition )
+        {
+            int sizeBetaAq = ptreeAffineDecomposition->template get<int>( "betaAq" );
+            M_betaAq.resize( sizeBetaAq );
+            int sizeBetaMq = ptreeAffineDecomposition->template get<int>( "betaMq" );
+            M_betaMq.resize( sizeBetaMq );
+            int sizeBetaFq = ptreeAffineDecomposition->get_child("betaFq").size();
+            M_betaFq.resize( sizeBetaFq );
+            int k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFq") )
+            {
+                int sizeSubBetaFq = item.second.template get_value<int>();
+                M_betaFq[k].resize( sizeSubBetaFq );
+                ++k;
+            }
+            int sizeBetaAqm = ptreeAffineDecomposition->get_child("betaAqm").size();
+            M_betaAqm.resize( sizeBetaAqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaAqm") )
+            {
+                int sizeSubBetaAqm = item.second.template get_value<int>();
+                M_betaAqm[k].resize( sizeSubBetaAqm );
+                ++k;
+            }
+            int sizeBetaMqm = ptreeAffineDecomposition->get_child("betaMqm").size();
+            M_betaMqm.resize( sizeBetaMqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaMqm") )
+            {
+                int sizeSubBetaMqm = item.second.template get_value<int>();
+                M_betaMqm[k].resize( sizeSubBetaMqm );
+                ++k;
+            }
+            int sizeBetaFqm = ptreeAffineDecomposition->get_child("betaFqm").size();
+            M_betaFqm.resize( sizeBetaFqm );
+            k=0;
+            for( auto const& item : ptreeAffineDecomposition->get_child("betaFqm") )
+            {
+                int sizeSubBetaFqm = item.second.get_child("").size();
+                M_betaFqm[k].resize( sizeSubBetaFqm );
+                int k2=0;
+                for ( auto const& item2 : item.second.get_child("") )
+                {
+                    int thesize = item2.second.template get_value<int>();
+                    M_betaFqm[k][k2].resize( thesize );
+                    ++k2;
+                }
+                ++k;
+            }
+
+        }
+
+
         this->setupSpecificityModel( ptree, dbDir );
 
-        XN->setModel( this->shared_from_this() );
+        XN->setFunctionSpace( this->functionSpace() );
+        //XN->setModel( this->shared_from_this() );
 
         this->setInitialized( true );
     }
@@ -1761,13 +2023,20 @@ public :
         }
     }
 
+    virtual value_type output( int output_index, parameter_type const& mu , element_type &u , bool need_to_solve=false) = 0;
+
 public:
 
     /**
      * Set the finite element space to \p Vh and then build the reduced basis
      * space from the finite element space.
      */
-    void setFunctionSpaces( functionspace_ptrtype const& Vh );
+    virtual void setFunctionSpaces( functionspace_ptrtype const& Vh )
+    {
+        Xh = Vh;
+        XN->setFunctionSpace( Xh );
+        //XN->setModel( this->shared_from_this() );
+    }
 
     /**
      * \brief Returns the function space
@@ -1784,6 +2053,13 @@ public:
         return Xh;
     }
 
+    virtual
+    typename functionspace_type::mesh_support_vector_type
+    functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+        {
+            return typename functionspace_type::mesh_support_vector_type();
+        }
+
     /**
      * \brief Returns the reduced basis function space
      */
@@ -1799,20 +2075,36 @@ public:
         return Dmu;
     }
 
+
+    //! Return a P1 vector field to warp the domain if we want to visualize the
+    //! the effect of geometric parameters.
+    virtual displacement_field_ptrtype meshDisplacementField( parameter_type const& mu )
+    {
+        CHECK( false ) << "Error : the function fieldForWarp() has been called without beeing rewrite.\n";
+
+        displacement_field_ptrtype u;
+        return u;
+    }
+
+    bool hasDisplacementField() const { return M_has_displacement_field; }
+    void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
+
+
+protected :
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
 
-protected :
+    backend_ptrtype M_backend;
 
-    
-    uuids::uuid M_uuid;
-
-    std::string M_name;
+    CRBModelDB M_crbModelDb;
 
     funs_type M_funs;
     funsd_type M_funs_d;
-    bool M_is_initialized;
+
+    deim_vector_type M_deims;
+    mdeim_vector_type M_mdeims;
+    bool M_is_initialized, M_has_displacement_field;
 
     sparse_matrix_ptrtype M;
     sparse_matrix_ptrtype M_energy_matrix;
@@ -1871,19 +2163,6 @@ protected :
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };
-template <typename ParameterDefinition,
-          typename FunctionSpaceDefinition,
-          int _Options,
-          typename EimDefinition
-          >
-void
-ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition,_Options,EimDefinition>::setFunctionSpaces( functionspace_ptrtype const& Vh )
-{
-    Xh = Vh;
-    //XN = rbfunctionspace_type::New( _model=this->shared_from_this() );
-    //XN->setFunctionSpace( Vh );
-    XN->setModel( this->shared_from_this() );
-}
 
 
 

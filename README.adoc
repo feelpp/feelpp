@@ -43,7 +43,7 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 
 toc::[]
 
-link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite element method and spectral element methods) continuous or discontinuous in 1D 2D and 3D.
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
 
 == {feelpp} Documentation
 
@@ -57,7 +57,6 @@ We encourage you to ask questions and discuss any aspects of the project on the 
 New contributors are always welcome!
 
 image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
-
 
 
 == Continuous Integration
@@ -79,24 +78,22 @@ When starting development of a feature, the target release in which this feature
 The essence of a feature branch is that it exists as long as the feature is in development, but will eventually be merged back into develop (to definitely add the new feature to the upcoming release) or discarded (in case of a disappointing experiment).
 
 |===
-| Platform & Compiler | `master` | `develop` | `feature/hdg-sc` | `feature/quad`
+| Platform & Compiler | `master` | `develop`
 
 | Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
 | image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/hdg-sc["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| image:https://travis-ci.org/feelpp/feelpp.svg?branch=feature/quad["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
+
 
 | Buildkite Ubuntu 16.10
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/hdg-sc["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=feature/quad["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
 |===
 
 == What is {feelpp}?
 
-link:http://www.feelpp.org[{feelpp}] is a {cpp} library for arbitrary order Galerkin methods (e.g. finite and spectral element methods) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
+The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
 
  * the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
  * the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,

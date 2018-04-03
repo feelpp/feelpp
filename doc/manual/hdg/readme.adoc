@@ -37,7 +37,8 @@ The simpliest way to use it:
 ----
 auto MP = MixedPoisson<2,1>();
 MP.init();
-MP.solve();
+MP.assembleAll();
+M.solve();
 MP.exportResults();
 ----
 
@@ -48,10 +49,13 @@ A more involved example:
 auto mesh = loadMesh(new mesh_type);
 auto MP = MixedPoisson<3,2>("MyPrefix");
 MP.init(mesh);
+MP.assembleCstPart();
 auto v = MP.potentialSpace()->element();
 auto ex = cst(2.)*idv(v);
 MP.updateConductivityTerm(ex);
-MP.solveNL();
+MP.assembleRHS();
+MP.assembleBoundaryCond();
+MP.solve();
 auto e = export(mesh);
 e->add("myflux", MP.fluxField());
 e->add("mypotential", MP.potentialField());

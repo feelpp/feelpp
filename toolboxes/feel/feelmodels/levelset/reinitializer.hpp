@@ -75,7 +75,6 @@ public:
     //ReinitializerType type() const { return M_reinitializerType; }
     std::string const& prefix() const { return M_prefix; }
 
-    virtual void loadParametersFromOptionsVm() {}
     //--------------------------------------------------------------------//
     functionspace_ptrtype const& functionSpace() const { return M_space; }
     mesh_ptrtype const& mesh() const { return M_space->mesh(); }

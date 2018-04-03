@@ -48,6 +48,8 @@
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
+#include <boost/bimap.hpp>
+
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
@@ -57,11 +59,15 @@
 namespace Feel {
 
     // LevelSet::build parameters
+    BOOST_PARAMETER_NAME(space_markers_extended_doftable)
+
     BOOST_PARAMETER_NAME(space_vectorial)
     BOOST_PARAMETER_NAME(space_markers)
+    BOOST_PARAMETER_NAME(space_tensor2symm)
     BOOST_PARAMETER_NAME(reinitializer)
     BOOST_PARAMETER_NAME(projectorL2)
     BOOST_PARAMETER_NAME(projectorL2_vectorial)
+    BOOST_PARAMETER_NAME(projectorL2_tensor2symm)
     BOOST_PARAMETER_NAME(smoother)
     BOOST_PARAMETER_NAME(smoother_vectorial)
 
@@ -82,19 +88,20 @@ enum class LevelSetMeasuresExported
 };
 enum class LevelSetFieldsExported
 {
-    GradPhi, ModGradPhi
+    GradPhi, ModGradPhi, 
+    BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
 };
 
-template<typename ConvexType, int Order=1, typename PeriodicityType = NoPeriodicity>
-class LevelSet 
-    : public AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType >
-    , public boost::enable_shared_from_this< LevelSet<ConvexType, Order, PeriodicityType> >
+template<typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity>
+class LevelSet : public ModelNumerical,
+                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
 {
+    typedef ModelNumerical super_type;
 public:
-    typedef AdvectionBase< ConvexType, Lagrange<Order, Scalar>, PeriodicityType > super_type;
-    typedef LevelSet<ConvexType, Order, PeriodicityType> self_type;
+    typedef LevelSet<ConvexType, BasisType, PeriodicityType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
+    static const uint16_type Order = BasisType::nOrder;
     typedef double value_type;
 
     //--------------------------------------------------------------------//
@@ -105,22 +112,28 @@ public:
     static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef mesh_type mymesh_type;
 
     //--------------------------------------------------------------------//
     // Periodicity
     typedef PeriodicityType periodicity_type;
-
+    // advection toolbox
+    typedef Advection< ConvexType, BasisType, PeriodicityType > advection_toolbox_type;
+    typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
+    static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
     //--------------------------------------------------------------------//
     // Space levelset
-    typedef typename super_type::space_advection_type space_levelset_type;
+    typedef typename advection_toolbox_type::basis_advection_type basis_levelset_type;
+    typedef typename advection_toolbox_type::space_advection_type space_levelset_type;
     typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
     typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
 
     //--------------------------------------------------------------------//
     // Space vectorial levelset
-    typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_levelset_vectorial_type>, value_type, Periodicity<periodicity_type> > space_levelset_vectorial_type;
+    //typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
+    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_levelset_vectorial_type;
+    typedef FunctionSpace<mymesh_type, bases<basis_levelset_vectorial_type>, Periodicity<periodicity_type> > space_levelset_vectorial_type;
     typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
     typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
     typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
@@ -128,7 +141,7 @@ public:
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
-    typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
+    typedef FunctionSpace<mymesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
     typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
     typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
@@ -139,12 +152,36 @@ public:
 #endif
 
     //--------------------------------------------------------------------//
+    // Tensor2 symmetric function space
+    //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
+    typedef Lagrange<Order, Tensor2> basis_tensor2symm_type;
+    typedef FunctionSpace<mymesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
+    typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
+    typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
+    typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Range types
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    //--------------------------------------------------------------------//
+    // Stretch and shear types
+    typedef element_levelset_type element_stretch_type;
+    typedef element_levelset_ptrtype element_stretch_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
     
     typedef Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> projector_levelset_vectorial_type;
     typedef boost::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
+
+    typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
+    typedef boost::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Reinitialization
@@ -155,7 +192,11 @@ public:
     typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
     typedef boost::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
 
-    enum strategy_before_FM_type {NONE=0, ILP=1, HJ_EQ=2, IL_HJ_EQ=3};
+    enum class FastMarchingInitializationMethod { 
+        NONE=0, ILP, SMOOTHED_ILP, HJ_EQ, IL_HJ_EQ
+    };
+
+    typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -174,12 +215,28 @@ public:
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
-    typedef Advection<ConvexType, Lagrange<Order, Scalar>, PeriodicityType> modgradphi_advection_type;
+    typedef basis_levelset_type basis_modgradphi_advection_type;
+    typedef Advection<ConvexType, basis_modgradphi_advection_type, PeriodicityType> modgradphi_advection_type;
     typedef boost::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
+    // Stretch advection
+    typedef basis_levelset_type basis_stretch_advection_type;
+    typedef Advection<ConvexType, basis_stretch_advection_type, PeriodicityType> stretch_advection_type;
+    typedef boost::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
+
+    //--------------------------------------------------------------------//
+    // Backward characteristics advection
+    typedef basis_levelset_vectorial_type basis_backwardcharacteristics_advection_type;
+    typedef Advection<ConvexType, basis_backwardcharacteristics_advection_type, PeriodicityType> backwardcharacteristics_advection_type;
+    typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
+    typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
+    typedef boost::shared_ptr<element_backwardcharacteristics_type> element_backwardcharacteristics_ptrtype;
+    // Cauchy-Green tensor invariants types
+    typedef element_levelset_type element_cauchygreen_invariant_type;
+    typedef boost::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
     //--------------------------------------------------------------------//
     // Exporter
-    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
+    typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
     typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -192,7 +249,7 @@ public:
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
 
     LevelSet( self_type const& L ) = default;
@@ -201,31 +258,78 @@ public:
             std::string const& prefix,
             WorldComm const& _worldComm = Environment::worldComm(),
             std::string const& subPrefix = "",
-            std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+            ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    void build();
-    void build( mesh_ptrtype const& mesh );
+    //BOOST_PARAMETER_MEMBER_FUNCTION(
+            //(void), build, tag,
+            //( optional
+              //( space_markers_extended_doftable, (bool), false )
+            //)
+            //)
+    void build()
+    {
+        this->log("LevelSet", "build", "start");
+        M_advectionToolbox->build();
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+        this->createFunctionSpaces( true );
+        this->createInterfaceQuantities();
+        this->createReinitialization();
+        this->createOthers();
+        this->createExporters();
+        this->log("LevelSet", "build", "finish");
+    }
+
+    //BOOST_PARAMETER_MEMBER_FUNCTION(
+            //(void), build, tag,
+            //( required
+              //( mesh, (mesh_ptrtype) )
+            //)
+            //( optional
+              //( space_markers_extended_doftable, (bool), false )
+            //)
+            //)
+    void build( mesh_ptrtype const& mesh )
+    {
+        this->log("LevelSet", "build (from mesh)", "start");
+        M_advectionToolbox->build( mesh );
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+        this->createFunctionSpaces( true );
+        this->createInterfaceQuantities();
+        this->createReinitialization();
+        this->createOthers();
+        this->createExporters();
+        this->log("LevelSet", "build (from mesh)", "finish");
+    }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( 
             (void), build, tag,
             ( required
-              ( space, * )
+              ( space, (space_levelset_ptrtype) )
             )
             ( optional
               ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              ( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
               ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
               ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
+              ( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
               ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
               ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
             )
             )
     {
-        super_type::build( space );
+        M_advectionToolbox->build( space );
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         // createFunctionSpaces
         M_spaceLevelSetVec = space_vectorial;
         M_spaceMarkers = space_markers;
+        if( M_useCauchyAugmented )
+        {
+            if( !space_tensor2symm )
+                space_tensor2symm = self_type::space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+            M_spaceTensor2Symm = space_tensor2symm;
+        }
         // createInterfaceQuantities
         this->createInterfaceQuantities();
         // createReinitialization
@@ -237,9 +341,20 @@ public:
         // createOthers
         M_projectorL2 = projectorL2;
         M_projectorL2Vec = projectorL2_vectorial;
+        if( M_useCauchyAugmented )
+        {
+            if( !projectorL2_tensor2symm )
+                projectorL2_tensor2symm = Feel::projector(
+                        this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
+                        backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                        );
+            M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
+        }
         M_smoother = smoother;
         M_smootherVectorial = smoother_vectorial;
 
+        // Create exporters
+        this->createExporters();
     }
 
     //--------------------------------------------------------------------//
@@ -248,29 +363,31 @@ public:
     void initLevelsetValue();
     void initPostProcess();
 
-    virtual void loadParametersFromOptionsVm();
-    virtual void loadConfigICFile();
-    virtual void loadConfigBCFile();
-    virtual void loadConfigPostProcess();
-
-    void createFunctionSpaces();
-    void createInterfaceQuantities();
-    void createReinitialization();
-    void createOthers();
-
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
+    // advection data
+    typename advection_toolbox_type::mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
+    typename advection_toolbox_type::space_advection_ptrtype const& functionSpace() const { return M_advectionToolbox->functionSpace(); }
+    typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
+    typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
+    boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
+    boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
+    template<typename ExprT>
+    void
+    updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
+    space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
     space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
-    //mesh_ptrtype const& mesh() const { return M_advection->mesh(); }
-    mesh_ptrtype const& submesh() const { return M_submesh; }
+    mesh_ptrtype const& submeshDirac() const;
+    mesh_ptrtype const& submeshOuter( double cut = 0.999 ) const;
+    mesh_ptrtype const& submeshInner( double cut = 1e-3 ) const;
 
     //--------------------------------------------------------------------//
     // Mesh adaptation
@@ -282,12 +399,14 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype & phi() { return this->fieldSolutionPtr(); }
-    element_levelset_ptrtype const& phi() const { return this->fieldSolutionPtr(); }
+    element_levelset_ptrtype & phi() { return M_advectionToolbox->fieldSolutionPtr(); }
+    element_levelset_ptrtype const& phi() const { return M_advectionToolbox->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
-    element_levelset_ptrtype const& stretch() const;
+    element_stretch_ptrtype const& stretch() const;
+    element_backwardcharacteristics_ptrtype const& backwardCharacteristics() const;
+
     element_levelset_ptrtype const& heaviside() const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     element_levelset_ptrtype const& dirac() const;
@@ -305,17 +424,33 @@ public:
 
     projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vec; }
+    projector_tensor2symm_ptrtype const& projectorL2Tensor2Symm() const { return M_projectorL2Tensor2Symm; }
+
     projector_levelset_ptrtype const& smoother() const;
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const;
+    projector_levelset_ptrtype const& smootherInterface() const;
+    projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
 
     void updateInterfaceQuantities();
 
     //--------------------------------------------------------------------//
+    // Cauchy-Green tensor related quantities
+    element_tensor2symm_ptrtype const& leftCauchyGreenTensor() const;
+    element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant1() const;
+    element_cauchygreen_invariant_ptrtype const& cauchyGreenInvariant2() const;
+
+    //--------------------------------------------------------------------//
     // Markers
-    element_markers_ptrtype const& markerInterface();
-    element_markers_ptrtype const& markerDirac();
-    element_markers_ptrtype const& markerHeaviside(bool invert = false, bool cut_at_half = false);
-    element_markers_ptrtype const& markerCrossedElements();
+    element_markers_ptrtype const& markerInterface() const;
+    element_markers_ptrtype const& markerDirac() const;
+    element_markers_ptrtype const& markerOuter( double cut = 0.999 ) const;
+    element_markers_ptrtype const& markerInner( double cut = 1e-3 ) const;
+    element_markers_ptrtype const& markerHeaviside( double cut = 0.999 ) const { return this->markerOuter(cut); }
+    element_markers_ptrtype const& markerCrossedElements() const;
+
+    range_elements_type interfaceElements() const;
+    range_elements_type outerElementsRange( double cut );
+    range_elements_type outerElementsRange() { return outerElementsRange( -this->thicknessInterface() ); }
 
     //--------------------------------------------------------------------//
     // Utility distances
@@ -339,8 +474,8 @@ public:
     // Reinitialization
     void reinitialize( bool useSmoothReinit = false );
 
-    void setStrategyBeforeFm( int strat = 1 );
-    strategy_before_FM_type strategyBeforeFm() { return M_strategyBeforeFM; }
+    void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
+    FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
@@ -382,9 +517,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
     bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
-
+    exporter_ptrtype & getExporter() { return M_exporter; }
+    exporter_ptrtype const& getExporter() const { return M_exporter; }
     //--------------------------------------------------------------------//
     // Physical quantities
     double volume() const;
@@ -409,11 +547,24 @@ protected:
     void updateCurvature();
 
     void updateMarkerDirac();
-    void updateMarkerHeaviside(bool invert, bool cut_at_half);
+    void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
     void updateMarkerCrossedElements();
     void updateMarkerInterface();
 
+    void updateLeftCauchyGreenTensor();
+
 private:
+    void loadParametersFromOptionsVm();
+    void loadConfigICFile();
+    void loadConfigBCFile();
+    void loadConfigPostProcess();
+
+    void createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable = false );
+    void createInterfaceQuantities();
+    void createReinitialization();
+    void createOthers();
+    void createExporters();
+
     void initWithMesh(mesh_ptrtype mesh);
     void initFastMarching(mesh_ptrtype const& mesh);
 
@@ -442,6 +593,9 @@ protected:
     // Interface quantities update flags
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
+    mutable bool M_doUpdateInterfaceElements;
+    mutable bool M_doUpdateSmootherInterface;
+    mutable bool M_doUpdateSmootherInterfaceVectorial;
     mutable bool M_doUpdateNormal;
     mutable bool M_doUpdateCurvature;
     mutable bool M_doUpdateGradPhi;
@@ -458,67 +612,62 @@ protected:
 
 private:
     //--------------------------------------------------------------------//
-    // Mesh 
-    //mesh_ptrtype M_mesh;
-    mesh_ptrtype M_submesh;
+    // Meshes 
+    mutable mesh_ptrtype M_submeshDirac;
+    mutable bool M_doUpdateSubmeshDirac;
+    mutable mesh_ptrtype M_submeshOuter;
+    mutable bool M_doUpdateSubmeshOuter;
+    mutable mesh_ptrtype M_submeshInner;
+    mutable bool M_doUpdateSubmeshInner;
 
     //--------------------------------------------------------------------//
     // Periodicity
     periodicity_type M_periodicity;
-
+    // Advection toolbox
+    advection_toolbox_ptrtype M_advectionToolbox;
+    bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
     space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
+    space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
     space_levelset_ptrtype M_subspaceLevelSet;
     space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
 
     //--------------------------------------------------------------------//
     // Markers
-    element_markers_ptrtype M_markerDirac;
-    element_markers_ptrtype M_markerHeaviside;
-    element_markers_ptrtype M_markerCrossedElements;
-    element_markers_ptrtype M_markerInterface;
+    mutable element_markers_ptrtype M_markerDirac;
+    mutable element_markers_ptrtype M_markerOuter;
+    mutable double M_markerOuterCut;
+    mutable element_markers_ptrtype M_markerInner;
+    mutable double M_markerInnerCut;
+    mutable element_markers_ptrtype M_markerCrossedElements;
+    mutable element_markers_ptrtype M_markerInterface;
     bool M_doUpdateMarkers;
     //--------------------------------------------------------------------//
     // Projectors
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
+    projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
+
     mutable projector_levelset_ptrtype M_smoother;
     mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
+    mutable projector_levelset_ptrtype M_smootherInterface;
+    mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
     mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
     mutable element_levelset_ptrtype M_dirac;
+    mutable range_elements_type M_interfaceElements;
     //--------------------------------------------------------------------//
     // Normal, curvature
     mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
+    bool M_doSmoothGradient;
     bool M_doSmoothCurvature;
-
-    //--------------------------------------------------------------------//
-    // Reinitialization
-    reinitializer_ptrtype M_reinitializer;
-    reinitializerFM_ptrtype M_reinitializerFM;
-    reinitializerHJ_ptrtype M_reinitializerHJ;
-    bool M_reinitializerIsUpdatedForUse;
-
-    boost::shared_ptr<Projector<space_levelset_type, space_levelset_type>> M_smootherFM;
-
-    bool M_hasReinitialized;
-    bool M_hasReinitializedSmooth;
-    int M_iterSinceReinit;
-    // Vector that stores the iterSinceReinit of each time-step
-    std::vector<int> M_vecIterSinceReinit;
-    //bool M_useSmoothReinitialization;
-
-    //--------------------------------------------------------------------//
-    // Backends
-    backend_ptrtype M_backend_smooth;
-
     //--------------------------------------------------------------------//
     // Advection
     int M_timeOrder;
@@ -533,38 +682,71 @@ private:
     //--------------------------------------------------------------------//
     // Stretch advection
     bool M_useStretchAugmented;
-    modgradphi_advection_ptrtype M_stretchAdvection;
-    mutable element_levelset_ptrtype M_levelsetStretch;
+    stretch_advection_ptrtype M_stretchAdvection;
+    mutable element_stretch_ptrtype M_levelsetStretch;
 
     //--------------------------------------------------------------------//
+    // Backward characteristics advection
+    bool M_useCauchyAugmented;
+    backwardcharacteristics_advection_ptrtype M_backwardCharacteristicsAdvection;
+    vector_field_expression<nDim> M_initialBackwardCharacteristics;
+    bool M_hasInitialBackwardCharacteristics;
+    // Cauchy-Green tensor
+    element_tensor2symm_ptrtype M_leftCauchyGreenTensor_K;
+    element_levelset_vectorial_ptrtype M_leftCauchyGreenTensor_KN;
+    element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
+    mutable bool M_doUpdateCauchyGreenTensor;
+    // Cauchy-Green tensor invariants
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant1;
+    mutable bool M_doUpdateCauchyGreenInvariant1;
+    mutable element_cauchygreen_invariant_ptrtype M_cauchyGreenInvariant2;
+    mutable bool M_doUpdateCauchyGreenInvariant2;
+
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    reinitializer_ptrtype M_reinitializer;
+    reinitializerFM_ptrtype M_reinitializerFM;
+    reinitializerHJ_ptrtype M_reinitializerHJ;
+    bool M_reinitializerIsUpdatedForUse;
+
+    LevelSetReinitMethod M_reinitMethod;
+    FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
+    static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
+    bool M_useMarkerDiracAsMarkerDoneFM;
+
+    bool M_reinitInitialValue;
+
+    bool M_hasReinitialized;
+    bool M_hasReinitializedSmooth;
+    int M_iterSinceReinit;
+    // Vector that stores the iterSinceReinit of each time-step
+    std::vector<int> M_vecIterSinceReinit;
+    //bool M_useSmoothReinitialization;
+    
+    //--------------------------------------------------------------------//
     // Export
+    exporter_ptrtype M_exporter;
     std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
     std::set<LevelSetFieldsExported> M_postProcessFieldsExported;
     //--------------------------------------------------------------------//
     // Parameters
     double M_thicknessInterface;
+    double M_thicknessInterfaceRectangularFunction;
     bool M_useAdaptiveThicknessInterface;
     bool M_useRegularPhi;
     bool M_useHeavisideDiracNodalProj;
 
-    //--------------------------------------------------------------------//
-    // Reinitialization
-    LevelSetReinitMethod M_reinitMethod;
-    strategy_before_FM_type M_strategyBeforeFM;
-    bool M_useMarkerDiracAsMarkerDoneFM;
-    //int M_hjMaxIter;
-    //double M_hjDtau;
-    //double M_hjTol;
-    bool M_reinitInitialValue;
+    bool M_fixVolume;
+    double M_initialVolume;
 
     //LevelSetTimeDiscretization M_discrMethod;
 
 }; //class LevelSet
 
-template<typename ConvexType, int Order, typename PeriodicityType>
+template<typename ConvexType, typename BasisType, typename PeriodicityType>
 template<typename ExprT>
 void 
-LevelSet<ConvexType, Order, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
+LevelSet<ConvexType, BasisType, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();

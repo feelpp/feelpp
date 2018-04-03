@@ -78,21 +78,36 @@ BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
     M_vector = backend->newBlockVector( _block=*this );
 }
 
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype&
+BlocksBaseVector<T>::vectorMonolithic()
+{
+    boost::shared_ptr< VectorBlockBase<T> > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
+    return vcast->getVector();
+}
+template<typename T>
+typename BlocksBaseVector<T>::vector_ptrtype const&
+BlocksBaseVector<T>::vectorMonolithic() const
+{
+    boost::shared_ptr< VectorBlockBase<T> const > vcast = boost::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
+    return vcast->getVector();
+}
 
 template <typename T>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int blockId, bool closeVector ) const
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int dtId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
     for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
     {
         auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
-        CHECK( blockId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<blockId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
-        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId+tag );
+        CHECK( dtId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<dtId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( dtId+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
+            vec.set( basisGpToContainerGpVec[k], subvec( basisGpToContainerGpSubVec[k] ) );
+            //vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
     if ( closeVector )
         vec.close();
@@ -112,8 +127,9 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
         auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
+            subvec.set( basisGpToContainerGpSubVec[k], vec( basisGpToContainerGpVec[k] ) );
     }
+    subvec.close();
 }
 
 template <typename T>
@@ -123,8 +139,12 @@ BlocksBaseVector<T>::updateVectorFromSubVectors()
     if ( !M_vector )
         return;
     int nBlock = this->nRow();
-    for ( int k = 0 ; k<nBlock ;++k )
-        this->setVector( *M_vector, *(this->operator()(k)), k, false );
+    for ( int k = 0, dtId = 0 ; k<nBlock ;++k )
+    {
+        vector_ptrtype subvec = this->operator()(k);
+        this->setVector( *M_vector, *subvec, dtId, false );
+        dtId += subvec->map().numberOfDofIdToContainerId();
+    }
     M_vector->close();
 }
 
@@ -168,6 +188,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
             //start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
 template <typename T>
@@ -190,8 +211,15 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
         for (int k=0;k<dofIdToContainerIdBlock.size();++k)
             M_vec->set( dofIdToContainerIdVec[k],m->operator()( dofIdToContainerIdBlock[k] ) );
     }
+    this->setMap( M_vec->mapPtr() );
 }
 
+template<typename T>
+void
+VectorBlockBase<T>::addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 )
+{
+    M_vec->addVector( rows, nrows, data, K, K2 );
+}
 template class VectorBlockBase<double>;
 
 } // Feel

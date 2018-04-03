@@ -1,0 +1,2 @@
+triangle-oneelt-{x,-y} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --gmsh.hsize=4 --functions.f={0,0} --checker.solution={x,-y}:x:y
+triangle-{x,-y} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --functions.f={0,0} --checker.solution={x,-y}:x:y

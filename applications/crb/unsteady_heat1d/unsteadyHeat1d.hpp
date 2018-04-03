@@ -224,7 +224,7 @@ public:
 
     void assemble();
 
-    value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false, bool export_outputs=false );
+    value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false );
 
     bdf_ptrtype bdfModel(){ return M_bdf; }
 
@@ -333,7 +333,7 @@ UnsteadyHeat1D::assemble()
 
 
 double
-UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve, bool export_output )
+UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve )
 {
 
     CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";

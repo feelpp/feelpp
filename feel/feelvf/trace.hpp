@@ -81,6 +81,15 @@ public:
     typedef value_type evaluate_type;
     typedef Trace<ExprT> this_type;
 
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        typedef Trace<typename expression_type::template Lambda<TheExpr...>::type> type;
+    };
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type( M_expr(e...) ); }
+
 
     //@}
 

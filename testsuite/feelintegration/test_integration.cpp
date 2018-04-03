@@ -29,8 +29,6 @@
  */
 
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE integration testsuite
 // disable the main function creation, use our own
@@ -261,7 +259,7 @@ struct test_integration_circle: public Application
         BOOST_CHECK_CLOSE( v1, v0/2, 2e-1 );
 #endif
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New( _mesh=mesh );
         auto u = Xh->element();
 
         u = project( Xh, elements( mesh ), constant( 1.0 ) );
@@ -281,7 +279,7 @@ struct test_integration_circle: public Application
 #endif /* USE_BOOST_TEST */
 
 
-        boost::shared_ptr<vector_space_type> Xvh( new vector_space_type( mesh ) );
+        auto Xvh = vector_space_type::New(_mesh=mesh);
         auto U = Xvh->element();
 
         U = project( Xvh, elements( mesh ), vec( constant( 1.0 ),constant( 1.0 ) ) );
@@ -356,7 +354,7 @@ struct test_integration_simplex: public Application
 
         typedef bases<Lagrange<3, Scalar> > basis_type;
         typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         value_type meas = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
@@ -447,7 +445,7 @@ struct test_integration_simplex: public Application
 
         typedef bases<Lagrange<3, Vectorial> > v_basis_type;
         typedef FunctionSpace<mesh_type, v_basis_type, value_type> v_space_type;
-        boost::shared_ptr<v_space_type> Yh( new v_space_type( mesh ) );
+        auto Yh = v_space_type::New( _mesh=mesh );
         typename v_space_type::element_type v( Yh );
 
         auto p2 = Px()*Px()*Py()+Py()*Py()+cos( Px() );
@@ -713,7 +711,7 @@ struct test_integration_functions: public Application
 
         const value_type eps = 1e-9;
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
@@ -864,7 +862,7 @@ struct test_integration_vectorial_functions: public Application
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         typename space_type::element_type u( Xh );
 
         u = project( Xh, elements( mesh ), P() );
@@ -1034,7 +1032,7 @@ struct test_integration_composite_functions: public Application
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
+        auto Xh = space_type::New(_mesh=mesh);
         element_type u( Xh );
 
         u.template element<0>() = project( _space=Xh->template functionSpace<0>(), _range=elements( mesh ), _expr=P() );
@@ -1272,17 +1270,6 @@ BOOST_AUTO_TEST_CASE( test_integration_3 )
 #endif
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_integration.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 
 #else
 int

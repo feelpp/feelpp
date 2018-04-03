@@ -40,7 +40,8 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_mat( world ),
     M_bc( world, false ),
     M_ic( world, false ),
-    M_postproc( world )
+    M_postproc( world ),
+    M_outputs( world )
 {
     if ( !fs::exists( filename ) ) 
     {
@@ -75,20 +76,17 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             std::cout << "Missing Name entry in model properties\n";
     }
     try {
-        M_model  = M_p.get<std::string>( "Model" );
-    }
-    catch ( pt::ptree_bad_path& e )
-    {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Model entry in model properties\n";
-    }
-    try {
         M_shortname = M_p.get( "ShortName", M_name );
     }
     catch ( pt::ptree_bad_path& e )
     {
         if ( Environment::isMasterRank() )
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
+    }
+    if ( auto mod = M_p.get_child_optional("Models") )
+    {
+        LOG(INFO) << "Model with model\n";
+        M_models.setPTree( *mod );
     }
     auto par = M_p.get_child_optional("Parameters");
     if ( par )
@@ -114,10 +112,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any boundary conditions\n";
-    }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
     {
@@ -125,10 +119,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
-    }
-    else
-    {
-        LOG(WARNING) << "Model does not have any initial conditions\n";
     }
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )
@@ -138,10 +128,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_mat.setDirectoryLibExpr( directoryLibExpr );
         M_mat.setPTree( *mat );
     }
-    else
-    {
-        LOG(WARNING) << "Model does not have any materials\n";
-    }
     auto pp = M_p.get_child_optional("PostProcess");
     if ( pp )
     {
@@ -150,9 +136,13 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_postproc.setDirectoryLibExpr( directoryLibExpr );
         M_postproc.setPTree( *pp );
     }
-    else
+    auto out = M_p.get_child_optional("Outputs");
+    if ( out )
     {
-        LOG(WARNING) << "Model does not have any materials\n";
+        LOG(INFO) << "Model with outputs\n";
+        if ( !directoryLibExpr.empty() )
+            M_outputs.setDirectoryLibExpr( directoryLibExpr );
+        M_outputs.setPTree( *out );
     }
 }
 
@@ -179,7 +169,6 @@ void ModelProperties::saveMD(std::ostream &os)
   os << " - Name **" << name()<< "**\n";
   os << " - shortName **" << shortName()<< "**\n";
   os << " - description **" << description()<< "**\n";
-  os << " - model **" << model()<< "**\n\n";
   M_params.saveMD(os);
   M_mat.saveMD(os);
   M_bc.saveMD(os);

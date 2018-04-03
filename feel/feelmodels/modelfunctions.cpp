@@ -30,7 +30,8 @@ namespace Feel {
 ModelFunction::ModelFunction( std::string const& name, std::string const& expression,
                               std::string const& dirLibExpr, WorldComm const& world )
     :
-    M_name( name )
+    M_name( name ),
+    M_exprString( expression )
 {
     auto parseExpr = GiNaC::parse(expression);
 

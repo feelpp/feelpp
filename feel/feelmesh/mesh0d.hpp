@@ -61,7 +61,7 @@
 namespace Feel
 {
 /**
- * 
+ *
  * \brief 0D mesh class
  *
  * \code
@@ -104,6 +104,16 @@ public:
     typedef typename super_elements::element_iterator element_iterator;
     typedef typename super_elements::element_const_iterator element_const_iterator;
     typedef typename super_elements::update_element_neighbor_type update_element_neighbor_type;
+    using interprocess_element_iterator = element_iterator;
+    using interprocess_element_const_iterator = element_const_iterator;
+    using location_element_iterator = typename super_elements::location_element_iterator;
+    using location_element_const_iterator = typename super_elements::location_element_const_iterator;
+    using marker_element_iterator = typename super_elements::marker_element_iterator;
+    using marker_element_const_iterator = typename super_elements::marker_element_const_iterator;
+    using marker2_element_iterator = typename super_elements::marker2_element_iterator;
+    using marker2_element_const_iterator = typename super_elements::marker2_element_const_iterator;
+    using marker3_element_iterator = typename super_elements::marker3_element_iterator;
+    using marker3_element_const_iterator = typename super_elements::marker3_element_const_iterator;
 
     typedef super_elements super_faces;
     typedef elements_type faces_type;
@@ -121,6 +131,33 @@ public:
     using edge_type = point_type;
     using edge_iterator = element_iterator;
     using edge_const_iterator = element_const_iterator;
+
+    using pid_face_iterator = face_iterator;
+    using pid_face_const_iterator = face_const_iterator;
+    using location_face_iterator = location_element_iterator;
+    using location_face_const_iterator = location_element_const_iterator;
+    using interprocess_face_iterator = location_element_iterator;
+    using interprocess_face_const_iterator = location_element_const_iterator;
+    using marker_face_iterator = marker_element_iterator;
+    using marker_face_const_iterator = marker_element_const_iterator;
+    using marker2_face_iterator = marker2_element_iterator;
+    using marker2_face_const_iterator = marker2_element_const_iterator;
+    using marker3_face_iterator = marker3_element_iterator;
+    using marker3_face_const_iterator = marker3_element_const_iterator;
+
+    using pid_edge_iterator = face_iterator;
+    using pid_edge_const_iterator = face_const_iterator;
+    using location_edge_iterator = location_element_iterator;
+    using location_edge_const_iterator = location_element_const_iterator;
+    using interprocess_edge_iterator = location_element_iterator;
+    using interprocess_edge_const_iterator = location_element_const_iterator;
+    using marker_edge_iterator = marker_element_iterator;
+    using marker_edge_const_iterator = marker_element_const_iterator;
+    using marker2_edge_iterator = marker2_element_iterator;
+    using marker2_edge_const_iterator = marker2_element_const_iterator;
+    using marker3_edge_iterator = marker3_element_iterator;
+    using marker3_edge_const_iterator = marker3_element_const_iterator;
+
     //@}
 
     /** @name Constructors, destructor

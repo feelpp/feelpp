@@ -2959,47 +2959,57 @@ struct GT_Lagrange
 
 template <int Dim, int Order, int RealDim, typename T = double>
 struct GT_QK
-{
-};
+{};
 
-#/* List of dims. */
-#define FEELPP_GEOMAP       \
-    BOOST_PP_TUPLE_TO_LIST( \
-        1,                  \
-        (                   \
-            Lagrange ) )    \
-/**/
-#/* List of dims. */
-#define FEELPP_DIMS         \
-    BOOST_PP_TUPLE_TO_LIST( \
-        3,                  \
-        (                   \
-            1, 2, 3 ) )     \
-/**/
-#/* List of real dims. */
-#define FEELPP_REALDIMS     \
-    BOOST_PP_TUPLE_TO_LIST( \
-        3,                  \
-        (                   \
-            1, 2, 3 ) )
+# /* List of dims. */
+# define FEELPP_GEOMAP                                    \
+    BOOST_PP_TUPLE_TO_LIST(                               \
+        1,                                                \
+        (                                                 \
+            Lagrange                                      \
+                                                          ) \
+                                                          ) \
+    /**/
+# /* List of dims. */
+# define FEELPP_DIMS                                      \
+    BOOST_PP_TUPLE_TO_LIST(                             \
+                           4,                           \
+                           (                            \
+                               0,1,2,3                  \
+                                                    )   \
+                                                    )   \
+    /**/
+# /* List of real dims. */
+# define FEELPP_REALDIMS                                  \
+    BOOST_PP_TUPLE_TO_LIST(                             \
+                           3,                           \
+                           (                            \
+                            1,2,3                       \
+                                                    )   \
+                                                    )   \
 
-#/* List of real dims. */
+# /* List of real dims. */
 
-#define FEELPP_NEWDIMS                    \
-    BOOST_PP_TUPLE_TO_LIST(               \
-        6,                                \
-        (                                 \
-            ( 1, 1 ), ( 1, 2 ), ( 1, 3 ), \
-            ( 2, 2 ), ( 2, 3 ),           \
-            ( 3, 3 ) ) )                  \
-/**/
-#/* List of orders. */
-#define FEELPP_ORDERS         \
-    BOOST_PP_TUPLE_TO_LIST(   \
-        5,                    \
-        (                     \
-            1, 2, 3, 4, 5 ) ) \
-/**/
+# define FEELPP_NEWDIMS                                           \
+    BOOST_PP_TUPLE_TO_LIST(                                     \
+                           9,                                   \
+                           (                                    \
+                            (0,1),(0,2),(0,3),                  \
+                            (1,1),(1,2),(1,3),                  \
+                            (2,2),(2,3),                        \
+                            (3,3)                                   \
+                                                                )   \
+                                                            )   \
+    /**/
+# /* List of orders. */
+# define FEELPP_ORDERS                                    \
+    BOOST_PP_TUPLE_TO_LIST(                             \
+                           5,                           \
+                           (                            \
+                            1,2,3,4,5                   \
+                                                    )   \
+                                                    )   \
+    /**/
 #
 #define FEELPP_ENTITY BOOST_PP_TUPLE_TO_LIST( 2, ( Simplex, Hypercube ) )
 /**/

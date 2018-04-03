@@ -548,8 +548,9 @@ public:
     /**
      * \return the mapping index which contains this global process id in container view
      */
-    int databaseIndexFromContainerId( size_type gpdof ) const
+    size_type databaseIndexFromContainerId( size_type gpdof ) const
         {
+#if 0
             size_type currentStartId = 0;
             for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
             {
@@ -559,6 +560,14 @@ public:
                 currentStartId+=nGpDof;
             }
             return 0;
+#endif
+            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
+            {
+                auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
+                if ( it !=M_dofIdToContainerId[tag].end() )
+                    return tag;
+            }
+            return invalid_size_type_value;
         }
     /**
      * initialize the number of dofIdToContainerId mapping
@@ -591,6 +600,14 @@ public:
      */
     size_type dofIdToContainerId( int tag,size_type gpdof ) const { return M_dofIdToContainerId[tag][gpdof]; }
 
+    size_type containerIdToDofId( int tag, size_type gpdof ) const
+    {
+        size_type dof_id = invalid_size_type_value;
+        auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
+        if ( it !=M_dofIdToContainerId[tag].end() )
+            dof_id = std::distance( M_dofIdToContainerId[tag].begin(), it );
+        return dof_id;
+    }
     /**
      * \return the indexsplit description
      */
