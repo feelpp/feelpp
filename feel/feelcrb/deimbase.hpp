@@ -269,7 +269,7 @@ protected :
 
     /**
      * Reassemble the DEIM basis from the database
-     * This method is called when the option deim.rebuild-db=false
+     * This method is called when the option deim.rebuild-database=false
      */
     void reAssembleFromDb();
 
@@ -451,7 +451,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
     M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
     M_max_value( -1 ),
-    M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-db") ) ),
+    M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-database") ) ),
     M_nl_assembly(false),
     M_store_tensors( false ),
     M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
@@ -507,7 +507,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
         }
     }
     else
-        cout << "DEIM : option deim.rebuild-db=true : start greedy algorithm from beginning\n";
+        cout << "DEIM : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
 
     LOG(INFO) <<"DEIMBase constructor end\n";
 } // DEIMBase Constructor
