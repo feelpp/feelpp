@@ -82,6 +82,7 @@ private :
     solver_ptrtype M_solver;
 
     var_list_ptrtype M_export_list;
+    double M_option_tinit, M_option_tfinal;
 };
 
 
