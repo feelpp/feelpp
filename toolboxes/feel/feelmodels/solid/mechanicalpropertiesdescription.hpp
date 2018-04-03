@@ -19,23 +19,9 @@ namespace FeelModels
         typedef boost::shared_ptr<SpaceType> space_ptrtype;
         typedef typename SpaceType::element_type element_type;
         typedef boost::shared_ptr<element_type> element_ptrtype;
+        typedef typename space_type::mesh_type mesh_type;
+        typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
         static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
-        MechanicalPropertiesDescription( space_ptrtype const& space, bool useDisplacementPressureFormulation, std::string const& prefix )
-            :
-            M_materialLaw( soption(_name="material_law",_prefix=prefix) ),
-            M_decouplingEnergyVolumicLaw( soption(_name="mechanicalproperties.compressible.volumic-law",_prefix=prefix) ),
-            M_compressibleNeoHookeanVariantName( soption(_name="mechanicalproperties.compressible.neohookean.variant",_prefix=prefix) ),
-            M_useDisplacementPressureFormulation( useDisplacementPressureFormulation )
-            {
-                M_cstYoungModulus[self_type::defaultMaterialName()] = doption(_name="youngmodulus",_prefix=prefix);// E
-                M_cstCoeffPoisson[self_type::defaultMaterialName()] = doption(_name="coeffpoisson",_prefix=prefix);// nu
-                M_cstRho[self_type::defaultMaterialName()] = doption(_name="rho",_prefix=prefix);// rho
-                this->initFromSpace( space );
-                CHECK( M_materialLaw == "StVenantKirchhoff" || M_materialLaw == "NeoHookean" ) << "invalid material law : " << M_materialLaw;
-                CHECK( M_decouplingEnergyVolumicLaw == "classic" || M_decouplingEnergyVolumicLaw == "simo1985" ) << "invalid decouplingEnergyVolumicLaw : " << M_decouplingEnergyVolumicLaw;
-                CHECK( M_compressibleNeoHookeanVariantName == "default" || M_compressibleNeoHookeanVariantName == "molecular-theory" ||
-                       M_compressibleNeoHookeanVariantName == "molecular-theory-simo1985" ) << "invalid compressibleNeoHookeanVariantName : " <<  M_compressibleNeoHookeanVariantName;
-            }
 
         MechanicalPropertiesDescription( std::string const& prefix )
             :
@@ -55,16 +41,70 @@ namespace FeelModels
 
         MechanicalPropertiesDescription( MechanicalPropertiesDescription const& app  ) = default;
 
-        void initFromSpace( space_ptrtype const& space )
-        {
-            M_space = space;
-            M_fieldYoungModulus = space->elementPtr( vf::cst( this->cstYoungModulus() ) );
-            M_fieldCoeffPoisson = space->elementPtr( vf::cst( this->cstCoeffPoisson() ) );
-            M_fieldCoeffLame1 = space->elementPtr( vf::cst( this->cstCoeffLame1() ) );
-            M_fieldCoeffLame2 = space->elementPtr( vf::cst( this->cstCoeffLame2() ) );
-            M_fieldBulkModulus = space->elementPtr( vf::cst( this->cstBulkModulus() ) );
-            M_fieldRho = space->elementPtr( vf::cst( this->cstRho() ) );
-        }
+        void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, std::vector<WorldComm> const& worldsComm )
+            {
+                std::set<std::string> eltMarkersInMesh;
+                for (auto const& markPair : mesh->markerNames() )
+                {
+                    std::string meshMarker = markPair.first;
+                    if ( mesh->hasElementMarker( meshMarker ) )
+                        eltMarkersInMesh.insert( meshMarker );
+                }
+
+                M_markers.clear();
+                for( auto const& m : mats )
+                {
+                    auto const& mat = m.second;
+                    if ( mat.hasPhysics() && !mat.hasPhysics( { "solid" } ) )
+                        continue;
+
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                            continue;
+                        M_markers.insert( matmarker );
+                    }
+                }
+
+                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+                if ( M_isDefinedOnWholeMesh )
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
+                else
+                    M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
+
+                M_fieldYoungModulus = M_space->elementPtr( vf::cst( this->cstYoungModulus( self_type::defaultMaterialName() ) ) );
+                M_fieldCoeffPoisson = M_space->elementPtr( vf::cst( this->cstCoeffPoisson( self_type::defaultMaterialName() ) ) );
+                M_fieldCoeffLame1 = M_space->elementPtr( vf::cst( this->cstCoeffLame1( self_type::defaultMaterialName() ) ) );
+                M_fieldCoeffLame2 = M_space->elementPtr( vf::cst( this->cstCoeffLame2( self_type::defaultMaterialName() ) ) );
+                M_fieldBulkModulus = M_space->elementPtr( vf::cst( this->cstBulkModulus( self_type::defaultMaterialName() ) ) );
+                M_fieldRho = M_space->elementPtr( vf::cst( this->cstRho( self_type::defaultMaterialName() ) ) );
+
+                for( auto const& m : mats )
+                {
+                    auto const& mat = m.second;
+                    for ( std::string const& matmarker : mat.meshMarkers() )
+                    {
+                        if ( M_markers.find( matmarker ) == M_markers.end() )
+                            continue;
+
+                        if ( mat.hasPropertyExprScalar("rho") )
+                            this->setRho( mat.propertyExprScalar("rho"), matmarker );
+                        else
+                            this->setCstRho( mat.propertyConstant("rho"), matmarker );
+
+                        if ( mat.hasPropertyExprScalar("E") )
+                            this->setYoungModulus( mat.propertyExprScalar("E"), matmarker );
+                        else
+                            this->setCstYoungModulus( mat.propertyConstant("E"), matmarker, false );
+
+                        if ( mat.hasPropertyExprScalar("nu") )
+                            this->setCoeffPoisson( mat.propertyExprScalar("nu"), matmarker );
+                        else
+                            this->setCstCoeffPoisson( mat.propertyConstant("nu"), matmarker, true );
+                    }
+                }
+            }
+
         std::string const& materialLaw() const { return M_materialLaw; }
         std::string const& decouplingEnergyVolumicLaw() const { return M_decouplingEnergyVolumicLaw; }
         std::string const& compressibleNeoHookeanVariantName() const { return M_compressibleNeoHookeanVariantName; }
@@ -115,6 +155,8 @@ namespace FeelModels
         }
         std::set<std::string> const& markers() const { return M_markers; }
 
+        bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
+
         element_type const& fieldYoungModulus() const { return *M_fieldYoungModulus; }
         element_type const& fieldCoeffPoisson() const { return *M_fieldCoeffPoisson; }
         element_type const& fieldCoeffLame1() const { return *M_fieldCoeffLame1; }
@@ -128,24 +170,49 @@ namespace FeelModels
         element_ptrtype const& fieldBulkModulusPtr() const { return M_fieldBulkModulus; }
         element_ptrtype const& fieldRhoPtr() const { return M_fieldRho; }
 
-        void setCstYoungModulus( double val, std::string const& marker = "", bool updateOthersFields = true )
+        void setCstYoungModulus( double val, std::string const& marker = "", bool updateOthersFields = true, bool updateExpr = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstYoungModulus[markerUsed]=val;
-            this->updateYoungModulus( cst(val), marker, updateOthersFields );
+            if ( updateExpr )
+                this->updateYoungModulus( cst(val), marker, updateOthersFields );
         }
-        void setCstCoeffPoisson( double val, std::string const& marker = "", bool updateOthersFields = true )
+        void setCstCoeffPoisson( double val, std::string const& marker = "", bool updateOthersFields = true, bool updateExpr = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstCoeffPoisson[markerUsed]=val;
-            this->updateCoeffPoisson( cst(val), marker, updateOthersFields );
+            if ( updateExpr )
+                this->updateCoeffPoisson( cst(val), marker, updateOthersFields );
         }
-        void setCstRho( double val, std::string const& marker = "" )
+        void setCstRho( double val, std::string const& marker = "", bool updateExpr = true )
         {
             std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
             M_cstRho[markerUsed]=val;
-            this->updateRho( vf::cst(val), marker );
+            if ( updateExpr )
+                this->updateRho( vf::cst(val), marker );
         }
+        template < typename ExprT >
+        void setYoungModulus( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "", bool updateOthersFields = true )
+            {
+                this->updateYoungModulus( vfexpr,marker,updateOthersFields );
+                if ( M_fieldYoungModulus )
+                    this->setCstYoungModulus( M_fieldYoungModulus->min(), marker, false, false );
+            }
+        template < typename ExprT >
+        void setCoeffPoisson( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "", bool updateOthersFields = true )
+            {
+                this->updateYoungModulus( vfexpr,marker,updateOthersFields );
+                if ( M_fieldCoeffPoisson )
+                    this->setCstCoeffPoisson( M_fieldCoeffPoisson->min(), marker, false, false );
+            }
+        template < typename ExprT >
+        void setRho( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
+            {
+                this->updateRho( vfexpr,marker);
+                if ( M_fieldRho )
+                    this->setCstRho( M_fieldRho->min(), marker, false );
+            }
+
 
         template < typename ExprT >
         void updateYoungModulus(vf::Expr<ExprT> const& __expr, std::string const& marker = "", bool updateOthersFields = true )
@@ -220,22 +287,6 @@ namespace FeelModels
             }
         }
 
-        void updateFromModelMaterials( ModelMaterials const& mat )
-        {
-            if ( mat.empty() ) return;
-
-            for( auto const& m : mat )
-            {
-                auto const& mat = m.second;
-                auto const& matmarker = m.first;
-                //LOG(INFO) << "set material " << mat.name() << " associated to marker : " << matmarker<< "\n";
-                M_markers.insert( matmarker );
-                this->setCstRho( mat.rho(), matmarker );
-                this->setCstYoungModulus( mat.E(), matmarker, false );
-                this->setCstCoeffPoisson( mat.nu(), matmarker, true );
-            }
-        }
-
         boost::shared_ptr<std::ostringstream>
         getInfoMaterialParameters() const
         {
@@ -263,20 +314,11 @@ namespace FeelModels
         std::map<std::string,double> M_cstCoeffPoisson;// nu;
         std::map<std::string,double> M_cstRho;
         std::set<std::string> M_markers;
-        //boost::reference_wrapper<const element_muP0_type> M_coefflame1P0, M_coefflame2P0;
+        bool M_isDefinedOnWholeMesh;
         space_ptrtype M_space;
         element_ptrtype M_fieldYoungModulus, M_fieldCoeffPoisson, M_fieldCoeffLame1, M_fieldCoeffLame2, M_fieldBulkModulus;
         element_ptrtype M_fieldRho;
     };
-
-
-    template<class SpaceType>
-    MechanicalPropertiesDescription<SpaceType>
-    mechanicalPropertiesDesc( boost::shared_ptr<SpaceType> const& space, bool useDisplacementPressureFormulation, std::string const& prefix )
-    {
-        MechanicalPropertiesDescription<SpaceType> res(space,useDisplacementPressureFormulation,prefix);
-        return res;
-    }
 
 } // namespace FeelModels
 } // namespace Feel

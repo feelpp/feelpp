@@ -1,0 +1,116 @@
+// -*- mode: javascript -*-
+{
+    "Name": "ISO 10211:2007 Thermal bridges in building construction",
+    "ShortName":"ThermalBridges",
+    "Materials":
+    {
+        "Concrete":
+        {
+            "markers":"mat1",
+            "k":"1.15",//[ W/(m*K) ]
+            "Cp":"880", //[ J/(kg*K) ]
+            "rho":"2300" //[ kg/(m^3) ]
+        },
+        "Wood":
+        {
+            "markers":"mat2",
+            "k":"0.12",//[ W/(m*K) ]
+            "Cp":"2500", //[ J/(kg*K) ]
+            "rho":"500" //[ kg/(m^3) ]
+        },
+        "Insulation":
+        {
+            "markers":"mat3",
+            "k":"0.029",//[ W/(m*K) ]
+            "Cp":"1000", //[ J/(kg*K) ]
+            "rho":"150" //[ kg/(m^3) ]
+        },
+        "Aluminium":
+        {
+            "markers":"mat4",
+            "k":"230",//[ W/(m*K) ]
+            "Cp":"900", //[ J/(kg*K) ]
+            "rho":"2700" //[ kg/(m^3) ]
+        }
+
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Robin":
+            {
+                "top":
+                {
+                    "expr1":"1.0/0.06",// h coeff
+                    "expr2":"0"// temperature exterior
+                },
+                "bottom":
+                {
+                    "expr1":"1.0/0.11",// h coeff
+                    "expr2":"20"// temperature exterior
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature"]
+        },
+        "Measures":
+        {
+            "Normal-Heat-Flux":"bottom",
+            "Points":
+            {
+                "pointA":
+                {
+                    "coord":"{0,0.0475}",
+                    "fields":"temperature"
+                },
+                "pointB":
+                {
+                    "coord":"{0.5,0.0475}",
+                    "fields":"temperature"
+                },
+                "pointC":
+                {
+                    "coord":"{0,0.0415}",
+                    "fields":"temperature"
+                },
+                "pointD":
+                {
+                    "coord":"{0.015,0.0415}",
+                    "fields":"temperature"
+                },
+                "pointE":
+                {
+                    "coord":"{0.5,0.0415}",
+                    "fields":"temperature"
+                },
+                "pointF":
+                {
+                    "coord":"{0,0.0365}",
+                    "fields":"temperature"
+                },
+                "pointG":
+                {
+                    "coord":"{0.015,0.0365}",
+                    "fields":"temperature"
+                },
+                "pointH":
+                {
+                    "coord":"{0,0}",
+                    "fields":"temperature"
+                },
+                "pointI":
+                {
+                    "coord":"{0.5,0}",
+                    "fields":"temperature"
+                }
+            }
+        }
+    }
+
+}

@@ -1,6 +1,6 @@
 
-#include <feel/feelmodels/fluid/@FLUID_MODEL_SPECIFIC_NAME_SUFFIX@/fluidmechanicsconfig.h>
-#include <feel/feelmodels/levelset/@LEVELSET_MODEL_SPECIFIC_NAME_SUFFIX@/levelsetconfig.h>
+#include <feel/feelmodels/fluid/@FLUIDMECHANICS_LIB_VARIANTS@/fluidmechanicsconfig.h>
+#include <feel/feelmodels/levelset/@LEVELSET_LIB_VARIANTS@/levelsetconfig.h>
 
 #define MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS \
     template< typename FluidType, typename LevelSetType > \
