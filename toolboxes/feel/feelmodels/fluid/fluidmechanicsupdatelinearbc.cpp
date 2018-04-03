@@ -593,6 +593,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         }
 #endif // FEELPP_MODELS_HAS_MESHALE
     }
+#if 0
     if ( UsePeriodicity && BuildNonCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
@@ -602,7 +603,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=inner(pressureJump*N(),id(v) ) );
     }
-
+#endif
 
     //--------------------------------------------------------------------------------------------------//
 
