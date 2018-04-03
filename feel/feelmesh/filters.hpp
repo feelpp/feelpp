@@ -1274,6 +1274,48 @@ marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessTyp
                               myelts );
 }
 
+template<typename MeshType>
+ext_faces_t<MeshType>
+faces( MeshType const& imesh, EntityProcessType entity )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    //typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
+    //boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    auto const& mesh = Feel::unwrap_ptr( imesh );
+    
+    if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
+        for ( auto const& theface : faces(mesh) )
+        {
+            myelts->push_back( boost::cref( boost::unwrap_ref( theface ) ) );
+        }
+
+    if ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) )
+    {
+        auto rangeInterProcessFaces = mesh.interProcessFaces();
+        auto face_it = std::get<0>( rangeInterProcessFaces );
+        auto const face_en = std::get<1>( rangeInterProcessFaces );
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& faceip = boost::unwrap_ref( *face_it );
+            auto const& elt0 = faceip.element0();
+            auto const& elt1 = faceip.element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            for ( size_type f = 0; f < mesh.numLocalFaces(); f++ )
+            {
+                auto const& theface = eltOffProc.face(f);
+                myelts->push_back(boost::cref(theface));
+            }
+        }
+    }
+
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+
+}
 
 template<typename MeshType>
 ext_faces_t<MeshType>
@@ -1445,14 +1487,15 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
     //auto myelts = make_elements_wrapper<MeshType>();
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
-
+    std::unordered_set<size_type> eltIdsDone;
     for( auto it = begin; it != end; ++ it )
     {
-        auto elt = *it;
-        if ( mesh.hasElement( elt ) )
-        {
-            myelts->push_back( boost::cref( mesh.element( elt ) ) );
-        }
+        size_type eltId = *it;
+        if ( eltIdsDone.find( eltId ) != eltIdsDone.end() )
+            continue;
+        eltIdsDone.insert( eltId );
+        if ( mesh.hasElement( eltId ) )
+            myelts->push_back( boost::cref( mesh.element( eltId ) ) );
     }
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),

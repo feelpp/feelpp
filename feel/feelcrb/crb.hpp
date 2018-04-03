@@ -127,6 +127,45 @@
 
 namespace Feel
 {
+
+template <typename SpaceType, typename ParameterSpaceType>
+class CRBBase
+{
+public :
+    typedef SpaceType space_type;
+    typedef ParameterSpaceType parameterspace_type;
+
+    typedef typename space_type::element_type element_type;
+    typedef typename parameterspace_type::element_type parameter_type;
+
+    typedef typename space_type::value_type value_type;
+    typedef Backend<value_type> backend_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
+    using vectorN_type = Feel::vectorN_type;
+    typedef boost::tuple< double,double > matrix_info_tuple;
+
+
+    virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N,
+                                                                    parameter_type const& mu,
+                                                                    std::vector< vectorN_type >& uN,
+                                                                    std::vector< vectorN_type >& uNdu ,
+                                                                    std::vector<vectorN_type> & uNold,
+                                                                    std::vector<vectorN_type> & uNduold,
+                                                                    bool print_rb_matrix=false, int K=0,
+                                                                    bool computeOutput = true ) const =0;
+
+
+    virtual double computeRieszResidualNorm( parameter_type const& mu ) const=0;
+    virtual double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const=0;
+    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const=0;
+    virtual int dimension() const=0;
+    virtual std::pair<int,double> online_iterations()=0;
+
+    virtual element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const=0;
+
+};
+
 /**
  * \brief Certifed Reduced Basis class
  *
@@ -136,7 +175,8 @@ namespace Feel
  * @see
  */
 template<typename TruthModelType>
-class CRB : public CRBDB
+class CRB : public CRBDB,
+            public CRBBase<typename TruthModelType::functionspace_type, typename TruthModelType::parameterspace_type>
 {
     typedef  CRBDB super;
 public:
@@ -179,6 +219,7 @@ public:
     typedef typename convergence_type::value_type convergence;
 
     typedef CRB self_type;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
@@ -191,6 +232,7 @@ public:
     //! POD
     typedef POD<truth_model_type> pod_type;
     typedef boost::shared_ptr<pod_type> pod_ptrtype;
+    typedef typename pod_type::mode_set_type mode_set_type;
 
     //! function space type
     typedef typename model_type::functionspace_type functionspace_type;
@@ -212,7 +254,7 @@ public:
     typedef std::vector<y_type> y_set_type;
     typedef std::vector<boost::tuple<double,double> > y_bounds_type;
 
-    typedef std::vector<element_type> wn_type;
+    typedef typename model_type::rbfunctionspace_type::rb_basis_type wn_type;
     typedef boost::tuple< std::vector<wn_type> , std::vector<std::string> > export_vector_wn_type;
 
     typedef std::vector<double> vector_double_type;
@@ -227,9 +269,6 @@ public:
     typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
     typedef boost::tuple< std::vector<double>,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
     typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
-
-    typedef std::vector<element_type> mode_set_type;
-    typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
 
     typedef boost::multi_array<value_type, 2> array_2_type;
     typedef boost::multi_array<vectorN_type, 2> array_3_type;
@@ -273,29 +312,37 @@ public:
      */
     //@{
 
-    //! default constructor
-    CRB( crb::stage stage = crb::stage::online )
-        :
-        CRB( "noname", boost::make_shared<truth_model_type>(stage), stage )
+    static self_ptrtype New( crb::stage stage = crb::stage::online )
         {
-
+            return New( "noname", boost::make_shared<truth_model_type>(stage), stage );
         }
 
-    CRB( std::string const& name, crb::stage stage = crb::stage::online )
-        :
-        CRB( name, boost::make_shared<truth_model_type>(stage), stage )
-    {
+    static self_ptrtype New( std::string const& name, crb::stage stage = crb::stage::online )
+        {
+            return New( name, boost::make_shared<truth_model_type>(stage), stage );
+        }
 
-    }
+    static self_ptrtype New( std::string const& name,
+                             truth_model_ptrtype const & model,
+                             crb::stage stage = crb::stage::online,
+                             std::string const& prefixExt = "" )
+        {
+            auto crb = boost::shared_ptr<self_type>( new self_type( name, model, stage, prefixExt ) );
+            if ( stage == crb::stage::offline )
+                crb->init();
+            return crb;
+        }
 
+protected:
     //! constructor from command line options
     CRB( std::string const& name,
          truth_model_ptrtype const & model,
-         crb::stage stage = crb::stage::online )
+         crb::stage stage = crb::stage::online,
+         std::string const& prefixExt = "" )
         :
-        super( name, "crb", model->worldComm()),
+        super( name, prefixvm(prefixExt, "crb"), model->worldComm()),
         M_elements_database( name,
-                             "elements",
+                             prefixvm(prefixExt,"elements"),
                              this->worldComm() ),
         M_nlsolver( SolverNonLinear<double>::build( "petsc", "", this->worldComm() ) ),
         M_model( model ),
@@ -310,8 +357,8 @@ public:
         // M_WNmu_complement(),
         // M_primal_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
         // M_dual_apee_mu( new sampling_type( M_Dmu, 0, M_Xi ) ),
-        M_scmA( new scm_type( name, "scma", false /*not scm for mass mastrix*/, this->worldComm() )  ),
-        M_scmM( new scm_type( name, "scmm", true /*scm for mass matrix*/, this->worldComm() ) ),
+        M_scmA( new scm_type( name, prefixvm(prefixExt,"scma"), false /*not scm for mass mastrix*/, this->worldComm() )  ),
+        M_scmM( new scm_type( name, prefixvm(prefixExt,"scmm"), true /*scm for mass matrix*/, this->worldComm() ) ),
         M_N( 0 ),
         M_solve_dual_problem( boption(_name="crb.solve-dual-problem") ),
         M_orthonormalize_primal( boption(_name="crb.orthonormalize-primal") ),
@@ -328,11 +375,11 @@ public:
         M_SER_useGreedyInRb( boption(_name="ser.use-greedy-in-rb") ),
         M_model_executed_in_steady_mode( boption(_name="crb.is-model-executed-in-steady-mode") ),
         M_save_output_behavior( boption(_name="crb.save-output-behavior") ),
-        M_fixedpointMaxIterations( ioption(_name="crb.max-fixedpoint-iterations") ),
-        M_fixedpointIncrementTol( doption(_name="crb.increment-fixedpoint-tol") ),
-        M_fixedpointVerbose( boption(_name="crb.fixedpoint-verbose") ),
-        M_fixedpointCriticalValue( doption(_name="crb.fixedpoint-critical-value") ),
-        M_fixedpointUseAitken( boption(_name="crb.use-aitken") ),
+        M_fixedpointMaxIterations( ioption(_name="crb.fixedpoint.maxit") ),
+        M_fixedpointIncrementTol( doption(_name="crb.fixedpoint.increment-tol") ),
+        M_fixedpointVerbose( boption(_name="crb.fixedpoint.verbose") ),
+        M_fixedpointCriticalValue( doption(_name="crb.fixedpoint.critical-value") ),
+        M_fixedpointUseAitken( boption(_name="crb.fixedpoint.aitken") ),
         M_loadElementsDb( boption(_name="crb.load-elements-database") ),
         M_useRbSpaceContextEim( boption(_name="crb.use-fast-eim") ),
         M_hasRbSpaceContextEim( false ),
@@ -342,58 +389,8 @@ public:
         M_showResidual( boption(_name="crb.show-residual") )
         {
             this->setTruthModel( model );
-            if ( stage == crb::stage::offline )
+            if( stage == crb::stage::offline )
             {
-                if ( !M_rebuild )
-                {
-                    this->setupOfflineFromDB();
-                }
-                else
-                {
-                    try
-                    {
-                        int updatemode = ioption( _name="crb.db.update" );
-                        switch ( updatemode )
-                        {
-                        case 0 :
-                            this->setId( this->id( db(soption(_name="crb.db.filename")) ) );
-                            break;
-                        case 1:
-                        case 2:
-                            this->setId( this->id( dbLast(static_cast<crb::last>(updatemode)) ) );
-                            break;
-                        case 3:
-                            this->setId( this->id( dbFromId(soption(_name="crb.db.id")) ) );
-                            break;
-                        default:
-                            // don't do anything and let the system pick up a new unique id
-                            break;
-                        }
-                    }
-                    catch ( std::invalid_argument const& e )
-                    {
-                        if ( Environment::isMasterRank() )
-                            std::cout << e.what() << std::endl
-                                      << "Using new unique id :" << this->id() << "\n";
-                    }
-                    
-                    M_scmM->setId( this->id() );
-                    M_scmA->setId( this->id() );
-                    M_elements_database.setId( this->id() );
-                    std::cout << "Use DB id " << this->id() << std::endl;
-                }
-                if ( M_N == 0 )
-                {
-                    if( this->worldComm().isMasterRank() )
-                        std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-                    LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
-                }
-
-                // fe vector is requiert in online : must not be TODO
-                if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
-                    boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
-
-
                 // define offline backend and preconditioner
                 M_backend =  backend();
                 M_backend_primal = backend(_name="backend-primal");
@@ -471,10 +468,44 @@ public:
         M_SER_maxerr( o.M_SER_maxerr )
         {}
 
+public:
     //! destructor
     ~CRB()
         {}
 
+    void init()
+        {
+            if ( !M_rebuild && !fs::exists(this->dbLocalPath()/fs::path(this->jsonFilename()) ) )
+            {
+                M_rebuild = true;
+                this->worldComm().barrier();
+            }
+            if ( !M_rebuild )
+            {
+                this->setupOfflineFromDB();
+            }
+            else
+            {
+                M_scmM->setId( this->id() );
+                M_scmA->setId( this->id() );
+                M_elements_database.setId( this->id() );
+            }
+            if( this->worldComm().isMasterRank() )
+                std::cout << "Use DB id " << this->id() << std::endl;
+
+            if ( M_N == 0 )
+            {
+                if( this->worldComm().isMasterRank() )
+                    std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
+                LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+            }
+
+            // fe vector is requiert in online : must not be TODO
+            if ( M_use_newton && M_loadElementsDb && M_Rqm.empty() )
+                boost::tie( boost::tuples::ignore, boost::tuples::ignore/*M_Jqm*/, M_Rqm ) = M_model->computeAffineDecomposition();
+
+
+        }
 
     //@}
 
@@ -524,7 +555,7 @@ public:
         }
 
     //! \return the dimension of the reduced basis space
-    int dimension() const
+    int dimension() const override
         {
             return M_N;
         }
@@ -824,7 +855,15 @@ public:
      * \param wn : tuple composed of a vector of wn_type and a vector of string (used to name basis)
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
-    virtual void exportBasisFunctions(){}
+    virtual void exportBasisFunctions()
+    {
+        wn_type WN = this->wn();
+        std::vector<wn_type> WN_vec = std::vector<wn_type>();
+        WN_vec.push_back(WN);
+        std::vector<std::string> name_vec = std::vector<std::string>(1, "primal");
+        export_vector_wn_type exportWn = boost::make_tuple(WN_vec, name_vec);
+        this->exportBasisFunctions(exportWn);
+    }
 
     /**
      * Returns the lower bound of the output
@@ -844,7 +883,7 @@ public:
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
     virtual boost::tuple<std::vector<double>,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
                                                                     std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0,
-                                                                    bool computeOutput = true ) const;
+                                                                    bool computeOutput = true ) const override;
 
 
     /*
@@ -930,6 +969,20 @@ public:
     virtual matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                                 std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false, bool computeOutput=true ) const;
 
+
+    /**
+     * solve fem model using the affine decomposition
+     * \param mu :current parameter
+     */
+    element_type solveFemModelUsingAffineDecomposition( parameter_type const& mu ) const override
+        {
+            if ( M_use_newton )
+                return M_model->solveFemUsingAffineDecompositionNewton( mu );
+            else
+                return M_model->solveFemUsingAffineDecompositionFixedPoint( mu );
+        }
+
+
     /*
      * Dump data array into a file
      * \param out : Name of the output file
@@ -964,7 +1017,7 @@ public:
      * \param output : vector of outpus at each time step
      * \param K : number of time step ( default value, must be >0 if used )
      */
-    void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
+    virtual void fixedPointDual(  size_type N, parameter_type const& mu, std::vector< vectorN_type > const& uN,
                           std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNduold, std::vector< double > & output_vector, int K=0) const;
 
     /**
@@ -1070,8 +1123,8 @@ public:
 
 
     vector_ptrtype computeRieszResidual( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
-    double computeRieszResidualNorm( parameter_type const& mu ) const;
-    double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const;
+    double computeRieszResidualNorm( parameter_type const& mu ) const override;
+    double computeRieszResidualNorm( parameter_type const& mu, std::vector<vectorN_type> const& uN ) const override;
 
     /**
      * Offline computation
@@ -1144,10 +1197,10 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const;
+    virtual element_type expansion( vectorN_type const& u , int N = -1, bool dual=false ) const override;
 
     // Summary of number of iterations (at the current step)
-    std::pair<int,double> online_iterations(){return online_iterations_summary;}
+    std::pair<int,double> online_iterations() override {return online_iterations_summary;}
     std::pair<int,double> offline_iterations(){return offline_iterations_summary;}
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
@@ -1186,7 +1239,10 @@ public:
             std::vector<CRBResults> res;
             res.reserve( S.size() );
             for( auto const& mu : S )
-                res.push_back( this->run( mu, eps, N, print_rb_matrix ) );
+            {
+                auto r = this->run( mu, eps, N, print_rb_matrix );
+                res.push_back( r );
+            }
             return res;
         }
 
@@ -1240,8 +1296,8 @@ public:
     //! @param l loading strategy (reduced basis, finite element, all)
     //!
     virtual void loadDB( std::string const& filename, crb::load l ) override;
-    
-    
+
+
     /**
      * \brief load Crb from json
      * \param filename : input json filename
@@ -1260,12 +1316,12 @@ public:
     /**
      * save the CRB database
      */
-    void saveDB() override;
+    virtual void saveDB() override;
 
     /**
      * load the CRB database
      */
-    bool loadDB() override;
+    virtual bool loadDB() override;
 
     /**
      *  do the projection on the POD space of u (for transient problems)
@@ -1329,7 +1385,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -1684,9 +1740,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     auto Apr = M_model->newMatrix();
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint.critical-value");
     int iteration=0;
     double increment_norm=1e3;
     bool is_linear=M_model->isLinear();
@@ -1905,9 +1961,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     double dt = M_model->timeStep();
 
-    int max_fixedpoint_iterations  = ioption(_name="crb.max-fixedpoint-iterations");
-    double increment_fixedpoint_tol  = doption(_name="crb.increment-fixedpoint-tol");
-    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint-critical-value");
+    int max_fixedpoint_iterations  = ioption(_name="crb.fixedpoint.maxit");
+    double increment_fixedpoint_tol  = doption(_name="crb.fixedpoint.increment-tol");
+    double fixedpoint_critical_value  = doption(_name="crb.fixedpoint.critical-value");
     int iteration=0;
     double increment_norm=1e3;
 
@@ -2371,7 +2427,8 @@ CRB<TruthModelType>::offline()
         {
             std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
-            std::cout << "save Mesh : " << meshFilename << std::endl;
+            if( this->worldComm().isMasterRank() )
+                std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
@@ -2442,7 +2499,8 @@ CRB<TruthModelType>::offline()
     bool use_predefined_WNmu = buildSampling();
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( this->worldComm().isMasterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
+    if( this->worldComm().isMasterRank() )
+        std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2470,14 +2528,14 @@ CRB<TruthModelType>::offline()
         // if( proc_number == this->worldComm().masterRank() )
         //     std::cout << "[crb - SER] M_N = " << M_N << ", N_old = " << Nold << ", M_iter_max = " << M_iter_max << std::endl;
     }
-    else if ( use_predefined_WNmu )
+
+    if ( use_predefined_WNmu )
     {
-        M_iter_max = this->M_WNmu->size();
+        if ( M_iter_max>this->M_WNmu->size() )
+            M_iter_max = this->M_WNmu->size();
         mu = this->M_WNmu->at( std::min( M_N, this->M_iter_max-1 ) );
         M_current_mu =mu;
     }
-    else
-        M_iter_max = user_max;
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
@@ -2787,17 +2845,11 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
-        if( this->worldComm().isMasterRank() )
+        if( this->worldComm().isMasterRank() && !M_model->isSteady() )
         {
-            if ( M_model->isSteady() )
-            {
-            }
-            else
-            {
-                std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
-                std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
-                std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
-            }
+            std::cout<<"-- time to perform primal POD : "<<tpr<<" s"<<std::endl;
+            std::cout<<"-- time to perform dual POD : "<<tdu<<" s"<<std::endl;
+            std::cout<<"-- time to add primal and dual basis : "<<time<<" s"<<std::endl;
         }
 
         //in the case of transient problem, we can add severals modes for a same mu
@@ -2843,6 +2895,11 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
+        if ( M_model->hasDeim() && !M_model->isLinear() )
+        {
+            M_model->updateRbInDeim();
+        }
+
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -2941,8 +2998,6 @@ CRB<TruthModelType>::offline()
     if( this->worldComm().isMasterRank() )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
 
-    if (boption("crb.visualize-basis"))
-        this->exportBasisFunctions();
 
     if ( boption("crb.check.residual") )
         this->testResidual();
@@ -2950,6 +3005,8 @@ CRB<TruthModelType>::offline()
     if( M_maxerror <= M_tolerance || M_N >= user_max  )
     {
         this->setOfflineStep( false );
+        if (boption("crb.visualize-basis"))
+            this->exportBasisFunctions();
     }
     return M_rbconv;
 }
@@ -4443,7 +4500,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 // backup uNdu
                 next_uNdu = uNdu[0];
                 // update coefficients of affine decomposition
-                // warning! should be uN[0] instead of uNdu[0] but no access to uN[0] at this time
                 if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
                     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( uN[0], mu/*, N*/ );
                 else
@@ -4704,7 +4760,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         else // nonlinear
         {
-            vectorN_type previous_uN( M_N );
+            vectorN_type previous_uN( N );
             //uN[0].setZero( N );
             computeProjectionInitialGuess( mu , N , uN[0] );
             int fi=0;
@@ -4745,7 +4801,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     }
                 }
                 // solve rb system
-                uN[0] = A.lu().solve( F );
+                if ( true )
+                    uN[0] = A.fullPivLu().solve( F );
+                else
+                    uN[0] = A.lu().solve( F );
 
                 if ( useAitkenRelaxation )
                 {
@@ -4767,7 +4826,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                             rbaitkenAux = rbresidual- rbPreviousResidual;
                             double scalar = rbaitkenAux.dot( M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux );
                             rbaitkenAux *= ( 1.0/scalar );
-                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal*rbaitkenAux);
+                            scalar =  -rbAitkenTheta*rbPreviousResidual.dot(M_algebraicInnerProductPrimal.block( 0,0,N,N )*rbaitkenAux);
                             if ( scalar > 1 || scalar < 1e-4 )
                                 scalar = 1.;
 
@@ -4783,8 +4842,11 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 }
                 else
                 {
+                    double oldEltL2Norm = previous_uN.norm();
                     increment = (uN[0]-previous_uN).norm();
-                    auto increment_abs = (uN[0]-previous_uN).array().abs();
+                    if ( oldEltL2Norm > 1e-13 )
+                        increment /= oldEltL2Norm;
+
                     fixPointIsFinished = increment < M_fixedpointIncrementTol || fi>=M_fixedpointMaxIterations;
 
                     this->online_iterations_summary.first = fi;
@@ -4796,6 +4858,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                         VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
                         double residual_norm = (A * uN[0] - F).norm() ;
                         VLOG(2) << " residual_norm :  "<<residual_norm;
+                        std::cout << "[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment << " residual_norm :  "<<residual_norm <<std::endl;
                     }
                 }
                 ++fi;
@@ -5686,6 +5749,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
+    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5727,7 +5791,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
         double time_for_output = time_step;
         if ( !M_model->isSteady() )
         {
-            double time_for_output = (number_of_time_step-1)*time_step;
+            time_for_output = (number_of_time_step-1)*time_step;
             if ( K > 0 )
                 time_for_output = K*time_step;
         }
@@ -5783,6 +5847,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
+    LOG(INFO)<<"CBR : end of lb()";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5797,6 +5862,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
+    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -6259,18 +6325,21 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 #else
     for ( size_type i =N-Nm; i < N; ++i )
     {
+        auto & wni = unwrap_ptr( wn[i] );
         for ( size_type j = 0; j < i; ++j )
         {
-            value_type __rij_pr = M_model->scalarProduct(  wn[i], wn[ j ] );
-            wn[i].add( -__rij_pr, wn[j] );
+            auto const& wnj = unwrap_ptr( wn[j] );
+            value_type __rij_pr = M_model->scalarProduct( wni, wnj );
+            wni.add( -__rij_pr, wnj );
         }
     }
 #endif
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
-        value_type __rii_pr = math::sqrt( M_model->scalarProduct(  wn[i], wn[i] ) );
-        wn[i].scale( 1./__rii_pr );
+        auto & wni = unwrap_ptr( wn[i] );
+        value_type __rii_pr = math::sqrt( M_model->scalarProduct( wni, wni ) );
+        wni.scale( 1./__rii_pr );
     }
 
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
@@ -6334,15 +6403,13 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         throw std::logic_error( "[CRB::exportBasisFunctions] ERROR : there are no wn_type to export" );
     }
 
-
     auto first_wn = vect_wn[0];
     auto first_element = first_wn[0];
     if ( !M_exporter )
-        M_exporter = Exporter<mesh_type>::New( "BasisFunction" );
-    M_exporter->step( 0 )->setMesh( first_element.functionSpace()->mesh() );
-    M_exporter->addRegions();
+        M_exporter = exporter( _mesh=unwrap_ptr(first_element).functionSpace()->mesh(), _name="BasisFunctions");
+
     int basis_number=0;
-    for( auto wn : vect_wn )
+    for( auto const& wn : vect_wn )
     {
 
         if ( wn.size()==0 )
@@ -6353,7 +6420,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         int element_number=0;
         parameter_type mu;
 
-        for( auto element : wn )
+        for( auto const& element : wn )
         {
 
             std::string basis_name = vect_names[basis_number];
@@ -6367,7 +6434,7 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
             }
 
             std::string name =   basis_name + number + mu_str;
-            M_exporter->step( 0 )->add( name, element );
+            M_exporter->step( 0 )->add( name, unwrap_ptr( element ) );
             element_number++;
         }
         basis_number++;
@@ -6567,11 +6634,24 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-
+    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
+
 
     residual_error_type steady_residual_contribution = steadyPrimalResidual( Ncur, mu, Un, time );
     std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();
@@ -6773,7 +6853,19 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
-    boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
+    if( M_model->isLinear() )
+    {
+        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+    }
+    else
+    {
+        if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm )
+                = M_model->computeBetaQm( Un, mu, time );
+        else
+            boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                M_model->computeBetaQm( this->expansion( Un, Ncur ), mu, time );
+    }
 
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
@@ -7791,6 +7883,10 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
 
+    bool use_ser = ioption(_name="ser.rb-frequency");
+    int added_elements = use_ser ? __N:number_of_added_elements;
+
+
     if( this->worldComm().isMasterRank() )
         std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
                   << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
@@ -7827,9 +7923,10 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
 #endif
 
+
     // Primal
     // no need to recompute this term each time
-    if ( Ncur == M_Nm )
+    if ( Ncur == M_Nm || use_ser )
     {
         ti.restart();
         LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
@@ -7910,7 +8007,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
     //
     LOG(INFO) << "[offlineResidual] Lambda_pr, Gamma_pr\n";
 
-    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    for ( int elem=__N-added_elements; elem<__N; elem++ )
     {
         *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
 
@@ -7944,7 +8041,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
     ti.restart();
 
-    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+    for ( int elem=__N-added_elements; elem<__N; elem++ )
     {
         *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
         for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
@@ -8018,7 +8115,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
                 //column N-1
                 //int __l = __N-1;
-                for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                for ( int elem=__N-added_elements; elem<__N; elem++ )
                 {
                     *__Y=M_model->rBFunctionSpace()->primalBasisElement(elem);
 
@@ -8111,7 +8208,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
 
         LOG(INFO) << "[offlineResidual] Lambda_du, Gamma_du\n";
 
-        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        for ( int elem=__N-added_elements; elem<__N; elem++ )
         {
             *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
 
@@ -8154,7 +8251,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
             std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
-        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+        for ( int elem=__N-added_elements; elem<__N; elem++ )
         {
             //int __j = __N-1;
             *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
@@ -8251,7 +8348,7 @@ CRB<TruthModelType>::offlineResidualV0( int Ncur, mpl::bool_<false> , int number
                     M_model->l2solve( __Z1, __W );
 
                     //int __l = __N-1;
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                    for ( int elem=__N-added_elements; elem<__N; elem++ )
                     {
                         *__Y=M_model->rBFunctionSpace()->dualBasisElement(elem);
 
@@ -9241,7 +9338,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u, int N, bool dual ) const
     FEELPP_ASSERT( Nwn <= WN.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and WN ) ");
     FEELPP_ASSERT( Nwn <= u.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and u ) ");
     //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( WN, u, N );
+    return Feel::expansion( WN, u, Nwn );
 }
 
 
@@ -9520,10 +9617,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
         if ( M_orthonormalize_dual )
             //in this case we can simplify because elements of reduced basis are orthonormalized
         {
-            for( auto du : M_model->rBFunctionSpace()->dualRB() )
+            for( auto const& du : M_model->rBFunctionSpace()->dualRB() )
             {
-                element_type e = du.functionSpace()->element();
-                e = du;
+                element_type e = unwrap_ptr( du ).functionSpace()->element();
+                e = unwrap_ptr( du );
                 double k =  M_model->scalarProduct( u, e );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9550,10 +9647,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            for( auto du : M_model->rBFunctionSpace()->dualRB() )
+            for( auto const& du : M_model->rBFunctionSpace()->dualRB() )
             {
-                element_type e = du.functionSpace()->element();
-                e = du;
+                element_type e = unwrap_ptr( du ).functionSpace()->element();
+                e = unwrap_ptr( du );
                 double k =  projectionN( index );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9566,10 +9663,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
     {
         if ( M_orthonormalize_primal )
         {
-            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
+            for( auto const& pr : M_model->rBFunctionSpace()->primalRB() )
             {
-                auto e = pr.functionSpace()->element();
-                e = pr;
+                auto e = unwrap_ptr( pr ).functionSpace()->element();
+                e = unwrap_ptr( pr );
                 double k =  M_model->scalarProduct( u, e );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -9596,10 +9693,10 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
             vectorN_type projectionN ( ( int ) M_N );
             projectionN = MN.lu().solve( FN );
             int index=0;
-            for( auto pr : M_model->rBFunctionSpace()->primalRB() )
+            for( auto const& pr : M_model->rBFunctionSpace()->primalRB() )
             {
-                element_type e = pr.functionSpace()->element();
-                e = pr;
+                element_type e = unwrap_ptr( pr ).functionSpace()->element();
+                e = unwrap_ptr( pr );
                 double k =  projectionN( index );
                 e.scale( k );
                 projection->add( 1 , e );
@@ -10824,10 +10921,10 @@ CRB<TruthModelType>::buildSampling()
 
     std::string file_name = ( boost::format("SamplingWNmu") ).str();
     std::ifstream file ( file_name );
-    this->M_WNmu->clear();
 
     if ( use_predefined_WNmu ) // In this case we want to read the sampling
     {
+        this->M_WNmu->clear();
         if( ! file ) // The user forgot to give the sampling file
             throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
         else
@@ -10842,6 +10939,7 @@ CRB<TruthModelType>::buildSampling()
     }
     else if ( this->M_error_type==CRB_NO_RESIDUAL )// We generate the sampling with choosen strategy
     {
+        this->M_WNmu->clear();
         if ( N_log_equi>0 )
         {
             this->M_WNmu->logEquidistribute( N_log_equi , true );
@@ -11340,16 +11438,16 @@ CRB<TruthModelType>::showMuSelection()
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l ) 
+CRB<TruthModelType>::loadDB( std::string const& filename, crb::load l )
 {
     auto fname = this->db( filename );
-    
+
     if ( ( l == crb::load::all ) ||  (l == crb::load::fe ) )
         this->setLoadBasisFromDB( true );
     else
         this->setLoadBasisFromDB( false );
     this->loadJson( fname.string() );
-    
+
     LOG(INFO) << "Loaded DB CRB " << fname;
 }
 
@@ -11392,11 +11490,11 @@ CRB<TruthModelType>::saveJson()
         boost::property_tree::ptree ptree;
 
         ptree.add( "uuid", this->idStr() );
-        
+
         boost::property_tree::ptree ptreeCrbModel;
         M_model->updatePropertyTree( ptreeCrbModel );
         ptree.add_child( "crbmodel", ptreeCrbModel );
-        
+
         boost::property_tree::ptree ptreeReducedBasisSpace;
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
@@ -11472,14 +11570,19 @@ CRB<TruthModelType>::setup( boost::property_tree::ptree const& ptree, size_type 
             M_scmM->setup( *ptreeOptionalScmM, dbDir );
     }
 
+    auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
     if ( (loadingContext == 1 || M_loadElementsDb ) && M_model )
     {
-        auto const& ptreeReducedBasisSpace = ptree.get_child( "reduced-basis-space" );
         // M_model->rBFunctionSpace()->setModel( M_model->model() );
         // //M_model->rBFunctionSpace()->setup( ptreeReducedBasisSpace );
         // M_elements_database.setModel( M_model );
         M_elements_database.setup( ptreeReducedBasisSpace, dbDir );
         M_loadElementsDb = true;
+    }
+    else
+    {
+        int rbdim = ptreeReducedBasisSpace.template get<size_type>( "dimension" );
+        M_model->rBFunctionSpace()->setDimension( rbdim );
     }
 
 }
@@ -11494,7 +11597,7 @@ CRB<TruthModelType>::saveDB()
         fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
         if ( ofs )
         {
-            //boost::archive::text_oarchive oa( ofs );
+            // boost::archive::text_oarchive oa( ofs );
             boost::archive::binary_oarchive oa( ofs );
             // write class instance to archive
             oa << *this;
@@ -11548,20 +11651,8 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::setupOfflineFromDB()
 {
-    int loadmode = ioption( _name="crb.db.load" );
-    switch ( loadmode )
-    {
-    case 0 :
-        this->loadDB( soption( _name="crb.db.filename"), crb::load::all );
-        break;
-    case 1:
-    case 2:
-        this->loadDBLast( static_cast<crb::last>(loadmode), crb::load::all );
-        break;
-    case 3:
-        this->loadDBFromId( soption(_name="crb.db.id"), crb::load::all );
-        break;
-    }
+    this->loadDB( (this->dbLocalPath()/fs::path(this->jsonFilename())).string(), crb::load::all );
+
     if( this->worldComm().isMasterRank() )
         std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
     LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";

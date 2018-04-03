@@ -55,9 +55,10 @@ namespace FeelModels
 template< typename MeshType, int Order >
 HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string prefix,
                                                       WorldComm const& worldcomm,
-                                                      bool useGhostEltFromExtendedStencil )
+                                                      bool useGhostEltFromExtendedStencil,
+                                                      ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldcomm,"","" ),
+    super_type( prefix, worldcomm,"",modelRep ),
     M_backend( backend ),
     M_mesh( mesh ),
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
@@ -70,9 +71,10 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
 }
 
 template< typename MeshType, int Order >
-HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix )
+HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backend_ptrtype const& backend, std::string prefix,
+                                                      ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, space->worldComm(),"","" ),
+    super_type( prefix, space->worldComm(),"",modelRep ),
     M_backend( backend ),
     M_mesh( space->mesh() ),
     M_Xh( space ),
@@ -296,7 +298,7 @@ HarmonicExtension<MeshType,Order>::solve()
 {
     this->log(this->prefix(),"solve", "start");
     // assemble and solve linear system
-    M_algebraicFactory->linearSolver(M_vectorSolution);
+    M_algebraicFactory->solveLinear(M_vectorSolution);
     // copy algebraic vector into an finite element approximation
     *M_displacement = *M_vectorSolution;
 

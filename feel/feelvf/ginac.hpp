@@ -191,6 +191,21 @@ namespace Feel
 {
 namespace vf
 {
+
+// return the number of components
+inline
+int nbComp( std::string expression )
+{
+    auto parseExpr = GiNaC::parse(expression);
+
+    auto ginacEvalm = parseExpr.first.evalm();
+    bool isLst = GiNaC::is_a<GiNaC::lst>(  ginacEvalm );
+    int nComp = 1;
+    if ( isLst )
+        nComp = ginacEvalm.nops();
+    return nComp;
+}
+
 inline
 Expr< GinacEx<2> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="",
@@ -489,6 +504,22 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
     return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, s, VFmap, filename, world ) );
 }
 
+template<typename ExprT,int Order>
+inline
+Expr< GinacExVF<ExprT,Order> >
+expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e )
+{
+    auto const& symbexpr = s.expression();
+    auto it = std::find_if( symbexpr.symbols().begin(), symbexpr.symbols().end(),
+                            [&se]( GiNaC::symbol const& s ) { return s.get_name() == se; } );
+    CHECK( it != symbexpr.symbols().end() ) << "invalid symbol " << se << " in expression ";// << s;
+    std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
+    VFmap.push_back(std::make_pair(*it, e));
+    auto res = Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc() ) );
+    res.expression().setParameterValues( symbexpr.parameterValue() );
+    return res;
+}
+
 /**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
  *
@@ -595,111 +626,112 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string co
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,M,Order> >
-grad( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+grad( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<1,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<M,M,Order> >
-grad( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+grad( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("grad(%1%)")% s.expression().exprDesc() ).str();
-    return expr<M,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<M,M,Order>( GiNaC::grad(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 // Divergence
 template<int M=1,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-div( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+div( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("div(%1%)")% s.expression().exprDesc() ).str();
-    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+div( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("div(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+div( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("div(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<1,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 template<int M,int N,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-div( Expr<GinacMatrix<M,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+div( Expr<GinacMatrix<M,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("div(%1%)")% s.expression().exprDesc() ).str();
-    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<M,1,Order>( GiNaC::div(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 // Curl
 template<int M=1,int Order=2>
 inline
 Expr<GinacMatrix<M,1,Order> >
-curl( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+curl( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("curl(%1%)")% s.expression().exprDesc() ).str();
-    return expr<M,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<M,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<((M==2)?1:3),1,Order> >
-curl( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+curl( Expr<GinacMatrix<M,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("curl(%1%)")% s.expression().exprDesc() ).str();
-    return expr<((M==2)?1:3),1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<((M==2)?1:3),1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 template<int Order=2>
 inline
 Expr<GinacMatrix<2,1,Order> >
-curl( Expr<GinacMatrix<1,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+curl( Expr<GinacMatrix<1,1,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("curl(%1%)")% s.expression().exprDesc() ).str();
-    return expr<2,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<2,1,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
 template<int M,int Order=2>
 inline
 Expr<GinacMatrix<1,M,Order> >
-curl( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+curl( Expr<GinacMatrix<1,M,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("curl(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,M,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<1,M,Order>( GiNaC::curl(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
 // Laplacian
 template<int Order=2>
 inline
 Expr<GinacMatrix<1,1,Order> >
-laplacian( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+laplacian( Expr<GinacEx<Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("laplacian(%1%)")% s.expression().exprDesc() ).str();
-    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<1,1,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
 template<int M,int N=1, int Order=2>
 inline
 Expr<GinacMatrix<M,N,Order> >
-laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm() )
+laplacian( Expr<GinacMatrix<M,N,Order>> const& s, std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("laplacian(%1%)")% s.expression().exprDesc() ).str();
-    return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world );
+    return expr<M,N,Order>( GiNaC::laplacian(s.expression().expression(),s.expression().symbols()), s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
 
 template<int Order=2>
 inline
 Expr<GinacEx<Order> >
-diff( Expr<GinacEx<Order>> const& s, std::string const& diffVariable, int diffOrder = 1, std::string filename="", WorldComm const& world=Environment::worldComm() )
+diff( Expr<GinacEx<Order>> const& s, std::string const& diffVariable, int diffOrder = 1, std::string filename="",
+      WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
 {
     std::string exprDesc = (boost::format("diff(%1%)_%2%_o%3%")% s.expression().exprDesc() %diffVariable %diffOrder ).str();
     auto const& exprSymb = s.expression().symbols();
@@ -707,8 +739,46 @@ diff( Expr<GinacEx<Order>> const& s, std::string const& diffVariable, int diffOr
                             [&diffVariable]( GiNaC::symbol const& s ) { return s.get_name() == diffVariable; } );
     CHECK( it != exprSymb.end() ) << "symbol " << diffVariable << "not found in expression";
     return expr<Order>( GiNaC::diff( s.expression().expression(),{ *it },diffOrder)(0,0),
-                        s.expression().symbols(), exprDesc, filename, world );
+                        s.expression().symbols(), exprDesc, filename, world, dirLibExpr );
 }
+
+
+template<int Order,int Order1,int Order2>
+inline
+Expr<GinacEx<Order> >
+expr_mult( Expr<GinacEx<Order1>> const& e1, Expr<GinacEx<Order2>> const& e2, std::string filename="",
+           WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    GiNaC::ex newex = e1.expression().expression()*e2.expression().expression();
+    std::string exprDesc = str( newex );
+    std::set<std::string> exprSymb;
+    for ( GiNaC::symbol const& s1 : e1.expression().symbols() )
+        exprSymb.insert( s1.get_name() );
+    for ( GiNaC::symbol const& s2 : e2.expression().symbols() )
+        exprSymb.insert( s2.get_name() );
+    for ( std::string const& s : exprSymb )
+        exprDesc += (":"+s);
+    return expr<Order>( exprDesc, filename, world, dirLibExpr );
+}
+
+template<int Order>
+inline
+Expr<GinacEx<Order> >
+expr_mult( Expr<GinacEx<Order>> const& e1, double e2, std::string filename="",
+           WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr="" )
+{
+    GiNaC::ex newex = e1.expression().expression()*e2;
+    std::string exprDesc = str( newex );
+    std::set<std::string> exprSymb;
+    for ( GiNaC::symbol const& s1 : e1.expression().symbols() )
+        exprSymb.insert( s1.get_name() );
+    for ( std::string const& s : exprSymb )
+        exprDesc += (":"+s);
+    return expr<Order>( exprDesc, filename, world, dirLibExpr );
+}
+
+
+
 
 template<int Order=2>
 using scalar_field_expression=Expr<GinacEx<Order>>;

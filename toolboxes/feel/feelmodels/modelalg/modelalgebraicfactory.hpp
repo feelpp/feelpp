@@ -43,19 +43,19 @@ namespace FeelModels
     public :
         typedef ModelAlgebraicFactory self_type;
 
-        //typedef FeelModels::AppliBase appli_type;
-        typedef FeelModels::ModelAlgebraic appli_type;
-        typedef boost::shared_ptr<appli_type> appli_ptrtype;
+        typedef FeelModels::ModelAlgebraic model_type;
+        typedef boost::shared_ptr<model_type> model_ptrtype;
+        typedef boost::weak_ptr<model_type> model_weakptrtype;
 
-        typedef typename appli_type::value_type value_type;
-        typedef typename appli_type::backend_type backend_type;
-        typedef typename appli_type::backend_ptrtype backend_ptrtype;
+        typedef typename model_type::value_type value_type;
+        typedef typename model_type::backend_type backend_type;
+        typedef typename model_type::backend_ptrtype backend_ptrtype;
 
         typedef GraphCSR graph_type;
         typedef boost::shared_ptr<graph_type> graph_ptrtype;
 
-        typedef typename appli_type::vector_ptrtype vector_ptrtype;
-        typedef typename appli_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+        typedef typename model_type::vector_ptrtype vector_ptrtype;
+        typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
         typedef typename sparse_matrix_ptrtype::element_type sparse_matrix_type;
 
         typedef Preconditioner<value_type> preconditioner_type;
@@ -64,11 +64,13 @@ namespace FeelModels
         typedef typename backend_type::solve_return_type solve_return_type;
         typedef typename backend_type::nl_solve_return_type nl_solve_return_type;
 
-        typedef appli_type::indexsplit_type indexsplit_type;
-        typedef appli_type::indexsplit_ptrtype indexsplit_ptrtype;
+        typedef model_type::indexsplit_type indexsplit_type;
+        typedef model_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
         typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
+        typedef boost::function<void ( vector_ptrtype const& U, sparse_matrix_ptrtype& J )> jacobianAssembly_function_type;
+        typedef boost::function<void ( vector_ptrtype const& U, vector_ptrtype& R )> residualAssembly_function_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
@@ -77,9 +79,9 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        ModelAlgebraicFactory(appli_ptrtype const& __app, backend_ptrtype const& __backend);
+        ModelAlgebraicFactory(model_ptrtype const& __app, backend_ptrtype const& __backend);
 
-        ModelAlgebraicFactory(appli_ptrtype const&__app,
+        ModelAlgebraicFactory(model_ptrtype const&__app,
                               backend_ptrtype const& __backend,
                               graph_ptrtype const& graph,
                               indexsplit_ptrtype const& indexSplit );
@@ -92,26 +94,26 @@ namespace FeelModels
         initFromFunctionSpace(boost::shared_ptr<SpaceType> const& space )
         {
 
-            if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodNum","initFromFunctionSpace", "start",
-                                                                      this->application()->worldComm(),this->application()->verboseAllProc());
+            if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "start",
+                                                                this->model()->worldComm(),this->model()->verboseAllProc());
 
-            this->application()->timerTool("Constructor").start();
+            this->model()->timerTool("Constructor").start();
             auto graph=stencil(_test=space,_trial=space,
-                               _pattern_block=this->application()->blockPattern(),
+                               _pattern_block=this->model()->blockPattern(),
                                _diag_is_nonzero=true)->graph();
             auto indexSplit= space->dofIndexSplit();
-            this->application()->timerTool("Constructor").elapsed("graph");
+            this->model()->timerTool("Constructor").elapsed("graph");
 
-            this->application()->timerTool("Constructor").restart();
+            this->model()->timerTool("Constructor").restart();
             this->buildMatrixVector(graph,indexSplit);
-            this->application()->timerTool("Constructor").elapsed("matrixVector");
+            this->model()->timerTool("Constructor").elapsed("matrixVector");
 
-            this->application()->timerTool("Constructor").restart();
+            this->model()->timerTool("Constructor").restart();
             this->buildOthers();
-            this->application()->timerTool("Constructor").elapsed("algebraicOthers");
+            this->model()->timerTool("Constructor").elapsed("algebraicOthers");
 
-            if (this->application()->verbose()) Feel::FeelModels::Log(this->application()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
-                                                                      this->application()->worldComm(),this->application()->verboseAllProc());
+            if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
+                                                                this->model()->worldComm(),this->model()->verboseAllProc());
         }
 
         //---------------------------------------------------------------------------------------------------------------//
@@ -131,8 +133,8 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        appli_ptrtype const&
-        application() const { return M_appli; }
+        model_ptrtype
+        model() const { return M_model.lock(); }
 
         backend_ptrtype
         backend() { return M_backend; }
@@ -161,24 +163,26 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         void solve( std::string const& type,vector_ptrtype& sol );
-        void linearSolver( vector_ptrtype &U );
-        void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ );
+        FEELPP_DEPRECATED void linearSolver( vector_ptrtype &U ) { this->solveLinear( U ); }
+        FEELPP_DEPRECATED void AlgoNewton2( vector_ptrtype &U ) { this->solveNewton( U ); }
+        FEELPP_DEPRECATED void AlgoPicard(vector_ptrtype &U) { this->solvePicard( U ); }
+        void solveLinear( vector_ptrtype &U );
+        void solveNewton( vector_ptrtype &U );
+        void solvePicard( vector_ptrtype &U );
+
+        void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
         void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
-        void AlgoNewton2( vector_ptrtype &U );
+
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
-
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
-        // fonctions obseletes
-        void AlgoPicard(vector_ptrtype U);
-        //OLD version (without petsc) : not up
-        void AlgoNewton(vector_ptrtype U);
 
         linearAssembly_function_type addFunctionLinearPostAssembly;
         linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-
+        jacobianAssembly_function_type addFunctionJacobianPreAssembly;
+        residualAssembly_function_type addFunctionResidualPreAssembly;
     private :
 
         void
@@ -193,7 +197,7 @@ namespace FeelModels
 
     private :
 
-        appli_ptrtype M_appli;
+        model_weakptrtype M_model;
 
         backend_ptrtype M_backend;
 

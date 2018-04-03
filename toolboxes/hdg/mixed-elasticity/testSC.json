@@ -1,0 +1,63 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{0,0}" // For 3D: "{0,0,0}"
+                }
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+                "Dirichlet":
+                {
+		     		"expr":"{1,0}" 
+                }/*, // For 3D
+                "Dirichlet":
+                {
+		     		"expr":"{0,1,0}" 
+                }*/
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{1,0}:x:y" // For 3D: "{0,1,0}:x:y:z"
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["stress","displacement"]
+        }
+    }
+}
+
+
+
+

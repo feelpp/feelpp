@@ -89,14 +89,19 @@ BOOST_AUTO_TEST_SUITE( prepost_solve_suite )
 
 BOOST_AUTO_TEST_CASE( test_prepostsolve )
 {
-    BOOST_MESSAGE("test_prepostsolve, checking with " << soption("functions.f"));
-    auto f = expr(soption("functions.f"),"f");
-    auto gradf = grad<2>(f);
-    auto lapf = laplacian(f);
+    std::string f_str = soption("functions.f");
+    std::string f_name = "f";
+    BOOST_MESSAGE("test_prepostsolve, checking with " << f_str);
+    
     auto mesh = unitSquare();
     auto Xh = Pch<1>( mesh );
     auto u = Xh->element();
     auto v = Xh->element();
+
+    auto f = expr(f_str,f_name);
+    auto gradf = grad<2>(f);
+    auto lapf = laplacian(f);
+
     auto a = form2( _test=Xh, _trial = Xh);
     a = integrate(_range=elements(mesh), _expr=gradt(u)*trans(grad(u)));
     auto l = form1( _test=Xh );
@@ -163,8 +168,7 @@ BOOST_AUTO_TEST_CASE( test_prepost_nlsolve )
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
-            auto u = Xh->element();
-            u = *X;
+            auto u = Xh->element(X);
             auto r = form1( _test=Xh, _vector=R );
             r= integrate(_range=elements(mesh), _expr=lapf*id(v)+gradv(u)*trans(grad(v)));
             r+=integrate(_range=boundaryfaces(mesh), _expr=-gradf*N()*id(v));

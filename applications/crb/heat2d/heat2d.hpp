@@ -76,12 +76,15 @@ class FEELPP_EXPORT  Heat2D : public ModelCrbBase<ParameterSpaceX, decltype(Pch<
 {
 public:
     using super = ModelCrbBase<ParameterSpaceX, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>;
+
     Heat2D() : super( "heat2d" ) {}
-    
+
     //! initialisation of the model
     void initModel();
 
-    beta_vector_light_type beta;
+    //! compute beta coefficients
+    super::betaq_type computeBetaQ( parameter_type const& mu );
+
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output

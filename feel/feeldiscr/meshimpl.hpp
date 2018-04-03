@@ -354,8 +354,7 @@ Mesh<Shape, T, Tag>::updateMeasures()
     typename gm1_type::faces_precompute_type pcf1;
     // assume that a high order mesh is straightened (probably we need to store this info in the mesh)
     bool meshIsStraightened = (nOrder > 1);
-    // not very nice and correct but this function can have a big cost so only do one time
-    bool updateMeasureWithPc = !this->isUpdatedForUse();
+    bool updateMeasureWithPc = true;
     if ( updateMeasureWithPc )
     {
         pc = M_gm->preCompute( M_gm, thequad.points() );
@@ -375,46 +374,43 @@ Mesh<Shape, T, Tag>::updateMeasures()
     if ( iv != en )
     {
         auto const& eltInit = iv->second;
-        auto ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
-        auto ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf,0 );
-        auto ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
-        auto ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
+        boost::shared_ptr<typename gm_type::template Context<vm::JACOBIAN,element_type>> ctx;
+        boost::shared_ptr<typename gm_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf;
+        boost::shared_ptr<typename gm1_type::template Context<vm::JACOBIAN,element_type>> ctx1;
+        boost::shared_ptr<typename gm1_type::template Context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN,element_type>> ctxf1;
+        if ( pc )
+            ctx = M_gm->template context<vm::JACOBIAN>( eltInit, pc );
+        if ( !pcf.empty() )
+            ctxf = M_gm->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf,0 );
+        if ( pc1 )
+            ctx1 = M_gm1->template context<vm::JACOBIAN>( eltInit, pc1 );
+        if ( !pcf1.empty() )
+            ctxf1 = M_gm1->template context</*vm::POINT|*/vm::NORMAL|vm::KB|vm::JACOBIAN>( eltInit,pcf1,0 );
+
         for ( ; iv != en; ++iv )
         {
             auto & elt = iv->second;
-            if ( updateMeasureWithPc )
+
+            if ( meshIsStraightened && !elt.isOnBoundary() )
             {
-                if ( meshIsStraightened && !elt.isOnBoundary() )
-                {
-                    ctx1->update( elt );
-                    elt.updateWithCtx1( thequad1, ctx1, ctxf1 );
-                }
-                else
-                {
-                    ctx->update( elt );
-                    elt.updateWithCtx( thequad, ctx, ctxf );
-                }
+                ctx1->update( elt );
+                elt.updateWithCtx1( thequad1, ctx1, ctxf1 );
+            }
+            else
+            {
+                ctx->update( elt );
+                elt.updateWithCtx( thequad, ctx, ctxf );
             }
 
             // only compute meas for active element (no ghost)
             if ( !elt.isGhostCell() )
                 M_local_meas += elt.measure();
-#if 0
-            auto _faces = elt.faces();
 
-            if ( nDim == 1 )
-                M_local_measbdy = 0;
-            else
-                for ( ; _faces.first != _faces.second; ++_faces.first )
-                    if ( ( *_faces.first ) && ( *_faces.first )->isOnBoundary() )
-                        M_local_measbdy += ( *_faces.first )->measure();
-#else
             if ( nDim == 1 || nDim != nRealDim )
                 M_local_measbdy = 0;
             else
                 for ( int f = 0; f < elt.numTopologicalFaces; ++f )
                     M_local_measbdy += elt.faceMeasure( f );
-#endif
         } // for element loop
     } // if ()
 #if BOOST_VERSION >= 105500
@@ -2339,7 +2335,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
         const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
 
         //memoryMsgToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]] = &ghostelt;
-        memoryMsgToSend[ghosteltPid][ dataToSend[ghosteltPid].size() ] = &ghostelt;
+        memoryMsgToSend[ghosteltPid][ dataToSend[ghosteltPid].size() ] = std::addressof(ghostelt);
         // update container
         //dataToSend[ghosteltPid][nDataInVecToSend/*Bis*/[ghosteltPid]].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
         dataToSend[ghosteltPid].push_back( std::make_pair( ghostelt.id(),idEltInOtherPartition) );
@@ -2567,14 +2563,15 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
     {
         const rank_type idProc = itFinalDataToRecv->first;
         const int nDataRecv = itFinalDataToRecv->second.size();
+        DCHECK( nDataRecv == memoryMsgToSend[idProc].size() ) << "invalid data size to send/recv, got " << nDataRecv << " expected:" << memoryMsgToSend[idProc].size();
         for ( int k=0; k<nDataRecv; ++k )
         {
             auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
             auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
             auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
-            //auto const& theelt = this->element( memoryMsgToSend[idProc][k]/*, idProc*/ );
-            auto & theelt = *memoryMsgToSend[idProc][k];
-
+            DCHECK( k < memoryMsgToSend[idProc].size() ) << "invalid data index : " << k << " must be less than " << memoryMsgToSend[idProc].size();
+            auto & theelt = *memoryMsgToSend.at(idProc).at(k);
+            
             //update faces data
             if ( !idFacesWithBaryRecv.empty() )
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
@@ -2590,7 +2587,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                 bool hasFind=false;
                 for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
                 {
-                    if ( !theelt.facePtr( j2 ) )
+                    if ( ! theelt.hasFace( j2 ) )
                         continue;
                     auto const& thefacej2 = theelt.face( j2 );
                     //auto const& theGj2 = thefacej2.G();

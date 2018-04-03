@@ -1,0 +1,76 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"steel",
+            "lambda":"1.15",   
+	    	"mu":"0.77"        
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{0,0,0}"
+                }
+            }/*,
+            "Integral":
+            {
+                "top":
+                {
+                    "expr":"{0,0,0.8*Pi}:x:y:z"      // "expr":"{0,0, 0.8*Pi}:x:y:z"
+                }
+            }*/,
+            "Neumann":
+            {
+                "lateral":
+                {
+                    "expr":"{0,0,0}:x:y:z"          
+                },
+                "top":
+                {
+                    "expr":"{0,0,0.8}:x:y:z"         
+                }
+            }
+		},
+		"displacement":
+		{
+	    	"Dirichlet":
+	    	{
+        		"bottom":
+                {
+		     		"expr":"{0,0,0}:x:y:z" 
+                }
+ 	    	}
+    	}/*,
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{0,0,0}:x:y:z" 
+				}
+			}
+		}*/
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["stress","displacement","top"]
+        }
+    }
+}
+
+
+
+

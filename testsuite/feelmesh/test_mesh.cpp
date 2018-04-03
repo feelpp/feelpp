@@ -28,9 +28,6 @@
    \date 2005-09-03
  */
 
-// Boost.Test
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh testsuite
 // disable the main function creation, use our own
@@ -102,7 +99,6 @@ struct test_mesh_filters
     void operator()()
     {
         BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize );
-        Feel::Assert::setLog( "test_mesh_filters.assert" );
 
 
         using namespace Feel;

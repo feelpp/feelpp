@@ -30,16 +30,16 @@
 #ifndef __MatrixPetsc_H
 #define __MatrixPetsc_H 1
 
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
 #include <feel/feelconfig.h>
 
 #if defined(FEELPP_HAS_PETSC_H)
 
-
-#include <feel/feelcore/application.hpp>
+#include <Eigen/Core>
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/graphcsr.hpp>
-#include <boost/serialization/export.hpp>
 
 
 extern "C"
@@ -86,7 +86,6 @@ template<typename T> class VectorPetscMPI;
 template<typename T>
 class FEELPP_EXPORT MatrixPetsc : public MatrixSparse<T>
 {
-    friend class boost::serialization::access;
     typedef MatrixSparse<T> super;
 public:
     /** @name Typedefs
@@ -368,7 +367,9 @@ public:
      */
     void addMatrix ( int* rows, int nrows,
                      int* cols, int ncols,
-                     value_type* data );
+                     value_type* data,
+                     size_type K = 0,
+                     size_type K2 = invalid_size_type_value);
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -568,72 +569,9 @@ public:
     //!
     virtual void threshold( void );
 
-    void save( std::string filename="default_archive_name", std::string format="binary" )
-    {
-        if ( !this->closed() )
-            this->close();
+    void save( std::string const& filename="default_archive_name", std::string const& format="binary" );
 
-        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-        std::ofstream ofs( filename );
-        if (ofs)
-        {
-            if ( format=="binary" )
-            {
-                boost::archive::binary_oarchive oa(ofs);
-                oa << *this;
-            }
-            else if ( format=="xml")
-            {
-                boost::archive::xml_oarchive oa(ofs);
-                oa << boost::serialization::make_nvp("vectorpetsc", *this );
-            }
-            else if ( format=="text")
-            {
-                boost::archive::text_oarchive oa(ofs);
-                oa << *this;
-            }
-            else
-                Feel::cout << "MatrixPetsc save() function : error with unknown format "
-                           << format <<std::endl;
-        }
-        else
-        {
-            Feel::cout << "MatrixPetsc save() function : error opening ofstream with name "
-                       << filename <<std::endl;
-        }
-    }
-
-    void load( std::string filename="default_archive_name", std::string format="binary" )
-    {
-        filename = boost::str( boost::format("%1%_%2%_%3%") %filename %format %Environment::rank() );
-        std::ifstream ifs( filename );
-        if ( ifs )
-        {
-            if ( format=="binary" )
-            {
-                boost::archive::binary_iarchive ia(ifs);
-                ia >> *this;
-            }
-            else if ( format=="xml")
-            {
-                boost::archive::xml_iarchive ia(ifs);
-                ia >> boost::serialization::make_nvp("vectorpetsc", *this );
-            }
-            else if ( format=="text")
-            {
-                boost::archive::text_iarchive ia(ifs);
-                ia >> *this;
-            }
-            else
-                Feel::cout << "MatrixPetsc save() function : error with unknown format "
-                           << format <<std::endl;
-        }
-        else
-        {
-            Feel::cout << "MatrixPetsc load() function : error opening ofstream with name "
-                       << filename <<std::endl;
-        }
-    }
+    void load( std::string const& filename="default_archive_name", std::string const& format="binary" );
 
 
 private:
@@ -645,14 +583,10 @@ private:
                             std::vector<size_type> const& cols,
                             Mat &submat, bool doClose = true ) const;
 
-    template<class Archive>
-    void save( Archive & ar, const unsigned int version ) const;
-
+    friend class boost::serialization::access;
 
     template<class Archive>
-    void load( Archive & ar, const unsigned int version );
-
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
+    void serialize(Archive & ar, const unsigned int version );
 
 protected:
 
@@ -660,6 +594,8 @@ protected:
      * Petsc matrix datatype to store values
      */
     Mat M_mat;
+
+
 
 private:
 
@@ -683,7 +619,6 @@ private:
 template<typename T>
 class MatrixPetscMPI : public MatrixPetsc<T>
 {
-    friend class boost::serialization::access;
     typedef MatrixPetsc<T> super;
 
 public :
@@ -744,7 +679,7 @@ public :
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_size_type_value );
 
     void addMatrix( const T a, MatrixSparse<T> const&X );
 
@@ -760,23 +695,18 @@ public :
 
 private :
 
+    friend class boost::serialization::access;
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version )
     {
-        if ( Archive::is_saving::value && !this->closed() )
-            this->close();
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(super);
     }
 
     void addMatrixSameNonZeroPattern( const T a, MatrixSparse<T> &X );
 };
 
-
-
 } // Feel
-
-BOOST_CLASS_EXPORT_KEY(Feel::MatrixPetsc<double>)
-BOOST_CLASS_EXPORT_KEY(Feel::MatrixPetscMPI<double>)
 
 
 #endif /* FEELPP_HAS_PETSC */

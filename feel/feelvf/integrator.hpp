@@ -3094,6 +3094,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         }
     }
 
+    bool hasMeshSupportPartialTest = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
+
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
         auto it = lit->template get<1>();
@@ -3267,18 +3269,63 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             rank_type procIdElt0 = faceCur.proc_first();
             size_type idEltTest = faceCur.element( 0 ).id();
             bool swapElt0Elt1WithSameMesh = false;
+            bool tryTwoConnections = true;
             if ( !useSameMesh)
             {
                 boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,faceCur);
                 if ( idEltTest == invalid_size_type_value )
                     continue;
             }
-            else if ( faceCur.element0().isGhostCell() && faceCur.isConnectedTo1() )
+            else if ( faceCur.isConnectedTo1() )
             {
-                __face_id_in_elt_0 = faceCur.pos_second();
-                procIdElt0 = faceCur.proc_second();
-                idEltTest = faceCur.element( 1 ).id();
-                swapElt0Elt1WithSameMesh = true;
+                if ( !hasMeshSupportPartialTest )
+                {
+                    if ( faceCur.element0().isGhostCell() )
+                    {
+                        __face_id_in_elt_0 = faceCur.pos_second();
+                        procIdElt0 = faceCur.proc_second();
+                        idEltTest = faceCur.element( 1 ).id();
+                        swapElt0Elt1WithSameMesh = true;
+                    }
+                }
+                else
+                {
+                    bool partialSupportHasConnection0 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltTest );
+                    size_type idEltOtherConnection = faceCur.element( 1 ).id();
+                    bool partialSupportHasConnection1 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltOtherConnection );
+
+                    if ( ( partialSupportHasConnection0 && !partialSupportHasConnection1 ) ||
+                         ( !partialSupportHasConnection0 && partialSupportHasConnection1 ) )
+                        tryTwoConnections = false;
+
+                    if ( tryTwoConnections )
+                    {
+                        if ( faceCur.element0().isGhostCell() )
+                        {
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = faceCur.element( 1 ).id();
+                            swapElt0Elt1WithSameMesh = true;
+                        }
+                    }
+                    else
+                    {
+                        if ( partialSupportHasConnection0 )
+                        {
+                            if ( faceCur.element0().isGhostCell() )
+                                continue;
+                        }
+                        else
+                        {
+                            if ( faceCur.element1().isGhostCell() )
+                                continue;
+                            __face_id_in_elt_0 = faceCur.pos_second();
+                            procIdElt0 = faceCur.proc_second();
+                            idEltTest = idEltOtherConnection;//faceCur.element( 1 ).id();
+                            //swapElt0Elt1WithSameMesh = true;
+                        }
+                    }
+                }
             }
 
             // element0 (from test mesh) used in integration
@@ -3288,17 +3335,24 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
 
             //if ( faceCur.isConnectedTo1() )
-            if ( this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
+            if ( tryTwoConnections && this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
             {
-
                 if ( faceCur.isGhostFace() )
                 {
-                    LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
-                    continue;
+                    if ( hasMeshSupportPartialTest )
+                    {
+                        if ( __form.testSpace()->dof()->meshSupport()->isGhostFace( faceCur ) )
+                            continue;
+                    }
+                    else
+                    {
+                        LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
+                        continue;
+                    }
                 }
-                // if is a interprocess faces, only integrate in one process
-                if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                    continue;
+                // // if is a interprocess faces, only integrate in one process
+                // if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
+                //     continue;
 
 
                 // get some info about test mesh element1 connected to the current face
@@ -4336,7 +4390,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
         else if ( testIsSubMeshFromRange )
             idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-
+        DCHECK( idEltTestInit != invalid_size_type_value ) << "invalid element id getting correspondance from "<< idEltRangeInit;
         //-----------------------------------------------//
         // get the geometric mapping associated with element 0
         uint16_type __face_id_in_elt_0 = faceInit.pos_first();

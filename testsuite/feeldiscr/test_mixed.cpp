@@ -26,10 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
-#define USE_BOOST_TEST 1
 
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
 #include <testsuite.hpp>
@@ -411,18 +408,6 @@ BOOST_AUTO_TEST_CASE( test_mixed2_33 )
 #endif
 BOOST_AUTO_TEST_SUITE_END()
 
-
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    Feel::Assert::setLog( "test_mixed.assert" );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
-
-    return ret;
-}
-#endif
 #else
 
 /**
