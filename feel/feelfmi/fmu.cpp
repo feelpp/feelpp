@@ -34,7 +34,7 @@ FMU::FMU( std::string prefix ) :
 
     if ( Environment::vm().count(prefixvm( M_prefix,"fmu.exported-variables" )) )
     {
-        M_export_list = make_shared<var_list_type>( option( _name="fmu.exported-variables", _prefix=M_prefix).template as<std::vector<std::string> >() );
+        M_export_list = boost::make_shared<var_list_type>( option( _name="fmu.exported-variables", _prefix=M_prefix).template as<std::vector<std::string> >() );
     }
 }
 
@@ -155,7 +155,7 @@ void FMU::addExportedVariables( std::vector<std::string> const& var_list )
 
 void FMU::setExportedVariables( std::vector<std::string> const& var_list )
 {
-    M_export_list = make_shared<var_list_type>( var_list );
+    M_export_list = boost::make_shared<var_list_type>( var_list );
     M_model->setExportList( M_export_list );
     M_model->setExportDirectory( M_export_directory );
 }
