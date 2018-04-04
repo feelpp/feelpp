@@ -60,12 +60,21 @@ public :
     using subelement_type = typename subspace_type<T>::element_type;
 
     CRBModelSaddlePoint( crb::stage stage, int level = 0 ) :
-        super ( stage, level )
+        super ( stage, level ),
+        M_addSupremizer(boption("crb.saddlepoint.add-supremizer"))
     {}
 
     CRBModelSaddlePoint( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
-        super ( model, stage, level )
+        super ( model, stage, level ),
+        M_addSupremizer(boption("crb.saddlepoint.add-supremizer"))
     {}
+
+    bool addSupremizerInSpace( int const& n_space ) const override
+    {
+        if ( n_space==0 )
+            return M_addSupremizer;
+        return false;
+    }
 
     element_type supremizer( parameter_type const& mu, element_type const& U, int n_space )
     {
@@ -111,6 +120,9 @@ public :
         A01->close();
         return A01;
     }
+private:
+    bool M_addSupremizer;
+
 
 }; // class CRBModelSaddlepoint
 

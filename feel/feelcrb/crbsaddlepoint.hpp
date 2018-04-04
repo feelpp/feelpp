@@ -35,6 +35,7 @@
 
 namespace Feel
 {
+po::options_description crbSaddlePointOptions( std::string const& prefix="" );
 
 /**
  * \class CRBSaddlePoint
@@ -42,8 +43,6 @@ namespace Feel
  *
  * \author JB Wahl
  */
-po::options_description crbSaddlePointOptions( std::string const& prefix="" );
-
 template<typename TruthModelType>
 class CRBSaddlePoint :
         public CRBBlock<TruthModelType>
@@ -148,10 +147,7 @@ protected:
     //! constructor from command line options
     CRBSaddlePoint( std::string const& name, truth_model_ptrtype const & model,
                     crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
-        super( name, model, stage, prefixExt ),
-        M_addSupremizer(boption("crb.saddlepoint.add-supremizer")),
-        M_orthonormalize0(boption("crb.saddlepoint.orthonormalize0")),
-        M_orthonormalize1(boption("crb.saddlepoint.orthonormalize1"))
+        super( name, model, stage, prefixExt )
         {
         }
 
@@ -230,21 +226,7 @@ public:
         return boost::make_tuple( output_upper_bound ,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
     }
 
-    bool orthonormalizeSpace( int const& n_space ) const override
-        {
-            if ( n_space==0 )
-                return M_orthonormalize0;
-            else if ( n_space==1 )
-                return M_orthonormalize1;
-            return false;
-        }
 
-    bool addSupremizerInSpace( int const& n_space ) const override
-        {
-            if ( n_space==0 )
-                return M_addSupremizer;
-            return false;
-        }
 
 private :
     void initRezMatrix() override;
@@ -258,9 +240,6 @@ private :
     void testResidual() override;
     double empiricalError( int N, parameter_type const& mu, std::vector<double> output_vec ) const;
 
-    bool M_addSupremizer;
-    bool M_orthonormalize0;
-    bool M_orthonormalize1;
 
 
     std::vector< std::vector< std::vector< std::vector< std::vector< double >>>>> M_R_RhsRhs;
@@ -385,7 +364,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     bool is_linear = this->M_model->isLinear();
     double output=0;
     double increment = this->M_fixedpointIncrementTol;
-    int N0 = M_addSupremizer ? 2*N:N;
+    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*N:N;
     int N1 = N;
 
     beta_vector_type betaAqm;
@@ -538,7 +517,7 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
                                                  std::vector< double > & output_vector,
                                                  int K ) const
 {
-    int N0 = M_addSupremizer ? 2*N:N;
+    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*N:N;
     int N1 = N;
 
     bool is_linear = this->M_model->isLinear();
@@ -644,8 +623,8 @@ double
 CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
 {
     int N = uN[0].size();
-    int Ni = M_addSupremizer ? N/3 : N/2;
-    int N0 = M_addSupremizer ? 2*Ni : Ni;
+    int Ni = this->M_model->addSupremizerInSpace(0) ? N/3 : N/2;
+    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ni : Ni;
     int N1 = Ni;
 
     matrixN_type Aprdu ( N0+N1, N0+N1 ) ;
@@ -720,9 +699,9 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
     bool optimize = boption(_name="crb.optimize-offline-residual") ;
-    int N0 = M_addSupremizer ? 2*Ncur:Ncur;
+    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ncur:Ncur;
     int N1 = Ncur;
-    int n_added0 = M_addSupremizer ? 2*number_of_added_elements:number_of_added_elements;
+    int n_added0 = this->M_model->addSupremizerInSpace(0) ? 2*number_of_added_elements:number_of_added_elements;
     int n_added1 = number_of_added_elements;
 
     int QLhs = this->M_model->Qa();
@@ -1082,7 +1061,7 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
                                                 vectorN_type Un, bool test ) const
 {
     using Feel::cout;
-    int N0 = M_addSupremizer ? 2*Ncur:Ncur;
+    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ncur:Ncur;
     int N1 = Ncur;
 
     CHECK( Un.size() == N0 + N1 )

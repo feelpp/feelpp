@@ -696,20 +696,30 @@ crbOptions( std::string const& prefix )
 }
 
 Feel::po::options_description
+crbBlockOptions( int const& n_block )
+{
+    Feel::po::options_description crboptions( "CRB Block Options" );
+    for ( int i=0; i<n_block; i++ )
+    {
+        crboptions.add_options()
+            ( (boost::format("crb.block.orthonormalize%1%") %i ).str().c_str(), Feel::po::value<bool>()->default_value( true ), (boost::format("orthonormalize reduce basis for rbspace #%1%") %i ).str().c_str() )
+            ;
+        crboptions.add( backend_options("backend-Xh"+std::to_string(i)) );
+    }
+
+    return crboptions;
+}
+
+
+Feel::po::options_description
 crbSaddlePointOptions( std::string const& prefix )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
-        ( "crb.saddlepoint.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
-        ( "crb.saddlepoint.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.saddlepoint.version",Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
         ;
 
-    crboptions.add( backend_options("backend-Xh0") );
-    crboptions.add( backend_options("backend-Xh1") );
-
-    return crboptions;
+    return crboptions.add( crbBlockOptions(2) );
 }
 
 Feel::po::options_description
