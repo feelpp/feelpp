@@ -228,7 +228,7 @@ struct OrthonormalizeBasisByBlock
                 auto wn = XN->primalRB();
                 int N = wn.size();
 
-                if ( m_crb->model()->model()->addSupremizerInSpace(T::value) )
+                if ( m_crb->model()->addSupremizerInSpace(T::value) )
                     n_added *= 2;
                 LOG(INFO) <<"CRBBlock orthonomalization begin for space "<<T::value <<", with "<< N
                           <<" basis vectors and "<< n_added <<" new vectors\n";
