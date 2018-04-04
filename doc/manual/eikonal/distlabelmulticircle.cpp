@@ -14,6 +14,8 @@ using namespace Feel;
 
 int main( int argc, char** argv )
 {
+    boost::timer chrono;
+
     Feel::Environment env( argc, argv );
 
     const double epsilon = 1e-6;
@@ -133,17 +135,33 @@ int main( int argc, char** argv )
     typedef LabelDistanceFMS<std::remove_reference<decltype(*Xh)>::type> labeldistanceFMS_type;
     auto distlabel = labeldistanceFMS_type::New( Xh );
 
+    double timeInit = chrono.elapsed();
+    Feel::cout << "initialization done in " << timeInit << " s" << std::endl;
+
     // interface local projection method
+    chrono.restart();
     auto phiILP = vf::project(Xh, elements(mesh),
                                   idv(phi)
                                   / sqrt( inner( gradv(phi), gradv(phi) ) ) );
+    double timeILP = chrono.elapsed();
+    Feel::cout << "interface local projection done in " << timeILP << " s" << std::endl;
 
+    chrono.restart();
     selflabelgenerator->updateLabel(phi);
+    double timeUpdateLabel = chrono.elapsed();
+    Feel::cout << "label update done in " << timeUpdateLabel << " s" << std::endl;
+
+    chrono.restart();
     distlabel->setSelfLabel( selflabelgenerator->getLabel() );
     distlabel->run( phiILP );
+    double timeDistLabel = chrono.elapsed();
+    Feel::cout << "distlabel fast-marching done in " << timeDistLabel << " s" << std::endl;
 
+    chrono.restart();
     auto fm = fms( Xh );
     auto dist = fm->march( phiILP );
+    double timeFastMarching = chrono.elapsed();
+    Feel::cout << "standard fast-marching done in " << timeFastMarching << " s" << std::endl;
 
     auto exp = exporter(_mesh=mesh, _name="distlabel");
     exp->step(0)->add("phi", *phi );
