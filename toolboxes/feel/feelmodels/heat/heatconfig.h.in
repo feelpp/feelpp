@@ -1,0 +1,25 @@
+#undef HEAT_DIM
+#undef HEAT_ORDERGEO
+#undef HEAT_ORDERPOLY
+
+#define HEAT_DIM @HEAT_DIM@
+#define HEAT_ORDERGEO @HEAT_ORDERGEO@
+#define HEAT_ORDERPOLY @HEAT_ORDERPOLY@
+
+
+#define HEAT_TEMPERATURE_INTERPOLATIONPOINTS PointSetFekete
+
+#define HEAT_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisTemperatureType> \
+        /**/
+#define HEAT_CLASS_TEMPLATE_TYPE \
+    Heat<ConvexType,BasisTemperatureType> \
+        /**/
+#define HEAT_CLASS_TYPE \
+    Heat< Simplex<HEAT_DIM,HEAT_ORDERGEO,HEAT_DIM>, \
+        Lagrange<HEAT_ORDERPOLY, Scalar,Continuous,HEAT_TEMPERATURE_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define HEAT_CLASS_INSTANTIATION \
+    template class HEAT_CLASS_TYPE ;  \
+    /**/

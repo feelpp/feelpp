@@ -2,11 +2,13 @@
 {
     "Name": "Solid Mechanics ",
     "ShortName":"Solid",
-    "Model":"Hyper-Elasticity",
+    "Models":
+    {
+        "equations":"Hyper-Elasticity"
+    },
     "Materials":
     {
         "OmegaSolid":{
-            "name":"copper",
             //"E":"1.4e6",
             "E":"124e6",
             "nu":"0.33",
@@ -63,7 +65,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","pressure","pid","Von-Mises"],
+        "Exports":
+        {
+            "fields":["displacement","pressure","pid","Von-Mises"]
+        },
         "Measures":
         {
             "VolumeVariation":""

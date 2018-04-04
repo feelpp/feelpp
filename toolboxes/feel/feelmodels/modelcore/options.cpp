@@ -28,24 +28,6 @@
 namespace Feel
 {
 
-Feel::po::options_description envfeelmodels_options(std::string const& prefix)
-{
-    Feel::po::options_description envfsiOptions("Env FSI options");
-    envfsiOptions.add_options()
-        (prefixvm(prefix,"verbose").c_str(), Feel::po::value<bool>()->default_value( true ), "true or false to view verbose")
-        (prefixvm(prefix,"evalpt-path").c_str(), Feel::po::value< std::string >(), "path of file containing set of point to evaluate")
-        (prefixvm(prefix,"comm.useNonStandartCompositeSpace").c_str(), Feel::po::value< bool >()->default_value( false ), "try old build of composite space")
-        (prefixvm(prefix,"rebuildOnlyAMeshPartion").c_str(), Feel::po::value< bool >()->default_value( false ), "only rebuild a mesh partition")
-        ;
-    envfsiOptions.add( Feel::gmsh_options("meshpartitioning") );
-    envfsiOptions.add_options()
-        (prefixvm(prefix,"meshpartitioning.gmsh.outputfilename").c_str(), Feel::po::value< std::string >(), "filename of partitioned mesh")
-        (prefixvm(prefix,"meshpartitioning.gmsh.partitions").c_str(), Feel::po::value< int >(), "number of partition")
-        ;
-
-    return envfsiOptions;
-}
-
 Feel::po::options_description modelbase_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
@@ -93,13 +75,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
         (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
-        // mesh
-        (prefixvm(prefix,"geofile").c_str(), Feel::po::value< std::string >(), "input geo file")
-        (prefixvm(prefix,"mshfile").c_str(), Feel::po::value< std::string >(), "input msh file")
-        // other
-        (prefixvm(prefix,"rebuild_mesh_partitions").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to rebuild mesh partitions ")
+        (prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
-        (prefixvm(prefix,"symbolic-expr.directory").c_str(), Feel::po::value< std::string >(), "symbolic-expr.directory");
         ;
 
     return appliBaseOptions
@@ -149,7 +126,6 @@ fluidMechanics_options(std::string const& prefix)
         ( prefixvm(prefix,"start-by-solve-newtonian").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-newtonian")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary")
         ( prefixvm(prefix,"start-by-solve-stokes-stationary.do-export").c_str(), Feel::po::value<bool>()->default_value( false ), "start-by-solve-stokes-stationary.do-export")
-        ( prefixvm(prefix,"start-by-solve-stokes-stationary.time-value-used-in-bc").c_str(), Feel::po::value<double>()->default_value( 0. ), "time-value-used-in-bc")
         //(prefixvm(prefix,"strain_tensor.use-sym-tensor").c_str(), Feel::po::value< bool >()->default_value(true), "sym tensor or not ")
 
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
@@ -190,24 +166,14 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"hovisu").c_str(), Feel::po::value<bool>(), "true or false for high order visualisation")
         (prefixvm(prefix,"hovisu.space-used").c_str(), Feel::po::value<std::string>()->default_value( "velocity" ), "velocity , pressure, p1 ")
 
-        (prefixvm(prefix,"do_export_velocity").c_str(), Feel::po::value<bool>(), "doExportVelocity")
-        (prefixvm(prefix,"do_export_pressure").c_str(), Feel::po::value<bool>(), "doExportPressure")
-        (prefixvm(prefix,"do_export_displacement").c_str(), Feel::po::value<bool>(), "doExportDisplacement")
-        (prefixvm(prefix,"do_export_vorticity").c_str(), Feel::po::value<bool>(), "doExportVorticity")
-        (prefixvm(prefix,"do_export_normalstress").c_str(), Feel::po::value<bool>(), "doExportNormalStress")
-        (prefixvm(prefix,"do_export_wallshearstress").c_str(), Feel::po::value<bool>(), "doExportWallShearStress")
-        (prefixvm(prefix,"do_export_density").c_str(), Feel::po::value<bool>(), "doExportDensity")
-        (prefixvm(prefix,"do_export_viscosity").c_str(), Feel::po::value<bool>(), "doExportViscosity")
-        (prefixvm(prefix,"do_export_meshale").c_str(), Feel::po::value<bool>()->default_value( false ), "doExportMeshALE")
-        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>(), "doExportAll")
-
+#if 0
         (prefixvm(prefix,"periodicity.translate-x").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-x")
         (prefixvm(prefix,"periodicity.translate-y").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-y")
         (prefixvm(prefix,"periodicity.translate-z").c_str(), Feel::po::value<double>()->default_value( 0.0 ), "periodicity.translate-z")
         (prefixvm(prefix,"periodicity.marker1").c_str(), Feel::po::value<std::string>(), "periodicity.marker1 ")
         (prefixvm(prefix,"periodicity.marker2").c_str(), Feel::po::value<std::string>(), "periodicity.marker2 ")
         (prefixvm(prefix,"periodicity.pressure-jump").c_str(), Feel::po::value<double>()->default_value(1.0), "periodicity.pressure-jump ")
-
+#endif
         (prefixvm(prefix,"blockns.type").c_str(), Feel::po::value<std::string>()->default_value("PCD"), "type : PCD,PMM")
         (prefixvm(prefix,"preconditioner.attach-mass-matrix").c_str(), Feel::po::value<bool>()->default_value(false), "attach mass matrix")
         (prefixvm(prefix,"preconditioner.attach-pmm").c_str(), Feel::po::value<bool>()->default_value(false), "attach pressure mass matrix")
@@ -235,7 +201,7 @@ fluidMechanics_options(std::string const& prefix)
     fluidOptions.add_options()
         (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
-    fluidOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+    fluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
 
     return fluidOptions;
 }
@@ -332,10 +298,10 @@ fluidStructInteraction_options( std::string const& prefix )
 
 
 Feel::po::options_description
-thermoDynamics_options(std::string const& prefix)
+heat_options(std::string const& prefix)
 {
-    Feel::po::options_description thermoDynamicsOptions("Thermo Dynamics options");
-    thermoDynamicsOptions.add_options()
+    Feel::po::options_description heatOptions("Heat options");
+    heatOptions.add_options()
         (prefixvm(prefix,"thermal-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "thermal-conductivity [ W/(m*K) ]")
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
@@ -353,12 +319,12 @@ thermoDynamics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         ;
-    return thermoDynamicsOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+    return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 Feel::po::options_description
 electricity_options(std::string const& prefix)
 {
-    Feel::po::options_description electricityOptions("Thermo Dynamics options");
+    Feel::po::options_description electricityOptions("Electricity options");
     electricityOptions.add_options()
         (prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
         ;
@@ -367,16 +333,31 @@ electricity_options(std::string const& prefix)
 Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
 {
-    Feel::po::options_description thermoElectricOptions("Thermo Dynamics options");
+    Feel::po::options_description thermoElectricOptions("ThermoElectric options");
+
     thermoElectricOptions.add_options()
-        // (prefixvm(prefix,"electric.electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
-        (prefixvm(prefix,"do_export_all").c_str(), Feel::po::value<bool>()->default_value( false ), "do_export_all")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-thermo-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-thermo-electric")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat")
+        (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")
         ;
-    thermoElectricOptions.add( thermoDynamics_options( prefixvm(prefix,"thermo") ) );
+    thermoElectricOptions.add( heat_options( prefixvm(prefix,"heat") ) );
     thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
 
+Feel::po::options_description
+heatFluid_options(std::string const& prefix)
+{
+    Feel::po::options_description heatFluidOptions("HeatFluid options");
+    heatFluidOptions.add_options()
+        (prefixvm(prefix,"use-natural-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use natural convection")
+        (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0")
+        (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
+    ;
+    heatFluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
+    heatFluidOptions.add( fluidMechanics_options( prefixvm(prefix,"fluid") ) );
+    return heatFluidOptions.add( modelnumerical_options( prefix ) );
+}
 
 Feel::po::options_description
 advection_options(std::string const& prefix)
@@ -587,36 +568,35 @@ alemesh_options(std::string const& prefix)
 
 
 Feel::po::options_description
-feelmodels_options(std::string type)
+toolboxes_options(std::string const& type)
 {
-    Feel::po::options_description FSIoptions("FSI options");
-
-    FSIoptions.add( envfeelmodels_options("master") );
+    Feel::po::options_description toolboxesOptions("toolboxes options");
 
     if (type == "fluid")
-        FSIoptions.add(fluidMechanics_options("fluid"));
+        toolboxesOptions.add(fluidMechanics_options("fluid"));
     else if (type == "solid")
-        FSIoptions.add(solidMechanics_options("solid"));
-    else if ( type == "thermo-dynamics" )
-        FSIoptions.add( thermoDynamics_options("thermo") );
+        toolboxesOptions.add(solidMechanics_options("solid"));
+    else if ( type == "heat" )
+        toolboxesOptions.add( heat_options("heat") );
     else if (type == "fsi")
-        FSIoptions
+        toolboxesOptions
             .add(fluidMechanics_options("fluid"))
             .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
     else if (type == "advection")
-        FSIoptions.add(advection_options("advection"));
+        toolboxesOptions.add(advection_options("advection"));
     else if (type == "levelset")
-        FSIoptions.add(levelset_options("levelset"));
+        toolboxesOptions.add(levelset_options("levelset"));
     else if (type == "multifluid")
-        FSIoptions.add(multifluid_options("multifluid"));
+        toolboxesOptions.add(multifluid_options("multifluid"));
     else if (type == "thermo-electric")
-        FSIoptions.add(thermoElectric_options("thermo-electric"));
+        toolboxesOptions.add(thermoElectric_options("thermo-electric"));
+    else if (type == "heat-fluid")
+        toolboxesOptions.add(heatFluid_options("heat-fluid"));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be fluid,solid,thermo-dynamics,fsi";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
 
-    return FSIoptions
-        .add( Feel::feel_options() );
+    return toolboxesOptions;
 }
 
 

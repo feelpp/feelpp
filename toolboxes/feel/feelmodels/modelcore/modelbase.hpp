@@ -45,6 +45,22 @@ namespace Feel
 namespace FeelModels
 {
 
+struct ModelBaseRepository
+{
+    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "" );
+    ModelBaseRepository( ModelBaseRepository const& ) = default;
+    ModelBaseRepository( ModelBaseRepository && ) = default;
+
+    std::string const& root() const { return this->rootWithNumProc(); }
+    std::string const& rootWithNumProc() const { return M_rootRepositoryWithNumProc; }
+    std::string const& rootWithoutNumProc() const { return M_rootRepositoryWithoutNumProc; }
+    std::string const& expr() const { return M_exprRepository; }
+
+private :
+    std::string M_rootRepositoryWithNumProc, M_rootRepositoryWithoutNumProc;
+    std::string M_exprRepository;
+};
+
 
 class ModelBase
 {
@@ -52,7 +68,7 @@ public :
     ModelBase( std::string const& prefix,
                WorldComm const& worldComm = Environment::worldComm(),
                std::string const& subPrefix = "",
-               std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     ModelBase( ModelBase const& app ) = default;
     virtual ~ModelBase();
@@ -67,14 +83,9 @@ public :
     // prefix
     std::string const& prefix() const;
     std::string const& subPrefix() const;
-    // vm
-    po::variables_map const& vm() const;
     // root repository
+    ModelBaseRepository const& repository() const { return M_modelRepository; }
     std::string const& rootRepository() const;
-    std::string const& rootRepositoryWithoutNumProc() const;
-    std::string const& rootRepositoryWithNumProc() const;
-    static std::string rootRepositoryByDefault();
-
     // verbose
     bool verbose() const;
     bool verboseAllProc() const;
@@ -106,8 +117,8 @@ private :
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
-    // short repository name
-    std::string M_rootRepositoryWithNumProc, M_rootRepositoryWithoutNumProc;
+    // directory
+    ModelBaseRepository M_modelRepository;
     // verbose
     bool M_verbose,M_verboseAllProc;
     // filename for save info
