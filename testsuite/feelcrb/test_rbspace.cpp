@@ -106,7 +106,7 @@ public :
         auto mesh=unitHypercube<Dim>();
         Xh = Pch<Order>( mesh );
 
-        auto RbSpace = RbSpacePch( this->shared_from_this()  );
+        auto RbSpace = RbSpacePch( Xh  );
 
         auto basis_x = vf::project( Xh , elements(mesh), Px() );
         auto basis_y = vf::project( Xh , elements(mesh), Py() );
