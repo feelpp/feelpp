@@ -158,14 +158,14 @@ removeComments( std::string str )
 
 /**
  * Edit the value in the ptree from the command line options
- * The syntax is : --json-options=key1:value1 key2:value2 key3:value3
+ * The syntax is : --json-editions=key1:value1 key2:value2 key3:value3
  */
 FEELPP_EXPORT void
 editPtreeFromOptions( pt::ptree& p, std::string const& prefix )
 {
-    if ( Environment::vm().count("json-options") )
+    if ( Environment::vm().count("json-editions") )
     {
-        std::vector<std::string> var_list = option( _name="json-options", _prefix=prefix ).template as<std::vector<std::string>>();
+        std::vector<std::string> var_list = option( _name="json-editions", _prefix=prefix ).template as<std::vector<std::string>>();
 
         for ( auto s : var_list )
         {
