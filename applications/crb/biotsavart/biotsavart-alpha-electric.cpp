@@ -146,7 +146,7 @@ void BiotSavartAlphaElectricCRB<te_rb_model_type>::runBS()
 
 template<typename te_rb_model_type>
 typename BiotSavartAlphaElectricCRB<te_rb_model_type>::vector_ptrtype
-BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type const& mu )
+BiotSavartAlphaElectricCRB<te_rb_model_type>::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     tic();
     double online_tol = doption(_name="crb.online-tolerance");
