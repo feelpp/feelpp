@@ -2,11 +2,13 @@
 {
     "Name": "Arterial wall",
     "ShortName":"ArterialWall",
-    "Model":"Elasticity",
+    "Models":
+    {
+        "equations":"Elasticity"
+    },
     "Materials":
     {
         "ArterialWall":{
-            "name":"solid",
             "E":"3e6",
             "nu":"0.3",
             "rho":"1.2"
@@ -49,7 +51,10 @@
     },
     "PostProcess":
     {
-        "Fields":["displacement","pid"],
+        "Exports":
+        {
+            "fields":["displacement","pid"]
+        },
         "Measures":
         {
             "Maximum":

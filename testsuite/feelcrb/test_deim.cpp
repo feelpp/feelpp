@@ -121,7 +121,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        Environment::setOptionValue("deim.rebuild-db", true );
+        Environment::setOptionValue("deim.rebuild-database", true );
         initDeim( Pset );
 
         M_deim->run();
@@ -164,7 +164,7 @@ public :
 
 
         // We rebuild a new DEIM object with same uuid so he will reload the db
-        Environment::setOptionValue("deim.rebuild-db", false );
+        Environment::setOptionValue("deim.rebuild-database", false );
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Rebuild and check" );
         initDeim( Pset );
@@ -268,6 +268,8 @@ public :
     {
         return "test_deim";
     }
+    void initOnlineModel()
+    {}
 
  private :
     void initDeim( sampling_ptrtype Pset )
