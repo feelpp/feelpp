@@ -1,0 +1,38 @@
+{
+    "Name": "Sedimentation2d",
+    "ShortName":"Sedimentation2d",
+    "Model":"Navier-Stokes",
+    "Parameters":
+    {
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "Left":
+                {
+                    "expr":"{0,0}"
+                },
+                "Right":
+                {
+                    "expr":"{0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Fields":["velocity","pressure","density", "viscosity", "pid"]
+    }
+
+}

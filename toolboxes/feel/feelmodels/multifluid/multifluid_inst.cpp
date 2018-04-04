@@ -8,6 +8,8 @@
 #include <feel/feelmodels/multifluid/inextensibilityforcemodel.hpp>
 #include <feel/feelmodels/multifluid/linearelasticforcemodel.hpp>
 #include <feel/feelmodels/multifluid/skalakforcemodel.hpp>
+#include <feel/feelmodels/multifluid/collisionforcemodel.hpp>
+#include <feel/feelmodels/multifluid/wallcontactforcemodel.hpp>
 
 namespace Feel {
 namespace FeelModels {
@@ -41,6 +43,15 @@ const bool skalak_interfaceforcesmodel =
             "skalak-force", 
             &detail::createInterfaceForcesModel<SkalakForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
 
+const bool collision_interfaceforcesmodel = 
+    MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
+            "collision-force", 
+            &detail::createInterfaceForcesModel<CollisionForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
+
+const bool wallcontact_interfaceforcesmodel = 
+    MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
+            "wallcontact-force", 
+            &detail::createInterfaceForcesModel<WallContactForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type> );
 }
 }
 

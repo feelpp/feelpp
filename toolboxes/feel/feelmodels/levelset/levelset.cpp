@@ -58,7 +58,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_reinitializerIsUpdatedForUse(false),
     M_hasReinitialized(false),
     M_hasReinitializedSmooth(false),
-    M_iterSinceReinit(0)
+    M_iterSinceReinit(0),
+    M_useSelfLabel(false),
+    M_useMultiLabels(false),
+    M_doUpdateMultiLabels(true)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -115,6 +118,50 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
 
     M_initialVolume = this->volume();
+    // Set self-label save name
+    std::string suffixName = "";
+    if ( this->timeStepBDF()->fileFormat() == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    M_selfLabelSavePrefix = prefixvm(this->prefix(),prefixvm(this->subPrefix(),"selflabel"+suffixName));
+    // When restarting, load self-labels if required
+    if( this->doRestart() )
+    {
+        if( M_useMultiLabels )
+        {
+            fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
+            int iteration = this->timeStepBDF()->iteration() - 1;
+
+            auto labels = this->functionSpace()->elementPtr(); 
+
+            if ( this->timeStepBDF()->fileFormat() == "hdf5")
+            {
+#ifdef FEELPP_HAS_HDF5
+                labels->loadHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_selfLabelSavePrefix %(iteration)).str() ).string() );
+#else
+                CHECK( false ) << "hdf5 not detected";
+#endif
+            }
+            else if ( this->timeStepBDF()->fileFormat() == "binary")
+            {
+                // create and open a character archive for output
+                std::ostringstream ostr;
+                if( this->timeStepBDF()->rankProcInNameOfFiles() )
+                    ostr << M_selfLabelSavePrefix << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+                else
+                    ostr << M_selfLabelSavePrefix << "-" << iteration;
+                DVLOG(2) << "[Levelset::init()] load file: " << ostr.str() << "\n";
+
+                fs::ifstream ifs;
+                ifs.open( dirPath/ostr.str() );
+
+                // load data from archive
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> *labels;
+            }
+
+            this->setUseMultiLabels( M_useMultiLabels, labels );
+        }
+    }
 
     // Init modGradPhi advection
     if( M_useGradientAugmented )
@@ -182,6 +229,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     auto phi_init = this->functionSpace()->element();
     phi_init.setConstant( std::numeric_limits<value_type>::max() );
 
+    element_levelset_ptrtype labels;
+    if( M_useMultiLabels )
+        labels = this->functionSpace()->elementPtr(); 
+
     this->modelProperties().parameters().updateParameterValues();
     if( !this->M_icDirichlet.empty() )
     {
@@ -228,12 +279,14 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 _expr=idv(phi_init) / sqrt( trans(idv(gradPhiInit))*idv(gradPhiInit) )
                 );
             // Reinitialize phi_init
-            phi_init = this->reinitializerFM()->run( phi_init );
+            phi_init = this->reinitializerFM()->run( phi_init ).distance();
         }
         // Add shapes
         for( auto const& shape: M_icShapes )
         {
             this->addShape( shape, phi_init );
+            if( M_useMultiLabels )
+                this->addLabel( shape, *labels );
         }
 
         hasInitialValue = true;
@@ -242,6 +295,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( hasInitialValue )
     {
         this->setInitialValue( phi_init );
+        if( M_useMultiLabels )
+        {
+            this->setUseMultiLabels( M_useMultiLabels, labels );
+            this->updateSelfLabel();
+        }
     }
 
     if( M_useGradientAugmented )
@@ -312,6 +370,42 @@ LEVELSET_CLASS_TEMPLATE_TYPE::addShape(
                     _space=this->functionSpace(),
                     _range=elements(this->mesh()),
                     _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
+                    _geomap=this->geomap()
+                    );
+        }
+        break;
+
+        case ShapeType::ELLIPSE:
+        {
+            // TODO
+        }
+        break;
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::addLabel( 
+        std::pair<ShapeType, parameter_map> const& shape, 
+        element_levelset_type & labels
+        )
+{
+    ShapeType shapeType = shape.first;
+    parameter_map const& shapeParams = shape.second;
+
+    switch(shapeType)
+    {
+        case ShapeType::SPHERE:
+        {
+            auto X = Px() - shapeParams.dget("xc");
+            auto Y = Py() - shapeParams.dget("yc");
+            auto Z = Pz() - shapeParams.dget("zc"); 
+            auto R = shapeParams.dget("radius");
+            auto Label = shapeParams.iget("label");
+            labels = vf::project(
+                    _space=this->functionSpace(),
+                    _range=elements(this->mesh()),
+                    _expr=idv(labels) + (X*X+Y*Y+Z*Z < R*R/2.) * Label,
                     _geomap=this->geomap()
                     );
         }
@@ -763,6 +857,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
 
     M_fixVolume = boption( _name="fix-volume", _prefix=this->prefix() );
+    M_useMultiLabels = boption( _name="use-multi-labels", _prefix=this->prefix() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -772,6 +867,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
     auto const& initialConditions = this->modelProperties().initialConditions();
 
     this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
+    int currentLabel = 1;
     
     // Shapes
     for( std::string const& icShape: initialConditions.markers( this->prefix(), "shapes") )
@@ -794,12 +890,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
+                    auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
+                    int label = (labelRead.first)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
                     shapeParameterMap["zc"] = zcRead.second;
                     shapeParameterMap["radius"] = radiusRead.second;
+                    shapeParameterMap["label"] = label;
                 }
                 break;
 
@@ -813,12 +912,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
                     CHECK(zcRead.first || nDim < 3) << icShape << " zc not provided\n";
                     auto radiusRead = initialConditions.dparam( this->prefix(), "shapes", icShape, "radius" );
                     CHECK(radiusRead.first) << icShape << " radius not provided\n";
+                    auto labelRead = initialConditions.iparam( this->prefix(), "shapes", icShape, "label" );
+                    int label = (labelRead.first)? labelRead.second: currentLabel;
 
                     shapeParameterMap["id"] = icShape;
                     shapeParameterMap["xc"] = xcRead.second;
                     shapeParameterMap["yc"] = ycRead.second;
                     shapeParameterMap["zc"] = zcRead.second;
                     shapeParameterMap["radius"] = radiusRead.second;
+                    shapeParameterMap["label"] = label;
                     // TODO
                 }
                 break;
@@ -830,6 +932,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
         {
             CHECK(false) << "invalid shape type in " << icShape << std::endl;
         }
+        ++currentLabel;
     } 
 }
 
@@ -1430,36 +1533,42 @@ LEVELSET_CLASS_TEMPLATE_TYPE::outerElementsRange( double cut )
 // Utility distances
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
-LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
+LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary( bool forceUpdate )
 {
-    element_levelset_ptrtype distToBoundary( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
+    if( !M_distToBoundary )
+    {
+        M_distToBoundary.reset( new element_levelset_type(this->functionSpace(), "DistToBoundary") );
+    }
 
-    // Retrieve the elements touching the boundary
-    auto boundaryelts = boundaryelements( this->mesh() );
+    if( forceUpdate )
+    {
+        // Retrieve the elements touching the boundary
+        auto boundaryelts = boundaryelements( this->mesh() );
 
-    // Mark the elements in myrange
-    auto mymark = vf::project(
-            _space=this->functionSpaceMarkers(),
-            _range=boundaryelts,
-            _expr=cst(1)
-            );
+        // Mark the elements in myrange
+        auto mymark = vf::project(
+                _space=this->functionSpaceMarkers(),
+                _range=boundaryelts,
+                _expr=cst(1)
+                );
 
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
+        // Update mesh marker2
+        this->mesh()->updateMarker2( mymark );
 
-    // Init phi0 with h on marked2 elements
-    auto phi0 = vf::project(
-            _space=this->functionSpace(),
-            _range=boundaryelts,
-            _expr=h()
-            );
-    phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
+        // Init phi0 with h on marked2 elements
+        auto phi0 = vf::project(
+                _space=this->functionSpace(),
+                _range=boundaryelts,
+                _expr=h()
+                );
+        phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
 
-    // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToBoundary = this->reinitializerFM()->run( phi0 );
+        // Run FM using marker2 as marker DONE
+        this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
+        *M_distToBoundary = this->reinitializerFM()->run( phi0 ).distance();
+    }
 
-    return distToBoundary;
+    return M_distToBoundary;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1504,7 +1613,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 ).distance();
 
     return distToMarkedFaces;
 }
@@ -1552,7 +1661,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
 
     // Run FM using marker2 as marker DONE
     this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->reinitializerFM()->run( phi0 ).distance();
 
     return distToMarkedFaces;
 }
@@ -1652,6 +1761,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 
     // Update interface-related quantities
     this->updateInterfaceQuantities();
+    if( this->useSelfLabel() )
+        this->updateSelfLabel();
 
     // Correct volume if requested
     if( this->M_fixVolume )
@@ -1923,113 +2034,28 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 // Reinitialization
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
-{ 
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
+{
     this->log("LevelSet", "reinitialize", "start");
     this->timerTool("Reinit").start();
 
-    if( !M_reinitializerIsUpdatedForUse )
-        this->createReinitialization();
-
     auto phi = this->phi();
-    auto phiReinit = this->functionSpace()->elementPtr();
 
-    if ( M_reinitMethod == LevelSetReinitMethod::FM )
+    bool reinitializeWithDistLabel = false;
+    /* If available, use the fast-marching done by distLabel */
+    if ( M_reinitMethod == LevelSetReinitMethod::FM 
+            && this->useMultiLabels() 
+            && !M_useMarkerDiracAsMarkerDoneFM )
     {
-        if ( M_useMarkerDiracAsMarkerDoneFM )
-        {
-            this->mesh()->updateMarker2( *this->markerDirac() );
-        }
+        if( M_doUpdateMultiLabels )
+            this->updateMultiLabels();
 
-        switch (M_fastMarchingInitializationMethod)
-        {
-            case FastMarchingInitializationMethod::ILP :
-            {
-                auto const gradPhi = idv(this->gradPhi());
-                
-                *phiReinit = vf::project(
-                        this->functionSpace(), 
-                        elements(this->mesh()), 
-                        idv(phi)/ sqrt( trans(gradPhi) * gradPhi )
-                        );
-            }
-            break;
-
-            case FastMarchingInitializationMethod::SMOOTHED_ILP :
-            {
-                // save the smoothed gradient magnitude of phi
-                //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
-                //auto gradPhi = idv(this->gradPhi());
-                auto gradPhi = trans(gradv(phi));
-                //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
-                auto modgradphi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
-                
-                *phiReinit = vf::project(
-                        this->functionSpace(), 
-                        elements(this->mesh()), 
-                        idv(phi)/idv(modgradphi) 
-                        );
-            }
-            break;
-
-            case FastMarchingInitializationMethod::HJ_EQ :
-            {
-                CHECK(false) << "TODO\n";
-                //*phi = *explicitHJ(max_iter, dtau, tol);
-            }
-            break;
-            case FastMarchingInitializationMethod::IL_HJ_EQ :
-            {
-                CHECK(false) << "TODO\n";
-                //*phi = *explicitHJ(max_iter, dtau, tol);
-            }
-            break;
-            case FastMarchingInitializationMethod::NONE :
-            {
-                *phiReinit = *phi;
-            }
-            break;
-        } // switch M_fastMarchingInitializationMethod
-
-        // Fast Marching Method
-        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                M_useMarkerDiracAsMarkerDoneFM 
-                );
-
-        LOG(INFO)<< "reinit with FMM done"<<std::endl;
-    } // Fast Marching
-
-    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
-    {
-        *phiReinit = *phi;
-        // TODO
-    } // Hamilton-Jacobi
-
-    //*phi = M_reinitializer->run( *phi );
-    if( useSmoothReinit )
-    {
-        *phiReinit = this->smoother()->project(
-                _expr=idv(*phiReinit)
-                );
+        *phi = M_distLabel->distance();
     }
-
-    *phi = M_reinitializer->run( *phiReinit );
-
-    //*phiReinit = M_reinitializer->run( *phiReinit );
-    //if( useSmoothReinit )
-    //{
-        ////auto R = this->interfaceRectangularFunction(phiReinit);
-        //auto R = this->interfaceRectangularFunction();
-        //*phi = vf::project(
-                //_space=this->functionSpace(),
-                //_range=elements(this->mesh()),
-                //_expr=idv(phi)*idv(R) + idv(phiReinit)*(1.-idv(R))
-                //);
-    //}
-    //else
-    //{
-        //*phi = *phiReinit;
-    //}
+    else
+    {
+        this->reinitializeImpl(phi);
+    }
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -2047,16 +2073,103 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize( bool useSmoothReinit )
                 );
     }
 
-    if( useSmoothReinit )
-    {
-        M_hasReinitializedSmooth = true;
-        M_hasReinitialized = true;
-    }
-    else
-        M_hasReinitialized = true;
+    M_hasReinitialized = true;
 
     double timeElapsed = this->timerTool("Reinit").stop();
     this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::initializeFastMarching( element_levelset_ptrtype phi )
+{
+    switch (M_fastMarchingInitializationMethod)
+    {
+        case FastMarchingInitializationMethod::ILP :
+        {
+            auto const modGradPhi = this->projectorL2()->project( 
+                    _expr=vf::sqrt(inner( gradv(phi), gradv(phi) )) 
+                    );
+            
+            *phi = vf::project(
+                    this->functionSpace(), 
+                    elements(this->mesh()), 
+                    idv(phi) / idv(modGradPhi)
+                    );
+        }
+        break;
+
+        case FastMarchingInitializationMethod::SMOOTHED_ILP :
+        {
+            // save the smoothed gradient magnitude of phi
+            //auto modgradphi = M_smootherFM->project( vf::min(vf::max(vf::sqrt(inner(gradv(phi), gradv(phi))), 0.92), 2.) );
+            //auto gradPhi = idv(this->gradPhi());
+            auto gradPhi = trans(gradv(phi));
+            //auto modgradphi = M_smootherFM->project( sqrt( trans(gradPhi)*gradPhi ) );
+            auto modGradPhi = this->smoother()->project( sqrt( trans(gradPhi)*gradPhi ) );
+            
+            *phi = vf::project(
+                    this->functionSpace(), 
+                    elements(this->mesh()), 
+                    idv(phi)/idv(modGradPhi) 
+                    );
+        }
+        break;
+
+        case FastMarchingInitializationMethod::HJ_EQ :
+        {
+            CHECK(false) << "TODO\n";
+            //*phi = *explicitHJ(max_iter, dtau, tol);
+        }
+        break;
+        case FastMarchingInitializationMethod::IL_HJ_EQ :
+        {
+            CHECK(false) << "TODO\n";
+            //*phi = *explicitHJ(max_iter, dtau, tol);
+        }
+        break;
+        case FastMarchingInitializationMethod::NONE :
+        {
+            // nothing to do
+        }
+        break;
+    } // switch M_fastMarchingInitializationMethod
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::reinitializeImpl( element_levelset_ptrtype phi )
+{ 
+    if( !M_reinitializerIsUpdatedForUse )
+        this->createReinitialization();
+
+    auto phiReinit = this->functionSpace()->elementPtr();
+
+    if ( M_reinitMethod == LevelSetReinitMethod::FM )
+    {
+        if ( M_useMarkerDiracAsMarkerDoneFM )
+        {
+            this->mesh()->updateMarker2( *this->markerDirac() );
+        }
+
+        this->initializeFastMarching( phi );
+
+        // Fast Marching Method
+        boost::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
+                M_useMarkerDiracAsMarkerDoneFM 
+                );
+
+        LOG(INFO)<< "reinit with FMM done"<<std::endl;
+    } // Fast Marching
+
+    else if ( M_reinitMethod == LevelSetReinitMethod::HJ )
+    {
+        *phiReinit = *phi;
+        // TODO
+    } // Hamilton-Jacobi
+
+    *phi = M_reinitializer->run( *phiReinit ).distance();
+
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -2085,6 +2198,92 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
     }
 
     return M_reinitializerHJ;
+}
+
+//----------------------------------------------------------------------------//
+// Multi-labels
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setUseSelfLabel(bool b, element_levelset_ptrtype const& label)
+{
+    M_useSelfLabel = b;
+    if( M_useSelfLabel )
+    {
+        if( !M_selfLabel )
+            M_selfLabel = selflabel_type::New( 
+                    this->functionSpace(), 
+                    this->functionSpaceMarkers() 
+                    );
+        CHECK( label ) << "NULL label ptr provided\n";
+        M_selfLabel->setLabel( label );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setUseMultiLabels(bool b, element_levelset_ptrtype const& label)
+{
+    M_useMultiLabels = b;
+    if( !M_distLabel )
+    {
+        M_distLabel.reset( 
+                new distlabelFMS_type( this->functionSpace(), prefixvm(this->prefix(), "distlabel-fm") ) 
+                );
+    }
+    if( !M_distBetweenLabels )
+    {
+        M_distBetweenLabels.reset(
+                new element_levelset_type(this->functionSpace(), "DistBetweenLabels") 
+                );
+    }
+    if( M_useMultiLabels )
+    {
+        this->setUseSelfLabel( M_useMultiLabels, label );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateSelfLabel()
+{
+    this->log("LevelSet", "updateSelfLabel", "start");
+    this->timerTool("Solve").start();
+
+    M_selfLabel->updateLabel( this->phi() );
+    M_doUpdateMultiLabels = true;
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet","updateSelfLabel","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateMultiLabels()
+{
+    this->log("LevelSet", "updateMultiLabels", "start");
+    this->timerTool("Solve").start();
+
+    *M_distBetweenLabels = *this->phi();
+    this->initializeFastMarching( M_distBetweenLabels );
+    M_distLabel->setSelfLabel( M_selfLabel->getLabel() );
+    M_distLabel->run( *M_distBetweenLabels );
+    *M_distBetweenLabels = M_distLabel->nextNearestNeighbourDistance();
+    M_doUpdateMultiLabels = false;
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("LevelSet","updateMultiLabels","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype
+LEVELSET_CLASS_TEMPLATE_TYPE::distanceBetweenLabels()
+{
+    CHECK(this->useMultiLabels()) << "You must enable multi-labels to get the distance between labels.\n";
+
+    if( M_doUpdateMultiLabels )
+        this->updateMultiLabels();
+
+    return M_distBetweenLabels;
 }
 
 //----------------------------------------------------------------------------//
@@ -2365,6 +2564,28 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
                                        *this->modGradPhi() );
     }
 
+    if( this->useSelfLabel() )
+    {
+        this->M_exporter->step( time )->add( 
+                prefixvm(this->prefix(), "Label0"),
+                prefixvm(this->prefix(), prefixvm(this->subPrefix(), "Label0")),
+                *M_selfLabel->getLabel()
+                );
+    }
+    if( this->useMultiLabels() )
+    {
+        this->M_exporter->step( time )->add( 
+                prefixvm(this->prefix(), "distBetweenLabels"),
+                prefixvm(this->prefix(), prefixvm(this->subPrefix(), "distBetweenLabels")),
+                *this->distanceBetweenLabels()
+                );
+        //this->M_exporter->step( time )->add( 
+                //prefixvm(this->prefix(), "Label0"),
+                //prefixvm(this->prefix(), prefixvm(this->subPrefix(), "Label0")),
+                //*M_selfLabel->getLabel()
+                //);
+    }
+
     if( M_useGradientAugmented )
     {
         M_modGradPhiAdvection->exportResults( time );
@@ -2527,6 +2748,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
 
     if (!doSave) return;
 
+    // Save iterSinceReinit
     if( this->worldComm().isMasterRank() )
     {
         fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
@@ -2535,6 +2757,36 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
         oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
     }
     this->worldComm().barrier();
+
+    // Save selfLabel
+    if( this->useSelfLabel() )
+    {
+        fs::path dirPath = ( this->timeStepBDF()->restartPath().empty() )? this->timeStepBDF()->path() : this->timeStepBDF()->restartPath()/this->timeStepBDF()->path();
+        int iteration = this->timeStepBDF()->iteration();
+
+        if ( this->timeStepBDF()->fileFormat() == "hdf5")
+        {
+#ifdef FEELPP_HAS_HDF5
+                M_selfLabel->getLabel()->saveHDF5( ( dirPath / (boost::format("%1%-%2%.h5")%M_selfLabelSavePrefix %(iteration)).str() ).string() );
+#else
+            CHECK( false ) << "hdf5 not detected";
+#endif
+        }
+        else if ( this->timeStepBDF()->fileFormat() == "binary")
+        {
+            // create and open a character archive for output
+            std::ostringstream ostr;
+            if( this->timeStepBDF()->rankProcInNameOfFiles() )
+                ostr << M_selfLabelSavePrefix << "-" << iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+            else
+                ostr << M_selfLabelSavePrefix << "-" << iteration;
+
+            // save data to archive
+            fs::ofstream ofs( dirPath/ostr.str() );
+            boost::archive::binary_oarchive oa( ofs );
+            oa << *(M_selfLabel->getLabel());
+        }
+    }
 }
 
 //----------------------------------------------------------------------------//

@@ -694,7 +694,6 @@ Bdf<SpaceType>::unknown( int i )
     return *M_unknowns[i];
 }
 
-
 template <typename SpaceType>
 void
 Bdf<SpaceType>::saveCurrent()

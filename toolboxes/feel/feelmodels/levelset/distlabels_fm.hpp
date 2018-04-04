@@ -3,7 +3,7 @@
  This file is part of the Feel library
 
  Author(s): Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- Date: 2016-05-20
+ Date: 2016-09-08
 
  Copyright (C) 2016 Université Joseph Fourier (Grenoble I)
 
@@ -22,27 +22,26 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- \file reinitializer_fm.hpp
+ \file distlabels_fm.hpp
  \author Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
- \date 2016-05-20
+ \date 2016-09-08
  */
-#ifndef _REINITIALIZER_FM_HPP
-#define _REINITIALIZER_FM_HPP 1
+#ifndef _DISTLABELS_FM_HPP
+#define _DISTLABELS_FM_HPP 1
 
 #include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelmodels/levelset/spaceP1wrapper.hpp>
-#include <feel/feells/reinit_fms_impl.hpp>
+#include <feel/feells/distlabels_fms.hpp>
 
 namespace Feel
 {
 
 template<typename FunctionSpaceType>
-class ReinitializerFM
+class DistLabelsFM
 : public Reinitializer<FunctionSpaceType>
 {
 public:
     typedef Reinitializer<FunctionSpaceType> super_type;
-    typedef ReinitializerFM<FunctionSpaceType> self_type;
+    typedef DistLabelsFM<FunctionSpaceType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
     //--------------------------------------------------------------------//
     // Function spaces
@@ -63,7 +62,7 @@ public:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     // Constructor
-    ReinitializerFM( 
+    DistLabelsFM( 
             functionspace_ptrtype const& space,
             std::string const& prefix = "" );
     //--------------------------------------------------------------------//
@@ -72,10 +71,13 @@ public:
     //--------------------------------------------------------------------//
     // Accessors
     element_type distance() const;
+    element_type nearestNeighbourLabel() const;
+    element_type nextNearestNeighbourDistance() const;
+    element_type nextNearestNeighbourLabel() const;
+
+    void setSelfLabel( element_ptrtype const& label ); 
     //--------------------------------------------------------------------//
     // Parameters
-    void loadParametersFromOptionsVm();
-
     void setUseMarker2AsMarkerDone( bool val = true ) { M_useMarker2AsMarkerDone = val; }
     bool useMarker2AsMarkerDone() const { return M_useMarker2AsMarkerDone; }
 
@@ -86,18 +88,20 @@ private:
     typedef boost::shared_ptr<spaceP1wrapper_type> spaceP1wrapper_ptrtype;
 
     spaceP1wrapper_ptrtype M_spaceP1Wrapper;
+
     //--------------------------------------------------------------------//
-    // ReinitializerFMS (takes only P1 non-periodic space)
+    // LabelDistanceFMS (takes only P1 non-periodic space)
     typedef typename mpl::if_< 
         mpl::bool_<spaceP1wrapper_type::use_P1_space>,
         typename spaceP1wrapper_type::functionspace_P1_type,
         functionspace_type
-            >::type reinitializerFMS_functionspace_type;
+            >::type labeldistanceFMS_functionspace_type;
+    //typedef typename ReinitFunctionSpace<functionspace_type>::type labeldistanceFMS_functionspace_type;
     
-    typedef ReinitializerFMS< reinitializerFMS_functionspace_type, periodicity_type > reinitializerFMS_type;
-    typedef boost::shared_ptr<reinitializerFMS_type> reinitializerFMS_ptrtype;
+    typedef LabelDistanceFMS< labeldistanceFMS_functionspace_type, periodicity_type > labeldistanceFMS_type;
+    typedef boost::shared_ptr<labeldistanceFMS_type> labeldistanceFMS_ptrtype;
 
-    reinitializerFMS_ptrtype M_reinitializerFMS;
+    labeldistanceFMS_ptrtype M_labeldistanceFMS;
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -106,40 +110,61 @@ private:
 };
 
 template<typename FunctionSpaceType>
-ReinitializerFM<FunctionSpaceType>::ReinitializerFM( 
+DistLabelsFM<FunctionSpaceType>::DistLabelsFM( 
         functionspace_ptrtype const& space,
-        std::string const& prefix )
-    : super_type( space, prefix )
+        std::string const& prefix ) :
+    super_type( space, prefix ),
+    M_useMarker2AsMarkerDone( false )
 {
-    this->loadParametersFromOptionsVm();
     M_spaceP1Wrapper.reset(
             new spaceP1wrapper_type( space )
             );
-    M_reinitializerFMS.reset(
-            new reinitializerFMS_type( M_spaceP1Wrapper->functionSpaceP1Wrapped(), this->M_periodicity )
+    M_labeldistanceFMS.reset(
+            new labeldistanceFMS_type( M_spaceP1Wrapper->functionSpaceP1Wrapped(), this->M_periodicity )
             );
 }
 
 template<typename FunctionSpaceType>
-typename ReinitializerFM<FunctionSpaceType>::self_type&
-ReinitializerFM<FunctionSpaceType>::run( element_type const& phi )
+typename DistLabelsFM<FunctionSpaceType>::self_type&
+DistLabelsFM<FunctionSpaceType>::run( element_type const& phi )
 {
-    M_reinitializerFMS->run( M_spaceP1Wrapper->toP1(phi), this->useMarker2AsMarkerDone() ); 
+    M_labeldistanceFMS->run( M_spaceP1Wrapper->toP1(phi), this->useMarker2AsMarkerDone() );
     return *this;
 }
 
 template<typename FunctionSpaceType>
-typename ReinitializerFM<FunctionSpaceType>::element_type
-ReinitializerFM<FunctionSpaceType>::distance() const
+typename DistLabelsFM<FunctionSpaceType>::element_type
+DistLabelsFM<FunctionSpaceType>::distance() const
 {
-    return M_spaceP1Wrapper->fromP1( *(M_reinitializerFMS->getDistance()) );
+    return M_spaceP1Wrapper->fromP1( *(M_labeldistanceFMS->getNearestNeighbourDistance()) );
+}
+
+template<typename FunctionSpaceType>
+typename DistLabelsFM<FunctionSpaceType>::element_type
+DistLabelsFM<FunctionSpaceType>::nearestNeighbourLabel() const
+{
+    return M_spaceP1Wrapper->fromP1( *(M_labeldistanceFMS->getNearestNeighbourLabel()) );
+}
+
+template<typename FunctionSpaceType>
+typename DistLabelsFM<FunctionSpaceType>::element_type
+DistLabelsFM<FunctionSpaceType>::nextNearestNeighbourDistance() const
+{
+    return M_spaceP1Wrapper->fromP1( *(M_labeldistanceFMS->getNextNearestNeighbourDistance()) );
+}
+
+template<typename FunctionSpaceType>
+typename DistLabelsFM<FunctionSpaceType>::element_type
+DistLabelsFM<FunctionSpaceType>::nextNearestNeighbourLabel() const
+{
+    return M_spaceP1Wrapper->fromP1( *(M_labeldistanceFMS->getNextNearestNeighbourLabel()) );
 }
 
 template<typename FunctionSpaceType>
 void
-ReinitializerFM<FunctionSpaceType>::loadParametersFromOptionsVm()
-{
-    M_useMarker2AsMarkerDone = boption( _name="use-marker2-as-done", _prefix=this->prefix() );
+DistLabelsFM<FunctionSpaceType>::setSelfLabel( element_ptrtype const& label )
+{ 
+    M_labeldistanceFMS->setSelfLabel( M_spaceP1Wrapper->toP1(label) );
 }
 
 } // namespace Feel

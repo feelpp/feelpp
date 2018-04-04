@@ -40,6 +40,10 @@
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelmodels/levelset/distlabels_fm.hpp>
+
+#include <feel/feells/selflabel.hpp>
+
 #include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
@@ -197,6 +201,13 @@ public:
     };
 
     typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
+
+    //--------------------------------------------------------------------//
+    // Multi-labels
+    typedef SelfLabel<space_levelset_type, space_markers_type> selflabel_type;
+    typedef boost::shared_ptr<selflabel_type> selflabel_ptrtype;
+    typedef DistLabelsFM<space_levelset_type> distlabelFMS_type;
+    typedef boost::shared_ptr<distlabelFMS_type> distlabelFMS_ptrtype;
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -454,7 +465,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Utility distances
-    element_levelset_ptrtype distToBoundary();
+    element_levelset_ptrtype distToBoundary( bool forceUpdate = false );
     element_levelset_ptrtype distToMarkedFaces( boost::any const& marker );
     element_levelset_ptrtype distToMarkedFaces( std::initializer_list<boost::any> marker );
 
@@ -472,17 +483,32 @@ public:
 
     //--------------------------------------------------------------------//
     // Reinitialization
-    void reinitialize( bool useSmoothReinit = false );
+    void reinitialize();
 
     void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
     FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
     void setUseMarkerDiracAsMarkerDoneFM( bool val = true ) { M_useMarkerDiracAsMarkerDoneFM  = val; }
+    void initializeFastMarching( element_levelset_ptrtype phi );
 
     reinitializer_ptrtype const& reinitializer() const { return M_reinitializer; }
     reinitializerFM_ptrtype const& reinitializerFM( bool buildOnTheFly = true );
     reinitializerHJ_ptrtype const& reinitializerHJ( bool buildOnTheFly = true );
 
     bool hasReinitialized() const { return M_hasReinitialized; }
+
+    //--------------------------------------------------------------------//
+    // Multi-labels
+    bool useSelfLabel() const { return M_useSelfLabel; }
+    void setUseSelfLabel( bool b, 
+            element_levelset_ptrtype const& label = element_levelset_ptrtype() );
+    bool useMultiLabels() const { return M_useMultiLabels; }
+    void setUseMultiLabels( bool b,
+            element_levelset_ptrtype const& label = element_levelset_ptrtype() );
+
+    void updateSelfLabel();
+    void updateMultiLabels();
+
+    element_levelset_ptrtype distanceBetweenLabels();
 
     //--------------------------------------------------------------------//
     // Initial value
@@ -554,6 +580,9 @@ protected:
     void updateMarkerInterface();
 
     void updateLeftCauchyGreenTensor();
+    //--------------------------------------------------------------------//
+    // Reinitialization
+    void reinitializeImpl( element_levelset_ptrtype e );
 
 private:
     void loadParametersFromOptionsVm();
@@ -571,9 +600,14 @@ private:
     void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
-    void addShape( 
+    void addShape(
             std::pair<ShapeType, parameter_map> const& shape, 
-            element_levelset_type & phi );
+            element_levelset_type & phi
+            );
+    void addLabel(
+            std::pair<ShapeType, parameter_map> const& shape,
+            element_levelset_type & labels
+            );
 
     //--------------------------------------------------------------------//
     element_levelset_ptrtype const& phio() const { return this->timeStepBDF()->unknowns()[1]; }
@@ -724,7 +758,24 @@ private:
     // Vector that stores the iterSinceReinit of each time-step
     std::vector<int> M_vecIterSinceReinit;
     //bool M_useSmoothReinitialization;
-    
+
+    //--------------------------------------------------------------------//
+    // Utility distances
+    element_levelset_ptrtype M_distToBoundary;
+
+    //--------------------------------------------------------------------//
+    // Multi-labels
+    bool M_useSelfLabel;
+    bool M_useMultiLabels;
+    bool M_doUpdateMultiLabels;
+
+    std::string M_selfLabelSavePrefix;
+
+    selflabel_ptrtype M_selfLabel;
+    distlabelFMS_ptrtype M_distLabel;
+
+    element_levelset_ptrtype M_distBetweenLabels;
+
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;

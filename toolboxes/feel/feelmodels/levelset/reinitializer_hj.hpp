@@ -139,7 +139,10 @@ public:
     functionspace_P0_ptrtype functionSpaceP0() const { return M_functionSpaceP0; }
     //--------------------------------------------------------------------//
     // Run reinitialization
-    element_type run( element_type const& phi );
+    self_type& run( element_type const& phi );
+    //--------------------------------------------------------------------//
+    // Accessors
+    element_type distance() const;
 
 private:
     advectionhj_ptrtype M_advectionHJ;
@@ -198,7 +201,7 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 }
 
 REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
-typename REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::element_type
+typename REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::self_type&
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
 {
     auto mesh = M_advectionHJ->mesh();
@@ -374,6 +377,13 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
     //Feel::cout << "reinit done in " << __iter - start_iter << " iter\n";
     Feel::cout << "final relative rate of change = " << relativeRateChangePhiL2 << std::endl;
 
+    return *this;
+}
+
+REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
+typename REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::element_type
+REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::distance() const
+{
     return M_advectionHJ->fieldSolution();
 }
 

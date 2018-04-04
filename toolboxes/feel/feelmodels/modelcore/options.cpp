@@ -463,6 +463,8 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"use-cauchy-augmented").c_str(), Feel::po::value<bool>()->default_value(false), "Advect additional backward characteristics to compute Cauchy tensor")
         (prefixvm(prefix,"initial-backward-characteristics").c_str(), Feel::po::value<std::string>(), "Initial  backward characteristics value (default for material at rest is {x,y(,z)})")
 
+        (prefixvm(prefix,"use-multi-labels").c_str(), Feel::po::value<bool>()->default_value(false), "Enable multi-labels support")
+
         (prefixvm(prefix,"fix-volume").c_str(), Feel::po::value<bool>()->default_value(false), "correct levelset volume after each iteration (using phi->phi+(V-Vi)/L)")
 
         (prefixvm(prefix,"do_export_advection").c_str(), Feel::po::value<bool>()->default_value(false), "doExportAdvection")
@@ -511,6 +513,14 @@ interfaceforces_options(std::string const& prefix)
 
         (prefixvm(prefix,"skalak-stretch-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force stretch modulus" )
         (prefixvm(prefix,"skalak-shear-modulus").c_str(), Feel::po::value<double>()->default_value(1), "Skalak force shear modulus" )
+
+        (prefixvm(prefix,"collision-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Collision force coefficient " )
+        (prefixvm(prefix,"collision-force-epsilon").c_str(), Feel::po::value<double>()->default_value(0.01), "Collision force epsilon " )
+        (prefixvm(prefix,"collision-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of collision force" )
+
+        (prefixvm(prefix,"wallcontact-force-coeff").c_str(), Feel::po::value<double>()->default_value(1), "Wall contact force coefficient " )
+        (prefixvm(prefix,"wallcontact-force-epsilon").c_str(), Feel::po::value<double>()->default_value(0.01), "Wall contact force epsilon" )
+        (prefixvm(prefix,"wallcontact-force-impl").c_str(), Feel::po::value<int>()->default_value(0), "Implementation of wall contact force" )
         ;
 
     return interfaceForcesOptions;

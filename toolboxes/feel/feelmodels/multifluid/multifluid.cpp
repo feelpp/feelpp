@@ -548,7 +548,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImpl()
             M_levelsets[n]->reinitialize();
         else if( M_levelsetReinitSmoothEvery[n] > 0 
                 && (M_levelsets[n]->iterSinceReinit()+1) % M_levelsetReinitSmoothEvery[n] == 0 )
-            M_levelsets[n]->reinitialize( true );
+            M_levelsets[n]->reinitialize();
     }
 
     // Update global levelset
