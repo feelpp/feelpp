@@ -22,7 +22,7 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define BOOST_TEST_MODULE test_ptree_options
+#define BOOST_TEST_MODULE test_ptree_editions
 #include <testsuite.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/ptreetools.hpp>
@@ -30,29 +30,14 @@
 
 using namespace Feel;
 
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_ptree_options" ,
-                     "test_ptree_options" ,
-                     "0.1",
-                     "Ptree edition from command line options",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2018 Feel++ Consortium" );
-    return about;
-}
-
-
-
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
-BOOST_AUTO_TEST_SUITE( ptree_options )
+FEELPP_ENVIRONMENT_NO_OPTIONS
+BOOST_AUTO_TEST_SUITE( ptree_editions )
 
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     pt::ptree p;
 
-    std::string filename = Environment::expand("$cfgdir/test_ptree_options.json");
+    std::string filename = Environment::expand("$cfgdir/test_ptree_editions.json");
 
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     std::istringstream istr( json_str_wo_comments );
