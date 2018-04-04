@@ -6,6 +6,8 @@
 namespace Feel
 {
 
+po::options_description crbBlockOptions( int const& n_block=3 );
+
 template <typename TruthModelType>
 class CRBBlock :
         public CRB<TruthModelType>
@@ -86,7 +88,10 @@ protected:
               crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
         super( name, model, stage, prefixExt ),
         M_subN( n_block, 0 )
-        {}
+        {
+            for ( int i=0; i<n_block; i++ )
+                M_orthonormalize.push_back( boption("crb.block.orthonormalize"+std::to_string(i)) );
+        }
 
 
 public:
@@ -94,42 +99,28 @@ public:
     element_type expansion( vectorN_type const& u, int N = -1,  bool dual=false ) const override;
 
     void orthonormalizeBasis( int number_of_added_elements ) override;
+    bool orthonormalizeSpace( int const& n_space ) const
+        {
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            return M_orthonormalize[n_space];
+        }
 
     //! \return the number of basis vectors in space \p n_space
     int& subN( int const& n_space ) { return M_subN[n_space]; }
 
     std::vector< std::vector< matrixN_type >>& blockAqm( int const& row, int const& col, bool dual=false )
-        {
-            if ( dual )
-                return M_blockAqm_du[row][col];
-            else
-                return M_blockAqm_pr[row][col];
-        }
+        { return dual ? M_blockAqm_du[row][col]:M_blockAqm_pr[row][col]; }
     std::vector< std::vector< vectorN_type >>& blockFqm( int const& row, bool dual= false )
-        {
-            if ( dual )
-                return M_blockFqm_du[row];
-            else
-                return M_blockFqm_pr[row];
-        }
+        { return dual ? M_blockFqm_du[row]:M_blockFqm_pr[row]; }
     std::vector< std::vector< vectorN_type >>& blockLqm( int const& row, bool dual= false )
-        {
-            if ( dual )
-                return M_blockLqm_du[row];
-            else
-                return M_blockLqm_pr[row];
-        }
+        { return dual ? M_blockLqm_du[row]:M_blockLqm_pr[row]; }
     std::vector< std::vector< matrixN_type >>& blockAqmPrDu( int const& row, int const& col )
         { return M_blockAqm_pr_du[row][col]; }
-
 
     //! save the CRB SP database
     void saveDB() override;
     //! load the CRB SP Database
     bool loadDB() override;
-
-    virtual bool orthonormalizeSpace( int const& n_space ) const =0;
-    virtual bool addSupremizerInSpace( int const& n_space ) const =0;
 
 protected:
     void exportBasisFunctions() override;
@@ -139,7 +130,6 @@ protected:
 
     //! add the primal and dual solution \p U and \p Udu to the reduced spaces
     void addBasis( element_type& U, element_type& Udu, parameter_type& mu ) override;
-
 
     void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field ) override;
     void updateAffineDecompositionSize() override;
@@ -152,6 +142,7 @@ protected:
 
 protected:
     std::vector<int> M_subN;
+    std::vector<bool> M_orthonormalize;
 
     blockmatrixN_type M_blockAqm_pr, M_blockAqm_du, M_blockAqm_pr_du;
     blockvectorN_type M_blockFqm_pr, M_blockFqm_du, M_blockLqm_pr, M_blockLqm_du;
@@ -186,7 +177,7 @@ struct AddBasisByBlock
             m_crb->subN( T::value )++;
             toc("Add Basis Function in space "+std::to_string(T::value) );
 
-            if ( m_crb->addSupremizerInSpace(T::value) )
+            if ( m_crb->model()->addSupremizerInSpace(T::value) )
             {
                 tic();
                 auto Us = model->supremizer( m_mu, m_U, T::value );
@@ -237,7 +228,7 @@ struct OrthonormalizeBasisByBlock
                 auto wn = XN->primalRB();
                 int N = wn.size();
 
-                if ( m_crb->addSupremizerInSpace(T::value) )
+                if ( m_crb->model()->model()->addSupremizerInSpace(T::value) )
                     n_added *= 2;
                 LOG(INFO) <<"CRBBlock orthonomalization begin for space "<<T::value <<", with "<< N
                           <<" basis vectors and "<< n_added <<" new vectors\n";
@@ -345,7 +336,7 @@ struct ExpansionByBlock
             auto XN = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<T::value>();
             auto WN = m_dual ? XN->dualRB() : XN->primalRB();
             int Nwn = m_N>0 ? m_N:m_crb->dimension();
-            if ( m_crb->addSupremizerInSpace(T::value) )
+            if ( m_crb->model()->addSupremizerInSpace(T::value) )
                 Nwn *= 2;
             CHECK( Nwn<=WN.size() ) << "invalid expansion size\n";
 
@@ -431,9 +422,9 @@ struct BuildRbMatrixByRow
 
                 int n_upr = m_n_added;
                 int n_upc = m_n_added;
-                if ( m_crb->addSupremizerInSpace(R::value) )
+                if ( m_crb->model()->addSupremizerInSpace(R::value) )
                     n_upr *= 2;
-                if ( m_crb->addSupremizerInSpace(C::value) )
+                if ( m_crb->model()->addSupremizerInSpace(C::value) )
                     n_upc *= 2;
                 if( ioption(_name="ser.rb-frequency")!=0 && !m_crb->rebuild() )
                 {
@@ -594,7 +585,7 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
     int output_index = this->M_output_index;
 
     for ( int n=0; n<n_block; n++ )
-        subN(n) = addSupremizerInSpace(n) ? 2*this->M_N:this->M_N;
+        subN(n) = this->M_model->addSupremizerInSpace(n) ? 2*this->M_N:this->M_N;
 
     for (int r=0; r<n_block; r++ )
     {
@@ -657,7 +648,7 @@ struct ExportBasisFunctionsByBlock
 
             for ( int index=0; index<u_vec.size(); index++ )
             {
-                int n = m_crb->addSupremizerInSpace(T::value) ? index/2:index;
+                int n = m_crb->model()->addSupremizerInSpace(T::value) ? index/2:index;
                 auto mu = m_crb->wnmu()->at( n );
 
                 std::string basis_name = ( boost::format("u%1%_pr_%2%_param")%T::value %index ).str();

@@ -87,12 +87,17 @@ public:
             return M_inner_product_matrix_vec[n_space]->energy( X, Y );
         }
 
+    virtual bool addSupremizerInSpace( int const& n_space ) const
+        {
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            return false;
+        }
+
     virtual element_type supremizer( parameter_type const& mu, element_type const& U, int n_space )
         {
             CHECK( n_space<n_block ) <<"Invalid space number\n";
             return this->functionSpace()->element();
         }
-
 
 
 protected:
