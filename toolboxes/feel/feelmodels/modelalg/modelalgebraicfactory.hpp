@@ -179,10 +179,11 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        linearAssembly_function_type addFunctionLinearPostAssembly;
-        linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-        jacobianAssembly_function_type addFunctionJacobianPreAssembly;
-        residualAssembly_function_type addFunctionResidualPreAssembly;
+        void addFunctionLinearPostAssembly( linearAssembly_function_type const& func, std::string const& key = "" );
+        void addFunctionLinearPreAssemblyNonCst( linearAssembly_function_type const& func, std::string const& key = "" );
+        void addFunctionJacobianPreAssembly( jacobianAssembly_function_type const& func, std::string const& key = "" );
+        void addFunctionResidualPreAssembly( residualAssembly_function_type const& func, std::string const& key = "" );
+
     private :
 
         void
@@ -213,6 +214,11 @@ namespace FeelModels
         bool M_hasBuildLinearJacobian;
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
+
+        std::map<std::string,linearAssembly_function_type> M_addFunctionLinearPostAssembly;
+        std::map<std::string,linearAssembly_function_type> M_addFunctionLinearPreAssemblyNonCst;
+        std::map<std::string,jacobianAssembly_function_type> M_addFunctionJacobianPreAssembly;
+        std::map<std::string,residualAssembly_function_type> M_addFunctionResidualPreAssembly;
     };
 
 
