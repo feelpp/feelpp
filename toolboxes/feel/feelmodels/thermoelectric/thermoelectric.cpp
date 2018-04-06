@@ -212,16 +212,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearHeat )
     {
         M_heatModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                   boost::ref( *this ), _1, _2 );
-        M_heatModel->algebraicFactory()->addFunctionResidualPreAssembly = boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
-                                                                                               boost::ref( *this ), _1, _2 );
+        M_heatModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst( boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                          boost::ref( *this ), _1, _2 ) );
+        M_heatModel->algebraicFactory()->addFunctionResidualPreAssembly( boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
+                                                                                      boost::ref( *this ), _1, _2 ) );
     }
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearElectric )
     {
         M_electricModel->initAlgebraicFactory();
-        M_electricModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
-                                                                                               boost::ref( *this ), _1, _2 );
+        M_electricModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst( boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
+                                                                                              boost::ref( *this ), _1, _2 ) );
     }
 
 
