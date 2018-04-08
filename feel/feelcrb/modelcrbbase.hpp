@@ -54,7 +54,11 @@ enum {
     /** Coercive PDE */
     Coercive = 0,
     /** Inf-Sup PDE */
-    InfSup = 0x4
+    InfSup = 0x4,
+    /** Monolithic */
+    Mono = 0,
+    /** By block */
+    UseBlock=0x8
 };
 
 class ModelCrbBaseBase {};
@@ -137,7 +141,7 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
     /*reduced basis space*/
-    typedef ReducedBasisSpace<self_type> rbfunctionspace_type;
+    typedef ReducedBasisSpace<space_type> rbfunctionspace_type;
     typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
     typedef typename rbfunctionspace_type::ctxrbset_type rbfunctionspace_context_type;
     typedef typename rbfunctionspace_type::ctxrbset_ptrtype rbfunctionspace_context_ptrtype;
@@ -201,6 +205,7 @@ public :
     static const bool is_time_dependent = ((_Options&TimeDependent)==TimeDependent);
     //static const bool is_linear = ((_Options&Linear)==Linear);
     static const bool is_linear = !((_Options&NonLinear)==NonLinear);
+    static const bool by_block = (_Options&UseBlock)==UseBlock;
 #endif
     static const int Options = _Options;
 
@@ -379,6 +384,10 @@ public :
     {
         M_backend = backend( _name=name, _worldcomm=Environment::worldCommSeq() );
     }
+
+    //! functions call by deim to init specific part of the model when online.
+    virtual void initOnlineModel()
+    {}
 
     //!
     //! unique id for CRB Model
@@ -716,23 +725,23 @@ public :
         return M_mdeims;
     }
 
-    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu )
+    virtual vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
     {
         return nullptr;
     }
 
-    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u )
+    virtual vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return nullptr;
     }
 
 
-    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu )
+    virtual sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
     {
         return nullptr;
     }
 
-    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u )
+    virtual sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
     {
         return nullptr;
     }
@@ -947,7 +956,8 @@ public :
 
         this->setupSpecificityModel( ptree, dbDir );
 
-        XN->setModel( this->shared_from_this() );
+        XN->setFunctionSpace( this->functionSpace() );
+        //XN->setModel( this->shared_from_this() );
 
         this->setInitialized( true );
     }
@@ -2024,7 +2034,8 @@ public:
     virtual void setFunctionSpaces( functionspace_ptrtype const& Vh )
     {
         Xh = Vh;
-        XN->setModel( this->shared_from_this() );
+        XN->setFunctionSpace( Xh );
+        //XN->setModel( this->shared_from_this() );
     }
 
     /**
