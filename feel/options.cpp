@@ -475,7 +475,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.dimension-max" ).c_str(), Feel::po::value<int>()->default_value( 20 ), "Offline  max WN size" )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
-        ( prefixvm( prefix, "deim.rebuild-db" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
+        ( prefixvm( prefix, "deim.rebuild-database" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
         ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.store-vectors" ).c_str(), Feel::po::value<bool>()->default_value(true ), "Store Vectors for the parameters in the trainset in DEIM"  )
@@ -697,7 +697,7 @@ crbOptions( std::string const& prefix )
         ;
 
     crboptions
-        .add( crbSCMOptions() );
+        .add( crbSCMOptions() ).add(deimOptions(prefix));
 
     return crboptions;
 }
@@ -707,12 +707,9 @@ crbOptions( std::string const& prefix )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
-        ( "crb.saddlepoint.transpose",Feel::po::value<bool>()->default_value( true ), "automatically fill the null blocks with transposed if true. ex A01=A10 if true and A01=zero")
-        ( "crb.saddlepoint.add-false-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis, false version")
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
         ( "crb.saddlepoint.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
         ( "crb.saddlepoint.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.saddlepoint.test-residual",Feel::po::value<bool>()->default_value( 0 ), "test residual evaluation")
         ( "crb.saddlepoint.version",Feel::po::value<int>()->default_value( 1 ), "test residual evaluation")
         ;
 
@@ -954,6 +951,12 @@ fmu_options( std::string const& prefix )
 
         ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
         ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+
+        ( prefixvm( prefix,"fmu.exported-variables" ).c_str(), po::value<std::vector<std::string>>()->multitoken(), "List of variables which have to be exported" )
+        ( prefixvm( prefix,"fmu.export-directory" ).c_str(), po::value<std::string>()->default_value(""), "Location of the exported data. Default is the app directory." )
+
+        ( prefixvm( prefix,"fmu.time-initial" ).c_str(), Feel::po::value<double>()->default_value(-1), "inital time for the simulation. Default is taken from the model" )
+        ( prefixvm( prefix,"fmu.time-final" ).c_str(), Feel::po::value<double>()->default_value(-1), "Final time for the simulation. Default is taken from the model" )
         ;
     return _options;
 }

@@ -303,6 +303,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( mu )
     BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
+    BOOST_PARAMETER_NAME( tag )
 } // Feel
 
 
