@@ -63,6 +63,7 @@ public :
     typedef typename super_type::space_ptrtype space_ptrtype;
     typedef typename super_type::rbspace_ptrtype rbspace_ptrtype;
     typedef typename super_type::rangespace_type rangespace_type;
+    typedef typename super_type::mesh_ptrtype mesh_ptrtype;
 
     static const bool by_block = model_type::by_block;
 
@@ -134,6 +135,11 @@ protected :
             rangespace_type range;
             boost::fusion::for_each( range, builder );
             this->M_elts_ids = builder.elts();
+        }
+
+    virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh )
+        {
+            return space_type::New( _mesh=mesh, _range=M_online_model->functionspaceMeshSupport( mesh ) );
         }
 
 protected :
