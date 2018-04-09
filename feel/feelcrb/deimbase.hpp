@@ -247,6 +247,8 @@ public :
             M_crb_built=true;
         }
 
+
+
     //! save the database
     void saveDB() override;
     //! load the database
@@ -394,6 +396,10 @@ protected :
 
     //! Perform an expansion of a RB solution using the projected basis stored in DEIM
     virtual element_type deimExpansion( vectorN_type const& urb )=0;
+
+
+    virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh )=0;
+
 
     //! Serialization method used to save the DB
     friend class boost::serialization::access;
@@ -1027,8 +1033,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=filename.string(),
                                      _worldcomm= Environment::worldCommSeq() );
-            Rh = space_type::New( seqmesh,
-                                  _worldscomm=std::vector<WorldComm>(space_type::nSpaces,Environment::worldCommSeq()) );
+            Rh = newInterpolationSpace(seqmesh);
         }
 
         boost::archive::binary_iarchive ia( ifs );

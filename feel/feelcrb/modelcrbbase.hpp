@@ -1334,6 +1334,34 @@ public :
         return computeBetaQm( mu, time , only_terms_time_dependent );
     }
 
+
+
+    virtual std::vector<double> computeBetaTri( parameter_type const& mu )
+        {
+            return M_betaTri;
+        }
+
+    virtual sparse_matrix_ptrtype assembleTrilinearJ( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearJ to use trilinear crb models\n";
+            sparse_matrix_ptrtype M;
+            return M;
+        }
+    virtual vector_ptrtype assembleTrilinearR( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearR to use trilinear crb models\n";
+            vector_ptrtype R;
+            return R;
+        }
+    virtual sparse_matrix_ptrtype assembleTrilinearOperator( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearOperator to use trilinear crb models\n";
+            sparse_matrix_ptrtype M;
+            return M;
+        }
+
+
+
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
         //not that the parameter mu is here to indicates
@@ -2045,6 +2073,7 @@ public:
     {
         return Xh->mesh();
     }
+
     /**
      * \brief Returns the function space
      */
@@ -2142,6 +2171,7 @@ protected :
     std::vector< std::string > M_symbols_vec;
     std::string M_symbolicExpressionBuildDir;
 
+    std::vector<double> M_betaTri;
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
