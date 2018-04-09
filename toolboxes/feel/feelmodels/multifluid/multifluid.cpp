@@ -103,11 +103,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             M_levelsets[i]->setThicknessInterface( M_globalLevelset->thicknessInterface() );
     }
 
-    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
-    super_type::init();
     // "Deep" copy FluidMechanics densityViscosityModel
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
     // Build levelsets densityViscosityModels and interfaceForcesModels
     M_levelsetDensityViscosityModels.resize( nLevelSets );
     M_levelsetInterfaceForcesModels.resize( nLevelSets );
@@ -118,7 +115,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
                 );
-        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
@@ -255,7 +251,18 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init()
         M_levelsets[i]->init();
     }
     this->updateGlobalLevelset();
+    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
+    super_type::init();
+    // Init FluidMechanics densityViscosityModel
+    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
+    // Init levelsets densityViscosityModels and interfaceForcesModels
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
 
+        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
+    }
+    // Update density-viscosity
     this->updateFluidDensityViscosity();
 
     M_doRebuildMatrixVector = false;
