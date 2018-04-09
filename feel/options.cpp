@@ -712,14 +712,14 @@ crbBlockOptions( int const& n_block )
 
 
 Feel::po::options_description
-crbSaddlePointOptions( std::string const& prefix )
+crbSaddlePointOptions( std::string const& prefix, int const& n_block )
 {
     Feel::po::options_description crboptions( "CRB Options" );
     crboptions.add_options()
         ( "crb.saddlepoint.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
         ;
 
-    return crboptions.add( crbBlockOptions(2) );
+    return crboptions.add( crbBlockOptions(n_block) );
 }
 
 Feel::po::options_description
@@ -728,12 +728,10 @@ crbAeroOptions( std::string const& prefix )
     Feel::po::options_description crboptions( "CRB Aero Options" );
     crboptions.add_options()
         ( "crb.aero.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
-        ( "crb.aero.orthonormalize0",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #0")
-        ( "crb.aero.orthonormalize1",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #1")
-        ( "crb.aero.orthonormalize2",Feel::po::value<bool>()->default_value( true ), "orthonormalize reduce basis for rbspace #2")
+        ( "crb.aero.fix-mean-pressure",Feel::po::value<bool>()->default_value( false ), "")
 
         ;
-    crboptions.add( backend_options("backend-Xh0") ).add( backend_options("backend-Xh1") ).add( backend_options("backend-Xh2") );
+    crboptions.add( crbSaddlePointOptions(prefix,3) );
 
     return crboptions;
 }
