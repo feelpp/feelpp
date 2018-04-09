@@ -61,8 +61,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // Build inherited FluidMechanics
     this->loadMesh( this->createMesh() );
-    super_type::init();
 
+    // Build global levelset
     M_globalLevelset.reset(
             new levelset_type( prefixvm(this->prefix(),"levelset"), this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
             );
@@ -79,15 +79,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         M_globalLevelset->build( this->mesh() );
     }
 
-    // "Deep" copy
-    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
-    //M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
-    //M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
-
     M_levelsets.resize( nLevelSets );
-    M_levelsetDensityViscosityModels.resize( nLevelSets );
-    M_levelsetInterfaceForcesModels.resize( nLevelSets );
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
@@ -109,12 +101,23 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
             M_levelsets[i]->setThicknessInterface( M_globalLevelset->thicknessInterface() );
+    }
+
+    // Init inherited FluidMechanics (to build spaces, algebraic data, ...)
+    super_type::init();
+    // "Deep" copy FluidMechanics densityViscosityModel
+    M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
+    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
+    // Build levelsets densityViscosityModels and interfaceForcesModels
+    M_levelsetDensityViscosityModels.resize( nLevelSets );
+    M_levelsetInterfaceForcesModels.resize( nLevelSets );
+    for( uint16_type i = 0; i < M_levelsets.size(); ++i )
+    {
+        auto levelset_prefix = prefixvm(this->prefix(), (boost::format( "levelset%1%" ) %(i+1)).str());
 
         M_levelsetDensityViscosityModels[i].reset(
                 new densityviscosity_model_type( levelset_prefix )
                 );
-        //M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
-        //M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
         M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
@@ -136,7 +139,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
             M_hasInterfaceForcesModel = true;
         }
     }
-
     M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
     this->log("MultiFluid", "build", "finish");
