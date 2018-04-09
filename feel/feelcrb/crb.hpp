@@ -1467,6 +1467,8 @@ protected:
     virtual void addBasis( element_type& u, element_type& udu, parameter_type& mu );
     virtual void orthonormalizeBasis( int number_of_added_elements );
     virtual void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field );
+    virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu )
+        {}
     virtual void saveRB();
 
     crb_elements_db_type M_elements_database;
