@@ -76,10 +76,8 @@ public :
         return false;
     }
 
-    element_type supremizer( parameter_type const& mu, element_type const& U, int n_space )
+    element_type supremizer( parameter_type const& mu, element_type const& U, int n_space ) override
     {
-        CHECK ( n_space<2 ) <<"Invalid space number\n";
-
         auto Us = this->functionSpace()->element();
 
         if ( n_space==0 )
@@ -120,7 +118,7 @@ public :
         A01->close();
         return A01;
     }
-private:
+protected:
     bool M_addSupremizer;
 
 

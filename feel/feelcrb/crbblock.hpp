@@ -116,6 +116,20 @@ public:
         { return dual ? M_blockLqm_du[row]:M_blockLqm_pr[row]; }
     std::vector< std::vector< matrixN_type >>& blockAqmPrDu( int const& row, int const& col )
         { return M_blockAqm_pr_du[row][col]; }
+    std::vector< std::vector< matrixN_type >>& blockTriqm( int const& row, int const& col )
+        {return M_blockTriqm_pr[row][col]; }
+
+    std::vector< std::vector< matrixN_type >> blockAqm( int const& row, int const& col, bool dual=false ) const
+        { return dual ? M_blockAqm_du[row][col]:M_blockAqm_pr[row][col]; }
+    std::vector< std::vector< vectorN_type >> blockFqm( int const& row, bool dual= false ) const
+        { return dual ? M_blockFqm_du[row]:M_blockFqm_pr[row]; }
+    std::vector< std::vector< vectorN_type >> blockLqm( int const& row, bool dual= false ) const
+        { return dual ? M_blockLqm_du[row]:M_blockLqm_pr[row]; }
+    std::vector< std::vector< matrixN_type >> blockAqmPrDu( int const& row, int const& col ) const
+        { return M_blockAqm_pr_du[row][col]; }
+    std::vector< std::vector< matrixN_type >> blockTriqm( int const& row, int const& col ) const
+        {return M_blockTriqm_pr[row][col]; }
+
 
     //! save the CRB SP database
     void saveDB() override;
@@ -144,6 +158,7 @@ protected:
     std::vector<int> M_subN;
     std::vector<bool> M_orthonormalize;
 
+    blockmatrixN_type M_blockTriqm_pr;
     blockmatrixN_type M_blockAqm_pr, M_blockAqm_du, M_blockAqm_pr_du;
     blockvectorN_type M_blockFqm_pr, M_blockFqm_du, M_blockLqm_pr, M_blockLqm_du;
 }; //class CRBBlock
@@ -422,9 +437,9 @@ struct BuildRbMatrixByRow
 
                 int n_upr = m_n_added;
                 int n_upc = m_n_added;
-                if ( m_crb->model()->addSupremizerInSpace(R::value) )
+                if ( model->addSupremizerInSpace(R::value) )
                     n_upr *= 2;
-                if ( m_crb->model()->addSupremizerInSpace(C::value) )
+                if ( model->addSupremizerInSpace(C::value) )
                     n_upc *= 2;
                 if( ioption(_name="ser.rb-frequency")!=0 && !m_crb->rebuild() )
                 {
@@ -574,6 +589,15 @@ CRBBlock<TruthModelType>::initBlockMatrix()
     M_blockLqm_pr.resize(n_block);
     M_blockFqm_du.resize(n_block);
     M_blockLqm_du.resize(n_block);
+
+    int q_tri = this->M_model->QTri();
+    if ( q_tri )
+    {
+        M_blockTriqm_pr.resize( n_block );
+        for( int i = 0; i < n_block; i++ )
+            M_blockTriqm_pr[i].resize(n_block);
+
+    }
 }
 
 template<typename TruthModelType>
@@ -617,6 +641,14 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
             M_blockLqm_pr[r][q].resize( this->M_model->mMaxF( output_index, q ) );
             M_blockLqm_du[r][q].resize( this->M_model->mMaxF( output_index, q ) );
         }
+    }
+
+    int q_tri = this->M_model->QTri();
+    if ( q_tri )
+    {
+        for (int r=0; r<n_block; r++ )
+            for ( int c=0; c<n_block; c++ )
+                M_blockTriqm_pr[r][c].resize(q_tri);
     }
 
     if ( this->M_error_type == CRB_RESIDUAL || this->M_error_type == CRB_RESIDUAL_SCM )

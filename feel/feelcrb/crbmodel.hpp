@@ -2875,7 +2875,7 @@ protected:
     std::vector< std::vector< std::vector<vector_ptrtype> > > M_RF_Fqm;
 
 
-private:
+protected:
 
 
     bool M_is_initialized = false;

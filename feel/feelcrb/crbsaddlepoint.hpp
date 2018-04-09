@@ -35,7 +35,7 @@
 
 namespace Feel
 {
-po::options_description crbSaddlePointOptions( std::string const& prefix="" );
+po::options_description crbSaddlePointOptions( std::string const& prefix="",, int const& n_block=2 );
 
 /**
  * \class CRBSaddlePoint
@@ -48,43 +48,28 @@ class CRBSaddlePoint :
         public CRBBlock<TruthModelType>
 {
     typedef CRBBlock<TruthModelType> super;
+    using self_type = CRBSaddlePoint;
+    using self_ptrtype = boost::shared_ptr<self_type>;
 
 public:
     //@{ // Truth Model
+    typedef double value_type;
     typedef TruthModelType model_type;
     typedef boost::shared_ptr<model_type> truth_model_ptrtype;
     typedef typename model_type::mesh_type mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     //@}
 
     //@{ /// Parameter Space
     typedef typename model_type::parameterspace_type parameterspace_type;
-    typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
     typedef typename parameterspace_type::element_type parameter_type;
-    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef typename parameterspace_type::sampling_type sampling_type;
-    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     //@}
 
-    typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
-    typedef double value_type;
-    typedef typename convergence_type::value_type convergence;
-
-    using self_type = CRBSaddlePoint;
-    using self_ptrtype = boost::shared_ptr<self_type>;
-
     //@{ /// Function Space and Elements
-    typedef typename model_type::space_type space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef typename model_type::functionspace_type functionspace_type;
-    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
     typedef typename model_type::element_type element_type;
     typedef typename model_type::element_ptrtype element_ptrtype;
     //@}
 
     //@{ Backend and Matrix
-    typedef typename model_type::backend_type backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
     typedef typename model_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename model_type::vector_ptrtype vector_ptrtype;
     typedef typename model_type::beta_vector_type beta_vector_type;
@@ -95,24 +80,12 @@ public:
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::Map< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double,Eigen::Dynamic, 1> > map_dense_vector_type;
-    typedef boost::tuple< std::vector<vectorN_type>,
-                          std::vector<vectorN_type>,
-                          std::vector<vectorN_type>,
-                          std::vector<vectorN_type> > solutions_tuple;
-    typedef boost::tuple< double,double,double,
-                          std::vector< std::vector< double > >,
-                          std::vector< std::vector< double > > > upper_bounds_tuple;
     typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
     //@}
 
     //@{ /// Exporter
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
-    //@}
-
-    //@{ /// Database
-    typedef CRBElementsDB<model_type> crb_elements_db_type;
-    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
     //@}
 
     typedef std::vector< std::vector< std::vector< std::vector< matrixN_type >>>> blockmatrixN_type;
