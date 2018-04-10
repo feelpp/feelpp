@@ -385,12 +385,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 {
     if( !M_spaceInextensibilityLM || M_doRebuildSpaceInextensibilityLM )
     {
+        this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "start" );
         // Lagrange-multiplier inextensibility space
         M_spaceInextensibilityLM = space_inextensibilitylm_type::New(
                 _mesh=this->levelsetModel(0)->submeshDirac(),
                 _worldscomm=this->localNonCompositeWorldsComm()
                 );
         M_doRebuildSpaceInextensibilityLM = false;
+        this->log("MultiFluid","buildFunctionSpaceInextensibilityLM", "finish" );
     }
     return M_spaceInextensibilityLM;
 }
@@ -419,15 +421,17 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
 MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
+    this->log("MultiFluid","buildBlockMatrixGraph", "start" );
     BlocksBaseGraphCSR myBlockGraph = super_type::buildBlockMatrixGraph();
 
     int indexBlock = super_type::nBlockMatrixGraph();
 
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
+        this->log("MultiFluid","buildBlockMatrixGraph", "start build lagrange-multiplier" );
         // Matrix stencil
         BlocksStencilPattern patCouplingLM(1, super_type::space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingLM(0,1) = size_type(Pattern::COUPLED);
+        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
 
         myBlockGraph(indexBlock,0) = stencil(_test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpace(),
                                              _pattern_block=patCouplingLM,
@@ -437,6 +441,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
+
+    this->log("MultiFluid","buildBlockMatrixGraph", "finish" );
 
     return myBlockGraph;
 }
