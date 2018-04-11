@@ -868,7 +868,7 @@ public :
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
-    virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
+    virtual void updateLinearPDEAdditional( DataUpdateLinear & data ) const {}
 
     //___________________________________________________________________________________//
 

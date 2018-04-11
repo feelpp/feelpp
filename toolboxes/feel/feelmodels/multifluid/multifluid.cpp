@@ -830,13 +830,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::advectLevelsets()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( 
-        sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional( DataUpdateLinear & data ) const
 {
+    bool _BuildCstPart = data.buildCstPart();
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("MultiFluid","updateLinearPDEAdditional", "start"+sc );
     this->timerTool("Solve").start();
 
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
 
