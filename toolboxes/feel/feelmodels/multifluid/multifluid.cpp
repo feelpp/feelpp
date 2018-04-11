@@ -927,14 +927,199 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianAdditional( DataUpdateJacobian & data ) const
 {
+    bool _BuildCstPart = data.buildCstPart();
+    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("MultiFluid","updateJacobianAdditional", "start"+sc );
+    this->timerTool("Solve").start();
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+
+    bool BuildNonCstPart = !_BuildCstPart;
+    bool BuildCstPart = _BuildCstPart;
+
+    if( this->M_enableInextensibility )
+    {
+        auto mesh = this->mesh();
+        auto Xh = this->functionSpace();
+
+        auto rowStartInMatrix = this->rowStartInMatrix();
+        auto colStartInMatrix = this->colStartInMatrix();
+        auto rowStartInVector = this->rowStartInVector();
+        auto bilinearForm_PatternCoupled = form2( 
+                _test=Xh,_trial=Xh,_matrix=J,
+                _pattern=size_type(Pattern::COUPLED),
+                _rowstart=rowStartInMatrix,
+                _colstart=colStartInMatrix 
+                );
+
+        auto U = Xh->element(XVec, rowStartInVector);
+        auto u = U.template element<0>();
+        auto v = U.template element<0>();
+        auto Id = vf::Id<nDim, nDim>();
+
+        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        {
+            if( this->hasInextensibility(n) )
+            {
+                auto N = this->M_levelsets[n]->N();
+                auto NxN = idv(N)*trans(idv(N));
+                auto D = this->M_levelsets[n]->D();
+
+                if( this->inextensibilityMethod(n) == "penalty" )
+                {
+                    this->timerTool("Solve").start();
+
+                    if( BuildNonCstPart )
+                    {
+                        bilinearForm_PatternCoupled += integrate(
+                                _range=elements(mesh),
+                                _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _geomap=this->geomap()
+                                );
+                    }
+
+                    double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateJacobianAdditional",
+                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_Penalty).str() );
+                }
+                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+                {
+                    this->timerTool("Solve").start();
+
+                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
+                    auto lambda = this->functionSpaceInextensibilityLM()->element();
+
+                    if( BuildNonCstPart )
+                    {
+                        form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpace(), _matrix=J,
+                               _rowstart=rowStartInMatrix,
+                               _colstart=colStartInMatrix+startBlockIndexInextensibilityLM ) +=
+                            integrate( _range=elements(submeshInextensibilityLM),
+                                       _expr=idt(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                                       _geomap=this->geomap()
+                                       );
+                        form2( _trial=this->functionSpace(), _test=this->functionSpaceInextensibilityLM(), _matrix=J,
+                               _rowstart=rowStartInMatrix+startBlockIndexInextensibilityLM,
+                               _colstart=colStartInMatrix ) +=
+                            integrate( _range=elements(submeshInextensibilityLM),
+                                       _expr=id(lambda)*trace((Id-NxN)*gradt(u))*idv(D),
+                                       _geomap=this->geomap()
+                                       );
+                    }
+
+                    double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateJacobianAdditional",
+                            "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_LagrangeMult).str() );
+                }
+            }
+        }
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","updateJacobianAdditional","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualAdditional( DataUpdateResidual & data ) const
 {
+    bool _BuildCstPart = data.buildCstPart();
+    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("MultiFluid","updateResidualAdditional", "start"+sc );
+    this->timerTool("Solve").start();
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool BuildCstPart = _BuildCstPart;
+    bool BuildNonCstPart = !BuildCstPart;
+    bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
+
+    if( this->M_enableInextensibility )
+    {
+        auto mesh = this->mesh();
+        auto Xh = this->functionSpace();
+
+        auto rowStartInMatrix = this->rowStartInMatrix();
+        auto colStartInMatrix = this->colStartInMatrix();
+        auto rowStartInVector = this->rowStartInVector();
+        auto linearForm_PatternCoupled = form1( 
+                _test=Xh,_vector=R,
+                _pattern=size_type(Pattern::COUPLED),
+                _rowstart=rowStartInVector
+                );
+
+        auto U = Xh->element(XVec, rowStartInVector);
+        auto u = U.template element<0>();
+        auto v = U.template element<0>();
+        auto Id = vf::Id<nDim, nDim>();
+
+        for( uint16_type n = 0; n < M_levelsets.size(); ++n )
+        {
+            if( this->hasInextensibility(n) )
+            {
+                auto N = this->M_levelsets[n]->N();
+                auto NxN = idv(N)*trans(idv(N));
+                auto D = this->M_levelsets[n]->D();
+
+                if( this->inextensibilityMethod(n) == "penalty" )
+                {
+                    this->timerTool("Solve").start();
+
+                    if( BuildNonCstPart && !UseJacobianLinearTerms )
+                    {
+                        linearForm_PatternCoupled += integrate(
+                                _range=elements(mesh),
+                                _expr=this->M_inextensibilityGamma[n]*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
+                                _geomap=this->geomap()
+                                );
+                    }
+
+                    double timeElapsedInextensibility_Penalty = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateResidualAdditional",
+                            "assembly inextensibility (penalty) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_Penalty).str() );
+                }
+                if( this->inextensibilityMethod(n) == "lagrange-multiplier" )
+                {
+                    this->timerTool("Solve").start();
+
+                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
+                    auto lambda = this->functionSpaceInextensibilityLM()->element(XVec,rowStartInVector+startBlockIndexInextensibilityLM);
+
+                    if( BuildNonCstPart )
+                    {
+                        form1( _test=this->functionSpace(), _vector=R,
+                               _rowstart=rowStartInVector ) +=
+                            integrate( _range=elements(submeshInextensibilityLM),
+                                       _expr=idv(lambda)*trace((Id-NxN)*grad(v))*idv(D),
+                                       _geomap=this->geomap()
+                                       );
+                        form1( _test=this->functionSpaceInextensibilityLM(), _vector=R,
+                               _rowstart=rowStartInVector+startBlockIndexInextensibilityLM ) += 
+                            integrate( _range=elements(submeshInextensibilityLM),
+                                       _expr=id(lambda)*trace((Id-NxN)*gradv(u))*idv(D),
+                                       _geomap=this->geomap()
+                                       );
+                    }
+
+                    double timeElapsedInextensibility_LagrangeMult = this->timerTool("Solve").stop();
+                    this->log("MultiFluid","updateResidualAdditional",
+                            "assembly inextensibility (lagrange-multiplier) in "+(boost::format("%1% s") 
+                                %timeElapsedInextensibility_LagrangeMult).str() );
+                }
+            }
+        }
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","updateResidualAdditional","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 } // namespace FeelModels
