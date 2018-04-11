@@ -203,7 +203,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // user-defined additional terms
-    this->updateJacobianAdditional( J, _BuildCstPart );
+    this->updateJacobianAdditional( data );
 
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst

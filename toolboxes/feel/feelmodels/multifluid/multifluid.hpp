@@ -37,6 +37,11 @@ public:
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype; 
     typedef typename levelset_type::element_levelset_vectorial_type element_levelset_vectorial_type;
     typedef typename levelset_type::element_levelset_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
+
+    //--------------------------------------------------------------------//
+    typedef typename super_type::DataUpdateJacobian DataUpdateJacobian;
+    typedef typename super_type::DataUpdateResidual DataUpdateResidual;
+    typedef typename super_type::DataUpdateLinear DataUpdateLinear;
     
     //--------------------------------------------------------------------//
     // Mesh
@@ -176,8 +181,8 @@ protected:
     // Linear solve
     void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const override;
     // Non-linear solve
-    void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const override;
-    void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const override;
+    void updateJacobianAdditional( DataUpdateJacobian & data ) const override;
+    void updateResidualAdditional( DataUpdateResidual & data ) const override;
     //--------------------------------------------------------------------//
     // Export
     virtual void exportResultsImpl( double time );
