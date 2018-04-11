@@ -855,8 +855,8 @@ public :
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
 
-    virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
-    virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
+    virtual void updateJacobianAdditional( DataUpdateJacobian & data ) const {}
+    virtual void updateResidualAdditional( DataUpdateResidual & data ) const {}
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const;
