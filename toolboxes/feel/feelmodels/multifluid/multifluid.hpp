@@ -179,7 +179,7 @@ protected:
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
     // Linear solve
-    void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const override;
+    void updateLinearPDEAdditional( DataUpdateLinear & data ) const override;
     // Non-linear solve
     void updateJacobianAdditional( DataUpdateJacobian & data ) const override;
     void updateResidualAdditional( DataUpdateResidual & data ) const override;
