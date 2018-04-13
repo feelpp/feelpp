@@ -35,6 +35,28 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
+class FEELPP_EXPORT ModelPostprocessExports
+{
+  public :
+    ModelPostprocessExports()
+        :
+        M_format( "ensightgold" )
+    {}
+    ModelPostprocessExports( ModelPostprocessExports const& ) = default;
+    ModelPostprocessExports( ModelPostprocessExports&& ) = default;
+    ModelPostprocessExports& operator=( ModelPostprocessExports const& ) = default;
+    ModelPostprocessExports& operator=( ModelPostprocessExports && ) = default;
+
+    std::set<std::string> const& fields() const { return M_fields; }
+    std::string const& format() const { return M_format; }
+
+    void setup( pt::ptree const& p );
+
+  private :
+    std::set<std::string> M_fields;
+    std::string M_format;
+};
+
 class FEELPP_EXPORT ModelPointPosition
 {
 public :
@@ -182,7 +204,7 @@ private:
     std::string M_directoryLibExpr;
 };
 
-class FEELPP_EXPORT ModelPostprocess: public std::map<std::string,std::vector<std::string>>
+class FEELPP_EXPORT ModelPostprocess//: public std::map<std::string,std::vector<std::string>>
 {
 public:
 
@@ -191,8 +213,17 @@ public:
     virtual ~ModelPostprocess();
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
-    std::vector<ModelPostprocessPointPosition> const& measuresPoint() const { return M_measuresPoint; }
-    std::vector<ModelPostprocessExtremum> const& measuresExtremum() const { return M_measuresExtremum; }
+    pt::ptree pTree( std::string const& name ) const;
+    bool useModelName() const { return M_useModelName; }
+    std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
+    std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
+    std::map<std::string,std::vector<ModelPostprocessExtremum> > const& allMeasuresExtremum() const { return M_measuresExtremum; }
+    bool hasExports( std::string const& name = "" ) const;
+    bool hasMeasuresPoint( std::string const& name = "" ) const;
+    bool hasMeasuresExtremum( std::string const& name = "" ) const;
+    ModelPostprocessExports const& exports( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessExtremum> const& measuresExtremum( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -211,11 +242,17 @@ public:
     void saveMD(std::ostream &os);
 private:
     void setup();
+    void setup( std::string const& name, pt::ptree const& p );
 private:
     WorldComm const& M_worldComm;
     pt::ptree M_p;
-    std::vector< ModelPostprocessPointPosition > M_measuresPoint;
-    std::vector< ModelPostprocessExtremum > M_measuresExtremum;
+    bool M_useModelName;
+    std::map<std::string,ModelPostprocessExports> M_exports;
+    std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
+    std::map<std::string,std::vector< ModelPostprocessExtremum > > M_measuresExtremum;
+    ModelPostprocessExports M_emptyExports;
+    std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
+    std::vector< ModelPostprocessExtremum > M_emptyMeasuresExtremum;
     std::string M_directoryLibExpr;
 };
 

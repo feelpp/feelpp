@@ -12,7 +12,7 @@ foreach( _DIM 2 3)
       P_ORDER ${_P_ORDER}
       P_CONTINUITY Continuous
       )
-    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -29,7 +29,7 @@ foreach( _DIM 2 3)
       P_ORDER ${_P_ORDER}
       P_CONTINUITY Continuous
       )
-    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -45,7 +45,7 @@ foreach( _DIM 2 3)
       P_ORDER ${_U_ORDER}
       P_CONTINUITY Continuous
       )
-    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -59,15 +59,14 @@ foreach( _DIM 2 3)
       P_ORDER 1
       P_CONTINUITY Continuous
       )
-    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
   endif()
 endforeach()
 
-add_library(feelpp_model_fluidmechanics SHARED libfluidmechanics.cpp)
-target_link_libraries(feelpp_model_fluidmechanics ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
-set_property(TARGET feelpp_model_fluidmechanics PROPERTY MACOSX_RPATH ON)
-
-install(TARGETS feelpp_model_fluidmechanics DESTINATION lib/ COMPONENT Libs)
+add_library(feelpp_toolbox_fluid_lib SHARED libfluidmechanics.cpp)
+target_link_libraries(feelpp_toolbox_fluid_lib ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
+set_property(TARGET feelpp_toolbox_fluid_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_fluid_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fluid COMPONENT Devel)

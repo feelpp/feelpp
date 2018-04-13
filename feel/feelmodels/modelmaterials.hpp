@@ -26,10 +26,8 @@
 
 
 #include <vector>
-#include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/ginac.hpp>
-
 #include <boost/property_tree/ptree.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel {
 
@@ -37,11 +35,13 @@ namespace pt =  boost::property_tree;
 
 struct FEELPP_EXPORT ModelMaterial
 {
-    static const uint16_type expr_order = 2;
-    typedef scalar_field_expression<expr_order> expr_scalar_type;
-    typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
-    typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
-    typedef std::tuple< boost::optional<double>, boost::optional<expr_scalar_type>, boost::optional<expr_vectorial2_type>,boost::optional<expr_vectorial3_type> > mat_property_expr_type;
+    typedef ModelExpression mat_property_expr_type;
+    static const uint16_type expr_order = mat_property_expr_type::expr_order;
+    typedef mat_property_expr_type::expr_scalar_type expr_scalar_type;
+    typedef mat_property_expr_type::expr_vectorial2_type expr_vectorial2_type;
+    typedef mat_property_expr_type::expr_vectorial3_type expr_vectorial3_type;
+    typedef mat_property_expr_type::expr_matrix22_type expr_matrix22_type;
+    typedef mat_property_expr_type::expr_matrix33_type expr_matrix33_type;
 
     ModelMaterial( WorldComm const& worldComm = Environment::worldComm() );
     ModelMaterial( ModelMaterial const& ) = default;
@@ -53,6 +53,7 @@ struct FEELPP_EXPORT ModelMaterial
                    std::string const& directoryLibExpr = "" );
 
     std::string const& name() const { return M_name; }
+    std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
     std::set<std::string> const& physics() const { return M_physics; }
     std::string const physic() const { return M_physics.empty() ? "" : *(M_physics.begin()); }
     /*! Set Name
@@ -61,8 +62,8 @@ struct FEELPP_EXPORT ModelMaterial
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
-    void setPhysics( std::set<std::string> const s) { M_physics = s; }
-    void addPhysics( std::string const s) { M_physics.insert( s ); }
+    void setPhysics( std::set<std::string> const& s) { M_physics = s; }
+    void addPhysics( std::string const& s) { M_physics.insert( s ); }
 
     void setProperty( std::string const& property, pt::ptree const& p );
     void setProperty( std::string const& property, double val );
@@ -72,14 +73,38 @@ struct FEELPP_EXPORT ModelMaterial
     bool hasPropertyExprScalar( std::string const& prop ) const;
     bool hasPropertyExprVectorial2( std::string const& prop ) const;
     bool hasPropertyExprVectorial3( std::string const& prop ) const;
+    template <int M,int N>
+    bool hasPropertyExprMatrix( std::string const& prop ) const
+    {
+        auto itFindProp = M_materialProperties.find( prop );
+        if ( itFindProp == M_materialProperties.end() )
+            return false;
+        auto const& matProp = itFindProp->second;
+        return matProp.template hasExprMatrix<M,N>();
+    }
+
+    mat_property_expr_type const& property( std::string const& prop ) const;
     double propertyConstant( std::string const& prop ) const;
     expr_scalar_type const& propertyExprScalar( std::string const& prop ) const;
     expr_vectorial2_type const& propertyExprVectorial2( std::string const& prop ) const;
     expr_vectorial3_type const& propertyExprVectorial3( std::string const& prop ) const;
+    template <int M,int N>
+    auto const& propertyExprMatrix( std::string const& prop ) const
+    {
+        bool hasProp = hasPropertyExprMatrix<M,N>( prop );
+        CHECK( hasProp ) << "no matrix expr";
+        return M_materialProperties.find( prop )->second.template exprMatrix<M,N>();
+    }
 
     bool hasPhysics() const { return !M_physics.empty(); }
-    bool hasPhysics( std::string physic ) const { return M_physics.find(physic) != M_physics.end(); }
-
+    bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }
+    bool hasPhysics( std::initializer_list<std::string> const& physics ) const
+    {
+        for ( std::string const& s : physics )
+            if ( this->hasPhysics( s ) )
+                return true;
+        return false;
+    }
     /*! Material mass density
      */
     double rho() const { return this->propertyConstant( "rho" ); }
@@ -380,6 +405,9 @@ private:
     std::map<std::string, mat_property_expr_type > M_materialProperties;
     //! material physics
     std::set<std::string> M_physics;
+    //! mesh markers
+    std::set<std::string> M_meshMarkers;
+
 };
 
 std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
@@ -397,23 +425,20 @@ public:
     ModelMaterials( pt::ptree const& p, WorldComm const& worldComm = Environment::worldComm() );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
-    ModelMaterial loadMaterial( std::string const& );
-    ModelMaterial getMaterial( pt::ptree const& );
 
     ModelMaterial const&
     material( std::string const& m ) const
         {
             auto it = this->find( m );
             if ( it == this->end() )
-                throw std::invalid_argument( std::string("ModelMaterial: Invalid material marker ") + m );
+                throw std::invalid_argument( std::string("ModelMaterial: Invalid material name ") + m );
             return it->second;
-
         }
 
     /** return all the materials which physic is physic
      *
      */
-    std::map<std::string,ModelMaterial> materialWithPhysic(std::string physic) const
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::string const& physic) const
     {
         std::map<std::string,ModelMaterial> mat;
         std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
@@ -425,7 +450,7 @@ public:
     /** return all the materials which physic is one of physics
      *
      */
-    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> physics) const
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> const& physics) const
     {
         std::map<std::string,ModelMaterial> mat;
         std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
@@ -460,7 +485,7 @@ material( ModelMaterials::value_type const& m )
 }
 
 FEELPP_EXPORT inline std::string
-marker( ModelMaterials::value_type const& m )
+name( ModelMaterials::value_type const& m )
 {
     return m.first;
 }

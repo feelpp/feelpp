@@ -90,7 +90,7 @@ main( int argc, char** argv )
     using namespace Feel;
 
     po::options_description multifluidoptions( "application multifluid options" );
-    multifluidoptions.add( Feel::feelmodels_options("multifluid") );
+    multifluidoptions.add( Feel::toolboxes_options("multifluid") );
     multifluidoptions.add_options()
         ("fluid-fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fluid-fe-approximation : P2P1,P1P1 ")
         ("levelset-fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "levelset-fe-approximation : P1,P2 ")

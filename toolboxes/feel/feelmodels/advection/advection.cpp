@@ -11,8 +11,8 @@ ADVECTION_CLASS_TEMPLATE_TYPE::Advection(
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefix, worldComm, subPrefix, rootRepository)
+        ModelBaseRepository const& modelRep )
+: super_type( prefix, worldComm, subPrefix, modelRep )
 {
     this->log("Advection","constructor", "start" );
 
@@ -35,9 +35,9 @@ ADVECTION_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
         WorldComm const& worldComm,
         std::string const& subPrefix,
-        std::string const& rootRepository )
+        ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, rootRepository );
+    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
 }
 
 ADVECTION_CLASS_TEMPLATE_DECLARATIONS

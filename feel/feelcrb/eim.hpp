@@ -945,7 +945,6 @@ EIM<ModelType>::offline()
         }
 
         timer2.restart();
-        auto gmax = M_model->computeMaximumOfExpression( mu , solution  );
         time=timer2.elapsed();
         if( this->worldComm().isMasterRank() )
         {
@@ -1746,7 +1745,7 @@ public:
     template <typename TheModelType,typename TheModelHasRbSpaceType>
     struct RbSpaceFromModel
     {
-        typedef ReducedBasisSpace<TheModelType> type;
+        typedef ReducedBasisSpace<typename TheModelType::functionspace_type> type;
     };
     template <typename TheModelType>
     struct RbSpaceFromModel<TheModelType,mpl::bool_<true> >

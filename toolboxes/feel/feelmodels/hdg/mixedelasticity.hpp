@@ -76,7 +76,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ( prefixvm( prefix, "nullspace").c_str(), po::value<bool>()->default_value( false ), "add null space" )
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
 	mpOptions.add ( backend_options( prefix+".sc" ) );
     return mpOptions;
 }
@@ -217,16 +217,16 @@ protected:
 public:
     
     // constructor
-    MixedElasticity( std::string const& prefix = "mixedelasticity",                   
-                    WorldComm const& _worldComm = Environment::worldComm(),
-                    std::string const& subPrefix = "",
-                    std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+    MixedElasticity( std::string const& prefix = "mixedelasticity",
+                     WorldComm const& _worldComm = Environment::worldComm(),
+                     std::string const& subPrefix = "",
+                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
     
     MixedElasticity( self_type const& ME ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedelasticity",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() ); 
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -295,12 +295,12 @@ public:
 
 };
 
-    template<int Dim, int Order, int G_Order, int E_Order>
+template<int Dim, int Order, int G_Order, int E_Order>
 MixedElasticity<Dim, Order, G_Order, E_Order>::MixedElasticity( std::string const& prefix,
-        WorldComm const& worldComm,
-        std::string const& subPrefix,
-        std::string const& rootRepository )
-: super_type( prefix, worldComm, subPrefix, rootRepository ) 
+                                                                WorldComm const& worldComm,
+                                                                std::string const& subPrefix,
+                                                                ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedElasticity","constructor", "start",
             this->worldComm(),this->verboseAllProc());
@@ -440,10 +440,10 @@ MixedElasticity<Dim,Order,G_Order, E_Order>::createTimeDiscretization()
 template<int Dim, int Order, int G_Order, int E_Order>
 typename MixedElasticity<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedElasticity<Dim,Order,G_Order,E_Order>::New( std::string const& prefix,
-                                         WorldComm const& worldComm, std::string const& subPrefix,
-                                         std::string const& rootRepository )
+                                                 WorldComm const& worldComm, std::string const& subPrefix,
+                                                 ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,rootRepository );
+    return boost::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -1216,12 +1216,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
     }
     
      // Export computed solutions
-     auto postProcess = M_modelProperties->postProcess();
-     auto itField = postProcess.find( "Fields");
-     
-	 if ( itField != postProcess.end() )
      {
-         for ( auto const& field : (*itField).second )
+         for ( auto const& field : M_modelProperties->postProcess().exports().fields() )
          {
             if ( field == "stress" )
             {
