@@ -95,18 +95,19 @@ BlocksBaseVector<T>::vectorMonolithic() const
 
 template <typename T>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int blockId, bool closeVector ) const
+BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int dtId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
     for ( int tag=0 ; tag<dmSubVec.numberOfDofIdToContainerId() ; ++tag )
     {
         auto const& basisGpToContainerGpSubVec = dmSubVec.dofIdToContainerId( tag );
-        CHECK( blockId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<blockId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
-        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( blockId+tag );
+        CHECK( dtId+tag < dmVec.numberOfDofIdToContainerId() ) << "error "<<dtId+tag << " vs " << dmVec.numberOfDofIdToContainerId();
+        auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( dtId+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " aii " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
+            vec.set( basisGpToContainerGpVec[k], subvec( basisGpToContainerGpSubVec[k] ) );
+            //vec( basisGpToContainerGpVec[k] ) = subvec( basisGpToContainerGpSubVec[k] );
     }
     if ( closeVector )
         vec.close();
@@ -126,8 +127,9 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
         auto const& basisGpToContainerGpVec = dmVec.dofIdToContainerId( basisIndexSubVec+tag );
         CHECK( basisGpToContainerGpSubVec.size() == basisGpToContainerGpVec.size() ) << " error " << basisGpToContainerGpSubVec.size() << " vs " << basisGpToContainerGpVec.size();
         for ( int k=0;k<basisGpToContainerGpSubVec.size();++k )
-            subvec( basisGpToContainerGpSubVec[k] ) = vec( basisGpToContainerGpVec[k] );
+            subvec.set( basisGpToContainerGpSubVec[k], vec( basisGpToContainerGpVec[k] ) );
     }
+    subvec.close();
 }
 
 template <typename T>
@@ -137,8 +139,12 @@ BlocksBaseVector<T>::updateVectorFromSubVectors()
     if ( !M_vector )
         return;
     int nBlock = this->nRow();
-    for ( int k = 0 ; k<nBlock ;++k )
-        this->setVector( *M_vector, *(this->operator()(k)), k, false );
+    for ( int k = 0, dtId = 0 ; k<nBlock ;++k )
+    {
+        vector_ptrtype subvec = this->operator()(k);
+        this->setVector( *M_vector, *subvec, dtId, false );
+        dtId += subvec->map().numberOfDofIdToContainerId();
+    }
     M_vector->close();
 }
 

@@ -120,13 +120,13 @@ FSI<FluidType,SolidType>::createMesh()
             meshesdirectories = meshesdirgiven;
     }
     else
-        meshesdirectories = fs::path(this->rootRepositoryWithoutNumProc()) / fs::path("meshes");
+        meshesdirectories = fs::path(this->repository().rootWithoutNumProc()) / fs::path("meshes");
 
     fs::path gp;
-    if (this->hasMshfileStr())
-        gp = this->mshfileStr();
+    if (this->hasMeshFile())
+        gp = this->meshFile();
     else
-        gp = this->geofileStr();
+        gp = this->geoFile();
 
     std::string nameMeshFile = gp.stem().string();
     fs::path mshFileNameFluidPart1, mshFileNameSolidPart1,mshFileNameFluidPartN,mshFileNameSolidPartN;
@@ -165,12 +165,12 @@ FSI<FluidType,SolidType>::createMesh()
 
     fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
-    if (this->hasMshfileStr())
+    if (this->hasMeshFile())
     {
-        fsimeshTool.setMshPathFSI( fs::path(this->mshfileStr()) );
+        fsimeshTool.setMshPathFSI( fs::path(this->meshFile()) );
         fsimeshTool.buildFSIMeshFromMsh();
     }
-    else if (this->hasGeofileStr())
+    else if (this->hasGeoFile())
     {
         fs::path mshFileNameFSI;
         if ( !M_tagFileNameMeshGenerated.empty() )
@@ -179,7 +179,7 @@ FSI<FluidType,SolidType>::createMesh()
             mshFileNameFSI = (boost::format("%1%_fsi_%2%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
         fs::path mshPathFSI = meshesdirectories / mshFileNameFSI;
 
-        fsimeshTool.setGeoPathFSI( fs::path(this->geofileStr()) );
+        fsimeshTool.setGeoPathFSI( fs::path(this->geoFile()) );
         fsimeshTool.setMshPathFSI( mshPathFSI );
         fsimeshTool.setMeshSize( this->meshSize() );
         fsimeshTool.buildFSIMeshFromGeo();
@@ -263,15 +263,15 @@ FSI<FluidType,SolidType>::init()
     this->log("FSI","init","start");
 
     // create fsimesh and partitioned meshes if require
-    if ( this->hasMshfileStr() || this->hasGeofileStr() )
+    if ( this->hasMeshFile() || this->hasGeoFile() )
         this->createMesh();
 
     // fluid model build
     if ( !M_fluidModel )
     {
-        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
+        M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->repository() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
-            M_fluidModel->setMshfileStr(M_mshfilepathFluidPartN.string());
+            M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
         //M_fluidModel->build();
         M_fluidModel->init();
     }
@@ -279,7 +279,7 @@ FSI<FluidType,SolidType>::init()
     // solid model build
     if ( !M_solidModel )
     {
-        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->rootRepositoryWithoutNumProc() ) );
+        M_solidModel = solid_ptrtype( new solid_type("solid",false,this->worldComm(), "", this->repository() ) );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
@@ -301,7 +301,7 @@ FSI<FluidType,SolidType>::init()
         else
         {
             if ( !M_mshfilepathSolidPartN.empty() )
-                M_solidModel->setMshfileStr( M_mshfilepathSolidPartN.string() );
+                M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
             M_solidModel->build();
         }
         M_solidModel->init();

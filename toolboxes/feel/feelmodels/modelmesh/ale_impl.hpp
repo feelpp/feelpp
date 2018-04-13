@@ -117,7 +117,8 @@ public :
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", WorldComm const& worldcomm = WorldComm(), bool moveGhostEltFromExtendedStencil=false );
+    ALE( mesh_ptrtype mesh, std::string prefix="", WorldComm const& worldcomm = WorldComm(), bool moveGhostEltFromExtendedStencil=false,
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * copy constructor

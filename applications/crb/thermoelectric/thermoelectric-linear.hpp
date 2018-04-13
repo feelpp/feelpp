@@ -38,6 +38,8 @@ makeThermoElectricOptions()
 {
     po::options_description options( "Thermoelectric" );
     options.add_options()
+        ( "thermoelectric.basename", Feel::po::value<std::string>()->default_value("thermoelectric_linear"),
+          "name of the database" )
         ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"),
           "json file containing application parameters and boundary conditions")
         ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
@@ -128,6 +130,7 @@ public:
     using J_space_type = FunctionSpaceDefinition::J_space_type;
     using J_space_ptrtype = boost::shared_ptr<J_space_type>;
     using q_sigma_space_type = space_type::template sub_functionspace<0>::type;
+    using q_sigma_space_ptrtype = boost::shared_ptr<q_sigma_space_type>;
     using q_sigma_element_type = q_sigma_space_type::element_type;
     using V_view_type = typename element_type::template sub_element_type<0>;
     using V_view_ptrtype = typename element_type::template sub_element_ptrtype<0>;
@@ -144,7 +147,7 @@ public:
     using parameter_type = super_type::parameter_type;
     using vectorN_type = super_type::vectorN_type;
     using beta_vector_type = typename super_type::beta_vector_type;
-    using beta_type = boost::tuple<beta_vector_type,  std::vector<beta_vector_type> >;
+    using beta_type = boost::tuple<beta_vector_type, std::vector<beta_vector_type> >;
     using affine_decomposition_type = typename super_type::affine_decomposition_type;
 
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
@@ -187,6 +190,8 @@ public:
     int mMaxA( int q ) const;
     int mMaxL( int l, int q ) const;
     int mMaxCompliant( int q ) const;
+    int QIntensity() const;
+    int QAverageTemp() const;
     int mMaxIntensity( int q ) const;
     int mMaxAverageTemp( int q ) const;
     int QInitialGuess() const override;

@@ -193,7 +193,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     bool Build_TransientTerm = !BuildCstPart;
     if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
 
-    if (!this->isStationary() && Build_TransientTerm/*BuildCstPart*/)
+    if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
     {
         bilinearForm_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
@@ -252,44 +252,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     this->updateJacobianWeakBC( data, U );
 
     //--------------------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        DataUpdateJacobian dataThermo( data );
-        dataThermo.setDoBCStrongDirichlet( false );
-        M_thermodynModel->updateJacobian( dataThermo );
-
-        if ( BuildNonCstPart )
-        {
-            auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
-            auto const& thermalProperties = M_thermodynModel->thermalProperties();
-
-            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
-            form2( _test=XhT,_trial=XhT,_matrix=J,
-                   _rowstart=M_thermodynModel->rowStartInMatrix(),
-                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= thecoeff*(gradt(t)*idv(u))*id(t),
-                       _geomap=this->geomap() );
-            form2( _test=XhT,_trial=Xh,_matrix=J,
-                   _rowstart=M_thermodynModel->rowStartInMatrix(),
-                   _colstart=this->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= thecoeff*(gradv(t)*idt(u))*id(t),
-                           _geomap=this->geomap() );
-
-            auto betaFluid = idv(thermalProperties->fieldThermalExpansion() );
-            form2( _test=Xh,_trial=XhT,_matrix=J,
-                   _rowstart=this->rowStartInMatrix(),
-                   _colstart=M_thermodynModel->colStartInMatrix() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= idv(thermalProperties->fieldRho())*betaFluid*(idt(t))*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-        }
-
-
-    }
-    //--------------------------------------------------------------------------------------------------//
 
     if ( BuildNonCstPart && _doBCStrongDirichlet )
     {
@@ -334,12 +296,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                     on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
                         _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
             }
-        }
-
-
-        if ( M_useThermodynModel && M_useGravityForce )
-        {
-            M_thermodynModel->updateBCStrongDirichletJacobian( J,RBis );
         }
 
     }

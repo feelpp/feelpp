@@ -75,9 +75,10 @@ buildSpaceHigh(boost::shared_ptr<SpaceLowType> spaceLow, bool moveGhostEltFromEx
 
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil )
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, WorldComm const& worldcomm, bool moveGhostEltFromExtendedStencil,
+                        ModelBaseRepository const& modelRep )
     :
-    super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil ),
+    super_type( mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ),
     M_verboseSolverTimer(boption(_prefix=this->prefix(),_name="verbose_solvertimer")),
     M_verboseSolverTimerAllProc(boption(_prefix=this->prefix(),_name="verbose_solvertimer_allproc")),
     M_reference_mesh( mesh ),
@@ -317,7 +318,8 @@ ALE<Convex,Order>::createHarmonicExtension()
      M_worldComm,useGhostEltFromExtendedStencil) );*/
     M_harmonicextensionFactory.reset( new harmonicextension_type( M_fspaceLow,
                                                                   Feel::backend(_rebuild=true,_name=this->prefix() ),
-                                                                  prefixvm(this->prefix(),"harmonic") ) );
+                                                                  prefixvm(this->prefix(),"harmonic"),
+                                                                  this->repository() ) );
     M_harmonicextensionFactory->setflagSet(this->flagSet());
     M_harmonicextensionFactory->init();
     M_isInitHarmonicExtension = true;

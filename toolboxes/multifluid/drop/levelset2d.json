@@ -1,7 +1,10 @@
 {
     "Name": "Drop2d",
     "ShortName": "Drop2d",
-    "Model": "Advection",
+    "Models":
+    {
+        "equations":"Advection"
+    },
 
     "Parameters":
     {

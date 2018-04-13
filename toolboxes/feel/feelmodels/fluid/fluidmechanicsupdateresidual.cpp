@@ -236,7 +236,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //------------------------------------------------------------------------------------//
 
     //transients terms
-    if (!this->isStationary())
+    if (!this->isStationaryModel())
     {
         bool Build_TransientTerm = !BuildCstPart;
         if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=!BuildCstPart && !UseJacobianLinearTerms;
@@ -322,7 +322,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     this->updateResidualStabilisation( data, U );
 
     //------------------------------------------------------------------------------------//
-
+#if 0
     if ( UsePeriodicity && !BuildCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
@@ -331,100 +331,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=-inner(pressureJump*N(),id(v) ) );
     }
-
+#endif
     //------------------------------------------------------------------------------------//
 
     this->updateResidualWeakBC( data, U );
 
     //------------------------------------------------------------------------------------//
-    if ( M_useThermodynModel && M_useGravityForce )
-    {
-        DataUpdateResidual dataThermo( data );
-        dataThermo.setDoBCStrongDirichlet( false );
-        M_thermodynModel->updateResidual( dataThermo );
 
-        if ( !BuildCstPart )
-        {
-            //auto const& t = M_thermodynModel->fieldTemperature();
-            auto XhT = M_thermodynModel->spaceTemperature();
-            auto t = XhT->element(XVec, M_thermodynModel->rowStartInVector() );
-            auto const& thermalProperties = M_thermodynModel->thermalProperties();
-
-            auto thecoeff = idv(thermalProperties->fieldRho())*idv(thermalProperties->fieldHeatCapacity());
-            form1( _test=M_thermodynModel->spaceTemperature(), _vector=R,
-                   _pattern=size_type(Pattern::COUPLED),
-                   _rowstart=M_thermodynModel->rowStartInVector() ) +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= thecoeff*(gradv(t)*idv(u))*id(t),
-                           _geomap=this->geomap() );
-
-            double T0 = M_BoussinesqRefTemperature;
-            auto betaFluid = idv(thermalProperties->fieldThermalExpansion());
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElementsAeroThermal,
-                           _expr= idv(thermalProperties->fieldRho())*(betaFluid*(idv(t)-T0))*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-        }
-    }
-    //------------------------------------------------------------------------------------//
-
-    bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet();
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    hasStrongDirichletBC = hasStrongDirichletBC || ( this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann" );
-#endif
-    if ( M_useThermodynModel && M_useGravityForce )
-        hasStrongDirichletBC = hasStrongDirichletBC || M_thermodynModel->hasMarkerDirichletBCelimination();
-
-    if (!BuildCstPart && _doBCStrongDirichlet && hasStrongDirichletBC)
+    if (!BuildCstPart && _doBCStrongDirichlet && this->hasStrongDirichletBC() )
     {
         R->close();
 
-        auto resFeView = Xh->element(R,rowStartInVector);
-        auto resFeViewVelocity = resFeView.template element<0>();
-
-        auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
-        auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-        for ( size_type thedof : dofsWithValueImposedVelocity )
-            resFeViewVelocity.set( thedof,0. );
-        sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
-
-
-        if ( this->hasMarkerPressureBC() )
-        {
-#if 0
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                               _expr=vf::zero<1,1>() );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
-                                   _expr=vf::zero<1,1>() );
-            }
-#else
-            auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
-            auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
-            for ( size_type thedof : dofsWithValueImposedPressureBC )
-                lambdaPressure1.set( thedof,0. );
-            sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
-                for ( size_type thedof : dofsWithValueImposedPressureBC )
-                    lambdaPressure2.set( thedof,0. );
-                sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
-            }
-
-#endif
-        }
-
-        if ( M_useThermodynModel && M_useGravityForce )
-            M_thermodynModel->updateBCDirichletStrongResidual( R );
+        this->updateResidualStrongDirichletBC( R );
     }
 
     //------------------------------------------------------------------------------------//
@@ -554,12 +472,60 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
         sync( pSol, "=" );
     }
 
-    if ( M_useThermodynModel && M_useGravityForce )
+    this->log("FluidMechanics","updateNewtonInitialGuess","finish");
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+{
+    auto Xh = this->spaceVelocityPressure();
+    size_type rowStartInVector = this->rowStartInVector();
+
+    auto resFeView = Xh->element(R,rowStartInVector);
+    auto resFeViewVelocity = resFeView.template element<0>();
+
+    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("velocity");
+    auto const& dofsWithValueImposedVelocity = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
+    for ( size_type thedof : dofsWithValueImposedVelocity )
+        resFeViewVelocity.set( thedof,0. );
+    sync( resFeViewVelocity, "=", dofsWithValueImposedVelocity );
+
+
+    if ( this->hasMarkerPressureBC() )
     {
-        M_thermodynModel->updateNewtonInitialGuess( U );
+#if 0
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                           _expr=vf::zero<1,1>() );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
+                               _expr=vf::zero<1,1>() );
+        }
+#else
+        auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
+        auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
+        for ( size_type thedof : dofsWithValueImposedPressureBC )
+            lambdaPressure1.set( thedof,0. );
+        sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
+            for ( size_type thedof : dofsWithValueImposedPressureBC )
+                lambdaPressure2.set( thedof,0. );
+            sync( lambdaPressure2, "=", dofsWithValueImposedPressureBC );
+        }
+
+#endif
     }
 
-    this->log("FluidMechanics","updateNewtonInitialGuess","finish");
 }
 
 
