@@ -789,10 +789,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solveFluid()
 
     if( this->M_doRebuildMatrixVector )
     {
-        this->algebraicFactory()->backend()->clear();
         // Rebuild algebraic matrix and vector
         auto graph = this->buildMatrixGraph();
-        this->algebraicFactory()->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
+        //this->algebraicFactory()->backend()->clear();
+        //this->algebraicFactory()->rebuildMatrixVector( graph, graph->mapRow().indexSplit() );
+        this->M_backend = backend( 
+                _kind=soption( _name="backend", _prefix=this->fluidPrefix() ), 
+                _name=this->fluidPrefix(),
+                _rebuild=true,
+                _worldcomm=this->functionSpace()->worldComm() 
+                );
+        this->algebraicFactory()->reset( this->M_backend, graph, graph->mapRow().indexSplit() );
         // Rebuild solution vector
         this->buildBlockVector();
     }
