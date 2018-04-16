@@ -109,7 +109,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
            << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
-    *_ostr << this->densityViscosityModel()->getInfoMaterialParameters()->str();
+    *_ostr << this->densityViscosityModel()->getInfo()->str();
     // *_ostr << "\n   Physical Parameters"
     //        << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
     //        << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()

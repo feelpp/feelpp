@@ -46,7 +46,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/fluid/densityviscositymodel.hpp>
+#include <feel/feelmodels/fluid/dynamicviscositymodel.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
@@ -199,7 +199,7 @@ public:
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
-    typedef DensityViscosityModel<space_densityviscosity_type> densityviscosity_model_type;
+    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> densityviscosity_model_type;
     typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
