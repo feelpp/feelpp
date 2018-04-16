@@ -2895,9 +2895,9 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
-        if ( M_model->hasDeim() )
+        if ( M_model->hasDeim() && !M_model->isLinear() )
         {
-            M_model->updateRbInDeim( this->wn() );
+            M_model->updateRbInDeim();
         }
 
 
