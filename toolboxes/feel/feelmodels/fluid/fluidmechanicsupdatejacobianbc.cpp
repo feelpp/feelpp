@@ -43,9 +43,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& rho = this->materialProperties()->fieldRho();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Nitsche formulation

@@ -67,8 +67,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     // strain tensor
     auto const deft = sym(gradt(u));
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& mu = this->materialProperties()->fieldMu();
+    auto const& rho = this->materialProperties()->fieldRho();
     // stress tensor
     auto const Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
     //--------------------------------------------------------------------------------------------------//
@@ -127,17 +127,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
-        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
         if ( dynamicViscosity.isNewtonianLaw() )
         {
             //auto const deft = sym(gradt(u));
             //--------------------------------------------------------------------------------------------------//
             // newtonian law
-            auto const& mu = this->densityViscosityModel()->fieldMu();
+            auto const& mu = this->materialProperties()->fieldMu();
             auto const sigma_newtonian_viscous = idv(mu)*deft;
             auto const Sigmat_newtonian = -idt(p)*Id + 2*idv(mu)*deft;
             //--------------------------------------------------------------------------------------------------//
@@ -173,7 +173,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
             if ( BuildNonCstPart )
             {
-                auto StressTensorExprJac = Feel::vf::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,false/*true*/);
+                auto StressTensorExprJac = Feel::vf::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),

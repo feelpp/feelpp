@@ -57,8 +57,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& mu = this->materialProperties()->fieldMu();
+    auto const& rho = this->materialProperties()->fieldRho();
     // Strain tensor (trial)
     auto Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
 

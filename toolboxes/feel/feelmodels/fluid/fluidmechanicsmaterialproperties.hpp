@@ -21,11 +21,6 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-/**
- \file dynamicviscositymodel.hpp
- \author Vincent Chabannes <vincent.chabannes@feelpp.org>
- \date 2014-03-21
- */
 
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP
 #define FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP 1

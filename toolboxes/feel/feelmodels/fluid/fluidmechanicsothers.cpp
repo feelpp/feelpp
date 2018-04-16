@@ -105,16 +105,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
            << "\n     -- pde name  : " << M_modelName
-        //<< "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
+        //<< "\n     -- stress tensor law  : " << this->materialProperties()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
            << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
-    *_ostr << this->densityViscosityModel()->getInfo()->str();
+    *_ostr << this->materialProperties()->getInfo()->str();
     // *_ostr << "\n   Physical Parameters"
-    //        << "\n     -- rho : " << this->densityViscosityModel()->cstRho()
-    //        << "\n     -- mu  : " << this->densityViscosityModel()->cstMu()
-    //        << "\n     -- nu  : " << this->densityViscosityModel()->cstNu();
-    // *_ostr << this->densityViscosityModel()->getInfo()->str();
+    //        << "\n     -- rho : " << this->materialProperties()->cstRho()
+    //        << "\n     -- mu  : " << this->materialProperties()->cstMu()
+    //        << "\n     -- nu  : " << this->materialProperties()->cstNu();
+    // *_ostr << this->materialProperties()->getInfo()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
@@ -306,7 +306,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string const&
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
 {
-    return this->densityViscosityModel()->dynamicViscosityLaw();
+    return this->materialProperties()->dynamicViscosityLaw();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -314,10 +314,10 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& type )
 {
     // if viscosity model change -> force to rebuild all algebraic data at next solve
-    if ( type != this->densityViscosityModel()->dynamicViscosityLaw() )
+    if ( type != this->materialProperties()->dynamicViscosityLaw() )
         this->setNeedToRebuildCstPart( true );
 
-    this->densityViscosityModel()->setDynamicViscosityLaw( type );
+    this->materialProperties()->setDynamicViscosityLaw( type );
 }
 #endif
 //---------------------------------------------------------------------------------------------------------//
@@ -485,7 +485,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"density"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"density")),
-                                     this->densityViscosityModel()->fieldDensity() );
+                                     this->materialProperties()->fieldDensity() );
         hasFieldToExport = true;
     }
     if ( fields.find( "viscosity" ) != fields.end() )
@@ -494,12 +494,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
         auto uCur = M_Solution->template element<0>();
         auto pCur = M_Solution->template element<1>();
         auto viscosityField = M_XhNormalBoundaryStress->compSpace()->element();
-        for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
             std::string const& matName = rangeData.first;
             auto const& range = rangeData.second;
-            //auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
-            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->densityViscosityModel(),matName);
+            //auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->materialProperties(),matName);
             viscosityField.on( _range=range,_expr=myViscosity );
         }
         exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
@@ -902,7 +902,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->setStationary( saveIsStationary );
     }
 #if 0 // TODO
-    if ( this->startBySolveNewtonian() && this->densityViscosityModel()->dynamicViscosityLaw() != "newtonian" &&
+    if ( this->startBySolveNewtonian() && this->materialProperties()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
     {
         this->log("FluidMechanics","solve", "start by solve newtonian" );
@@ -1035,7 +1035,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matri
 
     auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
     auto const& p = this->fieldPressure();
-    auto coeff = cst(1.)/idv(this->densityViscosityModel()->fieldMu());
+    auto coeff = cst(1.)/idv(this->materialProperties()->fieldMu());
     massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
     pmmMat->close();
     M_pmmNeedUpdate = false;
@@ -1048,8 +1048,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 
     boost::shared_ptr< OperatorPCD<space_fluid_type> > myOpPCD =
         boost::dynamic_pointer_cast< OperatorPCD<space_fluid_type> >( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
-    auto const& rho = this->densityViscosityModel()->fieldRho();
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& rho = this->materialProperties()->fieldRho();
+    auto const& mu = this->materialProperties()->fieldMu();
     bool hasAlpha = !this->isStationaryModel();
     double coeffAlpha = (this->isStationaryModel())? 0. : this->timeStepBDF()->polyDerivCoefficient(0);
     auto alpha = idv(rho)*coeffAlpha;
@@ -1082,9 +1082,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
         auto u = U.template element<0>();
         auto p = U.template element<1>();
-        CHECK( this->densityViscosityModel()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-        std::string matName = this->densityViscosityModel()->rangeMeshElementsByMaterial().begin()->first;
-        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName);
+        CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+        std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->materialProperties(),matName);
         if (this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1101,7 +1101,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
-    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = M_densityViscosityModel->isDefinedOnWholeMesh();
+    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = M_materialProperties->isDefinedOnWholeMesh();
     M_definePressureCstMeshRanges.clear();
     for ( auto const& markers : M_definePressureCstMarkers )
     {
@@ -1303,7 +1303,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::list<s
     // deformations tensor
     auto defv = sym(gradv(u));
     // stress tensor
-    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
+    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
 
     M_fieldNormalStress->zero();
     if ( listMarkers.empty() )
@@ -1350,7 +1350,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshStandard( s
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
+    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
 
     // Deformation tensor
     auto Fa = Id+gradv(*M_meshALE->displacement());
@@ -1494,7 +1494,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMeshOptSI( std:
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = -idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv;
+    auto Sigmav = -idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv;
 
     this->meshALE()->revertReferenceMesh();
 
@@ -1550,7 +1550,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress()
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes (trial)
-    auto Sigmav = (-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
+    auto Sigmav = (-idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv);
 
     M_fieldWallShearStress->on(_range=boundaryfaces(this->mesh()),
                                _expr=Sigmav*vf::N() - (trans(Sigmav*vf::N())*vf::N())*vf::N(),
@@ -1708,11 +1708,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) 
     // Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // Tenseur des contraintes
-    auto Sigmav = val(-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
+    auto Sigmav = val(-idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv);
 #endif
-    CHECK( this->densityViscosityModel()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = this->densityViscosityModel()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,true);
+    CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+    std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+    auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= sigmav*N(),

@@ -60,8 +60,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // identity Matrix
     auto Id = eye<nDim,nDim>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& mu = this->materialProperties()->fieldMu();
+    auto const& rho = this->materialProperties()->fieldRho();
     // stress tensor (eval)
     auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
 
@@ -123,11 +123,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
-        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
         if ( dynamicViscosity.isNewtonianLaw() )
         {
             // sigma : grad(v) on Omega
@@ -165,7 +165,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             }
             if ( BuildNonCstPart )
             {
-                auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,false/*true*/);
+                auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->materialProperties(),matName,false/*true*/);
                 // sigma : grad(v) on Omega
                 linearForm_PatternCoupled +=
                     integrate( _range=range,
@@ -184,7 +184,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                        _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
-        auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
+        auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
         linearForm_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
                        _expr= val(-coeffDiv*gradv(this->velocityDiv()))*id(v),

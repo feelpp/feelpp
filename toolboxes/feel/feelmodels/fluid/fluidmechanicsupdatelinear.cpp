@@ -105,7 +105,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     auto deft = sym(gradt(u));
     //auto deft = 0.5*gradt(u);
     // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& rho = this->materialProperties()->fieldRho();
     // identity matrix
     auto const Id = eye<nDim,nDim>();
 
@@ -113,16 +113,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     // stress tensor sigma : grad(v)
-    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
-        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
         if ( dynamicViscosity.isNewtonianLaw() )
         {
             if ( BuildCstPart )
             {
-                auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
+                auto Sigmat = -idt(p)*Id + 2*idv(this->materialProperties()->fieldMu())*deft;
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= inner(Sigmat,grad(v)),
@@ -135,7 +135,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             {
                 auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
                 auto betaU = BetaU.template element<0>();
-                auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel(),matName);
+                auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= 2*myViscosity*inner(deft,grad(v)),
@@ -342,7 +342,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                        _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
-        auto coeffDiv = (2./3.)*idv(this->densityViscosityModel()->fieldMu()); //(eps-2mu/3)
+        auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
         myLinearForm +=
             integrate( _range=M_rangeMeshElements,
                        _expr= val(coeffDiv*gradv(this->velocityDiv()))*id(v),
