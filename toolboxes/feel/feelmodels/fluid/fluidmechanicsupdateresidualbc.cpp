@@ -46,9 +46,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     auto Id = eye<nDim,nDim>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
     // density
-    auto const& rho = this->densityViscosityModel()->fieldRho();
+    auto const& rho = this->materialProperties()->fieldRho();
 
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition

@@ -46,7 +46,7 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/fluid/dynamicviscositymodel.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
@@ -199,8 +199,8 @@ public:
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
-    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> densityviscosity_model_type;
-    typedef boost::shared_ptr<densityviscosity_model_type> densityviscosity_model_ptrtype;
+    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type;
+    typedef boost::shared_ptr<material_properties_type> material_properties_ptrtype;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
@@ -503,9 +503,6 @@ public :
 
     bool isStationaryModel() const;
 
-    //void setDynamicViscosityLaw( std::string const& type);
-    //std::string const& dynamicViscosityLaw() const;
-
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
     bool hasSolveNewtonianAtKickOff() const { return M_hasSolveNewtonianAtKickOff; }
@@ -585,27 +582,27 @@ public :
 
     //___________________________________________________________________________________//
     // physical parameters rho,mu,nu,...
-    densityviscosity_model_ptrtype & densityViscosityModel() { return M_densityViscosityModel; }
-    densityviscosity_model_ptrtype const& densityViscosityModel() const { return M_densityViscosityModel; }
+    material_properties_ptrtype & materialProperties() { return M_materialProperties; }
+    material_properties_ptrtype const& materialProperties() const { return M_materialProperties; }
 
     void updateRho(double rho)
     {
-        this->densityViscosityModel()->setCstDensity(rho);
+        this->materialProperties()->setCstDensity(rho);
     }
     void updateMu(double mu)
     {
-        this->densityViscosityModel()->setCstDynamicViscosity(mu);
+        this->materialProperties()->setCstDynamicViscosity(mu);
         M_pmmNeedUpdate = true;
     }
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDensity( __expr );
+        this->materialProperties()->updateDensity( __expr );
     }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
-        this->densityViscosityModel()->updateDynamicViscosity( __expr );
+        this->materialProperties()->updateDynamicViscosity( __expr );
         M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//
@@ -921,7 +918,7 @@ protected:
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
-    densityviscosity_model_ptrtype M_densityViscosityModel;
+    material_properties_ptrtype M_materialProperties;
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
