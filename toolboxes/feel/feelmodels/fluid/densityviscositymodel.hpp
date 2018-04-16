@@ -50,6 +50,8 @@ public :
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef DynamicViscosityModel<space_type> super_type;
 
+    static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
+
     DensityViscosityModel( std::string prefix )
         :
         super_type( prefix )

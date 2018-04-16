@@ -503,8 +503,8 @@ public :
 
     bool isStationaryModel() const;
 
-    void setDynamicViscosityLaw( std::string const& type);
-    std::string const& dynamicViscosityLaw() const;
+    //void setDynamicViscosityLaw( std::string const& type);
+    //std::string const& dynamicViscosityLaw() const;
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }

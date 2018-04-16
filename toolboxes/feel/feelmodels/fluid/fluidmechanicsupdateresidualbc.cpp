@@ -5,7 +5,7 @@
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 
 namespace Feel
@@ -20,7 +20,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 {
     using namespace Feel::vf;
 
-    this->log("FluidMechanics","updateResidualModel", "start for " + this->densityViscosityModel()->dynamicViscosityLaw() );
+    this->log("FluidMechanics","updateResidualModel", "start" );
 
     boost::mpi::timer thetimer,thetimer2;
     const vector_ptrtype& XVec = data.currentSolution();

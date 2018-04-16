@@ -127,56 +127,61 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // sigma : grad(v) on Omega
-    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
     {
-        //auto const deft = sym(gradt(u));
-        //--------------------------------------------------------------------------------------------------//
-        // newtonian law
-        auto const& mu = this->densityViscosityModel()->fieldMu();
-        auto const sigma_newtonian_viscous = idv(mu)*deft;
-        auto const Sigmat_newtonian = -idt(p)*Id + 2*idv(mu)*deft;
-        //--------------------------------------------------------------------------------------------------//
-        if ( BuildCstPart )
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        if ( dynamicViscosity.isNewtonianLaw() )
         {
+            //auto const deft = sym(gradt(u));
+            //--------------------------------------------------------------------------------------------------//
+            // newtonian law
+            auto const& mu = this->densityViscosityModel()->fieldMu();
+            auto const sigma_newtonian_viscous = idv(mu)*deft;
+            auto const Sigmat_newtonian = -idt(p)*Id + 2*idv(mu)*deft;
+            //--------------------------------------------------------------------------------------------------//
+            if ( BuildCstPart )
+            {
 #if 1
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= inner(Sigmat_newtonian,grad(v)),
-                           _geomap=this->geomap() );
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= inner(Sigmat_newtonian,grad(v)),
+                               _geomap=this->geomap() );
 #else
-            //auto StressTensorExprJac = Feel::vf::FSI::fluidMecNewtonianStressTensorJacobian(u,p,viscosityModel,false/*true*/);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= 2*idv(mu)*inner(deft,grad(v)),
-                           //_expr= inner( StressTensorExprJac, grad(v) ),
-                           _geomap=this->geomap() );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idt(p)*div(v),
-                           _geomap=this->geomap() );
+                //auto StressTensorExprJac = Feel::vf::FSI::fluidMecNewtonianStressTensorJacobian(u,p,viscosityModel,false/*true*/);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= 2*idv(mu)*inner(deft,grad(v)),
+                               //_expr= inner( StressTensorExprJac, grad(v) ),
+                               _geomap=this->geomap() );
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= -idt(p)*div(v),
+                               _geomap=this->geomap() );
 #endif
 
+            }
         }
-    }
-    else
-    {
-        if ( BuildCstPart )
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idt(p)*div(v),
-                           _geomap=this->geomap() );
-
-        if ( BuildNonCstPart )
+        else
         {
-            auto StressTensorExprJac = Feel::vf::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),
-                           _expr= inner( StressTensorExprJac,grad(v) ),
-                           _geomap=this->geomap() );
-        }
-    } // non newtonian
+            if ( BuildCstPart )
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= -idt(p)*div(v),
+                               _geomap=this->geomap() );
 
+            if ( BuildNonCstPart )
+            {
+                auto StressTensorExprJac = Feel::vf::FeelModels::fluidMecNewtonianStressTensorJacobian<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,false/*true*/);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               //_expr= inner( 2*sigma_powerlaw_viscous/*Sigmat_powerlaw*/,grad(v) ),
+                               _expr= inner( StressTensorExprJac,grad(v) ),
+                               _geomap=this->geomap() );
+            }
+        } // non newtonian
+    }
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
