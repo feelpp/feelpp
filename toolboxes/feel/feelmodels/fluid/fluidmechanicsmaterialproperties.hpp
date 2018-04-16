@@ -417,7 +417,14 @@ public :
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
-
+    //! update dynamic viscosity projection field
+    template < typename ExprT >
+    void updateDynamicViscosityField( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
+        {
+            if ( !M_fieldDynamicViscosity ) return;
+            auto rangeEltUsed = ( marker.empty() )? elements(M_fieldDynamicViscosity->mesh()) : markedelements(M_fieldDynamicViscosity->mesh(),marker);
+            M_fieldDynamicViscosity->on(_range=rangeEltUsed,_expr=__expr );
+        }
 
     //! return true if has DynamicViscosity for this mat
     bool hasDynamicViscosity( std::string const& matName ) const
@@ -457,6 +464,14 @@ public :
     element_type const& fieldRho() const { return this->fieldDensity(); }
     element_type const& fieldDensity() const { return *M_fieldDensity; }
     element_ptrtype const& fieldDensityPtr() const { return M_fieldDensity; }
+    //! update density projection field
+    template < typename ExprT >
+    void updateDensityField( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
+        {
+            if ( !M_fieldDensity ) return;
+            auto rangeEltUsed = ( marker.empty() )? elements(M_fieldDensity->mesh()) : markedelements(M_fieldDensity->mesh(),marker);
+            M_fieldDensity->on(_range=rangeEltUsed,_expr=__expr );
+        }
 
     //! return true if has density description for this material name
     bool hasDensity( std::string const& matName ) const

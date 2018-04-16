@@ -189,7 +189,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->initAlgebraicFactory();
     }
 
-    for ( auto const& rangeData : M_fluidModel->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
