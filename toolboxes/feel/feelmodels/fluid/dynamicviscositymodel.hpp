@@ -27,8 +27,8 @@
  \date 2014-03-21
  */
 
-#ifndef FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H
-#define FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H 1
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP 1
 
 //#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
@@ -38,6 +38,9 @@ namespace Feel
 namespace FeelModels
 {
 
+/**
+ * Power Law parameters
+ */
 struct DynamicViscosityPowerLaw
 {
     DynamicViscosityPowerLaw( std::string const& prefix )
@@ -72,13 +75,15 @@ struct DynamicViscosityPowerLaw
                 M_muMin = *muMin;
             if ( auto muMax  = pt.get_optional<double>("muMax") )
                 M_muMax = *muMax;
-            std::cout << "powerLaw_n:"<< M_n  << " powerLaw_k:"<< M_k << "\n";
         }
 
 private :
     double M_k, M_n, M_muMin, M_muMax;
 };
 
+/**
+ * Carreau Law parameters
+ */
 struct DynamicViscosityCarreauLaw
 {
     DynamicViscosityCarreauLaw( std::string const& prefix )
@@ -115,6 +120,9 @@ private :
     double M_lambda, M_n;
 };
 
+/**
+ * Carreau-Yasuda Law parameters
+ */
 struct DynamicViscosityCarreauYasudaLaw
 {
     DynamicViscosityCarreauYasudaLaw( std::string const& prefix )
@@ -155,6 +163,9 @@ private :
     double M_lambda, M_n, M_a;
 };
 
+/**
+ * Walburn-Schneck Law parameters
+ */
 struct DynamicViscosityWalburnSchneckLaw
 {
     DynamicViscosityWalburnSchneckLaw( std::string const& prefix )
@@ -215,10 +226,13 @@ private :
     DynamicViscosityPowerLaw M_powerLaw;
 };
 
-class DynamicViscosityModelByMaterial
+/**
+ * Manage dynamic viscosity for a material
+ */
+class DynamicViscosityMaterialProperties
 {
 public :
-    DynamicViscosityModelByMaterial( std::string const& prefix, ModelMaterial const& mat )
+    DynamicViscosityMaterialProperties( std::string const& prefix, ModelMaterial const& mat )
         :
         M_lawName( soption(_name="viscosity.law",_prefix=prefix ) )
         {
@@ -226,7 +240,7 @@ public :
             {
                 auto const& expr = mat.propertyExprScalar("mu");
                 M_newtonian.setExpr( expr );
-                M_newtonian.setValue( 0 );//TODO
+                //M_newtonian.setValue( 0 );//TODO
             }
             else
             {
@@ -266,8 +280,8 @@ public :
 
         }
 
-    DynamicViscosityModelByMaterial( DynamicViscosityModelByMaterial const& ) = default;
-    DynamicViscosityModelByMaterial( DynamicViscosityModelByMaterial && ) = default;
+    DynamicViscosityMaterialProperties( DynamicViscosityMaterialProperties const& ) = default;
+    DynamicViscosityMaterialProperties( DynamicViscosityMaterialProperties && ) = default;
 
     std::string const& lawName() const { return M_lawName; }
 
@@ -297,7 +311,7 @@ public :
 
     void getInfo( boost::shared_ptr<std::ostringstream> ostr ) const
         {
-            *ostr << "\n          + viscosity law : " << this->lawName();
+            *ostr << "\n          + law : " << this->lawName();
             if ( this->isNewtonianLaw() )
             {
                 *ostr << "\n          + mu : ";
@@ -360,10 +374,13 @@ private :
     double M_non_newtonian_TPMA; //Total Proteins Minus Albumin (TPMA)
 };
 
+/**
+ * Manage Fluid Mechanics material properties
+ */
 template<class SpaceType>
-class DynamicViscosityModel
+class FluidMechanicsMaterialProperties
 {
-    typedef DynamicViscosityModel<SpaceType> self_type;
+    typedef FluidMechanicsMaterialProperties<SpaceType> self_type;
 public :
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
@@ -372,102 +389,24 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    DynamicViscosityModel( std::string const& prefix )
+    FluidMechanicsMaterialProperties( std::string const& prefix )
         :
         M_prefix( prefix ),
         M_isDefinedOnWholeMesh( true ),
-        M_dynamicViscosityDefaultValue( doption(_name="mu",_prefix=prefix) )
+        M_dynamicViscosityDefaultValue( doption(_name="mu",_prefix=prefix) ),
+        M_densityDefaultValue( doption(_name="rho",_prefix=prefix) )
         {}
-    DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
+    FluidMechanicsMaterialProperties( FluidMechanicsMaterialProperties const& ) = default;
 
     void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, bool useExtendedDofTable )
-    {
-        std::set<std::string> eltMarkersInMesh;
-        for (auto const& markPair : mesh->markerNames() )
         {
-            std::string meshMarker = markPair.first;
-            if ( mesh->hasElementMarker( meshMarker ) )
-                eltMarkersInMesh.insert( meshMarker );
+            this->updateForUseImpl( mesh,mats,useExtendedDofTable );
         }
-
-        std::map<std::string,std::set<std::string>> markersByMaterial;
-        M_markers.clear();
-        for( auto const& m : mats )
-        {
-            std::string const& matName = m.first;
-            auto const& mat = m.second;
-            if ( mat.hasPhysics() && !mat.hasPhysics( { "fluid","aerothermal" } ) )
-                continue;
-            for ( std::string const& matmarker : mat.meshMarkers() )
-            {
-                if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
-                    continue;
-                M_markers.insert( matmarker );
-                markersByMaterial[matName].insert( matmarker );
-            }
-        }
-
-        if( M_markers.size() > 0 )
-            M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-        else
-            M_isDefinedOnWholeMesh = true;
-        if ( M_isDefinedOnWholeMesh )
-            M_space = space_type::New(_mesh=mesh, _extended_doftable=useExtendedDofTable );
-        else
-            M_space = space_type::New(_mesh=mesh,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
-        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
-
-        for( auto const& m : mats )
-        {
-            std::string const& matName = m.first;
-            auto const& mat = m.second;
-            auto itFindMat = markersByMaterial.find( matName );
-            if ( itFindMat == markersByMaterial.end() )
-                continue;
-            if ( itFindMat->second.empty() )
-                continue;
-            auto const& matmarkers = itFindMat->second;
-            auto range = markedelements( mesh,matmarkers );
-            M_rangeMeshElementsByMaterial[matName] = range;
-
-            //M_dynamicViscosityModelByMaterial[matName] = DynamicViscosityModelByMaterial( M_prefix, mat );
-            M_dynamicViscosityModelByMaterial.insert( std::make_pair( matName, DynamicViscosityModelByMaterial(M_prefix,mat ) ) );
-            auto const& dynamicViscosity = M_dynamicViscosityModelByMaterial.find( matName )->second;
-            // update dynamic viscosity field (for newtonian)
-            if ( dynamicViscosity.newtonian().isConstant() )
-            {
-                double value = dynamicViscosity.newtonian().value();
-                M_fieldDynamicViscosity->on(_range=range,_expr=cst(value));
-            }
-            else
-            {
-                auto const& expr = dynamicViscosity.newtonian().expr();
-                M_fieldDynamicViscosity->on(_range=range,_expr=expr);
-            }
-        }
-    }
-#if 0
     void updateForUse( space_ptrtype const& space, ModelMaterials const& mats )
-    {
-        M_isDefinedOnWholeMesh = true;
-        M_space = space;
-        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
-
-        M_markers.clear();
-        for( auto const& m : mats )
         {
-            auto const& mat = m.second;
-            for ( std::string const& matmarker : mat.meshMarkers() )
-            {
-                M_markers.insert( matmarker );
-                if ( mat.hasPropertyExprScalar("mu") )
-                    this->setDynamicViscosity( mat.propertyExprScalar("mu"), matmarker );
-                else
-                    this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
-            }
+            this->updateForUseImpl( space->mesh(),mats,false,space );
         }
-    }
-#endif
+
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
@@ -479,7 +418,7 @@ public :
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
 
-    //! return projection field
+    //! return dynamic viscosity projection field
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
@@ -491,7 +430,7 @@ public :
             return M_dynamicViscosityModelByMaterial.find( matName ) != M_dynamicViscosityModelByMaterial.end();
         }
     //! return the expression manager of dynamicViscosity
-    DynamicViscosityModelByMaterial/*ModelExpression*/ const& dynamicViscosity( std::string const& matName ) const
+    DynamicViscosityMaterialProperties/*ModelExpression*/ const& dynamicViscosity( std::string const& matName ) const
         {
             CHECK( this->hasDynamicViscosity( matName ) ) << "material name not registered : " << matName;
             return M_dynamicViscosityModelByMaterial.find( matName )->second;
@@ -518,51 +457,157 @@ public :
             CHECK( false ) << "TODO";
         }
 
+
+    //! return density projection field
+    element_type const& fieldRho() const { return this->fieldDensity(); }
+    element_type const& fieldDensity() const { return *M_fieldDensity; }
+    element_ptrtype const& fieldDensityPtr() const { return M_fieldDensity; }
+
+    //! return true if has density description for this material name
+    bool hasDensity( std::string const& matName ) const
+        {
+            return M_densityByMaterial.find( matName ) != M_densityByMaterial.end();
+        }
+    //! return the density description for a material
+    ModelExpressionScalar const& density( std::string const& matName ) const
+        {
+            CHECK( this->hasDensity( matName ) ) << "material name not registered : " << matName;
+            return M_densityByMaterial.find( matName )->second;
+        }
+    //! return constant density for a material
+    double cstDensity( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_densityByMaterial.empty() )
+                    return M_densityDefaultValue;
+                else
+                    return M_densityByMaterial.begin()->second.value();
+            }
+            auto itFindMat = M_densityByMaterial.find( matName );
+            CHECK( itFindMat != M_densityByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.value();
+        }
+
+    void setCstDensity( double d, std::string const& matName = "", bool updateField = true )
+        {
+            CHECK( false ) << "TODO";
+        }
+
+
+
     boost::shared_ptr<std::ostringstream>
-    getInfo( std::string const& matName ) const
+    getInfo() const
     {
-        boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-        this->dynamicViscosity( matName ).getInfo( _ostr );
+        boost::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
 
-#if 0
-        std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
-        *_ostr << "\n     -- " << matmarkertag << "viscosity law : " << this->dynamicViscosityLaw();
+        *ostr << "\n   Materials parameters";
+        *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();
+        for ( auto const& matRange : M_rangeMeshElementsByMaterial)
+        {
+            std::string const& matName = matRange.first;
+            *ostr << "\n     -- [" << matName << "] rho : ";
+            *ostr << "\n       - density : ";
+            if ( this->density(matName).isConstant() )
+                *ostr << this->density(matName).value();
+            else
+                *ostr << str( this->density(matName).expr().expression() );
 
-        if ( this->dynamicViscosityLaw() ==  "newtonian" )
-        {
-            *_ostr << "\n        + " << matmarkertag << "mu : " << this->cstMu(matmarker);
+            *ostr << "\n       - dynamic viscosity : ";
+            this->dynamicViscosity( matName ).getInfo( ostr );
         }
-        else if ( this->dynamicViscosityLaw() == "power_law" )
+        return ostr;
+    }
+
+    private :
+    void updateForUseImpl( mesh_ptrtype const& mesh , ModelMaterials const& mats, bool useExtendedDofTable, space_ptrtype space=space_ptrtype() )
+    {
+        std::set<std::string> eltMarkersInMesh;
+        for (auto const& markPair : mesh->markerNames() )
         {
-            *_ostr << "\n        + " << matmarkertag << "n : " << this->powerLaw_n()
-                  << "\n        + " << matmarkertag << "k : " << this->powerLaw_k();
+            std::string meshMarker = markPair.first;
+            if ( mesh->hasElementMarker( meshMarker ) )
+                eltMarkersInMesh.insert( meshMarker );
         }
-        else if ( this->dynamicViscosityLaw() == "walburn-schneck_law" )
+
+        std::map<std::string,std::set<std::string>> markersByMaterial;
+        M_markers.clear();
+        for( auto const& m : mats )
         {
-            *_ostr << "\n        + " << matmarkertag << "C1 : " << this->walburnSchneck_C1()
-                  << "\n        + " << matmarkertag << "C2 : " << this->walburnSchneck_C2()
-                  << "\n        + " << matmarkertag << "C3 : " << this->walburnSchneck_C3()
-                  << "\n        + " << matmarkertag << "C4 : " << this->walburnSchneck_C4()
-                  << "\n        + " << matmarkertag << "hematocrit : " << nonNewtonianHematocrit()
-                  << "\n        + " << matmarkertag << "TPMA : " << this->nonNewtonianTPMA();
+            std::string const& matName = m.first;
+            auto const& mat = m.second;
+            if ( mat.hasPhysics() && !mat.hasPhysics( { "fluid","aerothermal" } ) )
+                continue;
+            for ( std::string const& matmarker : mat.meshMarkers() )
+            {
+                if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                    continue;
+                M_markers.insert( matmarker );
+                markersByMaterial[matName].insert( matmarker );
+            }
         }
-        else if ( this->dynamicViscosityLaw() == "carreau_law")
+
+        if ( !space )
         {
-            *_ostr << "\n        + " << matmarkertag << "lambda : " << this->carreau_lambda()
-                  << "\n        + " << matmarkertag << "n : " << this->carreau_n()
-                  << "\n        + " << matmarkertag << "mu_0 : " << this->mu_0()
-                  << "\n        + " << matmarkertag << "mu_inf : " << this->mu_inf();
+            if( M_markers.size() > 0 )
+                M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
+            else
+                M_isDefinedOnWholeMesh = true;
+            if ( M_isDefinedOnWholeMesh )
+                M_space = space_type::New(_mesh=mesh, _extended_doftable=useExtendedDofTable );
+            else
+                M_space = space_type::New(_mesh=mesh,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
         }
-        else if (  this->dynamicViscosityLaw() == "carreau-yasuda_law")
+        else
         {
-            *_ostr << "\n        + " << matmarkertag << "lambda : " << this->carreauYasuda_lambda()
-                  << "\n        + " << matmarkertag << "n : " << this->carreauYasuda_n()
-                  << "\n        + " << matmarkertag << "a : " << this->carreauYasuda_a()
-                  << "\n        + " << matmarkertag << "mu_0 : " << this->mu_0()
-                  << "\n        + " << matmarkertag << "mu_inf : " << this->mu_inf();
+            M_isDefinedOnWholeMesh = true;
+            M_space = space;
         }
-#endif
-        return _ostr;
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
+        M_fieldDensity = M_space->elementPtr( cst( this->cstDensity() ) );
+
+        for( auto const& m : mats )
+        {
+            std::string const& matName = m.first;
+            auto const& mat = m.second;
+            auto itFindMat = markersByMaterial.find( matName );
+            if ( itFindMat == markersByMaterial.end() )
+                continue;
+            if ( itFindMat->second.empty() )
+                continue;
+            auto const& matmarkers = itFindMat->second;
+            auto range = markedelements( mesh,matmarkers );
+            M_rangeMeshElementsByMaterial[matName] = range;
+
+            M_dynamicViscosityModelByMaterial.insert( std::make_pair( matName, DynamicViscosityMaterialProperties(M_prefix,mat ) ) );
+            auto const& dynamicViscosity = M_dynamicViscosityModelByMaterial.find( matName )->second;
+            // update dynamic viscosity field (for newtonian)
+            if ( dynamicViscosity.newtonian().isConstant() )
+            {
+                double value = dynamicViscosity.newtonian().value();
+                M_fieldDynamicViscosity->on(_range=range,_expr=cst(value));
+            }
+            else
+            {
+                auto const& expr = dynamicViscosity.newtonian().expr();
+                M_fieldDynamicViscosity->on(_range=range,_expr=expr);
+            }
+
+            if ( mat.hasPropertyExprScalar("rho") )
+            {
+                auto const& expr = mat.propertyExprScalar("rho");
+                M_densityByMaterial[matName].setExpr( expr );
+                //M_densityByMaterial[matName].setValue( 0 );//TODO
+                M_fieldDensity->on(_range=range,_expr=expr);
+            }
+            else
+            {
+                double value = mat.propertyConstant("rho");
+                M_densityByMaterial[matName].setValue( value );
+                M_fieldDensity->on(_range=range,_expr=cst(value));
+            }
+
+        }
     }
 
 private :
@@ -574,11 +619,14 @@ private :
 
     element_ptrtype M_fieldDynamicViscosity;
     double M_dynamicViscosityDefaultValue;
-    std::map<std::string, DynamicViscosityModelByMaterial> M_dynamicViscosityModelByMaterial;
-};
+    std::map<std::string, DynamicViscosityMaterialProperties> M_dynamicViscosityModelByMaterial;
 
+    element_ptrtype M_fieldDensity;
+    double M_densityDefaultValue;
+    std::map<std::string, ModelExpressionScalar> M_densityByMaterial;
+};
 
 } // namespace FeelModels
 } // namespace Feel
 
-#endif // FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H
+#endif // FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP

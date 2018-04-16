@@ -1737,9 +1737,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
     {
         auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
         auto const& u = this->fieldVelocity();
-        double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        if ( this->isStationaryModel() ) coeff=1.;
-        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        if ( this->isStationaryModel() )
+            massbf += integrate( _range=elements( this->mesh() ), _expr=inner( idt(u),id(u) ) );
+        else
+        {
+            //double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            auto coeff = idv(this->densityViscosityModel()->fieldDensity())*this->timeStepBDF()->polyDerivCoefficient(0);
+            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        }
         massbf.matrixPtr()->close();
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }
