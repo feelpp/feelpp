@@ -196,8 +196,8 @@ public:
 
     std::string alpha( parameter_type const& mu, ModelMaterial const& mat );
     std::string alphaPrime( parameter_type const& mu, ModelMaterial const& mat );
-    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu ) override;
-    vector_ptrtype assembleForDEIM( parameter_type const& mu ) override;
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) override;
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
