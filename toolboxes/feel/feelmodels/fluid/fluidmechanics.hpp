@@ -597,12 +597,12 @@ public :
     template < typename ExprT >
     void updateRho(vf::Expr<ExprT> const& __expr)
     {
-        this->materialProperties()->updateDensity( __expr );
+        this->materialProperties()->updateDensityField( __expr );
     }
     template < typename ExprT >
     void updateMu(vf::Expr<ExprT> const& __expr)
     {
-        this->materialProperties()->updateDynamicViscosity( __expr );
+        this->materialProperties()->updateDynamicViscosityField( __expr );
         M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//

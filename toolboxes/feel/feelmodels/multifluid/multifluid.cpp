@@ -77,8 +77,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
 
     // "Deep" copy
     M_fluidDensityViscosityModel.reset( new densityviscosity_model_type( this->fluidPrefix() ) );
-    M_fluidDensityViscosityModel->updateForUse( this->densityViscosityModel()->dynamicViscositySpace(), this->modelProperties().materials() );
-    //M_fluidDensityViscosityModel->initFromSpace( this->densityViscosityModel()->dynamicViscositySpace() );
+    M_fluidDensityViscosityModel->updateForUse( this->materialProperties()->dynamicViscositySpace(), this->modelProperties().materials() );
+    //M_fluidDensityViscosityModel->initFromSpace( this->materialProperties()->dynamicViscositySpace() );
     //M_fluidDensityViscosityModel->updateFromModelMaterials( this->modelProperties().materials() );
 
     M_levelsets.resize( nLevelSets );
@@ -111,7 +111,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 );
         //M_levelsetDensityViscosityModels[i]->initFromMesh( this->mesh(), this->useExtendedDofTable() );
         //M_levelsetDensityViscosityModels[i]->updateFromModelMaterials( M_levelsets[i]->modelProperties().materials() );
-        M_levelsetDensityViscosityModels[i]->updateForUse(this->densityViscosityModel()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
+        M_levelsetDensityViscosityModels[i]->updateForUse(this->materialProperties()->dynamicViscositySpace(), M_levelsets[i]->modelProperties().materials() );
 
         if( Environment::vm().count( prefixvm(levelset_prefix, "interface-forces-model").c_str() ) )
         {
@@ -339,17 +339,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     *_ostr << "\n   Fluids Parameters";
     *_ostr << "\n     -- fluid 0 (outer fluid)"
-           << "\n       * rho : " << this->M_fluidDensityViscosityModel->cstRho()
-           << "\n       * mu  : " << this->M_fluidDensityViscosityModel->cstMu()
-           << "\n       * nu  : " << this->M_fluidDensityViscosityModel->cstNu();
-    *_ostr << this->M_fluidDensityViscosityModel->getInfo("")->str();
+           << "\n       * rho : " << this->M_fluidDensityViscosityModel->cstDensity()
+           << "\n       * mu  : " << this->M_fluidDensityViscosityModel->cstMu();
+    *_ostr << this->M_fluidDensityViscosityModel->getInfo()->str();
     for( uint16_type i = 0; i < M_levelsetDensityViscosityModels.size(); ++i )
     {
     *_ostr << "\n     -- fluid " << i+1
-           << "\n       * rho : " << this->M_levelsetDensityViscosityModels[i]->cstRho()
-           << "\n       * mu  : " << this->M_levelsetDensityViscosityModels[i]->cstMu()
-           << "\n       * nu  : " << this->M_levelsetDensityViscosityModels[i]->cstNu();
-    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo("")->str();
+           << "\n       * rho : " << this->M_levelsetDensityViscosityModels[i]->cstDensity()
+           << "\n       * mu  : " << this->M_levelsetDensityViscosityModels[i]->cstMu();
+    *_ostr << this->M_levelsetDensityViscosityModels[i]->getInfo()->str();
     }
 
     *_ostr << "\n   Level Sets Parameters";
@@ -710,13 +708,13 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
     auto globalH = M_globalLevelset->H();
 
     auto rho = vf::project( 
-            this->densityViscosityModel()->dynamicViscositySpace(),
+            this->materialProperties()->dynamicViscositySpace(),
             elements(this->mesh()),
             idv(M_fluidDensityViscosityModel->fieldRho())*idv(globalH)
             );
 
     auto mu = vf::project( 
-            this->densityViscosityModel()->dynamicViscositySpace(),
+            this->materialProperties()->dynamicViscositySpace(),
             elements(this->mesh()),
             idv(M_fluidDensityViscosityModel->fieldMu())*idv(globalH)
             );
@@ -724,12 +722,12 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
     for( uint16_type i = 0; i < M_levelsets.size(); ++i )
     {
         rho += vf::project( 
-                this->densityViscosityModel()->dynamicViscositySpace(),
+                this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
                 idv(M_levelsetDensityViscosityModels[i]->fieldRho())*(1. - idv(M_levelsets[i]->H()))
                 );
         mu += vf::project( 
-                this->densityViscosityModel()->dynamicViscositySpace(),
+                this->materialProperties()->dynamicViscositySpace(),
                 elements(this->mesh()),
                 idv(M_levelsetDensityViscosityModels[i]->fieldMu())*(1. - idv(M_levelsets[i]->H()))
                 );

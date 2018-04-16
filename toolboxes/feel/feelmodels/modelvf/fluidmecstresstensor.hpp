@@ -571,7 +571,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                 const value_type DxD = math::pow(du1vdx,2) + math::pow(du2vdy,2) + math::pow(du3vdz,2) +
                     0.5*( math::pow(du2vdx+du1vdy,2) + math::pow(du1vdz+du3vdx,2) + math::pow(du2vdz+du3vdy,2) );
                 const value_type gammapoint2v = 2*DxD;
-                const value_type muEval = power_k_generic*math::pow( gammapoint2v , power_n_generic );
+                value_type muEval = power_k_generic*math::pow( gammapoint2v , power_n_generic );
                 if ( muEval < muMin )
                 {
                     muEval = muMin;

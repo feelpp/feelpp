@@ -322,7 +322,7 @@ FSI<FluidType,SolidType>::init()
     }
 
     // specific value for robin
-    M_solidModel->muFluidFSI( M_fluidModel->densityViscosityModel()->cstMu() );
+    M_solidModel->muFluidFSI( M_fluidModel->materialProperties()->cstMu() );
     M_fluidModel->setCouplingFSI_Nitsche_gamma( M_couplingNitscheFamily_gamma );
     M_solidModel->gammaNitschFSI( M_couplingNitscheFamily_gamma );
     M_fluidModel->setCouplingFSI_Nitsche_gamma0( M_couplingNitscheFamily_gamma0 );
