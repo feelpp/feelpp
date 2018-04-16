@@ -122,52 +122,58 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #endif
 
     //--------------------------------------------------------------------------------------------------//
-    //this->updateResidualModel( data, U );
-    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    // sigma : grad(v) on Omega
+    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
     {
-        // sigma : grad(v) on Omega
-        if ( BuildNonCstPart && !UseJacobianLinearTerms )
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        if ( dynamicViscosity.isNewtonianLaw() )
         {
-            this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
-            auto const mu_newtonian = idv(mu);
-            auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
-#if 1
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           //_expr= inner( StressTensorExpr,grad(v) ),
-                           _expr= inner( val(Sigmav_newtonian),grad(v) ),
-                           _geomap=this->geomap() );
-#else
-            form1( Xh, R ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
-                           _geomap=this->geomap() );
-            form1( Xh, R ) +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
-#endif
-        }
-    }
-    else
-    {
-        if ( BuildNonCstPart && !UseJacobianLinearTerms )
-        {
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -idv(p)*div(v),
-                           _geomap=this->geomap() );
-        }
-        if ( BuildNonCstPart )
-        {
-            auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),false/*true*/);
             // sigma : grad(v) on Omega
-            linearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= inner( StressTensorExpr,grad(v) ),
-                           _geomap=this->geomap() );
+            if ( BuildNonCstPart && !UseJacobianLinearTerms )
+            {
+                this->log("FluidMechanics","updateResidualModel","assembly with newtonian viscosity" );
+                auto const mu_newtonian = idv(mu);
+                auto const Sigmav_newtonian = -idv(p)*Id + 2*mu_newtonian*defv;
+#if 1
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               //_expr= inner( StressTensorExpr,grad(v) ),
+                               _expr= inner( val(Sigmav_newtonian),grad(v) ),
+                               _geomap=this->geomap() );
+#else
+                form1( Xh, R ) +=
+                    integrate( _range=range,
+                               _expr= 2*idv(*M_P0Mu)*trace(trans(defv)*grad(v)),
+                               _geomap=this->geomap() );
+                form1( Xh, R ) +=
+                    integrate( _range=range,
+                               _expr= -idv(p)*div(v),
+                               _geomap=this->geomap() );
+#endif
+            }
         }
-    } // non newtonian
+        else
+        {
+            if ( BuildNonCstPart && !UseJacobianLinearTerms )
+            {
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= -idv(p)*div(v),
+                               _geomap=this->geomap() );
+            }
+            if ( BuildNonCstPart )
+            {
+                auto const StressTensorExpr = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,false/*true*/);
+                // sigma : grad(v) on Omega
+                linearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= inner( StressTensorExpr,grad(v) ),
+                               _geomap=this->geomap() );
+            }
+        } // non newtonian
+    }
 
     //--------------------------------------------------------------------------------------------------//
     // take into account that div u != 0

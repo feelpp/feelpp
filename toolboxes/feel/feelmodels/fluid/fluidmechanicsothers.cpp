@@ -105,7 +105,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
            << "\n     -- pde name  : " << M_modelName
-           << "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
+        //<< "\n     -- stress tensor law  : " << this->densityViscosityModel()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
            << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
@@ -301,6 +301,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
 
 //---------------------------------------------------------------------------------------------------------//
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::string const&
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
@@ -318,7 +319,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& t
 
     this->densityViscosityModel()->setDynamicViscosityLaw( type );
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -492,8 +493,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
         if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
         auto uCur = M_Solution->template element<0>();
         auto pCur = M_Solution->template element<1>();
-        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->densityViscosityModel());
-        auto viscosityField = M_XhNormalBoundaryStress->compSpace()->element(myViscosity);
+        auto viscosityField = M_XhNormalBoundaryStress->compSpace()->element();
+        for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            //auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(uCur,pCur,*this->densityViscosityModel(),matName);
+            viscosityField.on( _range=range,_expr=myViscosity );
+        }
         exporter->step( time )->add( prefixvm(this->prefix(),"viscosity"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"viscosity")),
                                      viscosityField );
@@ -867,13 +875,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
         this->log("FluidMechanics","solve", "start by solve stokes stationary" );
-
+#if 0 // TODO
         std::string saveStressTensorLawType = this->dynamicViscosityLaw();
+#endif
         std::string savePdeType = this->modelName();
         std::string saveSolverName = this->solverName();
         bool saveIsStationary = this->isStationary();
         // prepare Stokes-stationary config
+#if 0 // TODO
         this->setDynamicViscosityLaw( "newtonian" );
+#endif
         this->setModelName( "Stokes" );
         this->setStationary( true );
         //this->solve();
@@ -883,12 +894,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         //if ( boption(_prefix=this->prefix(),_name="start-by-solve-stokes-stationary.do-export") )
         //   this->exportResults(this->timeInitial());
         // revert parameters
+#if 0 // TODO
         this->setDynamicViscosityLaw( saveStressTensorLawType );
+#endif
         this->setModelName( savePdeType );
         this->setSolverName( saveSolverName );
         this->setStationary( saveIsStationary );
     }
-
+#if 0 // TODO
     if ( this->startBySolveNewtonian() && this->densityViscosityModel()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
     {
@@ -900,7 +913,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->hasSolveNewtonianAtKickOff( true );
         this->setDynamicViscosityLaw( saveStressTensorLawType );
     }
-
+#endif
     //--------------------------------------------------
     // run solver
     std::string algebraicSolver = M_solverName;
@@ -1069,7 +1082,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
         auto u = U.template element<0>();
         auto p = U.template element<1>();
-        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel());
+        CHECK( this->densityViscosityModel()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+        std::string matName = this->densityViscosityModel()->rangeMeshElementsByMaterial().begin()->first;
+        auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName);
         if (this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1695,10 +1710,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) 
     // Tenseur des contraintes
     auto Sigmav = val(-idv(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*defv);
 #endif
-    auto Sigmav/*ViscousStressTensorExpr*/ = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),true);
+    CHECK( this->densityViscosityModel()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+    std::string matName = this->densityViscosityModel()->rangeMeshElementsByMaterial().begin()->first;
+    auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*nOrderVelocity>(u,p,*this->densityViscosityModel(),matName,true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
-                     _expr= Sigmav*N(),
+                     _expr= sigmav*N(),
                      _geomap=this->geomap() ).evaluate();
 
 }

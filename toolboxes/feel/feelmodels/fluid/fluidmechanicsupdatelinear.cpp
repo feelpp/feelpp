@@ -113,38 +113,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     // stress tensor sigma : grad(v)
-    if ( this->densityViscosityModel()->dynamicViscosityLaw() == "newtonian")
+    for ( auto const& rangeData : this->densityViscosityModel()->rangeMeshElementsByMaterial() )
     {
-        if ( BuildCstPart )
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& dynamicViscosity = this->densityViscosityModel()->dynamicViscosity(matName);
+        if ( dynamicViscosity.isNewtonianLaw() )
         {
-            auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= inner(Sigmat,grad(v)),
-                           _geomap=this->geomap() );
+            if ( BuildCstPart )
+            {
+                auto Sigmat = -idt(p)*Id + 2*idv(this->densityViscosityModel()->fieldMu())*deft;
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= inner(Sigmat,grad(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if ( build_StressTensorNonNewtonian )
+            {
+                auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
+                auto betaU = BetaU.template element<0>();
+                auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel(),matName);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= 2*myViscosity*inner(deft,grad(v)),
+                               _geomap=this->geomap() );
+            }
+            if ( BuildCstPart )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= -div(v)*idt(p),
+                               _geomap=this->geomap() );
+            }
         }
     }
-    else
-    {
-        if ( build_StressTensorNonNewtonian )
-        {
-            auto BetaU = ( this->solverName() == "Oseen" )? M_bdf_fluid->poly() : *fielCurrentPicardSolution;
-            auto betaU = BetaU.template element<0>();
-            auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->densityViscosityModel());
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= 2*myViscosity*inner(deft,grad(v)),
-                           _geomap=this->geomap() );
-        }
-        if ( BuildCstPart )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -div(v)*idt(p),
-                           _geomap=this->geomap() );
-        }
-    }
-
     // incompressibility term
     if ( BuildCstPart )
     {

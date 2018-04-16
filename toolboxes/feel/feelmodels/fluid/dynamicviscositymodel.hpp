@@ -31,11 +31,334 @@
 #define FEELPP_FLUIDMECHANICS_DYNAMICVISCOSITYMODEL_H 1
 
 //#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
+
+struct DynamicViscosityPowerLaw
+{
+    DynamicViscosityPowerLaw( std::string const& prefix )
+        :
+        M_k( doption(_name="power_law.k",_prefix=prefix) ),
+        M_n( doption(_name="power_law.n",_prefix=prefix) ),
+        M_muMin( doption(_name="viscosity.min",_prefix=prefix) ),
+        M_muMax( doption(_name="viscosity.max",_prefix=prefix) )
+        {}
+    DynamicViscosityPowerLaw( DynamicViscosityPowerLaw const& ) = default;
+    DynamicViscosityPowerLaw( DynamicViscosityPowerLaw && ) = default;
+    DynamicViscosityPowerLaw& operator=( DynamicViscosityPowerLaw const& ) = default;
+    DynamicViscosityPowerLaw& operator=( DynamicViscosityPowerLaw && ) = default;
+
+    double k() const { return M_k; }
+    double n() const { return M_n; }
+    double muMin() const { return M_muMin; }
+    double muMax() const { return M_muMax; }
+
+    void setK( double k ) { M_k = k; }
+    void setN( double n ) { M_n = n; }
+    void setMuMin( double v ) { M_muMin = v; }
+    void setMuMax( double v ) { M_muMax = v; }
+
+    void setup( pt::ptree const& pt )
+        {
+            if ( auto k  = pt.get_optional<double>("k") )
+                M_k = *k;
+            if ( auto n  = pt.get_optional<double>("n") )
+                M_n = *n;
+            if ( auto muMin  = pt.get_optional<double>("muMin") )
+                M_muMin = *muMin;
+            if ( auto muMax  = pt.get_optional<double>("muMax") )
+                M_muMax = *muMax;
+            std::cout << "powerLaw_n:"<< M_n  << " powerLaw_k:"<< M_k << "\n";
+        }
+
+private :
+    double M_k, M_n, M_muMin, M_muMax;
+};
+
+struct DynamicViscosityCarreauLaw
+{
+    DynamicViscosityCarreauLaw( std::string const& prefix )
+        :
+        M_mu0( doption(_name="viscosity.zero_shear",_prefix=prefix) ),
+        M_muInf( doption(_name="viscosity.infinite_shear",_prefix=prefix) ),
+        M_lambda( doption(_name="carreau_law.lambda",_prefix=prefix) ),
+        M_n( doption(_name="carreau_law.n",_prefix=prefix) )
+        {}
+    DynamicViscosityCarreauLaw( DynamicViscosityCarreauLaw const& ) = default;
+    DynamicViscosityCarreauLaw( DynamicViscosityCarreauLaw && ) = default;
+    DynamicViscosityCarreauLaw& operator=( DynamicViscosityCarreauLaw const& ) = default;
+    DynamicViscosityCarreauLaw& operator=( DynamicViscosityCarreauLaw && ) = default;
+
+    double mu0() const { return M_mu0; }
+    double muInf() const { return M_muInf; }
+    double lambda() const { return M_lambda; }
+    double n() const { return M_n; }
+
+    void setup( pt::ptree const& pt )
+        {
+            if ( auto mu0  = pt.get_optional<double>("mu0") )
+                M_mu0 = *mu0;
+            if ( auto muInf  = pt.get_optional<double>("muInf") )
+                M_muInf = *muInf;
+            if ( auto l  = pt.get_optional<double>("lambda") )
+                M_lambda = *l;
+            if ( auto n  = pt.get_optional<double>("n") )
+                M_n = *n;
+        }
+
+private :
+    double M_mu0, M_muInf;
+    double M_lambda, M_n;
+};
+
+struct DynamicViscosityCarreauYasudaLaw
+{
+    DynamicViscosityCarreauYasudaLaw( std::string const& prefix )
+        :
+        M_mu0( doption(_name="viscosity.zero_shear",_prefix=prefix) ),
+        M_muInf( doption(_name="viscosity.infinite_shear",_prefix=prefix) ),
+        M_lambda( doption(_name="carreau-yasuda_law.lambda",_prefix=prefix) ),
+        M_n( doption(_name="carreau-yasuda_law.n",_prefix=prefix) ),
+        M_a( doption(_name="carreau-yasuda_law.a",_prefix=prefix) )
+        {}
+    DynamicViscosityCarreauYasudaLaw( DynamicViscosityCarreauYasudaLaw const& ) = default;
+    DynamicViscosityCarreauYasudaLaw( DynamicViscosityCarreauYasudaLaw && ) = default;
+    DynamicViscosityCarreauYasudaLaw& operator=( DynamicViscosityCarreauYasudaLaw const& ) = default;
+    DynamicViscosityCarreauYasudaLaw& operator=( DynamicViscosityCarreauYasudaLaw && ) = default;
+
+    double mu0() const { return M_mu0; }
+    double muInf() const { return M_muInf; }
+    double lambda() const { return M_lambda; }
+    double n() const { return M_n; }
+    double a() const { return M_a; }
+
+    void setup( pt::ptree const& pt )
+        {
+            if ( auto mu0  = pt.get_optional<double>("mu0") )
+                M_mu0 = *mu0;
+            if ( auto muInf  = pt.get_optional<double>("muInf") )
+                M_muInf = *muInf;
+            if ( auto l  = pt.get_optional<double>("lambda") )
+                M_lambda = *l;
+            if ( auto n  = pt.get_optional<double>("n") )
+                M_n = *n;
+            if ( auto a  = pt.get_optional<double>("a") )
+                M_a = *a;
+        }
+
+private :
+    double M_mu0, M_muInf;
+    double M_lambda, M_n, M_a;
+};
+
+struct DynamicViscosityWalburnSchneckLaw
+{
+    DynamicViscosityWalburnSchneckLaw( std::string const& prefix )
+        :
+        M_C1( doption(_name="walburn-schneck_law.C1",_prefix=prefix) ),
+        M_C2( doption(_name="walburn-schneck_law.C2",_prefix=prefix) ),
+        M_C3( doption(_name="walburn-schneck_law.C3",_prefix=prefix) ),
+        M_C4( doption(_name="walburn-schneck_law.C4",_prefix=prefix) ),
+        M_hematocrit( doption(_name="hematocrit",_prefix=prefix) ),
+        M_TPMA( doption(_name="TPMA",_prefix=prefix) ),
+        M_powerLaw( prefix )
+        {
+            this->updateForUse();
+        }
+    DynamicViscosityWalburnSchneckLaw( DynamicViscosityWalburnSchneckLaw const& ) = default;
+    DynamicViscosityWalburnSchneckLaw( DynamicViscosityWalburnSchneckLaw && ) = default;
+    DynamicViscosityWalburnSchneckLaw& operator=( DynamicViscosityWalburnSchneckLaw const& ) = default;
+    DynamicViscosityWalburnSchneckLaw& operator=( DynamicViscosityWalburnSchneckLaw && ) = default;
+
+    double C1() const { return M_C1; }
+    double C2() const { return M_C2; }
+    double C3() const { return M_C3; }
+    double C4() const { return M_C4; }
+    double hematocrit() const { return M_hematocrit; }
+    double TPMA() const { return M_TPMA; }
+
+    DynamicViscosityPowerLaw const& powerLaw() const { return M_powerLaw; }
+
+    void setup( pt::ptree const& pt )
+        {
+            if ( auto C1  = pt.get_optional<double>("C1") )
+                M_C1 = *C1;
+            if ( auto C2  = pt.get_optional<double>("C2") )
+                M_C2 = *C2;
+            if ( auto C3  = pt.get_optional<double>("C3") )
+                M_C3 = *C3;
+            if ( auto C4  = pt.get_optional<double>("C4") )
+                M_C4 = *C4;
+            if ( auto hematocrit  = pt.get_optional<double>("hematocrit") )
+                M_hematocrit = *hematocrit;
+            if ( auto TPMA  = pt.get_optional<double>("TPMA") )
+                M_TPMA = *TPMA;
+            if ( auto muMin = pt.get_optional<double>("muMin") )
+                M_powerLaw.setMuMin( *muMin );
+            if ( auto muMax = pt.get_optional<double>("muMax") )
+                M_powerLaw.setMuMax( *muMax );
+            this->updateForUse();
+        }
+private :
+    void updateForUse()
+    {
+        M_powerLaw.setK( M_C1*math::exp(M_hematocrit*M_C2)*math::exp( M_C4*M_TPMA/math::pow(M_hematocrit,2) ) );
+        M_powerLaw.setN( 1.-M_C3*M_hematocrit );
+    }
+    double M_C1, M_C2, M_C3, M_C4;
+    double M_hematocrit;
+    double M_TPMA; //Total Proteins Minus Albumin (TPMA)
+    DynamicViscosityPowerLaw M_powerLaw;
+};
+
+class DynamicViscosityModelByMaterial
+{
+public :
+    DynamicViscosityModelByMaterial( std::string const& prefix, ModelMaterial const& mat )
+        :
+        M_lawName( soption(_name="viscosity.law",_prefix=prefix ) )
+        {
+            if ( mat.hasPropertyExprScalar("mu") )
+            {
+                auto const& expr = mat.propertyExprScalar("mu");
+                M_newtonian.setExpr( expr );
+                M_newtonian.setValue( 0 );//TODO
+            }
+            else
+            {
+                double value = mat.propertyConstant("mu");
+                M_newtonian.setValue( value );
+            }
+
+            pt::ptree const& pt = mat.pTree();
+            if ( auto viscosityLawOpt = pt.template get_optional<std::string>("mu_law") )
+                M_lawName = *viscosityLawOpt;
+            CHECK( this->checkLawName() ) << "invalid law name : " << this->lawName();
+
+            if ( this->lawName() == "power_law" )
+            {
+                M_powerLaw = boost::optional<DynamicViscosityPowerLaw>( prefix );
+                if ( auto ptPowerLawOpt = pt.get_child_optional("mu_power-law") )
+                    M_powerLaw->setup( *ptPowerLawOpt );
+            }
+            else if ( this->lawName() == "carreau_law" )
+            {
+                M_carreauLaw = boost::optional<DynamicViscosityCarreauLaw>( prefix );
+                if ( auto ptCarreauLawOpt = pt.get_child_optional("mu_carreau-law") )
+                    M_carreauLaw->setup( *ptCarreauLawOpt );
+            }
+            else if ( this->lawName() == "carreau-yasuda_law" )
+            {
+                M_carreauYasudaLaw = boost::optional<DynamicViscosityCarreauYasudaLaw>( prefix );
+                if ( auto ptCarreauYasudaLawOpt = pt.get_child_optional("mu_carreau-yasuda-law") )
+                    M_carreauYasudaLaw->setup( *ptCarreauYasudaLawOpt );
+            }
+            else if ( this->lawName() == "walburn-schneck_law" )
+            {
+                M_walburnSchneckLaw = boost::optional<DynamicViscosityWalburnSchneckLaw>( prefix );
+                if ( auto ptWalburnSchneckLawLawOpt = pt.get_child_optional("mu_walburn-schneck-law") )
+                    M_walburnSchneckLaw->setup( *ptWalburnSchneckLawLawOpt );
+            }
+
+        }
+
+    DynamicViscosityModelByMaterial( DynamicViscosityModelByMaterial const& ) = default;
+    DynamicViscosityModelByMaterial( DynamicViscosityModelByMaterial && ) = default;
+
+    std::string const& lawName() const { return M_lawName; }
+
+    bool isNewtonianLaw() const { return (this->lawName() == "newtonian"); }
+    bool isPowerLaw() const { return (this->lawName() == "power_law"); }
+    bool isCarreauLaw() const { return (this->lawName() == "carreau_law"); }
+    bool isCarreauYasudaLaw() const { return (this->lawName() == "carreau-yasuda_law"); }
+    bool isWalburnSchneckLaw() const { return (this->lawName() == "walburn-schneck_law"); }
+
+    bool checkLawName() const
+        {
+            return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() || this->isWalburnSchneckLaw() );
+        }
+
+    ModelExpressionScalar const& newtonian() const { return M_newtonian; }
+    ModelExpressionScalar & newtonian() { return M_newtonian; }
+
+    bool hasPowerLaw() const { return (M_powerLaw)? true : false; }
+    bool hasCarreauLaw() const { return (M_carreauLaw)? true : false; }
+    bool hasCarreauYasudaLaw() const { return (M_carreauYasudaLaw)? true : false; }
+    bool hasWalburnSchneckLaw() const { return (M_walburnSchneckLaw)? true : false; }
+
+    DynamicViscosityPowerLaw const& powerLaw() const { CHECK( this->hasPowerLaw() ) << "no PowerLaw";return *M_powerLaw; }
+    DynamicViscosityCarreauLaw const& carreauLaw() const { CHECK( this->hasCarreauLaw() ) << "no CarreauLaw";return *M_carreauLaw; }
+    DynamicViscosityCarreauYasudaLaw const& carreauYasudaLaw() const { CHECK( this->hasCarreauYasudaLaw() ) << "no CarreauYasudaLaw";return *M_carreauYasudaLaw; }
+    DynamicViscosityWalburnSchneckLaw const& walburnSchneckLaw() const { CHECK( this->hasWalburnSchneckLaw() ) << "no WalburnSchneckLaw";return *M_walburnSchneckLaw; }
+
+    void getInfo( boost::shared_ptr<std::ostringstream> ostr ) const
+        {
+            *ostr << "\n          + viscosity law : " << this->lawName();
+            if ( this->isNewtonianLaw() )
+            {
+                *ostr << "\n          + mu : ";
+                if ( this->newtonian().isConstant() )
+                    *ostr << this->newtonian().value();
+                else
+                    *ostr << this->newtonian().expr().expression();
+            }
+            else if ( this->isPowerLaw() )
+            {
+                *ostr << "\n          + k : " << this->powerLaw().k()
+                      << "\n          + n : " << this->powerLaw().n()
+                      << "\n          + muMin : " << this->powerLaw().muMin()
+                      << "\n          + muMax : " << this->powerLaw().muMax();
+            }
+            else if ( this->isCarreauLaw() )
+            {
+                *ostr << "\n          + lambda : " << this->carreauLaw().lambda()
+                      << "\n          + n : " << this->carreauLaw().n()
+                      << "\n          + mu0 : " << this->carreauLaw().mu0()
+                      << "\n          + muInf : " << this->carreauLaw().muInf();
+            }
+            else if ( this->isCarreauYasudaLaw() )
+            {
+                *ostr << "\n          + lambda : " << this->carreauYasudaLaw().lambda()
+                      << "\n          + n : " << this->carreauYasudaLaw().n()
+                      << "\n          + a : " << this->carreauYasudaLaw().a()
+                      << "\n          + mu0 : " << this->carreauYasudaLaw().mu0()
+                      << "\n          + muInf : " << this->carreauYasudaLaw().muInf();
+            }
+            else if ( this->isWalburnSchneckLaw() )
+            {
+                *ostr << "\n          + C1 : " << this->walburnSchneckLaw().C1()
+                      << "\n          + C2 : " << this->walburnSchneckLaw().C2()
+                      << "\n          + C3 : " << this->walburnSchneckLaw().C3()
+                      << "\n          + C4 : " << this->walburnSchneckLaw().C4()
+                      << "\n          + hematocrit : " << this->walburnSchneckLaw().hematocrit()
+                      << "\n          + TPMA : " << this->walburnSchneckLaw().TPMA()
+                      << "\n          + muMin : " << this->walburnSchneckLaw().powerLaw().muMin()
+                      << "\n          + muMax : " << this->walburnSchneckLaw().powerLaw().muMax();
+            }
+        }
+private :
+
+    std::string M_lawName;
+
+    ModelExpressionScalar M_newtonian;
+
+    boost::optional<DynamicViscosityPowerLaw> M_powerLaw;
+    boost::optional<DynamicViscosityCarreauLaw> M_carreauLaw;
+    boost::optional<DynamicViscosityCarreauYasudaLaw> M_carreauYasudaLaw;
+    boost::optional<DynamicViscosityWalburnSchneckLaw> M_walburnSchneckLaw;
+
+    double M_mu0, M_muInf;
+    double M_carreau_lambda, M_carreau_n;
+    double M_carreauYasuda_lambda, M_carreauYasuda_n, M_carreauYasuda_a;
+
+    double M_walburnSchneck_C1,M_walburnSchneck_C2,M_walburnSchneck_C3,M_walburnSchneck_C4;
+    double M_non_newtonian_hematocrit;
+    double M_non_newtonian_TPMA; //Total Proteins Minus Albumin (TPMA)
+};
 
 template<class SpaceType>
 class DynamicViscosityModel
@@ -48,40 +371,13 @@ public :
     typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    static std::string defaultMaterialName() { return std::string("FEELPP_DEFAULT_MATERIAL_NAME"); }
 
-    DynamicViscosityModel( std::string prefix )
+    DynamicViscosityModel( std::string const& prefix )
         :
-        M_viscosityModelName( soption(_name="viscosity.law",_prefix=prefix ) ),
+        M_prefix( prefix ),
         M_isDefinedOnWholeMesh( true ),
-        M_powerLaw_n( doption(_name="power_law.n",_prefix=prefix) ),
-        M_powerLaw_k( doption(_name="power_law.k",_prefix=prefix) ),
-        M_powerLaw_n_generic( (M_powerLaw_n-1.)/2. ), M_powerLaw_k_generic( M_powerLaw_k ),
-        M_mu_0( doption(_name="viscosity.zero_shear",_prefix=prefix) ),
-        M_mu_inf( doption(_name="viscosity.infinite_shear",_prefix=prefix) ),
-        M_carreau_lambda( doption(_name="carreau_law.lambda",_prefix=prefix) ),
-        M_carreau_n( doption(_name="carreau_law.n",_prefix=prefix) ),
-        M_carreauYasuda_lambda( doption(_name="carreau-yasuda_law.lambda",_prefix=prefix) ),
-        M_carreauYasuda_n( doption(_name="carreau-yasuda_law.n",_prefix=prefix) ),
-        M_carreauYasuda_a( doption(_name="carreau-yasuda_law.a",_prefix=prefix) ),
-        M_walburnSchneck_C1( doption(_name="walburn-schneck_law.C1",_prefix=prefix) ),
-        M_walburnSchneck_C2( doption(_name="walburn-schneck_law.C2",_prefix=prefix) ),
-        M_walburnSchneck_C3( doption(_name="walburn-schneck_law.C3",_prefix=prefix) ),
-        M_walburnSchneck_C4( doption(_name="walburn-schneck_law.C4",_prefix=prefix) ),
-        M_non_newtonian_hematocrit( doption(_name="hematocrit",_prefix=prefix) ),
-        M_non_newtonian_TPMA( doption(_name="TPMA",_prefix=prefix) )
-        {
-            M_cstDynamicViscosity[self_type::defaultMaterialName()] = doption(_name="mu",_prefix=prefix);
-
-            CHECK( this->checkDynamicViscosityLaw() ) << "invalid viscosity model : " << this->dynamicViscosityLaw();
-            if (this->dynamicViscosityLaw() == "walburn-schneck_law")
-            {
-                double hematocrit = this->nonNewtonianHematocrit();
-                M_powerLaw_k_generic=this->walburnSchneck_C1()*math::exp(hematocrit*this->walburnSchneck_C2())*
-                    math::exp( this->walburnSchneck_C4()*this->nonNewtonianTPMA()/math::pow(hematocrit,2) );
-                M_powerLaw_n_generic=-this->walburnSchneck_C3()*hematocrit;
-            }
-        }
+        M_dynamicViscosityDefaultValue( doption(_name="mu",_prefix=prefix) )
+        {}
     DynamicViscosityModel( DynamicViscosityModel const& app  ) = default;
 
     void updateForUse( mesh_ptrtype const& mesh , ModelMaterials const& mats, bool useExtendedDofTable )
@@ -119,7 +415,7 @@ public :
             M_space = space_type::New(_mesh=mesh, _extended_doftable=useExtendedDofTable );
         else
             M_space = space_type::New(_mesh=mesh,_range=markedelements(mesh,M_markers), _extended_doftable=useExtendedDofTable );
-        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity( self_type::defaultMaterialName() ) ) );
+        M_fieldDynamicViscosity = M_space->elementPtr( cst( this->cstDynamicViscosity() ) );
 
         for( auto const& m : mats )
         {
@@ -134,15 +430,23 @@ public :
             auto range = markedelements( mesh,matmarkers );
             M_rangeMeshElementsByMaterial[matName] = range;
 
-            for ( std::string const& matmarker : matmarkers )
+            //M_dynamicViscosityModelByMaterial[matName] = DynamicViscosityModelByMaterial( M_prefix, mat );
+            M_dynamicViscosityModelByMaterial.insert( std::make_pair( matName, DynamicViscosityModelByMaterial(M_prefix,mat ) ) );
+            auto const& dynamicViscosity = M_dynamicViscosityModelByMaterial.find( matName )->second;
+            // update dynamic viscosity field (for newtonian)
+            if ( dynamicViscosity.newtonian().isConstant() )
             {
-                if ( mat.hasPropertyExprScalar("mu") )
-                    this->setDynamicViscosity( mat.propertyExprScalar("mu"),matmarker );
-                else
-                    this->setCstDynamicViscosity( mat.propertyConstant("mu"), matmarker );
+                double value = dynamicViscosity.newtonian().value();
+                M_fieldDynamicViscosity->on(_range=range,_expr=cst(value));
+            }
+            else
+            {
+                auto const& expr = dynamicViscosity.newtonian().expr();
+                M_fieldDynamicViscosity->on(_range=range,_expr=expr);
             }
         }
     }
+#if 0
     void updateForUse( space_ptrtype const& space, ModelMaterials const& mats )
     {
         M_isDefinedOnWholeMesh = true;
@@ -163,23 +467,10 @@ public :
             }
         }
     }
-
+#endif
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
-
-    bool checkDynamicViscosityLaw() const
-    {
-        return ( this->dynamicViscosityLaw() == "newtonian" ||
-                 this->dynamicViscosityLaw() == "power_law" || this->dynamicViscosityLaw() == "walburn-schneck_law" ||
-                 this->dynamicViscosityLaw() == "carreau_law" || this->dynamicViscosityLaw() == "carreau-yasuda_law");
-    }
-    std::string const& dynamicViscosityLaw() const { return M_viscosityModelName; }
-    void setDynamicViscosityLaw( std::string s )
-    {
-        M_viscosityModelName = s;
-        CHECK( this->checkDynamicViscosityLaw() ) << "invalid viscosity model : " << s;
-    }
 
     space_ptrtype const& dynamicViscositySpace() const { return M_space; }
 
@@ -187,89 +478,53 @@ public :
 
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
-    double cstMu( std::string const& marker = "" ) const { return this->cstDynamicViscosity( marker); }
-    double cstDynamicViscosity( std::string const& marker = "" ) const
-    {
-        std::string markerUsed = ( marker.empty() )?
-            ( ( this->markers().empty() )? self_type::defaultMaterialName() : *this->markers().begin() ) :
-            marker;
-        auto itFindMarker = M_cstDynamicViscosity.find( markerUsed );
-        CHECK( itFindMarker != M_cstDynamicViscosity.end() ) << "invalid marker not registered " << markerUsed;
-        return itFindMarker->second;
-    }
 
+    //! return projection field
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }
     element_type const& fieldDynamicViscosity() const { return *M_fieldDynamicViscosity; }
     element_ptrtype const& fieldDynamicViscosityPtr() const { return M_fieldDynamicViscosity; }
 
-    void setCstDynamicViscosity( double d, std::string const& marker = "", bool update = true )
-    {
-        std::string markerUsed = ( marker.empty() )? self_type::defaultMaterialName() : marker;
-        M_cstDynamicViscosity[markerUsed]=d;
-        if ( update )
-            this->updateDynamicViscosity( cst(d), marker );
-    }
 
-    template < typename ExprT >
-    void setDynamicViscosity( vf::Expr<ExprT> const& vfexpr, std::string const& marker = "" )
-    {
-        this->updateDynamicViscosity( vfexpr,marker );
-        if ( M_fieldDynamicViscosity )
-            this->setCstDynamicViscosity( M_fieldDynamicViscosity->min(), marker, false );
-    }
-    template < typename ExprT >
-    void updateDynamicViscosity( vf::Expr<ExprT> const& __expr, std::string const& marker = "" )
-    {
-        if ( !M_fieldDynamicViscosity ) return;
-        if ( marker.empty() )
-            M_fieldDynamicViscosity->on(_range=elements(M_fieldDynamicViscosity->mesh()),_expr=__expr );
-        else
-            M_fieldDynamicViscosity->on(_range=markedelements(M_fieldDynamicViscosity->mesh(),marker),_expr=__expr );
-    }
+    //! return true if has DynamicViscosity for this mat
+    bool hasDynamicViscosity( std::string const& matName ) const
+        {
+            return M_dynamicViscosityModelByMaterial.find( matName ) != M_dynamicViscosityModelByMaterial.end();
+        }
+    //! return the expression manager of dynamicViscosity
+    DynamicViscosityModelByMaterial/*ModelExpression*/ const& dynamicViscosity( std::string const& matName ) const
+        {
+            CHECK( this->hasDynamicViscosity( matName ) ) << "material name not registered : " << matName;
+            return M_dynamicViscosityModelByMaterial.find( matName )->second;
+        }
+    //! return constant DynamicViscosity
+    double cstMu( std::string const& matName = "" ) const { return this->cstDynamicViscosity( matName ); }
+    //! return constant DynamicViscosity
+    double cstDynamicViscosity( std::string const& matName = "" ) const
+        {
+            if ( matName.empty() )
+            {
+                if ( M_dynamicViscosityModelByMaterial.empty() )
+                    return M_dynamicViscosityDefaultValue;
+                else
+                    return M_dynamicViscosityModelByMaterial.begin()->second.newtonian().value();
+            }
+            auto itFindMat = M_dynamicViscosityModelByMaterial.find( matName );
+            CHECK( itFindMat != M_dynamicViscosityModelByMaterial.end() ) << "material name not registered : " << matName;
+            return itFindMat->second.newtonian().value();
+        }
 
-
-    double powerLaw_n() const { return M_powerLaw_n; }
-    void powerLaw_n( double d ) { M_powerLaw_n=d; }
-    double powerLaw_k() const { return M_powerLaw_k; }
-    void powerLaw_k( double d ) { M_powerLaw_k=d; }
-    double powerLaw_n_generic() const { return M_powerLaw_n_generic; }
-    double powerLaw_k_generic() const { return M_powerLaw_k_generic; }
-
-    double mu_0() const { return M_mu_0; }
-    void mu_0( double d ) { M_mu_0=d; }
-    double mu_inf() const { return M_mu_inf; }
-    void mu_inf( double d ) { M_mu_inf=d; }
-    double carreau_lambda() const { return M_carreau_lambda; }
-    void carreau_lambda( double d ) { M_carreau_lambda=d; }
-    double carreau_n() const { return M_carreau_n; }
-    void carreau_n( double d ) { M_carreau_n=d; }
-    double carreauYasuda_lambda() const { return M_carreauYasuda_lambda; }
-    void carreauYasuda_lambda( double d ){ M_carreauYasuda_lambda=d; }
-    double carreauYasuda_n() const { return M_carreauYasuda_n; }
-    void carreauYasuda_n( double d ) { M_carreauYasuda_n=d; }
-    double carreauYasuda_a() const { return M_carreauYasuda_a; }
-    void carreauYasuda_a( double d ) { M_carreauYasuda_a=d; }
-
-    double nonNewtonianHematocrit() const { return M_non_newtonian_hematocrit; }
-    void nonNewtonianHematocrit(double d) { M_non_newtonian_hematocrit=d; }
-    double nonNewtonianTPMA() const { return M_non_newtonian_TPMA; }
-    void nonNewtonianTPMA(double d) { M_non_newtonian_TPMA=d; }
-
-    double walburnSchneck_C1() const { return M_walburnSchneck_C1; }
-    void walburnSchneck_C1(double d) { M_walburnSchneck_C1=d; }
-    double walburnSchneck_C2() const { return M_walburnSchneck_C2; }
-    void walburnSchneck_C2(double d) { M_walburnSchneck_C2=d; }
-    double walburnSchneck_C3() const { return M_walburnSchneck_C3; }
-    void walburnSchneck_C3(double d) { M_walburnSchneck_C3=d; }
-    double walburnSchneck_C4() const { return M_walburnSchneck_C4; }
-    void walburnSchneck_C4(double d) { M_walburnSchneck_C4=d; }
-
+    void setCstDynamicViscosity( double d, std::string const& matName = "", bool updateField = true )
+        {
+            CHECK( false ) << "TODO";
+        }
 
     boost::shared_ptr<std::ostringstream>
-    getInfo( std::string const& matmarker ) const
+    getInfo( std::string const& matName ) const
     {
         boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+        this->dynamicViscosity( matName ).getInfo( _ostr );
 
+#if 0
         std::string matmarkertag = matmarker.empty()? std::string("") : (boost::format("[%1%] ")%matmarker).str();
         *_ostr << "\n     -- " << matmarkertag << "viscosity law : " << this->dynamicViscosityLaw();
 
@@ -306,69 +561,20 @@ public :
                   << "\n        + " << matmarkertag << "mu_0 : " << this->mu_0()
                   << "\n        + " << matmarkertag << "mu_inf : " << this->mu_inf();
         }
-
-#if 0
-        if ( this->dynamicViscosityLaw() ==  "newtonian" )
-        {
-            *_ostr << "\n   Newtonian"
-                   << "\n     -- mu   : " << this->cstMu();
-        }
-        else if ( this->dynamicViscosityLaw() == "power_law" )
-        {
-            *_ostr << "\n   Power Law "
-                   << "\n     -- n   : " << this->powerLaw_n()
-                   << "\n     -- k   : " << this->powerLaw_k();
-        }
-        else if ( this->dynamicViscosityLaw() == "walburn-schneck_law" )
-        {
-            *_ostr << "\n   Walburn-Schneck "
-                   << "\n     -- C1  : " << this->walburnSchneck_C1()
-                   << "\n     -- C2  : " << this->walburnSchneck_C2()
-                   << "\n     -- C3  : " << this->walburnSchneck_C3()
-                   << "\n     -- C4  : " << this->walburnSchneck_C4()
-                   << "\n     -- hematocrit  : " << this->nonNewtonianHematocrit()
-                   << "\n     -- TPMA  : " << this->nonNewtonianTPMA();
-        }
-        else if ( this->dynamicViscosityLaw() == "carreau_law")
-        {
-            *_ostr << "\n   Carreau "
-                   << "\n     -- lambda  : " << this->carreau_lambda()
-                   << "\n     -- n       : " << this->carreau_n()
-                   << "\n     -- mu_0    : " << this->mu_0()
-                   << "\n     -- mu_inf  : " << this->mu_inf();
-        }
-        else if (  this->dynamicViscosityLaw() == "carreau-yasuda_law")
-        {
-            *_ostr << "\n   Carreau-Yasuda "
-                   << "\n     -- lambda  : " << this->carreauYasuda_lambda()
-                   << "\n     -- n       : " << this->carreauYasuda_n()
-                   << "\n     -- a       : " << this->carreauYasuda_a()
-                   << "\n     -- mu_0    : " << this->mu_0()
-                   << "\n     -- mu_inf  : " << this->mu_inf();
-        }
 #endif
         return _ostr;
     }
 
 private :
-    std::string M_viscosityModelName;
+    std::string M_prefix;
     space_ptrtype M_space;
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     element_ptrtype M_fieldDynamicViscosity;
-    std::map<std::string,double> M_cstDynamicViscosity;
-
-    double M_powerLaw_n, M_powerLaw_k, M_powerLaw_n_generic, M_powerLaw_k_generic;
-    double M_mu_0, M_mu_inf;
-    double M_carreau_lambda, M_carreau_n;
-    double M_carreauYasuda_lambda, M_carreauYasuda_n, M_carreauYasuda_a;
-
-    double M_walburnSchneck_C1,M_walburnSchneck_C2,M_walburnSchneck_C3,M_walburnSchneck_C4;
-    double M_non_newtonian_hematocrit;
-    double M_non_newtonian_TPMA; //Total Proteins Minus Albumin (TPMA)
-
+    double M_dynamicViscosityDefaultValue;
+    std::map<std::string, DynamicViscosityModelByMaterial> M_dynamicViscosityModelByMaterial;
 };
 
 
