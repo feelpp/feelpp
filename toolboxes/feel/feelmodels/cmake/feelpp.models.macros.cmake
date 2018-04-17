@@ -379,9 +379,11 @@ macro(genLibFSI)
     set(FSI_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/fsi/${FSI_LIB_VARIANTS})
     set(FSI_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fsi/fsi_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fsi/fsibc_inst.cpp
       )
     set(FSI_CODEGEN_SOURCES
       ${FSI_LIB_DIR}/fsi_inst.cpp
+      ${FSI_LIB_DIR}/fsibc_inst.cpp
       )
     set(FSI_LIB_DEPENDS ${FLUIDMECHANICS_LIB_NAME} ${SOLIDMECHANICS_LIB_NAME})
     # generate the lib target
