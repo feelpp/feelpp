@@ -120,6 +120,9 @@ public :
         this->solidModel()->exportResults(time);
     }
 
+    //---------------------------------------------------------------------------------------------------------//
+    void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+
 private :
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
     void solveImpl1();

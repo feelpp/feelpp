@@ -377,7 +377,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         if (this->hasMarkerDirichletBCelimination() )
             this->updateBCStrongDirichletLinearPDE(A,F);
 
-#if defined( FEELPP_MODELS_HAS_MESHALE )
+#if 0// defined( FEELPP_MODELS_HAS_MESHALE )
         if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
         {
             bilinearForm_PatternCoupled +=
