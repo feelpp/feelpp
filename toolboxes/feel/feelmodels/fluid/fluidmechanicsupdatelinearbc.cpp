@@ -421,7 +421,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     }
 
     //--------------------------------------------------------------------------------------------------//
-
+#if 0
     if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
                                    this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                    this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )
@@ -593,6 +593,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         }
 #endif // FEELPP_MODELS_HAS_MESHALE
     }
+#endif
+
 #if 0
     if ( UsePeriodicity && BuildNonCstPart )
     {

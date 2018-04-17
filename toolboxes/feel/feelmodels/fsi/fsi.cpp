@@ -500,6 +500,8 @@ FSI<FluidType,SolidType>::init()
     } // if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     //-------------------------------------------------------------------------//
 
+    M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Fluid,
+                                                                              boost::ref( *this ), _1 ) );
     M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
                                                                                   boost::ref( *this ), _1, _2 ) );
 
