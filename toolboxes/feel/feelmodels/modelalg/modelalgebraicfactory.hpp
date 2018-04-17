@@ -68,6 +68,9 @@ namespace FeelModels
         typedef model_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
         typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
         typedef boost::function<void ( vector_ptrtype const& U, sparse_matrix_ptrtype& J )> jacobianAssembly_function_type;
         typedef boost::function<void ( vector_ptrtype const& U, vector_ptrtype& R )> residualAssembly_function_type;
@@ -179,6 +182,9 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
         void addFunctionLinearPostAssembly( linearAssembly_function_type const& func, std::string const& key = "" );
         void addFunctionLinearPreAssemblyNonCst( linearAssembly_function_type const& func, std::string const& key = "" );
         void addFunctionJacobianPreAssembly( jacobianAssembly_function_type const& func, std::string const& key = "" );
@@ -215,6 +221,9 @@ namespace FeelModels
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
 
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianAssembly;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualAssembly;
         std::map<std::string,linearAssembly_function_type> M_addFunctionLinearPostAssembly;
         std::map<std::string,linearAssembly_function_type> M_addFunctionLinearPreAssemblyNonCst;
         std::map<std::string,jacobianAssembly_function_type> M_addFunctionJacobianPreAssembly;

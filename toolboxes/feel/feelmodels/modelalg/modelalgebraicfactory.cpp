@@ -205,7 +205,24 @@ namespace FeelModels
         M_PrecondManage->attachNearNullSpace( k, myNearNullSpace );
     }
 
-
+    void
+    ModelAlgebraicFactory::addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionLinearAssembly.size()).str() : key;
+        M_addFunctionLinearAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianAssembly.size()).str() : key;
+        M_addFunctionJacobianAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualAssembly.size()).str() : key;
+        M_addFunctionResidualAssembly[ keyUsed ] = func;
+    }
     void
     ModelAlgebraicFactory::addFunctionLinearPostAssembly( linearAssembly_function_type const& func, std::string const& key )
     {
@@ -321,6 +338,8 @@ namespace FeelModels
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             this->model()->updateLinearPDE( dataLinearCst );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
         }
         else if ( this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -331,6 +350,8 @@ namespace FeelModels
             //this->model()->updateLinearPDE(U,M_CstJ,M_CstR,true,M_Extended,false);
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
             this->model()->updateLinearPDE( dataLinearCst );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( dataLinearCst );
         }
         this->model()->setNeedToRebuildCstPart(false);
 
@@ -355,8 +376,10 @@ namespace FeelModels
             func.second( M_J,M_R );
 
         // assembling non cst part
-        //this->model()->updateLinearPDE(U,M_J,M_R,false,M_Extended,true);
         ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        // apply before addFunctionLinearAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinearNonCst );
         this->model()->updateLinearPDE( dataLinearNonCst );
 
         // post-assembly (optional)
@@ -442,9 +465,14 @@ namespace FeelModels
         {
             ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
             model->updateJacobian( dataJacobianCst );
+            for ( auto const& func : M_addFunctionJacobianAssembly )
+                func.second( dataJacobianCst );
         }
 
         ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        // apply before addFunctionJacobianAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionJacobianAssembly )
+            func.second( dataJacobianNonCst );
         model->updateJacobian( dataJacobianNonCst );
 
         model->updateInHousePreconditioner( J, X );
@@ -473,6 +501,8 @@ namespace FeelModels
         {
             ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
             model->updateResidual( dataResidualCst );
+            for ( auto const& func : M_addFunctionResidualAssembly )
+                func.second( dataResidualCst );
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
@@ -481,6 +511,9 @@ namespace FeelModels
             R->addVector(*X, *M_CstJ );
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        // apply before addFunctionResidualAssembly because due to Strong dirichlet
+        for ( auto const& func : M_addFunctionResidualAssembly )
+            func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
@@ -515,6 +548,8 @@ namespace FeelModels
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 model->updateJacobian( dataJacobianCst );
+                for ( auto const& func : M_addFunctionJacobianAssembly )
+                    func.second( dataJacobianCst );
                 M_CstJ->close();
                 M_hasBuildLinearJacobian = true;
             }
@@ -523,6 +558,8 @@ namespace FeelModels
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
                 model->updateJacobian( dataJacobianCst );
+                for ( auto const& func : M_addFunctionJacobianAssembly )
+                    func.second( dataJacobianCst );
                 M_CstJ->close();
             }
         }
@@ -539,6 +576,8 @@ namespace FeelModels
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 model->updateResidual( dataResidualCst );
+                for ( auto const& func : M_addFunctionResidualAssembly )
+                    func.second( dataResidualCst );
                 M_CstR->close();
                 M_hasBuildResidualCst = true;
             }
@@ -548,6 +587,8 @@ namespace FeelModels
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
                 ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
                 model->updateResidual( dataResidualCst );
+                for ( auto const& func : M_addFunctionResidualAssembly )
+                    func.second( dataResidualCst );
                 M_CstR->close();
             }
         }
@@ -602,6 +643,8 @@ namespace FeelModels
         M_CstJ->zero();
         ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
         this->model()->updateJacobian( dataJacobianCst );
+        for ( auto const& func : M_addFunctionJacobianAssembly )
+            func.second( dataJacobianCst );
         M_CstJ->close();
     }
 
@@ -613,6 +656,8 @@ namespace FeelModels
         M_CstR->zero();
         ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
         this->model()->updateLinearPDE(dataLinearCst);
+        for ( auto const& func : M_addFunctionLinearAssembly )
+            func.second( dataLinearCst );
         M_CstJ->close();
         M_CstR->close();
     }
