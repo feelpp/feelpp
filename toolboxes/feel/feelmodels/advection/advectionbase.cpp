@@ -782,6 +782,7 @@ void
 ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinear & data ) const
 {
     bool BuildCstPart = data.buildCstPart();
+    bool BuildNonCstPart = !BuildCstPart;
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Advection","updateLinearPDEStabilization", "start"+sc );
     this->timerTool("Solve").start();
@@ -824,23 +825,26 @@ ADVECTIONBASE_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilization( DataUpdateLinea
 
         case AdvectionStabMethod::CIP :
         {
-            auto mesh = this->mesh();
-            auto space = this->functionSpace();
-            auto const& phi = this->fieldSolution();
-            sparse_matrix_ptrtype & A = data.matrix();
+            if( BuildNonCstPart )
+            {
+                auto mesh = this->mesh();
+                auto space = this->functionSpace();
+                auto const& phi = this->fieldSolution();
+                sparse_matrix_ptrtype & A = data.matrix();
 
-            auto beta = idv(this->fieldAdvectionVelocity());
-            auto beta_norm = vf::sqrt(trans(beta)*beta);
-            double stabCoeff = this->M_stabilizationCIPCoefficient;
-            auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
+                auto beta = idv(this->fieldAdvectionVelocity());
+                auto beta_norm = vf::sqrt(trans(beta)*beta);
+                double stabCoeff = this->M_stabilizationCIPCoefficient;
+                auto coeff = stabCoeff * M_gamma1 * hFace() * hFace() * beta_norm;
 
-            auto bilinearForm_PatternExtended = form2( 
-                    _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) 
-                    );
-            bilinearForm_PatternExtended += integrate(
-                    _range=internalfaces(mesh),
-                    _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
-                    );
+                auto bilinearForm_PatternExtended = form2( 
+                        _test=space, _trial=space, _matrix=A, _pattern=size_type(Pattern::EXTENDED) 
+                        );
+                bilinearForm_PatternExtended += integrate(
+                        _range=internalfaces(mesh),
+                        _expr=coeff * inner(jumpt(gradt(phi)), jump(grad(phi)))
+                        );
+            }
 
         } //CIP
         break;
