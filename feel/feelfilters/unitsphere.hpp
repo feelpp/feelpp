@@ -38,6 +38,7 @@
 
 
 namespace Feel {
+
 /**
  * build a mesh of the unit circle using triangles
  */
