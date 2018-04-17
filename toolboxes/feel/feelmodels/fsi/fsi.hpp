@@ -82,6 +82,7 @@ public :
 
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
+    bool useFSISemiImplicitScheme() const { return ( this->fsiCouplingType() == "Semi-Implicit" ); }
     bool interfaceFSIisConforme() const { return M_interfaceFSIisConforme; }
     double fixPointTolerance() const { return M_fixPointTolerance; }
     double fixPointInitialTheta() const { return M_fixPointInitialTheta; }
@@ -121,6 +122,7 @@ public :
     }
 
     //---------------------------------------------------------------------------------------------------------//
+    void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
 
 private :
