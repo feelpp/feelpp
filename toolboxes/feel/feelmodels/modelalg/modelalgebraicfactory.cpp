@@ -212,6 +212,12 @@ namespace FeelModels
         M_addFunctionLinearAssembly[ keyUsed ] = func;
     }
     void
+    ModelAlgebraicFactory::addFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionNewtonInitialGuess.size()).str() : key;
+        M_addFunctionNewtonInitialGuess[ keyUsed ] = func;
+    }
+    void
     ModelAlgebraicFactory::addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key )
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianAssembly.size()).str() : key;
@@ -246,6 +252,18 @@ namespace FeelModels
     {
         std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualPreAssembly.size()).str() : key;
         M_addFunctionResidualPreAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionJacobianPostAssembly( jacobianAssembly_function_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionJacobianPostAssembly.size()).str() : key;
+        M_addFunctionJacobianPostAssembly[ keyUsed ] = func;
+    }
+    void
+    ModelAlgebraicFactory::addFunctionResidualPostAssembly( residualAssembly_function_type const& func, std::string const& key )
+    {
+        std::string keyUsed = ( key.empty() )? (boost::format("FEELPP_DEFAULT_%1%")%M_addFunctionResidualPostAssembly.size()).str() : key;
+        M_addFunctionResidualPostAssembly[ keyUsed ] = func;
     }
 
     //---------------------------------------------------------------------------------------------------------------//
@@ -475,6 +493,9 @@ namespace FeelModels
             func.second( dataJacobianNonCst );
         model->updateJacobian( dataJacobianNonCst );
 
+        for ( auto const& func : M_addFunctionJacobianPostAssembly )
+            func.second( X, J );
+
         model->updateInHousePreconditioner( J, X );
 
         double tElapsed = model->timerTool("Solve").stop();
@@ -516,6 +537,9 @@ namespace FeelModels
             func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
 
+        for ( auto const& func : M_addFunctionResidualPostAssembly )
+            func.second( X, R );
+
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
     }
@@ -537,6 +561,8 @@ namespace FeelModels
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
         model->updateNewtonInitialGuess(U);
+        for ( auto const& func : M_addFunctionNewtonInitialGuess )
+            func.second( U );
         //U->close();
         model->timerTool("Solve").elapsed("algebraic-newton-bc");
         model->timerTool("Solve").restart();
