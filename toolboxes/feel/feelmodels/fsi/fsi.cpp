@@ -272,8 +272,7 @@ FSI<FluidType,SolidType>::init()
         M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->repository() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
-        //M_fluidModel->build();
-        M_fluidModel->init();
+        M_fluidModel->init( false );
     }
 
     // solid model build
@@ -304,6 +303,12 @@ FSI<FluidType,SolidType>::init()
                 M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
             M_solidModel->build();
         }
+
+        // temporary fix TODO !!!!
+        M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
+        if (this->fsiCouplingType()=="Semi-Implicit")
+            M_solidModel->useFSISemiImplicitScheme(true);
+
         M_solidModel->init();
     }
 
@@ -315,12 +320,18 @@ FSI<FluidType,SolidType>::init()
     M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
     M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
 
+    M_fluidModel->initAlgebraicFactory();
+
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
         M_fluidModel->useFSISemiImplicitScheme(true);
         M_solidModel->useFSISemiImplicitScheme(true);
     }
 
+    // // create other space : TODO need to be improve!!
+    // if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
+    //      this->fsiCouplingBoundaryCondition()=="nitsche" )
+    //     M_solidModel->createAdditionalFunctionSpacesFSI();
     // specific value for robin
     M_solidModel->muFluidFSI( M_fluidModel->materialProperties()->cstMu() );
     M_fluidModel->setCouplingFSI_Nitsche_gamma( M_couplingNitscheFamily_gamma );
@@ -502,8 +513,12 @@ FSI<FluidType,SolidType>::init()
 
     M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Fluid,
                                                                               boost::ref( *this ), _1 ) );
-    M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
-                                                                                  boost::ref( *this ), _1, _2 ) );
+    M_fluidModel->algebraicFactory()->addFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Fluid,
+                                                                                boost::ref( *this ), _1 ) );
+    M_fluidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
+                                                                                boost::ref( *this ), _1 ) );
+    // M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
+    //                                                                               boost::ref( *this ), _1, _2 ) );
 
     this->log("FSI","init","finish");
 }

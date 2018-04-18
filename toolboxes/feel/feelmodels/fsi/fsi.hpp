@@ -123,7 +123,11 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
-    void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
+    void updateResidual_Fluid( DataUpdateResidual & data ) const;
+    //void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+
 
 private :
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
