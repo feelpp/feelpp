@@ -180,6 +180,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         this->updateBCRobinJacobian( J );
     }
     //--------------------------------------------------------------------------------------------------//
+#if 0
     // fsi coupling using a robin boundary condition
     if (this->markerNameFSI().size()>0 && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
                                             this->couplingFSIcondition() == "nitsche" ) )
@@ -214,6 +215,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 #endif
         }
     }
+#endif
     //--------------------------------------------------------------------------------------------------//
     // strong Dirichlet bc
     if ( this->hasMarkerDirichletBCelimination() && !BuildCstPart && _doBCStrongDirichlet)

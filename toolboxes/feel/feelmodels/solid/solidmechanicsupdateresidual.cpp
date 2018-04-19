@@ -187,6 +187,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     }
 
     //--------------------------------------------------------------------------------------------------//
+#if 0
     // fsi bc
     if (this->markerNameFSI().size()>0)
     {
@@ -253,6 +254,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         } // robin-robin fsi
 
     }
+#endif
 
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
