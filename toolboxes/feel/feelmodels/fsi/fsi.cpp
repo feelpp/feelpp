@@ -272,6 +272,10 @@ FSI<FluidType,SolidType>::init()
         M_fluidModel = fluid_ptrtype( new fluid_type("fluid",false,this->worldComm(), "", this->repository() ) );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
+
+        // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
+        M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
+
         M_fluidModel->init( false );
     }
 
@@ -928,9 +932,9 @@ FSI<FluidType,SolidType>::solveImpl3()
         if (this->fsiCouplingType()=="Semi-Implicit")
         {
             M_fluidModel->setRebuildLinearPartInJacobian(false);M_fluidModel->setRebuildCstPartInLinearSystem(false);
-            M_fluidModel->setRebuildCstPartInResidual(false);
+            //M_fluidModel->setRebuildCstPartInResidual(false);
             M_solidModel->setRebuildLinearPartInJacobian(false);M_solidModel->setRebuildCstPartInLinearSystem(false);
-            M_solidModel->setRebuildCstPartInResidual(false);
+            //M_solidModel->setRebuildCstPartInResidual(false);
         }
         //--------------------------------------------------------------//
         //--------------------------------------------------------------//

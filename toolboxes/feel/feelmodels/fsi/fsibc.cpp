@@ -523,7 +523,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
             }
 
             // todo cst in implicit non cst in semi-implicit
-            if ( buildNonCstPart )
+            if ( buildCstPart )
             {
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
