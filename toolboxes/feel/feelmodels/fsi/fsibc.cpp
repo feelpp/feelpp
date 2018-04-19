@@ -297,6 +297,9 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
 
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateJacobian_Fluid", "start"+sc );
+
     auto mesh = M_fluidModel->mesh();
     auto Xh = M_fluidModel->spaceVelocityPressure();
 
@@ -379,8 +382,10 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
         {
             CHECK( false ) << "TODO";
         }
-
     }
+
+    this->log("FSI","updateJacobian_Fluid", "finish"+sc );
+
 }
 
 template< class FluidType, class SolidType >
@@ -398,6 +403,9 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     bool buildNonCstPart = !buildCstPart;
     bool useJacobianLinearTerms = data.useJacobianLinearTerms();
 
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateResidual_Fluid", "start"+sc );
+
     auto mesh = M_fluidModel->mesh();
     auto Xh = M_fluidModel->spaceVelocityPressure();
 
@@ -412,13 +420,13 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
 
     auto rangeFSI = markedfaces(mesh,M_fluidModel->markersNameMovingBoundary());
 
-    //auto const& uPrevious = (true)? this->fieldVelocity() : this->timeStepBDF()->unknown(0).template element<0>();
+    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
     auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    //auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*fluid_type::nOrderVelocity>(uEval,pEval,*M_fluidModel->materialProperties(),matName,true);
-    auto muExpr = Feel::vf::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(u,p,*M_fluidModel->materialProperties(),matName);
+    auto sigmav = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName,true);
+    auto muExpr = Feel::vf::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName);
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
@@ -433,13 +441,17 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                                _geomap=this->geomap() );
         }
 
-        if ( buildNonCstPart )
-            {
-                linearForm +=
-                    integrate( _range=rangeFSI,
-                               _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
-                               _geomap=this->geomap() );
-            }
+        if ( buildCstPart )
+        {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= -inner( sigmav*N(),id(u)),
+                           _geomap=this->geomap() );
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
+                           _geomap=this->geomap() );
+        }
         if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
              this->fsiCouplingBoundaryCondition() == "nitsche" )
         {
@@ -521,8 +533,141 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
             CHECK(false) << "TODO";
         }
     }
+
+    this->log("FSI","updateResidual_Fluid", "finish"+sc );
 }
 
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "robin-robin" && this->fsiCouplingBoundaryCondition() != "robin-robin-genuine" &&
+         this->fsiCouplingBoundaryCondition() != "nitsche" )
+        return;
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateJacobian_Solid", "start"+sc );
+
+    auto mesh = M_solidModel->mesh();
+    auto Xh = M_solidModel->functionSpaceDisplacement();
+
+    auto u = Xh->element(XVec, M_solidModel->rowStartInVector());
+
+    auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
+
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=M_solidModel->rowStartInMatrix(),
+                               _colstart=M_solidModel->colStartInMatrix() );
+
+
+
+    double gammaRobinFSI = M_couplingNitscheFamily_gamma;
+    double muFluid = M_solidModel->muFluidFSI();
+    if ( buildNonCstPart)
+    {
+#if 0
+        // integrate on ref with variables change
+        auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
+        auto Ja = det(Fa);
+        auto Ba = inv(Fa);
+        auto variablechange = Ja*norm2( Ba*N() );
+        bilinearForm_PatternCoupled +=
+            integrate( _range=markedfaces(mesh,this->markerNameFSI()),
+                       _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
+                       _geomap=this->geomap() );
+
+#else
+
+        MeshMover<typename solid_type::mesh_type> mymesh_mover;
+        mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
+
+        bilinearForm +=
+            integrate( _range=markedfaces(mesh,M_solidModel->markerNameFSI()),
+                       _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
+                       _geomap=this->geomap() );
+
+        auto dispInv = M_solidModel->fieldDisplacement().functionSpace()->element(-idv(M_solidModel->timeStepNewmark()->previousUnknown()));
+        mymesh_mover.apply( mesh, dispInv );
+#endif
+    }
+
+    this->log("FSI","updateJacobian_Solid", "finish"+sc );
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    vector_ptrtype& R = data.residual();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    bool useJacobianLinearTerms = data.useJacobianLinearTerms();
+
+    bool buildCstPart_BoundaryParoiMobile = buildCstPart;
+    if ( this->useFSISemiImplicitScheme() )
+        buildCstPart_BoundaryParoiMobile = buildNonCstPart;
+
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    this->log("FSI","updateResidual_Solid", "start"+sc );
+
+
+    auto mesh = M_solidModel->mesh();
+    auto Xh = M_solidModel->functionSpaceDisplacement();
+    auto linearForm = form1( _test=Xh, _vector=R,
+                             _rowstart=M_solidModel->rowStartInVector() );
+
+    auto u = Xh->element(XVec, M_solidModel->rowStartInVector());
+
+    auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
+
+    // neumann boundary condition with normal stress (fsi boundary condition)
+    if ( buildCstPart_BoundaryParoiMobile )
+    {
+        linearForm +=
+            integrate( _range=rangeFSI,
+                       _expr= trans(idv(M_solidModel->fieldNormalStressFromFluidPtr()))*id(u),
+                       _geomap=this->geomap() );
+    }
+
+    if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
+         this->fsiCouplingBoundaryCondition() == "nitsche" )
+    {
+        double gammaRobinFSI = M_couplingNitscheFamily_gamma;
+        double muFluid = M_solidModel->muFluidFSI();
+
+        MeshMover<typename solid_type::mesh_type> mymesh_mover;
+        mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
+
+        if ( buildNonCstPart)
+        {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(u))/hFace(),
+                           _geomap=this->geomap() );
+        }
+        if ( buildNonCstPart )
+        {
+            auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(M_solidModel->fieldVelocityInterfaceFromFluid());
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
+                           _geomap=this->geomap() );
+        }
+
+        auto dispInv = M_solidModel->fieldDisplacement().functionSpace()->element(-idv(M_solidModel->timeStepNewmark()->previousUnknown()));
+        mymesh_mover.apply( mesh, dispInv );
+    } // robin-robin fsi
+    this->log("FSI","updateResidual_Solid", "finish"+sc );
+
+}
 
 } // namespace FeelModels
 } // namespace Feel

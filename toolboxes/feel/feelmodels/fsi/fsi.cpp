@@ -519,7 +519,13 @@ FSI<FluidType,SolidType>::init()
                                                                                 boost::ref( *this ), _1 ) );
     // M_fluidModel->algebraicFactory()->addFunctionLinearPostAssembly( boost::bind( &self_type::updateLinearPDEStrongDirichletBC_Fluid,
     //                                                                               boost::ref( *this ), _1, _2 ) );
-
+    if ( M_solidModel->isStandardModel() )
+    {
+        M_solidModel->algebraicFactory()->addFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Solid,
+                                                                                    boost::ref( *this ), _1 ) );
+        M_solidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Solid,
+                                                                                    boost::ref( *this ), _1 ) );
+    }
     this->log("FSI","init","finish");
 }
 
@@ -807,12 +813,12 @@ FSI<FluidType,SolidType>::solveImpl2()
         if (this->fsiCouplingType()=="Semi-Implicit")
         {
             M_fluidModel->setRebuildLinearPartInJacobian(false);M_fluidModel->setRebuildCstPartInLinearSystem(false);
-            M_fluidModel->setRebuildCstPartInResidual(false);
+            //M_fluidModel->setRebuildCstPartInResidual(false);
 
             if (solveStruct)
             {
                 M_solidModel->setRebuildLinearPartInJacobian(false);M_solidModel->setRebuildCstPartInLinearSystem(false);
-                M_solidModel->setRebuildCstPartInResidual(false);
+                //M_solidModel->setRebuildCstPartInResidual(false);
             }
         }
 
