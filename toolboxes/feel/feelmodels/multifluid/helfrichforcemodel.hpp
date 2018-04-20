@@ -8,15 +8,18 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class HelfrichForceModel
-: public virtual InterfaceForcesModel<LevelSetType>
+: public virtual InterfaceForcesModel<LevelSetType, FluidMechanicsType>
 {
-    typedef HelfrichForceModel<LevelSetType> self_type;
-    typedef InterfaceForcesModel<LevelSetType> super_type;
+    typedef HelfrichForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef InterfaceForcesModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
+
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
 
     typedef typename super_type::mesh_type mesh_type;
 
@@ -33,7 +36,7 @@ public:
     HelfrichForceModel() = default;
     HelfrichForceModel( HelfrichForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() ) override;
 
     boost::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -60,17 +63,17 @@ private:
 #endif
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HelfrichForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    super_type::build( prefix, ls );
+    super_type::build( prefix, ls, fm );
     this->loadParametersFromOptionsVm();
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 boost::shared_ptr<std::ostringstream> 
-HelfrichForceModel<LevelSetType>::getInfo() const
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Helfrich force ("
@@ -80,9 +83,9 @@ HelfrichForceModel<LevelSetType>::getInfo() const
     return _ostr;
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
     M_helfrichBendingModulus = doption( _name="helfrich-bending-modulus", _prefix=this->prefix() ); 
     M_forceImpl = ioption( _name="helfrich-force-impl", _prefix=this->prefix() );
@@ -98,16 +101,16 @@ HelfrichForceModel<LevelSetType>::loadParametersFromOptionsVm()
 #endif
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HelfrichForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
     this->addHelfrichForce( F, M_forceImpl );
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-HelfrichForceModel<LevelSetType>::addHelfrichForce( element_ptrtype & F, int impl ) const
+HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_ptrtype & F, int impl ) const
 {
 #ifdef DEBUG_HELFRICHFORCEMODEL
     if( !M_exporterInitDone )

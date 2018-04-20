@@ -6,15 +6,18 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class SkalakForceModel
-: public HyperelasticForceModel<LevelSetType>
+: public HyperelasticForceModel<LevelSetType, FluidMechanicsType>
 {
-    typedef SkalakForceModel<LevelSetType> self_type;
-    typedef HyperelasticForceModel<LevelSetType> super_type;
+    typedef SkalakForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef HyperelasticForceModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
+
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
 
     typedef typename super_type::mesh_type mesh_type;
 
@@ -40,7 +43,7 @@ public:
     SkalakForceModel() = default;
     SkalakForceModel( SkalakForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls );
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() );
     void loadParametersFromOptionsVm();
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
@@ -57,25 +60,25 @@ private:
 
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-SkalakForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+SkalakForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    super_type::build( prefix, ls, "skalak-force" );
+    super_type::build( prefix, ls, fm, "skalak-force" );
     this->loadParametersFromOptionsVm();
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-SkalakForceModel<LevelSetType>::loadParametersFromOptionsVm()
+SkalakForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
     M_skalakForceStretchModulus = doption( _name="skalak-stretch-modulus", _prefix=this->prefix() );
     M_skalakForceShearModulus = doption( _name="skalak-shear-modulus", _prefix=this->prefix() );
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 boost::shared_ptr<std::ostringstream> 
-SkalakForceModel<LevelSetType>::getInfo() const
+SkalakForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Skalak force ("
@@ -86,9 +89,9 @@ SkalakForceModel<LevelSetType>::getInfo() const
     return _ostr;
 }
 
-template<typename LevelSetType>
-typename SkalakForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-SkalakForceModel<LevelSetType>::energyDerivative1Impl() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename SkalakForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+SkalakForceModel<LevelSetType, FluidMechanicsType>::energyDerivative1Impl() const
 {
     if( !M_energyDerivative1 )
         M_energyDerivative1.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative1") );
@@ -103,9 +106,9 @@ SkalakForceModel<LevelSetType>::energyDerivative1Impl() const
     return M_energyDerivative1;
 }
 
-template<typename LevelSetType>
-typename SkalakForceModel<LevelSetType>::element_energyderivative_ptrtype const&
-SkalakForceModel<LevelSetType>::energyDerivative2Impl() const
+template<typename LevelSetType, typename FluidMechanicsType>
+typename SkalakForceModel<LevelSetType, FluidMechanicsType>::element_energyderivative_ptrtype const&
+SkalakForceModel<LevelSetType, FluidMechanicsType>::energyDerivative2Impl() const
 {
     if( !M_energyDerivative2 )
         M_energyDerivative2.reset( new element_energyderivative_type(this->levelset()->functionSpace(), "EnergyDerivative2") );
