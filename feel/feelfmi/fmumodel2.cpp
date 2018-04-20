@@ -48,7 +48,6 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
                       callbacks_ptrtype callbacks ) :
     super_type( callbacks )
 {
-    fmi2_type_t type;
 
     M_version = 2;
     M_callbackfunctions.logger = fmi2logger;
@@ -73,13 +72,13 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     {
         M_kind = "ME";
         M_id = fmi2_import_get_model_identifier_ME( M_fmu );
-        type = fmi2_model_exchange;
+        M_type = fmi2_model_exchange;
     }
     else if ( kind == fmi2_fmu_kind_cs )
     {
         M_kind = "CS";
         M_id = fmi2_import_get_model_identifier_CS( M_fmu );
-        type = fmi2_cosimulation;
+        M_type = fmi2_cosimulation;
     }
     else
         CHECK( false ) << "Unxepected FMU kind, exiting. " << jm_get_last_error( callbacks.get() ) << std::endl;
@@ -88,12 +87,6 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     auto status = fmi2_import_create_dllfmu( M_fmu, kind, &M_callbackfunctions );
     CHECK( status!=jm_status_error ) << "Could not create the DLL loading mechanism(C-API). " << std::endl;
     M_allocated_dll = true;
-
-    // Instatiate the model
-    std::string instance_name = "FMU model " + M_name;
-    status = fmi2_import_instantiate( M_fmu, instance_name.c_str(), type, 0, 0 );
-    CHECK( status!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
-    M_allocated_fmu=true;
 
     // Build the map of variables
     auto v_list = fmi2_import_get_variable_list( M_fmu, 1 );
@@ -127,11 +120,15 @@ void FmuModel2::reset()
     terminate();
     auto status = fmi2_import_reset(M_fmu);
     CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_reset failed\n";
+    M_allocated_fmu=false;
+    if( M_export_list )
+        M_values.clear();
     M_setup=false;
 }
 
 void FmuModel2::initialize( double t_init )
 {
+    // Instatiate the model
     auto status = fmi2_import_enter_initialization_mode(M_fmu);
     CHECK( status==fmi2_status_ok ) << "FMUModel2 : fmi2_import_enter_initialization_mode failed\n";
     status = fmi2_import_exit_initialization_mode(M_fmu);
@@ -161,6 +158,11 @@ void FmuModel2::terminate()
 
 void FmuModel2::setupExperiment( double const& t_init, double const& t_final, double const& tol )
 {
+    std::string instance_name = "FMU model " + M_name;
+    auto status1 = fmi2_import_instantiate( M_fmu, instance_name.c_str(), M_type, 0, 0 );
+    CHECK( status1!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
+    M_allocated_fmu=true;
+
     auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, true, t_final );
     CHECK( status==fmi2_status_ok )<< "FMUModel2 : fmi2_import_setup_experiment failed\n";
     M_setup=true;
