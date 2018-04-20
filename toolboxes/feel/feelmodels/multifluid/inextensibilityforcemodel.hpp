@@ -8,15 +8,18 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class InextensibilityForceModel
-: public virtual InterfaceForcesModel<LevelSetType>
+: public virtual InterfaceForcesModel<LevelSetType, FluidMechanicsType>
 {
-    typedef InextensibilityForceModel<LevelSetType> self_type;
-    typedef InterfaceForcesModel<LevelSetType> super_type;
+    typedef InextensibilityForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef InterfaceForcesModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
+
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
 
     typedef typename super_type::mesh_type mesh_type;
 
@@ -36,7 +39,7 @@ public:
     InextensibilityForceModel() = default;
     InextensibilityForceModel( InextensibilityForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() ) override;
 
     boost::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -64,19 +67,19 @@ private:
 #endif
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-InextensibilityForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+InextensibilityForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    super_type::build( prefix, ls );
+    super_type::build( prefix, ls, fm );
     this->loadParametersFromOptionsVm();
 
     M_levelsetModGradPhi.reset( new element_levelset_type(this->levelset()->functionSpace(), "ModGradPhi") );
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 boost::shared_ptr<std::ostringstream> 
-InextensibilityForceModel<LevelSetType>::getInfo() const
+InextensibilityForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Inextensibility force ("
@@ -86,9 +89,9 @@ InextensibilityForceModel<LevelSetType>::getInfo() const
     return _ostr;
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-InextensibilityForceModel<LevelSetType>::loadParametersFromOptionsVm()
+InextensibilityForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
     M_inextensibilityForceCoefficient = doption( _name="inextensibility-force-coeff", _prefix=this->prefix() );
 
@@ -108,9 +111,9 @@ InextensibilityForceModel<LevelSetType>::loadParametersFromOptionsVm()
 #endif
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
+InextensibilityForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceRectangularFunction()
 {
     if( !M_interfaceRectangularFunction )
         M_interfaceRectangularFunction.reset( new element_levelset_type(this->levelset()->functionSpace(), "InterfaceRectangularFunction") );
@@ -142,9 +145,9 @@ InextensibilityForceModel<LevelSetType>::updateInterfaceRectangularFunction()
             );
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-InextensibilityForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
+InextensibilityForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
 #ifdef DEBUG_INEXTENSIBILITYFORCEMODEL
     if( !M_exporterInitDone )

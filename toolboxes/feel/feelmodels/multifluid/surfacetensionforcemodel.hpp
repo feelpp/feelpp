@@ -7,15 +7,18 @@
 namespace Feel {
 namespace FeelModels {
 
-template<class LevelSetType>
+template<class LevelSetType, class FluidMechanicsType>
 class SurfaceTensionForceModel
-: public virtual InterfaceForcesModel<LevelSetType>
+: public virtual InterfaceForcesModel<LevelSetType, FluidMechanicsType>
 {
-    typedef SurfaceTensionForceModel<LevelSetType> self_type;
-    typedef InterfaceForcesModel<LevelSetType> super_type;
+    typedef SurfaceTensionForceModel<LevelSetType, FluidMechanicsType> self_type;
+    typedef InterfaceForcesModel<LevelSetType, FluidMechanicsType> super_type;
 public:
     typedef typename super_type::levelset_type levelset_type;
     typedef typename super_type::levelset_ptrtype levelset_ptrtype;
+
+    typedef typename super_type::fluidmechanics_type fluidmechanics_type;
+    typedef typename super_type::fluidmechanics_ptrtype fluidmechanics_ptrtype;
 
     typedef typename super_type::mesh_type mesh_type;
 
@@ -32,7 +35,7 @@ public:
     SurfaceTensionForceModel() = default;
     SurfaceTensionForceModel( SurfaceTensionForceModel const& i ) = default;
 
-    void build( std::string const& prefix, levelset_ptrtype const& ls ) override;
+    void build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm = fluidmechanics_ptrtype() ) override;
 
     boost::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -52,17 +55,17 @@ private:
 
 };
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-SurfaceTensionForceModel<LevelSetType>::build( std::string const& prefix, levelset_ptrtype const& ls )
+SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::build( std::string const& prefix, levelset_ptrtype const& ls, fluidmechanics_ptrtype const& fm )
 {
-    super_type::build( prefix, ls );
+    super_type::build( prefix, ls, fm );
     this->loadParametersFromOptionsVm();
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 boost::shared_ptr<std::ostringstream> 
-SurfaceTensionForceModel<LevelSetType>::getInfo() const
+SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::getInfo() const
 {
     boost::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "Surface tension ("
@@ -72,16 +75,16 @@ SurfaceTensionForceModel<LevelSetType>::getInfo() const
     return _ostr;
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-SurfaceTensionForceModel<LevelSetType>::loadParametersFromOptionsVm()
+SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::loadParametersFromOptionsVm()
 {
     M_surfaceTensionCoeff = doption( _name="surface-tension.coeff", _prefix=this->prefix() ); 
 }
 
-template<typename LevelSetType>
+template<typename LevelSetType, typename FluidMechanicsType>
 void
-SurfaceTensionForceModel<LevelSetType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
+SurfaceTensionForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceForcesImpl( element_ptrtype & F ) const
 {
     auto N = this->levelset()->N();
     auto K = this->levelset()->K();
