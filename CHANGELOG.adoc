@@ -1,6 +1,7 @@
 [[change-log]]
 = Change Log
 
+:toc:
 
 [[v0.104.0-2018-04-22]]
 == https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
