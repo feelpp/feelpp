@@ -1,10 +1,10 @@
 [[change-log]]
-Change Log
-----------
+= Change Log
+
 
 [[v0.104.0-2018-04-22]]
-https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
+
 
 https://github.com/feelpp/feelpp/compare/v0.103.2...v0.104.0[Full
 Changelog]
@@ -355,8 +355,8 @@ https://github.com/feelpp/feelpp/pull/997[#997]
 (https://github.com/prudhomm[prudhomm])
 
 [[v0.103.2-2017-05-21]]
-https://github.com/feelpp/feelpp/tree/v0.103.2[v0.103.2] (2017-05-21)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.103.2[v0.103.2] (2017-05-21)
+
 
 https://github.com/feelpp/feelpp/compare/v0.103.1...v0.103.2[Full
 Changelog]
@@ -367,6 +367,288 @@ Changelog]
 https://github.com/feelpp/feelpp/issues/903[#903]
 * Missing hpddm and others from source archive tarball
 https://github.com/feelpp/feelpp/issues/893[#893]
+
+[[v0.103.1-2017-05-18]]
+== https://github.com/feelpp/feelpp/tree/v0.103.1[v0.103.1] (2017-05-18)
+
+
+https://github.com/feelpp/feelpp/compare/v0.103.0...v0.103.1[Full
+Changelog]
+
+[[v0.103.0-2017-05-17]]
+== https://github.com/feelpp/feelpp/tree/v0.103.0[v0.103.0] (2017-05-17)
+
+
+https://github.com/feelpp/feelpp/compare/v0.102.0...v0.103.0[Full
+Changelog]
+
+*Closed issues:*
+
+* Support parallel adaptive meshing
+https://github.com/feelpp/feelpp/issues/898[#898]
+* Provide containerization tools for subprojects
+https://github.com/feelpp/feelpp/issues/896[#896]
+* rpath not properly handled on platform like linux
+https://github.com/feelpp/feelpp/issues/895[#895]
+* Support manual pages for applications
+https://github.com/feelpp/feelpp/issues/889[#889]
+* Installation process broken
+https://github.com/feelpp/feelpp/issues/887[#887]
+* Issue with Neumann BC in Toolbox:TE
+https://github.com/feelpp/feelpp/issues/886[#886]
+* Support intersection of entity sets
+https://github.com/feelpp/feelpp/issues/883[#883]
+* install-feelpp-lib can't finish because of mesh_partitioner
+https://github.com/feelpp/feelpp/issues/882[#882]
+* Building apps on top of feelmodels FTBS using feelpp-toolboxes docker
+images https://github.com/feelpp/feelpp/issues/881[#881]
+* Provide empty mesh shared and unique ptr construction
+https://github.com/feelpp/feelpp/issues/879[#879]
+* Support automated github release scripts
+https://github.com/feelpp/feelpp/issues/875[#875]
+* Add support for Advection-Diffusion-Reaction in quickstart
+https://github.com/feelpp/feelpp/issues/873[#873]
+* Move back Feel++ book into Feel++
+https://github.com/feelpp/feelpp/issues/853[#853]
+* Port Feel++ on Finis Terrae @ CESGA
+https://github.com/feelpp/feelpp/issues/852[#852]
+* Review and fix CRB codes
+https://github.com/feelpp/feelpp/issues/843[#843]
+* Support two element mesh in parallel (e.g 2 processors)
+https://github.com/feelpp/feelpp/issues/822[#822]
+* Installation Error https://github.com/feelpp/feelpp/issues/816[#816]
+* Support terminal colors
+https://github.com/feelpp/feelpp/issues/786[#786]
+* Support Altair development environment
+https://github.com/feelpp/feelpp/issues/776[#776]
+* Use Boost.Log instead of google/glog
+https://github.com/feelpp/feelpp/issues/732[#732]
+* Replace ordered containers by hashed container in geometric elements
+https://github.com/feelpp/feelpp/issues/723[#723]
+* Optimize interprocessfaces()
+https://github.com/feelpp/feelpp/issues/721[#721]
+* Provide a isInterProcess() property for faces
+https://github.com/feelpp/feelpp/issues/720[#720]
+* Support reading Acusim Raw Mesh formats
+https://github.com/feelpp/feelpp/issues/706[#706]
+* Fu convergence failure when reconstructing the preconditioner
+https://github.com/feelpp/feelpp/issues/628[#628]
+* Feel++ Travis Deployment
+https://github.com/feelpp/feelpp/issues/624[#624]
+* Support SIMPLE preconditioner in Operator Framework for Stokes and
+Navier-Stokes https://github.com/feelpp/feelpp/issues/496[#496]
+* Markers on submesh https://github.com/feelpp/feelpp/issues/402[#402]
+* Evaluate Precompiled Header support in Feel++
+https://github.com/feelpp/feelpp/issues/171[#171]
+
+*Merged pull requests:*
+
+* Feature/nlopt https://github.com/feelpp/feelpp/pull/897[#897]
+(https://github.com/vincentchabannes[vincentchabannes])
+* Feature/cmake dependencies
+https://github.com/feelpp/feelpp/pull/894[#894]
+(https://github.com/vincentchabannes[vincentchabannes])
+* Minor changes to cesga port in order to compile PETSc with MKL
+https://github.com/feelpp/feelpp/pull/891[#891]
+(https://github.com/victorsndvg[victorsndvg])
+* Feature/cmake dependencies
+https://github.com/feelpp/feelpp/pull/890[#890]
+(https://github.com/vincentchabannes[vincentchabannes])
+* Feature/cmake dependencies
+https://github.com/feelpp/feelpp/pull/888[#888]
+(https://github.com/vincentchabannes[vincentchabannes])
+* Feature/MeshStructured https://github.com/feelpp/feelpp/pull/865[#865]
+(https://github.com/LANTZT[LANTZT])
+
+[[v0.102.0-2017-04-08]]
+== https://github.com/feelpp/feelpp/tree/v0.102.0[v0.102.0] (2017-04-08)
+
+
+https://github.com/feelpp/feelpp/compare/v0.101.1...v0.102.0[Full
+Changelog]
+
+*Closed issues:*
+
+* CMake process fails from scratch at GINAC step
+https://github.com/feelpp/feelpp/issues/860[#860]
+* Support install rule in feelpp_add_application
+https://github.com/feelpp/feelpp/issues/842[#842]
+* Add project name in feelpp application
+https://github.com/feelpp/feelpp/issues/841[#841]
+* Reorganize models into toolboxes
+https://github.com/feelpp/feelpp/issues/839[#839]
+* Reduce quickstart to Laplacian and Stokes applications
+https://github.com/feelpp/feelpp/issues/837[#837]
+* Split mesh_partitioner files to reduce memory cost at compilation
+https://github.com/feelpp/feelpp/issues/835[#835]
+* Support staged compilation and installation
+https://github.com/feelpp/feelpp/issues/834[#834]
+* update Eigen3 https://github.com/feelpp/feelpp/issues/828[#828]
+* Improve interface to Gmsh mesh readers
+https://github.com/feelpp/feelpp/issues/826[#826]
+* Support nnz() member function in MatrixSparse class
+https://github.com/feelpp/feelpp/issues/821[#821]
+* FTBS on Debian/Testing with gcc 6.2.0
+https://github.com/feelpp/feelpp/issues/818[#818]
+* Support GSL https://github.com/feelpp/feelpp/issues/817[#817]
+* Bdf - Order > 1 https://github.com/feelpp/feelpp/issues/814[#814]
+* FTBS on Debian/Testing with gcc 6.1.1
+https://github.com/feelpp/feelpp/issues/812[#812]
+* Update eigen3 https://github.com/feelpp/feelpp/issues/809[#809]
+* Provide Boost hana support
+https://github.com/feelpp/feelpp/issues/808[#808]
+* Provide support for bi/linear forms on product of spaces
+https://github.com/feelpp/feelpp/issues/807[#807]
+* segfault with PtAP in sequential
+https://github.com/feelpp/feelpp/issues/806[#806]
+* Support mesh scaling to get proper dimension units
+https://github.com/feelpp/feelpp/issues/805[#805]
+* Support mesh for visualisation in MixedPoisson
+https://github.com/feelpp/feelpp/issues/804[#804]
+* Support boundary conditions defined in data file
+https://github.com/feelpp/feelpp/issues/803[#803]
+* Support loading a CSV file
+https://github.com/feelpp/feelpp/issues/802[#802]
+* CMake / CTest https://github.com/feelpp/feelpp/issues/801[#801]
+* Upgrade Eigen in feature/hdg
+https://github.com/feelpp/feelpp/issues/799[#799]
+* Improve expression Evaluator
+https://github.com/feelpp/feelpp/issues/797[#797]
+* Support boost 1.61 https://github.com/feelpp/feelpp/issues/794[#794]
+* Add support for ipopt
+https://github.com/feelpp/feelpp/issues/791[#791]
+* Minimal version of Feel++
+https://github.com/feelpp/feelpp/issues/790[#790]
+* move log files to result directory
+https://github.com/feelpp/feelpp/issues/787[#787]
+* Remove some files that are obsolete
+https://github.com/feelpp/feelpp/issues/773[#773]
+* Support visibility attributes
+https://github.com/feelpp/feelpp/issues/772[#772]
+* cleanup Ginac verbosity
+https://github.com/feelpp/feelpp/issues/771[#771]
+* Issue with petsc/ublas vector (probably copy) with petsc 3.7
+https://github.com/feelpp/feelpp/issues/770[#770]
+* Add support for libc++ in linux
+https://github.com/feelpp/feelpp/issues/767[#767]
+* Expose primal, dual and L2 preconditioners in CRBModel
+https://github.com/feelpp/feelpp/issues/766[#766]
+* Move physical marker management to MeshBase
+https://github.com/feelpp/feelpp/issues/765[#765]
+* Support automatic code reformatting according to Feel++ coding rules
+https://github.com/feelpp/feelpp/issues/763[#763]
+* Support elementswithmarkedfaces
+https://github.com/feelpp/feelpp/issues/762[#762]
+* CRB / PC https://github.com/feelpp/feelpp/issues/759[#759]
+* Support PETSc 3.7 https://github.com/feelpp/feelpp/issues/756[#756]
+* Bug in blockns preconditioner when vector is not ghosted
+https://github.com/feelpp/feelpp/issues/755[#755]
+* Provide the complement of a set of entities
+https://github.com/feelpp/feelpp/issues/754[#754]
+* Document and improve traits for functionspace and their elements
+https://github.com/feelpp/feelpp/issues/753[#753]
+* Support concatenation of entity sets
+https://github.com/feelpp/feelpp/issues/752[#752]
+* Bug in path of ensightgold scalar quantity file
+https://github.com/feelpp/feelpp/issues/751[#751]
+* Support add scalar quantity in Exporter interface
+https://github.com/feelpp/feelpp/issues/750[#750]
+* Support buildkite https://github.com/feelpp/feelpp/issues/748[#748]
+* brew install duplicated source
+https://github.com/feelpp/feelpp/issues/746[#746]
+* Supports Eigen::Tensor serialization
+https://github.com/feelpp/feelpp/issues/744[#744]
+* Fix FindPETSc on HomeBrew/MacosX
+https://github.com/feelpp/feelpp/issues/743[#743]
+* support for med format for mesh
+https://github.com/feelpp/feelpp/issues/735[#735]
+* Interpolate a dataset
+https://github.com/feelpp/feelpp/issues/733[#733]
+* Support for io streams in parallel
+https://github.com/feelpp/feelpp/issues/715[#715]
+* loadMesh behaviour when msh filename is wrong
+https://github.com/feelpp/feelpp/issues/668[#668]
+* Cmake installation with install-feelpp
+https://github.com/feelpp/feelpp/issues/662[#662]
+* Update gflags/glog support
+https://github.com/feelpp/feelpp/issues/642[#642]
+* Add support for external storage in FunctionSpace::Element
+https://github.com/feelpp/feelpp/issues/393[#393]
+* Support variable expansion in options
+https://github.com/feelpp/feelpp/issues/391[#391]
+* Move levelset core to feel++
+https://github.com/feelpp/feelpp/issues/390[#390]
+* FTBS applications/crb/heat1d with g++ 4.8.2
+https://github.com/feelpp/feelpp/issues/267[#267]
+
+*Merged pull requests:*
+
+* Feature/interpreter https://github.com/feelpp/feelpp/pull/872[#872]
+(https://github.com/gdolle[gdolle])
+* Feature/minor fixes from imft
+https://github.com/feelpp/feelpp/pull/871[#871]
+(https://github.com/Doyeux[Doyeux])
+* Feature/mesh memredux https://github.com/feelpp/feelpp/pull/851[#851]
+(https://github.com/vincentchabannes[vincentchabannes])
+* Feature/slepc mumps https://github.com/feelpp/feelpp/pull/848[#848]
+(https://github.com/romainhild[romainhild])
+* feature/meshStructured https://github.com/feelpp/feelpp/pull/847[#847]
+(https://github.com/LANTZT[LANTZT])
+* Feature/toolboxes https://github.com/feelpp/feelpp/pull/840[#840]
+(https://github.com/prudhomm[prudhomm])
+* Feature/fix install https://github.com/feelpp/feelpp/pull/838[#838]
+(https://github.com/prudhomm[prudhomm])
+* Feature/fix clang4 https://github.com/feelpp/feelpp/pull/836[#836]
+(https://github.com/prudhomm[prudhomm])
+* Feature/optimize mesh https://github.com/feelpp/feelpp/pull/832[#832]
+(https://github.com/prudhomm[prudhomm])
+* Feature/optimize https://github.com/feelpp/feelpp/pull/830[#830]
+(https://github.com/prudhomm[prudhomm])
+* Feature/eigen3 https://github.com/feelpp/feelpp/pull/829[#829]
+(https://github.com/prudhomm[prudhomm])
+* Feature/cmake gflags glog
+https://github.com/feelpp/feelpp/pull/825[#825]
+(https://github.com/prudhomm[prudhomm])
+* Add support for MESH and MED mesh format
+https://github.com/feelpp/feelpp/pull/824[#824]
+(https://github.com/Trophime[Trophime])
+* fixes #809 https://github.com/feelpp/feelpp/pull/810[#810]
+(https://github.com/prudhomm[prudhomm])
+* Feature/improve evaluator
+https://github.com/feelpp/feelpp/pull/798[#798]
+(https://github.com/prudhomm[prudhomm])
+* Feature/ls https://github.com/feelpp/feelpp/pull/796[#796]
+(https://github.com/prudhomm[prudhomm])
+* Feature/glog crbjson https://github.com/feelpp/feelpp/pull/795[#795]
+(https://github.com/prudhomm[prudhomm])
+* Implements Feature/minimal
+https://github.com/feelpp/feelpp/pull/792[#792]
+(https://github.com/prudhomm[prudhomm])
+* Simplifying some aspects of the runtime environment
+https://github.com/feelpp/feelpp/pull/788[#788]
+(https://github.com/prudhomm[prudhomm])
+* Feature/Holo3 https://github.com/feelpp/feelpp/pull/785[#785]
+(https://github.com/prudhomm[prudhomm])
+* Feature/visibility https://github.com/feelpp/feelpp/pull/783[#783]
+(https://github.com/prudhomm[prudhomm])
+* Feature/altair https://github.com/feelpp/feelpp/pull/777[#777]
+(https://github.com/prudhomm[prudhomm])
+* Feature/ls https://github.com/feelpp/feelpp/pull/774[#774]
+(https://github.com/prudhomm[prudhomm])
+* Feature/elements with marked faces
+https://github.com/feelpp/feelpp/pull/768[#768]
+(https://github.com/prudhomm[prudhomm])
+* Add HDF5 format for CRB database
+https://github.com/feelpp/feelpp/pull/758[#758]
+(https://github.com/aancel[aancel])
+* Feature/petsc37 https://github.com/feelpp/feelpp/pull/757[#757]
+(https://github.com/vhuber[vhuber])
+* Feature/interpolator https://github.com/feelpp/feelpp/pull/749[#749]
+(https://github.com/vhuber[vhuber])
+* Feature/crb clean https://github.com/feelpp/feelpp/pull/745[#745]
+(https://github.com/prudhomm[prudhomm])
+* Feature/hdg https://github.com/feelpp/feelpp/pull/712[#712]
+(https://github.com/prudhomm[prudhomm])
 
 * _This Change Log was automatically generated by
 https://github.com/skywinder/Github-Changelog-Generator[github_changelog_generator]_
