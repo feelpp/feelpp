@@ -530,7 +530,7 @@ if(FEELPP_ENABLE_PYTHON_WRAPPING)
 endif()
 
 # Then we try to find rest of the Boost components
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
@@ -1416,7 +1416,7 @@ set(FEELPP_BOOST_TEXT "
 set (Boost_MAJOR_VERSION \"${Boost_MAJOR_VERSION}\")
 set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
-foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
   string(TOUPPER ${_c} _BOOST_LIB)
   set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}

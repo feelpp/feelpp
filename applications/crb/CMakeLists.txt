@@ -63,6 +63,7 @@ OPTION(FEELPP_ENABLE_CRB_GEOHEATDIFFUSION "enable GeoHeatDiffusion testcases" ${
 OPTION(FEELPP_ENABLE_CRB_THERMALFIN "enable ThermalFin testcases" ${FEELPP_ENABLE_CRB_ALL})
 OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
 OPTION(FEELPP_ENABLE_CRB_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_CRB_ALL})
+OPTION(FEELPP_ENABLE_CRB_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_CRB_ALL})
 
 set(FEELPP_CRB_LIBRARIES)
 IF ( FEELPP_ENABLE_CRB_EADS )
@@ -143,13 +144,17 @@ IF ( FEELPP_ENABLE_CRB_CONVECTION )
   add_subdirectory(convection)
 ENDIF()
 
+IF ( FEELPP_ENABLE_CRB_STOKESDEIM )
+  add_subdirectory(stokesdeim)
+ENDIF()
+
 
 
 add_subdirectory(onlinerun)
 add_subdirectory(minimal)
 add_subdirectory(thermoelectric)
 add_subdirectory(biotsavart)
-add_subdirectory(grepldeim)
+
 
 
 include(${FEELPP_CRB_SOURCE_DIR}/cmake/feelpp.crb.cmake)

@@ -1,9 +1,9 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 ---
+###  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2012-05-23
+#  Author(s): JB WAHL <wahl.jb@gmail.com>
+#       Date: 26 Mar 2018
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,17 +21,14 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL testcrb )
-feelpp_add_test( eim NO_MPI_TEST )
-feelpp_add_test( eim_grepl TIMEOUT 90 NO_MPI_TEST )
-feelpp_add_test( eim_composite CFG test_eim_composite.cfg NO_MPI_TEST )
 
-feelpp_add_test( deim GEO test_deim.geo )
+crb_add_library( stokesdeim SRCS stokesdeim.cpp  EXEC CRB_LIB_STOKESDEIM )
+install(FILES stokesdeim.hpp DESTINATION include/feelpp/crb/stokesdeim COMPONENT Devel)
 
-feelpp_add_test( rbspace )
-feelpp_add_test( rbspacevector )
+set(FEELPP_CRB_STOKESDEIM_LIBRARIES ${CRB_LIB_STOKESDEIM} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_STKOKESDEIM_LIBRARIES PARENT_SCOPE)
 
-feelpp_add_test( db CFG test_db.cfg GEO test_db.geo CLI "-st_pc_factor_mat_solver_package mumps" )
+#crb_add_model(stokesdeim StokesDeim HDRS stokesdeim.hpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
+feelpp_add_application( stokesdeimapp SRCS stokesdeimapp.cpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
 
-feelpp_add_test( parameterspace )
-feelpp_add_test( reducedglobaldof )
+feelpp_add_testcase(stokesdeim PREFIX feelpp_crb CATEGORY CRB)

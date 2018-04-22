@@ -92,6 +92,7 @@ feelpp_add_test( space_on_range )
 
 feelpp_add_test( idelements)
 
+feelpp_add_test( twospacesmap )
+
 #! not functional yet
 # feelpp_add_test( element0D )
-
