@@ -238,7 +238,7 @@ std::string AlphaElectric::alphaPrime( parameter_type const& mu, ModelMaterial c
 }
 
 AlphaElectric::sparse_matrix_ptrtype
-AlphaElectric::assembleForMDEIM( parameter_type const& mu )
+AlphaElectric::assembleForMDEIM( parameter_type const& mu, int const& tag )
 {
     auto mesh = Xh->mesh();
     auto V = Xh->element();
@@ -297,7 +297,7 @@ AlphaElectric::assembleForMDEIM( parameter_type const& mu )
 }
 
 AlphaElectric::vector_ptrtype
-AlphaElectric::assembleForDEIM( parameter_type const& mu )
+AlphaElectric::assembleForDEIM( parameter_type const& mu, int const& tag )
 {
     auto mesh = Xh->mesh();
     auto phiV = Xh->element();
@@ -396,8 +396,8 @@ void AlphaElectric::initModel()
     this->decomposition();
 
     auto VFE = this->solve(M_mu);
-    auto A = this->assembleForMDEIM(M_mu);
-    auto F = this->assembleForDEIM(M_mu);
+    auto A = this->assembleForMDEIM(M_mu, 0 );
+    auto F = this->assembleForDEIM(M_mu, 0 );
 
     auto betaA = this->mdeim()->beta(M_mu);
     auto betaF = deim()->beta(M_mu);

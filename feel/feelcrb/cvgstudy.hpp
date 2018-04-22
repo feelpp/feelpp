@@ -31,8 +31,8 @@ public :
     CvgStudy()
     {
         crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
-        crb = boost::make_shared<crb_type>( crb_model->model()->modelName(),
-                                                        crb_model, crb::stage::offline);
+        crb = crb_type::New( crb_model->model()->modelName(),
+                             crb_model, crb::stage::offline);
         if( crb_model->hasEim() && crb_model->useSER() )
         {
             ser = boost::make_shared<ser_type>( crb, crb_model );
