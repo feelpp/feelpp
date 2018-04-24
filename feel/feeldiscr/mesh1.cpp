@@ -26,6 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
+#include <feel/feelconfig.h>
+
+
 #define FEELPP_MESH_IMPL_NOEXTERN 1
 #include <feel/feeldiscr/meshimpl.hpp>
 
