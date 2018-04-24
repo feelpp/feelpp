@@ -1294,5 +1294,5 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 }
 #endif
 
-#include <feel/feelalg/staticcondensation.cpp>
+
 
