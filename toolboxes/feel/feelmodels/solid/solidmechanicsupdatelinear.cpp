@@ -184,7 +184,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
         this->updateBCNeumannLinearPDE( F );
     }
     //---------------------------------------------------------------------------------------//
-
+#if 0
     if (this->markerNameFSI().size()>0)
     {
         // neumann boundary condition with normal stress (fsi boundary condition)
@@ -246,7 +246,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
 
         }
     }
-
+#endif
     //---------------------------------------------------------------------------------------//
 
     // robin condition (used in fsi blood flow as external tissue)
