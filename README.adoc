@@ -80,11 +80,7 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |===
 | Platform & Compiler | `master` | `develop`
 
-| Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-
-
-| Buildkite Ubuntu 16.10
+| Buildkite Ubuntu 16.04
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
@@ -107,6 +103,10 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 Here are the latest releases of {feelpp}
 
+* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
+ 
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
+ 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 
