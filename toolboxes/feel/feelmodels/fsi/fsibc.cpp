@@ -144,10 +144,12 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         }
         if ( buildNonCstPart )
         {
+            //M_fluidModel->meshALE()->revertReferenceMesh();
             linearForm +=
                 integrate( _range=rangeFSI,
                            _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
                            _geomap=this->geomap() );
+            //M_fluidModel->meshALE()->revertMovingMesh();
         }
         if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
              this->fsiCouplingBoundaryCondition() == "nitsche" )
@@ -185,6 +187,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
 
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
+                    //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
                                    _expr= -inner(idv(M_fluidModel->meshVelocity2()),vf::N())*id(p),
@@ -192,11 +195,13 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
                 {
+                    //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
                                    _expr= -inner(idv(M_fluidModel->meshVelocity2()),mysigma*vf::N()),
                                    _geomap=this->geomap() );
                 }
+                //M_fluidModel->meshALE()->revertMovingMesh();
             }
         }
     }
@@ -218,7 +223,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 }
                 else
                 {
-                    M_fluidModel->meshALE()->revertReferenceMesh();
+                    //M_fluidModel->meshALE()->revertReferenceMesh();
                     bilinearForm +=
                         integrate( _range=rangeFSI,
                                    _expr=M_fluidModel->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
@@ -243,14 +248,14 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 }
                 else
                 {
-                    M_fluidModel->meshALE()->revertReferenceMesh();
+                    //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
                                    _expr= -inner(idv(M_fluidModel->couplingFSI_RNG_evalForm1()),id(u)),
                                    _geomap=this->geomap() );
                 }
             }
-            M_fluidModel->meshALE()->revertMovingMesh();
+            //M_fluidModel->meshALE()->revertMovingMesh();
         }
         else // useInterfaceOperator
         {
@@ -590,16 +595,20 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
 #else
 
+#if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
         mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
-
+#endif
         bilinearForm +=
             integrate( _range=markedfaces(mesh,M_solidModel->markerNameFSI()),
                        _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(u))/hFace(),
                        _geomap=this->geomap() );
 
+#if 0
         auto dispInv = M_solidModel->fieldDisplacement().functionSpace()->element(-idv(M_solidModel->timeStepNewmark()->previousUnknown()));
         mymesh_mover.apply( mesh, dispInv );
+#endif
+
 #endif
     }
 
@@ -648,9 +657,10 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
         double gammaRobinFSI = M_couplingNitscheFamily_gamma;
         double muFluid = M_solidModel->muFluidFSI();
 
+#if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
         mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
-
+#endif
         if ( buildNonCstPart)
         {
             linearForm +=
@@ -666,9 +676,10 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
                            _expr= -gammaRobinFSI*muFluid*inner( robinFSIRhs,id(u) )/hFace(),
                            _geomap=this->geomap() );
         }
-
+#if 0
         auto dispInv = M_solidModel->fieldDisplacement().functionSpace()->element(-idv(M_solidModel->timeStepNewmark()->previousUnknown()));
         mymesh_mover.apply( mesh, dispInv );
+#endif
     } // robin-robin fsi
     this->log("FSI","updateResidual_Solid", "finish"+sc );
 
