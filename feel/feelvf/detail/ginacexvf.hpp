@@ -144,8 +144,17 @@ public:
      */
     //@{
 
-    this_type& operator=( this_type const& ) = default;
-    this_type& operator=( this_type && ) = default;
+    this_type& operator=( this_type const& t )
+    {
+        if ( this == &t )
+            return *this;
+        M_fun = t.M_fun;
+        M_expr = t.M_expr;
+        M_cfun = t.M_cfun;
+        M_exprDesc = t.M_exprDesc;
+        return *this;
+    }
+    //this_type& operator=( this_type && ) = default;
 
     //@}
 
