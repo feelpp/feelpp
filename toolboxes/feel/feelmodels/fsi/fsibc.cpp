@@ -582,7 +582,12 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
          this->fsiCouplingBoundaryCondition() == "nitsche" )
     {
         double gammaRobinFSI = M_couplingNitscheFamily_gamma;
-        double muFluid = M_solidModel->muFluidFSI();
+
+        CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+        std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+        auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
+        CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
+        double muFluid = dynamicViscosity.newtonian().value();
 
 #if 0
             MeshMover<mesh_type> mymesh_mover;
@@ -643,22 +648,15 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
-    double muFluid = M_solidModel->muFluidFSI();
-    if ( buildNonCstPart)
+
+    CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+    std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+    auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
+    CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
+    double muFluid = dynamicViscosity.newtonian().value();
+
+    if ( buildCstPart )
     {
-#if 0
-        // integrate on ref with variables change
-        auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
-        auto Ja = det(Fa);
-        auto Ba = inv(Fa);
-        auto variablechange = Ja*norm2( Ba*N() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                       _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
-                       _geomap=this->geomap() );
-
-#else
-
 #if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
         mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
@@ -671,8 +669,6 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
 #if 0
         auto dispInv = M_solidModel->fieldDisplacement().functionSpace()->element(-idv(M_solidModel->timeStepNewmark()->previousUnknown()));
         mymesh_mover.apply( mesh, dispInv );
-#endif
-
 #endif
     }
 
@@ -707,7 +703,7 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     auto rangeFSI = markedfaces(mesh,M_solidModel->markerNameFSI());
 
     // neumann boundary condition with normal stress (fsi boundary condition)
-    if ( buildCstPart_BoundaryParoiMobile )
+    if ( buildCstPart )
     {
         linearForm +=
             integrate( _range=rangeFSI,
@@ -719,20 +715,25 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
          this->fsiCouplingBoundaryCondition() == "nitsche" )
     {
         double gammaRobinFSI = M_couplingNitscheFamily_gamma;
-        double muFluid = M_solidModel->muFluidFSI();
+
+        CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+        std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+        auto const& dynamicViscosity = M_fluidModel->materialProperties()->dynamicViscosity(matName);
+        CHECK( dynamicViscosity.isNewtonianLaw() && dynamicViscosity.newtonian().isConstant() ) << "TODO";
+        double muFluid = dynamicViscosity.newtonian().value();
 
 #if 0
         MeshMover<typename solid_type::mesh_type> mymesh_mover;
         mymesh_mover.apply( mesh, M_solidModel->timeStepNewmark()->previousUnknown() );
 #endif
-        if ( buildNonCstPart)
+        if ( buildNonCstPart && !useJacobianLinearTerms )
         {
             linearForm +=
                 integrate( _range=rangeFSI,
                            _expr= gammaRobinFSI*muFluid*M_solidModel->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idv(u),id(u))/hFace(),
                            _geomap=this->geomap() );
         }
-        if ( buildNonCstPart )
+        if ( buildCstPart )
         {
             auto robinFSIRhs = idv(M_solidModel->timeStepNewmark()->polyFirstDeriv() ) + idv(M_solidModel->fieldVelocityInterfaceFromFluid());
             linearForm +=

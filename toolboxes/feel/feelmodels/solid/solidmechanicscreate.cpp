@@ -221,7 +221,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
-    M_gammaNitschFSI = 2500;
 
     M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )

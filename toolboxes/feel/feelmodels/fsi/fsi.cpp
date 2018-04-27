@@ -336,12 +336,6 @@ FSI<FluidType,SolidType>::init()
     // if ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
     //      this->fsiCouplingBoundaryCondition()=="nitsche" )
     //     M_solidModel->createAdditionalFunctionSpacesFSI();
-    // specific value for robin
-    M_solidModel->muFluidFSI( M_fluidModel->materialProperties()->cstMu() );
-    M_fluidModel->setCouplingFSI_Nitsche_gamma( M_couplingNitscheFamily_gamma );
-    M_solidModel->gammaNitschFSI( M_couplingNitscheFamily_gamma );
-    M_fluidModel->setCouplingFSI_Nitsche_gamma0( M_couplingNitscheFamily_gamma0 );
-    M_fluidModel->setCouplingFSI_Nitsche_alpha( M_couplingNitscheFamily_alpha );
 
     // save if reuse prec option at the begining
     M_reusePrecOptFluid = M_fluidModel->backend()->reusePrec();
@@ -355,8 +349,6 @@ FSI<FluidType,SolidType>::init()
     // M_fluidModel->init();
     // M_solidModel->init();
     this->updateTime( this->timeStepBase()->time() );
-    //-------------------------------------------------------------------------//
-    M_fluidModel->setCouplingFSI_solidIs1dReduced( M_solidModel->is1dReducedModel() );
     //-------------------------------------------------------------------------//
     // init interpolation tool
     M_interpolationFSI.reset(new interpolationFSI_type(M_fluidModel,M_solidModel));
