@@ -80,11 +80,7 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |===
 | Platform & Compiler | `master` | `develop`
 
-| Travis/Ubuntu & Clang >= 3.5 |  image:https://travis-ci.org/feelpp/feelpp.svg?branch=master["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-| image:https://travis-ci.org/feelpp/feelpp.svg?branch=develop["Build Status", link="https://travis-ci.org/feelpp/feelpp"]
-
-
-| Buildkite Ubuntu 16.10
+| Buildkite Ubuntu 16.04
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
