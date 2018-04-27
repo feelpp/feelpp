@@ -736,6 +736,9 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
+        this->interpolationTool()->transfertDisplacement();
+        M_fluidModel->updateALEmesh();
+
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
@@ -838,7 +841,7 @@ FSI<FluidType,SolidType>::solveImpl2()
         ++cptFSI;
     }
 
-    if (this->fsiCouplingType()=="Semi-Implicit")
+    if (false && this->fsiCouplingType()=="Semi-Implicit")
     {
         this->interpolationTool()->transfertDisplacement();
         M_fluidModel->updateALEmesh();
