@@ -1563,7 +1563,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
         for( rank_type p = 0 ; p<nProc_row ; ++p )
             localMeshRankToWorldCommFusion_image[p]=p;
-        std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize(),(int)true);
+        std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize(),boost::make_tuple((int)true,(int)true));
         worldcommFusionProperties.template get<0>() = localMeshRankToWorldCommFusion_domain;
         worldcommFusionProperties.template get<1>() = localMeshRankToWorldCommFusion_image;
         worldcommFusionProperties.template get<2>() = procActivitiesOnWorldCommFusion;
