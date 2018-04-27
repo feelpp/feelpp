@@ -103,6 +103,10 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 Here are the latest releases of {feelpp}
 
+* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
+ 
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
+ 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 
