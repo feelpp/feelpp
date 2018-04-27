@@ -521,19 +521,10 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    double couplingFSI_Nitsche_gamma() const { return M_couplingFSI_Nitsche_gamma; }
-    void setCouplingFSI_Nitsche_gamma(double d) { M_couplingFSI_Nitsche_gamma=d; }
-    double couplingFSI_Nitsche_gamma0() const { return M_couplingFSI_Nitsche_gamma0; }
-    void setCouplingFSI_Nitsche_gamma0(double d) { M_couplingFSI_Nitsche_gamma0=d; }
-    double couplingFSI_Nitsche_alpha() const { return M_couplingFSI_Nitsche_alpha; }
-    void setCouplingFSI_Nitsche_alpha(double d) { M_couplingFSI_Nitsche_alpha=d; }
-
     bool couplingFSI_RNG_useInterfaceOperator() const { return M_couplingFSI_RNG_useInterfaceOperator; }
     void setCouplingFSI_RNG_useInterfaceOperator(bool b) { M_couplingFSI_RNG_useInterfaceOperator=b; }
     vector_ptrtype const& couplingFSI_RNG_interfaceOperator() const { return M_couplingFSI_RNG_interfaceOperator; }
     void setCouplingFSI_RNG_interfaceOperator(vector_ptrtype const& op ) { M_couplingFSI_RNG_interfaceOperator=op; }
-    bool couplingFSI_solidIs1dReduced() const { return M_couplingFSI_solidIs1dReduced; }
-    void setCouplingFSI_solidIs1dReduced(bool b) { M_couplingFSI_solidIs1dReduced=b; }
     double couplingFSI_RNG_coeffForm2() const { return M_couplingFSI_RNG_coeffForm2; }
     void setCouplingFSI_RNG_coeffForm2(double d) { M_couplingFSI_RNG_coeffForm2=d; }
     element_meshvelocityonboundary_ptrtype const& couplingFSI_RNG_evalForm1() const { return M_couplingFSI_RNG_evalForm1; }
@@ -940,10 +931,8 @@ protected:
     double M_dirichletBCnitscheGamma;
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_couplingFSI_Nitsche_gamma,M_couplingFSI_Nitsche_gamma0, M_couplingFSI_Nitsche_alpha;
     bool M_couplingFSI_RNG_useInterfaceOperator;
     vector_ptrtype M_couplingFSI_RNG_interfaceOperator;
-    bool M_couplingFSI_solidIs1dReduced;
     double M_couplingFSI_RNG_coeffForm2;
     element_meshvelocityonboundary_ptrtype M_couplingFSI_RNG_evalForm1;
     boost::shared_ptr<typename space_fluid_velocity_type::element_type> M_couplingFSI_RNG_evalForm1Bis;

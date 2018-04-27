@@ -571,11 +571,6 @@ public :
     void updateSubMeshDispFSIFromPrevious();
 
     std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
-    double gammaNitschFSI() const { return M_gammaNitschFSI; }
-    void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
-    double muFluidFSI() const { return M_muFluidFSI; }
-    void muFluidFSI(double d) { M_muFluidFSI=d; }
-
 
     void updateNormalStressFromStruct();
     void updateStressCriterions();
@@ -780,8 +775,6 @@ protected:
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_gammaNitschFSI;
-    double M_muFluidFSI;
     boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json
