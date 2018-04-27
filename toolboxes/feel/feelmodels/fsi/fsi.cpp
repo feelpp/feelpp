@@ -525,6 +525,8 @@ FSI<FluidType,SolidType>::init()
     //                                                                               boost::ref( *this ), _1, _2 ) );
     if ( M_solidModel->isStandardModel() )
     {
+        M_solidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPDE_Solid,
+                                                                                  boost::ref( *this ), _1 ) );
         M_solidModel->algebraicFactory()->addFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Solid,
                                                                                     boost::ref( *this ), _1 ) );
         M_solidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Solid,

@@ -125,6 +125,7 @@ public :
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
     void updateResidual_Fluid( DataUpdateResidual & data ) const;
+    void updateLinearPDE_Solid( DataUpdateLinear & data ) const;
     void updateJacobian_Solid( DataUpdateJacobian & data ) const;
     void updateResidual_Solid( DataUpdateResidual & data ) const;
     //void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
