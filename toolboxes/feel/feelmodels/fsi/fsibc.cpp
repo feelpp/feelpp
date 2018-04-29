@@ -123,16 +123,6 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
 
     auto rangeFSI = markedfaces(mesh,M_fluidModel->markersNameMovingBoundary());
 
-    if ( buildNonCstPart )
-    {
-        // stress tensor (eval)
-        // auto defv = sym(gradv(uEval));
-        // auto Sigmav = -idv(pEval)*Id + 2*idv(mu)*defv;
-        linearForm +=
-            integrate( _range=rangeFSI,
-                       _expr= inner( sigmav*N(),id(u)),
-                       _geomap=this->geomap() );
-    }
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
@@ -148,6 +138,11 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         }
         if ( buildNonCstPart )
         {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= inner( sigmav*N(),id(u)),
+                           _geomap=this->geomap() );
+
             //M_fluidModel->meshALE()->revertReferenceMesh();
             linearForm +=
                 integrate( _range=rangeFSI,
@@ -213,11 +208,22 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
         //---------------------------------------------------------------------------//
     {
+        if ( buildNonCstPart )
+        {
+            M_fluidModel->meshALE()->revertReferenceMesh();
+            auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= inner( sigmaSolidN,id(u)),
+                           _geomap=this->geomap() );
+        }
+
         bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
         if ( !useInterfaceOperator )
         {
             if ( buildCstPart )
             {
+                M_fluidModel->meshALE()->revertReferenceMesh();
                 bilinearForm +=
                     integrate( _range=rangeFSI,
                                _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
@@ -225,6 +231,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             }
             if ( buildNonCstPart )
             {
+                M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
@@ -236,6 +243,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         {
             CHECK( false ) << "Not implemented";
         }
+        M_fluidModel->meshALE()->revertMovingMesh();
     }
 
     double timeElapsed = M_fluidModel->timerTool("Solve").stop();
@@ -330,10 +338,12 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
         {
             if ( buildCstPart )
             {
+                M_fluidModel->meshALE()->revertReferenceMesh();
                 bilinearForm +=
                     integrate( _range=rangeFSI,
                                _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
                                _geomap=this->geomap() );
+                M_fluidModel->meshALE()->revertMovingMesh();
             }
         }
         else // useInterfaceOperator
@@ -386,14 +396,6 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     auto sigmavPrevious = Feel::vf::FeelModels::fluidMecNewtonianStressTensor<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName,true);
     auto muExpr = Feel::vf::FeelModels::fluidMecViscosity<2*fluid_type::nOrderVelocity>(uPrevious,pPrevious,*M_fluidModel->materialProperties(),matName);
 
-    if ( buildNonCstPart )
-    {
-        linearForm +=
-            integrate( _range=rangeFSI,
-                       _expr= -inner( sigmavPrevious*N(),id(u)),
-                       _geomap=this->geomap() );
-    }
-
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
@@ -409,6 +411,10 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
 
         if ( buildCstPart )
         {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= -inner( sigmavPrevious*N(),id(u)),
+                           _geomap=this->geomap() );
             linearForm +=
                 integrate( _range=rangeFSI,
                            _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
@@ -467,11 +473,22 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
+        if ( buildCstPart )
+        {
+            M_fluidModel->meshALE()->revertReferenceMesh();
+            auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= -inner( sigmaSolidN,id(u)),
+                           _geomap=this->geomap() );
+        }
+
         bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
         if ( !useInterfaceOperator )
         {
             if ( buildNonCstPart && !useJacobianLinearTerms )
             {
+                M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr=this->couplingRNG_coeffForm2()*inner(idv(u),id(u)),
@@ -479,6 +496,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
             }
             if ( buildCstPart )
             {
+                M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
                                _expr= inner(idv(this->couplingRNG_evalForm1()),id(u)),
@@ -489,6 +507,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
         {
             CHECK(false) << "Not implemented";
         }
+        M_fluidModel->meshALE()->revertMovingMesh();
     }
 
     this->log("FSI","updateResidual_Fluid", "finish"+sc );
