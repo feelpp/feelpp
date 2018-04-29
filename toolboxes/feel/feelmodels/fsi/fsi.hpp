@@ -33,10 +33,9 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 
-#include <feel/feelmodels/fsi/interpolationfsi.hpp>
 #include <feel/feelmodels/fsi/aitkenrelaxationfsi.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelts/tsbase.hpp>
+//#include <feel/feelts/tsbase.hpp>
 
 namespace Feel
 {
@@ -55,8 +54,122 @@ public :
     typedef boost::shared_ptr<fluid_type> fluid_ptrtype;
     typedef boost::shared_ptr<solid_type> solid_ptrtype;
 
-    typedef InterpolationFSI<fluid_type,solid_type> interpolationFSI_type;
-    typedef boost::shared_ptr<interpolationFSI_type> interpolationFSI_ptrtype;
+    typedef typename fluid_type::mesh_type mesh_fluid_type;
+    typedef typename solid_type::mesh_type mesh_solid_type;
+    typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
+
+    typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
+    typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
+    typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    //typedef InterpolationFSI<fluid_type,solid_type> interpolationFSI_type;
+    //typedef boost::shared_ptr<interpolationFSI_type> interpolationFSI_ptrtype;
+        // space and element displacement with interaction 2d/2d or 3d/3d
+    typedef typename fluid_type::mesh_ale_type::ale_map_functionspace_type space_fluid_disp_type;
+    typedef typename fluid_type::mesh_ale_type::ale_map_element_type element_fluid_disp_type;
+
+    typedef typename solid_type::space_displacement_type space_struct_disp_type;
+    typedef typename solid_type::element_displacement_type element_struct_disp_type;
+
+    //operator interpolation for this displacement
+    typedef OperatorInterpolation<space_struct_disp_type, space_fluid_disp_type,
+                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_disp_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dnonconf_disp_type> op_interpolation2dTo2dnonconf_disp_ptrtype;
+    typedef OperatorInterpolation<space_struct_disp_type, space_fluid_disp_type,
+                                  range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_disp_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dconf_disp_type> op_interpolation2dTo2dconf_disp_ptrtype;
+
+    //-----------------------------------------------------------------------------------//
+    // space and element velocity with interaction 2d/2d or 3d/3d
+    typedef typename fluid_type::element_meshvelocityonboundary_type::functionspace_type space_fluid_velocity_type;
+    typedef typename fluid_type::element_meshvelocityonboundary_type element_fluid_velocity_type;
+
+    typedef typename solid_type::space_displacement_type space_struct_velocity_type;
+    typedef typename solid_type::element_vectorial_type element_struct_velocity_type;
+
+    //operator interpolation for this velocity
+    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocity_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dnonconf_velocity_type> op_interpolation2dTo2dnonconf_velocity_ptrtype;
+    typedef OperatorInterpolation<space_struct_velocity_type, space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dconf_velocity_type> op_interpolation2dTo2dconf_velocity_ptrtype;
+    
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocityBis_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dnonconf_velocityBis_type> op_interpolation2dTo2dnonconf_velocityBis_ptrtype;
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+                                  range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocityBis_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dconf_velocityBis_type> op_interpolation2dTo2dconf_velocityBis_ptrtype;
+    
+    //-----------------------------------------------------------------------------------//
+    // space and element displacement with interaction 2d/1d (disp is scalar)
+    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_disp_1dreduced_type;
+    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_disp_1dreduced_type;
+
+    //operator interpolation for this displacement
+    typedef OperatorInterpolation<space_struct_vect_disp_1dreduced_type, space_fluid_disp_type,
+                                  range_fluid_face_type,InterpolationNonConforme> op_interpolation1dToNdnonconf_disp_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdnonconf_disp_type> op_interpolation1dToNdnonconf_disp_ptrtype;
+    typedef OperatorInterpolation<space_struct_vect_disp_1dreduced_type, space_fluid_disp_type,
+                                  range_fluid_face_type,InterpolationConforme> op_interpolation1dToNdconf_disp_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdconf_disp_type> op_interpolation1dToNdconf_disp_ptrtype;
+
+    //-----------------------------------------------------------------------------------//
+    // space and element velocity with interaction 2d/1d (velocity is scalar)
+    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_velocity_1dreduced_type;
+    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_velocity_1dreduced_type;
+
+    //operator interpolation for this velocity
+    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_velocity_type,
+                                  range_fluid_face_type, InterpolationNonConforme> op_interpolation1dToNdnonconf_velocity_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdnonconf_velocity_type> op_interpolation1dToNdnonconf_velocity_ptrtype;
+    typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_velocity_type,
+                                  range_fluid_face_type, InterpolationConforme> op_interpolation1dToNdconf_velocity_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdconf_velocity_type> op_interpolation1dToNdconf_velocity_ptrtype;
+
+    //-----------------------------------------------------------------------------------//
+    // space and element stress with interaction 2d/2d or 3d/3d
+    typedef typename fluid_type::space_stress_type space_fluid_stress_type;
+    typedef typename fluid_type::element_stress_type element_fluid_stress_type;
+
+    typedef typename solid_type::space_normal_stress_type space_struct_stress_type;
+    typedef typename solid_type::element_normal_stress_type element_struct_stress_type;
+
+    //operator interpolation for this stress
+    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_type,
+                                  range_solid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_stress_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dnonconf_stress_type> op_interpolation2dTo2dnonconf_stress_ptrtype;
+    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_type,
+                                  range_solid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_stress_type;
+    typedef boost::shared_ptr<op_interpolation2dTo2dconf_stress_type> op_interpolation2dTo2dconf_stress_ptrtype;
+
+    // NEW ( robin-neumann)
+    typedef OperatorInterpolation<space_struct_stress_type, space_fluid_stress_type,
+                                  range_fluid_face_type,InterpolationConforme> op_s2f_interpolation2dTo2dconf_stress_type;
+    typedef boost::shared_ptr<op_s2f_interpolation2dTo2dconf_stress_type> op_s2f_interpolation2dTo2dconf_stress_ptrtype;
+
+    //typedef typename fluid_type::space_fluid_velocity_type space_fluid_velocity_type;
+    typedef OperatorInterpolation<typename fluid_type::space_fluid_velocity_type/*space_fluid_velocity_type*/,space_struct_velocity_type,
+                                  range_solid_face_type,InterpolationConforme> op_f2s_interpolation2dTo2dconf_velocity_type;
+    typedef boost::shared_ptr<op_f2s_interpolation2dTo2dconf_velocity_type> op_f2s_interpolation2dTo2dconf_velocity_ptrtype;
+
+    //-----------------------------------------------------------------------------------//
+    // space and element stress with interaction 2d/1d
+    typedef typename solid_type::space_stress_vect_1dreduced_type space_struct_stress_vect_1dreduced_type;
+    typedef typename solid_type::element_stress_vect_1dreduced_type element_struct_stress_vect_1dreduced_type;
+    //operator interpolation for this stress
+    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_vect_1dreduced_type,
+                                  range_solid_elt_1dreduced_type,InterpolationNonConforme> op_interpolation1dToNdnonconf_stress_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdnonconf_stress_type> op_interpolation1dToNdnonconf_stress_ptrtype;
+    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_vect_1dreduced_type,
+                                  range_solid_elt_1dreduced_type,InterpolationConforme> op_interpolation1dToNdconf_stress_type;
+    typedef boost::shared_ptr<op_interpolation1dToNdconf_stress_type> op_interpolation1dToNdconf_stress_ptrtype;
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
 
     typedef AitkenRelaxationFSI<solid_type> aitkenrelaxationFSI_type;
     typedef boost::shared_ptr<aitkenrelaxationFSI_type> aitkenrelaxationFSI_ptrtype;
@@ -90,8 +203,8 @@ public :
     int fixPointMaxIt() const { return M_fixPointMaxIt; }
     int fixPointMinItConvergence() const { return M_fixPointMinItConvergence; }
 
-    interpolationFSI_ptrtype interpolationTool() { return M_interpolationFSI; }
-    interpolationFSI_ptrtype const& interpolationTool() const { return M_interpolationFSI; }
+    //interpolationFSI_ptrtype interpolationTool() { return M_interpolationFSI; }
+    //interpolationFSI_ptrtype const& interpolationTool() const { return M_interpolationFSI; }
     aitkenrelaxationFSI_ptrtype aitkenRelaxTool() { return M_aitkenFSI; }
     aitkenrelaxationFSI_ptrtype const& aitkenRelaxTool() const { return M_aitkenFSI; }
 
@@ -104,7 +217,29 @@ public :
     void createMesh();
     void init();
     void solve();
+private :
+    void initInterpolation();
+    void initDispInterpolation();
+    void initDisp1dToNdInterpolation();
+    void initStressInterpolation();
+    void initStress1dToNdInterpolation();
+    void initVelocityInterpolation();
+    void initVelocity1dToNdInterpolation();
+    void initVelocityInterpolationF2S();
+    void initStressInterpolationS2F();
 
+    void transfertDisplacement();
+    void transfertStress();
+    void transfertVelocity( bool useExtrap=false);
+    void transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling = 1 );
+
+    void transfertStressS2F();
+    void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
+
+    double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
+    typename fluid_type::element_meshvelocityonboundary_ptrtype const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
+
+public :
     //---------------------------------------------------------------------------------------------------------//
 
     void updateTime(double time);
@@ -157,7 +292,7 @@ private :
     double M_fixPointTolerance, M_fixPointInitialTheta, M_fixPointMinTheta;
     int M_fixPointMaxIt, M_fixPointMinItConvergence;
 
-    interpolationFSI_ptrtype M_interpolationFSI;
+    //interpolationFSI_ptrtype M_interpolationFSI;
     aitkenrelaxationFSI_ptrtype M_aitkenFSI;
     fixpointconvergenceFSI_ptrtype M_fixPointConvergenceFSI;
 
@@ -170,6 +305,36 @@ private :
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
     double M_couplingRNG_manualScaling;
     bool M_couplingRNG_useInterfaceOperator;
+
+    double M_couplingRNG_coeffForm2;
+    typename fluid_type::element_meshvelocityonboundary_ptrtype M_couplingRNG_evalForm1;
+
+
+    op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;
+    op_interpolation2dTo2dconf_disp_ptrtype M_opDisp2dTo2dconf;
+
+    op_interpolation2dTo2dconf_stress_ptrtype M_opStress2dTo2dconf;
+    op_interpolation2dTo2dnonconf_stress_ptrtype M_opStress2dTo2dnonconf;
+
+    op_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconf;
+    op_interpolation2dTo2dnonconf_velocity_ptrtype M_opVelocity2dTo2dnonconf;
+
+    op_interpolation2dTo2dconf_velocityBis_ptrtype M_opVelocityBis2dTo2dconf;
+    op_interpolation2dTo2dnonconf_velocityBis_ptrtype M_opVelocityBis2dTo2dnonconf;
+
+    // 1d reduced model
+    op_interpolation1dToNdnonconf_disp_ptrtype M_opDisp1dToNdnonconf;
+    op_interpolation1dToNdconf_disp_ptrtype M_opDisp1dToNdconf;
+
+    op_interpolation1dToNdnonconf_stress_ptrtype M_opStress1dToNdnonconf;
+    op_interpolation1dToNdconf_stress_ptrtype M_opStress1dToNdconf;
+
+    op_interpolation1dToNdnonconf_velocity_ptrtype M_opVelocity1dToNdnonconf;
+    op_interpolation1dToNdconf_velocity_ptrtype M_opVelocity1dToNdconf;
+
+    op_s2f_interpolation2dTo2dconf_stress_ptrtype M_opStress2dTo2dconfS2F;
+
+    op_f2s_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconfF2S;
 
 };
 

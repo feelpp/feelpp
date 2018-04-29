@@ -152,7 +152,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     // fsi options
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
-    M_couplingFSI_RNG_useInterfaceOperator = false;
 
     //--------------------------------------------------------------//
     // start solver options
