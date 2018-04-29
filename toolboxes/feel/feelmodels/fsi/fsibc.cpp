@@ -218,68 +218,23 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         {
             if ( buildCstPart )
             {
-                if ( M_fluidModel->couplingFSI_RNG_matrix() )
-                {
-                    A->addMatrix( M_fluidModel->couplingFSI_RNG_coeffForm2(), M_fluidModel->couplingFSI_RNG_matrix() );
-                }
-                else
-                {
-                    //M_fluidModel->meshALE()->revertReferenceMesh();
-                    bilinearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr=M_fluidModel->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
-                                   _geomap=this->geomap() );
-                }
+                bilinearForm +=
+                    integrate( _range=rangeFSI,
+                               _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
+                               _geomap=this->geomap() );
             }
             if ( buildNonCstPart )
             {
-                if ( M_fluidModel->couplingFSI_RNG_matrix() )
-                {
-#if 0
-                    auto tempVec = M_backend->newVector( F->mapPtr() );
-                    auto spaceEvalForm1 = this->couplingFSI_RNG_evalForm1()->functionSpace();
-                    auto eltEvalForm1 = spaceEvalForm1->element( tempVec,rowStartInVector );
-                    eltEvalForm1.on(_range=rangeFSI,
-                                    _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
-                    sync( eltEvalForm1, "=", M_dofsVelocityInterfaceOnMovingBoundary);
-                    F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
-#else
-                    CHECK( false ) << "TODO";
-#endif
-                }
-                else
-                {
-                    //M_fluidModel->meshALE()->revertReferenceMesh();
-                    linearForm +=
-                        integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(M_fluidModel->couplingFSI_RNG_evalForm1()),id(u)),
-                                   _geomap=this->geomap() );
-                }
+                linearForm +=
+                    integrate( _range=rangeFSI,
+                               _expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
+                               _geomap=this->geomap() );
+
             }
-            //M_fluidModel->meshALE()->revertMovingMesh();
         }
         else // useInterfaceOperator
         {
-#if 0
-            if ( BuildNonCstPart_robinFSI )
-            {
-                //std::cout << "fluid assembly : use operator ---1----\n";
-                //A->updateBlockMat();
-                //A->addMatrix(1.0, matBCFSI );
-                CHECK( this->couplingFSI_RNG_matrix() ) << "couplingFSI_RNG_matrix not build";
-                auto matBCFSI=this->couplingFSI_RNG_matrix();
-                A->addMatrix(1.0, matBCFSI );
-                //A->addMatrix(1.0, this->couplingFSI_RNG_matrix() );
-                //std::cout << "fluid assembly : use operator finish\n";
-            }
-
-            if ( BuildNonCstPart )
-            {
-                this->couplingFSI_RNG_updateLinearPDE( F );
-            }
-#else
-            CHECK( false ) << "TODO";
-#endif
+            CHECK( false ) << "Not implemented";
         }
     }
 
@@ -375,17 +330,15 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
         {
             if ( buildCstPart )
             {
-                //M_fluidModel->meshALE()->revertReferenceMesh();
                 bilinearForm +=
                     integrate( _range=rangeFSI,
-                               _expr=M_fluidModel->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
+                               _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
                                _geomap=this->geomap() );
-                //M_fluidModel->meshALE()->revertMovingMesh();
             }
         }
         else // useInterfaceOperator
         {
-            CHECK( false ) << "TODO";
+            CHECK( false ) << "Not implemented";
         }
     }
 
@@ -519,27 +472,22 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
         {
             if ( buildNonCstPart && !useJacobianLinearTerms )
             {
-                //M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr=M_fluidModel->couplingFSI_RNG_coeffForm2()*inner(idv(u),id(u)),
+                               _expr=this->couplingRNG_coeffForm2()*inner(idv(u),id(u)),
                                _geomap=this->geomap() );
             }
-
-            // todo cst in implicit non cst in semi-implicit
             if ( buildCstPart )
             {
-                //M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= inner(idv(M_fluidModel->couplingFSI_RNG_evalForm1()),id(u)),
+                               _expr= inner(idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
             }
-            //M_fluidModel->meshALE()->revertMovingMesh();
         }
         else // useInterfaceOperator
         {
-            CHECK(false) << "TODO";
+            CHECK(false) << "Not implemented";
         }
     }
 

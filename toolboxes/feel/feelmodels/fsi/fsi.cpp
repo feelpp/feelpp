@@ -351,7 +351,7 @@ FSI<FluidType,SolidType>::init()
     this->updateTime( this->timeStepBase()->time() );
     //-------------------------------------------------------------------------//
     // init interpolation tool
-    M_interpolationFSI.reset(new interpolationFSI_type(M_fluidModel,M_solidModel));
+    this->initInterpolation();
     //-------------------------------------------------------------------------//
     // init aitken relaxation tool
     std::string aitkenType = "method1";
@@ -370,8 +370,7 @@ FSI<FluidType,SolidType>::init()
     // build interface operator for generalized robin-neumann
     if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        auto fieldInit = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
-        M_fluidModel->setCouplingFSI_RNG_evalForm1( fieldInit );
+        M_couplingRNG_evalForm1 = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
     }
     if ( M_solidModel->is1dReducedModel() )
         M_couplingRNG_useInterfaceOperator = false;
@@ -379,16 +378,14 @@ FSI<FluidType,SolidType>::init()
     {
         if ( !M_couplingRNG_useInterfaceOperator )
         {
-            M_fluidModel->setCouplingFSI_RNG_useInterfaceOperator( false );
-            if ( boption(_name="coupling-robin-neumann-generalized.without-interface-operator.precompute-mass-matrix",_prefix=this->prefix() ) )
-                M_fluidModel->couplingFSI_RNG_updateForUse();
         }
         else if ( M_solidModel->isStandardModel() && M_couplingRNG_useInterfaceOperator )
     {
+#if 0
         auto fieldInitBis = M_fluidModel->functionSpaceVelocity()->elementPtr();
         M_fluidModel->setCouplingFSI_RNG_evalForm1Bis( fieldInitBis );
 
-#if 1
+
         auto spaceDisp = M_solidModel->functionSpaceDisplacement();
         auto const& uDisp = M_solidModel->fieldDisplacement();
         auto mygraph = stencil(_test=spaceDisp,_trial=spaceDisp)->graph();
@@ -498,11 +495,10 @@ FSI<FluidType,SolidType>::init()
 
         }
         vecDiag->close();
-#endif
-
 
         M_interpolationFSI->setRobinNeumannInterfaceOperator( vecDiag );
         M_interpolationFSI->transfertRobinNeumannInterfaceOperatorS2F();
+#endif
     }
     } // if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     //-------------------------------------------------------------------------//
@@ -625,7 +621,7 @@ FSI<FluidType,SolidType>::solveImpl1()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->interpolationTool()->transfertDisplacement();
+        this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
@@ -662,14 +658,14 @@ FSI<FluidType,SolidType>::solveImpl1()
         timerCur.restart();
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->interpolationTool()->transfertDisplacement();
+            this->transfertDisplacement();
             M_fluidModel->updateALEmesh();
             double tALE = timerCur.elapsed();
             this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
         }
         else  if (this->fsiCouplingType()=="Semi-Implicit")
         {
-            this->interpolationTool()->transfertVelocity();
+            this->transfertVelocity();
             double tALE = timerCur.elapsed();
             this->log("FSI","transfert velocity","finish in "+(boost::format("%1% s") % tALE).str());
         }
@@ -680,7 +676,7 @@ FSI<FluidType,SolidType>::solveImpl1()
         // revert ref mesh
         //M_fluidModel->meshALE()->revertReferenceMesh();
         // transfert stress
-        this->interpolationTool()->transfertStress();
+        this->transfertStress();
         // revert moving mesh
         //M_fluidModel->meshALE()->revertMovingMesh();
         double t3 = timerCur.elapsed();
@@ -708,7 +704,7 @@ FSI<FluidType,SolidType>::solveImpl1()
         {
             M_fluidModel->setRebuildLinearPartInJacobian(false);M_fluidModel->setRebuildCstPartInLinearSystem(false);
             M_solidModel->setRebuildLinearPartInJacobian(false);M_solidModel->setRebuildCstPartInLinearSystem(false);
-            M_fluidModel->setRebuildCstPartInResidual(false);M_solidModel->setRebuildCstPartInResidual(false);
+            //M_fluidModel->setRebuildCstPartInResidual(false);M_solidModel->setRebuildCstPartInResidual(false);
         }
         //--------------------------------------------------------------//
         double timeElapsedIter = timerIter.elapsed();
@@ -730,7 +726,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->interpolationTool()->transfertDisplacement();
+        this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
@@ -761,7 +757,7 @@ FSI<FluidType,SolidType>::solveImpl2()
         {
             //M_fluidModel->meshALE()->revertReferenceMesh();
             // transfert stress
-            this->interpolationTool()->transfertStress();
+            this->transfertStress();
             // revert moving mesh
             //M_fluidModel->meshALE()->revertMovingMesh();
             if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
@@ -769,7 +765,7 @@ FSI<FluidType,SolidType>::solveImpl2()
                  M_solidModel->isStandardModel() )
             {
                 bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
-                this->interpolationTool()->transfertVelocityF2S(cptFSI,useExtrap);
+                this->transfertVelocityF2S(cptFSI,useExtrap);
             }
             M_solidModel->solve();
             M_solidModel->updateVelocity();
@@ -792,12 +788,12 @@ FSI<FluidType,SolidType>::solveImpl2()
         //--------------------------------------------------------------//
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->interpolationTool()->transfertDisplacement();
+            this->transfertDisplacement();
             M_fluidModel->updateALEmesh();
         }
         else
         {
-            this->interpolationTool()->transfertVelocity();
+            this->transfertVelocity();
         }
         M_fluidModel->solve();
         //--------------------------------------------------------------//
@@ -837,7 +833,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (false && this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->interpolationTool()->transfertDisplacement();
+        this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
     }
 
@@ -852,7 +848,7 @@ FSI<FluidType,SolidType>::solveImpl3()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->interpolationTool()->transfertDisplacement();
+        this->transfertDisplacement();
         M_fluidModel->updateALEmesh();
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
@@ -884,21 +880,21 @@ FSI<FluidType,SolidType>::solveImpl3()
         //--------------------------------------------------------------//
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->interpolationTool()->transfertDisplacement();
+            this->transfertDisplacement();
             M_fluidModel->updateALEmesh();
         }
         else
         {
             //bool useExtrap = (this->fluidModel()->timeStepBDF()->iteration() > 1) && cptFSI==0;
-            //this->interpolationTool()->transfertVelocity(useExtrap);
+            //this->transfertVelocity(useExtrap);
         }
-        this->interpolationTool()->transfertRobinNeumannGeneralizedS2F( cptFSI, manualScalingRNG );
+        this->transfertRobinNeumannGeneralizedS2F( cptFSI, manualScalingRNG );
         M_fluidModel->solve();
 
         //--------------------------------------------------------------//
         //M_fluidModel->meshALE()->revertReferenceMesh();
         // transfert stress
-        this->interpolationTool()->transfertStress();
+        this->transfertStress();
         // revert moving mesh
         //M_fluidModel->meshALE()->revertMovingMesh();
         M_solidModel->solve();
