@@ -36,6 +36,8 @@ namespace pt =  boost::property_tree;
 
 //! Merge property tree pb into pa recursively.
 //! Extend mathematical operation.
+//! Note: property_tree does not support boolean operation currently 
+//! (union, intersection, ...)
 inline void ptMerge( pt::ptree& pa, const pt::ptree& pb )                                                                                                                                                    
 {                                                                                                                                                                                              
     for( const auto& b: pb )                                                                                                                                                                   

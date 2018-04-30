@@ -28,7 +28,7 @@ namespace Observer
 {
 
 // Init static variables.
-std::string JournalManager::M_journal_filename = "journal.json";
+std::string JournalManager::M_journal_filename = "journal";
 pt::ptree JournalManager::M_journal_ptree;
 
 } // Observer namespace

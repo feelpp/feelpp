@@ -25,6 +25,7 @@
 
 #include <boost/signals2.hpp>
 #include <boost/any.hpp>
+#include <feel/feelcore/feelassert.hpp>
 #include <feel/feelevent/slothandler.hpp>
 
 namespace Feel
@@ -139,7 +140,9 @@ public:
     signal( const std::string& name )
     {
         using RetType = const SignalHandler::sig_shared_ptr_type< SlotType, Args... >&;
-        return boost::any_cast< RetType >( M_sigs[name] );
+        RetType sig = boost::any_cast< RetType >( M_sigs.at(name) );
+        CHECK( sig != nullptr ) << "Bad signal allocation 'journalManager'";
+        return sig;
     }
 
     //! Get a static signal by name.
@@ -151,7 +154,9 @@ public:
     signalStatic( const std::string& name )
     {
         using RetType = const SignalHandler::sig_shared_ptr_type< SlotType, Args... >&;
-        return boost::any_cast< RetType >( S_sigs[name] );
+        RetType sig = boost::any_cast< RetType >( S_sigs.at(name) );
+        CHECK( sig != nullptr ) << "Bad signal allocation 'journalManager'";
+        return  sig;
     }
 
     //! Get a signal by name.
