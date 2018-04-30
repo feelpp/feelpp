@@ -35,11 +35,16 @@
 #include <boost/accumulators/statistics/count.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
+#include <boost/accumulators/statistics/sum.hpp>
 #include <boost/accumulators/statistics/min.hpp>
 #include <boost/accumulators/statistics/max.hpp>
 #include <boost/algorithm/string/trim_all.hpp>
+
+#include <feel/feelobserver/journalwatcher.hpp>
+
 namespace Feel {
 
+//! TimerData is the value for the TimerTable map.
 class TimerData : public std::vector<double>
 {
   public:
@@ -50,12 +55,35 @@ class TimerData : public std::vector<double>
     std::string name;
     int level;
 };
-class TimerTable : std::map<std::string, TimerData>
+
+//! TimerTable is a map of timer.
+class TimerTable : std::map<std::string, TimerData>,
+    public Observer::JournalWatcher
 {
 public:
-    TimerTable() = default;
-    ~TimerTable() = default;
-    
+
+    //! Constructors
+    //! @{
+
+    //! Default constructor
+    TimerTable()
+    { 
+        this->journalConnect();
+    };
+
+
+    //! @}
+
+    //! Destructor
+    ~TimerTable()
+    {
+        this->journalDisconnect();
+    }
+
+    //! Modifiers
+    //! @{
+
+    //! Add a timer for the given message
     void add( std::string const& msg, std::pair<double,int> const&  t )
         {
             if ( msg.empty() ) return;
@@ -73,6 +101,14 @@ public:
                 M_max_len = (m>M_max_len)?m:M_max_len;
             }
         }
+
+    //! @}
+
+    //! Methods
+    //! @{
+
+    //! Save the timers.
+    //! If display is true, the timers are printed on the standard output.
     void save( bool display ) 
         {
             std::ostringstream os;
@@ -96,16 +132,16 @@ public:
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
-                double tot = sum(acc);
+                double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( 2*T.second.level ) << " "
                    << std::setw( M_max_len -  2*T.second.level ) <<std::left << T.first << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "\n";
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
             }
             os << "--------------------------------------------------------------------------------\n";
             os << std::setw( M_max_len ) <<std::left << "Timer" << " " 
@@ -127,22 +163,22 @@ public:
                 os << std::setw( 2*T.second.level ) << " "
                    << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.name << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "\n";
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
 
                 std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.name, "_", boost::is_any_of(":")), "_" );
                 
                 try {
                     Environment::summary().put( "application.timers."s+n+".name", T.second.name );
                     Environment::summary().put( "application.timers."s+n+".count", boost::accumulators::count(acc) );
-                    Environment::summary().put( "application.timers."s+n+".total", sum(acc) );
-                    Environment::summary().put( "application.timers."s+n+".max", max(acc) );
-                    Environment::summary().put( "application.timers."s+n+".min", min(acc) );
-                    Environment::summary().put( "application.timers."s+n+".mean", mean(acc) );
-                    Environment::summary().put( "application.timers."s+n+".stddev", sqrt(variance(acc)) );
+                    Environment::summary().put( "application.timers."s+n+".total", boost::accumulators::sum(acc) );
+                    Environment::summary().put( "application.timers."s+n+".max", boost::accumulators::max(acc) );
+                    Environment::summary().put( "application.timers."s+n+".min", boost::accumulators::min(acc) );
+                    Environment::summary().put( "application.timers."s+n+".mean", boost::accumulators::mean(acc) );
+                    Environment::summary().put( "application.timers."s+n+".stddev", std::sqrt(boost::accumulators::variance(acc)) );
                 }
                 catch( pt::ptree_bad_data d )
                 {
@@ -155,6 +191,10 @@ public:
                 if ( Environment::isMasterRank() )
                     std::cout << os.str() << std::endl;
         }
+
+    //! Save timers in markdown format.
+    //! \param os output stream
+    //! \see save
     void saveMD( std::ostream & os ) 
         {
             using namespace boost::accumulators;
@@ -177,15 +217,15 @@ public:
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
-                double tot = sum(acc);
+                double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( M_max_len ) << std::left       << "|" << T.first << " | " 
                    << std::setw(7)           << std::right      << boost::accumulators::count(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "|\n";
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " | "
+                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "|\n";
             }
             os << "\n";
             os << std::setw( M_max_len ) << std::left  << "|Timer" << " " 
@@ -207,21 +247,79 @@ public:
 
                 os << std::setw( M_max_len ) <<std::left << "|" << T.second.name << " | " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sum(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << max(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << min(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << mean(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << sqrt(variance(acc)) << "|\n";
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " | "
+                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "|\n";
             }
             os << "\n";
             os << std::resetiosflags(os.flags());
         }
 
+    void test()
+    {}
+
+        //! Journal notification.
+        //! \see JournalWatcher
+    const pt::ptree journalNotify() const override
+    {
+        using namespace boost::accumulators;
+        using namespace std::string_literals;
+        pt::ptree p;
+        std::map<double,TimerData, std::greater<double>> sortTotal;
+
+        const std::string category_name = "timers";
+
+        // Get total time accumulating all timers.
+        for( auto const& T: *this )
+        {
+            accumulator_set<double, stats<boost::accumulators::tag::count,
+                                          boost::accumulators::tag::mean,
+                                          boost::accumulators::tag::variance,
+                                          boost::accumulators::tag::min,
+                                          boost::accumulators::tag::max> > acc;
+            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+            double tot = boost::accumulators::sum(acc);
+            sortTotal[tot] = T.second;
+
+            const std::string timer_name = T.first;
+            const std::string prefix = category_name + "." + timer_name;
+
+            p.put( prefix + ".count", boost::accumulators::count(acc) );
+            p.put( prefix + ".total", boost::accumulators::sum(acc) );
+            p.put( prefix + ".max", boost::accumulators::max(acc) );
+            p.put( prefix + ".min", boost::accumulators::min(acc) );
+            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
+            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+        }
+
+        for( auto const& T: sortTotal )
+        {
+            accumulator_set<double, stats<boost::accumulators::tag::count,
+                                          boost::accumulators::tag::mean,
+                                          boost::accumulators::tag::variance,
+                                          boost::accumulators::tag::min,
+                                          boost::accumulators::tag::max> > acc;
+            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+
+            const std::string timer_name = T.second.name;
+            const std::string prefix = category_name + "." + timer_name;
+
+            p.put( prefix + ".count", boost::accumulators::count(acc) );
+            p.put( prefix + ".total", boost::accumulators::sum(acc) );
+            p.put( prefix + ".max", boost::accumulators::max(acc) );
+            p.put( prefix + ".min", boost::accumulators::min(acc) );
+            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
+            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+        }
+
+        return p;
+    }
+
 private:
     size_type M_max_len = 0;
 };
 
-
-
-}
+} // Feel namespace.
 #endif
