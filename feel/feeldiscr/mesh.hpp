@@ -1686,10 +1686,6 @@ private:
     boost::shared_ptr<Localization<self_type>> M_tool_localization;
 
 };
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nDim;
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
