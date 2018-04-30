@@ -674,6 +674,9 @@ public:
      */
     static MemoryUsage logMemoryUsage( std::string const& message );
 
+    //! Return the timerstable pointer.
+    static boost::shared_ptr<TimerTable> timers();
+
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
@@ -684,6 +687,7 @@ public:
      */
     static void saveTimers( bool save );
     static void saveTimersMD( std::ostream & os );
+    static const pt::ptree notifyTimers();
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -862,8 +866,7 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
-
-    static TimerTable S_timers;
+    static boost::shared_ptr<TimerTable> S_timers;
 
 #if defined(FEELPP_HAS_MONGOCXX )
     static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;

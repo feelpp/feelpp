@@ -460,6 +460,8 @@ Environment::Environment( int argc, char** argv,
     S_desc = boost::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
+    S_timers = boost::make_shared<TimerTable>();
+
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
     // otherwise we will have duplicated options
     std::vector<boost::shared_ptr<po::option_description>> opts = Environment::optionsDescriptionApplication().options();
@@ -2306,24 +2308,37 @@ Environment::expand( std::string const& expr )
     return res;
 }
 
+boost::shared_ptr<TimerTable>
+Environment::timers()
+{
+    return S_timers;
+}
+
 void
 Environment::addTimer( std::string const& msg, std::pair<double,int> const& t )
 {
-    S_timers.add( msg, t );
+    S_timers->add( msg, t );
 }
 
 void
 Environment::saveTimers( bool display )
 {
     //S_timers.save( Environment::about().appName(), display );
-    S_timers.save( display );
+    S_timers->save( display );
 }
 
 void
 Environment::saveTimersMD( std::ostream &os )
 {
     //S_timers.save( Environment::about().appName(), display );
-    S_timers.saveMD( os );
+    S_timers->saveMD( os );
+}
+
+// TODO Remove
+const pt::ptree
+Environment::notifyTimers()
+{
+    return S_timers->journalNotify();
 }
 
 int Environment::S_argc = 0;
@@ -2361,7 +2376,7 @@ std::vector<std::string> Environment::olAutoloadFiles;
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
-TimerTable Environment::S_timers;
+boost::shared_ptr<TimerTable> Environment::S_timers;
 
 #if defined(FEELPP_HAS_MONGOCXX )
 std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
