@@ -30,6 +30,13 @@
 #include <feel/feelevent/events.hpp>
 #include <feel/feelobserver/functors/journalmerge.hpp>
 
+#if defined(FEELPP_HAS_MONGOCXX )
+#include <bsoncxx/json.hpp>
+#include <mongocxx/client.hpp>
+#include <mongocxx/stdx.hpp>
+#include <mongocxx/uri.hpp>
+#endif
+
 #define FEELPP_DB_JOURNAL_VERSION "0.1.0"
 
 namespace Feel
@@ -51,8 +58,9 @@ class JournalManager
         //! @{
 
         //! Default constructor
-        //! This constructor create a new signal waiting for simulation info
-        //! watcher object to connect.
+        //! This constructor create a new signal waiting for called
+        //! 'journalManager'. journalWatcher object connect a specific slot to this
+        //! signal.
         //! \see JournalWatcher
         JournalManager()
         {
@@ -87,25 +95,40 @@ class JournalManager
         {
             //std::cout << "[Observer: Journal] Pull watcher information.";
             const pt::ptree& pt_merged = signalStaticPull< notify_type (), JournalMerge >( "journalManager" );
-            for( const auto& it : pt_merged )
-                M_journal_ptree.put_child( it.first, it.second );
+//            for( const auto& it : pt_merged )
+//                M_journal_ptree.put_child( it.first, it.second );
+            ptMerge( M_journal_ptree, pt_merged );
             return M_journal_ptree;
         }
 
         //! Save the simulation info global property tree into a json file.
         static void
-        journalSave( const std::string& filename = "journal.json" )
+        journalSave( const std::string& filename = "journal" )
         {
             std::string fname = M_journal_filename;
-            if( filename != "journal.json" )
+            if( filename != "journal" )
                 fname = filename;
 
             //std::cout << "[Observer: Journal] generate report (JSON).";
             if( not M_journal_ptree.empty() )
-                write_json( fname, M_journal_ptree );
+                write_json( fname + ".json", M_journal_ptree );
         }
 
         //! @}
+
+    private:
+        static void
+        journalDBsave()
+        {
+#if defined(FEELPP_HAS_MONGOCXX )
+            using bsoncxx::builder::stream::close_array;
+            using bsoncxx::builder::stream::close_document;
+            using bsoncxx::builder::stream::document;
+            using bsoncxx::builder::stream::finalize;
+            using bsoncxx::builder::stream::open_array;
+            using bsoncxx::builder::stream::open_document;
+#endif
+        }
 
     private:
         //! JSON filename.

@@ -65,6 +65,13 @@ public:
             journalConnect();
     }
 
+    //! Default destructor.
+    virtual ~JournalWatcher()
+    {
+        if( M_journal_autoconnect )
+            journalDisconnect();
+    }
+
     //! @}
 
     //! Setters

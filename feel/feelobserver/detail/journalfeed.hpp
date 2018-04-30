@@ -76,7 +76,7 @@ public:
     }
 
     //! Add a watcher notification.
-    const pt::ptree journalNotify() const                                                                                                                                                  
+    const pt::ptree journalNotify() const override
     {
         return M_p;
     };
