@@ -39,16 +39,17 @@
 namespace Feel
 {
 using time_point = std::chrono::high_resolution_clock::time_point;
+using seconds_t = double;
+using microseconds_t = double;
+using time_quantum_t = uint64_type;
+using cycles_t = Feel::uint64_type;
+
 namespace details
 {
-typedef Feel::uint64_type  cycles_t;
+microseconds_t to_microseconds( time_quantum_t const t );
+    
+time_point now();
 
-inline time_point    now()
-{
-    return std::chrono::high_resolution_clock::now();
-}
-
-//inline cycles_t read_cycles();
 } // details
 } // Feel
 

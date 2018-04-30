@@ -7,8 +7,8 @@ FMU::FMU( std::string prefix ) :
     M_prefix( prefix ),
     M_verbose( boption(_name="fmu.verbose", _prefix=M_prefix) ),
     M_callbacks( new callbacks_type ),
-    M_option_tinit( doption( _name="fmu.time-initial", _prefix=M_prefix ) ),
-    M_option_tfinal( doption( _name="fmu.time-final", _prefix=M_prefix ) )
+    M_tinit( doption( _name="fmu.time-initial", _prefix=M_prefix ) ),
+    M_tfinal( doption( _name="fmu.time-final", _prefix=M_prefix ) )
 {
     M_callbacks->malloc = malloc;
     M_callbacks->calloc = calloc;
@@ -81,10 +81,6 @@ int FMU::load( std::string _path )
 
 void FMU::simulate( double t_init, double t_final, double tolerance )
 {
-    if ( t_init<0 )
-        t_init = M_option_tinit;
-    if ( t_init<0 )
-        t_final = M_option_tfinal;
     this->initialize( t_init, t_final, tolerance );
     M_solver->simulate();
 }
@@ -93,14 +89,20 @@ void FMU::initialize( double t_init, double t_final, double tolerance )
 {
     if ( !M_solver )
         initSolver();
-    if ( t_init==-1 )
-        t_init = M_model->defaultStartTime();
-    if ( t_final==-1 )
-        t_final = M_model->defaultFinalTime();
+    if ( t_init>=0 )
+        M_tinit = t_init;
+    else if ( M_tinit<0 )
+        M_tinit = M_model->defaultStartTime();
+
+    if ( t_final>0 )
+        M_tfinal = t_final;
+    else if ( M_tfinal<0 )
+        M_tfinal = M_model->defaultFinalTime();
+
     if ( tolerance==-1 )
         tolerance = M_model->defaultTolerance();
 
-    M_solver->initialize( t_init, t_final, tolerance );
+    M_solver->initialize( M_tinit, M_tfinal, tolerance );
 }
 
 void FMU::doSteps( double t_stop )

@@ -877,7 +877,7 @@ private:
 };
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT po::variable_value ), option, tag,
+    ( po::variable_value ), option, tag,
     ( required
       ( name,( std::string ) ) )
     ( optional
@@ -891,7 +891,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT double ),
+    ( double ),
     doption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -917,7 +917,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT bool ),
+    ( bool ),
     boption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -943,7 +943,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT int ),
+    ( int ),
     ioption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -970,7 +970,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::string ),
+    ( std::string ),
     soption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -996,7 +996,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::vector<std::string> ),
+    ( std::vector<std::string> ),
     vsoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -1022,7 +1022,7 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT std::vector<double> ),
+    ( std::vector<double> ),
     vdoption, tag,
     ( required
       ( name,( std::string ) ) )
@@ -1066,7 +1066,7 @@ struct FEELPP_EXPORT option
 //! @endcond
 
 BOOST_PARAMETER_FUNCTION(
-    ( FEELPP_EXPORT typename Feel::detail::option<Args>::type ),
+    ( typename Feel::detail::option<Args>::type ),
     optionT, tag,
     ( required
       ( name,( std::string ) )

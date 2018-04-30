@@ -177,7 +177,7 @@ endif(APPLE)
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic  -ftemplate-depth-256 -Wno-inline" )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-256 -Wno-inline" )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "Default flags" FORCE)
   #SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -fPIC -fsanitize=address -fno-omit-frame-pointer" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -fPIC -fno-omit-frame-pointer" CACHE STRING "Debug flags" FORCE)
