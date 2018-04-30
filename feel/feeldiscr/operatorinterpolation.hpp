@@ -1339,8 +1339,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // usefull data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
-    typename domain_mesh_type::Localization::container_search_iterator_type itanal,itanal_end;
-    typename domain_mesh_type::Localization::container_output_iterator_type itL,itL_end;
+    typename Localization<domain_mesh_type>::container_search_iterator_type itanal,itanal_end;
+    typename Localization<domain_mesh_type>::container_output_iterator_type itL,itL_end;
     matrix_node_type MlocEval( domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1 );
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false );
@@ -1563,7 +1563,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
         for( rank_type p = 0 ; p<nProc_row ; ++p )
             localMeshRankToWorldCommFusion_image[p]=p;
-        std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize(),(int)true);
+        std::vector<boost::tuple<int,int> > procActivitiesOnWorldCommFusion(this->worldCommFusion().globalSize(),boost::make_tuple((int)true,(int)true));
         worldcommFusionProperties.template get<0>() = localMeshRankToWorldCommFusion_domain;
         worldcommFusionProperties.template get<1>() = localMeshRankToWorldCommFusion_image;
         worldcommFusionProperties.template get<2>() = procActivitiesOnWorldCommFusion;
