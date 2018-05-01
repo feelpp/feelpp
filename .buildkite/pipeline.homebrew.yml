@@ -1,0 +1,28 @@
+ steps:
+ - name: ':mac: :beer: feelpp'
+   command: "brew reinstall -v --HEAD feelpp"
+   agents:
+     osx: true
+   env:
+     HOMEBREW_MAKE_JOBS: 8
+ - wait
+ - name: ':mac: :beer: feelpp-base'
+   command: "brew reinstall -v --HEAD feelpp-base"
+   agents:
+     osx: true
+   env:
+     HOMEBREW_MAKE_JOBS: 8
+ # - wait
+ # - name: ':mac: :beer: feelpp-toolboxes'
+ #   command: "brew install -v --HEAD feelpp-toolboxes"
+ #   agents:
+ #     osx: true
+ #   env:
+ #     HOMEBREW_MAKE_JOBS: 8
+ # - wait
+ # - name: ':mac: :beer: feelpp-crb'
+ #   command: "brew install -v --HEAD feelpp-crb"
+ #   agents:
+ #     osx: true
+ #   env:
+ #     HOMEBREW_MAKE_JOBS: 8
