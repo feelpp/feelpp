@@ -1479,6 +1479,30 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
 
 }
 
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
+{
+    CHECK ( this->isStandardModel() ) << "only compute when isStandardModel";
+    auto Vh = this->functionSpaceDisplacement();
+    auto const& u = this->fieldDisplacement();
+    auto mesh = Vh->mesh();
+    // mass matrix of Vh
+    auto massMatrix = this->backend()->newMatrix(_test=Vh,_trial=Vh);
+    form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
+        integrate(_range=elements(mesh),
+                  _expr=inner(idt(u),id(u)) );
+    massMatrix->close();
+    // mass matrix lumped of Vh
+    auto vecDiagMassLumped = this->backend()->newVector(Vh);
+    auto unityVec = this->backend()->newVector(Vh);
+    unityVec->setConstant(1);
+    massMatrix->multVector( unityVec,vecDiagMassLumped );
+    M_massMatrixLumped = this->backend()->newMatrix(_test=Vh,_trial=Vh);
+    M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+}
+
 } // FeelModels
 
 

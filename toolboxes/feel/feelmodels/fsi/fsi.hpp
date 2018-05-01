@@ -218,6 +218,8 @@ public :
     void init();
     void solve();
 private :
+    void initCouplingRobinNeumannGeneralized();
+
     void initInterpolation();
     void initDispInterpolation();
     void initDisp1dToNdInterpolation();
@@ -239,6 +241,18 @@ private :
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
     typename fluid_type::element_meshvelocityonboundary_ptrtype const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
+    auto
+    couplingRNG_operatorExpr( mpl::int_<2> /**/ ) const
+        {
+            return mat<2,2>(idv(M_coulingRNG_operatorDiagonalOnFluid)(0),cst(0.),cst(0.),idv(M_coulingRNG_operatorDiagonalOnFluid)(1));
+        }
+    auto
+    couplingRNG_operatorExpr( mpl::int_<3> /**/ ) const
+        {
+            return mat<3,3>(idv(M_coulingRNG_operatorDiagonalOnFluid)(0),cst(0.),cst(0.),
+                            cst(0.),idv(M_coulingRNG_operatorDiagonalOnFluid)(1),cst(0.),
+                            cst(0.),cst(0.),idv(M_coulingRNG_operatorDiagonalOnFluid)(2) );
+        }
 public :
     //---------------------------------------------------------------------------------------------------------//
 
@@ -308,6 +322,7 @@ private :
 
     double M_couplingRNG_coeffForm2;
     typename fluid_type::element_meshvelocityonboundary_ptrtype M_couplingRNG_evalForm1;
+    typename fluid_type::element_meshvelocityonboundary_ptrtype M_coulingRNG_operatorDiagonalOnFluid;
 
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;

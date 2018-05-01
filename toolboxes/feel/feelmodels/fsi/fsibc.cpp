@@ -221,12 +221,14 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
         if ( !useInterfaceOperator )
         {
+            auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildCstPart )
             {
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 bilinearForm +=
                     integrate( _range=rangeFSI,
-                               _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
+                               //_expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
+                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idt(u),id(u)),
                                _geomap=this->geomap() );
             }
             if ( buildNonCstPart )
@@ -234,7 +236,8 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
+                               //_expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
+                               _expr= -inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
 
             }
@@ -338,10 +341,11 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
         {
             if ( buildCstPart )
             {
+                auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 bilinearForm +=
                     integrate( _range=rangeFSI,
-                               _expr=this->couplingRNG_coeffForm2()*inner(idt(u),id(u)),
+                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idt(u),id(u)),
                                _geomap=this->geomap() );
                 M_fluidModel->meshALE()->revertMovingMesh();
             }
@@ -486,12 +490,13 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
         bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
         if ( !useInterfaceOperator )
         {
+            auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildNonCstPart && !useJacobianLinearTerms )
             {
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr=this->couplingRNG_coeffForm2()*inner(idv(u),id(u)),
+                               _expr=this->couplingRNG_coeffForm2()*inner(myB*idv(u),id(u)),
                                _geomap=this->geomap() );
             }
             if ( buildCstPart )
@@ -499,7 +504,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                 M_fluidModel->meshALE()->revertReferenceMesh();
                 linearForm +=
                     integrate( _range=rangeFSI,
-                               _expr= inner(idv(this->couplingRNG_evalForm1()),id(u)),
+                               _expr= inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
             }
         }

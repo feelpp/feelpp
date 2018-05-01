@@ -146,10 +146,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     // discretisation acceleration term
     if (BuildCstPart && !this->isStationary())
     {
+#if 0
         bilinearForm_PatternDefault +=
             integrate( _range=elements(mesh),
                        _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
                        _geomap=this->geomap() );
+#else
+        J->close();
+        double thecoeff = M_timeStepNewmark->polyDerivCoefficient()*this->mechanicalProperties()->cstRho();
+        J->addMatrix( thecoeff, this->massMatrixLumped() );
+#endif
     }
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
