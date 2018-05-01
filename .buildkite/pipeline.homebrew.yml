@@ -5,13 +5,13 @@
      osx: true
    env:
      HOMEBREW_MAKE_JOBS: 8
- - wait
- - name: ':mac: :beer: feelpp-base'
-   command: "brew reinstall -v --HEAD feelpp-base"
-   agents:
-     osx: true
-   env:
-     HOMEBREW_MAKE_JOBS: 8
+ # - wait
+ # - name: ':mac: :beer: feelpp-base'
+ #   command: "brew reinstall -v --HEAD feelpp-base"
+ #   agents:
+ #     osx: true
+ #   env:
+ #     HOMEBREW_MAKE_JOBS: 8
  # - wait
  # - name: ':mac: :beer: feelpp-toolboxes'
  #   command: "brew install -v --HEAD feelpp-toolboxes"
