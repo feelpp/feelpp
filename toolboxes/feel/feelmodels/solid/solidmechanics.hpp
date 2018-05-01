@@ -515,6 +515,9 @@ public :
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
 
+    void updateMassMatrixLumped();
+    sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
+
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
     //-----------------------------------------------------------------------------------//
@@ -700,6 +703,8 @@ protected:
     BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+
+    sparse_matrix_ptrtype M_massMatrixLumped;
 
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;

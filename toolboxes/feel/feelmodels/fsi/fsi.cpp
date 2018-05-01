@@ -376,6 +376,9 @@ FSI<FluidType,SolidType>::init()
         M_couplingRNG_useInterfaceOperator = false;
     if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
+        this->initCouplingRobinNeumannGeneralized();
+
+
         if ( !M_couplingRNG_useInterfaceOperator )
         {
         }
@@ -524,6 +527,95 @@ FSI<FluidType,SolidType>::init()
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
+{
+    if ( M_solidModel->isStandardModel() )
+    {
+        auto Vh = this->solidModel()->functionSpaceDisplacement();
+        auto mesh = Vh->mesh();
+
+        if ( !this->solidModel()->massMatrixLumped() )
+            this->solidModel()->updateMassMatrixLumped();
+        auto massMatrixLumped = this->solidModel()->massMatrixLumped();
+
+        //--------------------------------------------------------
+        auto rangeFSI = markedfaces(mesh,this->solidModel()->markerNameFSI());
+        double areaFSI = measure(_range=rangeFSI);
+
+        std::set<size_type> dofsIdOnFSI;
+        for ( auto const& faceWrap : rangeFSI )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = Vh->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                dofsIdOnFSI.insert( it->index() );
+        }
+
+        auto vecDiagMassLumped2 = this->solidModel()->backend()->newVector(Vh);
+        massMatrixLumped->diagonal(vecDiagMassLumped2);
+
+        auto vecDiagMassLumpedRestrictedFSI = Vh->element();
+        auto markedDofsOnFSI = Vh->element();
+        for ( size_type k : dofsIdOnFSI )
+        {
+            vecDiagMassLumpedRestrictedFSI.set( k, vecDiagMassLumped2->operator()(k) );
+            markedDofsOnFSI.set( k, 1. );
+        }
+        sync( vecDiagMassLumpedRestrictedFSI, "=", dofsIdOnFSI );
+        sync( markedDofsOnFSI, "=", dofsIdOnFSI );
+
+        size_type countActiveDofOnFSILocal = 0;
+        for ( size_type k=0;k<Vh->nLocalDofWithGhost();++k )
+        {
+            if ( markedDofsOnFSI(k) > 0.5 && !Vh->dof()->dofGlobalProcessIsGhost( k ) )
+                ++countActiveDofOnFSILocal;
+        }
+        size_type countActiveDofOnFSI = countActiveDofOnFSILocal;
+        if ( this->solidModel()->worldComm().size() > 1 )
+            mpi::all_reduce( this->solidModel()->worldComm(), countActiveDofOnFSILocal, countActiveDofOnFSI, std::plus<size_type>() );
+
+        M_coulingRNG_operatorDiagonalOnFluid = this->fluidModel()->meshVelocity2().functionSpace()->elementPtr();
+
+        bool useOperatorProportionalToIdentity = false;
+        if ( useOperatorProportionalToIdentity )
+        {
+            // alternative version (less accurate) :  compute a scalar c in order to define operator B = c*Id_{fsi}
+            double sumDiagMassLumpedRestrictedFSI = vecDiagMassLumpedRestrictedFSI.sum();
+            double myscalingbc = sumDiagMassLumpedRestrictedFSI/(Vh->nComponents*areaFSI);
+            //M_couplingRNG_manualScaling = myscalingbc;
+            for ( size_type k : dofsIdOnFSI )
+                vecDiagMassLumpedRestrictedFSI.set( k,myscalingbc );
+            sync( vecDiagMassLumpedRestrictedFSI, "=", dofsIdOnFSI );
+        }
+        else
+        {
+            // diagonal entries of the operator B
+            vecDiagMassLumpedRestrictedFSI.scale( countActiveDofOnFSI/(Vh->nComponents*areaFSI) );
+        }
+
+        M_opVelocity2dTo2dconf->apply( vecDiagMassLumpedRestrictedFSI, *M_coulingRNG_operatorDiagonalOnFluid );
+        M_couplingRNG_manualScaling = 1;
+    }
+    else if ( this->solidModel()->is1dReducedModel() )
+    {
+        auto VhFluid = this->fluidModel()->meshVelocity2().functionSpace();
+        M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
+        auto rangeFSIFluid = markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
+        std::set<size_type> dofsIdOnFSIFluid;
+        for ( auto const& faceWrap : rangeFSIFluid )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            auto facedof = VhFluid->dof()->faceLocalDof( face.id() );
+            for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
+                dofsIdOnFSIFluid.insert( it->index() );
+        }
+        M_coulingRNG_operatorDiagonalOnFluid->on(_range=rangeFSIFluid,_expr=one());
+        sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", dofsIdOnFSIFluid );
+    }
+}
 
 template< class FluidType, class SolidType >
 void
@@ -853,9 +945,14 @@ FSI<FluidType,SolidType>::solveImpl3()
 
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
-        M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
+        //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
     }
 
+#if 0
+    // predictor disp : WARNING explicit is instable
+    M_solidModel->predictorDispl();
+    M_solidModel->updateVelocity();
+#endif
     double manualScalingRNG = M_couplingRNG_manualScaling;
 
     bool useAitken = boption(_name="coupling-robin-neumann-generalized.use-aitken",_prefix=this->prefix());
