@@ -77,6 +77,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #if defined(FEELPP_HAS_VTK)
+#include <feel/feelcore/disablewarnings.hpp>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPoints.h>
@@ -87,6 +88,7 @@
 #include <vtkHexahedron.h>
 #include <vtkFloatArray.h>
 #include <vtkCellData.h>
+#include <feel/feelcore/reenablewarnings.hpp>
 #endif
 
 namespace Feel
@@ -1686,11 +1688,6 @@ private:
 };
 
 template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nDim;
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nOrder;
-
-template<typename Shape, typename T, int Tag>
 template<typename RangeT>
 typename Mesh<Shape, T, Tag>::template trace_mesh<Tag>::ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
@@ -2643,10 +2640,10 @@ constexpr int realdim( boost::shared_ptr<MeshType> m,
 } // Feel
 
 
-//! #if !defined(FEELPP_INSTANTIATION_MODE)
+//#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
 
-//! #endif //
+//#endif 
 
 
 #endif /* FEELPP_MESH_HPP */

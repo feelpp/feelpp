@@ -80,9 +80,21 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |===
 | Platform & Compiler | `master` | `develop`
 
-| Buildkite Ubuntu 16.04
+| Buildkite Ubuntu 16.04 clang4
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+
+| Buildkite Ubuntu 16.04 clang5
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang5"]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang5"]
+
+| Buildkite Ubuntu 16.04 clang6
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang6"]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang6"]
+
+| Buildkite MacOsX Homebrew
+| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=master[link=https://buildkite.com/feelpp/feelpp-homebrew]
+| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=develop[link=https://buildkite.com/feelpp/feelpp-homebrew]
 
 |===
 
@@ -103,10 +115,13 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 Here are the latest releases of {feelpp}
 
+* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.2[v0.104.0-beta.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1239039.svg["DOI",link="https://doi.org/10.5281/zenodo.1239039"]
+
+
 * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
- 
+
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
- 
+
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 

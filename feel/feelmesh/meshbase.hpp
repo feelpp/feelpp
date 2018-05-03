@@ -33,8 +33,10 @@
 #include <unordered_map>
 
 #if defined(FEELPP_HAS_VTK)
+#include <feel/feelcore/disablewarnings.hpp>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
+#include <feel/feelcore/reenablewarnings.hpp>
 #endif
 
 namespace Feel

@@ -39,6 +39,8 @@ class MeshSupportBase
 {
 public :
 
+    virtual ~MeshSupportBase() {}
+    
     virtual bool isFullSupport() const = 0;
     virtual bool isPartialSupport() const = 0;
 

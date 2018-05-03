@@ -528,11 +528,16 @@ Newmark<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
-    //int iterTranslate = M_iteration;// + 1;
-    //bool doSave= iterTranslate % this->saveFreq()==0;
-    //if ( !doSaveIteration(i) ) return;
-    if ( this->iteration() % this->saveFreq()>0 ) return;
-    //if (!doSave) return;
+    bool doSave=false;
+    int sizePreviousDisp = M_previousUnknown.size();
+    for ( uint8_type i = 0; i < sizePreviousDisp && !doSave; ++i )
+    {
+        int iterTranslate = this->iteration() + sizePreviousDisp-(i+1);
+        if ( (iterTranslate % this->saveFreq()) == 0 )
+            doSave=true;
+    }
+
+    if (!doSave) return;
 
     TSBaseMetadata tssaver( *this );
     tssaver.save();
