@@ -160,34 +160,40 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         if (!BuildCstPart && !UseJacobianLinearTerms)
         {
-#if 0
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
-                           _geomap=this->geomap() );
-#else
-            auto myvec = this->backend()->newVector(M_XhDisplacement);
-            *myvec = u;
-            myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient()*this->mechanicalProperties()->cstRho());
-            R->close();
-            R->addVector( myvec, this->massMatrixLumped() );
-#endif
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto myvec = this->backend()->newVector(M_XhDisplacement);
+                *myvec = u;
+                myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient()*this->mechanicalProperties()->cstRho());
+                R->close();
+                R->addVector( myvec, this->massMatrixLumped() );
+            }
         }
         if (BuildCstPart)
         {
             auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
-#if 0
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
-                           _geomap=this->geomap() );
-#else
-            auto myvec = this->backend()->newVector(M_XhDisplacement);
-            *myvec = polySecondDerivDisp;
-            myvec->scale(-this->mechanicalProperties()->cstRho());
-            R->close();
-            R->addVector( myvec, this->massMatrixLumped() );
-#endif
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                auto myvec = this->backend()->newVector(M_XhDisplacement);
+                *myvec = polySecondDerivDisp;
+                myvec->scale(-this->mechanicalProperties()->cstRho());
+                R->close();
+                R->addVector( myvec, this->massMatrixLumped() );
+            }
         }
     }
     //--------------------------------------------------------------------------------------------------//

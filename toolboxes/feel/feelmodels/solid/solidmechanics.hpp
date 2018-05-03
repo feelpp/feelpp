@@ -516,6 +516,8 @@ public :
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
 
     void updateMassMatrixLumped();
+    bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
+    void setUseMassMatrixLumped( bool b ) { M_useMassMatrixLumped = b; }
     sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
 
     //-----------------------------------------------------------------------------------//
@@ -704,6 +706,7 @@ protected:
     std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
+    bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
 
     // trace mesh
