@@ -444,7 +444,7 @@ private:
     block_index_t M_block_rowcol;
     int M_block_row;
     int M_dim4;
-    std::mutex mutex_add_v, mutex_add_m;;
+    std::mutex mutex_add_v, mutex_add_m;
 
 };
 

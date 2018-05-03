@@ -504,7 +504,7 @@ private:
 FEELPP_EXPORT std::ostream& operator<<( std::ostream& os, AboutData const& about );
 
 BOOST_PARAMETER_FUNCTION(
-    (FEELPP_EXPORT AboutData), about, tag,
+    (AboutData), about, tag,
     ( required (name, *  ) )
     ( optional
       ( author,  *, "Feel++ Consortium"  )
