@@ -541,6 +541,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             this->solidModel()->updateMassMatrixLumped();
         auto massMatrixLumped = this->solidModel()->massMatrixLumped();
 
+        this->solidModel()->setUseMassMatrixLumped( true );
         //--------------------------------------------------------
         auto rangeFSI = markedfaces(mesh,this->solidModel()->markerNameFSI());
         double areaFSI = measure(_range=rangeFSI);

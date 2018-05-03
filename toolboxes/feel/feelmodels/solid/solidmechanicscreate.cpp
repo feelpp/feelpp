@@ -281,6 +281,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
     M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
 
+    M_useMassMatrixLumped = false;
+
     // axi-sym
     M_thickness_1dReduced = doption(_name="1dreduced-thickness",_prefix=this->prefix());
     M_radius_1dReduced = doption(_name="1dreduced-radius",_prefix=this->prefix());
