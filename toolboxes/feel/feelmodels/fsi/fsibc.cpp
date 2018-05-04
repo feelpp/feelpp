@@ -218,8 +218,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                            _geomap=this->geomap() );
         }
 
-        bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
-        if ( !useInterfaceOperator )
+        if ( true )
         {
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildCstPart )
@@ -242,7 +241,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
 
             }
         }
-        else // useInterfaceOperator
+        else
         {
             CHECK( false ) << "Not implemented";
         }
@@ -336,8 +335,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
-        if ( !useInterfaceOperator )
+        if ( true )
         {
             if ( buildCstPart )
             {
@@ -350,7 +348,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
                 M_fluidModel->meshALE()->revertMovingMesh();
             }
         }
-        else // useInterfaceOperator
+        else
         {
             CHECK( false ) << "Not implemented";
         }
@@ -487,8 +485,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                            _geomap=this->geomap() );
         }
 
-        bool useInterfaceOperator = M_couplingRNG_useInterfaceOperator && !M_solidModel->is1dReducedModel();
-        if ( !useInterfaceOperator )
+        if ( true )
         {
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildNonCstPart && !useJacobianLinearTerms )
@@ -508,7 +505,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                                _geomap=this->geomap() );
             }
         }
-        else // useInterfaceOperator
+        else
         {
             CHECK(false) << "Not implemented";
         }

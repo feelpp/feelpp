@@ -585,7 +585,7 @@ FSI<FluidType,SolidType>::transfertVelocity(bool useExtrap)
 #if 0
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling )
+FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -657,7 +657,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI,
 #else
 template< class FluidType, class SolidType >
 void
-FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling )
+FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
 {
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
                                                this->worldComm(),this->verboseAllProc());

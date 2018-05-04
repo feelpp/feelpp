@@ -233,7 +233,7 @@ private :
     void transfertDisplacement();
     void transfertStress();
     void transfertVelocity( bool useExtrap=false);
-    void transfertRobinNeumannGeneralizedS2F( int iterationFSI, double manualScaling = 1 );
+    void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
 
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
@@ -317,8 +317,6 @@ private :
     double M_reusePrecActivatedToleranceFluid,M_reusePrecActivatedToleranceSolid;
 
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
-    double M_couplingRNG_manualScaling;
-    bool M_couplingRNG_useInterfaceOperator;
 
     double M_couplingRNG_coeffForm2;
     typename fluid_type::element_meshvelocityonboundary_ptrtype M_couplingRNG_evalForm1;
