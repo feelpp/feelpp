@@ -1,13 +1,20 @@
+// -*- mode: adoc -*-
 [[change-log]]
-Change Log
----------
+= Change Log
 :toc: left
 :toc-title: Releases
 :toclevels: 2
 
+[[v0.104.1-2018-05-xx]]
+== v0.104.1 (unreleased) // https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
+
+https://github.com/feelpp/feelpp/compare/v0.104.0...v0.104.1[Full Changelog]
+
+* Add cantilever example for quickstart elasticity code in 2D
+* Fix newmark restart if a frequency is used
+
 [[v0.104.0-2018-04-22]]
-https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
 
 https://github.com/feelpp/feelpp/compare/v0.103.2...v0.104.0[Full
 Changelog]
