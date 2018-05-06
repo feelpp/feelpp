@@ -6,12 +6,18 @@
 :toclevels: 2
 
 [[v0.104.1-2018-05-xx]]
-== v0.104.1 (unreleased) // https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
+== v0.104.1 (unreleased)
+// https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.104.1[Full Changelog]
 
-* Add cantilever example for quickstart elasticity code in 2D
-* Fix newmark restart if a frequency is used
+=== Features
+
+* [**quickstart/**] Add cantilever example for quickstart elasticity code in 2D
+
+=== Fixes
+
+* [**feel/**] Fix newmark restart if a frequency is used
 
 [[v0.104.0-2018-04-22]]
 == https://github.com/feelpp/feelpp/tree/v0.104.0[v0.104.0] (2018-04-22)
@@ -382,8 +388,8 @@ https://github.com/feelpp/feelpp/pull/997[#997]
 (https://github.com/prudhomm[prudhomm])
 
 [[v0.103.2-2017-05-21]]
-https://github.com/feelpp/feelpp/tree/v0.103.2[v0.103.2] (2017-05-21)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.103.2[v0.103.2] (2017-05-21)
+
 
 https://github.com/feelpp/feelpp/compare/v0.103.1...v0.103.2[Full
 Changelog]
@@ -396,15 +402,15 @@ https://github.com/feelpp/feelpp/issues/903[#903]
 https://github.com/feelpp/feelpp/issues/893[#893]
 
 [[v0.103.1-2017-05-18]]
-https://github.com/feelpp/feelpp/tree/v0.103.1[v0.103.1] (2017-05-18)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.103.1[v0.103.1] (2017-05-18)
+
 
 https://github.com/feelpp/feelpp/compare/v0.103.0...v0.103.1[Full
 Changelog]
 
 [[v0.103.0-2017-05-17]]
-https://github.com/feelpp/feelpp/tree/v0.103.0[v0.103.0] (2017-05-17)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.103.0[v0.103.0] (2017-05-17)
+
 
 https://github.com/feelpp/feelpp/compare/v0.102.0...v0.103.0[Full
 Changelog]
@@ -494,8 +500,8 @@ https://github.com/feelpp/feelpp/pull/888[#888]
 (https://github.com/LANTZT[LANTZT])
 
 [[v0.102.0-2017-04-08]]
-https://github.com/feelpp/feelpp/tree/v0.102.0[v0.102.0] (2017-04-08)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.102.0[v0.102.0] (2017-04-08)
+
 
 https://github.com/feelpp/feelpp/compare/v0.101.1...v0.102.0[Full
 Changelog]
@@ -699,8 +705,8 @@ https://github.com/feelpp/feelpp/pull/758[#758]
 (https://github.com/vhuber[vhuber])
 
 [[v0.101.0-2016-04-12]]
-https://github.com/feelpp/feelpp/tree/v0.101.0[v0.101.0] (2016-04-12)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.101.0[v0.101.0] (2016-04-12)
+
 
 https://github.com/feelpp/feelpp/compare/v0.100.0...v0.101.0[Full
 Changelog]
@@ -760,8 +766,8 @@ https://github.com/feelpp/feelpp/pull/705[#705]
 (https://github.com/cdaversin[cdaversin])
 
 [[v0.100.0-2016-01-25]]
-https://github.com/feelpp/feelpp/tree/v0.100.0[v0.100.0] (2016-01-25)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+== https://github.com/feelpp/feelpp/tree/v0.100.0[v0.100.0] (2016-01-25)
+
 
 https://github.com/feelpp/feelpp/compare/v0.100.0-beta.7...v0.100.0[Full
 Changelog]
