@@ -48,12 +48,11 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "maxwell":
         {
             "Exports":
             {
-                "fields":["maxwell.magnetic-potential","maxwell.magnetic-field","heat.pid"]
+                "fields":["magnetic-potential","magnetic-field","pid"]
             }
         }
     }

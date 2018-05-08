@@ -45,6 +45,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
+    M_maxwellProperties( new maxwellproperties_type( prefix ) ),
     M_epsilon( doption(_name="regularization-epsilon", _prefix=prefix) )
 {
     this->log("Maxwell","constructor", "start" );
