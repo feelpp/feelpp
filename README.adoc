@@ -130,9 +130,9 @@ Here are the latest releases of {feelpp}
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.45132"]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="https://doi.org/10.5281/zenodo.45132"]
 
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="https://doi.org/10.5281/zenodo.11624"]
 
 == Features
 
