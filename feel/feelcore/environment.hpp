@@ -627,6 +627,10 @@ public:
     //! containing the results exported during the application execution
     static std::string exportsRepository();
 
+    //! the downloads repository is a subdirectory of the \c appRepository
+    //! containing the files downloaded during the application execution
+    static std::string downloadsRepository();
+
     //!
     //! Generate a random UUID
     //!

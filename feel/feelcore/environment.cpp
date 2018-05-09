@@ -74,6 +74,7 @@ extern "C"
 #include <feel/feelcore/utility.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
+#include <feel/feelcore/remotedata.hpp>
 
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
@@ -1263,36 +1264,32 @@ Environment::doOptions( int argc, char** argv,
          */
         if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
         {
+            std::vector<std::string> configFiles;
+            if ( S_vm.count( "config-file" ) )
+                configFiles.push_back( S_vm["config-file"].as<std::string>() );
             if ( S_vm.count( "config-files" ) )
             {
-                std::vector<std::string> configFiles = S_vm["config-files"].as<std::vector<std::string> >();
-                // reverse order (priorty for the last)
-                std::reverse(configFiles.begin(),configFiles.end());
-                for ( std::string const& cfgfile : configFiles )
-                {
-                    if ( !fs::exists( cfgfile ) ) continue;
-                    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
-                    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-                    // LOG( INFO ) << "Reading " << cfgfile << "...";
-                    S_cfgdir = cfgAbsolutePath.parent_path();
-                    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-                    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-                    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-                    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
-                }
+                std::vector<std::string> configFilesFromOption = S_vm["config-files"].as<std::vector<std::string> >();
+                configFiles.insert( configFiles.end(), configFilesFromOption.begin(), configFilesFromOption.end() );
             }
-
-            if ( S_vm.count( "config-file" ) && fs::exists(  S_vm["config-file"].as<std::string>() ) )
+            // reverse order (priorty for the last)
+            std::reverse(configFiles.begin(),configFiles.end());
+            for ( std::string const& _cfgfile : configFiles )
             {
-                std::string cfgfile = S_vm["config-file"].as<std::string>();
+                std::string cfgfile = _cfgfile;
+                RemoteData rdTool( _cfgfile, worldComm());
+                if ( rdTool.canDownload() )
+                    cfgfile = rdTool.download();
+
+                if ( !fs::exists( cfgfile ) ) continue;
                 fs::path cfgAbsolutePath = fs::absolute( cfgfile );
                 cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-                // LOG( INFO ) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
+                // LOG( INFO ) << "Reading " << cfgfile << "...";
                 S_cfgdir = cfgAbsolutePath.parent_path();
-                //std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+                std::ifstream ifs( cfgAbsolutePath.string().c_str() );
                 std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-                po::store( parse_config_file( iss, *S_desc, true ), S_vm );
-                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(),std::forward<std::istringstream>( iss ) ) );
+                po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+                S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
             }
 
             po::notify( S_vm );
@@ -1652,6 +1649,12 @@ std::string
 Environment::exportsRepository()
 {
     return (S_appdir / "exports").string();
+}
+
+std::string
+Environment::downloadsRepository()
+{
+    return (S_appdirWithoutNumProc / "downloads").string();
 }
 
 uuids::uuid
