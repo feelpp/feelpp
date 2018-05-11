@@ -41,21 +41,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     //---------------------------------------------------------------------------------------//
 
     //double rho_s=0.8;
-    double alpha_f=M_genAlpha_alpha_f;//1./(1.+rho_s);
-    double alpha_m=M_genAlpha_alpha_m;//(2.-rho_s)/(1.+rho_s);
-    double alpha_vel = M_genAlpha_alpha_f;//0.5*(3-rho_s)/(1+rho_s);
+    //double alpha_f=M_genAlpha_alpha_f;//1./(1.+rho_s);
+    //double alpha_m=M_genAlpha_alpha_m;//(2.-rho_s)/(1.+rho_s);
+    //double alpha_vel = M_genAlpha_alpha_f;//0.5*(3-rho_s)/(1+rho_s);
 
     //double gamma=0.5+alpha_m-alpha_f;
-    double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
+    //double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
 
     auto deltaT =  M_newmark_displ_1dReduced->timeStep();
     auto const& buzz1 = M_newmark_displ_1dReduced->previousUnknown();
-
-    // coef acceleration term
-    double coef_disp=alpha_m/(beta*std::pow(deltaT,2));
-    double coef_vel =alpha_m/(beta*deltaT);
-    double coef_acc=(alpha_m/(2*beta) -1.0);
-
 
     //---------------------------------------------------------------------------------------//
 
@@ -76,7 +70,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
         {
             bilinearForm1dreduced +=
                 integrate( _range=elements(mesh),
-                           _expr=coef_disp*rho*epp*idt(u)*id(v) );
+                           _expr=this->timeStepNewmark1dReduced()->polySecondDerivCoefficient()*rho*epp*idt(u)*id(v) );
         }
 
         if (BuildNonCstPart)
@@ -92,13 +86,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     {
         bilinearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=alpha_f*(E*epp/((1-mu*mu)*R0*R0))*idt(u)*id(v) );
-    }
-    if (alpha_f!=1 && BuildNonCstPart)
-    {
-        linearForm1dreduced +=
-            integrate( _range=elements(mesh),
-                       _expr=- (1-alpha_f)*(E*epp/((1-mu*mu)*R0*R0))*idv(buzz1)*id(v) );
+                       _expr=(E*epp/((1-mu*mu)*R0*R0))*idt(u)*id(v) );
     }
     //---------------------------------------------------------------------------------------//
     // diffusion term
@@ -106,13 +94,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     {
         bilinearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=+alpha_f*k*G*epp*dxt(u)*dx(v) );
-    }
-    if (alpha_f!=1 && BuildNonCstPart)
-    {
-        linearForm1dreduced +=
-            integrate( _range=elements(mesh),
-                       _expr=-(1-alpha_f)*k*G*epp*dxv(buzz1)*dx(v) );
+                       _expr=k*G*epp*dxt(u)*dx(v) );
     }
 
     //---------------------------------------------------------------------------------------//
@@ -121,13 +103,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralisedStringGeneralisedAlph
     {
         bilinearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=alpha_vel*gammav*(1./deltaT)*dxt(u)*dx(v) );
+                       _expr=this->timeStepNewmark1dReduced()->polyFirstDerivCoefficient()*gammav*dxt(u)*dx(v) );
     }
     if (BuildNonCstPart)
     {
         linearForm1dreduced +=
             integrate( _range=elements(mesh),
-                       _expr=alpha_vel*gammav*dxv(M_newmark_displ_1dReduced->previousUnknown())*dx(v) );
+                       _expr=gammav*dxv(this->timeStepNewmark1dReduced()->polyFirstDeriv())*dx(v) );
     }
     //---------------------------------------------------------------------------------------//
     // fluid stress
