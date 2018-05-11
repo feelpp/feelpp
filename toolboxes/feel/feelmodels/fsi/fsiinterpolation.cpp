@@ -598,8 +598,34 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double beta = M_solidModel->timeStepNewmark()->beta();
         double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
         // time derivative acceleration in solid
-        *fieldToTransfert = M_solidModel->timeStepNewmark()->currentAcceleration();
-        fieldToTransfert->scale( -scaleTimeDisc );
+        if ( true/*false*/ )
+            fieldToTransfert->add( -1, M_solidModel->timeStepNewmark()->currentAcceleration());
+        else
+        {
+            if ( iterationFSI == 0 )
+            {
+                fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                       this->solidModel()->timeStepNewmark()->previousVelocity(0) );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                           this->solidModel()->timeStepNewmark()->previousVelocity(i+1) );
+            }
+            else
+            {
+                fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                       this->solidModel()->timeStepNewmark()->currentVelocity() );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                           this->solidModel()->timeStepNewmark()->previousVelocity(i) );
+            }
+        }
+
+        for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+            fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                   this->solidModel()->timeStepNewmark()->previousVelocity(i) );
+
+        fieldToTransfert->scale( scaleTimeDisc );
+
         // transfer solid to fluid
         if (M_interfaceFSIisConforme)
         {
@@ -612,11 +638,15 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
         }
         // time derivative acceleration in fluid
+#if 0
         auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
         auto uPolyDeriv = UPolyDeriv.template element<0>();
         this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
-
         M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+#else
+        M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+#endif
+
     }
     else if ( this->solidModel()->is1dReducedModel() )
     {
@@ -627,8 +657,32 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double beta = M_solidModel->timeStepNewmark1dReduced()->beta();
         double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho()*M_solidModel->thickness1dReduced();
         // time derivative acceleration in solid
-        *fieldExtrapolated2 = M_solidModel->timeStepNewmark1dReduced()->currentAcceleration();
-        fieldExtrapolated2->scale( /*-*/scaleTimeDisc );
+        if ( true )
+            fieldExtrapolated2->add( -1, M_solidModel->timeStepNewmark1dReduced()->currentAcceleration());
+        else
+        {
+            if ( iterationFSI == 0 )
+            {
+                fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(0) );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                             this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i+1) );
+            }
+            else
+            {
+                fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->currentVelocity() );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                             this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i) );
+            }
+        }
+        // time derivative acceleration in fluid
+        for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+            fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                     this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i) );
+        fieldExtrapolated2->scale( scaleTimeDisc );
         fieldToTransfert = M_solidModel->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
         // transfer solid to fluid
         if (M_interfaceFSIisConforme)
@@ -644,9 +698,9 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
                                              *this->couplingRNG_evalForm1() );
         }
         // time derivative acceleration in fluid
-        auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
-        auto uPolyDeriv = UPolyDeriv.template element<0>();
-        this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
+        //auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
+        //auto uPolyDeriv = UPolyDeriv.template element<0>();
+        //this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
 
         M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
     }
@@ -654,7 +708,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "finish",
                                                this->worldComm(),this->verboseAllProc());
 }
-#else
+#elif 0
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
@@ -671,14 +725,17 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double beta = M_solidModel->timeStepNewmark()->beta();
         double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
 
+#if 0
         if ( useOriginalMethod || (iterationFSI == 0) )
-            fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solidModel->timeStepNewmark()->previousVelocity() );
+            fieldToTransfert->add( -1./(dt*gamma) , M_solidModel->timeStepNewmark()->previousVelocity() );
+            //fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solidModel->timeStepNewmark()->previousVelocity() );
         //else
         //fieldToTransfert->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solidModel->timeStepNewmark()->currentVelocity() );
 
         if ( useOriginalMethod || (iterationFSI == 0) )
         {
-            fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solidModel->timeStepNewmark()->previousAcceleration() );
+            //fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1), M_solidModel->timeStepNewmark()->previousAcceleration() );
+            fieldToTransfert->add( -(1.-gamma)/gamma, M_solidModel->timeStepNewmark()->previousAcceleration() );
             fieldToTransfert->add( -1.0, M_solidModel->timeStepNewmark()->currentAcceleration() );
         }
         else
@@ -687,7 +744,31 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             //fieldToTransfert->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) - 1.0, M_solidModel->timeStepNewmark()->currentAcceleration() );
             fieldToTransfert->add(-(1./(dt*gamma)), M_solidModel->timeStepNewmark()->currentVelocity() );
         }
-
+#else
+        fieldToTransfert->add( -1./(dt*gamma) , M_solidModel->timeStepNewmark()->previousVelocity() );
+        fieldToTransfert->add( -(1.-gamma)/gamma, M_solidModel->timeStepNewmark()->previousAcceleration() );
+        if ( true )
+            fieldToTransfert->add( -1.0, M_solidModel->timeStepNewmark()->currentAcceleration() );
+        else
+        {
+            if ( iterationFSI == 0 )
+            {
+                fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                       this->solidModel()->timeStepNewmark()->previousVelocity(0) );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                           this->solidModel()->timeStepNewmark()->previousVelocity(i+1) );
+            }
+            else
+            {
+                fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                       this->solidModel()->timeStepNewmark()->currentVelocity() );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                           this->solidModel()->timeStepNewmark()->previousVelocity(i) );
+            }
+        }
+#endif
         fieldToTransfert->scale( scaleTimeDisc );
 
         if (M_interfaceFSIisConforme)
@@ -712,6 +793,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double beta = M_solidModel->timeStepNewmark1dReduced()->beta();
         double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho()*M_solidModel->thickness1dReduced();
 
+#if 0
         if ( useOriginalMethod || (iterationFSI == 0)  )
             fieldExtrapolated2->add( (1./(dt*gamma))*( (gamma/beta)-1. ) -1./(beta*dt) , M_solidModel->timeStepNewmark1dReduced()->previousVelocity() );
         else
@@ -730,8 +812,33 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             //fieldExtrapolated2->add( (1./gamma)*(gamma/(2*beta) - 1) - (1./(2*beta) -1) + 1.0, M_solidModel->timeStepNewmark1dReduced()->currentAcceleration() );
             fieldExtrapolated2->add(-(1./(dt*gamma)), M_solidModel->timeStepNewmark1dReduced()->currentVelocity() );
         }
-
         fieldExtrapolated2->scale( scaleTimeDisc );
+#else
+        fieldExtrapolated2->add( -1./(dt*gamma) , M_solidModel->timeStepNewmark1dReduced()->previousVelocity() );
+        fieldExtrapolated2->add( -(1.-gamma)/gamma, M_solidModel->timeStepNewmark1dReduced()->previousAcceleration() );
+        if ( true )
+            fieldExtrapolated2->add( -1.0, M_solidModel->timeStepNewmark1dReduced()->currentAcceleration() );
+        else
+        {
+            if ( iterationFSI == 0 )
+            {
+                fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(0) );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                             this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i+1) );
+            }
+            else
+            {
+                fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->currentVelocity() );
+                for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                    fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                             this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i) );
+            }
+        }
+        fieldExtrapolated2->scale( scaleTimeDisc );
+#endif
         fieldToTransfert = M_solidModel->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
 
         if (M_interfaceFSIisConforme)
@@ -753,6 +860,136 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "finish",
                                                this->worldComm(),this->verboseAllProc());
 
+}
+#else
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI )
+{
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "start",
+                                               this->worldComm(),this->verboseAllProc());
+
+    if ( this->solidModel()->isStandardModel())
+    {
+        auto fieldToTransfert = M_solidModel->fieldVelocity().functionSpace()->elementPtr();
+        double dt = M_solidModel->timeStepNewmark()->timeStep();
+        double gamma = M_solidModel->timeStepNewmark()->gamma();
+        double beta = M_solidModel->timeStepNewmark()->beta();
+        double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
+        // time derivative acceleration in solid (newmark)
+        fieldToTransfert->add( -1, M_solidModel->timeStepNewmark()->currentAcceleration());
+        // time derivative acceleration in solid (bdf)
+        if ( iterationFSI == 0 )
+        {
+            fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                   this->solidModel()->timeStepNewmark()->previousVelocity(0) );
+            for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                       this->solidModel()->timeStepNewmark()->previousVelocity(i+1) );
+        }
+        else
+        {
+            fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                   this->solidModel()->timeStepNewmark()->currentVelocity() );
+            for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                fieldToTransfert->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                       this->solidModel()->timeStepNewmark()->previousVelocity(i) );
+        }
+
+        // time derivative acceleration in fluid (bdf)
+        for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+            fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                   this->solidModel()->timeStepNewmark()->previousVelocity(i) );
+        // time derivative acceleration in fluid (newamrk)
+        fieldToTransfert->add( -1./(dt*gamma) , this->solidModel()->timeStepNewmark()->previousVelocity() );
+        fieldToTransfert->add( -(1.-gamma)/gamma, this->solidModel()->timeStepNewmark()->previousAcceleration() );
+
+        fieldToTransfert->scale( 0.5*scaleTimeDisc );
+
+        // transfer solid to fluid
+        if (M_interfaceFSIisConforme)
+        {
+            CHECK( M_opVelocity2dTo2dconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+        }
+        else
+        {
+            CHECK( M_opVelocity2dTo2dnonconf ) << "interpolation operator not build";
+            M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
+        }
+        // time derivative acceleration in fluid
+#if 0
+        auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
+        auto uPolyDeriv = UPolyDeriv.template element<0>();
+        this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
+        M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+#else
+        //M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+        M_couplingRNG_coeffForm2 = 0.5*scaleTimeDisc*(this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0) + (1./(dt*gamma)));
+#endif
+
+    }
+    else if ( this->solidModel()->is1dReducedModel() )
+    {
+        typename solid_type::element_vect_1dreduced_ptrtype fieldToTransfert;
+        auto fieldExtrapolated2 = this->solidModel()->timeStepNewmark1dReduced()->previousVelocity().functionSpace()->elementPtr();
+        double dt = M_solidModel->timeStepNewmark1dReduced()->timeStep();
+        double gamma = M_solidModel->timeStepNewmark1dReduced()->gamma();
+        double beta = M_solidModel->timeStepNewmark1dReduced()->beta();
+        double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho()*M_solidModel->thickness1dReduced();
+        // time derivative acceleration in solid (newmark)
+        fieldExtrapolated2->add( -1, M_solidModel->timeStepNewmark1dReduced()->currentAcceleration());
+        // time derivative acceleration in solid (bdf)
+        if ( iterationFSI == 0 )
+        {
+            fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                     this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(0) );
+            for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i+1) );
+        }
+        else
+        {
+            fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( 0 ),
+                                     this->solidModel()->timeStepNewmark1dReduced()->currentVelocity() );
+            for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+                fieldExtrapolated2->add( this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                         this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i) );
+        }
+
+        // time derivative acceleration in fluid (bdf)
+        for ( uint8_type i = 0; i < this->fluidModel()->timeStepBDF()->timeOrder(); ++i )
+            fieldExtrapolated2->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
+                                     this->solidModel()->timeStepNewmark1dReduced()->previousVelocity(i) );
+        // time derivative acceleration in fluid (newamrk)
+        fieldExtrapolated2->add( -1./(dt*gamma) , M_solidModel->timeStepNewmark1dReduced()->previousVelocity() );
+        fieldExtrapolated2->add( -(1.-gamma)/gamma, M_solidModel->timeStepNewmark1dReduced()->previousAcceleration() );
+
+        fieldExtrapolated2->scale( 0.5*scaleTimeDisc );
+        fieldToTransfert = M_solidModel->extendVelocity1dReducedVectorial( *fieldExtrapolated2 );
+        // transfer solid to fluid
+        if (M_interfaceFSIisConforme)
+        {
+            CHECK( M_opVelocity1dToNdconf ) << "interpolation operator not build";
+            M_opVelocity1dToNdconf->apply(*fieldToTransfert,
+                                          *this->couplingRNG_evalForm1() );
+        }
+        else
+        {
+            CHECK( M_opVelocity1dToNdnonconf ) << "interpolation operator not build";
+            M_opVelocity1dToNdnonconf->apply(*fieldToTransfert,
+                                             *this->couplingRNG_evalForm1() );
+        }
+        // time derivative acceleration in fluid
+        //auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
+        //auto uPolyDeriv = UPolyDeriv.template element<0>();
+        //this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
+
+        M_couplingRNG_coeffForm2 = scaleTimeDisc*(0.5*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0)+0.5*(1./(dt*gamma)));
+    }
+
+    if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertRobinNeumannGeneralizedS2F", "finish",
+                                               this->worldComm(),this->verboseAllProc());
 }
 #endif
 //-----------------------------------------------------------------------------------//
