@@ -24,6 +24,7 @@
 #ifndef FEELPP_CORE_REMOTEDATA_HPP
 #define FEELPP_CORE_REMOTEDATA_HPP 1
 
+#include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 
@@ -69,12 +70,26 @@ struct RemoteData
         std::string M_protocol, M_domain, M_port, M_path, M_query;
     };
 
+    class Github
+    {
+    public :
+        Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
+        Github( Github const& ) = default;
+        Github( Github && ) = default;
+        void download( std::string const& dir = Environment::downloadsRepository() );
+    private :
+        WorldComm const& M_worldComm;
+        std::string M_owner, M_repo, M_branch, M_path;
+    };
+
     class Girder
     {
     public :
         void download( size_type id, std::string const& dir );
     private :
     };
+
+
 private :
     boost::optional<URL> M_url;
 };
