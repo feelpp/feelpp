@@ -488,6 +488,31 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_operatorDiagonalOnFluid->on(_range=rangeFSIFluid,_expr=one());
         sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", dofsIdOnFSIFluid );
     }
+
+
+    if ( false )
+    {
+        if ( M_fluidModel->doRestart() )
+            this->fluidModel()->meshALE()->revertReferenceMesh();
+        M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newMatrix(0,0,0,0,this->fluidModel()->algebraicFactory()->sparsityMatrixGraph());
+        auto VhFluid = this->fluidModel()->spaceVelocityPressure();
+        auto const& u = M_fluidModel->fieldVelocity();
+        auto rangeFSIFluid = markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
+        auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
+        form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative) +=
+            integrate( _range=rangeFSIFluid,
+                       _expr=inner(myB*idt(u),id(u)),
+                       _geomap=this->geomap() );
+        auto VhStress = this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace();
+        M_coulingRNG_matrixStress = this->fluidModel()->backend()->newMatrix( _test=VhFluid,_trial=VhStress );
+        form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
+            integrate( _range=rangeFSIFluid,
+                       _expr= inner( idt(this->fluidModel()->fieldNormalStressRefMeshPtr()),id(u)),
+                       _geomap=this->geomap() );
+        if ( M_fluidModel->doRestart() )
+            this->fluidModel()->meshALE()->revertMovingMesh();
+    }
+
 }
 
 template< class FluidType, class SolidType >

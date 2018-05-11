@@ -208,16 +208,6 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
         //---------------------------------------------------------------------------//
     {
-        if ( buildNonCstPart )
-        {
-            M_fluidModel->meshALE()->revertReferenceMesh();
-            auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= inner( sigmaSolidN,id(u)),
-                           _geomap=this->geomap() );
-        }
-
         if ( true )
         {
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
@@ -238,14 +228,36 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                                //_expr= -inner(idv(this->couplingRNG_evalForm1()),id(u)),
                                _expr= -inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
-
+                auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+                //auto sigmaSolidN = -idv( this->fluidModel()->normalStressFromStruct() );
+                linearForm +=
+                    integrate( _range=rangeFSI,
+                               _expr= inner( sigmaSolidN,id(u)),
+                               _geomap=this->geomap() );
             }
+            M_fluidModel->meshALE()->revertMovingMesh();
         }
         else
         {
-            CHECK( false ) << "Not implemented";
+            //CHECK( false ) << "Not implemented";
+            if ( buildCstPart )
+            {
+                A->close();
+                A->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative );
+            }
+            if ( buildNonCstPart )
+            {
+                auto myvec = this->fluidModel()->backend()->newVector(this->fluidModel()->spaceVelocityPressure() );
+                *myvec = *this->couplingRNG_evalForm1();
+                myvec->scale( -1. );
+                F->close();
+                F->addVector( myvec, M_coulingRNG_matrixTimeDerivative );
+
+                auto myvec2 = this->fluidModel()->backend()->newVector( this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace() );
+                *myvec2 = *this->fluidModel()->fieldNormalStressRefMeshPtr();
+                F->addVector( myvec2, M_coulingRNG_matrixStress );
+            }
         }
-        M_fluidModel->meshALE()->revertMovingMesh();
     }
 
     double timeElapsed = M_fluidModel->timerTool("Solve").stop();
