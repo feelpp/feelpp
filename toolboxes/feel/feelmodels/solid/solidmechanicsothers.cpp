@@ -950,6 +950,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         this->createAdditionalFunctionSpacesNormalStress();
 
     auto const& u = this->fieldDisplacement();
+    auto range = boundaryfaces(this->mesh());
+
     if ( M_pdeType=="Elasticity" )
     {
         auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
@@ -960,14 +962,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         if ( !this->useDisplacementPressureFormulation() )
         {
             auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigma = idv(p)*Id + 2*idv(coeffLame2)*eps;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
     }
@@ -980,14 +982,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
         auto const sigma = Feel::vf::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigma*vf::N() );
         }
         else
         {
             auto const& p = this->fieldPressure();
             auto sigmaWithPressure = Feel::vf::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()) + sigma ;
-            M_fieldNormalStressFromStruct->on( _range=boundaryfaces(this->mesh()),
+            M_fieldNormalStressFromStruct->on( _range=range,
                                                _expr=sigmaWithPressure*vf::N() );
         }
     }
