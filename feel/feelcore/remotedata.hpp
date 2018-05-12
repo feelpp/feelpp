@@ -32,7 +32,7 @@ namespace Feel
 {
 
 /**
- * \brief class which manage downloads from an url and download/upload with the Girder database by using the libcurl
+ * \brief class which manage downloads from an url or github and download/upload with the Girder database by using the libcurl
  */
 struct RemoteData
 {
@@ -76,10 +76,15 @@ struct RemoteData
         Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
         Github( Github const& ) = default;
         Github( Github && ) = default;
+        //! download file/folder from the github desc
+        //! @param dir : the directory where the file is downloaded
         void download( std::string const& dir = Environment::downloadsRepository() );
     private :
+        void downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir );
+
+    private :
         WorldComm const& M_worldComm;
-        std::string M_owner, M_repo, M_branch, M_path;
+        std::string M_owner, M_repo, M_branch, M_path, M_token;
     };
 
     class Girder
