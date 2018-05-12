@@ -25,6 +25,7 @@
 #include <feel/feelcore/remotedata.hpp>
 #include <fstream>
 #include <regex>
+#include <boost/algorithm/string.hpp>
 
 extern "C" {
 
@@ -42,7 +43,7 @@ static size_t write_data(char/*void*/ *ptr, size_t size, size_t nmemb, void *str
     return nmemb/*written*/;
 }
 
-void requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::string& response)
+void requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
     curl_global_init(CURL_GLOBAL_ALL);
@@ -52,7 +53,6 @@ void requestHTTPGET( std::string const& url, std::vector<std::string> const& hea
     curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
 
     struct curl_slist *list = NULL;
-    //list = curl_slist_append(list, "Accept: application/vnd.github.v3.raw");
     for ( std::string const& header : headers )
         list = curl_slist_append(list, header.c_str() );
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
@@ -60,8 +60,7 @@ void requestHTTPGET( std::string const& url, std::vector<std::string> const& hea
     /* send all data to this function  */
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 
-    std::ostringstream ofile;
-
+    /* write the page body to this file handle */
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
 
     /* get it! */
@@ -71,8 +70,6 @@ void requestHTTPGET( std::string const& url, std::vector<std::string> const& hea
     curl_easy_cleanup(curl_handle);
 
     curl_global_cleanup();
-
-    response = ofile.str();
 #else
     CHECK( false ) << "LIBCURL is not detected";
 #endif
@@ -119,17 +116,14 @@ RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
         M_port     = std::string(what[3].first, what[3].second);
         M_path     = std::string(what[4].first, what[4].second);
         M_query    = std::string(what[5].first, what[5].second);
+#if 0
         std::cout << "[" << url << "]" << std::endl;
         std::cout << "protocol: " << M_protocol << std::endl;
         std::cout << "domain: " << M_domain << std::endl;
         std::cout << "port:" << M_port << std::endl;
         std::cout << "path:" << M_path << std::endl;
         std::cout << "query:" << M_query << std::endl;
-        //std::cout << "isDIr:" << fs::is_directory(M_path) << std::endl;
-        std::cout << "filename: " << fs::path(M_path).filename().string() << std::endl;
-
-        size_t hashURL = std::hash<std::string>()( M_url );
-        std::cout << "hash:" << hashURL << std::endl;
+#endif
     }
 }
 
@@ -227,56 +221,130 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     :
     M_worldComm( worldComm )
 {
-    std::string subex = "(owner|repo|branch|path):([^]*)";
-    std::string subsep = "([ ]*)([,])([ ]*)";
-    std::regex ex("([ ]*)github([ ]*):([ ]*)[{]([ ]*)"+subex+subsep+subex+subsep+subex+subsep+subex+"([ ]*)([}])");
+    std::regex ex("([ ]*)github([ ]*):([ ]*)([{])([^]*)([}])");
     std::cmatch what;
     if( !regex_match(desc.c_str(), what, ex) )
         return;
 
-    CHECK( what.size() == 24 ) << "invalid size";
-    for ( int k : { 5,10,15,20 } )
+    CHECK( what.size() == 7 ) << "invalid size";
+    std::vector<std::string> keysvalues;
+    std::string exprtosplit = std::string(what[5].first, what[5].second);
+    boost::split( keysvalues, exprtosplit, boost::is_any_of(","), boost::token_compress_on );
+    for ( std::string const& keyvalue : keysvalues )
     {
-        if ( what[k] == "owner" ) M_owner = what[k+1];
-        else if ( what[k] == "repo" ) M_repo = what[k+1];
-        else if ( what[k] == "branch" ) M_branch = what[k+1];
-        else if ( what[k] == "path" ) M_path = what[k+1];
+        std::vector<std::string> keyvalueSplitted;
+        boost::split( keyvalueSplitted, keyvalue, boost::is_any_of(":"), boost::token_compress_on );
+
+        CHECK( keyvalueSplitted.size() == 2 ) << "invalid size";
+        boost::trim(keyvalueSplitted[0]);
+        boost::trim(keyvalueSplitted[1]);
+        if ( keyvalueSplitted[0] == "owner" ) M_owner = keyvalueSplitted[1];
+        else if ( keyvalueSplitted[0] == "repo" ) M_repo = keyvalueSplitted[1];
+        else if ( keyvalueSplitted[0] == "branch" ) M_branch = keyvalueSplitted[1];
+        else if ( keyvalueSplitted[0] == "path" ) M_path = keyvalueSplitted[1];
+        else if ( keyvalueSplitted[0] == "token" ) M_token = keyvalueSplitted[1];
     }
 
+#if 0
     std::cout << "owner: " << M_owner << "\n"
               << "repo: " << M_repo << "\n"
               << "branch: " << M_branch << "\n"
               << "path: " << M_path << "\n";
+#endif
 }
 void
 RemoteData::Github::download( std::string const& dir )
 {
-    std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path + "?ref="+M_branch;
+    if ( !M_worldComm.isMasterRank() )
+    {
+        M_worldComm.barrier();
+        return;
+    }
+
+    std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
+    if ( !M_branch.empty() )
+        url += "?ref=" + M_branch;
     std::vector<std::string> headers;
     headers.push_back("Accept: application/vnd.github.v3.json");
     headers.push_back("User-Agent: feelpp-agent");
+    if ( !M_token.empty() )
+        headers.push_back( "Authorization: token "+M_token );
 
-    std::string response;
-    requestHTTPGET( url,headers, response );
-    std::istringstream istr( response );
+    std::ostringstream omemfile;
+    requestHTTPGET( url,headers, omemfile );
+    std::istringstream istr( omemfile.str() );
     pt::ptree ptree;
     pt::read_json(istr, ptree);
 
+    if ( !fs::exists( dir ) )
+        fs::create_directories( dir );
+
     if ( auto testFile = ptree.get_optional<std::string>("path") )
     {
-        // a file
         std::string filename = ptree.get<std::string>("name");
-        std::string fileurl = ptree.get<std::string>("download_url");
-        RemoteData::URL urlTool(fileurl,M_worldComm);
-        urlTool.download( dir,filename );
+        headers[0] = "Accept: application/vnd.github.v3.raw";
+        std::string filepath = (fs::path(dir)/filename).string();
+        std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+        requestHTTPGET( url,headers,ofile );
+        ofile.close();
     }
     else
     {
-        // a folder
-        for (auto& item : ptree)
-            std::cout << "THE PATH : " << item.second.get<std::string>("path") << "\n";
+        std::string subdir = (M_path.empty())? M_repo : fs::path(M_path).filename().string();
+        std::string newdir = (fs::path(dir)/subdir).string();
+        fs::create_directories( newdir );
+
+        this->downloadFolderRecursively( ptree, newdir );
+    }
+
+    M_worldComm.barrier();
+}
+
+void
+RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir )
+{
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/vnd.github.v3.json");
+    headers.push_back("User-Agent: feelpp-agent");
+    if ( !M_token.empty() )
+        headers.push_back( "Authorization: token "+M_token );
+
+    for (auto const& item : ptree)
+    {
+        std::string type = item.second.get<std::string>("type");
+        std::string name = item.second.get<std::string>("name");
+        std::string pathInUrl = item.second.get<std::string>("path");
+        std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + pathInUrl;
+        if ( !M_branch.empty() )
+            url += "?ref=" + M_branch;
+
+        if ( type == "file" )
+        {
+            // download file
+            headers[0] = "Accept: application/vnd.github.v3.raw";
+            std::string filepath = (fs::path(dir)/name).string();
+            std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+            requestHTTPGET( url,headers,ofile );
+            ofile.close();
+        }
+        else if ( type == "dir" )
+        {
+            // get ptree subdir
+            headers[0] = "Accept: application/vnd.github.v3.json";
+            std::ostringstream omemfile;
+            requestHTTPGET( url,headers,omemfile );
+            std::istringstream istr( omemfile.str() );
+            pt::ptree ptreeSubdir;
+            pt::read_json( istr,ptreeSubdir );
+            // create subdir
+            std::string newdir = (fs::path(dir)/name).string();
+            fs::create_directories( newdir );
+            // recursive call
+            this->downloadFolderRecursively( ptreeSubdir, newdir );
+        }
     }
 }
+
 
 void
 RemoteData::Girder::download( size_type id, std::string const& dir )
