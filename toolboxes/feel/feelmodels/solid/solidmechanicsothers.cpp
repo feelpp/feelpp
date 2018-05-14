@@ -1496,13 +1496,33 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
         integrate(_range=elements(mesh),
                   _expr=inner(idt(u),id(u)) );
     massMatrix->close();
-    // mass matrix lumped of Vh
-    auto vecDiagMassLumped = this->backend()->newVector(Vh);
-    auto unityVec = this->backend()->newVector(Vh);
-    unityVec->setConstant(1);
-    massMatrix->multVector( unityVec,vecDiagMassLumped );
+
+    // mass matrix lumped
     M_massMatrixLumped = this->backend()->newMatrix(_test=Vh,_trial=Vh);
-    M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+    if ( Vh->fe()->nOrder==1)
+    {
+        auto vecDiagMassLumped = this->backend()->newVector(Vh);
+        auto unityVec = this->backend()->newVector(Vh);
+        unityVec->setConstant(1);
+        massMatrix->multVector( unityVec,vecDiagMassLumped );
+        M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+    }
+    else
+    {
+        // ref for high order :
+        // - https://www.sharcnet.ca/Software/Ansys/17.2/en-us/help/ans_thry/thy_et2.html
+        // - https://scicomp.stackexchange.com/questions/19704/how-to-formulate-lumped-mass-matrix-in-fem
+        // - section 16.2.4 of : Zhu, J., Z. R. L. Taylor, and O. C. Zienkiewicz. "The finite element method: its basis and fundamentals." (2005): 54-102.
+        auto sumRow = this->backend()->newVector(Vh);
+        auto unityVec = this->backend()->newVector(Vh);
+        unityVec->setConstant(1);
+        massMatrix->multVector( unityVec,sumRow );
+        double sumMatrix = sumRow->sum();
+        auto vecDiagMassLumped = massMatrix->diagonal();
+        double sumDiag = vecDiagMassLumped->sum();
+        vecDiagMassLumped->scale( sumMatrix/sumDiag );
+        M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+    }
 }
 
 } // FeelModels
