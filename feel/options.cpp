@@ -58,6 +58,8 @@ file_options( std::string const& appname )
         ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ( "case", po::value<std::string>(), "specify a case directory" )
+        ( "case.config-file", po::value<std::string>(), "specify the config-file in the case directory" )
         ;
     return file;
 }

@@ -81,13 +81,24 @@ RemoteData::RemoteData( std::string const& desc, WorldComm const& worldComm )
 {
     RemoteData::URL urlTool( desc,worldComm );
     if ( urlTool.isValid() )
+    {
         M_url.emplace( urlTool );
+        return;
+    }
+    RemoteData::Github githubTool( desc,worldComm );
+    if ( githubTool.isInit() )
+    {
+        M_github.emplace( githubTool );
+        return;
+    }
 }
 
 bool
 RemoteData::canDownload() const
 {
     if ( M_url )
+        return true;
+    else if ( M_github )
         return true;
     return false;
 }
@@ -96,6 +107,8 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
 {
     if ( M_url )
         return M_url->download( dir, filename );
+    else if ( M_github )
+        return M_github->download( dir );
     return std::string("");
 }
 
@@ -245,6 +258,11 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
         else if ( keyvalueSplitted[0] == "token" ) M_token = keyvalueSplitted[1];
     }
 
+    if ( M_owner.empty() )
+        M_owner = "feelpp";
+    if ( M_repo.empty() )
+        M_repo = "feelpp";
+
 #if 0
     std::cout << "owner: " << M_owner << "\n"
               << "repo: " << M_repo << "\n"
@@ -252,56 +270,61 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
               << "path: " << M_path << "\n";
 #endif
 }
-void
-RemoteData::Github::download( std::string const& dir )
+bool
+RemoteData::Github::isInit() const
 {
-    if ( !M_worldComm.isMasterRank() )
+    return !M_owner.empty() && !M_repo.empty();
+}
+std::string
+RemoteData::Github::download( std::string const& dir ) const
+{
+    std::string downloadFileOrFolder;
+    if ( M_worldComm.isMasterRank() )
     {
-        M_worldComm.barrier();
-        return;
+        std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
+        if ( !M_branch.empty() )
+            url += "?ref=" + M_branch;
+        std::vector<std::string> headers;
+        headers.push_back("Accept: application/vnd.github.v3.json");
+        headers.push_back("User-Agent: feelpp-agent");
+        if ( !M_token.empty() )
+            headers.push_back( "Authorization: token "+M_token );
+
+        std::ostringstream omemfile;
+        requestHTTPGET( url,headers, omemfile );
+        std::istringstream istr( omemfile.str() );
+        pt::ptree ptree;
+        pt::read_json(istr, ptree);
+
+        if ( !fs::exists( dir ) )
+            fs::create_directories( dir );
+
+        if ( auto testFile = ptree.get_optional<std::string>("path") )
+        {
+            std::string filename = ptree.get<std::string>("name");
+            headers[0] = "Accept: application/vnd.github.v3.raw";
+            std::string filepath = (fs::path(dir)/filename).string();
+            std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+            requestHTTPGET( url,headers,ofile );
+            ofile.close();
+            downloadFileOrFolder = filepath;
+        }
+        else
+        {
+            std::string subdir = (M_path.empty())? M_repo : fs::path(M_path).filename().string();
+            std::string newdir = (fs::path(dir)/subdir).string();
+            fs::create_directories( newdir );
+
+            this->downloadFolderRecursively( ptree, newdir );
+            downloadFileOrFolder = newdir;
+        }
     }
-
-    std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
-    if ( !M_branch.empty() )
-        url += "?ref=" + M_branch;
-    std::vector<std::string> headers;
-    headers.push_back("Accept: application/vnd.github.v3.json");
-    headers.push_back("User-Agent: feelpp-agent");
-    if ( !M_token.empty() )
-        headers.push_back( "Authorization: token "+M_token );
-
-    std::ostringstream omemfile;
-    requestHTTPGET( url,headers, omemfile );
-    std::istringstream istr( omemfile.str() );
-    pt::ptree ptree;
-    pt::read_json(istr, ptree);
-
-    if ( !fs::exists( dir ) )
-        fs::create_directories( dir );
-
-    if ( auto testFile = ptree.get_optional<std::string>("path") )
-    {
-        std::string filename = ptree.get<std::string>("name");
-        headers[0] = "Accept: application/vnd.github.v3.raw";
-        std::string filepath = (fs::path(dir)/filename).string();
-        std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
-        requestHTTPGET( url,headers,ofile );
-        ofile.close();
-    }
-    else
-    {
-        std::string subdir = (M_path.empty())? M_repo : fs::path(M_path).filename().string();
-        std::string newdir = (fs::path(dir)/subdir).string();
-        fs::create_directories( newdir );
-
-        this->downloadFolderRecursively( ptree, newdir );
-    }
-
-    M_worldComm.barrier();
+    mpi::broadcast( M_worldComm.globalComm(), downloadFileOrFolder, M_worldComm.masterRank() );
+    return downloadFileOrFolder;
 }
 
 void
-RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir )
+RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const
 {
     std::vector<std::string> headers;
     headers.push_back("Accept: application/vnd.github.v3.json");

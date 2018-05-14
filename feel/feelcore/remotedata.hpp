@@ -76,11 +76,16 @@ struct RemoteData
         Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
         Github( Github const& ) = default;
         Github( Github && ) = default;
+
+        //! return true if the github is initialized from a desc
+        bool isInit() const;
+
         //! download file/folder from the github desc
         //! @param dir : the directory where the file is downloaded
-        void download( std::string const& dir = Environment::downloadsRepository() );
+        //! @return : the path of the downloaded file or the path of downloaded folder
+        std::string download( std::string const& dir = Environment::downloadsRepository() ) const;
     private :
-        void downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir );
+        void downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const;
 
     private :
         WorldComm const& M_worldComm;
@@ -97,6 +102,7 @@ struct RemoteData
 
 private :
     boost::optional<URL> M_url;
+    boost::optional<Github> M_github;
 };
 
 }
