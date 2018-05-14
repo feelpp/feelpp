@@ -78,6 +78,7 @@ FSI<FluidType,SolidType>::updateJacobianStrongDirichletBC_Fluid( sparse_matrix_p
 }
 #endif
 
+
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
@@ -208,7 +209,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
         //---------------------------------------------------------------------------//
     {
-        if ( true )
+        if ( !M_coulingRNG_usePrecomputeBC )
         {
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildCstPart )
@@ -239,7 +240,6 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         }
         else
         {
-            //CHECK( false ) << "Not implemented";
             if ( buildCstPart )
             {
                 A->close();
@@ -247,15 +247,15 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             }
             if ( buildNonCstPart )
             {
-                auto myvec = this->fluidModel()->backend()->newVector(this->fluidModel()->spaceVelocityPressure() );
-                *myvec = *this->couplingRNG_evalForm1();
-                myvec->scale( -1. );
+                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
+                auto uWrap = UWrap.template element<0>();
+                uWrap.zero();
+                uWrap.add( -1., *this->couplingRNG_evalForm1() );
                 F->close();
-                F->addVector( myvec, M_coulingRNG_matrixTimeDerivative );
+                F->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
 
-                auto myvec2 = this->fluidModel()->backend()->newVector( this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace() );
-                *myvec2 = *this->fluidModel()->fieldNormalStressRefMeshPtr();
-                F->addVector( myvec2, M_coulingRNG_matrixStress );
+                *M_coulingRNG_vectorStress = *this->fluidModel()->fieldNormalStressRefMeshPtr();
+                F->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
             }
         }
     }
@@ -347,7 +347,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        if ( true )
+        if ( !M_coulingRNG_usePrecomputeBC )
         {
             if ( buildCstPart )
             {
@@ -362,7 +362,11 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
         }
         else
         {
-            CHECK( false ) << "Not implemented";
+            if ( buildCstPart )
+            {
+                J->close();
+                J->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative );
+            }
         }
     }
 
@@ -487,17 +491,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     }
     else if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
-        if ( buildCstPart )
-        {
-            M_fluidModel->meshALE()->revertReferenceMesh();
-            auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
-            linearForm +=
-                integrate( _range=rangeFSI,
-                           _expr= -inner( sigmaSolidN,id(u)),
-                           _geomap=this->geomap() );
-        }
-
-        if ( true )
+        if ( !M_coulingRNG_usePrecomputeBC )
         {
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
             if ( buildNonCstPart && !useJacobianLinearTerms )
@@ -515,13 +509,35 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                     integrate( _range=rangeFSI,
                                _expr= inner(myB*idv(this->couplingRNG_evalForm1()),id(u)),
                                _geomap=this->geomap() );
+                auto sigmaSolidN = idv( this->fluidModel()->fieldNormalStressRefMeshPtr() );
+                linearForm +=
+                    integrate( _range=rangeFSI,
+                               _expr= -inner( sigmaSolidN,id(u)),
+                               _geomap=this->geomap() );
             }
+            M_fluidModel->meshALE()->revertMovingMesh();
         }
         else
         {
-            CHECK(false) << "Not implemented";
+            if ( buildNonCstPart && !useJacobianLinearTerms )
+            {
+                CHECK(false) << "Not implemented";
+            }
+            if ( buildCstPart )
+            {
+                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
+                auto uWrap = UWrap.template element<0>();
+                uWrap.zero();
+                uWrap.add( 1., *this->couplingRNG_evalForm1() );
+                R->close();
+                R->addVector( M_coulingRNG_vectorTimeDerivative, M_coulingRNG_matrixTimeDerivative );
+
+                *M_coulingRNG_vectorStress = *this->fluidModel()->fieldNormalStressRefMeshPtr();
+                M_coulingRNG_vectorStress->scale(-1.);
+                R->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
+
+            }
         }
-        M_fluidModel->meshALE()->revertMovingMesh();
     }
 
     this->log("FSI","updateResidual_Fluid", "finish"+sc );

@@ -66,7 +66,8 @@ FSI<FluidType,SolidType>::FSI(std::string const& prefix,WorldComm const& worldCo
     M_reusePrecActivatedToleranceSolid( doption(_name="solid.reuse-prec.activated-only-if-greater-than-tol",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_gamma( doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_gamma0( doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix()) ),
-    M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) )
+    M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) ),
+    M_coulingRNG_usePrecomputeBC( boption(_name="coupling-robin-neumann-generalized.use-precompute-bc",_prefix=this->prefix()) )
 {
     this->log("FSI","constructor","start");
 
@@ -490,10 +491,13 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     }
 
 
-    if ( false )
+    if ( M_coulingRNG_usePrecomputeBC )
     {
         if ( M_fluidModel->doRestart() )
             this->fluidModel()->meshALE()->revertReferenceMesh();
+
+        // create matrix which represent time derivative  bc operator
+        M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr() );
         M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newMatrix(0,0,0,0,this->fluidModel()->algebraicFactory()->sparsityMatrixGraph());
         auto VhFluid = this->fluidModel()->spaceVelocityPressure();
         auto const& u = M_fluidModel->fieldVelocity();
@@ -503,12 +507,34 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             integrate( _range=rangeFSIFluid,
                        _expr=inner(myB*idt(u),id(u)),
                        _geomap=this->geomap() );
+
+        // create matrix which represent stress bc operator
         auto VhStress = this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace();
-        M_coulingRNG_matrixStress = this->fluidModel()->backend()->newMatrix( _test=VhFluid,_trial=VhStress );
+        M_coulingRNG_vectorStress = this->fluidModel()->backend()->newVector( VhStress );
+        auto dofStress = VhStress->dof();
+        int nBlock = this->fluidModel()->nBlockMatrixGraph();
+        BlocksBaseGraphCSR myblockGraph(nBlock,1);
+        auto ru = stencilRange<0,0>(rangeFSIFluid);
+        auto blockpatternStress = vf::Blocks<2,1,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO);
+        auto mygraph = stencil(_test=VhFluid,_trial=VhStress,
+                               _pattern_block=blockpatternStress,
+                               _diag_is_nonzero=false,_close=true,
+                               _range=stencilRangeMap(ru) )->graph();
+        myblockGraph(0,0) = mygraph;
+        for ( int k=1;k<nBlock;++k )
+        {
+            auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,dofStress );
+            zeroGraph->zero();
+            myblockGraph(k,0) = zeroGraph;
+        }
+        M_coulingRNG_matrixStress = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraph);
+        // assembly stress matrix
         form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
             integrate( _range=rangeFSIFluid,
                        _expr= inner( idt(this->fluidModel()->fieldNormalStressRefMeshPtr()),id(u)),
                        _geomap=this->geomap() );
+
         if ( M_fluidModel->doRestart() )
             this->fluidModel()->meshALE()->revertMovingMesh();
     }
@@ -863,7 +889,8 @@ FSI<FluidType,SolidType>::solveImpl3()
     {
         timerIter.restart();
         //timerCur.restart();
-        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
+        if ( false )
+            this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
 
         if ( useAitken )
             this->aitkenRelaxTool()->saveOldSolution();

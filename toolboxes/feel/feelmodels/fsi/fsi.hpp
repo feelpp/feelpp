@@ -322,6 +322,8 @@ private :
     typename fluid_type::element_meshvelocityonboundary_ptrtype M_couplingRNG_evalForm1;
     typename fluid_type::element_meshvelocityonboundary_ptrtype M_coulingRNG_operatorDiagonalOnFluid;
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
+    vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
+    bool M_coulingRNG_usePrecomputeBC;
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;
     op_interpolation2dTo2dconf_disp_ptrtype M_opDisp2dTo2dconf;
