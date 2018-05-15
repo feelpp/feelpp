@@ -241,6 +241,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> co
             res.insert( "electric-field" );
         if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
             res.insert( "conductivity" );
+        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
+            res.insert( "current-density" );
         if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
             res.insert( "pid" );
     }
@@ -382,6 +384,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
                                      M_electricProperties->fieldElectricConductivity() );
         hasFieldToExport = true;
     }
+    if ( fields.find( "current-density" ) != fields.end() )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
+                                     *M_fieldCurrentDensity );
+        hasFieldToExport = true;
+    }
     if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
@@ -407,6 +416,40 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
      else*/ if ( M_computeElectricFieldProjType == "nodal" )
         M_fieldElectricField->on(_range=M_rangeMeshElements,
                                  _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
+    else
+        CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
+{
+    std::string M_computeElectricFieldProjType = "nodal";
+    /*if ( M_computeElectricFieldProjType == "L2" )
+     *M_fieldCurrentDensityContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
+     else*/ if ( M_computeElectricFieldProjType == "nodal" )
+    {
+        for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+        {
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+            if ( electricConductivity.isConstant() )
+            {
+                double sigma = electricConductivity.value();
+                M_fieldCurrentDensity->on(_range=range,
+                                          _expr=-sigma*trans(gradv( this->fieldElectricPotential() ) ) );
+            }
+            else
+            {
+                auto sigma = electricConductivity.expr();
+                if ( sigma.expression().hasSymbol( "heat_T" ) )
+                    continue;
+                M_fieldCurrentDensity->on(_range=range,
+                                          _expr=-sigma*trans(gradv( this->fieldElectricPotential() ) ) );
+            }
+        }
+    }
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
@@ -444,6 +487,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.localize();
 
     this->updateElectricField();
+    this->updateCurrentDensity();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
