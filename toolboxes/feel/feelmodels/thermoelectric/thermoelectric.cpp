@@ -434,6 +434,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_blockVectorSolutionMonolithic.localize();
 
         M_electricModel->updateElectricField();
+        M_electricModel->updateCurrentDensity();
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");

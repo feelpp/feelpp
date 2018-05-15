@@ -146,6 +146,8 @@ public :
     space_electricfield_ptrtype const& spaceElectricField() const { return M_XhElectricField; }
     element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
+    element_electricfield_ptrtype const& fieldCurrentDensityPtr() const { return M_fieldCurrentDensity; }
+    element_electricfield_type const& fieldCurrentDensity() const { return *M_fieldCurrentDensity; }
 
     electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
@@ -174,6 +176,7 @@ public :
 
     //___________________________________________________________________________________//
     void updateElectricField();
+    void updateCurrentDensity();
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -185,6 +188,8 @@ private :
     element_electricpotential_ptrtype M_fieldElectricPotential;
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
+    element_electricfield_ptrtype M_fieldCurrentDensity;
+
     // physical parameter
     electricproperties_ptrtype M_electricProperties;
     // boundary conditions
