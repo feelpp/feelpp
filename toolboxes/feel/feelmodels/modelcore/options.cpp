@@ -449,8 +449,8 @@ levelset_options(std::string const& prefix)
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
+        (prefixvm(prefix,"curvature-method").c_str(), Feel::po::value<std::string>()->default_value( "smooth-projection" ), "method to compute curvature (nodal-projection, l2-projection, smooth-projection, diffusion-o1, diffusion-o2)")
         (prefixvm(prefix,"smooth-gradient").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth gradient (with smoother-vec)")
-        (prefixvm(prefix,"smooth-curvature").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth curvature (use if the levelset has order < 2)")
         (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
         (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
 
@@ -517,7 +517,7 @@ interfaceforces_options(std::string const& prefix)
 }
 
 Feel::po::options_description
-multifluid_options(std::string const& prefix, uint16_type nls = 1)
+multifluid_options(std::string const& prefix, uint16_type nls = 3)
 {
     Feel::po::options_description multifluidOptions("MultiFluid options");
     multifluidOptions.add_options()

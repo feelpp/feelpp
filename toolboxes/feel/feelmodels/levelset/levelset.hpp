@@ -214,6 +214,14 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Curvature
+    enum class CurvatureMethod { 
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION
+    };
+    typedef boost::bimap<std::string, CurvatureMethod> curvaturemethod_maptype;
+    static curvaturemethod_maptype CurvatureMethodMap;
+
+    //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
     typedef Advection<ConvexType, basis_modgradphi_advection_type, PeriodicityType> modgradphi_advection_type;
@@ -669,10 +677,13 @@ private:
     mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
     bool M_doSmoothGradient;
-    bool M_doSmoothCurvature;
     //--------------------------------------------------------------------//
     // Advection
     int M_timeOrder;
+
+    //--------------------------------------------------------------------//
+    // Curvature
+    CurvatureMethod M_curvatureMethod;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
