@@ -117,6 +117,7 @@ public:
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
 
     static const int nb_spaces = functionspace_type::nSpaces;
+
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
                                typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > ,
                                                    fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> >,
@@ -505,8 +506,7 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<false> )
     {
-        auto mesh = model->functionSpace()->mesh();
-        return math::sqrt( integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
+        return math::sqrt( integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
@@ -524,16 +524,16 @@ private:
     double h1Norm( element_type const& u, mpl::bool_<false> )
     {
         auto mesh = model->functionSpace()->mesh();
-        double l22 = integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
-        double semih12 = integrate( elements(mesh), (vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
+        double l22 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
     }
     double h1Norm( element_type const& u, mpl::bool_<true>)
     {
         auto mesh = model->functionSpace()->mesh();
         auto u_femT = u.template element<1>();
-        double l22 = integrate( elements(mesh), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
-        double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
+        double l22 = integrate( u.functionSpace()->template rangeElements<0>(), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
+        double semih12 = integrate( u_femT.functionSpace()->template rangeElements<0>(), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
     }
 
@@ -556,7 +556,7 @@ private:
 
                 auto u = M_composite_u.template element< T::value >();
                 auto mesh = u.functionSpace()->mesh();
-                double norm  = normL2(_range=elements( mesh ),_expr=( idv(u) ) );
+                double norm  = normL2(_range=u.functionSpace()->template rangeElements<0>(),_expr=( idv(u) ) );
                 M_vec(i)= norm ;
             }
 
