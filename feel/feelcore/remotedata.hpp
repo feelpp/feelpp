@@ -73,6 +73,7 @@ struct RemoteData
     class Github
     {
     public :
+        //! init from a description : github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
         Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
         Github( Github const& ) = default;
         Github( Github && ) = default;
@@ -95,7 +96,17 @@ struct RemoteData
     class Girder
     {
     public :
-        void download( size_type id, std::string const& dir );
+        Girder( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
+        Girder( Girder const& ) = default;
+        Girder( Girder && ) = default;
+    public :
+        std::string download( std::string const& dir = Environment::downloadsRepository() );
+    private :
+        std::string downloadFile( std::string const& fileId, std::string const& dir );
+    private :
+        WorldComm const& M_worldComm;
+        std::string M_url, M_token;
+        std::string M_fileId;//, M_folderId, M_itemId;
     private :
     };
 

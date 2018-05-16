@@ -230,6 +230,55 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
     return thefilename;
 }
 
+
+pt::ptree
+convertDescToPropertyTree( std::string const& desc )
+{
+    // split the desc with respect to special characters
+    std::vector<std::pair<bool,std::string>> descSplitted;
+    std::string currentSplit;
+    std::vector<char> splitChars = { ':',',','{','}','[',']' };
+    char lastSplitChar = '0';
+    for ( std::string::const_iterator it=desc.begin(); it!=desc.end(); ++it)
+    {
+        char c = *it;
+        auto itFindSplitChar = std::find(splitChars.begin(),splitChars.end(), c );
+        if ( ( itFindSplitChar != splitChars.end() ) && ( c != ':' || lastSplitChar != ':' ) )
+        {
+            descSplitted.push_back( std::make_pair( false,currentSplit ) );
+            descSplitted.push_back( std::make_pair( true,std::string(1,c) ) );
+            lastSplitChar = c;
+            currentSplit.clear();
+        }
+        else
+            currentSplit += c;
+    }
+    if ( !currentSplit.empty() )
+        descSplitted.push_back( std::make_pair( false, currentSplit ) );
+
+    // create new string convertible to property tree (by adding double quote)
+    std::string newDesc = "{";
+    for (int k=0;k<descSplitted.size();++k)
+    {
+        std::string expr = descSplitted[k].second;
+        if ( descSplitted[k].first )
+        {
+            newDesc += expr;
+            continue;
+        }
+        boost::trim( expr );
+        newDesc += "\"" + expr + "\"";
+    }
+    newDesc += "}";
+ 
+    // create the property tree
+    pt::ptree pt;
+    std::istringstream istr( newDesc );
+    pt::read_json( istr, pt );
+    return pt;
+}
+
+
 RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm )
     :
     M_worldComm( worldComm )
@@ -242,6 +291,7 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     CHECK( what.size() == 7 ) << "invalid size";
     std::vector<std::string> keysvalues;
     std::string exprtosplit = std::string(what[5].first, what[5].second);
+#if 0
     boost::split( keysvalues, exprtosplit, boost::is_any_of(","), boost::token_compress_on );
     for ( std::string const& keyvalue : keysvalues )
     {
@@ -257,13 +307,26 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
         else if ( keyvalueSplitted[0] == "path" ) M_path = keyvalueSplitted[1];
         else if ( keyvalueSplitted[0] == "token" ) M_token = keyvalueSplitted[1];
     }
+#else
+    pt::ptree pt = convertDescToPropertyTree( exprtosplit );
+    if ( auto it = pt.get_optional<std::string>("owner") )
+        M_owner = *it;
+    if ( auto it = pt.get_optional<std::string>("repo") )
+        M_repo = *it;
+    if ( auto it = pt.get_optional<std::string>("branch") )
+        M_branch = *it;
+    if ( auto it = pt.get_optional<std::string>("path") )
+        M_path = *it;
+    if ( auto it = pt.get_optional<std::string>("token") )
+        M_token = *it;
+#endif
 
     if ( M_owner.empty() )
         M_owner = "feelpp";
     if ( M_repo.empty() )
         M_repo = "feelpp";
 
-#if 0
+#if 1
     std::cout << "owner: " << M_owner << "\n"
               << "repo: " << M_repo << "\n"
               << "branch: " << M_branch << "\n"
@@ -369,14 +432,89 @@ RemoteData::Github::downloadFolderRecursively( pt::ptree const& ptree, std::stri
 }
 
 
-void
-RemoteData::Girder::download( size_type id, std::string const& dir )
+RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm )
+    :
+    M_worldComm( worldComm )
 {
-#if defined(FEELPP_HAS_LIBCURL)
-    CURL *curl_handle;
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-#endif
+    std::regex ex("([ ]*)girder([ ]*):([ ]*)([{])([^]*)([}])");
+    std::cmatch what;
+    if( !regex_match(desc.c_str(), what, ex) )
+        return;
+
+    CHECK( what.size() == 7 ) << "invalid size";
+    std::vector<std::string> keysvalues;
+    std::string exprtosplit = std::string(what[5].first, what[5].second);
+
+    pt::ptree pt = convertDescToPropertyTree( exprtosplit );
+
+    if ( auto it = pt.get_optional<std::string>("url") )
+        M_url = *it;
+    if ( auto it = pt.get_optional<std::string>("file") )
+        M_fileId = *it;
+    if ( auto it = pt.get_optional<std::string>("token") )
+        M_token = *it;
+
+    if ( M_url.empty() )
+        M_url = "https://girder.math.unistra.fr";
+}
+std::string
+RemoteData::Girder::download( std::string const& dir )
+{
+    std::string downloadedFileOrFolder;
+    if ( M_worldComm.isMasterRank() )
+    {
+        if ( !M_fileId.empty() )
+            downloadedFileOrFolder = this->downloadFile( M_fileId, dir );
+    }
+    mpi::broadcast( M_worldComm.globalComm(), downloadedFileOrFolder, M_worldComm.masterRank() );
+    return downloadedFileOrFolder;
+}
+
+std::string
+RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir )
+{
+    std::string downloadedFile;
+    // get metadata info
+    std::string urlFileInfo = M_url+"/api/v1/file/" + fileId;
+    std::vector<std::string> headersFileInfo;
+    headersFileInfo.push_back("Accept: application/json");
+    if ( !M_token.empty() )
+        headersFileInfo.push_back( "Girder-Token: "+M_token );
+    std::ostringstream omemfile;
+    requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+
+    // extract info of ptree
+    auto itFileName = pt.get_optional<std::string>("name");
+    CHECK( itFileName ) << "invalid id : not a file or not exists";
+    std::string filename = *itFileName;
+    auto itMimeType = pt.get_optional<std::string>("mimeType");
+
+    if ( !fs::exists( dir ) )
+        fs::create_directories( dir );
+
+    // download the file
+    std::string urlFileDownload = M_url+"/api/v1/file/" + fileId + "/download";
+    std::vector<std::string> headersFileDownload;
+    if ( itMimeType )
+        headersFileDownload.push_back( "Accept: " + *itMimeType );
+    if ( !M_token.empty() )
+        headersFileDownload.push_back( "Girder-Token: "+M_token );
+    std::string filepath = (fs::path(dir)/filename).string();
+    std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
+    requestHTTPGET( urlFileDownload,headersFileDownload,ofile );
+    ofile.close();
+    // save metadata
+    std::string metadatapath = (fs::path(dir)/(filename+".metadata.json")).string();
+    std::ofstream ofileMetadata( metadatapath, std::ios::out);
+    ofileMetadata << omemfile.str();
+    ofileMetadata.close();
+
+    downloadedFile = filepath;
+    return downloadedFile;
 }
 
 } // namespace Feel
