@@ -112,6 +112,7 @@ public:
 
     typedef typename ModelType::parameter_type parameter_type;
     typedef typename ModelType::mesh_type mesh_type;
+    
     typedef std::vector< parameter_type > vector_parameter_type;
 
     typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
