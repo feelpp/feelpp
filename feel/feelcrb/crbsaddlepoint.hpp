@@ -35,7 +35,7 @@
 
 namespace Feel
 {
-po::options_description crbSaddlePointOptions( std::string const& prefix="",, int const& n_block=2 );
+po::options_description crbSaddlePointOptions( std::string const& prefix="", int const& n_block=2 );
 
 /**
  * \class CRBSaddlePoint
