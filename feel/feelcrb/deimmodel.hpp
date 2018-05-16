@@ -98,6 +98,7 @@ public :
     //! \return the model
     model_ptrtype & model() { return M_model; }
 
+    int tag() override { return M_tag; }
 protected :
     //! UpdateRb without block structure
     void updateRb( rbspace_ptrtype const& XN, mpl::false_ );
@@ -137,9 +138,10 @@ protected :
             this->M_elts_ids = builder.elts();
         }
 
-    virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh )
+    virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh ) override
         {
-            return space_type::New( _mesh=mesh, _range=M_online_model->functionspaceMeshSupport( mesh ) );
+            return space_type::New( _mesh=mesh,
+                                    _range=M_online_model->functionspaceMeshSupport( mesh ) );
         }
 
 protected :
@@ -185,7 +187,8 @@ private :
         ExpansionByBlock( self_type* deim, vectorN_type const& urb ) :
             m_deim( deim ),
             m_urb( urb ),
-            U( m_deim->model()->functionSpace() )
+            m_start(0),
+            U( m_deim->onlineModel()->functionSpace() )
         {
             int size0 = m_deim->template subRb<0>().size();
             int size1 = m_deim->template subRb<1>().size();
@@ -201,18 +204,19 @@ private :
         template <typename T>
         void operator()( T const& t ) const
         {
+            auto WN = m_deim->template subRb<T::value>();
             int Nwn = N;
-            int n = T::value;
-            if ( m_supremizer && (n==0) )
-                Nwn = 2*N;
-            else if ( m_supremizer )
-                n++;
+            if ( m_supremizer && T::value==0 )
+                Nwn *= 2;
 
-            CHECK( Nwn<=m_deim->template subRb<T::value>().size() ) <<"Unvalid expansion size\n";
-
-            auto coeff = m_urb.segment( n*Nwn, (n+1)*Nwn-1 );
+            CHECK( Nwn<=WN.size() ) << "invalide expansion size, N<n="<<Nwn<<", size="<<WN.size()
+                                    << ", space="<<T::value<<std::endl;
+            CHECK( m_start+Nwn<=m_urb.size() ) << "invalide expansion size, N<n="<<Nwn<<", size="
+                                                 <<m_urb.size() << ", space="<<T::value<<std::endl;
+            auto  coeff = m_urb.segment( m_start, Nwn );
             auto u = U.template element<T::value>();
-            u = Feel::expansion( m_deim->template subRb<T::value>(), coeff, Nwn ).container();
+            u = Feel::expansion( WN, coeff, Nwn ).container();
+            m_start += Nwn;
         }
 
         element_type& field() { return U; }
@@ -220,6 +224,7 @@ private :
     private :
         self_type* m_deim;
         vectorN_type m_urb;
+        mutable int m_start;
         bool m_supremizer;
         int N;
         mutable element_type U;
