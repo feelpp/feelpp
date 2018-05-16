@@ -1360,6 +1360,11 @@ public :
             return M;
         }
 
+    virtual int sizeOfBilinearJ() const
+        { return -1; }
+
+    virtual int sizeOfLinearR() const
+        { return -1; }
 
 
     void buildGinacBetaExpressions( parameter_type const& mu )

@@ -566,6 +566,8 @@ CRBBlock<TruthModelType>::buildRbMatrix( int number_of_added_elements, parameter
     rangespace_type range;
     boost::fusion::for_each( range, row );
 
+    this->buildRbMatrixTrilinear(number_of_added_elements,mu);
+
     LOG(INFO) <<"CRBBlock Build rb matrices end\n";
     toc("Reduced Matrices Built");
 }// buildRbMatrix
