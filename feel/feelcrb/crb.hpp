@@ -2881,10 +2881,7 @@ CRB<TruthModelType>::offline()
             M_model->updateRbSpaceContextEim();
             M_hasRbSpaceContextEim = true;
         }
-        if ( M_model->hasDeim() && !M_model->isLinear() )
-        {
-            M_model->updateRbInDeim();
-        }
+        M_model->updateRbInDeim();
 
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
@@ -10951,7 +10948,8 @@ CRB<TruthModelType>::buildSampling()
         }
         else if ( N_random>0 )
         {
-            this->M_WNmu->randomize( N_random , true );
+            bool use_log = boption("crb.randomize.use-log");
+            this->M_WNmu->randomize( N_random , true, "",use_log );
             if( Environment::isMasterRank() )
                 std::cout<<"[CRB::offline] Randomize WNmu ( sampling size : "
                          <<N_random<<" )"<<std::endl;
