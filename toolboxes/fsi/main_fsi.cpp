@@ -58,10 +58,12 @@ main( int argc, char** argv )
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P2P1" )
         runApplicationFSI<2,1>();
-    /*#if FEELPP_DIM == 2
+    else if ( feapprox == "P2P1-P2" )
+        runApplicationFSI<2,1,2>();
+#if 0//FEELPP_DIM == 2
     else if ( feapprox == "P1P1" )
         runApplicationFSI<1,1>();
-     #endif*/
+#endif
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
