@@ -28,6 +28,17 @@ public :
     using ser_type = SER<crb_type>;
     using ser_ptrtype = boost::shared_ptr<ser_type>;
 
+    typedef typename model_type::element_type element_type;
+    typedef typename model_type::functionspace_type functionspace_type;
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                               typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > ,
+                                                   fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> >,
+                                                   typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >,
+                                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                                      fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                                      >::type >::type >::type index_vector_type;
+
     CvgStudy()
     {
         crb_model = boost::make_shared<crb_model_type>(crb::stage::offline);
@@ -65,7 +76,7 @@ public :
             tic();
             auto u_fem = crb_model->model()->solve( mu );
             double output_fem = crb_model->output( crb->outputIndex(), mu, u_fem );
-            double u_l2 = normL2( elements(mesh), idv(u_fem) );
+            double u_l2 = l2Norm(u_fem);
             toc("FEM Solve");
 
             cout << std::setw(5) << "N"
@@ -85,7 +96,8 @@ public :
 
                 vectorN_type u = Un[0];
                 auto u_rb = crb->expansion( u, n );
-                l2_error[i].push_back( normL2( elements(mesh), idv(u_rb)-idv(u_fem) )/u_l2 );
+                auto u_diff = u_fem-u_rb;
+                l2_error[i].push_back( l2Norm(u_diff)/u_l2 );
 
                 cout << std::setw(5) << n
                      << std::setw(25) << output_fem
@@ -144,6 +156,53 @@ private :
         }
     }
 
+    double l2Norm( element_type const& u )
+        {
+            static const bool is_composite = functionspace_type::is_composite;
+            return l2Norm( u, mpl::bool_< is_composite >() );
+        }
+    double l2Norm( element_type const& u, mpl::bool_<false> )
+        {
+            return norml2( u.functionSpace()->template rangeElements<0>(), idv(u) );
+        }
+    double l2Norm( element_type const& u, mpl::bool_<true>)
+        {
+            ComputeNormL2InCompositeCase compute_normL2_in_composite_case( u );
+            index_vector_type index_vector;
+            fusion::for_each( index_vector, compute_normL2_in_composite_case );
+            return compute_normL2_in_composite_case.norm();
+        }
+
+    struct ComputeNormL2InCompositeCase
+    {
+        ComputeNormL2InCompositeCase( element_type const composite_u )
+            :
+            M_composite_u( composite_u )
+            {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+            {
+                int i = T::value;
+                if( i == 0 )
+                    M_vec.resize( 1 );
+                else
+                    M_vec.conservativeResize( i+1 );
+
+                auto u = M_composite_u.template element< T::value >();
+                double norm  = normL2(_range=u.functionSpace()->template rangeElements<0>(),_expr=( idv(u) ) );
+                M_vec(i)= norm ;
+            }
+
+        double norm()
+            {
+                return M_vec.sum();
+            }
+
+        mutable vectorN_type M_vec;
+        element_type M_composite_u;
+    };
 
 
 private :
