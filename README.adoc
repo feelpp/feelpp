@@ -43,6 +43,10 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 
 toc::[]
 
+image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
+image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
+
 link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
 
 == {feelpp} Documentation
@@ -126,9 +130,9 @@ Here are the latest releases of {feelpp}
  image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
 
  * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.45132"]
+ image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="https://doi.org/10.5281/zenodo.45132"]
 
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="http://dx.doi.org/10.5281/zenodo.11624"]
+ * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="https://doi.org/10.5281/zenodo.11624"]
 
 == Features
 

@@ -2,10 +2,10 @@
 
  This file is part of the Feel++ library
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Author(s): JB Wahl <wahl.jb@gmail.com>
  Date: 27 sept. 2015
 
- Copyright (C) 2015 Feel++ Consortium
+ Copyright (C) 2018 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,24 +22,34 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define BOOST_TEST_MODULE test_removecomments
+#define BOOST_TEST_MODULE test_ptree_editions
 #include <testsuite.hpp>
-
+#include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/ptreetools.hpp>
+#include <feel/feelcore/utility.hpp>
 
-
+using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
+BOOST_AUTO_TEST_SUITE( ptree_editions )
 
-BOOST_AUTO_TEST_SUITE( removecomments )
-
-BOOST_AUTO_TEST_CASE( test1 )
+BOOST_AUTO_TEST_CASE( test_0 )
 {
-    using namespace Feel;
-    std::string s = "int main() /* toto */ { // a comment \n int i = 0; /* tutu */ }\n";
-    auto res = removeComments(s);
-    BOOST_TEST_MESSAGE( "remove comment of \n" << s << "\n gives\n" << res );
-    BOOST_CHECK_EQUAL( res, "int main()  { \n int i = 0;  }\n" );
+    pt::ptree p;
+
+    std::string filename = Environment::expand("$cfgdir/test_ptree_editions.json");
+
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, p);
+
+    std::string my_value = p.get<std::string>( "Field1.subfield.myvariable" );
+    BOOST_CHECK_EQUAL( my_value, "value1" );
+
+    editPtreeFromOptions( p );
+    my_value = p.get<std::string>( "Field1.subfield.myvariable" );
+    BOOST_CHECK_EQUAL( my_value, "value2" );
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
