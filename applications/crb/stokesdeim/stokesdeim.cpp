@@ -99,6 +99,7 @@ void StokesDeim::initModel()
     this->addEnergyMatrix( energy );
 
     f1 = integrate( markedfaces(mesh,"midflux"), inner(oneX(),id(u)) );
+    this->M_Fqm[1][0][0]->close();
 }
 
 StokesDeim::beta_type
@@ -190,7 +191,7 @@ StokesDeim::output( int output_index, parameter_type const& mu ,
     }
     else if ( output_index==1 )
     {
-        output = 1./(.1-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
+        output = 1./(1.-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
     }
 
     return output;
