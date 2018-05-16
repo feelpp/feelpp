@@ -99,7 +99,7 @@ private :
                                  _filename=this->name(true)+"-submesh.msh",
                                  _worldcomm= Environment::worldCommSeq() );
 
-        Rh = newInterpolationSpace(seqmesh);
+        Rh = this->newInterpolationSpace(seqmesh);
 
         this->M_map->init( Rh, Xh );
 

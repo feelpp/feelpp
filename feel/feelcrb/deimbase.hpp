@@ -169,12 +169,13 @@ public :
     //! the name of this instance
     std::string name( bool lower=false )
         {
-            std::string name = ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %M_prefix  ).str();
+            std::string name = ( boost::format( "%1%DEIM%2%%3%" ) %(is_matrix ? "M":"") %M_prefix %tag() ).str();
             if ( lower )
                 return algorithm::to_lower_copy(name);
             return name;
         }
 
+    virtual int tag()=0;
     /**
      * Run the greedy algotithm and build the DEIM basis.
      * Greedy algorithm stops when the affine decomposition is exact
