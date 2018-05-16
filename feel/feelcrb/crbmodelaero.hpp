@@ -58,6 +58,9 @@ public :
 
     CRBModelAero( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
         super ( model, stage, level ),
+        M_use_psit( boption("crb.aero.use-psit")),
+        M_delta( doption("crb.aero.psit.delta0" ) ),
+        M_rez(-1),
         M_QTri( 0 ),
         M_set_0_mean_pressure( boption("crb.aero.fix-mean-pressure") )
         {
@@ -65,6 +68,8 @@ public :
             if ( stage == crb::stage::offline )
                 this->initTrilinear();
         }
+    element_type solve( parameter_type const& mu ) override
+        { return this->M_model->solve(mu); }
 
     void initTrilinear();
     element_type offlineSolveAD( parameter_type const& mu );
@@ -74,11 +79,26 @@ public :
     std::vector<double> computeBetaTri( parameter_type const& mu )
         { return this->M_model->computeBetaTri(mu); }
 
+    int sizeOfBilinearJ() const
+        { return this->M_model->sizeOfBilinearJ()==-1 ? this->Qa():this->M_model->sizeOfBilinearJ(); }
+    int sizeOfLinearR() const
+        { return this->M_model->sizeOfLinearR()==-1 ? this->Ql(0):this->M_model->sizeOfLinearR(); }
+
+
 private:
     void updateJacobianAD( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu);
     void updateResidualAD( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu);
     void postSolve( vector_ptrtype rhs, vector_ptrtype sol );
+    double updateR( vector_ptrtype const& X, parameter_type const& mu )
+        {
+            auto R = backend()->newVector(this->functionSpace());
+            updateResidualAD(X, R, mu );
+            return R->l2Norm();
+        }
+    void updatePsiT( const vector_ptrtype& X, parameter_type const& mu );
 private:
+    bool M_use_psit;
+    double M_delta, M_rez;
     int M_QTri;
     sparse_matrix_ptrtype M_J;
     vector_ptrtype M_R;
@@ -126,6 +146,12 @@ CRBModelAero<ModelType>::offlineSolveAD( parameter_type const& mu )
     this->M_backend_primal->nlSolver()->residual = boost::bind( &CRBModelAero<ModelType>::updateResidualAD, boost::ref( *this ), _1, _2, mu );
     auto post_solve = boost::bind( &CRBModelAero<ModelType>::postSolve, boost::ref( *this ), _1, _2 );
 
+    if ( M_use_psit )
+    {
+        M_rez = -1;
+        M_delta = doption("crb.aero.psit.delta0");
+    }
+
     auto U = this->functionSpace()->element();
     this->M_backend_primal->nlSolve( _jacobian=M_J, _residual=M_R, _solution=U, _post=post_solve );
 
@@ -137,7 +163,8 @@ void
 CRBModelAero<ModelType>::updateJacobianAD( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
 {
     J->zero();
-    auto U = this->functionSpace()->element();
+    auto Xh = this->functionSpace();
+    auto U = Xh->element();
     U = *X;
 
     beta_vector_type betaJqm;
@@ -158,6 +185,17 @@ CRBModelAero<ModelType>::updateJacobianAD( const vector_ptrtype& X, sparse_matri
         {
             J->addMatrix( betaJqm[q][m], M_Jqm[q][m] );
         }
+    }
+
+    if ( M_use_psit )
+    {
+        auto u = U.template element<0>();
+        auto T = U.template element<2>();
+        updatePsiT( X, mu );
+        auto norm_u=max(1e-12,sqrt(inner(idv(u),idv(u))));
+        auto range = u.functionSpace()->template rangeElements<0>();
+        form2( _test=Xh, _trial=Xh, _matrix=J )
+            += integrate( range, norm_u/hMin()/M_delta*(inner(idt(u),id(u)) + inner(id(T),idt(T))) );
     }
     J->close();
 }
@@ -186,7 +224,7 @@ CRBModelAero<ModelType>::updateResidualAD( const vector_ptrtype& X, vector_ptrty
 
     // bilinear part
     temp->zero();
-    for ( size_type q = 0; q < this->Qa(); ++q )
+    for ( size_type q = 0; q < this->sizeOfBilinearJ(); ++q )
         if ( this->mMaxA(q)==1 )
         {
             temp->addMatrix( betaJqm[q][0], M_Jqm[q][0] );
@@ -205,6 +243,16 @@ CRBModelAero<ModelType>::updateResidualAD( const vector_ptrtype& X, vector_ptrty
     R->close();
 }
 
+template<typename ModelType>
+void
+CRBModelAero<ModelType>::updatePsiT( const vector_ptrtype& X, parameter_type const& mu )
+{
+    double new_rez = updateR( X, mu );
+    if ( M_rez==-1 )
+        M_rez=new_rez;
+    M_delta = M_delta*M_rez/new_rez;
+    M_rez = new_rez;
+}
 
 template<typename ModelType>
 void
