@@ -98,6 +98,7 @@ public :
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
     //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
