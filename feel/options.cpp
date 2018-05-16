@@ -477,8 +477,6 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.elements.write" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Write evaluated nl solutions on disk"  )
         ( prefixvm( prefix, "deim.elements.clean-directory" ).c_str(), Feel::po::value<bool>()->default_value( false ), ""  )
         ( prefixvm( prefix, "deim.elements.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "nlsolutions" ), "directory were nl solutions are stored"  )
-
-        ( prefixvm( prefix, "deim.optimized-online" ).c_str(), Feel::po::value<bool>()->default_value( true ), "Use optimized version for online assembly. DEBUG, this option has to be removed !"  )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
@@ -595,6 +593,7 @@ crbOptions( std::string const& prefix )
         ( "crb.db.filename"   , Feel::po::value<std::string>(), "DB filename" )
         ( "crb.output-index"   , Feel::po::value<int>()->default_value( 0 ), "output index (default is right hand side = 0)" )
         ( "crb.sampling-size"   , Feel::po::value<int>()->default_value( 1000 ), "Offline  sampling size " )
+        ( "crb.randomize.use-log"   , Feel::po::value<bool>()->default_value(true ), "" )
         ( "crb.sampling-mode"   , Feel::po::value<std::string>()->default_value( "log-random" ), "Offline  sampling mode, equidistribute, log-equidistribute or log-random " )
         ( "crb.all-procs-have-same-sampling" , Feel::po::value<bool>()->default_value( false ), "all procs have the same sampling if true" )
         ( "crb.error-max"   , Feel::po::value<double>()->default_value( 1e-6 ),       "Offline  tolerance" )
@@ -729,6 +728,8 @@ crbAeroOptions( std::string const& prefix )
     crboptions.add_options()
         ( "crb.aero.add-supremizer",Feel::po::value<bool>()->default_value( false ), "add the supremizer function to the first reduced basis")
         ( "crb.aero.fix-mean-pressure",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.use-psit",Feel::po::value<bool>()->default_value( false ), "")
+        ( "crb.aero.psit.delta0",Feel::po::value<double>()->default_value( 1. ), "")
 
         ;
     crboptions.add( crbSaddlePointOptions(prefix,3) );
