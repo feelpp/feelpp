@@ -1498,14 +1498,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
     massMatrix->close();
 
     // mass matrix lumped
-    M_massMatrixLumped = this->backend()->newMatrix(_test=Vh,_trial=Vh);
+    auto graph = boost::make_shared<graph_type>( Vh->dof(),Vh->dof() );
+    graph->addMissingZeroEntriesDiagonal();
+    graph->close();
+    M_massMatrixLumped = this->backend()->newMatrix( 0,0,0,0,graph );
+    //M_massMatrixLumped = this->backend()->newMatrix(_test=Vh,_trial=Vh);
     if ( Vh->fe()->nOrder==1)
     {
-        auto vecDiagMassLumped = this->backend()->newVector(Vh);
+        M_vecDiagMassMatrixLumped = this->backend()->newVector(Vh);
         auto unityVec = this->backend()->newVector(Vh);
         unityVec->setConstant(1);
-        massMatrix->multVector( unityVec,vecDiagMassLumped );
-        M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+        massMatrix->multVector( unityVec,M_vecDiagMassMatrixLumped );
+        M_massMatrixLumped->setDiagonal( M_vecDiagMassMatrixLumped );
     }
     else
     {
@@ -1518,10 +1522,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
         unityVec->setConstant(1);
         massMatrix->multVector( unityVec,sumRow );
         double sumMatrix = sumRow->sum();
-        auto vecDiagMassLumped = massMatrix->diagonal();
-        double sumDiag = vecDiagMassLumped->sum();
-        vecDiagMassLumped->scale( sumMatrix/sumDiag );
-        M_massMatrixLumped->setDiagonal( vecDiagMassLumped );
+        M_vecDiagMassMatrixLumped = massMatrix->diagonal();
+        double sumDiag = M_vecDiagMassMatrixLumped->sum();
+        M_vecDiagMassMatrixLumped->scale( sumMatrix/sumDiag );
+        M_massMatrixLumped->setDiagonal( M_vecDiagMassMatrixLumped );
     }
 }
 

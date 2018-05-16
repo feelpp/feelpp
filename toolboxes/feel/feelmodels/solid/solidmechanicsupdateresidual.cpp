@@ -169,11 +169,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             }
             else
             {
-                auto myvec = this->backend()->newVector(M_XhDisplacement);
-                *myvec = u;
-                myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient()*this->mechanicalProperties()->cstRho());
-                R->close();
-                R->addVector( myvec, this->massMatrixLumped() );
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = u;
+                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient()*this->mechanicalProperties()->cstRho());
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO";
+                }
             }
         }
         if (BuildCstPart)
@@ -188,11 +195,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             }
             else
             {
-                auto myvec = this->backend()->newVector(M_XhDisplacement);
-                *myvec = polySecondDerivDisp;
-                myvec->scale(-this->mechanicalProperties()->cstRho());
-                R->close();
-                R->addVector( myvec, this->massMatrixLumped() );
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = polySecondDerivDisp;
+                    myvec->scale(-this->mechanicalProperties()->cstRho());
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    R->close();
+                    auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                    uAddResidual.add(-this->mechanicalProperties()->cstRho(), element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                }
             }
         }
     }

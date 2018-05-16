@@ -155,21 +155,62 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     }
     //---------------------------------------------------------------------------------------//
     // discretisation acceleration term
-    if (!this->isStationary() && BuildNonCstPart_TransientForm2Term)
+    if ( !this->isStationary() )
     {
-        form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-            integrate( _range=elements(mesh),
-                       _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
-                       _geomap=this->geomap() );
-    }
-    //---------------------------------------------------------------------------------------//
-    // discretisation acceleration term
-    if (!this->isStationary() && BuildNonCstPart_TransientForm1Term)
-    {
-        form1( _test=Xh, _vector=F ) +=
-            integrate( _range=elements(mesh),
-                       _expr= idv(rho)*inner(idv(this->timeStepNewmark()->polyDeriv()),id(v)),
-                       _geomap=this->geomap() );
+        if ( BuildNonCstPart_TransientForm2Term )
+        {
+            if ( !this->useMassMatrixLumped() )
+            {
+                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                    integrate( _range=elements(mesh),
+                               _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                A->close();
+                double thecoeff = this->timeStepNewmark()->polyDerivCoefficient()*this->mechanicalProperties()->cstRho();
+                if ( this->massMatrixLumped()->size1() == A->size1() )
+                    A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                else
+                {
+                    auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
+                    auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
+                    uAddDiagA = *M_vecDiagMassMatrixLumped;
+                    uAddDiagA.scale( thecoeff );
+                    A->addDiagonal( vecAddDiagA );
+                }
+            }
+        }
+        if ( BuildNonCstPart_TransientForm1Term )
+        {
+            auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
+            if ( !this->useMassMatrixLumped() )
+            {
+                form1( _test=Xh, _vector=F ) +=
+                    integrate( _range=elements(mesh),
+                               _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == F->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = polySecondDerivDisp;
+                    myvec->scale(this->mechanicalProperties()->cstRho());
+                    F->close();
+                    F->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    F->close();
+                    auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
+                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                    uAddRhs.add(this->mechanicalProperties()->cstRho(), element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                }
+            }
+        }
     }
     //---------------------------------------------------------------------------------------//
     // source term

@@ -157,7 +157,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         {
             J->close();
             double thecoeff = M_timeStepNewmark->polyDerivCoefficient()*this->mechanicalProperties()->cstRho();
-            J->addMatrix( thecoeff, this->massMatrixLumped() );
+            if ( this->massMatrixLumped()->size1() == J->size1() )
+                J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+            else
+            {
+                auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
+                auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
+                uAddDiagJ = *M_vecDiagMassMatrixLumped;
+                uAddDiagJ.scale( thecoeff );
+                J->addDiagonal( vecAddDiagJ );
+            }
         }
     }
     //--------------------------------------------------------------------------------------------------//
