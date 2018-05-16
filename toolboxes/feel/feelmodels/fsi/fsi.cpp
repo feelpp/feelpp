@@ -496,14 +496,31 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         if ( M_fluidModel->doRestart() )
             this->fluidModel()->meshALE()->revertReferenceMesh();
 
+
         // create matrix which represent time derivative  bc operator
         M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr() );
-        M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newMatrix(0,0,0,0,this->fluidModel()->algebraicFactory()->sparsityMatrixGraph());
+        int nBlock = this->fluidModel()->nBlockMatrixGraph();
         auto VhFluid = this->fluidModel()->spaceVelocityPressure();
-        auto const& u = M_fluidModel->fieldVelocity();
         auto rangeFSIFluid = markedfaces(this->fluidModel()->mesh(),this->fluidModel()->markersNameMovingBoundary());
+        auto ru = stencilRange<0,0>(rangeFSIFluid);
+        BlocksBaseGraphCSR myblockGraphTimeDerivative(nBlock,nBlock);
+        auto blockpatternTimeDerivative = vf::Blocks<2,2,size_type>() << size_type(Pattern::COUPLED/*DEFAULT*/) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO);
+        auto mygraphTimeDerivative = stencil(_test=VhFluid,_trial=VhFluid,
+                                             _pattern_block=blockpatternTimeDerivative,
+                                             _diag_is_nonzero=false,_close=true,
+                                             _range=stencilRangeMap(ru) )->graph();
+        myblockGraphTimeDerivative(0,0) = mygraphTimeDerivative;
+        for ( int k=1;k<nBlock;++k )
+        {
+            auto mapPtr = this->fluidModel()->blockVectorSolution()(k)->mapPtr();
+            graph_ptrtype zeroGraph = boost::make_shared<graph_type>( mapPtr,mapPtr );
+            zeroGraph->zero();
+            myblockGraphTimeDerivative(k,k) = zeroGraph;
+        }
+        M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraphTimeDerivative);
+        auto const& u = M_fluidModel->fieldVelocity();
         auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-        form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative) +=
+        form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
             integrate( _range=rangeFSIFluid,
                        _expr=inner(myB*idt(u),id(u)),
                        _geomap=this->geomap() );
@@ -512,9 +529,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         auto VhStress = this->fluidModel()->fieldNormalStressRefMeshPtr()->functionSpace();
         M_coulingRNG_vectorStress = this->fluidModel()->backend()->newVector( VhStress );
         auto dofStress = VhStress->dof();
-        int nBlock = this->fluidModel()->nBlockMatrixGraph();
         BlocksBaseGraphCSR myblockGraph(nBlock,1);
-        auto ru = stencilRange<0,0>(rangeFSIFluid);
         auto blockpatternStress = vf::Blocks<2,1,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO);
         auto mygraph = stencil(_test=VhFluid,_trial=VhStress,
                                _pattern_block=blockpatternStress,

@@ -243,7 +243,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             if ( buildCstPart )
             {
                 A->close();
-                A->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative );
+                A->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
             }
             if ( buildNonCstPart )
             {
@@ -365,7 +365,7 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
             if ( buildCstPart )
             {
                 J->close();
-                J->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative );
+                J->addMatrix( this->couplingRNG_coeffForm2(), M_coulingRNG_matrixTimeDerivative, Feel::SUBSET_NONZERO_PATTERN );
             }
         }
     }
@@ -535,7 +535,6 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                 *M_coulingRNG_vectorStress = *this->fluidModel()->fieldNormalStressRefMeshPtr();
                 M_coulingRNG_vectorStress->scale(-1.);
                 R->addVector( M_coulingRNG_vectorStress, M_coulingRNG_matrixStress );
-
             }
         }
     }
