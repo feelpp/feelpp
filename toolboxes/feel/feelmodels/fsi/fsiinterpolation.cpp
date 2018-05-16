@@ -596,7 +596,6 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double dt = M_solidModel->timeStepNewmark()->timeStep();
         double gamma = M_solidModel->timeStepNewmark()->gamma();
         double beta = M_solidModel->timeStepNewmark()->beta();
-        double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
         // time derivative acceleration in solid
         if ( true/*false*/ )
             fieldToTransfert->add( -1, M_solidModel->timeStepNewmark()->currentAcceleration());
@@ -624,8 +623,6 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             fieldToTransfert->add( -this->fluidModel()->timeStepBDF()->polyDerivCoefficient( i+1 ),
                                    this->solidModel()->timeStepNewmark()->previousVelocity(i) );
 
-        fieldToTransfert->scale( scaleTimeDisc );
-
         // transfer solid to fluid
         if (M_interfaceFSIisConforme)
         {
@@ -641,10 +638,10 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
 #if 0
         auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
         auto uPolyDeriv = UPolyDeriv.template element<0>();
-        this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
-        M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+        this->couplingRNG_evalForm1()->add( -1.0, uPolyDeriv );
+        M_couplingRNG_coeffForm2 = this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
 #else
-        M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+        M_couplingRNG_coeffForm2 = this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
 #endif
 
     }
@@ -723,7 +720,6 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double dt = M_solidModel->timeStepNewmark()->timeStep();
         double gamma = M_solidModel->timeStepNewmark()->gamma();
         double beta = M_solidModel->timeStepNewmark()->beta();
-        double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
 
 #if 0
         if ( useOriginalMethod || (iterationFSI == 0) )
@@ -769,7 +765,6 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             }
         }
 #endif
-        fieldToTransfert->scale( scaleTimeDisc );
 
         if (M_interfaceFSIisConforme)
         {
@@ -782,7 +777,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
             M_opVelocity2dTo2dnonconf->apply( *fieldToTransfert, *this->couplingRNG_evalForm1() );
         }
 
-        M_couplingRNG_coeffForm2 = scaleTimeDisc*(1./(dt*gamma));
+        M_couplingRNG_coeffForm2 = (1./(dt*gamma));
     }
     else if ( M_solidModel->is1dReducedModel() )
     {
@@ -875,7 +870,6 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         double dt = M_solidModel->timeStepNewmark()->timeStep();
         double gamma = M_solidModel->timeStepNewmark()->gamma();
         double beta = M_solidModel->timeStepNewmark()->beta();
-        double scaleTimeDisc = M_solidModel->mechanicalProperties()->cstRho();
         // time derivative acceleration in solid (newmark)
         fieldToTransfert->add( -1, M_solidModel->timeStepNewmark()->currentAcceleration());
         // time derivative acceleration in solid (bdf)
@@ -904,7 +898,7 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
         fieldToTransfert->add( -1./(dt*gamma) , this->solidModel()->timeStepNewmark()->previousVelocity() );
         fieldToTransfert->add( -(1.-gamma)/gamma, this->solidModel()->timeStepNewmark()->previousAcceleration() );
 
-        fieldToTransfert->scale( 0.5*scaleTimeDisc );
+        fieldToTransfert->scale( 0.5 );
 
         // transfer solid to fluid
         if (M_interfaceFSIisConforme)
@@ -921,11 +915,11 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F( int iterationFSI 
 #if 0
         auto UPolyDeriv = this->fluidModel()->timeStepBDF()->polyDeriv();
         auto uPolyDeriv = UPolyDeriv.template element<0>();
-        this->couplingRNG_evalForm1()->add( -scaleTimeDisc, uPolyDeriv );
-        M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
+        this->couplingRNG_evalForm1()->add( -1.0, uPolyDeriv );
+        M_couplingRNG_coeffForm2 = this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
 #else
         //M_couplingRNG_coeffForm2 = scaleTimeDisc*this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0);
-        M_couplingRNG_coeffForm2 = 0.5*scaleTimeDisc*(this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0) + (1./(dt*gamma)));
+        M_couplingRNG_coeffForm2 = 0.5*(this->fluidModel()->timeStepBDF()->polyDerivCoefficient(0) + (1./(dt*gamma)));
 #endif
 
     }

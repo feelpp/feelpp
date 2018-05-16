@@ -1489,12 +1489,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
     CHECK ( this->isStandardModel() ) << "only compute when isStandardModel";
     auto Vh = this->functionSpaceDisplacement();
     auto const& u = this->fieldDisplacement();
+    auto const& rho = this->mechanicalProperties()->fieldRho();
     auto mesh = Vh->mesh();
     // mass matrix of Vh
     auto massMatrix = this->backend()->newMatrix(_test=Vh,_trial=Vh);
     form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
         integrate(_range=elements(mesh),
-                  _expr=inner(idt(u),id(u)) );
+                  _expr=idv(rho)*inner(idt(u),id(u)) );
     massMatrix->close();
 
     // mass matrix lumped

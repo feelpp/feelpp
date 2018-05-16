@@ -173,7 +173,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 {
                     auto myvec = this->backend()->newVector(M_XhDisplacement);
                     *myvec = u;
-                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient()*this->mechanicalProperties()->cstRho());
+                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
                     R->close();
                     R->addVector( myvec, this->massMatrixLumped() );
                 }
@@ -199,7 +199,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 {
                     auto myvec = this->backend()->newVector(M_XhDisplacement);
                     *myvec = polySecondDerivDisp;
-                    myvec->scale(-this->mechanicalProperties()->cstRho());
+                    myvec->scale(-1.0);
                     R->close();
                     R->addVector( myvec, this->massMatrixLumped() );
                 }
@@ -208,7 +208,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                     R->close();
                     auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
                     auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddResidual.add(-this->mechanicalProperties()->cstRho(), element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
                 }
             }
         }
