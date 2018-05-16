@@ -519,6 +519,7 @@ public :
     bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
     void setUseMassMatrixLumped( bool b ) { M_useMassMatrixLumped = b; }
     sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
+    vector_ptrtype const& vecDiagMassMatrixLumped() const { return M_vecDiagMassMatrixLumped; }
 
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
@@ -708,6 +709,7 @@ protected:
 
     bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
+    vector_ptrtype M_vecDiagMassMatrixLumped;
 
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
