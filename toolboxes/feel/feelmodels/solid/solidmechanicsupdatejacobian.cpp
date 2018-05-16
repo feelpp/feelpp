@@ -156,7 +156,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         else
         {
             J->close();
-            double thecoeff = M_timeStepNewmark->polyDerivCoefficient()*this->mechanicalProperties()->cstRho();
+            double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
             if ( this->massMatrixLumped()->size1() == J->size1() )
                 J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
             else

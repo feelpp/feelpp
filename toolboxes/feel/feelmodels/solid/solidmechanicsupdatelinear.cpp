@@ -169,7 +169,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
             else
             {
                 A->close();
-                double thecoeff = this->timeStepNewmark()->polyDerivCoefficient()*this->mechanicalProperties()->cstRho();
+                double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
                 if ( this->massMatrixLumped()->size1() == A->size1() )
                     A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
                 else
@@ -198,7 +198,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
                 {
                     auto myvec = this->backend()->newVector(M_XhDisplacement);
                     *myvec = polySecondDerivDisp;
-                    myvec->scale(this->mechanicalProperties()->cstRho());
                     F->close();
                     F->addVector( myvec, this->massMatrixLumped() );
                 }
@@ -207,7 +206,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
                     F->close();
                     auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
                     auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddRhs.add(this->mechanicalProperties()->cstRho(), element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
                 }
             }
         }
