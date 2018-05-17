@@ -71,6 +71,8 @@ private :
     fmi2_callback_functions_t M_callbackfunctions;
     var_map_type M_v_map;
     std::map< std::string,std::vector<std::string> > M_values;
+    fmi2_type_t M_type;
+
 };
 
 

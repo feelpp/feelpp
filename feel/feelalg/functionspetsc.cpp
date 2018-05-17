@@ -31,6 +31,7 @@
 
 namespace Feel
 {
+
 void
 PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 {
@@ -39,7 +40,65 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 
     switch ( mspackt )
     {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 9, 0 )
+    case MATSOLVER_SUPERLU :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERSUPERLU );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_SUPERLU_DIST :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERSUPERLU_DIST );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_UMFPACK :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERUMFPACK );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_ESSL :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERESSL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_LUSOL :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERLUSOL );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_MUMPS :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERMUMPS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+
+    case MATSOLVER_MKL_PARDISO :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERMKL_PARDISO );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_PASTIX :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERPASTIX );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_MATLAB :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERMATLAB );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_PETSC :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERPETSC );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+    case MATSOLVER_BAS :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERBAS );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
+
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
 #if PETSC_VERSION_LESS_THAN(3,4,0)
     case MATSOLVER_SPOOLES :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSPOOLES );
@@ -189,8 +248,14 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
                   << mspackt               << std::endl
                   << "Continuing with PETSC defaults" << std::endl;
     }
+
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 9, 0 )
+    MatSolverType t;
+    ierr = PCFactorGetMatSolverType( pc, &t );
+#else
     const MatSolverPackage t;
     ierr = PCFactorGetMatSolverPackage( pc, &t );
+#endif
     LOG_FIRST_N(INFO,10) << "mat solver package is "  << t << "\n";
 } // PetscPCFactorSetMatSolverPackage
 

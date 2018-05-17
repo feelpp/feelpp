@@ -55,7 +55,9 @@ public :
 
     std::pair<double,int> toc( std::string const& msg, bool display ) const
     {
-        BOOST_ASSERT_MSG( !empty(), "Unbalanced timing calls" );
+        LOG_IF(WARNING, !empty()) << "Unbalanced timing calls : " << msg;
+        if ( empty() )
+            return {-1,-1};
         std::chrono::duration<double> t = std::chrono::duration_cast<std::chrono::duration<double>>(time()-times().top());
         times().pop();
         auto r = std::make_pair( t.count(), times().size());
@@ -75,9 +77,9 @@ public :
 
     std::stack<type>& times() const
     {
-        static std::stack<type> localStack;
         return localStack;
     }
+    mutable std::stack<type> localStack;
 };
 }
 }
