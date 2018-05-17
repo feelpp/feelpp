@@ -47,7 +47,7 @@ struct RemoteData
     //! @param dir : the directory where the file is downloaded
     //! @param filename : the filename of the downloaded file
     //! @return : the path of the downloaded file
-    std::string download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
+    std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
 
     class URL
     {
@@ -73,7 +73,8 @@ struct RemoteData
     class Github
     {
     public :
-        //! init from a description : github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
+        //! init from a description :
+        //!   github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
         Github( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
         Github( Github const& ) = default;
         Github( Github && ) = default;
@@ -83,8 +84,8 @@ struct RemoteData
 
         //! download file/folder from the github desc
         //! @param dir : the directory where the file is downloaded
-        //! @return : the path of the downloaded file or the path of downloaded folder
-        std::string download( std::string const& dir = Environment::downloadsRepository() ) const;
+        //! @return : vector of path of the downloaded file or the path of downloaded folder
+        std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
     private :
         void downloadFolderRecursively( pt::ptree const& ptree, std::string const& dir ) const;
 
@@ -96,24 +97,36 @@ struct RemoteData
     class Girder
     {
     public :
+        //! init from a description : github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx}
+        //!   girder:{url:https://girder.math.unistra.fr,file:5ac722e9b0e9574027047886,token:xxxxx}
+        //!   girder:{url:https://girder.math.unistra.fr,file:[5ac7253ab0e957402704788d,5ac722e9b0e9574027047886],token:xxxxx}
         Girder( std::string const& desc, WorldComm const& worldComm = Environment::worldComm() );
         Girder( Girder const& ) = default;
         Girder( Girder && ) = default;
-    public :
-        std::string download( std::string const& dir = Environment::downloadsRepository() );
+
+        //! return true if the github is initialized from a desc
+        bool isInit() const;
+
+        //! return true if enough information are available for download a file
+        bool canDownload() const;
+
+        //! download file/folder from the girder desc
+        //! @param dir : the directory where the file is downloaded
+        //! @return : vector of path of the downloaded file or the path of downloaded folder
+        std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
     private :
-        std::string downloadFile( std::string const& fileId, std::string const& dir );
+        std::string downloadFile( std::string const& fileId, std::string const& dir ) const;
     private :
         WorldComm const& M_worldComm;
         std::string M_url, M_token;
-        std::string M_fileId;//, M_folderId, M_itemId;
+        std::set<std::string> M_fileIds;//, M_folderId, M_itemId;
     private :
     };
-
 
 private :
     boost::optional<URL> M_url;
     boost::optional<Github> M_github;
+    boost::optional<Girder> M_girder;
 };
 
 }

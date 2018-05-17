@@ -1267,7 +1267,11 @@ Environment::doOptions( int argc, char** argv,
             std::string caseDir = S_vm["case"].as<std::string>();
             RemoteData rdTool( caseDir, worldComm());
             if ( rdTool.canDownload() )
-                caseDir = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+            {
+                auto dowloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+                CHECK( dowloadedFolder.size() == 1 ) << "download only one folder";
+                caseDir = dowloadedFolder[0];
+            }
 
             fs::path fscaseDir( caseDir );
             CHECK( fs::is_directory( fscaseDir ) ) << "case must be a directory";
@@ -1303,12 +1307,25 @@ Environment::doOptions( int argc, char** argv,
          // parse config file if given to command line
         if ( S_vm.count( "config-file" ) || S_vm.count( "config-files" ) )
         {
+            std::vector<std::string> configFilesFromCmd;
             if ( S_vm.count( "config-file" ) )
-                configFiles.push_back( S_vm["config-file"].as<std::string>() );
+                configFilesFromCmd.push_back( S_vm["config-file"].as<std::string>() );
             if ( S_vm.count( "config-files" ) )
             {
-                std::vector<std::string> configFilesFromOption = S_vm["config-files"].as<std::vector<std::string> >();
-                configFiles.insert( configFiles.end(), configFilesFromOption.begin(), configFilesFromOption.end() );
+                std::vector<std::string> configFilesOptVec = S_vm["config-files"].as<std::vector<std::string> >();
+                configFilesFromCmd.insert( configFilesFromCmd.end(), configFilesOptVec.begin(), configFilesOptVec.end() );
+            }
+            for ( std::string const& cfgFile : configFilesFromCmd )
+            {
+                RemoteData rdTool( cfgFile, worldComm());
+                if ( rdTool.canDownload() )
+                {
+                    auto dowloadedData = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
+                    for ( std::string const& data : dowloadedData )
+                        configFiles.push_back( data );
+                }
+                else
+                    configFiles.push_back( cfgFile );
             }
         }
 #if 0
@@ -1318,13 +1335,8 @@ Environment::doOptions( int argc, char** argv,
 #endif
         // reverse order (priorty for the last)
         std::reverse(configFiles.begin(),configFiles.end());
-        for ( std::string const& _cfgfile : configFiles )
+        for ( std::string const& cfgfile : configFiles )
         {
-            std::string cfgfile = _cfgfile;
-            RemoteData rdTool( _cfgfile, worldComm());
-            if ( rdTool.canDownload() )
-                cfgfile = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
-
             if ( !fs::exists( cfgfile ) ) continue;
             fs::path cfgAbsolutePath = fs::absolute( cfgfile );
             cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
