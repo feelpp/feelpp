@@ -178,6 +178,12 @@ public :
     void updateElectricField();
     void updateCurrentDensity();
 
+    template<typename ExprT>
+    void updateCurrentDensity( Expr<ExprT> const& expr, elements_reference_wrapper_t<mesh_type> range )
+        {
+            M_fieldCurrentDensity->on(_range=range, _expr=expr );
+        }
+
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 

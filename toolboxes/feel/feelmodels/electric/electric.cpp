@@ -150,6 +150,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
+    M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
 
     this->initBoundaryConditions();
 
@@ -424,34 +425,26 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
 {
-    std::string M_computeElectricFieldProjType = "nodal";
-    /*if ( M_computeElectricFieldProjType == "L2" )
-     *M_fieldCurrentDensityContinuous = M_l2proj->operator()( -trans(gradv(this->fieldElectricPotential() ) ) );
-     else*/ if ( M_computeElectricFieldProjType == "nodal" )
+    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
     {
-        for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-            if ( electricConductivity.isConstant() )
-            {
-                double sigma = electricConductivity.value();
-                M_fieldCurrentDensity->on(_range=range,
-                                          _expr=-sigma*trans(gradv( this->fieldElectricPotential() ) ) );
-            }
-            else
-            {
-                auto sigma = electricConductivity.expr();
-                if ( sigma.expression().hasSymbol( "heat_T" ) )
-                    continue;
-                M_fieldCurrentDensity->on(_range=range,
-                                          _expr=-sigma*trans(gradv( this->fieldElectricPotential() ) ) );
-            }
+            double sigma = electricConductivity.value();
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            if ( sigma.expression().hasSymbol( "heat_T" ) )
+                continue;
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
         }
     }
-    else
-        CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
 
 
