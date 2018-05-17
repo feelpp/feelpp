@@ -70,7 +70,7 @@
         {
             "Exports":
             {
-                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density",,"heat.pid"]
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","heat.pid"]
             }
         }
     }
