@@ -91,6 +91,12 @@ RemoteData::RemoteData( std::string const& desc, WorldComm const& worldComm )
         M_github.emplace( githubTool );
         return;
     }
+    RemoteData::Girder girderTool( desc,worldComm );
+    if ( girderTool.isInit() )
+    {
+        M_girder.emplace( girderTool );
+        return;
+    }
 }
 
 bool
@@ -100,16 +106,21 @@ RemoteData::canDownload() const
         return true;
     else if ( M_github )
         return true;
+    else if ( M_girder && M_girder->canDownload() )
+        return true;
     return false;
 }
-std::string
+std::vector<std::string>
 RemoteData::download( std::string const& dir, std::string const& filename ) const
 {
+    std::vector<std::string> downloadedData;
     if ( M_url )
-        return M_url->download( dir, filename );
+        downloadedData.push_back( M_url->download( dir, filename ) );
     else if ( M_github )
         return M_github->download( dir );
-    return std::string("");
+    else if ( M_girder )
+        return M_girder->download( dir );
+    return downloadedData;
 }
 
 
@@ -245,7 +256,9 @@ convertDescToPropertyTree( std::string const& desc )
         auto itFindSplitChar = std::find(splitChars.begin(),splitChars.end(), c );
         if ( ( itFindSplitChar != splitChars.end() ) && ( c != ':' || lastSplitChar != ':' ) )
         {
-            descSplitted.push_back( std::make_pair( false,currentSplit ) );
+            boost::trim( currentSplit );
+            if ( !currentSplit.empty() )
+                descSplitted.push_back( std::make_pair( false,currentSplit ) );
             descSplitted.push_back( std::make_pair( true,std::string(1,c) ) );
             lastSplitChar = c;
             currentSplit.clear();
@@ -253,8 +266,11 @@ convertDescToPropertyTree( std::string const& desc )
         else
             currentSplit += c;
     }
+    boost::trim( currentSplit );
     if ( !currentSplit.empty() )
+    {
         descSplitted.push_back( std::make_pair( false, currentSplit ) );
+    }
 
     // create new string convertible to property tree (by adding double quote)
     std::string newDesc = "{";
@@ -266,11 +282,10 @@ convertDescToPropertyTree( std::string const& desc )
             newDesc += expr;
             continue;
         }
-        boost::trim( expr );
         newDesc += "\"" + expr + "\"";
     }
     newDesc += "}";
- 
+
     // create the property tree
     pt::ptree pt;
     std::istringstream istr( newDesc );
@@ -326,7 +341,7 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     if ( M_repo.empty() )
         M_repo = "feelpp";
 
-#if 1
+#if 0
     std::cout << "owner: " << M_owner << "\n"
               << "repo: " << M_repo << "\n"
               << "branch: " << M_branch << "\n"
@@ -338,10 +353,10 @@ RemoteData::Github::isInit() const
 {
     return !M_owner.empty() && !M_repo.empty();
 }
-std::string
+std::vector<std::string>
 RemoteData::Github::download( std::string const& dir ) const
 {
-    std::string downloadFileOrFolder;
+    std::vector<std::string> downloadFileOrFolder;
     if ( M_worldComm.isMasterRank() )
     {
         std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo +"/contents/" + M_path;
@@ -370,7 +385,7 @@ RemoteData::Github::download( std::string const& dir ) const
             std::ofstream ofile( filepath, std::ios::out|std::ios::binary);
             requestHTTPGET( url,headers,ofile );
             ofile.close();
-            downloadFileOrFolder = filepath;
+            downloadFileOrFolder.push_back( filepath );
         }
         else
         {
@@ -379,7 +394,7 @@ RemoteData::Github::download( std::string const& dir ) const
             fs::create_directories( newdir );
 
             this->downloadFolderRecursively( ptree, newdir );
-            downloadFileOrFolder = newdir;
+            downloadFileOrFolder.push_back( newdir );
         }
     }
     mpi::broadcast( M_worldComm.globalComm(), downloadFileOrFolder, M_worldComm.masterRank() );
@@ -449,29 +464,58 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
 
     if ( auto it = pt.get_optional<std::string>("url") )
         M_url = *it;
-    if ( auto it = pt.get_optional<std::string>("file") )
-        M_fileId = *it;
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
+    if ( auto it = pt.get_child_optional("file") )
+    {
+        for( auto const& item : pt.get_child("file") )
+            M_fileIds.insert( item.second.get_value<std::string>() );
+        if ( M_fileIds.empty() )
+            M_fileIds.insert( pt.get<std::string>("file") );
+    }
 
     if ( M_url.empty() )
         M_url = "https://girder.math.unistra.fr";
+
+#if 0
+    std::cout << "url: " << M_url << "\n";
+    for ( std::string const& fileId : M_fileIds )
+        std::cout << "file id: " << fileId << "\n";
+#endif
+
 }
-std::string
-RemoteData::Girder::download( std::string const& dir )
+
+bool
+RemoteData::Girder::isInit() const
 {
-    std::string downloadedFileOrFolder;
+    return !M_url.empty();
+}
+bool
+RemoteData::Girder::canDownload() const
+{
+    return this->isInit() && !M_fileIds.empty();
+}
+
+
+std::vector<std::string>
+RemoteData::Girder::download( std::string const& dir ) const
+{
+    std::vector<std::string> downloadedFileOrFolder;
     if ( M_worldComm.isMasterRank() )
     {
-        if ( !M_fileId.empty() )
-            downloadedFileOrFolder = this->downloadFile( M_fileId, dir );
+        for ( std::string const& fileId : M_fileIds )
+        {
+            std::string file = this->downloadFile( fileId, dir );
+            if ( !file.empty() )
+                downloadedFileOrFolder.push_back( file );
+        }
     }
     mpi::broadcast( M_worldComm.globalComm(), downloadedFileOrFolder, M_worldComm.masterRank() );
     return downloadedFileOrFolder;
 }
 
 std::string
-RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir )
+RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir ) const
 {
     std::string downloadedFile;
     // get metadata info
