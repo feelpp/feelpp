@@ -30,6 +30,7 @@
 #define _LEVELSETSPACEMANAGER_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
@@ -62,7 +63,7 @@ class LevelSetSpaceManager
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
-    typedef boost::shared_ptr<space_vectorial_type> space_levelset_vectorial_ptrtype;
+    typedef boost::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
 
     //--------------------------------------------------------------------//
     // isoPN levelset spaces
@@ -110,6 +111,16 @@ public:
     mesh_ptrtype const& mesh() const { return M_mesh };
     mesh_ptrtype const& meshP1isoPN() const { return M_meshP1isoPN };
 
+    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
+    space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
+    space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
+    space_levelset_PN_ptrtype const& functionSpacePN() const { return M_spaceLevelsetPN; }
+    space_vectorial_PN_ptrtype const& functionSpaceVectorialPN() const { return M_spaceVectorialPN; }
+    space_levelset_ptrtype const& functionSpaceIsoPN() const { return M_spaceLevelsetIsoPN; }
+    space_vectorial_ptrtype const& functionSpaceVectorialIsoPN() const { return M_spaceVectorialIsoPN; }
+    space_markers_ptrtype const& functionSpaceMarkersIsoPN() const { return M_spaceMarkersIsoPN; }
+    space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
+
 private:
     std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
 
@@ -129,19 +140,20 @@ private:
     //--------------------------------------------------------------------//
     // Default function spaces
     space_levelset_ptrtype M_spaceLevelset;
-    space_levelset_vectorial_ptrtype M_spaceVectorial;
+    space_vectorial_ptrtype M_spaceVectorial;
     space_markers_ptrtype M_spaceMarkers;
     // PN function spaces
     space_levelset_PN_ptrtype M_spaceLevelsetPN;
-    space_levelset_PN_vectorial_ptrtype M_spaceVectorialPN;
+    space_vectorial_PN_ptrtype M_spaceVectorialPN;
     // IsoPN function spaces
     space_levelset_ptrtype M_spaceLevelsetIsoPN;
-    space_levelset_vectorial_ptrtype M_spaceVectorialIsoPN;
+    space_vectorial_ptrtype M_spaceVectorialIsoPN;
+    space_markers_ptrtype M_spaceMarkersIsoPN;
     // Tensor2Symm function space
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
     space_levelset_ptrtype M_subspaceLevelSet;
-    space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
+    space_vectorial_ptrtype M_subspaceLevelSetVec;
 
 };
 
@@ -159,15 +171,6 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager( mesh_ptrtype con
       M_buildExtendedDofTable( false ),
       M_functionSpaceCreated( false )
 {
-    // Default spaces
-    M_spaceLevelSetVec = space_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( 
-            _mesh=this->mesh(), _worldscomm=this->worldsComm(),
-            _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
-            );
-    if( M_useCauchyAugmented )
-        M_spaceTensor2Symm = space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-
 }
 
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
@@ -199,6 +202,15 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
                 _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
+                );
+    }
+    if( !M_spaceMarkers )
+    {
+        M_spaceMarkers = space_markers_type::New( 
+                _mesh=this->mesh(), 
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity(),
+                _extended_doftable=std::vector<bool>(1, true)
                 );
     }
 
@@ -246,6 +258,31 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     {
         M_spaceVectorialIsoPN = space_vectorial_type::New( 
                 _mesh=this->meshP1isoPN(),
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity()
+                );
+    }
+    if( !M_spaceMarkersIsoPN )
+    {
+        M_spaceMarkersIsoPN = space_markers_type::New( 
+                _mesh=this->meshP1IsoPN(), 
+                _worldscomm=this->worldsComm(),
+                _periodicity=this->periodicity(),
+                _extended_doftable=std::vector<bool>(1, true)
+                );
+    }
+
+    M_functionSpaceCreated = true;
+}
+
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
+{
+    if( !M_spaceTensor2Symm )
+    {
+        M_spaceTensor2Symm = space_tensor2symm_type::New( 
+                _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
                 );
