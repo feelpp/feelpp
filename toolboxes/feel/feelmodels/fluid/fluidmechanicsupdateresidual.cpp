@@ -23,7 +23,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     vector_ptrtype& R = data.residual();
     bool BuildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
     bool BuildNonCstPart = !BuildCstPart;
 
     std::string sc=(BuildCstPart)?" (build cst part)":" (build non cst part)";
@@ -344,15 +343,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //------------------------------------------------------------------------------------//
 
-    if (!BuildCstPart && _doBCStrongDirichlet && this->hasStrongDirichletBC() )
-    {
-        R->close();
-
-        this->updateResidualStrongDirichletBC( R );
-    }
-
-    //------------------------------------------------------------------------------------//
-
     double timeElapsed=thetimer.elapsed();
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateResidual",
                                                "finish"+sc+" in "+(boost::format("%1% s") % timeElapsed).str()+
@@ -483,8 +473,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess(vector_ptrtype& U) 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
+    if ( !this->hasStrongDirichletBC() ) return;
+
+    vector_ptrtype& R = data.residual();
     auto Xh = this->spaceVelocityPressure();
     size_type rowStartInVector = this->rowStartInVector();
 

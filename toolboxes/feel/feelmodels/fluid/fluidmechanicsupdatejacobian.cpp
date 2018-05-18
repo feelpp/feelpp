@@ -21,9 +21,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool _BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     if (this->verbose()) Feel::FeelModels::Log("--------------------------------------------------\n",
@@ -255,55 +253,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     this->updateJacobianWeakBC( data, U );
-
-    //--------------------------------------------------------------------------------------------------//
-
-    if ( BuildNonCstPart && _doBCStrongDirichlet )
-    {
-        if ( this->hasMarkerDirichletBCelimination() )
-            this->updateJacobianStrongDirichletBC(J,RBis);
-
-        std::list<std::string> markerDirichletEliminationOthers;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-        {
-            for (std::string const& marker : this->markersNameMovingBoundary() )
-                markerDirichletEliminationOthers.push_back( marker );
-        }
-#endif
-        for ( auto const& inletbc : M_fluidInletDesc )
-        {
-            std::string const& marker = std::get<0>( inletbc );
-            markerDirichletEliminationOthers.push_back( marker );
-        }
-
-        if ( !markerDirichletEliminationOthers.empty() )
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(mesh, markerDirichletEliminationOthers ),
-                    _element=u,_rhs=RBis,
-                    _expr= vf::zero<nDim,1>() );
-
-
-        if ( this->hasMarkerPressureBC() )
-        {
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
-                   _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
-                   _colstart=rowStartInMatrix+startBlockIndexPressureLM1 ) +=
-                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
-                    _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
-                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
-                       _colstart=rowStartInMatrix+startBlockIndexPressureLM2 ) +=
-                    on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=RBis,
-                        _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
-            }
-        }
-
-    }
 
     //--------------------------------------------------------------------------------------------------//
 

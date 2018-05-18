@@ -820,8 +820,8 @@ public :
     void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const;
     void updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const;
-    void updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis) const;
-    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
     virtual void updateJacobianAdditional( sparse_matrix_ptrtype & J, bool BuildCstPart ) const {}
     virtual void updateResidualAdditional( vector_ptrtype & R, bool BuildCstPart ) const {}
@@ -831,7 +831,7 @@ public :
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data ) const;
-    void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updatePicard( DataUpdateLinear & data ) const;
     double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;

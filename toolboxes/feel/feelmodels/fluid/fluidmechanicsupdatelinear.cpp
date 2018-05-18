@@ -30,7 +30,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
@@ -368,59 +367,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     // others bc
     this->updateLinearPDEWeakBC( data );
 
-    //--------------------------------------------------------------------------------------------------//
-    // strong Dirichlet bc
-    if ( BuildNonCstPart && _doBCStrongDirichlet)
-    {
-        this->timerTool("Solve").start();
-
-        if (this->hasMarkerDirichletBCelimination() )
-            this->updateBCStrongDirichletLinearPDE(A,F);
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
-        {
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                    _element=u, _rhs=F,
-                    _expr=idv(this->meshVelocity2()) );
-        }
-#endif
-
-        for ( auto const& inletbc : M_fluidInletDesc )
-        {
-            std::string const& marker = std::get<0>( inletbc );
-            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
-
-            bilinearForm_PatternCoupled +=
-                on( _range=markedfaces(this->mesh(),marker),
-                    _element=u, _rhs=F,
-                    _expr=-idv(inletVel)*N() );
-        }
-
-        if ( this->hasMarkerPressureBC() )
-        {
-            size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
-            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
-                   _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
-                   _colstart=rowStartInMatrix+startBlockIndexPressureLM1 ) +=
-                on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=F,
-                    _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
-            if ( nDim == 3 )
-            {
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
-                       _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
-                       _colstart=rowStartInMatrix+startBlockIndexPressureLM2 ) +=
-                    on( _range=boundaryfaces(M_meshLagrangeMultiplierPressureBC), _rhs=F,
-                        _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
-            }
-        }
-
-        double timeElapsedDirichletBC = this->timerTool("Solve").stop();
-        this->log("FluidMechanics","updateLinearPDE","assembly strong DirichletBC in "+(boost::format("%1% s") %timeElapsedDirichletBC).str() );
-    }
-
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 
@@ -429,15 +375,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    using namespace Feel::vf;
-
-    if ( !this->hasDirichletBC() ) return;
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE", "start",
+    if ( !this->hasStrongDirichletBC() ) return;
+    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateLinearPDEDofElimination", "start",
                                                this->worldComm(),this->verboseAllProc());
-    boost::mpi::timer timerBClinear;
+    this->timerTool("Solve").start();
 
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
     auto Xh = this->functionSpace();
     auto mesh = this->mesh();
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -520,10 +466,50 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matr
         }
     }
 
-    double t1=timerBClinear.elapsed();
-    if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","updateBCStrongDirichletLinearPDE",
-                                               "finish in "+(boost::format("%1% s") % t1).str(),
-                                               this->worldComm(),this->verboseAllProc());
+
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+    if (this->isMoveDomain() && this->couplingFSIcondition()=="dirichlet-neumann")
+    {
+        bilinearForm +=
+            on( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
+                _element=u, _rhs=F,
+                _expr=idv(this->meshVelocity2()) );
+    }
+#endif
+
+    for ( auto const& inletbc : M_fluidInletDesc )
+    {
+        std::string const& marker = std::get<0>( inletbc );
+        auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
+
+        bilinearForm +=
+            on( _range=markedfaces(this->mesh(),marker),
+                _element=u, _rhs=F,
+                _expr=-idv(inletVel)*N() );
+    }
+
+    if ( this->hasMarkerPressureBC() )
+    {
+        auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
+        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
+               _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM1 ) +=
+            on( _range=rangePressureBC, _rhs=F,
+                _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
+        if ( nDim == 3 )
+        {
+            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
+                   _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM2 ) +=
+                on( _range=rangePressureBC, _rhs=F,
+                    _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
+        }
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("FluidMechanics","updateLinearPDEDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 

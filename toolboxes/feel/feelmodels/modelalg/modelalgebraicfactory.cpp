@@ -400,6 +400,9 @@ namespace FeelModels
             func.second( dataLinearNonCst );
         this->model()->updateLinearPDE( dataLinearNonCst );
 
+        // dof elimination
+        this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+
         // post-assembly (optional)
         for ( auto const& func : M_addFunctionLinearPostAssembly )
             func.second(M_J,M_R);
@@ -493,6 +496,9 @@ namespace FeelModels
             func.second( dataJacobianNonCst );
         model->updateJacobian( dataJacobianNonCst );
 
+        // dof elimination
+        model->updateJacobianDofElimination( dataJacobianNonCst );
+
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( X, J );
 
@@ -536,6 +542,10 @@ namespace FeelModels
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
         model->updateResidual( dataResidualNonCst );
+
+        // dof elimination
+        R->close();
+        model->updateResidualDofElimination( dataResidualNonCst );
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( X, R );
@@ -775,6 +785,9 @@ namespace FeelModels
             // assembling non cst part
             ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
             this->model()->updateLinearPDE( dataLinearNonCst );
+
+            // dof elimination
+            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
 
             // post-assembly (optional)
             for ( auto const& func : M_addFunctionLinearPostAssembly )

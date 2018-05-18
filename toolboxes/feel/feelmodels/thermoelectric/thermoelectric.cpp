@@ -572,7 +572,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateJacobian", "start"+sc);
@@ -661,15 +660,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
 
     DataUpdateJacobian dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatModel->updateJacobian( dataSubPhysics );
     M_electricModel->updateJacobian( dataSubPhysics );
 
-    if ( buildNonCstPart && doBCStrongDirichlet )
-    {
-        M_heatModel->updateJacobianStrongDirichletBC( J,RBis );
-        M_electricModel->updateJacobianStrongDirichletBC( J,RBis );
-    }
     this->log("ThermoElectric","updateJacobian", "finish"+sc);
 }
 
@@ -682,7 +675,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
     bool useJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateResidual", "start"+sc);
@@ -693,7 +685,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto mesh = this->mesh();
 
     DataUpdateResidual dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatModel->updateResidual( dataSubPhysics );
     M_electricModel->updateResidual( dataSubPhysics );
 
@@ -746,16 +737,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
     }
 
-    if ( !buildCstPart && doBCStrongDirichlet &&
-         ( M_heatModel->hasMarkerDirichletBCelimination() || M_electricModel->hasMarkerDirichletBCelimination() ) )
-    {
-        R->close();
-        M_heatModel->updateResidualStrongDirichletBC( R );
-        M_electricModel->updateResidualStrongDirichletBC( R );
-    }
     this->log("ThermoElectric","updateResidual", "finish"+sc);
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{
+    M_heatModel->updateJacobianDofElimination( data );
+    M_electricModel->updateJacobianDofElimination( data );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    M_heatModel->updateResidualDofElimination( data );
+    M_electricModel->updateResidualDofElimination( data );
+}
 
 } // end namespace FeelModels
 } // end namespace Feel
