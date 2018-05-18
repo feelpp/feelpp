@@ -202,19 +202,19 @@ class Heat : public ModelNumerical,
         void updateLinearPDE( DataUpdateLinear & data ) const;
         void updateLinearPDEStabilizationGLS( DataUpdateLinear & data ) const;
         void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-        void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
+        void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
         void updateLinearPDESourceTerm( vector_ptrtype& F, bool buildCstPart) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( vector_ptrtype& U ) const;
         void updateJacobian( DataUpdateJacobian & data ) const;
         void updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-        void updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+        void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
         void updateResidual( DataUpdateResidual & data ) const;
         void updateResidualSourceTerm( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualNeumannBC( vector_ptrtype& R, bool buildCstPart ) const;
         void updateResidualRobinBC( element_temperature_external_storage_type const& u, vector_ptrtype& R, bool buildCstPart ) const;
-        void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+        void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//

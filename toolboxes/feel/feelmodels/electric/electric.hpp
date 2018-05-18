@@ -39,11 +39,6 @@ namespace Feel
 namespace FeelModels
 {
 
-enum class ElectricPostProcessFieldExported
-{
-    Temperature = 0, ElectricPotential, ElectricField, Pid
-};
-
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                        public MarkerManagementDirichletBC,
@@ -161,15 +156,15 @@ public :
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
-    void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-    void updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
     void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
-    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
 
     //___________________________________________________________________________________//
