@@ -435,7 +435,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable )
 {
-    M_spaceLevelSetVec = space_levelset_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    M_spaceLevelSetVec = space_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     M_spaceMarkers = space_markers_type::New( 
             _mesh=this->mesh(), _worldscomm=this->worldsComm(),
             _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
@@ -462,7 +462,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
     M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
     M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
-    M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+    M_levelsetNormal.reset( new element_vectorial_type(this->functionSpaceVectorial(), "Normal") );
     M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
 
     if( M_useGradientAugmented )
@@ -502,7 +502,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
         M_leftCauchyGreenTensor_K.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor_K") );
-        M_leftCauchyGreenTensor_KN.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "LeftCauchyGreenTensor_KN") );
+        M_leftCauchyGreenTensor_KN.reset( new element_vectorial_type(this->functionSpaceVectorial(), "LeftCauchyGreenTensor_KN") );
         M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
         M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
         M_cauchyGreenInvariant2.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI2(TrCofC)") );
@@ -581,11 +581,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
 {
     if( !M_levelsetGradPhi )
-        M_levelsetGradPhi.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
+        M_levelsetGradPhi.reset( new element_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
 
     if( M_doUpdateGradPhi )
        const_cast<self_type*>(this)->updateGradPhi(); 
@@ -675,11 +675,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::dirac() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_vectorial_ptrtype const&
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::normal() const
 {
     if( !M_levelsetNormal )
-        M_levelsetNormal.reset( new element_levelset_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+        M_levelsetNormal.reset( new element_vectorial_type(this->functionSpaceVectorial(), "Normal") );
 
     if( M_doUpdateNormal )
        const_cast<self_type*>(this)->updateNormal(); 
@@ -1237,7 +1237,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
 {
     if( !M_smootherInterfaceVectorial || M_doUpdateSmootherInterfaceVectorial )
     {
-        auto const spaceInterfaceVectorial = self_type::space_levelset_vectorial_type::New( 
+        auto const spaceInterfaceVectorial = self_type::space_vectorial_type::New( 
                 _mesh=this->mesh(),
                 _range=this->interfaceElements(),
                 _worldscomm=this->worldsComm()
