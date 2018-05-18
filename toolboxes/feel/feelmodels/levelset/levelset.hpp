@@ -36,10 +36,11 @@
 
 #include <feel/feelmodels/advection/advection.hpp>
 
-#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feelmodels/levelset/levelsetspacemanager.hpp>
 #include <feel/feelmodels/levelset/reinitializer.hpp>
 #include <feel/feelmodels/levelset/reinitializer_fm.hpp>
 #include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+
 #include <feel/feelfilters/straightenmesh.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
@@ -92,13 +93,16 @@ enum class LevelSetFieldsExported
     BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
 };
 
-template<typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity>
+template<
+    typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
+    typename BasisPnType = BasisType
+    >
 class LevelSet : public ModelNumerical,
                  public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
 {
     typedef ModelNumerical super_type;
 public:
-    typedef LevelSet<ConvexType, BasisType, PeriodicityType> self_type;
+    typedef LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     static const uint16_type Order = BasisType::nOrder;
@@ -117,48 +121,46 @@ public:
     //--------------------------------------------------------------------//
     // Periodicity
     typedef PeriodicityType periodicity_type;
-    // advection toolbox
+    //--------------------------------------------------------------------//
+    // Advection toolbox
     typedef Advection< ConvexType, BasisType, PeriodicityType > advection_toolbox_type;
     typedef boost::shared_ptr<advection_toolbox_type> advection_toolbox_ptrtype;
     static_assert( advection_toolbox_type::is_scalar, "LevelSet function basis must be scalar" );
     //--------------------------------------------------------------------//
-    // Space levelset
-    typedef typename advection_toolbox_type::basis_advection_type basis_levelset_type;
-    typedef typename advection_toolbox_type::space_advection_type space_levelset_type;
-    typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
+    // Function space manager
+    typedef LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_space_manager_type;
+    typedef boost::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
+    //--------------------------------------------------------------------//
+    // Function spaces and elements
+    // levelset
+    typedef typename levelset_space_manager_type::basis_levelset_type basis_levelset_type;
+    typedef typename levelset_space_manager_type::space_levelset_type space_levelset_type;
+    typedef typename levelset_space_manager_type::space_levelset_ptrtype space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
     typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
-
-    //--------------------------------------------------------------------//
-    // Space vectorial levelset
-    //typedef Lagrange<Order, Vectorial> basis_levelset_vectorial_type;
-    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_levelset_vectorial_type;
-    typedef FunctionSpace<mymesh_type, bases<basis_levelset_vectorial_type>, Periodicity<periodicity_type> > space_levelset_vectorial_type;
-    typedef boost::shared_ptr<space_levelset_vectorial_type> space_levelset_vectorial_ptrtype;
-    typedef typename space_levelset_vectorial_type::element_type element_levelset_vectorial_type;
-    typedef boost::shared_ptr< element_levelset_vectorial_type > element_levelset_vectorial_ptrtype;
-
-    //--------------------------------------------------------------------//
-    // Space markers P0
-    typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
-    typedef FunctionSpace<mymesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
-    typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
+    // vectorial
+    typedef typename levelset_space_manager_type::basis_vectorial_type basis_vectorial_type;
+    typedef typename levelset_space_manager_type::space_vectorial_type space_vectorial_type;
+    typedef typename levelset_space_manager_type::space_vectorial_ptrtype space_vectorial_ptrtype;
+    typedef typename space_vectorial_type::element_type element_vectorial_type;
+    typedef boost::shared_ptr< element_vectorial_type > element_vectorial_ptrtype;
+    // markers P0
+    typedef typename levelset_space_manager_type::basis_markers_type basis_markers_type;
+    typedef typename markers_space_manager_type::space_markers_type space_markers_type;
+    typedef typename markers_space_manager_type::space_markers_ptrtype space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
-    typedef boost::shared_ptr< element_markers_type > element_markers_ptrtype;
+    typedef boost::shared_ptr<element_markers_type> element_markers_ptrtype;
+    // tensor2symm
+    typedef typename levelset_space_manager_type::basis_tensor2symm_type basis_tensor2symm_type;
+    typedef typename levelset_space_manager_type::space_tensor2symm_type space_tensor2symm_type;
+    typedef typename levelset_space_manager_type::space_tensor2symm_ptrtype space_tensor2symm_ptrtype;
+    typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
+    typedef boost::shared_ptr< element_tensor2symm_type > element_tensor2symm_ptrtype;
 
 #if defined (MESH_ADAPTATION_LS)
     typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
     typedef boost::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
 #endif
-
-    //--------------------------------------------------------------------//
-    // Tensor2 symmetric function space
-    //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
-    typedef Lagrange<Order, Tensor2> basis_tensor2symm_type;
-    typedef FunctionSpace<mymesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
-    typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
-    typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
-    typedef boost::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
     // Range types
@@ -177,7 +179,7 @@ public:
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef boost::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
     
-    typedef Projector<space_levelset_vectorial_type, space_levelset_vectorial_type> projector_levelset_vectorial_type;
+    typedef Projector<space_vectorial_type, space_vectorial_type> projector_levelset_vectorial_type;
     typedef boost::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
 
     typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
@@ -233,7 +235,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Backward characteristics advection
-    typedef basis_levelset_vectorial_type basis_backwardcharacteristics_advection_type;
+    typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
     typedef Advection<ConvexType, basis_backwardcharacteristics_advection_type, PeriodicityType> backwardcharacteristics_advection_type;
     typedef boost::shared_ptr<backwardcharacteristics_advection_type> backwardcharacteristics_advection_ptrtype;
     typedef typename backwardcharacteristics_advection_type::element_advection_type element_backwardcharacteristics_type;
@@ -268,12 +270,6 @@ public:
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    //BOOST_PARAMETER_MEMBER_FUNCTION(
-            //(void), build, tag,
-            //( optional
-              //( space_markers_extended_doftable, (bool), false )
-            //)
-            //)
     void build()
     {
         this->log("LevelSet", "build", "start");
@@ -287,15 +283,6 @@ public:
         this->log("LevelSet", "build", "finish");
     }
 
-    //BOOST_PARAMETER_MEMBER_FUNCTION(
-            //(void), build, tag,
-            //( required
-              //( mesh, (mesh_ptrtype) )
-            //)
-            //( optional
-              //( space_markers_extended_doftable, (bool), false )
-            //)
-            //)
     void build( mesh_ptrtype const& mesh )
     {
         this->log("LevelSet", "build (from mesh)", "start");
@@ -315,7 +302,7 @@ public:
               ( space, (space_levelset_ptrtype) )
             )
             ( optional
-              ( space_vectorial, (space_levelset_vectorial_ptrtype), space_levelset_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              ( space_vectorial, (space_vectorial_ptrtype), space_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
               ( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
@@ -385,11 +372,11 @@ public:
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     //--------------------------------------------------------------------//
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
-    space_levelset_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
+    space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
     space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
-    space_levelset_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
+    space_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
@@ -410,7 +397,7 @@ public:
     element_levelset_ptrtype & phi() { return M_advectionToolbox->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return M_advectionToolbox->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
-    element_levelset_vectorial_ptrtype const& gradPhi() const;
+    element_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
     element_stretch_ptrtype const& stretch() const;
     element_backwardcharacteristics_ptrtype const& backwardCharacteristics() const;
@@ -420,8 +407,8 @@ public:
     element_levelset_ptrtype const& dirac() const;
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_levelset_vectorial_ptrtype const& normal() const;
-    element_levelset_vectorial_ptrtype const& N() const { return this->normal(); }
+    element_vectorial_ptrtype const& normal() const;
+    element_vectorial_ptrtype const& N() const { return this->normal(); }
     element_levelset_ptrtype const& curvature() const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
 
@@ -638,12 +625,12 @@ private:
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
-    space_levelset_vectorial_ptrtype M_spaceLevelSetVec;
+    space_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
     space_levelset_ptrtype M_subspaceLevelSet;
-    space_levelset_vectorial_ptrtype M_subspaceLevelSetVec;
+    space_vectorial_ptrtype M_subspaceLevelSetVec;
 
     //--------------------------------------------------------------------//
     // Markers
@@ -667,14 +654,14 @@ private:
     mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
-    mutable element_levelset_vectorial_ptrtype M_levelsetGradPhi;
+    mutable element_vectorial_ptrtype M_levelsetGradPhi;
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
     mutable element_levelset_ptrtype M_dirac;
     mutable range_elements_type M_interfaceElements;
     //--------------------------------------------------------------------//
     // Normal, curvature
-    mutable element_levelset_vectorial_ptrtype M_levelsetNormal;
+    mutable element_vectorial_ptrtype M_levelsetNormal;
     mutable element_levelset_ptrtype M_levelsetCurvature;
     bool M_doSmoothGradient;
     //--------------------------------------------------------------------//
@@ -706,7 +693,7 @@ private:
     bool M_hasInitialBackwardCharacteristics;
     // Cauchy-Green tensor
     element_tensor2symm_ptrtype M_leftCauchyGreenTensor_K;
-    element_levelset_vectorial_ptrtype M_leftCauchyGreenTensor_KN;
+    element_vectorial_ptrtype M_leftCauchyGreenTensor_KN;
     element_tensor2symm_ptrtype M_leftCauchyGreenTensor;
     mutable bool M_doUpdateCauchyGreenTensor;
     // Cauchy-Green tensor invariants
