@@ -122,11 +122,11 @@ public :
     // apply assembly and solver
     void solve();
 
-    void updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
-    void updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const;
+    void updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const;
+    void updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const;
     void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
 
-    void updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
 
