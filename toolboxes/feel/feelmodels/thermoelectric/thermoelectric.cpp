@@ -212,16 +212,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearHeat )
     {
         M_heatModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst( boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                          boost::ref( *this ), _1, _2 ) );
-        M_heatModel->algebraicFactory()->addFunctionResidualPreAssembly( boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
-                                                                                      boost::ref( *this ), _1, _2 ) );
+        M_heatModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                 boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
+                                                                                   boost::ref( *this ), _1 ) );
     }
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearElectric )
     {
         M_electricModel->initAlgebraicFactory();
-        M_electricModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst( boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
-                                                                                              boost::ref( *this ), _1, _2 ) );
+        M_electricModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
+                                                                                     boost::ref( *this ), _1 ) );
     }
 
 
@@ -456,9 +456,15 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const
 {
     this->log("ThermoElectric","updateLinearElectricDependingOnTemperature","start" );
+
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    if ( !buildNonCstPart )
+        return;
+    sparse_matrix_ptrtype& A = data.matrix();
 
     auto mesh = this->mesh();
     auto XhV = M_electricModel->spaceElectricPotential();
@@ -494,14 +500,23 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( 
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const
 {
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    if ( !buildNonCstPart )
+        return;
+    vector_ptrtype& F = data.rhs();
     this->updateGenericPreAssemblyJouleLaw( F, false );
 }
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const
 {
+    bool buildCstPart = data.buildCstPart();
+    if  ( !buildCstPart )
+        return;
+    vector_ptrtype& R = data.residual();
     this->updateGenericPreAssemblyJouleLaw( R, true );
 }
 
