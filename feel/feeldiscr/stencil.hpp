@@ -2044,7 +2044,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 mpl::identity<typename _Q<order_used_type::value>::template ApplyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
     >::type::type theim_type;
 
-    typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;
+    typedef typename Localization<test_mesh_type>::matrix_node_type matrix_node_type;
 
     //-----------------------------------------------------------------------//
 

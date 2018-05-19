@@ -971,7 +971,19 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
 
     int ierr = 0;
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 9, 0 )
+    ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERUMFPACK );
+
+    if ( ierr )
+    {
+        ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERSUPERLU );
+
+        if ( ierr )
+        {
+            ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERPETSC );
+        }
+    }
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
     ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERUMFPACK );
 
     if ( ierr )
@@ -984,7 +996,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         }
     }
 
-#elif (PETSC_VERSION_MAJOR >= 3)
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 0, 0 )
     ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_UMFPACK );
 
     if ( ierr )
@@ -996,6 +1008,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
             ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_PETSC );
         }
     }
+#else
 
 #endif
     DVLOG(2) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";

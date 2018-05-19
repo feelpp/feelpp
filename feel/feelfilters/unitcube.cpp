@@ -34,6 +34,7 @@
 #include <feel/feelfilters/domain.hpp>
 
 namespace Feel {
+extern template class Mesh<Simplex<3>>;
 boost::shared_ptr<Mesh<Simplex<3> > >
 unitCube( double h )
 {

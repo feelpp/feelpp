@@ -1,6 +1,6 @@
 #! /bin/bash
 
-prefix=/usr
+prefix=/opt/petsc
 export PETSC_DIR=`pwd`
 ./configure --prefix=$1 \
     --with-shared-libraries=1 \
@@ -20,6 +20,7 @@ export PETSC_DIR=`pwd`
     --download-ptscotch \
     --download-ml \
     --download-hypre \
-    --download-fftw \
     --download-suitesparse\
     --download-superlu
+
+#    --download-fftw \

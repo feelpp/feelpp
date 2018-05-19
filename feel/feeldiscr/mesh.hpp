@@ -77,6 +77,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #if defined(FEELPP_HAS_VTK)
+#include <feel/feelcore/disablewarnings.hpp>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPoints.h>
@@ -87,6 +88,7 @@
 #include <vtkHexahedron.h>
 #include <vtkFloatArray.h>
 #include <vtkCellData.h>
+#include <feel/feelcore/reenablewarnings.hpp>
 #endif
 
 namespace Feel
@@ -104,6 +106,7 @@ const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_PO
 const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 }
 #include <feel/feeldiscr/createsubmesh.hpp>
+#include <feel/feeldiscr/localization.hpp>
 
 namespace Feel
 {
@@ -877,8 +880,7 @@ public:
     //!
      //!  @return a localization tool
      //!
-    struct Localization;
-    boost::shared_ptr<typename self_type::Localization> tool_localization()
+    boost::shared_ptr<Localization<self_type>> tool_localization()
     {
         return M_tool_localization;
     }
@@ -1019,11 +1021,15 @@ public:
      //!  \param mesh new mesh to construct
      //!  \param pid process id that will select the elements to add
      //!
-    void createSubmeshByProcessId( self_type& mesh, uint16_type pid ) const
+    FEELPP_DEPRECATED void createSubmeshByProcessId( self_type& mesh, uint16_type pid ) const
     {
+#if 0
         this->createSubmesh( mesh,
                              this->beginElementWithProcessId( pid ),
                              this->endElementWithProcessId( pid ) );
+#else
+        CHECK( 0 ) << "createSubmeshByProcessId is not yet implemented";
+#endif
     }
 
     //!
@@ -1176,7 +1182,7 @@ private:
     //!
     //!  save mesh in hdf5
     //!
-    FEELPP_NO_EXPORT void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 #endif
 public:
     //!
@@ -1379,10 +1385,14 @@ private:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
 
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<0> );
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<1> );
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<2> );
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( mpl::int_<3> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==0>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==1>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==2>* = nullptr );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim==3>* = nullptr );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1492,336 +1502,6 @@ public:
 
     }; // Inverse
 
-    struct Localization
-    {
-
-        typedef Localization localization_type;
-        typedef boost::shared_ptr<localization_type> localization_ptrtype;
-
-        typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
-
-        typedef boost::weak_ptr<self_type> mesh_ptrtype;
-
-        typedef KDTree kdtree_type;
-        typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
-
-        //!  a node x => a list of id elt which contain the node x
-        typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
-
-        typedef typename std::list<boost::tuple<size_type,node_type> > container_output_type;
-        typedef typename std::list<boost::tuple<size_type,node_type> >::iterator container_output_iterator_type;
-        //! map between element id and list of node described in the reference elt
-        //! typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type
-        typedef std::map<size_type, container_output_type > container_search_type;
-        typedef typename container_search_type::const_iterator container_search_const_iterator_type;
-        typedef typename container_search_type::iterator container_search_iterator_type;
-
-        //!  geomap inverse
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,T,Hypercube> > >::type::type gm_inverse_type;
-        typedef typename gm_inverse_type::gic_type gmc_inverse_type;
-
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Simplex> >,
-                                  mpl::identity<GeoMapInverse<nDim,1,nRealDim,T,Hypercube> > >::type::type gm1_inverse_type;
-        typedef typename gm1_inverse_type::gic_type gmc1_inverse_type;
-
-        //!  reference convex
-        typedef typename self_type::gm_type::reference_convex_type ref_convex_type;
-        typedef typename self_type::gm1_type::reference_convex_type ref_convex1_type;
-
-        //! --------------------------------------------------------------
-         //!  Constructors
-         //!
-        Localization() :
-            M_mesh (),
-            M_kd_tree( new kdtree_type() ),
-            M_isInit( false ),
-            M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( boption( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ) ),
-            M_barycenter(),
-            M_barycentersWorld()
-        {
-            DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
-            int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
-            M_kd_tree->nbNearNeighbor( usedNbNeighbor );
-
-            M_resultAnalysis.clear();
-            DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
-        }
-
-        Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
-            M_mesh ( m ),
-            M_isInit( init_b ),
-            M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( boption( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ) ),
-            M_barycenter(),
-            M_barycentersWorld()
-        {
-            if ( this->isInit() )
-                this->init();
-
-            int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*self_type::element_type::numPoints : optNbNeighbor;
-            M_kd_tree->nbNearNeighbor( usedNbNeighbor );
-
-            M_resultAnalysis.clear();
-        }
-
-        Localization( Localization const & L ) :
-            M_mesh( L.M_mesh ),
-            M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
-            M_geoGlob_Elts( L.M_geoGlob_Elts ),
-            M_isInit( L.M_isInit ),
-            M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
-            M_resultAnalysis( L.M_resultAnalysis ),
-            M_doExtrapolation( L.M_doExtrapolation ),
-            M_gic( L.M_gic ), M_gic1( L.M_gic1 ),
-            M_barycenter( L.M_barycenter ),
-            M_barycentersWorld( L.M_barycentersWorld )
-        {}
-
-        //! --------------------------------------------------------------
-         //!  Define the mesh whith or not init
-         //!
-        void
-        setMesh( boost::shared_ptr<self_type> m,bool b=true )
-        {
-            M_mesh=m;
-
-            if ( b )
-                this->init();
-
-            else M_isInit=b;
-
-            M_resultAnalysis.clear();
-        }
-
-        //! --------------------------------------------------------------
-         //!  Define if necessary to use extrapolation
-         //!
-        void
-        setExtrapolation( bool b )
-        {
-            M_doExtrapolation = b;
-        }
-
-        //! --------------------------------------------------------------
-         //!  Run the init function if necessary
-         //!
-        void updateForUse()
-        {
-            if ( !this->isInit() )
-                this->init();
-        }
-
-        //! --------------------------------------------------------------
-         //!  Run the init function if necessary
-         //!
-        void updateForUseBoundaryFaces()
-        {
-            if ( !this->isInitBoundaryFaces() )
-                this->initBoundaryFaces();
-        }
-
-        //! --------------------------------------------------------------
-         //!  Access
-         //!
-        bool isInit() const
-        {
-            return M_isInit;
-        }
-
-        bool isInitBoundaryFaces() const
-        {
-            return M_isInitBoundaryFaces;
-        }
-
-        bool doExtrapolation() const
-        {
-            return M_doExtrapolation;
-        }
-
-        mesh_ptrtype mesh()
-        {
-            return M_mesh;
-        }
-        mesh_ptrtype mesh() const
-        {
-            return M_mesh;
-        }
-
-        kdtree_ptrtype kdtree()
-        {
-            return M_kd_tree;
-        }
-
-        kdtree_ptrtype const& kdtree() const
-        {
-            return M_kd_tree;
-        }
-
-        node_type const& barycenter() const
-        {
-            CHECK( this->isInit() || this->isInitBoundaryFaces()  ) << " localization tool not init \n";
-            return M_barycenter;
-        }
-
-        void computeBarycenter();
-
-        bool hasComputedBarycentersWorld()
-        {
-#if BOOST_VERSION >= 105600
-            return M_barycentersWorld != boost::none;
-#else
-            return M_barycentersWorld;
-#endif
-        }
-
-        std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
-        {
-            CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
-            return M_barycentersWorld.get();
-        }
-
-        void computeBarycentersWorld();
-
-        container_search_type const & result_analysis() const { return M_resultAnalysis;}
-
-        container_search_iterator_type result_analysis_begin()
-        {
-            return M_resultAnalysis.begin();
-        }
-        container_search_iterator_type result_analysis_end()
-        {
-            return M_resultAnalysis.end();
-        }
-
-        //! ---------------------------------------------------------------
-         //!  True if the node p is in mesh->element(id)
-         //!
-        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt ) const;
-        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt, const matrix_node_type & setPoints, mpl::int_<1> /**/ ) const;
-        boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
-
-        //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
-        //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
-                                                              const matrix_node_type & setPoints,
-                                                              mpl::int_<0> /**/ )
-        {
-            return searchElement( p );
-        }
-
-        //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
-                                                               const matrix_node_type & setPoints,
-                                                               mpl::int_<1> /**/ );
-
-        //! ---------------------------------------------------------------
-         //!  Research all elements wich contains the node p
-         //!
-        boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements( const node_type & p );
-
-        //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
-         //!  matrix_node_type m. The result is save by this object
-         //!
-        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
-                                                                const size_type & eltHypothetical);
-
-        //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
-         //!  matrix_node_type m. The result is save by this object
-         //!
-        boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
-                                                                 const size_type & eltHypothetical,
-                                                                 const matrix_node_type & setPoints,
-                                                                 mpl::int_<0> /**/)
-        {
-            return run_analysis( m,eltHypothetical );
-        }
-
-        //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
-         //!  matrix_node_type m. The result is save by this object
-         //!
-        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
-                                                                const size_type & eltHypothetical,
-                                                                const matrix_node_type & setPoints,
-                                                                mpl::int_<1> /**/);
-
-        //! ---------------------------------------------------------------
-         //!  Reset all data
-         //!
-        void reset()
-        {
-            M_isInit=false;
-            M_isInitBoundaryFaces=false;
-            this->init();
-        }
-
-        void resetBoundaryFaces()
-        {
-            M_isInit=false;
-            M_isInitBoundaryFaces=false;
-            this->initBoundaryFaces();
-        }
-
-    private :
-
-        //! ---------------------------------------------------------------
-        //! initializes the kd tree and the map between node and list elements(all elements)
-        //!
-        FEELPP_NO_EXPORT void init();
-
-        //! ---------------------------------------------------------------
-        //! initializes the kd tree and the map between node and list elements(only on boundary)
-        //!
-        FEELPP_NO_EXPORT void initBoundaryFaces();
-
-        //! ---------------------------------------------------------------
-        //! search near elt in kd tree and get a sorted list
-        //!
-        FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
-                                              std::list< std::pair<size_type, uint> > & listTri );
-
-        //! ---------------------------------------------------------------
-        //!  computed barycenter
-        //!
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<1> /**/) const;
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<2> /**/) const;
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<3> /**/) const;
-
-    private:
-
-        mesh_ptrtype M_mesh;
-        kdtree_ptrtype M_kd_tree;
-        //! map between node and list elements
-        std::map<size_type, node_elem_type > M_geoGlob_Elts;
-        bool M_isInit,M_isInitBoundaryFaces;
-        container_search_type M_resultAnalysis;
-        bool M_doExtrapolation;
-
-        ref_convex_type M_refelem;
-        ref_convex1_type M_refelem1;
-        mutable boost::shared_ptr<gmc_inverse_type> M_gic;
-        mutable boost::shared_ptr<gmc1_inverse_type> M_gic1;
-
-        node_type M_barycenter;
-        boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
-
-    };
-
 
     //!  @name  Signals
      //!
@@ -1899,22 +1579,26 @@ private:
     /**
      * modify edges on boundary in 3D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<true> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, std::enable_if_t<TheShape::nDim==3>* = nullptr );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, mpl::bool_<false> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type & face, std::enable_if_t<TheShape::nDim!=3>* = nullptr );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<false> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim!=3>* = nullptr );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, mpl::bool_<true> );
+    template<typename TheShape=GeoShape>
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim==3>* = nullptr );
 
     //!
     //!  update entities on boundary (point, edge, face and element)
@@ -1999,14 +1683,9 @@ private:
     //!
      //!  tool for localize point in the mesh
      //!
-    boost::shared_ptr<Localization> M_tool_localization;
+    boost::shared_ptr<Localization<self_type>> M_tool_localization;
 
 };
-
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nDim;
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
@@ -2961,10 +2640,10 @@ constexpr int realdim( boost::shared_ptr<MeshType> m,
 } // Feel
 
 
-//! #if !defined(FEELPP_INSTANTIATION_MODE)
+//#if !defined(FEELPP_INSTANTIATION_MODE)
 # include <feel/feeldiscr/meshimpl.hpp>
-# include <feel/feeldiscr/meshio.hpp>
-//! #endif //
+
+//#endif 
 
 
 #endif /* FEELPP_MESH_HPP */

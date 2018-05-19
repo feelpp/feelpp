@@ -1,29 +1,29 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 15 Mar 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -33,7 +33,7 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
     :
     M_worldComm( world ),
     M_params( world ),
@@ -41,9 +41,10 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
     M_bc( world, false ),
     M_ic( world, false ),
     M_postproc( world ),
-    M_outputs( world )
+    M_outputs( world ),
+    M_prefix( prefix )
 {
-    if ( !fs::exists( filename ) ) 
+    if ( !fs::exists( filename ) )
     {
         if ( Environment::isMasterRank() )
         {
@@ -64,9 +65,13 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 
     auto json_str_wo_comments = removeComments(readFromFile(filename));
     LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-    
+
+
     std::istringstream istr( json_str_wo_comments );
     pt::read_json(istr, M_p);
+
+    editPtreeFromOptions( M_p, M_prefix );
+
     try {
         M_name  = M_p.get<std::string>( "Name"  );
     }
