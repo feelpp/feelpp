@@ -34,15 +34,16 @@ hp::hp( double h, int p )
     :
     M_h(h),
     M_p(p)
-      
+
 {
-    
+    bool verbose = boption("checker.verbose");
     fs::path path ( Environment::expand( soption("checker.filename" ) ) );
     if ( fs::exists( path ) )
     {
         std::ifstream f ( path.string().c_str() );
         pt::read_json( f, M_ptree);
-        pt::write_json( std::cout,  M_ptree );
+        if ( verbose )
+            pt::write_json( std::cout,  M_ptree );
         // build data structure
         for( auto itfn = M_ptree.begin(); itfn != M_ptree.end(); ++itfn )
         {
@@ -50,11 +51,11 @@ hp::hp( double h, int p )
             for( auto it = fn.second.begin(); it != fn.second.end(); ++it )
             {
                 auto const& v = *it;
-                
+
                 int order = boost::lexical_cast<int>(v.first);
-                
+
                 M_data[fn.first][order].exact = v.second.get("exact",false);
-                
+
                 if ( M_data[fn.first][order].exact == false )
                 {
                     std::vector<double> hs;
@@ -69,15 +70,15 @@ hp::hp( double h, int p )
                     {
                         errors[error.first].order = error.second.get<double>( "order" );
                         // error values stores a set of arrays associated to one or more error norms
-                        
+
                         for ( pt::ptree::value_type const &e : error.second.get_child("values" ) )
-                        {   
+                        {
                             errors[error.first].values.push_back(boost::lexical_cast<double>(e.second.data()) );
                         }
                         LOG(INFO) << error.first << " error norms(" << errors[error.first].order << "): " << errors[error.first].values;
                     }
-                    
-                
+
+
                     M_data[fn.first][order] = data( std::move(hs), std::move( errors ) );
                 }
                 if ( M_data[fn.first][order].hs.size() >= 3 )
@@ -95,7 +96,7 @@ hp::hp( double h, int p )
             }
         }
     }
-    
+
 
 }
 
@@ -106,14 +107,14 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
     if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {
         hp::data d = M_data.at(solution).at(M_p);
-        
+
         if ( d.exact )
         {
-            
+
             if ( r.second < etol )
                 return Checks::EXACT;
             throw CheckerExactFailed( r.second, etol );
-            
+
         }
         else
         {
@@ -123,7 +124,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
                 d.errors.at(r.first).values.push_back(r.second);
                 auto c = polyfit( log(d.hs), log(d.errors.at(r.first).values), 1 );
                 LOG(INFO) << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
-                std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
+                //std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
                 if (  c[1]>=d.errors.at(r.first).order - otol )
                     return Checks::CONVERGENCE_ORDER;
                 throw CheckerConvergenceFailed( d.errors.at(r.first).order, c[1], otol );
@@ -146,7 +147,7 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
     fnode.add_child( solution, node );
     //M_ptree.add_child( std::to_string(M_p), node );
     pt::write_json(soption("checker.name")+".json", fnode);
-    pt::write_json(std::cout, node);
+    //pt::write_json(std::cout, node);
 #endif
     return Checks::NONE;
 }
@@ -160,12 +161,12 @@ checker( std::string const& p ) { return Checker{}; }
 Checker::Checker()
     :
     M_check( boption("checker.check") ),
+    M_verbose( boption("checker.verbose" ) ),
     M_solution( soption("checker.solution" ) ),
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
-    
-}
 
 }
 
+}
