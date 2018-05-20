@@ -292,7 +292,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 
         if ( M_useDisplacementPressureFormulation )
         {
-            size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            size_type blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
             M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldPressure(), blockIndexPressure );
         }
         //M_blockVectorSolution.vectorMonolithic()->close();

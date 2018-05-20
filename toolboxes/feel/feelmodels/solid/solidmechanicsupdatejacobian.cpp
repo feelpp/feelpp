@@ -174,7 +174,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     if (M_useDisplacementPressureFormulation && !BuildCstPart)
     {
         // define pressure field
-        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        size_type blockIndexPressure = rowStartInVector+this->startSubBlockSpaceIndex("pressure");
         auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateJacobianIncompressibilityTerms(u,p,J);
@@ -268,7 +268,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
 
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;

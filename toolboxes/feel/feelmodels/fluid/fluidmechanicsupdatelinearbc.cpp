@@ -92,9 +92,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
 
     if (this->hasMarkerDirichletBClm())
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for dirichletlm is not present\n";
-        size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
+        size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
         auto lambdaBC = this->XhDirichletLM()->element();
         if (BuildCstPart)
         {
@@ -194,10 +193,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
 
     if ( this->hasMarkerPressureBC() )
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for pressurelm1 is not present\n";
-
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if (BuildCstPart)
         {
             if ( nDim == 2 )
@@ -233,9 +230,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
-                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
-                    << " start dof index for pressurelm2 is not present\n";
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
                 form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
@@ -317,9 +313,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         }
         if ( this->hasFluidOutletWindkesselImplicit() )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for windkessel is not present\n";
-            size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
+            size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
 
             if (BuildNonCstPart)
             {

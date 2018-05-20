@@ -1651,25 +1651,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
-    size_type currentStartIndex = 2;// velocity and pressure before
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
+    currentStartIndex += 2;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
+        this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
         currentStartIndex += M_XhMeanPressureLM.size();
     }
     if (this->hasMarkerDirichletBClm())
     {
-        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "dirichletlm", currentStartIndex++ );
     }
     if ( this->hasMarkerPressureBC() )
     {
-        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "pressurelm1", currentStartIndex++ );
         if ( nDim == 3 )
-            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+            this->setStartSubBlockSpaceIndex( "pressurelm2", currentStartIndex++ );
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
     return currentStartIndex;

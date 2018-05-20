@@ -284,9 +284,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
         if ( this->definePressureCstMethod() == "lagrange-multiplier" )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for define-pressure-cst-lm is not present\n";
-            size_type startBlockIndexDefinePressureCstLM = this->startBlockIndexFieldsInMatrix().find("define-pressure-cst-lm")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("define-pressure-cst-lm") ) << " start dof index for define-pressure-cst-lm is not present\n";
+            size_type startBlockIndexDefinePressureCstLM = this->startSubBlockSpaceIndex("define-pressure-cst-lm");
 
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
@@ -494,13 +493,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
     if ( this->hasMarkerPressureBC() )
     {
 #if 0
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
         lambdaPressure1.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
                            _expr=vf::zero<1,1>() );
         if ( nDim == 3 )
         {
-            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
             auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
             lambdaPressure2.on(_range=boundaryfaces(M_meshLagrangeMultiplierPressureBC),
                                _expr=vf::zero<1,1>() );
@@ -508,14 +507,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 #else
         auto itFindDofsWithValueImposedPressureBC = M_dofsWithValueImposed.find("pressurebc-lm");
         auto const& dofsWithValueImposedPressureBC = ( itFindDofsWithValueImposedPressureBC != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposedPressureBC->second : std::set<size_type>();
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         auto lambdaPressure1 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM1 );
         for ( size_type thedof : dofsWithValueImposedPressureBC )
             lambdaPressure1.set( thedof,0. );
         sync( lambdaPressure1, "=", dofsWithValueImposedPressureBC );
         if ( nDim == 3 )
         {
-            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
             auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( R/*XVec*/, rowStartInVector+startBlockIndexPressureLM2 );
             for ( size_type thedof : dofsWithValueImposedPressureBC )
                 lambdaPressure2.set( thedof,0. );

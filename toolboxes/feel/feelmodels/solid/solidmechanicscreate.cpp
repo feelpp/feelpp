@@ -942,12 +942,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     // update block vector (index + data struct)
     if (this->isStandardModel())
     {
-        // define start dof index ( lm , windkessel )
-        size_type currentStartIndex = 1;
+        // define start dof index
+        size_type currentStartIndex = 0;
+        this->setStartSubBlockSpaceIndex( "displacement", currentStartIndex++ );
         if ( M_useDisplacementPressureFormulation )
-        {
-            M_startBlockIndexFieldsInMatrix["pressure"] = currentStartIndex++;
-        }
+            this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
+
         // prepare block vector
         int nBlock = this->nBlockMatrixGraph();
         M_blockVectorSolution.resize( nBlock );
