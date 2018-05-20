@@ -132,7 +132,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
                            _geomap=this->geomap() );
 
             auto p = M_XhPressure->element();//*M_fieldPressure;
-            size_type startBlockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+            size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
             form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexPressure ) +=

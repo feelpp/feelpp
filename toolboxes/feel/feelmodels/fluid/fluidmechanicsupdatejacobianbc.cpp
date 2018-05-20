@@ -68,9 +68,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     {
         if ( BuildCstPart )
         {
-            CHECK( this->startBlockIndexFieldsInMatrix().find("dirichletlm") != this->startBlockIndexFieldsInMatrix().end() )
-                << " start dof index for dirichletlm is not present\n";
-            size_type startBlockIndexDirichletLM = this->startBlockIndexFieldsInMatrix().find("dirichletlm")->second;
+            CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
+            size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
             auto lambdaBC = this->XhDirichletLM()->element();
             form2( _test=Xh,_trial=this->XhDirichletLM(),_matrix=J,_pattern=size_type(Pattern::COUPLED),
@@ -90,10 +89,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // pressure bc
     if ( this->hasMarkerPressureBC() )
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm1") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for pressurelm1 is not present\n";
-
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if (BuildCstPart)
         {
             if ( nDim==2 )
@@ -129,9 +126,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                                _expr=-trans(cross(idt(u),N()))(0,2)*id(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
-                CHECK( this->startBlockIndexFieldsInMatrix().find("pressurelm2") != this->startBlockIndexFieldsInMatrix().end() )
-                    << " start dof index for pressurelm2 is not present\n";
-                size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+                CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
+                size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
                 form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
@@ -155,9 +151,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // windkessel implicit
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        CHECK( this->startBlockIndexFieldsInMatrix().find("windkessel") != this->startBlockIndexFieldsInMatrix().end() )
-            << " start dof index for windkessel is not present\n";
-        size_type startBlockIndexWindkessel = this->startBlockIndexFieldsInMatrix().find("windkessel")->second;
+        CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
+        size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
 
         if (BuildCstPart)
         {
@@ -438,7 +433,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
 
     if ( this->hasMarkerPressureBC() )
     {
-        size_type startBlockIndexPressureLM1 = this->startBlockIndexFieldsInMatrix().find("pressurelm1")->second;
+        size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
                _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
                _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM1 ) +=
@@ -446,7 +441,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
                 _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
         if ( nDim == 3 )
         {
-            size_type startBlockIndexPressureLM2 = this->startBlockIndexFieldsInMatrix().find("pressurelm2")->second;
+            size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
             form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
                    _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM2 ) +=

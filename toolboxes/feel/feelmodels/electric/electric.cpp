@@ -160,7 +160,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
-    M_startBlockIndexFieldsInMatrix["potential-electric"] = currentStartIndex;
+    this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
@@ -540,7 +540,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) cons
     this->log("Electric","updateNewtonInitialGuess","start" );
 
     auto mesh = this->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     for( auto const& d : M_bcDirichlet )
     {
@@ -568,7 +568,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
@@ -629,7 +629,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
@@ -655,7 +655,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_ex
     {
         auto XhV = this->spaceElectricPotential();
         auto mesh = XhV->mesh();
-        size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+        size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
         auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                                   _pattern=size_type(Pattern::COUPLED),
@@ -686,7 +686,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
 
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
@@ -760,7 +760,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual &
 
     auto XhV = this->spaceElectricPotential();
     auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( R,this->rowStartInVector()+startBlockIndexElectricPotential );
     auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
     auto const& dofsWithValueImposedElectricPotential = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
@@ -779,7 +779,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_ex
 
     auto XhV = this->spaceElectricPotential();
     auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );

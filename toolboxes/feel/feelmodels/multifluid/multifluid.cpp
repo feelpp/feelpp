@@ -655,7 +655,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
     if( this->M_enableInextensibility && this->inextensibilityMethod() == "lagrange-multiplier" )
     {
         // Add inextensibility LM block index
-        this->M_startBlockIndexFieldsInMatrix["inextensibility-lm"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "inextensibility-lm", currentStartIndex++ );
     }
 
     return currentStartIndex;
@@ -910,7 +910,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEAdditional(
                 {
                     this->timerTool("Solve").start();
 
-                    size_type startBlockIndexInextensibilityLM = this->startBlockIndexFieldsInMatrix().find("inextensibility-lm")->second;
+                    size_type startBlockIndexInextensibilityLM = this->startSubBlockSpaceIndex("inextensibility-lm");
                     auto submeshInextensibilityLM = this->levelsetModel(n)->submeshDirac();
                     auto lambda = this->functionSpaceInextensibilityLM()->element();
 

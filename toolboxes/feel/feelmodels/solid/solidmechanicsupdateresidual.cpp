@@ -137,7 +137,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if ( this->useDisplacementPressureFormulation() && !BuildCstPart)
     {
         // define pressure field
-        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        size_type blockIndexPressure = rowStartInVector+this->startSubBlockSpaceIndex("pressure");
         auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateResidualIncompressibilityTerms(u,p,R);
@@ -348,7 +348,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
      double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);*/
 
     size_type rowStartInVector = this->rowStartInVector();
-    size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+    size_type blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,

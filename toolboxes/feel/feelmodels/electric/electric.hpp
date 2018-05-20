@@ -193,8 +193,6 @@ private :
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
-    // start dof index fields in matrix (temperature,electric-potential,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 
     // post-process
     export_ptrtype M_exporter;
