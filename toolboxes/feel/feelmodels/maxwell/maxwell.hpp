@@ -30,10 +30,14 @@
 #ifndef FEELPP_TOOLBOXES_MAXWELL_HPP
 #define FEELPP_TOOLBOXES_MAXWELL_HPP 1
 
+#include <boost/mpl/equal.hpp>
+
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/ned1h.hpp>
+#include <feel/feelpoly/raviartthomas.hpp>
 
 #include <feel/feelmodels/maxwell/maxwellpropertiesdescription.hpp>
 
@@ -47,17 +51,17 @@ enum class MaxwellPostProcessFieldExported
     MagneticPotential = 0, MagneticField, Pid
 };
 
-template< typename ConvexType, typename BasisPotentialType>
+template< typename ConvexType>//, typename BasisPotentialType>
 class Maxwell : public ModelNumerical,
                 public MarkerManagementDirichletBC,
                 public MarkerManagementNeumannBC,
                 public MarkerManagementRobinBC,
-                public boost::enable_shared_from_this< Maxwell<ConvexType,BasisPotentialType> >
+                public boost::enable_shared_from_this< Maxwell<ConvexType>>//,BasisPotentialType> >
 {
 
 public:
     typedef ModelNumerical super_type;
-    typedef Maxwell<ConvexType,BasisPotentialType> self_type;
+    typedef Maxwell<ConvexType>/*,BasisPotentialType>*/ self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
 
     // mesh
@@ -68,15 +72,25 @@ public:
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     // function space magnetic-potential
-    typedef BasisPotentialType basis_magneticpotential_type;
+    // typedef BasisPotentialType basis_magneticpotential_type;
+    using basis_magneticpotential_type = Nedelec<0, NedelecKind::NED1>;
     static const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_magneticpotential_type> > space_magneticpotential_type;
     typedef boost::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_type element_magneticpotential_type;
     typedef boost::shared_ptr<element_magneticpotential_type> element_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_external_storage_type element_magneticpotential_external_storage_type;
+
     // function space magnetic-field
-    typedef Lagrange<nOrderPolyMagneticPotential-1, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_magneticfield_type;
+    // typedef Lagrange<nOrderPolyMagneticPotential-1, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_magneticfield_type;
+// #if FEELPP_DIM==3
+    using basis_magneticfield_type = typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+                                                       RaviartThomas<0>,
+                                                       Lagrange<0, Scalar, Discontinuous> >::type;
+    // using basis_magneticfield_type = RaviartThomas<0>;
+// #else
+//     using basis_magneticfield_type = Lagrange<0, Scalar, Discontinuous>;
+// #endif
     typedef FunctionSpace<mesh_type, bases<basis_magneticfield_type> > space_magneticfield_type;
     typedef boost::shared_ptr<space_magneticfield_type> space_magneticfield_ptrtype;
     typedef typename space_magneticfield_type::element_type element_magneticfield_type;
@@ -101,6 +115,10 @@ public:
     typedef typename space_magneticpotential_type::Context context_magneticpotential_type;
     typedef boost::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
 
+    using map_dirichlet_field = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
+                                                   map_vector_field<nDim>,
+                                                   map_scalar_field<2> >::type;
+
 
     //___________________________________________________________________________________//
     // constructor
@@ -115,6 +133,10 @@ private :
     void loadParameterFromOptionsVm();
     void createMesh();
     void initBoundaryConditions();
+    template<typename convex = convex_type>
+    void initDirichlet(std::enable_if_t<convex::nDim==2>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getScalarFields<nDim>( "magnetic-potential", "Dirichlet" ); }
+    template<typename convex = convex_type>
+    void initDirichlet(std::enable_if_t<convex::nDim==3>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" ); }
     void initPostProcess();
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
@@ -167,6 +189,20 @@ public :
     //___________________________________________________________________________________//
     void updateMagneticField();
 
+    //___________________________________________________________________________________//
+    template<typename T, typename convex = convex_type>
+    auto vcurl(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curl(f)) { return curl(f); }
+    template<typename T, typename convex = convex_type>
+    auto vcurlt(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlt(f)) { return curlt(f); }
+    template<typename T, typename convex = convex_type>
+    auto vcurlv(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlv(f)) { return curlv(f); }
+    template<typename T, typename convex = convex_type>
+    auto vcurl(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlx(f)) { return curlx(f); }
+    template<typename T, typename convex = convex_type>
+    auto vcurlt(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxt(f)) { return curlxt(f); }
+    template<typename T, typename convex = convex_type>
+    auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
+
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
@@ -180,7 +216,7 @@ private :
     // physical parameter
     maxwellproperties_ptrtype M_maxwellProperties;
     // boundary conditions
-    map_vector_field<nDim> M_bcDirichlet;
+    map_dirichlet_field M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
     map_vector_field<nDim> M_volumicForcesProperties;
