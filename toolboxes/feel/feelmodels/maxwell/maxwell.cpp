@@ -45,7 +45,7 @@ MAXWELL_CLASS_TEMPLATE_TYPE::Maxwell( std::string const& prefix,
                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_maxwellProperties( new maxwellproperties_type( prefix ) ),
+    M_maxwellProperties( boost::make_shared<maxwellproperties_type>( prefix ) ),
     M_epsilon( doption(_name="regularization-epsilon", _prefix=prefix) )
 {
     this->log("Maxwell","constructor", "start" );
@@ -183,9 +183,10 @@ MAXWELL_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->clearMarkerNeumannBC();
     this->clearMarkerRobinBC();
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" );
+    this->initDirichlet();
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", marker(d) );
+        this->addMarkerDirichletBC("nitsche", marker(d) );
+        // this->addMarkerDirichletBC("elimination", marker(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "magnetic-potential", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
         this->addMarkerNeumannBC(NeumannBCShape::SCALAR,marker(d));
@@ -221,6 +222,8 @@ MAXWELL_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             dofsWithValueImposedMagneticPotential.insert( it->index() );
     }
 }
+
+
 
 MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
@@ -399,7 +402,12 @@ MAXWELL_CLASS_TEMPLATE_TYPE::updateMagneticField()
      *M_fieldMagneticFieldContinuous = M_l2proj->operator()( -trans(gradv(this->fieldMagneticPotential() ) ) );
      else*/ if ( M_computeMagneticFieldProjType == "nodal" )
         M_fieldMagneticField->on(_range=M_rangeMeshElements,
-                                 _expr=curlv( this->fieldMagneticPotential() ) );
+// #if FEELPP_DIM==3
+                                 _expr=vcurlv( this->fieldMagneticPotential() )
+// #else
+//                                  _expr=curlxv( this->fieldMagneticPotential() )
+// #endif
+                                 );
     else
         CHECK( false ) << "invalid M_computeMagneticFieldProjType " << M_computeMagneticFieldProjType << "\n";
 }
@@ -482,7 +490,11 @@ MAXWELL_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
             double mu = magneticPermeability.value();
             bilinearForm_PatternCoupled +=
                 integrate( _range=range,
-                           _expr=1./mu*inner(curlt(v),curl(v)) + M_epsilon*inner(idt(v),id(v)),
+// #if FEELPP_DIM==3
+                           _expr=1./mu*trans(vcurlt(v))*vcurl(v) + M_epsilon*inner(idt(v),id(v)),
+// #else
+//                            _expr=1./mu*curlxt(v)*curlx(v) + M_epsilon*inner(idt(v),id(v)),
+// #endif
                            _geomap=this->geomap() );
         }
     }
@@ -541,10 +553,43 @@ MAXWELL_CLASS_TEMPLATE_DECLARATIONS
 void
 MAXWELL_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const
 {
-    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() ) return;
+    if ( this->M_bcNeumann.empty() && this->M_bcRobin.empty() && this->M_bcDirichlet.empty() ) return;
 
     if ( !buildCstPart )
     {
+        auto XhA = this->spaceMagneticPotential();
+        auto const& v = this->fieldMagneticPotential();
+        auto mesh = XhA->mesh();
+
+        auto myLinearForm = form1( _test=XhA, _vector=F,
+                                   _rowstart=this->rowStartInVector() );
+        auto bilinearForm_PatternCoupled = form2( _test=XhA,_trial=XhA,_matrix=A,
+                                                  _pattern=size_type(Pattern::COUPLED),
+                                                  _rowstart=this->rowStartInMatrix(),
+                                                  _colstart=this->colStartInMatrix() );
+
+        for( auto const& d : this->M_bcDirichlet )
+        {
+            myLinearForm +=
+                integrate( _range=markedfaces(mesh,this->markerDirichletBCByNameId("nitsche",marker(d)) ),
+// #if FEELPP_DIM==3
+                           _expr= trans(expression(d))*vcurl(v) + 1e5*trans(expression(d))*cross(id(v),N())/hFace(),
+// #else
+//                            _expr=expression(d)*curlx(v) + 1e5*expression(d)*cross(id(v),N())/hFace(),
+// #endif
+                           _geomap=this->geomap() );
+
+            bilinearForm_PatternCoupled +=
+                integrate( _range=markedfaces(mesh,this->markerDirichletBCByNameId("nitsche",marker(d)) ),
+// // #if FEELPP_DIM==3
+                           _expr=trans(vcurlt(v))*cross(id(v),N()) + trans(vcurl(v))*cross(idt(v),N())
+                           + 1e5*trans(cross(idt(v),N()))*cross(id(v),N())/hFace(),
+// // #else
+// //                            _expr=curlxt(v)*cross(id(v),N()) + curlx(v)*cross(idt(v),N())
+// //                            + 1e5*trans(cross(idt(v),N()))*cross(id(v),N())/hFace(),
+// // #endif
+                           _geomap=this->geomap() );
+        }
     }
 }
 

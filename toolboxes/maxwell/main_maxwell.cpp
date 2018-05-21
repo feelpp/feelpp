@@ -1,14 +1,13 @@
 #include <feel/feelmodels/maxwell/maxwell.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 
-template<int Order>
+// template<int Order>
 void
 runApplicationMaxwell()
 {
     using namespace Feel;
 
-    using model_type = FeelModels::Maxwell< Simplex<FEELPP_DIM,1>,
-                                            Lagrange<Order, Vectorial, Continuous, PointSetFekete> >;
+    using model_type = FeelModels::Maxwell< Simplex<FEELPP_DIM,1> >;
 
     boost::shared_ptr<model_type> maxwell( new model_type("maxwell") );
     maxwell->init();
@@ -33,18 +32,19 @@ int main( int argc, char** argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     std::string feapprox = soption(_name="fe-approximation");
-    if ( feapprox == "P1" )
-        runApplicationMaxwell<1>();
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    else if ( feapprox == "P2" )
-        runApplicationMaxwell<2>();
-#endif
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    else if ( feapprox == "P3" )
-        runApplicationMaxwell<3>();
-#endif
-    else
-        CHECK( false ) << "invalid feapprox " << feapprox;
+    runApplicationMaxwell();
+//     if ( feapprox == "P1" )
+//         runApplicationMaxwell<1>();
+// #if FEELPP_INSTANTIATION_ORDER_MAX >= 2
+//     else if ( feapprox == "P2" )
+//         runApplicationMaxwell<2>();
+// #endif
+// #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
+//     else if ( feapprox == "P3" )
+//         runApplicationMaxwell<3>();
+// #endif
+//     else
+//         CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
 
