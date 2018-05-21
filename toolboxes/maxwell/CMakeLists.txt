@@ -23,3 +23,4 @@ feelpp_add_application( cvg_maxwell_3d SRCS cvg_maxwell.cpp
   )
 
 feelpp_add_testcase(test PREFIX maxwell CATEGORY maxwell )
+feelpp_add_testcase(cvg PREFIX maxwell CATEGORY maxwell )
