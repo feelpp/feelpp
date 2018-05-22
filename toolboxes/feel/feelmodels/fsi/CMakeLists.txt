@@ -51,16 +51,18 @@ endforeach()
 
 # add Taylor Hood P2P1G2 P2G2
 if ( FEELPP_INSTANTIATION_ORDER_MAX GREATER 1 AND FEELPP_MESH_MAX_ORDER GREATER 1 )
-  message(STATUS "[feelpp] FSI 3D P2P1G2 P2G2")
-  genLibFSI(
-    DIM 3
-    FLUID_U_ORDER 2
-    FLUID_P_ORDER 1
-    FLUID_P_CONTINUITY Continuous
-    FLUID_GEO_ORDER 2
-    SOLID_DISP_ORDER 2
-    SOLID_GEO_ORDER 2
-    )
+  foreach( _DIM 2 3)
+    message(STATUS "[feelpp] FSI ${_DIM}D P2P1G2 P2G2")
+    genLibFSI(
+      DIM ${_DIM}
+      FLUID_U_ORDER 2
+      FLUID_P_ORDER 1
+      FLUID_P_CONTINUITY Continuous
+      FLUID_GEO_ORDER 2
+      SOLID_DISP_ORDER 2
+      SOLID_GEO_ORDER 2
+      )
+  endforeach()
 endif()
 
 # same order velocty,pressure,displacement (geo1)
