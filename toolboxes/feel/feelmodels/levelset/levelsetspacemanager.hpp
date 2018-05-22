@@ -76,6 +76,19 @@ class LevelSetSpaceManager
     typedef boost::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
 
     //--------------------------------------------------------------------//
+    // isoPN interpolation operators
+    typedef OperatorInterpolation<
+        space_scalar_type, // from space
+        space_scalar_PN_type // to space
+        > op_interpolation_scalar_to_PN_type;
+    typedef boost::shared_ptr<op_interpolation_scalar_to_PN_type> op_interpolation_scalar_to_PN_ptrtype;
+    typedef OperatorInterpolation<
+        space_scalar_PN_type // from space
+        space_scalar_type, // to space
+        > op_interpolation_scalar_from_PN_type;
+    typedef boost::shared_ptr<op_interpolation_scalar_from_PN_type> op_interpolation_scalar_from_PN_ptrtype;
+
+    //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
     typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
@@ -151,7 +164,10 @@ private:
     space_markers_ptrtype M_spaceMarkersIsoPN;
     // Tensor2Symm function space
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
-
+    //--------------------------------------------------------------------//
+    // Interpolation operators
+    op_interpolation_scalar_to_PN_ptrtype M_opInterpolationScalarToPN;
+    op_interpolation_scalar_from_PN_ptrtype M_opInterpolationScalarFromPN;
 };
 
 #define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS \
@@ -266,6 +282,23 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity(),
                 _extended_doftable=std::vector<bool>(1, true)
+                );
+    }
+
+    if( !M_opInterpolationScalarFromPN )
+    {
+        M_opInterpolationScalarFromPN = opInterpolation(
+                _domainSpace = M_spaceScalarPN,
+                _imageSpace = M_spaceScalarIsoPN,
+                _type = InterpolationNonConforme(false)
+                );
+    }
+    if( !M_opInterpolationScalarToPN )
+    {
+        M_opInterpolationScalarToPN = opInterpolation(
+                _domainSpace = M_spaceScalarIsoPN,
+                _imageSpace = M_spaceScalarPN,
+                _type = InterpolationNonConforme(false)
                 );
     }
 
