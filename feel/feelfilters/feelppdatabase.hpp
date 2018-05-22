@@ -30,7 +30,7 @@
 #define FEELPP_FEELPPDATABASE_HPP 1
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 #include <feel/feelfilters/loadmesh.hpp>

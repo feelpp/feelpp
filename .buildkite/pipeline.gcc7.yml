@@ -1,0 +1,48 @@
+steps:
+ - name: ':ubuntu:16.04, GCC6'
+   command: tools/scripts/buildkite/install-feelpp-lib.sh
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     CXX: g++-7
+     CC: gcc-7
+     TARGET: ubuntu:16.04
+ - wait
+ - name: ':ubuntu: 16.04, GCC6,  feelpp-base :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh base
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     CXX: g++-7
+     CC: gcc-7
+     TARGET: ubuntu:16.04
+ - wait
+ - name: ':ubuntu: 16.04, GCC6, feelpp-toolboxes :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh toolboxes
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     CXX: g++-7
+     CC: gcc-7
+     TARGET: ubuntu:16.04
+ - wait
+ - name: ':ubuntu: 16.04, GCC6, feelpp-crb :hammer:'
+   command: tools/scripts/buildkite/install-feelpp.sh crb
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     CXX: g++-7
+     CC: gcc-7
+     TARGET: ubuntu:16.04
+ - wait
+ - command: tools/scripts/buildkite/release.sh  -- feelpp-libs feelpp-base feelpp-toolboxes feelpp-crb
+   name: ":docker: push images to the hub :rocket:"
+   agents:
+     docker: true
+     ubuntu: "16.04"
+   env:
+     TARGET: ubuntu:16.04

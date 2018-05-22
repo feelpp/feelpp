@@ -149,11 +149,6 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_gmodel( new GModel() )
 {
     this->setReferenceDomain();
-    setX( std::make_pair( 0., 1.) );
-    if ( nDim > 1 )
-        setY( std::make_pair( 0., 1.) );
-    if ( nDim > 2 )
-        setZ( std::make_pair( 0., 1.) );
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :

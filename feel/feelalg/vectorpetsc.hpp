@@ -791,7 +791,7 @@ private:
         delete[] array;
     }
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 protected:
 
