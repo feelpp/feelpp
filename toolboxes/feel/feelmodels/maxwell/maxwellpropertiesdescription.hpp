@@ -21,7 +21,7 @@ public :
     typedef typename space_type::mesh_type mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    MaxwellPropertiesDescription( std::string const& prefix )
+    explicit MaxwellPropertiesDescription( std::string const& prefix )
         :
         M_isDefinedOnWholeMesh( true ),
         M_magneticPermeabilityDefaultValue( doption(_name="magnetic-permeability",_prefix=prefix) )
