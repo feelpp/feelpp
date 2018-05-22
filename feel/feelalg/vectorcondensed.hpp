@@ -140,7 +140,10 @@ public:
             else
                 super::zero();
         }
-    void zero( int n1 )
+    //!
+    //! zero block @param n1
+    //!
+    void zeroBlock( int n1 )
         {
             if ( staticCondensation() )
                 M_sc->zero( n1 );
