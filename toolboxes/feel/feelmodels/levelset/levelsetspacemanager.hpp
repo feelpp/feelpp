@@ -134,6 +134,9 @@ public:
     space_markers_ptrtype const& functionSpaceMarkersIsoPN() const { return M_spaceMarkersIsoPN; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
+    op_interpolation_scalar_to_PN_ptrtype const& opInterpolationScalarToPN() const { return M_opInterpolationScalarToPN; }
+    op_interpolation_scalar_from_PN_ptrtype const& opInterpolationScalarFromPN() const { return M_opInterpolationScalarFromPN; }
+
 private:
     std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
 
