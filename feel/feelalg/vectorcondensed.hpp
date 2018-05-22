@@ -141,6 +141,13 @@ public:
                 super::zero();
         }
     //!
+    //! zero block @p n1
+    //!
+    FEELPP_DEPRECATED void zero( int n1 )
+        {
+            return this->zeroBlock( n1 );
+        }
+    //!
     //! zero block @param n1
     //!
     void zeroBlock( int n1 )
