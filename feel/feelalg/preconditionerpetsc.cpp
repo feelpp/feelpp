@@ -1473,8 +1473,13 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, Wo
     M_matSolverPackage( ""),//getOption<std::string>("pc-factor-mat-solver-package-type",prefix,sub,prefixOverwrite) ),
     M_mumpsParameters( 33, std::make_pair(false,-1) )
 {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 9, 0 )    
+    MatSolverType ptype;
+    this->check( PCFactorGetMatSolverType(pc, &ptype ) );
+#else
     const MatSolverPackage ptype;
     this->check( PCFactorGetMatSolverPackage(pc, &ptype ) );
+#endif
     M_matSolverPackage = std::string( ( char* ) ptype );
 
     if ( M_matSolverPackage == "mumps" )
@@ -1503,7 +1508,12 @@ ConfigurePCLU::run( PC& pc )
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
     // allow to tune the factorisation package
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,9,0 )
+    this->check( PCFactorSetUpMatSolverType(pc) );
+    
+#else
     this->check( PCFactorSetUpMatSolverPackage(pc) );
+#endif
 
     // configure mumps
     if ( M_matSolverPackage == "mumps" )

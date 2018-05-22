@@ -23,6 +23,9 @@
 #
 
 #feelpp_add_application( hdg_darcy main.cpp )
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+endif()
 
 foreach(D 3)
     foreach(P RANGE 0 4 0) #3 
