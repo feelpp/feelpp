@@ -82,8 +82,11 @@ int main(int argc, char**argv )
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
     auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
     auto tau = expr<FEELPP_DIM,1>( soption(_name="functions.tau"), "tau" );
-    auto omega = expr<(FEELPP_DIM==2)?1:3,1>( soption(_name="functions.omega"), "omega" );
-
+#if FEELPP_DIM == 2
+    auto omega = expr( soption(_name="functions.omega"), "omega" );
+#else
+    auto omega = expr<3,1>( soption(_name="functions.omega"), "omega" );
+#endif
     tic();
     auto l = blockform1( Xh, solve::strategy::monolithic, backend() );
     l(0_c) = integrate(_range=elements(mesh),
