@@ -152,9 +152,6 @@ private:
     // Tensor2Symm function space
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
-    space_levelset_ptrtype M_subspaceLevelSet;
-    space_vectorial_ptrtype M_subspaceLevelSetVec;
-
 };
 
 #define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS \

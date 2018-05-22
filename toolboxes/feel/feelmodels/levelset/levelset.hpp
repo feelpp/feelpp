@@ -371,12 +371,11 @@ public:
     void
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     //--------------------------------------------------------------------//
+    levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
+
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
-
-    space_levelset_ptrtype const& functionSubspace() const { return M_subspaceLevelSet; }
-    space_vectorial_ptrtype const& functionSubspaceVectorial() const { return M_subspaceLevelSetVec; }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
@@ -625,12 +624,10 @@ private:
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
+    levelset_space_manager_ptrtype M_spaceManager;
     space_vectorial_ptrtype M_spaceLevelSetVec;
     space_markers_ptrtype M_spaceMarkers;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
-
-    space_levelset_ptrtype M_subspaceLevelSet;
-    space_vectorial_ptrtype M_subspaceLevelSetVec;
 
     //--------------------------------------------------------------------//
     // Markers
