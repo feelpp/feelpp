@@ -103,6 +103,50 @@ LEVELSET_CLASS_TEMPLATE_TYPE::New(
     return new_ls;
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void 
+LEVELSET_CLASS_TEMPLATE_TYPE::build()
+{
+    this->log("LevelSet", "build", "start");
+    // Create mesh in advection toolbox
+    M_advectionToolbox->createMesh();
+    // Space manager
+    M_spaceManager = boost::make_shared<levelset_space_manager_type>( M_advectionToolbox->mesh() );
+    // Build
+    this->buildImpl();
+
+    this->log("LevelSet", "build", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void 
+LEVELSET_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype const& mesh )
+{
+    this->log("LevelSet", "build (from mesh)", "start");
+    // Space manager
+    M_spaceManager = boost::make_shared<levelset_space_manager_type>( mesh );
+    // Build
+    this->buildImpl();
+
+    this->log("LevelSet", "build (from mesh)", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void 
+LEVELSET_CLASS_TEMPLATE_TYPE::buildImpl()
+{
+    // Function spaces
+    this->createFunctionSpaces();
+    // Advection toolbox
+    M_advectionToolbox->build( this->functionSpace() );
+    M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+    // Tools
+    this->createInterfaceQuantities();
+    this->createReinitialization();
+    this->createOthers();
+    this->createExporters();
+}
+
 //----------------------------------------------------------------------------//
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -433,15 +477,30 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable )
+LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
-    M_spaceLevelSetVec = space_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-    M_spaceMarkers = space_markers_type::New( 
-            _mesh=this->mesh(), _worldscomm=this->worldsComm(),
-            _extended_doftable=std::vector<bool>(1, buildSpaceMarkersExtendedDofTable)
-            );
+    if( M_useSpaceIsoPN )
+    {
+        this->functionSpaceManager()->createFunctionSpaceIsoPN();
+        M_mesh = this->functionSpaceManager()->meshP1IsoPN();
+        M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalarIsoPN();
+        M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorialIsoPN();
+        M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkersIsoPN();
+    }
+    else
+    {
+        this->functionSpaceManager()->createFunctionSpaceDefault();
+        M_mesh = this->functionSpaceManager()->mesh();
+        M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalar();
+        M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorial();
+        M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkers();
+    }
+
     if( M_useCauchyAugmented )
-        M_spaceTensor2Symm = space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+    {
+        this->functionSpaceManager()->createFunctionSpaceTensor2Symm();
+        M_spaceTensor2Symm = this->functionSpaceManager()->functionSpaceTensor2Symm();
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
