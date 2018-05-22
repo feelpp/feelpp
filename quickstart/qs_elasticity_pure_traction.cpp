@@ -34,6 +34,7 @@ int main(int argc, char**argv )
     using namespace Feel;
 	po::options_description laplacianoptions( "Elasticity options" );
 	laplacianoptions.add_options()
+        ( "domain", po::value<std::string>()->default_value( "" ), "name of the subdomain where rigid body are applied, if empty then it is the full domain" )
         ( "E", po::value<double>()->default_value( 1.0e6 ), "Young modulus" )
         ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
         ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
@@ -87,17 +88,22 @@ int main(int argc, char**argv )
 #else
     auto omega = expr<3,1>( soption(_name="functions.omega"), "omega" );
 #endif
+    auto rigid_body_domain_name = soption(_name="domain");
+    
     tic();
     auto l = blockform1( Xh, solve::strategy::monolithic, backend() );
     l(0_c) = integrate(_range=elements(mesh),
                        _expr=inner(f,id(v)));
     l(0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                         _expr=inner(g,id(v)));
+
+    auto rigid_body_domain = (rigid_body_domain_name.empty())?elements(mesh):markedelements(mesh, rigid_body_domain_name );
+    std::cout << "surface rigid domain=" << integrate( _range=rigid_body_domain, _expr=cst(1.0) ).evaluate() << std::endl; 
     // translation
     l(1_c) += integrate(_range=elements(mesh),
                         _expr=inner(tau,id(mv)));
     // rotation
-    l(2_c) += integrate(_range=elements(mesh),
+    l(2_c) += integrate(_range=rigid_body_domain,
                         _expr=inner(omega,id(m)));
     toc("l");
 
@@ -110,14 +116,14 @@ int main(int argc, char**argv )
     a(1_c,0_c) += integrate(_range=elements(mesh),
                             _expr=trans(id(mv))*idt(v));
 #if FEELPP_DIM == 2
-    a(0_c,2_c) += integrate(_range=elements(mesh),
+    a(0_c,2_c) += integrate(_range=rigid_body_domain,
                             _expr=trans(idt(m))*curlx(v));
-    a(2_c,0_c) += integrate(_range=elements(mesh),
+    a(2_c,0_c) += integrate(_range=rigid_body_domain,
                             _expr=trans(id(m))*curlxt(v));
 #else
-    a(0_c,2_c) += integrate(_range=elements(mesh),
+    a(0_c,2_c) += integrate(_range=rigid_body_domain,
                             _expr=trans(idt(m))*curl(v));
-    a(2_c,0_c) += integrate(_range=elements(mesh),
+    a(2_c,0_c) += integrate(_range=rigid_body_domain,
                             _expr=trans(id(m))*curlt(v));
 #endif
     toc("a");
