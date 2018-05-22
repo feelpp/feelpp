@@ -16,6 +16,13 @@ feelpp_add_application( fsi_3d SRCS main_fsi.cpp
   INSTALL
   )
 
+feelpp_add_application( fsi_2d_g2 SRCS main_fsi.cpp
+  LINK_LIBRARIES
+  feelpp_toolbox_fsi_lib_2dP2P1G2_2dP2G2
+  DEFS FEELPP_DIM=2 FEELPP_GEO_ORDER=2
+  INSTALL
+  )
+
 feelpp_add_application( fsi_3d_g2 SRCS main_fsi.cpp
   LINK_LIBRARIES
   feelpp_toolbox_fsi_lib_3dP2P1G2_3dP2G2

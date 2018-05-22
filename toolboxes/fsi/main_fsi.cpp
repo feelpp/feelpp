@@ -45,7 +45,7 @@ main( int argc, char** argv )
 	po::options_description fsioptions( "application fsi options" );
     fsioptions.add( Feel::toolboxes_options("fsi") );
     fsioptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
+        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P2P1-P2 ")
         ;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -56,6 +56,7 @@ main( int argc, char** argv )
 
 
     std::string feapprox = soption(_name="fe-approximation");
+#if FEELPP_GEO_ORDER == 1
     if ( feapprox == "P2P1" )
         runApplicationFSI<2,1>();
     else if ( feapprox == "P2P1-P2" )
@@ -63,6 +64,10 @@ main( int argc, char** argv )
 #if 0//FEELPP_DIM == 2
     else if ( feapprox == "P1P1" )
         runApplicationFSI<1,1>();
+#endif
+#elif FEELPP_GEO_ORDER == 2
+    if ( true )
+        runApplicationFSI<2,1,2>();
 #endif
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
