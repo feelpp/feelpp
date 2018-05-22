@@ -107,6 +107,7 @@ runApplicationMaxwell()
         errB[2*i] = normL2( Bh->template rangeElements<0>(),
                             idv(B_h)-idv(B_ex) );
         errRelB[2*i] = errB[2*i]/normB[2*i];
+#if FEELPP_DIM==3
         normB[2*i+1] = normL2( Bh->template rangeElements<0>(),
                                _expr=idv(B_h) );
         normB[2*i+1] += normL2( Bh->template rangeElements<0>(),
@@ -116,6 +117,7 @@ runApplicationMaxwell()
         errB[2*i+1] += normL2( Bh->template rangeElements<0>(),
                               _expr=divv(B_h)-divv(B_ex) );
         errRelB[2*i+1] = errB[2*i+1]/normB[2*i+1];
+#endif
         e->step(i)->add("B_h", "B_h", B_h);
         e->step(i)->add("B_ex", "N_ex", B_ex);
 
