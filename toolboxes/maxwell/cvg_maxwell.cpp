@@ -73,9 +73,7 @@ runApplicationMaxwell()
         auto params = maxwell->modelProperties().parameters().toParameterValues();
         functions.setParameterValues( params );
 
-        // auto e = exporter(_mesh=mesh, _name="convergence",_geo="static");
-        e->step(i)->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
-        // e->step(i)->setMesh(mesh);
+        e->step(i)->setMesh(mesh);
 
         auto A_h = maxwell->fieldMagneticPotential();
         auto AExpr = expr<FEELPP_DIM,1>(functions["A_exact"].expressionString() );
