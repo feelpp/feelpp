@@ -270,31 +270,8 @@ public:
             std::string const& subPrefix = "",
             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
 
-    void build()
-    {
-        this->log("LevelSet", "build", "start");
-        M_advectionToolbox->build();
-        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-        this->createFunctionSpaces( true );
-        this->createInterfaceQuantities();
-        this->createReinitialization();
-        this->createOthers();
-        this->createExporters();
-        this->log("LevelSet", "build", "finish");
-    }
-
-    void build( mesh_ptrtype const& mesh )
-    {
-        this->log("LevelSet", "build (from mesh)", "start");
-        M_advectionToolbox->build( mesh );
-        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-        this->createFunctionSpaces( true );
-        this->createInterfaceQuantities();
-        this->createReinitialization();
-        this->createOthers();
-        this->createExporters();
-        this->log("LevelSet", "build (from mesh)", "finish");
-    }
+    void build();
+    void build( mesh_ptrtype const& mesh );
 
     BOOST_PARAMETER_MEMBER_FUNCTION( 
             (void), build, tag,
@@ -317,7 +294,7 @@ public:
         M_advectionToolbox->build( space );
         M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         // createFunctionSpaces
-        M_spaceLevelSetVec = space_vectorial;
+        M_spaceVectorial = space_vectorial;
         M_spaceMarkers = space_markers;
         if( M_useCauchyAugmented )
         {
@@ -360,9 +337,8 @@ public:
 
     boost::shared_ptr<std::ostringstream> getInfo() const;
 
-    // advection data
-    typename advection_toolbox_type::mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
-    typename advection_toolbox_type::space_advection_ptrtype const& functionSpace() const { return M_advectionToolbox->functionSpace(); }
+    //--------------------------------------------------------------------//
+    // Advection data
     typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
     typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
@@ -371,11 +347,15 @@ public:
     void
     updateAdvectionVelocity(vf::Expr<ExprT> const& v_expr) { M_advectionToolbox->updateAdvectionVelocity( v_expr ); }
     //--------------------------------------------------------------------//
+    // Spaces
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
 
+    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
-    space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceLevelSetVec; }
+    space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
+
+    typename mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
@@ -533,6 +513,8 @@ public:
 
 protected:
     //--------------------------------------------------------------------//
+    void buildImpl();
+    //--------------------------------------------------------------------//
     // Levelset data update functions
     void updateGradPhi();
     void updateModGradPhi();
@@ -555,14 +537,11 @@ private:
     void loadConfigBCFile();
     void loadConfigPostProcess();
 
-    void createFunctionSpaces( bool buildSpaceMarkersExtendedDofTable = false );
+    void createFunctionSpaces();
     void createInterfaceQuantities();
     void createReinitialization();
     void createOthers();
     void createExporters();
-
-    void initWithMesh(mesh_ptrtype mesh);
-    void initFastMarching(mesh_ptrtype const& mesh);
 
     //--------------------------------------------------------------------//
     void addShape( 
@@ -609,6 +588,8 @@ protected:
 private:
     //--------------------------------------------------------------------//
     // Meshes 
+    mesh_ptrtype M_mesh;
+
     mutable mesh_ptrtype M_submeshDirac;
     mutable bool M_doUpdateSubmeshDirac;
     mutable mesh_ptrtype M_submeshOuter;
@@ -625,7 +606,8 @@ private:
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype M_spaceManager;
-    space_vectorial_ptrtype M_spaceLevelSetVec;
+    space_levelset_ptrtype M_spaceLevelset;
+    space_vectorial_ptrtype M_spaceVectorial;
     space_markers_ptrtype M_spaceMarkers;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
 
