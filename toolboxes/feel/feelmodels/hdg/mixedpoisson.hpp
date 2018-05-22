@@ -1166,6 +1166,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
     auto nu = M_Ch->element( "nu" );
     auto uI = M_Ch->element( "uI" );
 
+
+
     std::string marker;
     Expr<GinacEx<expr_order> > g;
 
@@ -1352,7 +1354,6 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
     auto tau_constant = cst(doption(prefixvm(this->prefix(), "tau_constant")));
 
     std::string marker;
-    auto exAtMarker = M_IBCList[i];
 
     if ( !markerOpt.empty())
     {
@@ -1360,11 +1361,11 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleIBC( int i, std::string mark
     }
     else
     {
+    	auto exAtMarker = M_IBCList[i];
         marker = exAtMarker.marker();
     }
 
     // Feel::cout << "Matrix marker integral: " << marker << " with line " << i << std::endl;
-
 
     // <lambda, v.n>_Gamma_I
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
@@ -1539,9 +1540,9 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
-                        j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                        j_integral = integrate(_quad=_Q<expr_order>(), _range=markedfaces(mesh,marker),
                                                 _expr=trans(idv(M_up))*N()).evaluate()(0,0);
-                        meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(M_mesh,marker),
+                        meas = integrate(_quad=_Q<expr_order>(), _range=markedfaces(mesh,marker),
                                           _expr=cst(1.0)).evaluate()(0,0);
                         Feel::cout << "Integral flux on " << marker << ": " << j_integral << std::endl;
                     }
@@ -1559,7 +1560,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     auto material = pairMat.second;
                     auto kk = expr(material.getScalar( "scale_flux" ) );
 
-                    scaled_flux.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
+                    scaled_flux.on( _range=markedelements(mesh,marker) , _expr= kk*idv(M_up));
 
                 }
 
@@ -1600,35 +1601,41 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                             if (exAtMarker.isExpression() )
                             {
                                 auto p_exact = expr(exAtMarker.expression()) ;
-                                if ( !this->isStationary() )
-                                    p_exact.setParameterValues( { {"t", time } } );
+
                                 double K = 1;
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
                                     K = material.getDouble( "k" );
                                 }
+								
                                 auto gradp_exact = grad<Dim>(p_exact) ;
-                                if ( !this->isStationary() )
-                                    gradp_exact.setParameterValues( { {"t", time } } );
-                                auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
 
-								auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
-								auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+                                if ( !this->isStationary() )
+								{
+                                    gradp_exact.setParameterValues( { {"t", time } } );
+                                    p_exact.setParameterValues( { {"t", time } } );
+								}
+
+                                auto u_exact = cst(-K)*trans(gradp_exact);
+								// auto u_exact = expr(-K* trans(gradp_exact)) ;
+
+								auto p_exactExport = project( _space=M_Wh, _range=elements(mesh), _expr=p_exact );
+								auto u_exactExport = project( _space=M_Vh, _range=elements(mesh), _expr=u_exact );
 
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
 								M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
-                                // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
-                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
-								auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+                                // auto l2err_u = normL2( _range=elements(mesh), _expr= idv(M_up) - u_exact );
+                                auto l2err_u = normL2( _range=elements(mesh), _expr= idv(M_up) - idv(u_exactExport) );
+								auto l2norm_uex = normL2( _range=elements(mesh), _expr= u_exact );
 
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
 
 
-                                auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
-                                auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+                                auto l2err_p = normL2( _range=elements(mesh), _expr=p_exact - idv(M_pp) );
+                                auto l2norm_pex = normL2( _range=elements(mesh), _expr=p_exact );
                                 if (l2norm_pex < 1)
                                     l2norm_pex = 1.0;
 
@@ -1654,7 +1661,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     auto material = pairMat.second;
                     auto kk = expr(material.getScalar( "scale_potential" ) );
 
-                    scaled_potential.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
+                    scaled_potential.on( _range=markedelements(mesh,marker) , _expr= kk*idv(M_pp));
 
                 }
 
