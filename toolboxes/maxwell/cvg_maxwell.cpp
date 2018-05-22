@@ -20,9 +20,9 @@ void printCvg( std::ostream& out, std::vector<double> h, std::vector<std::vector
     out << fmter % "errRelA_L2";
     out << fmter % "errRelA_Curl";
     out << fmter % "errB_L2";
-    out << fmter % "errB_H1";
+    out << fmter % "errB_Div";
     out << fmter % "errRelB_L2";
-    out << fmter_endl % "errRelB_H1";
+    out << fmter_endl % "errRelB_Div";
 
     int maxiter = h.size();
     for( int i = 0; i < maxiter; ++i )
@@ -73,8 +73,8 @@ runApplicationMaxwell()
         auto params = maxwell->modelProperties().parameters().toParameterValues();
         functions.setParameterValues( params );
 
-        auto e = exporter(_mesh=mesh, _name="convergence",_geo="static");
-        // e->step(i)->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
+        // auto e = exporter(_mesh=mesh, _name="convergence",_geo="static");
+        e->step(i)->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
         // e->step(i)->setMesh(mesh);
 
         auto A_h = maxwell->fieldMagneticPotential();
@@ -104,18 +104,22 @@ runApplicationMaxwell()
         BExpr.setParameterValues( params );
         auto Bh = maxwell->spaceMagneticField();
         auto B_ex = Bh->element(BExpr);
-        // normB[2*i] = normL2( Bh->template rangeElements<0>(),
-        //                      idv(B_h) );
-        // errB[2*i] = normL2( Bh->template rangeElements<0>(),
-        //                     idv(B_h)-idv(B_ex) );
-        // errRelB[2*i] = errB[2*i]/normB[2*i];
-        // normB[2*i+1] = normH1( Bh->template rangeElements<0>(),
-        //                        _expr=idv(B_h), _grad_expr=gradv(B_h) );
-        // errB[2*i+1] = normH1( Bh->template rangeElements<0>(),
-        //                       _expr=idv(B_h)-idv(B_ex), _grad_expr=gradv(B_h)-gradv(B_ex) );
-        // errRelB[2*i+1] = errB[2*i+1]/normB[2*i+1];
-        // e->step(i)->add("B_h", "B_h", B_h);
-        // e->step(i)->add("B_ex", "N_ex", B_ex);
+        normB[2*i] = normL2( Bh->template rangeElements<0>(),
+                             idv(B_h) );
+        errB[2*i] = normL2( Bh->template rangeElements<0>(),
+                            idv(B_h)-idv(B_ex) );
+        errRelB[2*i] = errB[2*i]/normB[2*i];
+        normB[2*i+1] = normL2( Bh->template rangeElements<0>(),
+                               _expr=idv(B_h) );
+        normB[2*i+1] += normL2( Bh->template rangeElements<0>(),
+                               _expr=divv(B_h) );
+        errB[2*i+1] = normL2( Bh->template rangeElements<0>(),
+                              _expr=idv(B_h)-idv(B_ex) );
+        errB[2*i+1] += normL2( Bh->template rangeElements<0>(),
+                              _expr=divv(B_h)-divv(B_ex) );
+        errRelB[2*i+1] = errB[2*i+1]/normB[2*i+1];
+        e->step(i)->add("B_h", "B_h", B_h);
+        e->step(i)->add("B_ex", "N_ex", B_ex);
 
         e->save();
         size /= factor;
@@ -139,7 +143,6 @@ int main(int argc, char** argv) {
     po::options_description maxwelloptions( "application maxwell options" );
     maxwelloptions.add( toolboxes_options("maxwell") );
     maxwelloptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2,P3 ")
         ("cvg.nb-iter", po::value<int>()->default_value(1), "number of convergence iteration")
         ("cvg.factor", po::value<double>()->default_value(2), "factor of mesh size by iteration")
         ("cvg.filename", po::value<std::string>()->default_value("cvg.dat"), "filename to store convergence results")
@@ -151,20 +154,7 @@ int main(int argc, char** argv) {
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    std::string feapprox = soption(_name="fe-approximation");
     runApplicationMaxwell();
-    // if ( feapprox == "P1" )
-    //     runApplicationMaxwell<1>();
-// #if FEELPP_INSTANTIATION_ORDER_MAX >= 2
-//     else if ( feapprox == "P2" )
-//         runApplicationMaxwell<2>();
-// #endif
-// #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-//     else if ( feapprox == "P3" )
-//         runApplicationMaxwell<3>();
-// #endif
-//     else
-//         CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
 }
