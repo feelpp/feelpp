@@ -56,22 +56,22 @@ class LevelSetSpaceManager
     typedef PeriodicityType periodicity_type;
 
     //--------------------------------------------------------------------//
-    // Default levelset spaces
-    typedef BasisType basis_levelset_type;
-    typedef FunctionSpace< mesh_type, bases<basis_levelset_type>, Periodicity<periodicity_type> > space_levelset_type;
-    typedef boost::shared_ptr<space_levelset_type> space_levelset_ptrtype;
+    // Default scalar and vectorial spaces
+    typedef BasisType basis_scalar_type;
+    typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
+    typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
 
-    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_type>::type basis_vectorial_type;
+    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
     typedef boost::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
 
     //--------------------------------------------------------------------//
-    // isoPN levelset spaces
-    typedef BasisPnType basis_levelset_PN_type;
-    typedef FunctionSpace< mesh_type, bases<basis_levelset_PN_type>, Periodicity<periodicity_type> > space_levelset_PN_type;
-    typedef boost::shared_ptr<space_levelset_PN_type> space_levelset_PN_ptrtype;
+    // isoPN scalar spaces
+    typedef BasisPnType basis_scalar_PN_type;
+    typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type>, Periodicity<periodicity_type> > space_scalar_PN_type;
+    typedef boost::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
 
-    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_levelset_PN_type>::type basis_vectorial_PN_type;
+    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_PN_type>::type basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_PN_type>, Periodicity<periodicity_type> > space_vectorial_PN_type;
     typedef boost::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
 
@@ -84,7 +84,7 @@ class LevelSetSpaceManager
     //--------------------------------------------------------------------//
     // Tensor2 symmetric function space
     //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
-    typedef typename detail::ChangeBasisPolySet<Tensor2Symm, basis_levelset_type>::type basis_tensor2symm_type;
+    typedef typename detail::ChangeBasisPolySet<Tensor2Symm, basis_scalar_type>::type basis_tensor2symm_type;
     typedef FunctionSpace<mesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
     typedef boost::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
@@ -111,12 +111,12 @@ public:
     mesh_ptrtype const& mesh() const { return M_mesh };
     mesh_ptrtype const& meshP1isoPN() const { return M_meshP1isoPN };
 
-    space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
+    space_scalar_ptrtype const& functionSpaceScalar() const { return M_spaceScalar; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
-    space_levelset_PN_ptrtype const& functionSpacePN() const { return M_spaceLevelsetPN; }
+    space_scalar_PN_ptrtype const& functionSpaceScalarPN() const { return M_spaceScalarPN; }
     space_vectorial_PN_ptrtype const& functionSpaceVectorialPN() const { return M_spaceVectorialPN; }
-    space_levelset_ptrtype const& functionSpaceIsoPN() const { return M_spaceLevelsetIsoPN; }
+    space_scalar_ptrtype const& functionSpaceScalarIsoPN() const { return M_spaceScalarIsoPN; }
     space_vectorial_ptrtype const& functionSpaceVectorialIsoPN() const { return M_spaceVectorialIsoPN; }
     space_markers_ptrtype const& functionSpaceMarkersIsoPN() const { return M_spaceMarkersIsoPN; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
@@ -139,14 +139,14 @@ private:
     bool M_functionSpaceCreated;
     //--------------------------------------------------------------------//
     // Default function spaces
-    space_levelset_ptrtype M_spaceLevelset;
+    space_scalar_ptrtype M_spaceScalar;
     space_vectorial_ptrtype M_spaceVectorial;
     space_markers_ptrtype M_spaceMarkers;
     // PN function spaces
-    space_levelset_PN_ptrtype M_spaceLevelsetPN;
+    space_scalar_PN_ptrtype M_spaceScalarPN;
     space_vectorial_PN_ptrtype M_spaceVectorialPN;
     // IsoPN function spaces
-    space_levelset_ptrtype M_spaceLevelsetIsoPN;
+    space_scalar_ptrtype M_spaceScalarIsoPN;
     space_vectorial_ptrtype M_spaceVectorialIsoPN;
     space_markers_ptrtype M_spaceMarkersIsoPN;
     // Tensor2Symm function space
@@ -183,10 +183,10 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
 {
-    if( !M_spaceLevelset )
+    if( !M_spaceScalar )
     {
         std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-        M_spaceLevelset = space_levelset_type::New( 
+        M_spaceScalar = space_scalar_type::New( 
                 _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(),
                 _extended_doftable=extendedDT,
@@ -218,9 +218,9 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
 {
-    if( !M_spaceLevelsetPN )
+    if( !M_spaceScalarPN )
     {
-        M_spaceLevelsetPN = space_levelset_type::New( 
+        M_spaceScalarPN = space_scalar_type::New( 
                 _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(),
                 _periodicity=this->periodicity()
@@ -237,14 +237,14 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     if( !M_meshP1isoPN )
     {
         M_opLagrangeP1isoPN = lagrangeP1(
-                _space=this->M_spaceLevelsetPN
+                _space=this->M_spaceScalarPN
                 );
         M_meshP1isoPN = M_opLagrangeP1isoPN->mesh();
     }
-    if( !M_spaceLevelsetIsoPN )
+    if( !M_spaceScalarIsoPN )
     {
         std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-        M_spaceLevelsetIsoPN = space_levelset_type::New(
+        M_spaceScalarIsoPN = space_scalar_type::New(
                 _mesh=this->meshP1isoPN(), 
                 _worldscomm=this->worldsComm(),
                 _extended_doftable=extendedDT,
