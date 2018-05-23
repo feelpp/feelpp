@@ -227,7 +227,7 @@ public:
         NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_NODAL_PROJECTION
     };
     typedef boost::bimap<std::string, DerivationMethod> derivationmethod_maptype;
-    static derivationmethod_maptype DerivationMethodMap;
+    static const derivationmethod_maptype DerivationMethodMap;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
@@ -615,6 +615,7 @@ private:
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype M_spaceManager;
+    bool M_useSpaceIsoPN;
     space_levelset_ptrtype M_spaceLevelset;
     space_vectorial_ptrtype M_spaceVectorial;
     space_markers_ptrtype M_spaceMarkers;

@@ -35,6 +35,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< type
     ( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
     ( "l2-projection", DerivationMethod::L2_PROJECTION )
     ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
+    ( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
 ;
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -644,7 +645,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_PN_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::phiPN() const
 {
-    CHECK( M_useSpaceIsoPN ) << "use-space-isoPN must be enabled to use phi PN \n";
+    CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use phiPN \n";
 
     if( !M_levelsetPhiPN )
         M_levelsetPhiPN.reset( new element_levelset_PN_type(this->functionSpaceManager()->functionSpaceScalarPN(), "PhiPN") );
@@ -831,6 +832,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     {
         M_hasInitialBackwardCharacteristics = false;
     }
+
+    M_useSpaceIsoPN = boption( _name="use-space-iso-pn", _prefix=this->prefix() );
 
     M_doExportAdvection = boption(_name="do_export_advection", _prefix=this->prefix());
 
