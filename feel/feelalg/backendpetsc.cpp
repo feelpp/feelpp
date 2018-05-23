@@ -110,34 +110,6 @@ template<typename T>
 typename BackendPetsc<T>::vector_ptrtype
 BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
 {
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
-
-    vector_ublas_type * vecUblas = const_cast<vector_ublas_type *>( dynamic_cast<vector_ublas_type const*>( &v ) );
-    if ( vecUblas )
-    {
-        //std::cout << "Convert Ublas vector\n";
-        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
-        return _newvec;
-    }
-    //vector_ublas_range_type * vecUblasRange = dynamic_cast<vector_ublas_range_type*>( &v );
-    vector_ublas_range_type * vecUblasRange = const_cast<vector_ublas_range_type *>( dynamic_cast<vector_ublas_range_type const*>( &v ) );
-    if ( vecUblasRange )
-    {
-        //std::cout << "Convert Ublas range vector\n";
-        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
-        return _newvec;
-    }
-#if 0
-    vector_ublas_slice_type * vecUblasSlice = dynamic_cast<vector_ublas_slice_type*>( &v );
-    if ( vecUblasSlice )
-    {
-        //std::cout << "Convert Ublas slice vector\n";
-        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
-        return _newvec;
-    }
-#endif
     petsc_vector_type * vecPetsc = const_cast<petsc_vector_type *>( dynamic_cast<petsc_vector_type const*>( &v ) );
     if ( vecPetsc )
     {
@@ -158,6 +130,56 @@ BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
         vector_ptrtype _newvecPetsc( boost::make_shared<petsc_vector_type>( vecPetsc->vec(), vecPetsc->mapPtr() ) );
         return _newvecPetsc;
     }
+
+    typedef VectorUblas<T> vector_ublas_type;
+    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_saa_type;
+    typedef typename vector_ublas_saa_type::range::type vector_ublas_saa_range_type;
+    typedef typename vector_ublas_saa_type::slice::type vector_ublas_saa_slice_type;
+    vector_ublas_type * vecUblas = const_cast<vector_ublas_type *>( dynamic_cast<vector_ublas_type const*>( &v ) );
+    if ( vecUblas )
+    {
+        //std::cout << "Convert Ublas vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblas ) );
+        return _newvec;
+    }
+    vector_ublas_range_type * vecUblasRange = const_cast<vector_ublas_range_type *>( dynamic_cast<vector_ublas_range_type const*>( &v ) );
+    if ( vecUblasRange )
+    {
+        //std::cout << "Convert Ublas range vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasRange ) );
+        return _newvec;
+    }
+#if 0
+    vector_ublas_slice_type * vecUblasSlice = dynamic_cast<vector_ublas_slice_type*>( &v );
+    if ( vecUblasSlice )
+    {
+        //std::cout << "Convert Ublas slice vector\n";
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+    vector_ublas_saa_type * vecUblasSAA = const_cast<vector_ublas_saa_type *>( dynamic_cast<vector_ublas_saa_type const*>( &v ) );
+    if ( vecUblasSAA )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAA ) );
+        return _newvec;
+    }
+    vector_ublas_saa_range_type * vecUblasSAARange = const_cast<vector_ublas_saa_range_type *>( dynamic_cast<vector_ublas_saa_range_type const*>( &v ) );
+    if ( vecUblasSAARange )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAARange ) );
+        return _newvec;
+    }
+#if 0
+    vector_ublas_saa_slice_type * vecUblasSAASlice = const_cast<vector_ublas_saa_slice_type *>( dynamic_cast<vector_ublas_saa_slice_type const*>( &v ) );
+    if ( vecUblasSAASlice )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAASlice ) );
+        return _newvec;
+    }
+#endif
 
     const VectorBlockBase<T> * vecBlock = dynamic_cast< VectorBlockBase<T> const * >( &v );
     if ( vecBlock )
@@ -190,6 +212,9 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
     typedef VectorUblas<T> vector_ublas_type;
     typedef typename vector_ublas_type::range::type vector_ublas_range_type;
     typedef typename vector_ublas_type::slice::type vector_ublas_slice_type;
+    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_saa_type;
+    typedef typename vector_ublas_saa_type::range::type vector_ublas_saa_range_type;
+    typedef typename vector_ublas_saa_type::slice::type vector_ublas_saa_slice_type;
     boost::shared_ptr<vector_ublas_type> vecUblas = boost::dynamic_pointer_cast< vector_ublas_type >( v );
     if ( vecUblas )
     {
@@ -210,6 +235,26 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
     {
         //std::cout << "Convert Ublas slice vector\n";
         vector_ptrtype _newvec( toPETScPtr( *vecUblasSlice ) );
+        return _newvec;
+    }
+#endif
+    boost::shared_ptr<vector_ublas_saa_type> vecUblasSAA = boost::dynamic_pointer_cast< vector_ublas_saa_type >( v );
+    if ( vecUblasSAA )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAA ) );
+        return _newvec;
+    }
+    boost::shared_ptr<vector_ublas_saa_range_type> vecUblasSAARange = boost::dynamic_pointer_cast< vector_ublas_saa_range_type >( v );
+    if ( vecUblasSAARange )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAARange ) );
+        return _newvec;
+    }
+#if 0
+    boost::shared_ptr<vector_ublas_saa_slice_type> vecUblasSAASlice = boost::dynamic_pointer_cast< vector_ublas_saa_slice_type >( v );
+    if ( vecUblasSAASlice )
+    {
+        vector_ptrtype _newvec( toPETScPtr( *vecUblasSAASlice ) );
         return _newvec;
     }
 #endif

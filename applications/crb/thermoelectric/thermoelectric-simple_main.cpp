@@ -64,7 +64,7 @@ int main( int argc, char** argv)
     // init
     rb_model_ptrtype model = boost::make_shared<rb_model_type>(mesh);
     crb_model_ptrtype crbModel = boost::make_shared<crb_model_type>(model, crb::stage::offline);
-    crb_ptrtype crb = boost::make_shared<crb_type>("thermoelectric", crbModel, crb::stage::offline);
+    crb_ptrtype crb = crb_type::New("thermoelectric", crbModel, crb::stage::offline);
 
     // offline
     crb->offline();

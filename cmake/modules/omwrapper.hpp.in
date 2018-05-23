@@ -1,0 +1,30 @@
+/* this header is generated automatically by Feelpp to wrap OM library*/
+#ifndef FEEL@OM_UP_NAME@_HPP
+#define FEEL@OM_UP_NAME@_HPP 1
+#define OPENMODELICA_XML_FROM_FILE_AT_RUNTIME
+#include <string>
+
+#include <feel/feelom/ommodel.hpp>
+namespace Feel
+{
+
+class Feel@OMWRAPPER_NAME@ : public OMModel
+{
+    typedef OMModel super_type;
+
+public :
+    Feel@OMWRAPPER_NAME@() :
+        super_type()
+    {
+        boost::property_tree::read_xml( "@OMWRAPPER_LIBDIR@/@OMWRAPPER_NAME@_init.xml",
+                                        M_input_ptree,
+                                        boost::property_tree::xml_parser::trim_whitespace );
+        M_input_ptree.put("fmiModelDescription.DefaultExperiment.<xmlattr>.outputFormat", "csv");
+    }
+    int run() override;
+
+private :
+};
+} //namespace Feel
+
+#endif

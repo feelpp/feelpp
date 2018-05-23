@@ -119,8 +119,8 @@ BOOST_PARAMETER_FUNCTION(
                              } );
         }
     }
-    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
-    gmsh_ptr->setGeoParameters( geo_parameters );
+    //gmsh_ptr->addGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ) );
+    gmsh_ptr->addGeoParameters( geo_parameters );
 
     return gmsh_ptr;
 

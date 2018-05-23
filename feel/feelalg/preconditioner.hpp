@@ -46,6 +46,8 @@ template<typename T> class Backend;
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<Backend<double> > backend_ptrtype;
 
+template<typename T> class OperatorPCDBase;
+
 /**
  * \class Preconditioner
  * \brief base class for preconditioner
@@ -80,11 +82,12 @@ public:
     //@{
     typedef T value_type;
     typedef Preconditioner<T> preconditioner_type;
-    typedef boost::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
+    typedef boost::shared_ptr<preconditioner_type > preconditioner_ptrtype;
 
     typedef boost::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
     typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
+    typedef boost::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     
     //@}
 
@@ -111,7 +114,7 @@ public:
         {}
 
     //! destructor
-    ~Preconditioner();
+    virtual ~Preconditioner();
 
     static preconditioner_ptrtype build( 
             std::string const& name = "", 
@@ -255,6 +258,13 @@ public:
         return M_inHousePreconditioners[key];
     }
 
+    bool hasOperatorPCD( std::string const& key ) const { return M_operatorPCD.find( key ) != M_operatorPCD.end(); }
+    operator_pcdbase_ptrtype const& operatorPCD( std::string const& key ) const
+        {
+            CHECK( this->hasOperatorPCD( key ) ) << " operator PCD not given for this key : " << key ;
+            return M_operatorPCD.find(key)->second;
+        }
+
     //@}
 
     /** @name  Mutators
@@ -311,6 +321,11 @@ public:
     void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
     {
         M_inHousePreconditioners[key] = pc;
+    }
+
+    void attachOperatorPCD( std::string const& key, operator_pcdbase_ptrtype const& opPCD )
+    {
+        M_operatorPCD[key] = opPCD;
     }
 
     //@}
@@ -375,6 +390,8 @@ protected:
     std::map<std::string,vector_ptrtype> M_auxiliaryVector;
 
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
+
+    std::map<std::string,operator_pcdbase_ptrtype> M_operatorPCD;
 };
 
 typedef Preconditioner<double> preconditioner_type;
@@ -413,32 +430,6 @@ Preconditioner<T>::~Preconditioner ()
 typedef Preconditioner<double> preconditioner_type;
 typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
-namespace detail
-{
-class PreconditionerManagerImpl:
-        public std::map<std::pair<backend_ptrtype,std::string>, preconditioner_ptrtype >,
-        public boost::noncopyable
-{
-public:
-    typedef preconditioner_ptrtype value_type;
-    typedef std::pair<backend_ptrtype,std::string> key_type;
-    typedef std::map<key_type, value_type> preconditioner_manager_type;
-
-};
-typedef Feel::Singleton<PreconditionerManagerImpl> PreconditionerManager;
-
-struct PreconditionerManagerDeleterImpl
-{
-    void operator()() const
-        {
-            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager Singleton: " << Feel::detail::PreconditionerManager::instance().size() << "\n";
-            Feel::detail::PreconditionerManager::instance().clear();
-            VLOG(2) << "[PreconditionerManagerDeleter] clear PreconditionerManager done\n";
-        }
-};
-typedef Feel::Singleton<PreconditionerManagerDeleterImpl> PreconditionerManagerDeleter;
-} // detail
-
 
 template<typename Args>
 struct compute_prec_return
@@ -456,50 +447,21 @@ BOOST_PARAMETER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                           ( optional
                             ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
                             ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
-                            
                             ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
                             ( rebuild,      (bool), false )
                             )
                           )
 {
-    // register the PreconditionerManager into Feel::Environment so that it gets the
-    // PreconditionerManager is cleared up when the Environment is deleted
-    static bool observed=false;
-    if ( !observed )
+    using value_type = typename compute_prec_return<Args>::value_type;
+    preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->comm() );
+    p->setType( pc );
+    p->setMatSolverPackageType( pcfactormatsolverpackage );
+
+    if ( matrix )
     {
-        Environment::addDeleteObserver( Feel::detail::PreconditionerManagerDeleter::instance() );
-        observed = true;
+        p->setMatrix( matrix );
     }
-
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    auto git = Feel::detail::PreconditionerManager::instance().find( std::make_pair( backend, prefix ) );
-
-    if (  git != Feel::detail::PreconditionerManager::instance().end() && ( rebuild == false ) )
-    {
-        VLOG(2) << "[preconditioner] found preconditioner name=" << prefix << " rebuild=" << rebuild << "\n";
-        if ( matrix && !git->second->matrix() )
-            git->second->setMatrix( matrix );
-        return git->second;
-    }
-
-    else
-    {
-        using value_type = typename compute_prec_return<Args>::value_type;
-        preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->comm() );
-        p->setType( pc );
-        p->setMatSolverPackageType( pcfactormatsolverpackage );
-
-        if ( matrix )
-        {
-            p->setMatrix( matrix );
-        }
-        VLOG(2) << "storing preconditioner in singleton (name = " << prefix << ")\n";
-        Feel::detail::PreconditionerManager::instance().operator[]( std::make_pair( backend, prefix ) ) = p;
-        backend->addDeleteObserver( p );
-        return p;
-    }
+    return p;
 }
 
 /**

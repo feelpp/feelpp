@@ -138,7 +138,8 @@ class GeoMap
     static const uint16_type nOrder = Order;
     static const uint16_type nNodes = super::nNodes;
     static const fem::transformation_type trans = super::trans;
-
+    static const bool is_linear = ( trans == fem::LINEAR );
+    
     typedef typename super::value_type value_type;
 
     typedef typename super::PreCompute precompute_type;
@@ -154,6 +155,7 @@ class GeoMap
     typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;
     typedef boost::shared_ptr<element_gm_type> element_gm_ptrtype;
     typedef element_gm_ptrtype gm_ptrtype;
+    using gm_type = element_gm_type;
 
     typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;
     typedef boost::shared_ptr<face_gm_type> face_gm_ptrtype;
@@ -543,8 +545,8 @@ class GeoMap
     using allocator_vector_n_t = Eigen::aligned_allocator<std::pair<const element_face_pair_t, eigen_vector_n_type> >;
     std::unordered_map<element_face_pair_t,eigen_vector_n_type,boost::hash<element_face_pair_t>, std::equal_to<element_face_pair_t>, allocator_vector_n_t> M_un_real;
     std::unordered_map<element_face_pair_t,int,boost::hash<element_face_pair_t>> M_permutation_element_face_neighbor;
-    unordered_map_eigen_matrix_type<uint32_type,nDim,nRealDim,value_type> M_K;
-    unordered_map_eigen_matrix_type<uint32_type,nDim,nRealDim,value_type> M_B;
+    unordered_map_eigen_matrix_type<uint32_type,nRealDim,nDim,value_type> M_K;
+    unordered_map_eigen_matrix_type<uint32_type,nRealDim,nDim,value_type> M_B;
 
 
     template <typename MeshType>
@@ -616,6 +618,48 @@ class GeoMap
     void setK( int e, eigen_matrix_type<nDim,nRealDim,value_type> const& K ) 
         {
             M_K[e]=K;
+        }
+    template<typename G = self_type>
+    bool cache( int e,
+                eigen_matrix_type<nRealDim,nDim,value_type>& K,
+                eigen_matrix_type<nRealDim,nDim,value_type>& B,
+                double& J,
+                std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
+        {
+            return false;
+        }
+    template<typename G = self_type>
+    bool cache( int e,
+                eigen_matrix_type<nRealDim,nDim,value_type>& K,
+                eigen_matrix_type<nRealDim,nDim,value_type>& B,
+                double& J,
+                std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
+        {
+            if ( M_K.count(e) == 0 ) return false;
+            K = M_K.at(e);
+            B = M_B.at(e);
+            J = M_J.at(e);
+            return true;
+        }
+    template<typename G = self_type>
+    void updateCache( int e,
+                      eigen_matrix_type<nRealDim,nDim,value_type> const& K,
+                      eigen_matrix_type<nRealDim,nDim,value_type> const& B,
+                      double const& J,
+                      std::enable_if_t<!G::is_linear || (nDim!=nRealDim)>* = nullptr )
+        {
+        }
+    template<typename G = self_type>
+    void updateCache( int e,
+                      eigen_matrix_type<nRealDim,nDim,value_type> const& K,
+                      eigen_matrix_type<nRealDim,nDim,value_type> const & B,
+                      double const& J,
+                      std::enable_if_t<G::is_linear && (nDim==nRealDim)>* = nullptr )
+        {
+            //if ( M_K.count(e) > 0 ) return false;
+            M_K[e] = K;
+            M_B[e] = B;
+            M_J[e] = J;
         }
     void addJ( int e, double v )
     {
@@ -1969,13 +2013,8 @@ class GeoMap
                     tensor_map_t<2,value_type> TPts( M_G.data().begin(), M_G.size1(), M_G.size2() );
                     for ( int q = 0; q < nComputedPoints(); ++q )
                     {
-                        if ( 0 ) // (nComputedPoints() ==1) && M_gm->hasJacobian( M_id ) )
+                        if ( M_gm->cache( M_id, M_K[q], M_B[q], M_J[q] ) )
                         {
-#if 0
-                            M_K[q] = M_gm->K(M_id);
-                            M_B[q] = M_gm->B(M_id);
-                            M_J[q] = M_gm->J(M_id);
-#endif
                         }
                         else
                         {
@@ -1985,14 +2024,8 @@ class GeoMap
                                                                     M_G.size2(), PDim );
                             M_K[q].noalias() = Pts * GradPhi;
                             updateJacobian( M_K[q], M_B[q], M_J[q] );
-                            if ( 0 ) ///* (nComputedPoints() ==1)*/ )
-                            {
-#if 0
-                                M_gm->setK( M_id, M_K[q] );
-                                M_gm->setB( M_id, M_B[q] );
-                                M_gm->setJacobian( M_id, M_J[q] );
-#endif
-                            }
+                            
+                            M_gm->updateCache( M_id, M_K[q], M_B[q], M_J[q] );
                         }
                         if ( vm::has_hessian_v<CTX> || vm::has_laplacian_v<CTX> )
                         {

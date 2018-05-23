@@ -762,52 +762,30 @@ namespace Feel
                 //#if 0
 
                 std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
-                std::string exeName = "";
 
-                // Load geofile (.geo) and post processing (.pos) files
-                int argcGmsh = nbPosfiles + 2;
-                char **argvGmsh = new char * [argcGmsh]; // geofile + posfiles
-
-                /// argv[0] is the executable name
-                char *argExe = new char[exeName.size() + 1];
-                copy(exeName.begin(), exeName.end(), argExe);
-                argExe[exeName.size()] = '\0';
-                argvGmsh[0] = argExe;
-
-
-                /// argv[1] => geofile
-                char *argGeo = new char[geofileNameWE.size() + 1];
-                copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
-                argGeo[geofileNameWE.size()] = '\0';
-                argvGmsh[1] = argGeo;
-
-                /// argv[2,...,n] => posfiles
-                for (int i=0; i<nbPosfiles; i++)
-                    {
-                        int j = i + 2; // Shift (0 = exe, 1 = geo)
-                        char *argPos = new char[posfiles[i].size() + 1];
-                        copy(posfiles[i].begin(), posfiles[i].end(), argPos);
-                        argPos[posfiles[i].size()] = '\0';
-                        argvGmsh[j] = argPos;
-                    }
-
-                // Initializing
-                GmshInitialize(argcGmsh, argvGmsh);
+                CTX _backup = *(CTX::instance());
                 Msg::SetVerbosity( ioption("gmsh.verbosity") );
 
                 GmshSetOption("Mesh", "Algorithm", 5.);
                 ::GModel *newGmshModel = new GModel();
+                //::GModel::current(::GModel::list.size() - 1);
 
                 // Read the input geometry file
                 newGmshModel->readGEO(geofileNameWE);
 
                 // Retreive list of files
+#if 0
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {
                         LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
                         Feel::cout << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << std::endl;
                         MergeFile(CTX::instance()->files[i]);
                     }
+#else
+                for (int i=0; i<nbPosfiles; i++)
+                    MergeFile( posfiles[i] );
+
+#endif
 
                 // /* Create Fields from PView list */
                 ::FieldManager* myFieldManager = newGmshModel->getFields();
@@ -816,7 +794,7 @@ namespace Feel
                 for (unsigned int i = 0; i < ::PView::list.size(); i++)
                     {
                         ::PView *v = ::PView::list[i];
-                        if (v->getData()->hasModel(::GModel::current()))
+                        if (v->getData()->hasModel( newGmshModel/*::GModel::current()*/))
                             {
                                 Msg::Error("Cannot use view based on current mesh for background mesh: you might"
                                            " want to use a list-based view (.pos file) instead");
@@ -889,10 +867,8 @@ namespace Feel
                 // Cleanup memory
                 newGmshModel->destroy();
                 delete newGmshModel;
-                delete[] argGeo;
-                delete[] argExe;
-                delete[] argvGmsh;
-                GmshFinalize();
+                // copy context (in order to allow multiple calls)
+                *(CTX::instance()) = _backup ;
 
 #else
                 std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);

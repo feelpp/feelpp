@@ -39,7 +39,10 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+
+#if defined(FEELPP_HAS_PYBIND11)
 #include <pybind11/pybind11.h>
+#endif
 
 #if defined(FEELPP_HAS_BOOST_PYTHON)
 #include <boost/python.hpp>
@@ -70,6 +73,9 @@
 #include <hwloc.h>
 #endif
 
+#if defined(FEELPP_HAS_MONGOCXX )
+#include <mongocxx/instance.hpp>
+#endif
 
 namespace Feel
 {
@@ -422,13 +428,13 @@ public:
         return *S_commandLineParser;
     }
 
-    static std::vector<std::tuple<std::string,std::ifstream> > & configFiles()
+    static std::vector<std::tuple<std::string,std::istringstream> > & configFiles()
     {
         for ( auto & configFile : S_configFiles )
         {
-            std::ifstream & ifs = std::get<1>( configFile );
-            ifs.clear();
-            ifs.seekg(0, std::ios::beg);
+            std::istringstream & iss = std::get<1>( configFile );
+            iss.clear();
+            iss.seekg(0, std::ios::beg);
         }
         return S_configFiles;
     }
@@ -625,7 +631,11 @@ public:
     //! the application directory, application results are stored there
     //! the directory is controlled by changeRepository
     static std::string appRepository();
-    
+
+    //! the application directory without np, application results are stored there
+    //! the directory is controlled by changeRepository
+    static std::string appRepositoryWithoutNumProc();
+
     //! the expressions repository is typically a sub-directory of the \c
     //! appRepository() that contains the expressions generated using Ginac
     static std::string exprRepository();
@@ -846,12 +856,13 @@ private:
     static std::vector<fs::path> S_paths;
 
     static fs::path S_appdir;
+    static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
     static pt::ptree S_summary;
     static boost::shared_ptr<po::command_line_parser> S_commandLineParser;
-    static std::vector<std::tuple<std::string,std::ifstream> > S_configFiles;
+    static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
     static po::variables_map S_vm;
     static boost::shared_ptr<po::options_description> S_desc;
     static boost::shared_ptr<po::options_description> S_desc_app;
@@ -882,6 +893,10 @@ private:
 #endif
 
     static TimerTable S_timers;
+
+#if defined(FEELPP_HAS_MONGOCXX )
+    static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;
+#endif
 };
 
 BOOST_PARAMETER_FUNCTION(

@@ -1745,7 +1745,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
         CHKERRABORT( this->comm(),ierr );
 
-        VectorPetsc<value_type> diag( this->size1(), stop-start );
+        VectorPetsc<value_type> diag( this->mapColPtr() );
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq getdiag";

@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
@@ -592,6 +593,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         }
 #endif // FEELPP_MODELS_HAS_MESHALE
     }
+#if 0
     if ( UsePeriodicity && BuildNonCstPart )
     {
         std::string marker1 = soption(_name="periodicity.marker1",_prefix=this->prefix());
@@ -601,7 +603,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             integrate( _range=markedfaces( this->mesh(),this->mesh()->markerName(marker1) ),
                        _expr=inner(pressureJump*N(),id(v) ) );
     }
-
+#endif
 
     //--------------------------------------------------------------------------------------------------//
 

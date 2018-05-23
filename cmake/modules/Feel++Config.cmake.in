@@ -18,8 +18,10 @@ get_filename_component(TOP_INSTALL_DIR ${_CONFIG_DIR}/../../../../ ABSOLUTE)
 message(STATUS "[Feel++] Current installation directory: ${TOP_INSTALL_DIR}")
 set(FEELPP_DIR ${TOP_INSTALL_DIR})
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
+
 endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
 
 set(FEELPP_FOUND "1")
 set(Feel++_FOUND "1")
@@ -29,7 +31,7 @@ message(STATUS "[feelpp] timeout set to ${CTEST_TIMEOUT}s in tests")
 set(NProcs2 "@NProcs2@")
 message(STATUS "[feelpp] use up to ${NProcs2} MPI processes in parallel tests")
 
-set(FEELPP_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@")  
+set(FEELPP_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@")
 set(FEELPP_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@")
 set(FEELPP_CXX_STANDARD @CMAKE_CXX_STANDARD@)
 set(FEELPP_CXX_STANDARD_REQUIRED @CMAKE_CXX_STANDARD_REQUIRED@)
@@ -88,6 +90,18 @@ if (FEELPP_HAS_CLING_INTERPRETER)
   set(FEELPP_CLING_BIN "@FEELPP_CLING_BIN@")
 endif()
 
+# OpenModelica
+set(FEELPP_HAS_OMC "@FEELPP_HAS_OMC@")
+set(OMC_COMPILER "@OMC_COMPILER@" )
+set(OMC_INCLUDE_DIR "@OMC_INCLUDE_DIR@" )
+set(OMCGC_LIBRARY "@OMCGC_LIBRARY@" )
+set(SIMULATIONRUNTIMEC_LIBRARY "@SIMULATIONRUNTIMEC_LIBRARY@")
+
+#FMI
+set(FEELPP_HAS_FMILIB "@FEELPP_HAS_FMILIB@")
+set(FMILIB_INCLUDE_DIR "@FMILIB_INCLUDE_DIR@" )
+set(FMILIB_LIBRARIES "@FMILIB_LIBRARIES@" )
+
 set(PYTHON_EXECUTABLE "@PYTHON_EXECUTABLE@")
 set(PYTHON_INCLUDE_DIRS "@PYTHON_INCLUDE_DIRS@")
 set(PYTHON_LIBRARIES "@PYTHON_LIBRARIES@")
@@ -112,7 +126,7 @@ string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIE
 
 # the variable FEELPP_DONT_SETUP_CMAKE allows the users to not setup the library
 # meaning that this file will will automatically use
-# include_directories( ... ), add_definitions( ... ), 
+# include_directories( ... ), add_definitions( ... ),
 # set the compiler flags, link_directories( ... )
 if (NOT FEELPP_DONT_SETUP_CMAKE)
 
@@ -137,7 +151,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEELPP_CXX_FLAGS}")
   set(CMAKE_CXX_STANDARD ${FEELPP_CXX_STANDARD})
   set(CMAKE_CXX_STANDARD_REQUIRED ${FEELPP_CXX_STANDARD_REQUIRED})
-  
+
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
   include(feelpp.host)
   include(feelpp.macros)
@@ -163,7 +177,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   feelpp_get_link_libraries( FEELPP_LIBRARIES feelpp )
   set(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_LIBRARIES})
   string(REGEX REPLACE "-framework;([a-zA-Z]+);" "-framework \\1;" FEELPP_LIBRARIES "${FEELPP_LIBRARIES}")
-  
+
   MESSAGE(STATUS "[Feel++] loaded with configuration: ${FEELPP_CMAKE_BUILD_TYPE}")
   MESSAGE(STATUS "[Feel++] loaded with packages: ${FEELPP_ENABLED_OPTIONS}")
 endif()

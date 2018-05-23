@@ -22,10 +22,8 @@
 #
 #
 
-#add_subdirectory(solid_oldversion)
-
-SET(FEELPP_MODELS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "") # TODO to remove
-SET(FEELPP_MODELS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "") # TODO to remove
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.models.macros.cmake DESTINATION share/feelpp/toolboxes/cmake COMPONENT Devel)
 
 add_subdirectory(modelcore)
 add_subdirectory(modelalg)
@@ -40,7 +38,7 @@ add_custom_target(feelpp-models-mesh)
 add_dependencies(feelpp-models-mesh feelpp_modelmesh)
 
 add_custom_target(feelpp-models)
-#add_dependencies(feelpp-models feelpp_model_thermodynamics feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
+#add_dependencies(feelpp-models feelpp_model_heat feelpp_model_solidmechanics feelpp_model_fluid feelpp_model_fsi)
 add_dependencies(feelpp-models feelpp-models-algebra feelpp-models-mesh)
 
 add_custom_target(feelpp-models-common)
@@ -50,33 +48,37 @@ if( FEELPP_MODELS_HAS_MESHALE )
 endif()
 
 # generate models lib
-if ( FEELPP_MODELS_ENABLE_THERMODYNAMICS )
-  add_subdirectory(thermodyn)
+if ( FEELPP_TOOLBOXES_ENABLE_HEAT )
+  add_subdirectory(heat)
 endif()
-if ( FEELPP_MODELS_ENABLE_SOLIDMECHANICS )
+if ( FEELPP_TOOLBOXES_ENABLE_ELECTRIC )
+  add_subdirectory(electric)
+endif()
+if ( FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS )
   add_subdirectory(solid)
 endif()
-if ( FEELPP_MODELS_ENABLE_FLUIDMECHANICS )
+if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory(fluid)
 endif()
-if ( FEELPP_MODELS_ENABLE_FSI )
+if ( FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
-if ( 0 ) # disable
-if ( FEELPP_MODELS_ENABLE_ADVECTION )
+if ( FEELPP_TOOLBOXES_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()
-if ( FEELPP_MODELS_ENABLE_LEVELSET )
+if ( FEELPP_TOOLBOXES_ENABLE_LEVELSET )
   add_subdirectory(levelset)
 endif()
-if ( FEELPP_MODELS_ENABLE_MULTIFLUID )
+if ( FEELPP_TOOLBOXES_ENABLE_MULTIFLUID )
   add_subdirectory(multifluid)
-endif()
 endif() 
-if ( FEELPP_MODELS_ENABLE_THERMOELECTRIC )
+if ( FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
-if ( FEELPP_MODELS_ENABLE_HDG )
+if ( FEELPP_TOOLBOXES_ENABLE_HEAT AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
+  add_subdirectory(heatfluid)
+endif()
+if ( FEELPP_TOOLBOXES_ENABLE_HDG )
   add_subdirectory(hdg)
 endif()
 
