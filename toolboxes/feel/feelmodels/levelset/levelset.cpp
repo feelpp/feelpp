@@ -1025,23 +1025,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     this->log("LevelSet", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    auto phi = this->phi();
-    if( M_doSmoothGradient )
+    switch( M_gradPhiMethod )
     {
-        this->log("LevelSet", "updateGradPhi", "perform smooth projection");
-        //*M_levelsetGradPhi = this->smootherVectorial()->derivate( idv(phi) );
-        *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
-    }
-    else
-    {
-        //*M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
-        this->log("LevelSet", "updateGradPhi", "perform L2 projection");
-        *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
-        //*M_levelsetGradPhi = vf::project( 
-                //_space=this->functionSpaceVectorial(),
-                //_range=elements(this->mesh()),
-                //_expr=trans(gradv(phi)) 
-                //);
+        case DerivationMethod::NODAL_PROJECTION:
+            this->log("LevelSet", "updateGradPhi", "perform nodal projection");
+            M_levelsetGradPhi->on( _range=elements(this->mesh()), _expr=trans(gradv(phi)) );
+            break;
+        case DerivationMethod::L2_PROJECTION:
+            this->log("LevelSet", "updateGradPhi", "perform L2 projection");
+            *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+            break;
+        case DerivationMethod::SMOOTH_PROJECTION:
+            this->log("LevelSet", "updateGradPhi", "perform smooth projection");
+            *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
+            break;
     }
 
     M_doUpdateGradPhi = false;
@@ -1227,7 +1224,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     this->log("LevelSet", "updateNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    auto phi = this->phi();
+    //auto phi = this->phi();
     //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
     auto gradPhi = this->gradPhi();
     *M_levelsetNormal = vf::project( 
@@ -1253,12 +1250,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
     switch( M_curvatureMethod )
     {
         case DerivationMethod::NODAL_PROJECTION:
+            this->log("LevelSet", "updateCurvature", "perform nodal projection");
             M_levelsetCurvature->on( _range=elements(this->mesh()), _expr=divv(this->normal()) );
             break;
         case DerivationMethod::L2_PROJECTION:
+            this->log("LevelSet", "updateCurvature", "perform L2 projection");
             *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
             break;
         case DerivationMethod::SMOOTH_PROJECTION:
+            this->log("LevelSet", "updateCurvature", "perform smooth projection");
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
             break;
     }
