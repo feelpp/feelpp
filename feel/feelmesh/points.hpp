@@ -157,7 +157,12 @@ public:
         return itFindPt->isOnBoundary();
     }
 
-
+    point_type& point( size_type i ) 
+        {
+            auto itFindPt = M_points.find( i );
+            CHECK( itFindPt != M_points.end() ) << " point " << i << "does not found";
+            return itFindPt->second;
+        }
     point_type const& point( size_type i ) const
     {
         auto itFindPt = M_points.find( i );

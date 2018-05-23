@@ -143,9 +143,11 @@ public:
     typedef GEOSHAPE GeoShape;
     typedef POINTTYPE PointType;
 
-    typedef PointType point_type;
+    //typedef PointType point_type;
     typedef typename super::face_type face_type;
-
+    using geo0d_type = Geo0D<Dim,T>;
+    using point_type = geo0d_type;
+    
     static const size_type Shape = super::Shape;
     static const uint16_type numPoints = super::numPoints;
     static const uint16_type numVertices = super::numVertices;
@@ -158,8 +160,8 @@ public:
     static const uint16_type numNeighbors = super::numTopologicalFaces;
 
 
-    typedef typename ublas::bounded_array<point_type*, numPoints>::iterator point_iterator;
-    typedef typename ublas::bounded_array<point_type*, numPoints>::const_iterator point_const_iterator;
+    typedef typename std::vector<point_type*>::iterator point_iterator;
+    typedef typename std::vector<point_type*>::const_iterator point_const_iterator;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
     typedef typename node<value_type>::type node_type;
@@ -307,22 +309,15 @@ public:
      */
     bool hasPoints() const
     {
-        for ( int i = 0; i < numPoints; ++i )
-            if ( M_points[ i ] == nullptr )
-                return false;
-        return numPoints > 0;
+        auto it = std::find( M_points.begin(), M_points.end(), nullptr );
+        return it == M_points.end();
     }
     //! @return true if the element has at least a point with marker1 active
     bool hasPointWithMarker() const
         {
-            bool pt_with_marker = false;
-            for ( int i = 0; i < numPoints; ++i )
-            {
-                pt_with_marker = this->point( i ).hasMarker();
-                if ( pt_with_marker )
-                    break;
-            }
-            return pt_with_marker;
+            auto it = std::find_if( M_points.begin(), M_points.end(),
+                                    []( auto const* p ) { return p->hasMarker(); } );
+            return it != M_points.end();
         }
 
     /**
@@ -438,13 +433,23 @@ public:
         return permutation_type();
     }
 
+    //!
+    //! @return points set with constness
+    //!
+    std::vector<point_type*> const& points() const { return M_points; }
+
+    //!
+    //! @return points set
+    //!
+    std::vector<point_type*>& points() { return M_points; }
+    
     /**
      * It returns the reference to an point object (possibly derived from
      * Geo0D)
      */
-    PointType & point( uint16_type i )
+    point_type & point( uint16_type i )
     {
-        return *( static_cast<POINTTYPE *>( M_points[ i ] ) );
+        return *( static_cast<point_type *>( M_points[ i ] ) );
     }
 
 
@@ -452,15 +457,15 @@ public:
      * It returns the reference to an point object (possibly derived from
      * Geo0D)
      */
-    PointType const & point ( uint16_type i ) const
+    point_type const & point ( uint16_type i ) const
     {
-        return *( static_cast<POINTTYPE *>( M_points[ i ] ) );
+        return *( static_cast<point_type *>( M_points[ i ] ) );
     }
     /**
      * It returns the pointer to an point object (possibly derived from
      * Geo0D)
      */
-    PointType* pointPtr( uint16_type i )
+    point_type* pointPtr( uint16_type i )
     {
         return M_points[ i ];
     }
@@ -469,7 +474,7 @@ public:
      * It returns the pointer to an point object (possibly derived from
      * Geo0D)
      */
-    PointType const* pointPtr ( uint16_type i ) const
+    point_type const* pointPtr ( uint16_type i ) const
     {
         return M_points[ i ];
     }
@@ -482,9 +487,9 @@ public:
      *  first. It may be used to access the points of a Geometry Element in a
      *  reverse way (i.e. with the opposite GeoElement permutation)
      */
-    PointType & reversepoint( uint16_type const i )
+    point_type & reversepoint( uint16_type const i )
     {
-        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<point_type *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -496,9 +501,9 @@ public:
      *  first. It may be used to access the points of a Geometry Element in a
      *  reverse way (i.e. with the opposite GeoElement permutation)
      */
-    PointType const & reversepoint ( uint16_type const i ) const
+    point_type const & reversepoint ( uint16_type const i ) const
     {
-        return *( static_cast<POINTTYPE *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
+        return *( static_cast<point_type *>( M_points[ Feel::detail::ReversePoint<GEOSHAPE>::operate( i ) ] ) );
     }
 
 
@@ -506,7 +511,7 @@ public:
      * Inserts a point.  Uses point references
      * put point
      */
-    void setPoint( uint16_type const i, point_type const & p );
+    void setPoint( uint16_type i, point_type & p );
 
     /**
      * show information about the geoND
@@ -1031,6 +1036,11 @@ public:
      */
     static quad_meas1_type imMeasureOrder1()  { return quad_meas1_type( 0 ); }
 
+    //!
+    //! check if an element is valid: check points are != nullptr
+    //!
+    bool isValid() const;
+    
     void update();
     void updateWithPc( typename gm_type::precompute_ptrtype const& pc,
                        typename gm_type::faces_precompute_type & pcf,
@@ -1131,14 +1141,10 @@ const uint16_type GeoND<Dim,GEOSHAPE, T, POINTTYPE>::numLocalVertices;
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 inline
 void
-GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const & p )
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type i, point_type & p )
 {
-    M_points[ i ] = const_cast<point_type *>( &p );
-    //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
-    FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
-    // DCHECK( M_G.size1() == M_points[i]->node().size()) << "Invalid dimension " << M_G.size1() << "  vs "  << M_points[i]->node().size()
-    //                                                    << " n=" << M_points[i]->node();
-    // ublas::column( M_G, i ) = M_points[i]->node();
+    M_points[ i ] = std::addressof( p );
+    DCHECK( M_points[ i ] != nullptr ) << "invalid point added to element at index " << i;
 }
 
 
@@ -1192,6 +1198,14 @@ void GeoND<Dim,GEOSHAPE, T, POINTTYPE>::exchangePoints( const uint16_type otn[ n
     }
 }
 
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+bool
+GeoND<Dim,GEOSHAPE, T, POINTTYPE>::isValid() const
+{
+    auto it = std::find( M_points.begin(), M_points.end(), nullptr );
+    DCHECK( it == M_points.end() ) << "element with invalid point : " << this->id();
+    return it == M_points.end();
+}
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
 void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::update()
@@ -1267,6 +1281,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( boost::shared_ptr<GmType> 
     value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
+    DVLOG(2) << "meas element " << this->id() << " : " << meas;
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
 }
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
@@ -1284,6 +1299,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::updateMeasureImpl( QuadType const& thequad,
     value_type meas = 0.;
     for ( int q=0 ; q < thequad.nPoints() ; ++q )
         meas += thequad.weight(q)*ctx->J( q );
+    DVLOG(2) << "meas element " << this->id() << " : " << meas;
     M_measures[GEOND_MEASURES::MEAS_ELEMENT][0] = meas;
 }
 

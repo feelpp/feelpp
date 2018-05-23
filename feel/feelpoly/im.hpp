@@ -109,8 +109,8 @@ public:
     using face_quad_type = IMGeneral<Dim_m_1,T, Entity>;
 
     IMGeneral() = default;
-
-    IMGeneral( uint16_type o ): super(o) 
+    
+    explicit IMGeneral( uint16_type o ): super(o) 
         {
             if ( nDim > 0 )
             {
@@ -161,7 +161,7 @@ public:
         
     };
     IM() : super( IMORDER ) {}
-    IM( uint16_type o ) : super( o ) {}
+    explicit IM( uint16_type o ) : super( o ) {}
     IM( IM const& ) = default;
     IM( IM && ) = default;
     IM& operator=( IM const& ) = default;
@@ -282,7 +282,7 @@ struct _Q
         :
         M_order( (CompileTimeOrder!=invalid_uint16_type_value)?CompileTimeOrder:1 )
         {}
-    _Q( uint16_type M_order )
+    explicit _Q( uint16_type M_order )
         :
         M_order( M_order )
         {}

@@ -38,8 +38,6 @@ namespace detail{
 
 template<int D, typename T>
 class GaussHypercube
-    :
-        public IMBase<T>
 {
 public :
     typedef T value_type;
@@ -62,128 +60,120 @@ public :
     //!
     //! create a Gauss quadrature on hypercube integrating up to order o
     //!
-    GaussHypercube( uint16_type o )
+    explicit GaussHypercube( uint16_type o )
                     
         :
-        super( D, gaussdegree(o), ipow(gaussdegree(o), D) )
+        M_order( o ) 
         {}
     ~GaussHypercube() = default;
 
-    IMBase<T>* operator()()
+    std::unique_ptr<IMBase<T>> operator()()
     {
         return operator()( mpl::int_<D>() );
     }
-    IMBase<T>* operator()(mpl::int_<1>)
+    std::unique_ptr<IMBase<T>> operator()( mpl::int_<1> ) 
         {
-            if ( this->M_created ==false )
+            std::unique_ptr<IMBase<T>> p( std::make_unique<IMBase<T>>(D,gaussdegree(M_order), ipow(gaussdegree(M_order), D) ) );
+            // build rules in x and y direction
+            std::vector<T> wx( p->numberOfPoints() );
+            std::vector<T> px( p->numberOfPoints() );
+            Feel::details::dyna::gaussjacobi( p->numberOfPoints(), wx, px, 0.0, 0.0 );
+#if 0
+            VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
+            VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
+#endif
+            p->q.resize( (D+1)*p->numberOfPoints() );
+            for ( int i = 0; i < p->degree(); ++i )
             {
-                // build rules in x and y direction
-                std::vector<T> wx( this->numberOfPoints() );
-                std::vector<T> px( this->numberOfPoints() );
-                Feel::details::dyna::gaussjacobi( this->numberOfPoints(), wx, px, 0.0, 0.0 );
-#if 0
-                VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
-                VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
-#endif
-                this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0; i < this->degree(); ++i )
-                {
-                    // computes the weight of the k-th node
-                    this->q[(D+1)*i] = px[i];
-                    this->q[(D+1)*i+1] = wx[i];
-                }
-
-
-#if 0
-                VLOG(1) << "[gauss<SP<2,1>] p = " << this->M_points << "\n";
-                VLOG(1) << "[gauss<SP<2,1>] w = " << this->M_w << "\n";
-#endif
-                this->M_created = true;
+                // computes the weight of the k-th node
+                p->q[(D+1)*i] = px[i];
+                p->q[(D+1)*i+1] = wx[i];
             }
-            return this;
+
+
+#if 0
+            VLOG(1) << "[gauss<SP<2,1>] p = " << p->M_points << "\n";
+            VLOG(1) << "[gauss<SP<2,1>] w = " << p->M_w << "\n";
+#endif
+            p->setDefined();
+            return p;
         }
 
-    IMBase<T>* operator()( mpl::int_<2> )
+    std::unique_ptr<IMBase<T>> operator()( mpl::int_<2> ) 
+    {
+        std::unique_ptr<IMBase<T>> p( std::make_unique<IMBase<T>>(D,gaussdegree(M_order), ipow(gaussdegree(M_order), D) ) );
+        // build rules in x and y direction
+        std::vector<T> wx( p->degree() );
+        std::vector<T> px( p->degree() );
+        Feel::details::dyna::gaussjacobi( p->degree(), wx, px, 0.0, 0.0 );
+        
+        p->q.resize( (D+1)*p->numberOfPoints() );
+        for ( int i = 0,  k = 0; i < p->degree(); ++i )
         {
-            if ( this->M_created == false )
+            for ( int j = 0; j < p->degree(); ++j, ++k )
             {
-                // build rules in x and y direction
-                std::vector<T> wx( this->degree() );
-                std::vector<T> px( this->degree() );
-                Feel::details::dyna::gaussjacobi( this->degree(), wx, px, 0.0, 0.0 );
+                // computes the weight of the k-th node
+                p->q[(D+1)*k] = px[i];
+                p->q[(D+1)*k+1] = px[j];
+                p->q[(D+1)*k+2] = wx[ i ] * wx[ j ];
+            }
+        }
 
-                this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->degree(); ++i )
+        p->setDefined();
+        return p;
+    }
+    std::unique_ptr<IMBase<T>> operator()( mpl::int_<3> ) 
+        {
+            std::unique_ptr<IMBase<T>> p( std::make_unique<IMBase<T>>(D,gaussdegree(M_order), ipow(gaussdegree(M_order), D) ) );
+            // build rules in x and y direction
+            std::vector<T> wx( p->degree() );
+            std::vector<T> px( p->degree() );
+            Feel::details::dyna::gaussjacobi( p->degree(), wx, px, 0.0, 0.0 );
+            
+            p->q.resize( (D+1)*p->numberOfPoints() );
+            for ( int i = 0,  k = 0; i < p->degree(); ++i )
+            {
+                for ( int j = 0; j < p->degree(); ++j )
                 {
-                    for ( int j = 0; j < this->degree(); ++j, ++k )
+                    for ( int l = 0; l < p->degree() ; ++l, ++k )
                     {
                         // computes the weight of the k-th node
-                        this->q[(D+1)*k] = px[i];
-                        this->q[(D+1)*k+1] = px[j];
-                        this->q[(D+1)*k+2] = wx[ i ] * wx[ j ];
+                        p->q[(D+1)*k] = px[i];
+                        p->q[(D+1)*k+1] = px[j];
+                        p->q[(D+1)*k+2] = wx[ i ] * wx[ j ] * wx[ l ];
                     }
                 }
-
-
-                //DVLOG(2) << "[quadrature] q = " << *this << "\n";
-
-                this->M_created = true;
             }
-            return this;
-
+            return p;
+            p->setDefined();
         }
-    IMBase<T>* operator()( mpl::int_<3> )
-        {
-            if ( this->M_created == false )
-            {
-                // build rules in x and y direction
-                std::vector<T> wx( this->degree() );
-                std::vector<T> px( this->degree() );
-                Feel::details::dyna::gaussjacobi( this->degree(), wx, px, 0.0, 0.0 );
+    
 
-                this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->degree(); ++i )
-                {
-                    for ( int j = 0; j < this->degree(); ++j )
-                    {
-                        for ( int l = 0; l < this->degree() ; ++l, ++k )
-                        {
-                            // computes the weight of the k-th node
-                            this->q[(D+1)*k] = px[i];
-                            this->q[(D+1)*k+1] = px[j];
-                            this->q[(D+1)*k+2] = wx[ i ] * wx[ j ] * wx[ l ];
-                        }
-                    }
-                }
-                this->M_created = true;
-            }
-            return this;
-        }
 #if 0
             GaussHypercube( uint16_type o, mpl::int_<4> )
                 :
                 super( 4, o, (o+1)/2+1 )
             {
                 // build rules in x and y direction
-                std::vector<T> wx( this->numberOfPoints() );
-                std::vector<T> px( this->numberOfPoints() );
-                Feel::details::dyna::gaussjacobi( this->numberOfPoints(), wx, px, 0.0, 0.0 );
+                std::vector<T> wx( p->numberOfPoints() );
+                std::vector<T> px( p->numberOfPoints() );
+                Feel::details::dyna::gaussjacobi( p->numberOfPoints(), wx, px, 0.0, 0.0 );
 
-                this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->numberOfPoints(); ++i )
+                p->q.resize( (D+1)*p->numberOfPoints() );
+                for ( int i = 0,  k = 0; i < p->numberOfPoints(); ++i )
                 {
-                    for ( int j = 0; j < this->numberOfPoints(); ++j )
+                    for ( int j = 0; j < p->numberOfPoints(); ++j )
                     {
-                        for ( int l = 0; l < this->numberOfPoints() ; ++l )
+                        for ( int l = 0; l < p->numberOfPoints() ; ++l )
                         {
-                            for ( int r = 0; r < this->numberOfPoints() ; ++r, ++k )
+                            for ( int r = 0; r < p->numberOfPoints() ; ++r, ++k )
                             {
                                 // computes the weight of the k-th node
-                                this->q[(D+1)*k] = px[i];
-                                this->q[(D+1)*k+1] = px[j];
-                                this->q[(D+1)*k+2] = px[l];
-                                this->q[(D+1)*k+3] = px[r];
-                                this->q[(D+1)*k+4] = wx[ i ] * wx[ j ] * wx[ l ]* wx[ r ];
+                                p->q[(D+1)*k] = px[i];
+                                p->q[(D+1)*k+1] = px[j];
+                                p->q[(D+1)*k+2] = px[l];
+                                p->q[(D+1)*k+3] = px[r];
+                                p->q[(D+1)*k+4] = wx[ i ] * wx[ j ] * wx[ l ]* wx[ r ];
                             }
                         }
                     }
@@ -195,27 +185,27 @@ public :
                 super( 5, o, (o+1)/2+1)
             {
                 // build rules in x and y direction
-                std::vector<T> wx( this->numberOfPoints() );
-                std::vector<T> px( this->numberOfPoints() );
-                Feel::details::dyna::gaussjacobi( this->numberOfPoints(), wx, px, 0.0, 0.0 );
+                std::vector<T> wx( p->numberOfPoints() );
+                std::vector<T> px( p->numberOfPoints() );
+                Feel::details::dyna::gaussjacobi( p->numberOfPoints(), wx, px, 0.0, 0.0 );
 
-                this->q.resize( (D+1)*this->numberOfPoints() );
-                for ( int i = 0,  k = 0; i < this->numberOfPoints(); ++i )
+                p->q.resize( (D+1)*p->numberOfPoints() );
+                for ( int i = 0,  k = 0; i < p->numberOfPoints(); ++i )
                 {
-                    for ( int j = 0; j < this->numberOfPoints(); ++j )
+                    for ( int j = 0; j < p->numberOfPoints(); ++j )
                     {
-                        for ( int l = 0; l < this->numberOfPoints() ; ++l )
+                        for ( int l = 0; l < p->numberOfPoints() ; ++l )
                         {
-                            for ( int r = 0; r < this->numberOfPoints() ; ++r )
+                            for ( int r = 0; r < p->numberOfPoints() ; ++r )
                             {
-                                for ( int s = 0; s < this->numberOfPoints() ; ++s, ++k )
+                                for ( int s = 0; s < p->numberOfPoints() ; ++s, ++k )
                                 {
-                                    this->q[(D+1)*k] = px[i];
-                                    this->q[(D+1)*k+1] = px[j];
-                                    this->q[(D+1)*k+2] = px[l];
-                                    this->q[(D+1)*k+3] = px[r];
-                                    this->q[(D+1)*k+4] = px[s];
-                                    this->q[(D+1)*k+5] = wx[ i ] * wx[ j ] * wx[ l ]* wx[ r ] * wx[ s ];
+                                    p->q[(D+1)*k] = px[i];
+                                    p->q[(D+1)*k+1] = px[j];
+                                    p->q[(D+1)*k+2] = px[l];
+                                    p->q[(D+1)*k+3] = px[r];
+                                    p->q[(D+1)*k+4] = px[s];
+                                    p->q[(D+1)*k+5] = wx[ i ] * wx[ j ] * wx[ l ]* wx[ r ] * wx[ s ];
                                 }
                             }
                         }
@@ -223,7 +213,7 @@ public :
                 }
             }
 #endif
-    
+    int M_order = 0;
 };
 
 } // DETAILS
