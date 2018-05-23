@@ -10,9 +10,8 @@ foreach( _DIM 2 3)
       DISP_ORDER ${_DISP_ORDER}
       GEO_ORDER 1
       DENSITY_COEFFLAME_TYPE P0d
-      ADD_CMAKE_INSTALL
       )
-    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${SOLIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()
 
@@ -27,16 +26,15 @@ foreach( _DIM 2 3)
       DISP_ORDER ${_DISP_ORDER}
       GEO_ORDER ${_DISP_ORDER}
       DENSITY_COEFFLAME_TYPE P0d
-      ADD_CMAKE_INSTALL
       )
-    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${LIBBASE_NAME}  )
+    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${SOLIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()
 
-add_library(feelpp_model_solidmechanics SHARED libsolidmechanics.cpp )
-target_link_libraries(feelpp_model_solidmechanics ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})
-set_property(TARGET feelpp_model_solidmechanics PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_model_solidmechanics DESTINATION lib/ COMPONENT Libs)
+add_library(feelpp_toolbox_solid_lib SHARED libsolidmechanics.cpp )
+target_link_libraries(feelpp_toolbox_solid_lib ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})
+set_property(TARGET feelpp_toolbox_solid_lib PROPERTY MACOSX_RPATH ON)
+install(TARGETS feelpp_toolbox_solid_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/solid COMPONENT Devel)

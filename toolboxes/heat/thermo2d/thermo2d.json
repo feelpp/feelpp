@@ -1,0 +1,90 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Test heat toolbox",
+    "ShortName":"TestHeat",
+    // "Parameters":
+    // {
+    //     "gravity":
+    //     {
+    //         "value":"-1"
+    //     }
+    // },
+    "Materials":
+    {
+        "mymat":
+        {
+            "markers":"Omega",
+            "name":"mymat",
+            "k":"10",//[ W/(m*K) ]
+            //"k":"{10,0,0,100}",//[ W/(m*K) ]
+            //"k":"10*heat_T/293:heat_T",//[ W/(m*K) ]
+            "Cp":"1000.005", //[ J/(kg*K) ]
+            "rho":"1.205" //[ kg/(m^3) ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "temperature":
+        {
+            "Dirichlet":
+            {
+                "MarkerDirichlet":
+                {
+                    "expr":"293-10*(y-1)*(y+1):y"
+                },
+                "wall":
+                {
+                    "expr":"293+0.38*t:t"
+                }
+            },
+            "Neumann":
+            {
+                "MarkerNeumann":
+                {
+                    "expr":"0:x" 
+                }
+            },
+            "Robin":
+            {
+                "MarkerRobin":
+                {
+                    "expr1":"16.667",// h coeff
+                    "expr2":"287"// temperature exterior
+                }
+            }
+        }
+    },
+    "InitialConditions":
+    {
+        "temperature":
+        {
+            "":
+            {
+                "":
+                {
+                    "expr":"293"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature"]
+        },
+        "Measures":
+        {
+            "Normal-Heat-Flux":["MarkerRobin","MarkerNeumann"],
+            "Points":
+            {
+                "ptA":
+                {
+                    "coord":"{-0.6,0.6}",
+                    "fields":"temperature"
+                }
+            }
+        }
+    }
+
+}

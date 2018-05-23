@@ -1,0 +1,16 @@
+
+#include <feel/feelmodels/heat/@HEAT_LIB_VARIANTS@/heatconfig.h>
+#include <feel/feelmodels/fluid/@FLUIDMECHANICS_LIB_VARIANTS@/fluidmechanicsconfig.h>
+
+#define HEATFLUID_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename HeatType, typename FluidType> \
+        /**/
+#define HEATFLUID_CLASS_TEMPLATE_TYPE \
+    HeatFluid<HeatType,FluidType>   \
+        /**/
+#define HEATFLUID_CLASS_TYPE \
+    HeatFluid< HEAT_CLASS_TYPE, FLUIDMECHANICS_CLASS_TYPE > \
+    /**/
+#define HEATFLUID_CLASS_INSTANTIATION \
+    template class HEATFLUID_CLASS_TYPE ;  \
+    /**/

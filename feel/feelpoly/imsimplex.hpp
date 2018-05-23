@@ -627,7 +627,7 @@ public:
             mpl::identity<Feel::detail::IMTriangle<Order,T> >,
             mpl::identity<Feel::detail::IMTetrahedra<Order,T> > >::type::type quad_type;
 
-#if 1
+#if 0
 #if 0
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<Dim>,mpl::int_<2> >,
             mpl::identity<Gauss<Simplex<Dim-1,1>,Order,T> >,
@@ -637,7 +637,8 @@ public:
     typedef Gauss<Simplex<Dim-1,1>,Order,T> face_quad_type;
 #endif
 #else
-    typedef IMSimplex<Dim-1,Order,T> face_quad_type;
+    using face_quad_type =  typename mpl::if_<mpl::equal_to<mpl::int_<Dim>,mpl::int_<3>>, mpl::identity<IMSimplex<2,Order,T> >, mpl::identity<Gauss<Simplex<Dim-1,1>,Order,T> > >::type::type;
+    //typedef IMSimplex<((Dim==1) || (Dim ==0))?0:Dim-1,Order,T> face_quad_type;
 #endif
     typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;

@@ -531,7 +531,6 @@ BOOST_AUTO_TEST_CASE( test_entity_range_ )
 test_suite*
 init_unit_test_suite( int argc, char* argv[] )
 {
-    Feel::Assert::setLog( "assertions.log" );
     test_suite* test = BOOST_TEST_SUITE( "2D Generic finite element solver test suite" );
 
     test->add( BOOST_TEST_CASE( ( test_entity_isin<2,1> ) ) );

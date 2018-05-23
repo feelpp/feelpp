@@ -351,6 +351,7 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
     ( prefixvm( prefix, "bdf.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
     ( prefixvm( prefix, "bdf.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+    ( prefixvm( prefix, "bdf.reverse" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reverse time" )
     ( prefixvm( prefix, "bdf.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
     ( prefixvm( prefix, "bdf.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
     ( prefixvm( prefix, "bdf.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
@@ -380,6 +381,7 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
         //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
         ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
+        ( prefixvm( prefix, "ts.reverse" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reverse time" )
         ( prefixvm( prefix, "ts.restart" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart " )
         ( prefixvm( prefix, "ts.restart.path" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "path where we reload old data" )
         ( prefixvm( prefix, "ts.restart.at-last-save" ).c_str(), Feel::po::value<bool>()->default_value( false ), "do a restart with ti the last save " )
@@ -691,6 +693,7 @@ crbOptions( std::string const& prefix )
         ("crb.minimization-param-name", Feel::po::value<std::string>()->default_value( "output" ), "name of the parameter to be replaced by the output in expression given by crb.minimization-func")
 
         ( "crb.use-fast-eim",Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
+
         ;
 
     crboptions
@@ -778,6 +781,7 @@ blockns_options( std::string const& prefix )
         ( prefixvm( prefix, "blockns.pcd.order" ).c_str(), Feel::po::value<int>()->default_value(1), "order for pcd operator 1:Ap^-1 Fp Mp^-1 other: Mp^-1 Fp Ap^-1" )
         ( prefixvm( prefix, "blockns.pcd.diffusion" ).c_str(), Feel::po::value<std::string>()->default_value("Laplacian"), "Laplacian or BTBt" )
         ( prefixvm( prefix, "blockns.weakdir" ).c_str(), Feel::po::value<bool>()->default_value(0), "set to true for Weak dirichlet conditions for Fp and Ap, false otherwise" )
+        ( prefixvm( prefix, "blockns.weakdir.penaldir" ).c_str(), Feel::po::value<double>()->default_value(10.), "Penalisation parameter for weak bc" )
         // options for pmm
         ( prefixvm( prefix, "blockns.pmm.diag" ).c_str(), Feel::po::value<bool>()->default_value(1), "set to true to use diagonal of the pressure mass matrix, false otherwise" )
         ;
@@ -940,6 +944,21 @@ checker_options( std::string const& prefix )
 }
 
 po::options_description
+fmu_options( std::string const& prefix )
+{
+    po::options_description _options( "FMU " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"fmu.verbose" ).c_str(), Feel::po::value<bool>()->default_value(true), "Run with verbosity" )
+        ( prefixvm( prefix,"fmu.display-variables-info" ).c_str(), Feel::po::value<bool>()->default_value(false), "Display the list of variables and description after loading FMU" )
+        ( prefixvm( prefix,"fmu.filename" ).c_str(), Feel::po::value<std::string>()->default_value(""), "The fmu to load" )
+
+        ( prefixvm( prefix,"fmu.solver.time-step" ).c_str(), Feel::po::value<double>()->default_value(0.1), "Time step for FMU Solver" )
+        ( prefixvm( prefix,"fmu.solver.rtol" ).c_str(), Feel::po::value<double>()->default_value(1e-4), "Relative tolerance for FMU Solver" )
+        ;
+    return _options;
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -1023,6 +1042,7 @@ feel_options( std::string const& prefix  )
         .add (msi_options(prefix))
         .add (fit_options(prefix))
         .add (checker_options(prefix))
+        .add( fmu_options(prefix) )
         ;
 
     return opt;
