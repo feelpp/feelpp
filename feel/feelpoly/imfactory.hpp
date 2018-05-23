@@ -30,7 +30,9 @@
 
 namespace Feel {
 
-
+//!
+//! base class for integration method
+//!
 template<typename T>
 class IMBase
 {
@@ -69,6 +71,10 @@ public:
 
     IMBase<T>* operator()() { return this; }
 
+    //! set the quadrature to be defined
+    void setDefined() { M_created = true; }
+    //! @return true if the quadrature is defined, false otherwise
+    bool isDefined() { return M_created; }
 protected:
     bool M_created = false;
 private:
