@@ -218,7 +218,7 @@ public:
     //--------------------------------------------------------------------//
     // Derivation methods
     enum class DerivationMethod { 
-        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_PROJECTION
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_NODAL_PROJECTION
     };
     typedef boost::bimap<std::string, DerivationMethod> derivationmethod_maptype;
     static derivationmethod_maptype DerivationMethodMap;
@@ -516,6 +516,7 @@ protected:
     void buildImpl();
     //--------------------------------------------------------------------//
     // Levelset data update functions
+    void updatePhiPN();
     void updateGradPhi();
     void updateModGradPhi();
     void updateDirac();
@@ -566,6 +567,7 @@ private:
 protected:
     //--------------------------------------------------------------------//
     // Interface quantities update flags
+    mutable bool M_doUpdatePhiPN;
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
@@ -633,6 +635,7 @@ private:
     mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
+    typename levelset_space_manager_type::element_scalar_PN_ptrtype M_levelsetPhiPN;
     mutable element_vectorial_ptrtype M_levelsetGradPhi;
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
