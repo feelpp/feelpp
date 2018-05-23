@@ -126,6 +126,21 @@ Winslow<MeshType,Order>::init()
         }
     }
 
+
+    M_fieldMetricDerivative.reset( new element_type( M_Xh ) );
+    M_backendMetricDerivative = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"metric-derivative"), this->worldComm() );
+    M_matrixMetricDerivative = M_backendMetricDerivative->newMatrix(_test=M_Xh,_trial=M_Xh);
+    M_vectorMetricDerivative = M_backendMetricDerivative->newVector(M_Xh);
+
+    auto Xh = this->functionSpace();
+    auto mesh = this->functionSpace()->mesh();
+    auto const& u = *M_displacement;
+    form2( _trial=Xh, _test=Xh,_matrix=M_matrixMetricDerivative)
+        += integrate(_range=elements(mesh),
+                     _expr=inner(idt(u),id(u)) );
+    M_matrixMetricDerivative->close();
+
+
     this->log("Winslow","init", "finish" );
 }
 
@@ -152,6 +167,7 @@ Winslow<MeshType,Order>::solve()
 
     if ( M_solverType=="Picard" || M_solverType == "FixPoint" )
     {
+        //this->updateNewtonInitialGuess( M_vectorSolution );
         M_algebraicFactory->solvePicard( M_vectorSolution );
     }
     else if ( M_solverType=="Newton" )
@@ -406,7 +422,7 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data, mpl::int_<2>
     auto alpha = pow(du1dyv,2) + pow(du2dyv,2);
     auto beta = du1dxv*du1dyv + du2dxv*du2dyv;
     auto gamma = pow(du1dxv,2) + pow(du2dxv,2);
-
+#if 0
     auto proj_alpha = this->l2projector()->operator()(alpha);
     auto proj_beta = this->l2projector()->operator()(beta);
     auto proj_gamma = this->l2projector()->operator()(gamma);
@@ -437,7 +453,33 @@ Winslow<MeshType,Order>::updateResidual( DataUpdateResidual & data, mpl::int_<2>
         integrate( _range=elements(mesh),
                    _expr=winslowResidualExpr );
 #endif
-#if 1
+#else
+    auto ux = u[Component::X];
+    auto uy = u[Component::Y];
+    auto uxhess = hessv(ux);
+    auto uyhess = hessv(uy);
+    auto g11 = alpha;
+    auto g12 = beta;
+    auto g22 = gamma;
+    auto dxvg11 = 2*(uxhess(0,1)*dyv(ux)+uyhess(0,1)*dyv(uy));
+    auto dyvg22 = 2*(uxhess(1,0)*dxv(ux)+uyhess(1,0)*dxv(uy));
+    auto dxvg12 = uxhess(0,0)*dyv(ux)+dxv(ux)*uxhess(0,1) + uyhess(0,0)*dyv(uy)+dxv(uy)*uyhess(0,1);
+    auto dyvg12 = uxhess(0,1)*dyv(ux)+dxv(ux)*uxhess(1,1) + uyhess(0,1)*dyv(uy)+dxv(uy)*uyhess(1,1);
+    form1( _test=Xh, _vector=R ) +=
+        integrate( _range=elements(mesh),
+                   _expr=
+                   //comp 1
+                   - gradv(u)(0,0)*(dxvg11*id(u)(0,0)+ g11*grad(u)(0,0) )
+                   + gradv(u)(0,0)*(dyvg12*id(u)(0,0) + g12*grad(u)(0,1) )
+                   + gradv(u)(0,1)*(dxvg12*id(u)(0,0) + g12*grad(u)(0,0) )
+                   - gradv(u)(0,1)*(dyvg22*id(u)(0,0) + g22*grad(u)(0,1) )
+                   //comp 2
+                   - gradv(u)(1,0)*(dxvg11*id(u)(1,0) + g11*grad(u)(1,0) )
+                   + gradv(u)(1,0)*(dyvg12*id(u)(1,0) + g12*grad(u)(1,1) )
+                   + gradv(u)(1,1)*(dxvg12*id(u)(1,0) + g12*grad(u)(1,0) )
+                   - gradv(u)(1,1)*(dyvg22*id(u)(1,0) + g22*grad(u)(1,1) ) );
+#endif
+#if 0
     // update markedfaces free
     if ( this->hasFlagSet("free" ) )
     {
@@ -502,50 +544,12 @@ template< typename MeshType, int Order >
 void
 Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDE( data, mpl::int_<mesh_type::nDim>() );
-#if 0
-    auto u  = this->displacement();
-    auto v  = this->displacement();
-    //auto v = M_Xh->element();
-
-    //A->zero();
-    if ( buildCstPart )
+    if ( false )
     {
-        form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-            integrate( _range=elements(M_mesh),
-                       _expr= trace( trans(gradt(u))*grad(v) ) );
+        this->updateLinearPDE( data, mpl::int_<mesh_type::nDim>() );
+        return;
     }
-    //A->close();
-    //Rhs->close();
 
-    if ( !buildCstPart )
-    {
-        for ( uint16_type i=0; i < this->flagSet()["moving"].size(); ++i )
-        {
-            auto aux_pol = idv( M_dispImposedOnBoundary ) + idv(M_identity);
-
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces( M_mesh, this->flagSet()["moving"][i] ),
-                    _element=*u, _rhs=F,
-                    _expr=aux_pol );
-        }
-
-        for ( uint16_type i=0; i < this->flagSet()["fixed"].size(); ++i )
-        {
-            form2( _test=M_Xh, _trial=M_Xh, _matrix=A ) +=
-                on( _range=markedfaces(M_mesh, this->flagSet()["fixed"][i] ),
-                    _element=*u, _rhs=F,
-                    _expr=idv(M_identity) );
-
-        }
-    }
-#endif
-}
-
-template< typename MeshType, int Order >
-void
-Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const
-{
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     auto Xh = this->functionSpace();
@@ -556,6 +560,44 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> 
 
     const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
     auto u = Xh->element( vecCurrentPicardSolution );
+    auto G = trans(gradv(u))*gradv(u);
+    auto invG = inv(G);
+
+    M_vectorMetricDerivative->zero();
+    auto lf = form1( _test=Xh,_vector=M_vectorMetricDerivative );
+    lf += integrate(_range=elements(mesh),
+                    _expr=inner(invG, grad(u)) );
+    lf += integrate(_range=boundaryfaces(mesh),
+                    _expr=-inner(invG*N(), id(u)) );
+    //M_vectorMetricDerivative->close();
+    M_backendMetricDerivative->solve(_matrix=M_matrixMetricDerivative,_solution=*M_fieldMetricDerivative,_rhs=M_vectorMetricDerivative);
+
+    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+        integrate( _range=elements(mesh),
+                   _expr= inner(invG*trans(gradt(u)),trans(grad(u))) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+        integrate( _range=elements(mesh),
+                   _expr=-inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
+}
+
+template< typename MeshType, int Order >
+void
+Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const
+{
+#if 0
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    auto Xh = this->functionSpace();
+    auto mesh = this->functionSpace()->mesh();
+    bool buildCstPart = data.buildCstPart();
+    if ( buildCstPart )
+        return;
+
+    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    auto u = Xh->element( vecCurrentPicardSolution );
+    auto ux = u[Component::X];
+    auto uy = u[Component::Y];
 
     auto XhScalM1 = this->functionSpaceScalM1();
 
@@ -571,6 +613,7 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> 
     auto g22 = G(0,0);
 #endif
 
+#if 1
     //auto l2p = projector(XhScalM1,XhScalM1,winslow_type::backend_type::build( WinslowFactory.vm() ),Feel::L2);
     auto l2p = this->l2projector();
     auto proj_alpha/*proj_g11*/ = (*l2p)(g11);
@@ -589,10 +632,33 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> 
                    + gradt(u)(1,0)*(dyv(proj_beta)*id(u)(1,0) + idv(proj_beta)*grad(u)(1,1) )
                    + gradt(u)(1,1)*(dxv(proj_beta)*id(u)(1,0) + idv(proj_beta)*grad(u)(1,0) )
                    - gradt(u)(1,1)*(dyv(proj_gamma)*id(u)(1,0) + idv(proj_gamma)*grad(u)(1,1) ) );
+#else
+    tic();
+    auto uxhess = hessv(ux);
+    auto uyhess = hessv(uy);
+    auto dxvg11 = 2*(uxhess(0,1)*dyv(ux)+uyhess(0,1)*dyv(uy));
+    auto dyvg22 = 2*(uxhess(1,0)*dxv(ux)+uyhess(1,0)*dxv(uy));
+    auto dxvg12 = uxhess(0,0)*dyv(ux)+dxv(ux)*uxhess(0,1) + uyhess(0,0)*dyv(uy)+dxv(uy)*uyhess(0,1);
+    auto dyvg12 = uxhess(0,1)*dyv(ux)+dxv(ux)*uxhess(1,1) + uyhess(0,1)*dyv(uy)+dxv(uy)*uyhess(1,1);
+    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+        integrate( _range=elements(mesh),
+                   _expr=
+                   //comp 1
+                   - gradt(u)(0,0)*(dxvg11*id(u)(0,0) + g11*grad(u)(0,0) )
+                   + gradt(u)(0,0)*(dyvg12*id(u)(0,0) + g12*grad(u)(0,1) )
+                   + gradt(u)(0,1)*(dxvg12*id(u)(0,0) + g12*grad(u)(0,0) )
+                   - gradt(u)(0,1)*(dyvg22*id(u)(0,0) + g22*grad(u)(0,1) )
+                   //comp 2
+                   - gradt(u)(1,0)*(dxvg11*id(u)(1,0) + g11*grad(u)(1,0) )
+                   + gradt(u)(1,0)*(dyvg12*id(u)(1,0) + g12*grad(u)(1,1) )
+                   + gradt(u)(1,1)*(dxvg12*id(u)(1,0) + g12*grad(u)(1,0) )
+                   - gradt(u)(1,1)*(dyvg22*id(u)(1,0) + g22*grad(u)(1,1) ) );
+    double telapsed = toc("HOLA");
+    std::cout << "telapsed="<<telapsed<<"\n";
+#endif
 
 
-
-#if 1
+#if 0
     // update markedfaces free
     if ( this->hasFlagSet("free" ) )
     {
@@ -616,6 +682,7 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> 
     }
 #endif
 
+#endif
 }
 template< typename MeshType, int Order >
 void

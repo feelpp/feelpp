@@ -562,6 +562,7 @@ alemesh_options(std::string const& prefix)
         .add( modelalgebraic_options( prefixvm(prefix,"alemesh.harmonic") ) )
         .add( modelalgebraic_options( prefixvm(prefix,"alemesh.winslow") ) )
         .add( backend_options( prefixvm(prefix,"alemesh.winslow.l2proj") ) )
+        .add( backend_options( prefixvm(prefix,"alemesh.winslow.metric-derivative") ) )
         .add( backend_options( prefixvm(prefix,"alemesh.winslow") ) )
         .add( backend_options( prefixvm(prefix,"alemesh.ho") ) );
 }
