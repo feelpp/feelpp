@@ -133,11 +133,17 @@ public:
     //--------------------------------------------------------------------//
     // Function spaces and elements
     // levelset
-    typedef typename levelset_space_manager_type::basis_levelset_type basis_levelset_type;
-    typedef typename levelset_space_manager_type::space_levelset_type space_levelset_type;
-    typedef typename levelset_space_manager_type::space_levelset_ptrtype space_levelset_ptrtype;
+    typedef typename levelset_space_manager_type::basis_scalar_type basis_levelset_type;
+    typedef typename levelset_space_manager_type::space_scalar_type space_levelset_type;
+    typedef typename levelset_space_manager_type::space_scalar_ptrtype space_levelset_ptrtype;
     typedef typename space_levelset_type::element_type element_levelset_type;
     typedef boost::shared_ptr<element_levelset_type> element_levelset_ptrtype;
+    // levelset PN
+    typedef typename levelset_space_manager_type::basis_scalar_PN_type basis_levelset_PN_type;
+    typedef typename levelset_space_manager_type::space_scalar_PN_type space_levelset_PN_type;
+    typedef typename levelset_space_manager_type::space_scalar_PN_ptrtype space_levelset_PN_ptrtype;
+    typedef typename space_levelset_PN_type::element_type element_levelset_PN_type;
+    typedef boost::shared_ptr<element_levelset_PN_type> element_levelset_PN_ptrtype;
     // vectorial
     typedef typename levelset_space_manager_type::basis_vectorial_type basis_vectorial_type;
     typedef typename levelset_space_manager_type::space_vectorial_type space_vectorial_type;
@@ -376,6 +382,7 @@ public:
     element_levelset_ptrtype & phi() { return M_advectionToolbox->fieldSolutionPtr(); }
     element_levelset_ptrtype const& phi() const { return M_advectionToolbox->fieldSolutionPtr(); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
+    element_levelset_PN_ptrtype const& phiPN() const;
     element_vectorial_ptrtype const& gradPhi() const;
     element_levelset_ptrtype const& modGradPhi() const;
     element_stretch_ptrtype const& stretch() const;
@@ -516,11 +523,11 @@ protected:
     void buildImpl();
     //--------------------------------------------------------------------//
     // Levelset data update functions
-    void updatePhiPN();
     void updateGradPhi();
     void updateModGradPhi();
     void updateDirac();
     void updateHeaviside();
+    void updatePhiPN();
 
     void updateNormal();
     void updateCurvature();
@@ -567,7 +574,6 @@ private:
 protected:
     //--------------------------------------------------------------------//
     // Interface quantities update flags
-    mutable bool M_doUpdatePhiPN;
     mutable bool M_doUpdateDirac;
     mutable bool M_doUpdateHeaviside;
     mutable bool M_doUpdateInterfaceElements;
@@ -577,6 +583,7 @@ protected:
     mutable bool M_doUpdateCurvature;
     mutable bool M_doUpdateGradPhi;
     mutable bool M_doUpdateModGradPhi;
+    mutable bool M_doUpdatePhiPN;
 
     //--------------------------------------------------------------------//
     // Levelset initial value
@@ -635,7 +642,7 @@ private:
     mutable projector_levelset_vectorial_ptrtype M_smootherInterfaceVectorial;
     //--------------------------------------------------------------------//
     // Levelset data
-    typename levelset_space_manager_type::element_scalar_PN_ptrtype M_levelsetPhiPN;
+    mutable element_levelset_PN_ptrtype M_levelsetPhiPN;
     mutable element_vectorial_ptrtype M_levelsetGradPhi;
     mutable element_levelset_ptrtype M_levelsetModGradPhi;
     mutable element_levelset_ptrtype M_heaviside;
