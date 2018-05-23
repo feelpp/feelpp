@@ -30,11 +30,11 @@ LEVELSET_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::ass
 ;
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-const typename LEVELSET_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
-LEVELSET_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSET_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
-    ( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
-    ( "l2-projection", CurvatureMethod::L2_PROJECTION )
-    ( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
+const typename LEVELSET_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
+LEVELSET_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< typename LEVELSET_CLASS_TEMPLATE_TYPE::derivationmethod_maptype::relation >
+    ( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
+    ( "l2-projection", DerivationMethod::L2_PROJECTION )
+    ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
 ;
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -796,8 +796,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doSmoothGradient = boption( _name="smooth-gradient", _prefix=this->prefix() );
 
     const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
-    CHECK(CurvatureMethod.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature computation methods\n";
-    M_curvatureMethod = CurvatureMethodMap.left.at(curvatureMethod);
+    CHECK(DerivationMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature computation methods\n";
+    M_curvatureMethod = DerivationMethodMap.left.at(curvatureMethod);
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
     M_reinitGradientAugmented = boption( _name="reinit-gradient-augmented", _prefix=this->prefix() );
@@ -1217,13 +1217,13 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     switch( M_curvatureMethod )
     {
-        case CurvatureMethod::NODAL_PROJECTION:
+        case DerivationMethod::NODAL_PROJECTION:
             M_levelsetCurvature->on( _range=elements(this->mesh()), _expr=divv(this->normal()) );
             break;
-        case CurvatureMethod::L2_PROJECTION:
+        case DerivationMethod::L2_PROJECTION:
             *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
             break;
-        case CurvatureMethod::SMOOTH_PROJECTION:
+        case DerivationMethod::SMOOTH_PROJECTION:
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
             break;
     }
@@ -2175,7 +2175,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
 
-    const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
+    const std::string curvatureMethod = DerivationMethodMap.right.at(this->M_curvatureMethod);
 
     std::string reinitMethod;
     std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );

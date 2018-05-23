@@ -216,12 +216,12 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Curvature
-    enum class CurvatureMethod { 
-        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION
+    // Derivation methods
+    enum class DerivationMethod { 
+        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_PROJECTION
     };
-    typedef boost::bimap<std::string, CurvatureMethod> curvaturemethod_maptype;
-    static curvaturemethod_maptype CurvatureMethodMap;
+    typedef boost::bimap<std::string, DerivationMethod> derivationmethod_maptype;
+    static derivationmethod_maptype DerivationMethodMap;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
@@ -649,7 +649,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Curvature
-    CurvatureMethod M_curvatureMethod;
+    DerivationMethod M_curvatureMethod;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection
