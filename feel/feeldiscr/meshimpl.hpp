@@ -115,6 +115,33 @@ initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
 }
 }
 
+template<typename MeshT>
+void print( MeshT * m )
+{
+    std::cout << "Mesh: npoints: " << m->numPoints() << std::endl;
+    std::for_each( m->beginPoint(), m->endPoint(),
+                   []( auto const& p )
+                   {
+                       std::cout << p.first << " " << p.second.id() << " ";
+                       std::for_each( p.second.begin(), p.second.end(),
+                                      []( auto const& c )
+                                      { std::cout << c << " "; } );
+                       std::cout << std::endl;
+                   } );
+    std::cout << "Mesh nElements: " << m->numElements()<< std::endl;
+    std::for_each( m->beginElement(), m->endElement(),
+                   []( auto const& ep )
+                   {
+                       auto const & e = ep.second;
+                       std::cout << e.id() << " ";
+                       std::for_each( e.beginPoint(), e.endPoint(),
+                                      []( auto const& c )
+                                      { std::cout << c->id() << " "; } );
+                                      //{ std::cout << c->id() << " " << c->hasMarker() << " "; } );
+                       std::cout << std::endl;
+                   } );
+}
+
 
 template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
@@ -255,30 +282,29 @@ Mesh<Shape, T, Tag>::updateForUse()
 
         if ( true )
         {
+            VLOG(2) << "Adding element information to marked points";
             tic();
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
                 auto & eltModified = iv->second;
+                VLOG(3) << "looking into element " << eltModified.id();
+
+                DCHECK( eltModified.isValid() ) << "Element " << eltModified << " with invalid point";
                 // first look if the element has a point with a marker
                 // if not we skip this element
                 if ( eltModified.hasPointWithMarker() && !eltModified.isGhostCell())
                 {
-                    size_type eltId = eltModified.id();
-                    for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
-                    {
-                        if ( eltModified.point( i ).hasMarker() )
-                        {
-                            eltModified.point( i ).addElement( eltId, i );
-#if 0
-                            LOG(INFO) << "added to point " << eltModified.point(i).id() << " marker " << eltModified.point(i).marker()
-                                      << " element " << e.id() << " pt id in element " << i
-                                      << " pt(std::set) " << boost::prior( eltModified.point(i).elements().end())->first
-                                      << ", " << boost::prior( eltModified.point(i).elements().end())->second;
-#endif
-                        }
-                    }
-
+                    int index_pt = 0;
+                    std::for_each( std::begin(eltModified.points()), std::end(eltModified.points()),
+                                   [&eltModified,&index_pt]( auto* p )
+                                   {
+                                       if ( p->hasMarker() )
+                                       {
+                                           p->addElement( eltModified.id(), index_pt );
+                                       }
+                                       ++index_pt;
+                                   } );
                 }
             }
 #if 0
@@ -2773,9 +2799,13 @@ Mesh<Shape, T, Tag>::check() const
         {
              for ( size_type j = 0; j < this->numLocalFaces(); j++ )
              {
-                 FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
+                 //FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
                  VLOG(2) << "------------------------------------------------------------\n";
-                 VLOG(2) << "Element : " << elt.id() << " face lid: " << j << " face gid:  " << elt.face( j ).id() << "\n";
+                 if ( elt.hasFace( j ) )
+                     VLOG(2) << "Element : " << elt.id() << " face lid: " << j << " face gid:  "
+                             << elt.face( j ).id();
+                 else
+                     VLOG(2) << "Element : " << elt.id() << " face lid: " << j;
              }
         }
 
@@ -2792,7 +2822,7 @@ Mesh<Shape, T, Tag>::check() const
             VLOG(2) << "[Mesh::check] element " << elt.id() << " number of neighbors: " << counter << "\n";
             if ( elt.nNeighbors() > 0 )
             {
-                FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+                //FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
             }
         }
 

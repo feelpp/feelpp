@@ -114,7 +114,7 @@ public:
     typedef IdentifierType identifier_type;
     typedef AbstractProduct product_type;
     typedef ProductCreator creator_type;
-
+    using result_type=typename creator_type::result_type ;
     typedef FactoryErrorPolicy<identifier_type,product_type> super;
 
     //@}
@@ -164,7 +164,7 @@ public:
      *
      * @return the object associate with \c id
      */
-    std::unique_ptr<product_type> createObject( const identifier_type& id )
+    result_type createObject( const identifier_type& id )
     {
         typename id_to_product_type::const_iterator i = M_associations.find( id );
 
