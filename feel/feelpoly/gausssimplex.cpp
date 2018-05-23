@@ -29,7 +29,7 @@ namespace Feel {
 
 namespace detail{
 template<int D, typename T>
-class GaussSimplex  : public IMBase<T>
+class GaussSimplex
 {
 public :
     typedef T value_type;
@@ -41,35 +41,32 @@ public :
 
     GaussSimplex() = default;
 
-    GaussSimplex( uint16_type o )
+    explicit GaussSimplex( uint16_type o )
         :
-        super( D, o, (o+1)/2+1 )
+        M_order( o )
         {}
-    
-    IMBase<T>* operator()()
-    {
-        if ( this->M_created == false )
+
+    std::unique_ptr<IMBase<T>> operator()() 
         {
-            std::vector<T> px( this->numberOfPoints() );
-            std::vector<T> w( this->numberOfPoints() );
+            std::unique_ptr<IMBase<T>> p( std::make_unique<IMBase<T>>(D,M_order,(M_order+1)/2+1) );
+
+            std::vector<T> px( p->numberOfPoints() );
+            std::vector<T> w( p->numberOfPoints() );
             
-            Feel::details::dyna::gaussjacobi<T, std::vector<T>, std::vector<T> >( this->numberOfPoints(), w, px );
+            Feel::details::dyna::gaussjacobi<T, std::vector<T>, std::vector<T> >( p->numberOfPoints(), w, px );
             
-            this->q.resize( (D+1)*this->numberOfPoints() );
-            for( int i = 0; i < this->numberOfPoints(); ++i )
+            p->q.resize( (D+1)*p->numberOfPoints() );
+            for( int i = 0; i < p->numberOfPoints(); ++i )
             {
-                this->q[(D+1)*i] = px[i];
-                this->q[(D+1)*i+1] = w[i];
+                p->q[(D+1)*i] = px[i];
+                p->q[(D+1)*i+1] = w[i];
             }
-            this->M_created = true;
+            p->setDefined();
+            return p;
         }
-        return this;
-
-    }
-
     ~GaussSimplex() = default;
-
- 
+    int M_order = 0;
+    
     
 };
 }
