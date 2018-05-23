@@ -659,7 +659,8 @@ private:
     int M_timeOrder;
 
     //--------------------------------------------------------------------//
-    // Curvature
+    // Derivation methods
+    DerivationMethod M_gradPhiMethod;
     DerivationMethod M_curvatureMethod;
 
     //--------------------------------------------------------------------//

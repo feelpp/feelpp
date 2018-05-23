@@ -32,6 +32,9 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 
+namespace Feel {
+namespace FeelModels {
+
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
     typename BasisPnType = BasisType
@@ -333,6 +336,9 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
 
     M_functionSpaceCreated = true;
 }
+
+} // namespace FeelModels
+} // namespace Feel
 
 #endif // _LEVELSETSPACEMANAGER_HPP
 
