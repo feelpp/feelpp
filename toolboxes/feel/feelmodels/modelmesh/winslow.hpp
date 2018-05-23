@@ -159,6 +159,13 @@ private :
     space_p0_ptrtype M_XhScalP0Disc;
 
     projector_scal_m1_ptrtype M_l2projector;
+
+    backend_ptrtype M_backendMetricDerivative;
+    sparse_matrix_ptrtype M_matrixMetricDerivative;
+    vector_ptrtype M_vectorMetricDerivative;
+    element_ptrtype M_fieldMetricDerivative;
+
+
 }; // class Winslow
 
 

@@ -110,7 +110,7 @@ public :
     typedef boost::shared_ptr<harmonicextension_type> harmonicextension_ptrtype;
 #endif
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
-    typedef Winslow<mesh_type,Order_low+1 > winslow_type;
+    typedef Winslow<mesh_type,Order_low/*+1*/ > winslow_type;
     typedef boost::shared_ptr<winslow_type> winslow_ptrtype;
 #endif
     /**
