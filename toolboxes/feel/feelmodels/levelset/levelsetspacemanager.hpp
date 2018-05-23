@@ -99,6 +99,17 @@ class LevelSetSpaceManager
         > op_interpolation_scalar_from_PN_type;
     typedef boost::shared_ptr<op_interpolation_scalar_from_PN_type> op_interpolation_scalar_from_PN_ptrtype;
 
+    typedef OperatorInterpolation<
+        space_vectorial_type, // from space
+        space_vectorial_PN_type // to space
+        > op_interpolation_vectorial_to_PN_type;
+    typedef boost::shared_ptr<op_interpolation_vectorial_to_PN_type> op_interpolation_vectorial_to_PN_ptrtype;
+    typedef OperatorInterpolation<
+        space_vectorial_PN_type // from space
+        space_vectorial_type, // to space
+        > op_interpolation_vectorial_from_PN_type;
+    typedef boost::shared_ptr<op_interpolation_vectorial_from_PN_type> op_interpolation_vectorial_from_PN_ptrtype;
+
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
@@ -149,6 +160,8 @@ public:
 
     op_interpolation_scalar_to_PN_ptrtype const& opInterpolationScalarToPN() const { return M_opInterpolationScalarToPN; }
     op_interpolation_scalar_from_PN_ptrtype const& opInterpolationScalarFromPN() const { return M_opInterpolationScalarFromPN; }
+    op_interpolation_vectorial_to_PN_ptrtype const& opInterpolationVectorialToPN() const { return M_opInterpolationVectorialToPN; }
+    op_interpolation_vectorial_from_PN_ptrtype const& opInterpolationVectorialFromPN() const { return M_opInterpolationVectorialFromPN; }
 
 private:
     std::vector<WorldComm> const& worldsComm() const { return M_worldsComm; }
@@ -184,6 +197,8 @@ private:
     // Interpolation operators
     op_interpolation_scalar_to_PN_ptrtype M_opInterpolationScalarToPN;
     op_interpolation_scalar_from_PN_ptrtype M_opInterpolationScalarFromPN;
+    op_interpolation_vectorial_to_PN_ptrtype M_opInterpolationVectorialToPN;
+    op_interpolation_vectorial_from_PN_ptrtype M_opInterpolationVectorialFromPN;
 };
 
 #define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS \
@@ -314,6 +329,22 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
         M_opInterpolationScalarToPN = opInterpolation(
                 _domainSpace = M_spaceScalarIsoPN,
                 _imageSpace = M_spaceScalarPN,
+                _type = InterpolationNonConforme(false)
+                );
+    }
+    if( !M_opInterpolationVectorialFromPN )
+    {
+        M_opInterpolationVectorialFromPN = opInterpolation(
+                _domainSpace = M_spaceVectorialPN,
+                _imageSpace = M_spaceVectorialIsoPN,
+                _type = InterpolationNonConforme(false)
+                );
+    }
+    if( !M_opInterpolationVectorialToPN )
+    {
+        M_opInterpolationVectorialToPN = opInterpolation(
+                _domainSpace = M_spaceVectorialIsoPN,
+                _imageSpace = M_spaceVectorialPN,
                 _type = InterpolationNonConforme(false)
                 );
     }
