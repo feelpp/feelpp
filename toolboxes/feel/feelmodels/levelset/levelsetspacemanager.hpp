@@ -60,20 +60,28 @@ class LevelSetSpaceManager
     typedef BasisType basis_scalar_type;
     typedef FunctionSpace< mesh_type, bases<basis_scalar_type>, Periodicity<periodicity_type> > space_scalar_type;
     typedef boost::shared_ptr<space_scalar_type> space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef boost::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
     typedef boost::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
+    typedef typename space_vectorial_type::element_type element_vectorial_type;
+    typedef boost::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
 
     //--------------------------------------------------------------------//
     // isoPN scalar spaces
     typedef BasisPnType basis_scalar_PN_type;
     typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type>, Periodicity<periodicity_type> > space_scalar_PN_type;
     typedef boost::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
+    typedef typename space_scalar_PN_type::element_type element_scalar_PN_type;
+    typedef boost::shared_ptr<element_scalar_PN_type> element_scalar_PN_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_PN_type>::type basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_PN_type>, Periodicity<periodicity_type> > space_vectorial_PN_type;
     typedef boost::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
+    typedef typename space_vectorial_PN_type::element_type element_vectorial_PN_type;
+    typedef boost::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
 
     //--------------------------------------------------------------------//
     // isoPN interpolation operators
@@ -93,6 +101,8 @@ class LevelSetSpaceManager
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
     typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
     typedef boost::shared_ptr<space_markers_type> space_markers_ptrtype;
+    typedef typename space_markers_type::element_type element_markers_type;
+    typedef boost::shared_ptr<element_markers_type> element_markers_ptrtype;
 
     //--------------------------------------------------------------------//
     // Tensor2 symmetric function space
