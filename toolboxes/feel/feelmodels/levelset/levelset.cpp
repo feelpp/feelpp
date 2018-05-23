@@ -54,6 +54,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCurvature(true),
     M_doUpdateGradPhi(true),
     M_doUpdateModGradPhi(true),
+    M_doUpdatePhiPN(true),
     M_doUpdateSubmeshDirac(true),
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
@@ -640,6 +641,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createExporters()
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_PN_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::phiPN() const
+{
+    CHECK( M_useSpaceIsoPN ) << "use-space-isoPN must be enabled to use phi PN \n";
+
+    if( !M_levelsetPhiPN )
+        M_levelsetPhiPN.reset( new element_levelset_PN_type(this->functionSpaceManager()->functionSpaceScalarPN(), "PhiPN") );
+
+    if( M_doUpdatePhiPN )
+       const_cast<self_type*>(this)->updatePhiPN(); 
+
+    return M_levelsetPhiPN;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::gradPhi() const
 {
@@ -1183,6 +1199,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSet", "updateHeaviside", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updatePhiPN()
+{
+    this->log("LevelSet", "updatePhiPN", "start");
+    this->timerTool("UpdateInterfaceData").start();
+
+    auto phi = this->phi();
+    this->functionSpaceManager()->opInterpolationScalarToPN()->apply( *phi, *M_levelsetPhiPN );
+
+    M_doUpdatePhiPN = false;
+
+    double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
+    this->log("LevelSet", "updatePhiPN", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1966,6 +1998,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
     M_doUpdateMarkers = true;
     M_doUpdateGradPhi = true;
     M_doUpdateModGradPhi = true;
+    M_doUpdatePhiPN = true;
     M_doUpdateSubmeshDirac = true;
     M_doUpdateSubmeshOuter = true;
     M_doUpdateSubmeshInner = true;
