@@ -20,7 +20,7 @@ public:
     typedef FluidMechanicsType fluidmechanics_type;
     typedef boost::shared_ptr<fluidmechanics_type> fluidmechanics_ptrtype;
 
-    typedef typename levelset_type::space_levelset_vectorial_type space_type;
+    typedef typename levelset_type::space_vectorial_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
     typedef typename space_type::mesh_type mesh_type;
