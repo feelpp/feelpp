@@ -28,8 +28,13 @@ namespace Observer
 {
 
 // Init static variables.
-std::string JournalManager::M_journal_filename = "journal";
-pt::ptree JournalManager::M_journal_ptree;
+//std::string JournalManager::M_journal_filename = "journal";
+//pt::ptree JournalManager::M_journal_ptree;
+//MongoConfig JournalManager::M_journal_db_config;
+
+template<> std::string JournalManagerBase<>::M_journal_filename = "journal";
+template<> pt::ptree JournalManagerBase<>::M_journal_ptree = {};
+template<> MongoConfig JournalManagerBase<>::M_journal_db_config = {};
 
 } // Observer namespace
 } // Feel namespace.
