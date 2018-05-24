@@ -38,6 +38,7 @@ set(SRC
   utility.cpp
   ptreetools.cpp
   checker.cpp
+  remotedata.cpp
   )
 if(FEELPP_HAS_HDF5)
     set(SRC hdf5.cpp ${SRC})

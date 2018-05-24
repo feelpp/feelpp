@@ -237,7 +237,7 @@ class MatrixBlockBase : public MatrixSparse<T>
                const size_type m_l,
                const size_type n_l,
                const size_type nnz = 30,
-               const size_type noz = 10 );
+               const size_type noz = 10 ) override;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -246,59 +246,59 @@ class MatrixBlockBase : public MatrixSparse<T>
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               graph_ptrtype const& graph );
+               graph_ptrtype const& graph ) override;
 
     /**
      * Release all memory and return to a state just like after having
      * called the default constructor.
      */
-    void clear();
+    void clear() override;
 
     /**
      * Set all entries to 0.
      */
-    void zero();
+    void zero() override;
 
     /**
      * Set entries between to 0.
      */
     void zero( size_type start1, size_type size1,
-               size_type start2, size_type size2 );
+               size_type start2, size_type size2 ) override;
 
     /**
      * Call the Sparse assemble routines.  sends necessary messages to
      * other processors
      */
-    void close() const;
+    void close() const override;
 
     /**
      * @returns \p m, the row-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size1() const;
+    size_type size1() const override;
 
     /**
      * @returns \p n, the column-dimension of
      * the matrix where the marix is \f$ M \times N \f$.
      */
-    size_type size2() const;
+    size_type size2() const override;
 
     //!
     //! @return the number of non-zero entries
     //!
-    std::size_t nnz() const { return M_mat->nnz(); }
+    std::size_t nnz() const override { return M_mat->nnz(); }
     
     /**
      * return row_start, the index of the first
      * matrix row stored on this processor
      */
-    size_type rowStart() const;
+    size_type rowStart() const override;
 
     /**
      * return row_stop, the index of the last
      * matrix row (+1) stored on this processor
      */
-    size_type rowStop() const;
+    size_type rowStop() const override;
 
     /**
      * Set the element \p (i,j) to \p value.
@@ -308,7 +308,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void set( const size_type i,
               const size_type j,
-              const value_type& value );
+              const value_type& value ) override;
 
     /**
      * Add \p value to the element
@@ -320,7 +320,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void add( const size_type i,
               const size_type j,
-              const value_type& value );
+              const value_type& value ) override;
 
     /**
      * Add the full matrix to the
@@ -330,7 +330,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void addMatrix( const ublas::matrix<value_type>& dm,
                     const std::vector<size_type>& rows,
-                    const std::vector<size_type>& cols );
+                    const std::vector<size_type>& cols ) override;
 
     /**
      * Add the full matrix to the
@@ -342,14 +342,14 @@ class MatrixBlockBase : public MatrixSparse<T>
                     int* cols, int ncols,
                     value_type* data,
                     size_type K = 0,
-                    size_type K2 = invalid_size_type_value );
+                    size_type K2 = invalid_size_type_value ) override;
 
     /**
      * Same, but assumes the row and column maps are the same.
      * Thus the matrix \p dm must be square.
      */
     void addMatrix( const ublas::matrix<value_type>& dm,
-                    const std::vector<size_type>& dof_indices )
+                    const std::vector<size_type>& dof_indices ) override
     {
         this->addMatrix( dm, dof_indices, dof_indices );
     }
@@ -359,9 +359,9 @@ class MatrixBlockBase : public MatrixSparse<T>
      * stores the result in \p this:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
-    void addMatrix( const value_type, MatrixSparse<value_type> const&, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN );
+    void addMatrix( const value_type, MatrixSparse<value_type> const&, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override;
 
-    void scale( const value_type );
+    void scale( const value_type ) override;
 
     /**
      * Return the value of the entry \p (i,j).  This may be an
@@ -375,26 +375,26 @@ class MatrixBlockBase : public MatrixSparse<T>
      * use the \p el function.
      */
     value_type operator()( const size_type i,
-                           const size_type j ) const;
+                           const size_type j ) const override;
 
     /**
      *
      */
-    self_type& operator=( MatrixSparse<value_type> const& M );
+    self_type& operator=( MatrixSparse<value_type> const& M ) override;
 
     /**
      * Returns the diagonal of the block matrix
      *
      * \param out the vector to store the diagonal
      */
-    void diagonal( Vector<value_type>& out ) const;
+    void diagonal( Vector<value_type>& out ) const override;
 
     /**
      * Returns the transpose of a matrix
      *
      * \param Mt the matrix transposed
      */
-    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const;
+    void transpose( MatrixSparse<value_type>& Mt, size_type options ) const override;
 
     /**
      * \return \f$ v^T M u \f$
@@ -402,7 +402,7 @@ class MatrixBlockBase : public MatrixSparse<T>
     real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u,
-            bool transpose = false ) const;
+            bool transpose = false ) const override;
 
     /**
      * Return the l1-norm of the matrix, that is
@@ -411,7 +411,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      * This is the natural matrix norm that is compatible to the
      * l1-norm for vectors, i.e.  \f$|Mv|_1\leq |M|_1 |v|_1\f$.
      */
-    real_type l1Norm() const;
+    real_type l1Norm() const override;
 
     /**
      * Return the linfty-norm of the matrix, that is
@@ -423,13 +423,13 @@ class MatrixBlockBase : public MatrixSparse<T>
      * compatible to the linfty-norm of vectors, i.e.
      * \f$|Mv|_\infty \leq |M|_\infty |v|_\infty\f$.
      */
-    real_type linftyNorm() const;
+    real_type linftyNorm() const override;
 
     /**
      * see if Sparse matrix has been closed
      * and fully assembled yet
      */
-    bool closed() const;
+    bool closed() const override;
 
     /**
      * Print the contents of the matrix to the screen
@@ -449,7 +449,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      * Print the contents of the matrix to the screen
      * in a package-personalized style, if available.
      */
-    void printPersonal( std::ostream& /*os*/ = std::cout ) const
+    void printPersonal( std::ostream& /*os*/ = std::cout ) const override
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         FEELPP_ASSERT( 0 )
@@ -462,7 +462,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name = "NULL" ) const;
+    void printMatlab( const std::string name = "NULL" ) const override;
 
     /**
      * This function creates a matrix called "submatrix" which is defined
@@ -471,7 +471,7 @@ class MatrixBlockBase : public MatrixSparse<T>
      */
     void createSubmatrix( MatrixSparse<value_type>& submatrix,
                           const std::vector<size_type>& rows,
-                          const std::vector<size_type>& cols ) const
+                          const std::vector<size_type>& cols ) const override
     {
         this->_get_submatrix( submatrix,
                               rows,
@@ -502,11 +502,11 @@ class MatrixBlockBase : public MatrixSparse<T>
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context, value_type value_on_diagonal ) override;
 
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>> const& m, std::vector<size_type> const& start_i, std::vector<size_type> const& start_j ) override;
 
-    //@}
+    //@}o
 
   protected:
   private:

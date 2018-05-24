@@ -1,0 +1,5 @@
+= Cantilever
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>
+v1.0, 2018/05/07 
+
+NOTE: this test case is part of the quickstart
