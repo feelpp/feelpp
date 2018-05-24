@@ -125,7 +125,10 @@ public :
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
             if ( this == &a )
+            {
+                M_matrix->scale( 2.0 );
                 return *this;
+            }
 
             M_matrix->addMatrix( 1.0, a.M_matrix );
 
@@ -525,7 +528,10 @@ public :
      */
     void zero() { M_vector->zero(); }
 
-    void zero( int n1 ) { M_vector->zero( n1 ); }
+    //!
+    //! zero block @param n1
+    //!
+    void zeroBlock( int n1 ) { M_vector->zeroBlock( n1 ); }
 
     BlockLinearForm& operator+=( BlockLinearForm const& l )
         {
