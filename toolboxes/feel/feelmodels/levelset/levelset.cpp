@@ -110,10 +110,10 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::build()
 {
     this->log("LevelSet", "build", "start");
-    // Create mesh in advection toolbox
-    M_advectionToolbox->createMesh();
+    // Create mesh
+    this->createMesh();
     // Space manager
-    M_spaceManager = boost::make_shared<levelset_space_manager_type>( M_advectionToolbox->mesh() );
+    M_spaceManager = boost::make_shared<levelset_space_manager_type>( M_mesh );
     // Build
     this->buildImpl();
 
@@ -479,12 +479,25 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSET_CLASS_TEMPLATE_TYPE::createMesh()
+{
+    this->log("LevelSet","createMesh", "start");
+    this->timerTool("Constructor").start();
+
+    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
+    CHECK( M_mesh ) << "mesh generation failed";
+
+    this->log("LevelSet", "createMesh", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSET_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
 {
     if( M_useSpaceIsoPN )
     {
         this->functionSpaceManager()->createFunctionSpaceIsoPN();
-        M_mesh = this->functionSpaceManager()->meshP1IsoPN();
+        M_mesh = this->functionSpaceManager()->meshIsoPN();
         M_spaceLevelset = this->functionSpaceManager()->functionSpaceScalarIsoPN();
         M_spaceVectorial = this->functionSpaceManager()->functionSpaceVectorialIsoPN();
         M_spaceMarkers = this->functionSpaceManager()->functionSpaceMarkersIsoPN();
@@ -1025,6 +1038,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
     this->log("LevelSet", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
+    auto phi = this->phi();
     switch( M_gradPhiMethod )
     {
         case DerivationMethod::NODAL_PROJECTION:
@@ -1038,6 +1052,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
         case DerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform smooth projection");
             *M_levelsetGradPhi = this->smootherVectorial()->project( trans(gradv(phi)) );
+            break;
+        case DerivationMethod::PN_NODAL_PROJECTION:
+            this->log("LevelSet", "updateGradPhi", "perform PN-nodal projection");
+            auto phiPN = this->phiPN();
+            auto gradPhiPN = vf::project(
+                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    _expr=trans(gradv(phiPN))
+                    );
+            this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *M_levelsetGradPhi );
             break;
     }
 
@@ -1260,6 +1284,21 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
         case DerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
+            break;
+        case DerivationMethod::PN_NODAL_PROJECTION:
+            this->log("LevelSet", "updateGradPhi", "perform PN-nodal projection");
+            auto phiPN = this->phiPN();
+            auto normalPN = vf::project(
+                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    _expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                    );
+            auto curvaturePN = vf::project(
+                    _space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    _expr=divv(normalPN)
+                    );
+            this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
             break;
     }
 
