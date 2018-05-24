@@ -172,16 +172,24 @@ template<uint16_type IMORDER = invalid_uint16_type_value,
          template<class Convex, uint16_type O, typename T2> class QPS = Gauss>
 struct _Q
 {
-    static const int order = IMORDER;
+    //static const int order = IMORDER;
     static const uint16_type CompileTimeOrder = IMORDER;
 
-    
     template<int DIM,
              typename T,
              template<uint16_type, uint16_type, uint16_type> class Entity>
     struct Apply
     {
         typedef IMGeneral<DIM, T, Entity> type;
+    };
+    template<typename T,
+             typename GeoEntityType>
+    struct ApplyGeoEntity
+    {
+        static const uint16_type DIM = GeoEntityType::nRealDim;
+        typedef typename mpl::if_<mpl::bool_<GeoEntityType::is_simplex>,
+                                  mpl::identity<IMGeneral<DIM, T, Simplex> >,
+                                  mpl::identity<IMGeneral<DIM, T, Hypercube> > >::type::type type;
     };
 
     template<int DIM,
@@ -222,6 +230,13 @@ struct _Q
     typename Apply<DIM,T,Entity>::type get( Entity<DIM,1,DIM> && e ) const
         {
             return typename Apply<DIM,T,Entity>::type( this->order() );
+        }
+
+    template<typename T,
+             typename GeoEntityType>
+    typename ApplyGeoEntity<T,GeoEntityType>::type getGeoEntity() const
+        {
+            return typename ApplyGeoEntity<T,GeoEntityType>::type( this->order() );
         }
 
     template<int DIM,
@@ -287,6 +302,7 @@ struct _Q
         M_order( M_order )
         {}
 
+    uint16_type order() const { return M_order; }
 private:
     uint16_type M_order;
 };
