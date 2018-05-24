@@ -64,15 +64,20 @@ namespace Feel
 {
 namespace time
 {
+
+//! Record internal time at its execution. To be used with toc.
 inline void tic()
 {
     Feel::details::sec_timer.tic();
 }
 
-inline double  toc( std::string const& msg = "", bool display = true )
+//! 
+inline double  toc( std::string const& msg = "",
+                    bool display = true, 
+                    std::string const& uiname = "" )
 {
     auto t = Feel::details::sec_timer.toc( msg, display );
-    Environment::addTimer( msg, t );
+    Environment::addTimer( msg, t, uiname );
     return t.first;
 }
 } // time
