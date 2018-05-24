@@ -979,6 +979,15 @@ fmu_options( std::string const& prefix )
 }
 
 po::options_description
+ptree_options( std::string const& prefix )
+{
+    po::options_description _options( "Ptree " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json-editions" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of entries to modified in json. format= key:value " )
+        ;
+    return _options;
+}
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -1064,6 +1073,7 @@ feel_options( std::string const& prefix  )
         .add( checker_options(prefix) )
         .add( journal_options(prefix) )
         .add( fmu_options(prefix) )
+        .add( ptree_options( prefix ) )
         ;
 
     return opt;

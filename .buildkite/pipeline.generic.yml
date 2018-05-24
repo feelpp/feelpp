@@ -1,23 +1,23 @@
 steps:
- - name: ':ubuntu:16.04, GCC6'
+ - name: ':$TARGET, ${CXX}'
    command: tools/scripts/buildkite/install-feelpp-lib.sh
    agents:
      docker: true
      ubuntu: "16.04"
  - wait
- - name: ':ubuntu: 16.04, GCC6,  feelpp-base :hammer:'
+ - name: ':$TARGET, $CXX,  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base
    agents:
      docker: true
      ubuntu: "16.04"
  - wait
- - name: ':ubuntu: 16.04, GCC6, feelpp-toolboxes :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
      ubuntu: "16.04"
  - wait
- - name: ':ubuntu: 16.04, GCC6, feelpp-crb :hammer:'
+ - name: ':$TARGET $CXX, feelpp-crb :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh crb
    agents:
      docker: true

@@ -2,8 +2,6 @@
 
 set -eo pipefail
 
-echo '--- tapping in homebrew-science'
-brew tap homebrew/homebrew-science
 echo '--- tapping in homebrew-feelpp'
 brew tap feelpp/homebrew-feelpp
 echo '--- updating formulas'
