@@ -115,7 +115,8 @@ public:
                GeomapStrategyType geomap_strategy )
         :
         M_range( r ),
-        M_pset( pset.template get<value_type>( mesh_element_type{} ) ),
+        //M_pset( pset.template get<value_type>( typename mesh_element_type::convex_type{} ) ),
+        M_pset( pset.template getGeoEntity<value_type,mesh_element_type>() ),
         M_expr( __expr ),
         M_geomap_strategy( geomap_strategy )
     {
