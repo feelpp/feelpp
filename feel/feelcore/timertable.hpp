@@ -44,15 +44,23 @@
 
 namespace Feel {
 
+static uint16_type TIMERDATA_INSTANCE_NUMBER = 0;
+
 //! TimerData is the value for the TimerTable map.
 class TimerData : public std::vector<double>
 {
   public:
     TimerData() = default;
     TimerData(TimerData const& ) = default;
-    TimerData( std::string const& n ) : name(n) {}
+    TimerData( std::string const& m, 
+               std::string const& p = ( "timer-" + std::to_string(TIMERDATA_INSTANCE_NUMBER) ) )
+        : msg(m), instance_name(p)
+    {
+        TIMERDATA_INSTANCE_NUMBER++;
+    }
     void add( std::pair<double,int> const& t ) { this->push_back( t.first ); level=t.second; }
-    std::string name;
+    std::string msg;
+    std::string instance_name;
     int level;
 };
 
@@ -84,7 +92,9 @@ public:
     //! @{
 
     //! Add a timer for the given message
-    void add( std::string const& msg, std::pair<double,int> const&  t )
+    void add( std::string const& msg,
+              std::pair<double,int> const&  t,
+              std::string const& uiname = "" )
         {
             if ( msg.empty() ) return;
             auto it = this->find( msg );
@@ -94,7 +104,10 @@ public:
             }
             else
             {
+                
                 TimerData T( msg );
+                if( not uiname.empty() )
+                    T.instance_name = uiname;
                 T.add( t );
                 this->insert( std::make_pair( msg, T ) );
                 auto m = msg.size()+2*t.second;
@@ -161,7 +174,7 @@ public:
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
                 os << std::setw( 2*T.second.level ) << " "
-                   << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.name << " " 
+                   << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.msg << " " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " "
@@ -169,10 +182,10 @@ public:
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
 
-                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.name, "_", boost::is_any_of(":")), "_" );
+                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );
                 
                 try {
-                    Environment::summary().put( "application.timers."s+n+".name", T.second.name );
+                    Environment::summary().put( "application.timers."s+n+".name", T.second.msg );
                     Environment::summary().put( "application.timers."s+n+".count", boost::accumulators::count(acc) );
                     Environment::summary().put( "application.timers."s+n+".total", boost::accumulators::sum(acc) );
                     Environment::summary().put( "application.timers."s+n+".max", boost::accumulators::max(acc) );
@@ -245,7 +258,7 @@ public:
                                               boost::accumulators::tag::max> > acc;
                 for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
-                os << std::setw( M_max_len ) <<std::left << "|" << T.second.name << " | " 
+                os << std::setw( M_max_len ) <<std::left << "|" << T.second.msg << " | " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " | "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " | "
@@ -283,9 +296,10 @@ public:
             double tot = boost::accumulators::sum(acc);
             sortTotal[tot] = T.second;
 
-            const std::string timer_name = T.first;
-            const std::string prefix = category_name + "." + timer_name;
+            const std::string& timer_name = T.second.instance_name;
+            const std::string& prefix = category_name + "." + timer_name;
 
+            p.put( prefix + ".message", T.second.msg );
             p.put( prefix + ".count", boost::accumulators::count(acc) );
             p.put( prefix + ".total", boost::accumulators::sum(acc) );
             p.put( prefix + ".max", boost::accumulators::max(acc) );
@@ -303,9 +317,10 @@ public:
                                           boost::accumulators::tag::max> > acc;
             for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
 
-            const std::string timer_name = T.second.name;
-            const std::string prefix = category_name + "." + timer_name;
+            const std::string& timer_name = T.second.instance_name;
+            const std::string& prefix = category_name + "." + timer_name;
 
+            p.put( prefix + ".message", T.second.msg );
             p.put( prefix + ".count", boost::accumulators::count(acc) );
             p.put( prefix + ".total", boost::accumulators::sum(acc) );
             p.put( prefix + ".max", boost::accumulators::max(acc) );
