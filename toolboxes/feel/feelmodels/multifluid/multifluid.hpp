@@ -29,14 +29,14 @@ public:
     //--------------------------------------------------------------------//
     // Function spaces
     typedef typename levelset_type::space_levelset_ptrtype space_levelset_ptrtype;
-    typedef typename levelset_type::space_levelset_vectorial_ptrtype space_levelset_vectorial_ptrtype;
+    typedef typename levelset_type::space_vectorial_ptrtype space_levelset_vectorial_ptrtype;
     typedef typename levelset_type::space_markers_ptrtype space_levelset_markers_ptrtype;
     typedef typename fluid_type::component_space_fluid_velocity_type component_space_fluid_velocity_type;
 
     typedef typename levelset_type::element_levelset_type element_levelset_type;
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype; 
-    typedef typename levelset_type::element_levelset_vectorial_type element_levelset_vectorial_type;
-    typedef typename levelset_type::element_levelset_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
+    typedef typename levelset_type::element_vectorial_type element_levelset_vectorial_type;
+    typedef typename levelset_type::element_vectorial_ptrtype element_levelset_vectorial_ptrtype; 
 
     //--------------------------------------------------------------------//
     typedef typename super_type::DataUpdateJacobian DataUpdateJacobian;
