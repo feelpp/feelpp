@@ -2,20 +2,23 @@
 
 namespace Feel {
 
-template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1>
+template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1, uint16_type OrderPNLevelset = 2>
 void
 runApplicationMultiFluid()
 {
     using namespace Feel;
 
-    typedef Simplex<FEELPP_DIM,FEELPP_GEO_ORDER> mesh_type;
-    typedef FeelModels::FluidMechanics< mesh_type,
+    typedef Simplex<FEELPP_DIM,FEELPP_GEO_ORDER> convex_type;
+    typedef FeelModels::FluidMechanics< convex_type,
                                         Lagrange<OrderVelocity, Vectorial, Continuous, PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar, Continuous, PointSetFekete>,
                                         Lagrange<1, Scalar, Continuous>
                                             > model_fluid_type;
-    typedef FeelModels::LevelSet< mesh_type, 
-                                  Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> > model_levelset_type;
+    typedef FeelModels::LevelSet< convex_type, 
+                                  Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>,
+                                  NoPeriodicity,
+                                  Lagrange<OrderPNLevelset, Scalar, Continuous, PointSetFekete>
+                                  > model_levelset_type;
 
     typedef FeelModels::MultiFluid< model_fluid_type, model_levelset_type > model_multifluid_type;
 
@@ -29,7 +32,7 @@ runApplicationMultiFluid()
 
     bool exportVelocitySurfaceDivergence = boption( _name="export-velocity-surface-div" );
 
-    typedef FunctionSpace< Mesh<mesh_type>,
+    typedef FunctionSpace< Mesh<convex_type>,
                            bases<Lagrange<OrderVelocity-1, Scalar, Continuous, PointSetFekete>>
                                > space_velocity_surfdiv_type;
     boost::shared_ptr<space_velocity_surfdiv_type> spaceSurfDivU;
