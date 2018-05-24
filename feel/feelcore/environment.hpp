@@ -754,6 +754,20 @@ public:
 
     static void clearSomeMemory();
 
+
+    //! Finalize feel++ operations
+    //! The environement, as journal manager, request to all connected watcher to
+    //! send their informations.
+    static const void finalize()
+    {
+        //    // This will merge simulation info (map) into one ptree.
+        Environment::journalPull();
+        //    // This will save the ptree into a json file.
+        Environment::journalSave();
+        // end::journal[]
+    }
+
+
     //!
     //!  \return the scratch directory
     //!

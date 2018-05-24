@@ -57,8 +57,7 @@ int getOneChar() {
       int res = 0;
 
       // Store settings.
-//      res = tcgetattr(STDIN_FILENO, &org_opts);
-      res = tcgetattr(ORTE_IOF_STDIN, &org_opts);
+      res = tcgetattr(STDIN_FILENO, &org_opts);
       if( res!=0 )
       {
           std::cerr << "tcgetattr: store failed " << std::strerror(errno) << std::endl;
