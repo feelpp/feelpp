@@ -36,7 +36,7 @@ set(SRC
   worldcomm.cpp
   debug.cpp
   utility.cpp
-  removecomments.cpp
+  ptreetools.cpp
   checker.cpp
   )
 if(FEELPP_HAS_MONGOCXX)
