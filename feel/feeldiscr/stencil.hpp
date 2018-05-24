@@ -1940,22 +1940,21 @@ struct gmcDefFaceStencil
 
 template<typename ImType,typename EltType>
 typename gmcDefStencil<EltType>::gmc_ptrtype
-gmcStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem )
+gmcStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem, ImType const& im )
 {
     typedef typename gmcDefStencil<EltType>::pc_type pc_type;
     typedef typename gmcDefStencil<EltType>::pc_ptrtype pc_ptrtype;
     typedef typename gmcDefStencil<EltType>::gmc_type gmc_type;
     typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
 
-    ImType theim;
-    pc_ptrtype geopc( new pc_type( elem.gm(), theim.points() ) );
+    pc_ptrtype geopc( new pc_type( elem.gm(), im.points() ) );
     gmc_ptrtype gmc( new gmc_type( elem.gm(), elem, geopc ) );
     return gmc;
 }
 
 template<typename ImType,typename FaceType>
 typename gmcDefFaceStencil<FaceType>::gmc_ptrtype
-gmcStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
+gmcStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface, ImType const& im )
 {
     typedef typename gmcDefFaceStencil<FaceType>::pc_type pc_type;
     typedef typename gmcDefFaceStencil<FaceType>::pc_ptrtype pc_ptrtype;
@@ -1965,12 +1964,11 @@ gmcStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
     typedef typename QuadMapped<ImType>::permutation_type permutation_type;
     typedef typename QuadMapped<ImType>::permutation_points_type permutation_points_type;
 
-    ImType theim;
     QuadMapped<ImType> qm;
-    permutation_points_type ppts( qm(theim) );
+    permutation_points_type ppts( qm(im) );
 
-    std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( theim.nFaces() );
-    for ( uint16_type __f = 0; __f < theim.nFaces(); ++__f )
+    std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( im.nFaces() );
+    for ( uint16_type __f = 0; __f < im.nFaces(); ++__f )
     {
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
@@ -2028,9 +2026,9 @@ typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_p
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, single_spaces_t )
 {
     //std::cout << "\n start graphInterp "<< std::endl;
-    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,0>::type>::type::order > order_1d_type;
-    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,1>::type>::type::order > order_2d_type;
-    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,2>::type>::type::order > order_3d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,0>::type>::type::CompileTimeOrder > order_1d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,1>::type>::type::CompileTimeOrder > order_2d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,2>::type>::type::CompileTimeOrder > order_3d_type;
 
     typedef typename test_space_type::mesh_type test_mesh_type;
     typedef typename trial_space_type::mesh_type trial_mesh_type;
@@ -2087,6 +2085,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
     std::set<size_type > listTup;
 
+    theim_type im( order_used_type::value );
     //-----------------------------------------------------------------------//
 
     static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
@@ -2103,7 +2102,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     CHECK( eltInit.mesh()->isSameMesh( _M_X1->mesh() ) ) << "case not take into account : mesh range is not the same that test mesh";
 
     matrix_node_type ptsReal( eltInit.vertices().size1(), 1 );
-    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange, eltInit );
+    auto gmc = Feel::detail::gmcStencil<theim_type>( iDimRange, eltInit, im );
 
     if ( _M_X1->nDof()>1 )
     {
