@@ -98,7 +98,7 @@ template<
     typename BasisPnType = BasisType
     >
 class LevelSet : public ModelNumerical,
-                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType> >
+                 public boost::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
 {
     typedef ModelNumerical super_type;
 public:
@@ -152,8 +152,8 @@ public:
     typedef boost::shared_ptr< element_vectorial_type > element_vectorial_ptrtype;
     // markers P0
     typedef typename levelset_space_manager_type::basis_markers_type basis_markers_type;
-    typedef typename markers_space_manager_type::space_markers_type space_markers_type;
-    typedef typename markers_space_manager_type::space_markers_ptrtype space_markers_ptrtype;
+    typedef typename levelset_space_manager_type::space_markers_type space_markers_type;
+    typedef typename levelset_space_manager_type::space_markers_ptrtype space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
     typedef boost::shared_ptr<element_markers_type> element_markers_ptrtype;
     // tensor2symm
@@ -345,7 +345,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection data
-    typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return  M_advectionToolbox->timeStepBDF(); }
+    typename advection_toolbox_type::bdf_ptrtype timeStepBDF() { return M_advectionToolbox->timeStepBDF(); }
     typename advection_toolbox_type::bdf_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     boost::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
@@ -361,7 +361,7 @@ public:
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
 
-    typename mesh_ptrtype const& mesh() const { return M_advectionToolbox->mesh(); }
+    mesh_ptrtype const& mesh() const { return M_mesh; }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
@@ -527,10 +527,11 @@ protected:
     void updateModGradPhi();
     void updateDirac();
     void updateHeaviside();
-    void updatePhiPN();
 
     void updateNormal();
     void updateCurvature();
+
+    void updatePhiPN();
 
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
@@ -545,6 +546,7 @@ private:
     void loadConfigBCFile();
     void loadConfigPostProcess();
 
+    void createMesh();
     void createFunctionSpaces();
     void createInterfaceQuantities();
     void createReinitialization();
@@ -734,10 +736,10 @@ private:
 
 }; //class LevelSet
 
-template<typename ConvexType, typename BasisType, typename PeriodicityType>
+template<typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType>
 template<typename ExprT>
 void 
-LevelSet<ConvexType, BasisType, PeriodicityType>::advect(vf::Expr<ExprT> const& velocity)
+LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::advect(vf::Expr<ExprT> const& velocity)
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();
