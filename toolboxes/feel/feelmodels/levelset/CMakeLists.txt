@@ -8,6 +8,7 @@ foreach(_DIM 2 3)
       genLibLevelset(
           DIM     ${_DIM}
           LEVELSET_ORDER ${_PHI_ORDER}
+          LEVELSET_PN_ORDER 2
           GEO_ORDER 1 
           )
   set(FEELPP_MODELS_LIBRARIES_LEVELSET  ${FEELPP_MODELS_LIBRARIES_LEVELSET} ${LIBBASE_NAME}  )
