@@ -75,10 +75,7 @@
 #include <hwloc.h>
 #endif
 
-#if defined(FEELPP_HAS_MONGOCXX )
-#include <mongocxx/instance.hpp>
-#endif
-
+#include <feel/feelcore/mongocxx.hpp>
 #include <feel/feelobserver/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -680,7 +677,9 @@ public:
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
      */
-    static void addTimer( std::string const& msg, std::pair<double,int> const& t );
+    static void addTimer( std::string const& msg,
+                          std::pair<double,int> const& t,
+                          std::string const& uiname );
 
     /**
      * display and save timers
