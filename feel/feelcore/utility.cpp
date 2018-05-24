@@ -24,6 +24,15 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
+#include <assert.h>
+
+#include <feel/feelcore/utility.hpp>
+
+#ifdef FEELPP_OS_LINUX
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 namespace Feel {
 
@@ -40,5 +49,75 @@ readFromFile(std::string const& infile)
                        std::istreambuf_iterator<char>());
 }
 
+// Get a unique char from standard input (no return cariage required).
+int getOneChar() {
+      int c=10;
+#ifdef FEELPP_OS_LINUX
+      struct termios org_opts, new_opts;
+      int res = 0;
+
+      // Store settings.
+//      res = tcgetattr(STDIN_FILENO, &org_opts);
+      res = tcgetattr(ORTE_IOF_STDIN, &org_opts);
+      if( res!=0 )
+      {
+          std::cerr << "tcgetattr: store failed " << std::strerror(errno) << std::endl;
+          std::exit(1);
+      }
+      // New params.
+      memcpy(&new_opts, &org_opts, sizeof(new_opts));
+      new_opts.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ECHOPRT | ECHOKE | ICRNL);
+      tcsetattr(STDIN_FILENO, TCSANOW, &new_opts);
+      c=getchar();
+      // Restore settings.
+      res = tcsetattr(STDIN_FILENO, TCSANOW, &org_opts);
+      if( res!=0 )
+      {
+          std::cerr << "tcgetattr: restore failed " << std::strerror(errno) << std::endl;
+          std::exit(1);
+      }
+#endif
+      return(c);
+}
+
+
+// Ask to the user to fill a password.
+// This function support password corrections.
+// Note: Sequential only!
+std::string askPassword( const std::string& msg )
+{
+    const char RETURN=10;
+    const char ERASE=8;
+    std::string pw;
+    pw.reserve(100);
+    std::cout << msg;
+    char ch = 0;
+#ifdef FEELPP_OS_LINUX
+    while( (ch = getOneChar()) != RETURN ) // return key
+    {
+        switch(ch)
+        {
+            case ERASE:
+                if( pw.size() )
+                {
+                    std::cout << "\b";
+                    std::cout << " ";
+                    std::cout << "\b" << std::flush;
+                    pw.pop_back();
+                }
+                break;
+
+            case RETURN:
+                break;
+
+            default:
+                std::cout << '*';
+                pw.push_back(ch);
+        }
+    }
+    std::cout << std::endl;
+#endif
+    return pw;
+}
 
 }

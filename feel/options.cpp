@@ -937,16 +937,24 @@ checker_options( std::string const& prefix )
 po::options_description
 journal_options( std::string const& prefix )
 {
-    po::options_description _options( "Journal " + prefix + " options" );
-    _options.add_options()
-        ( prefixvm( prefix,"journal.enable" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
-        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>()->default_value("simulation.info.json"), "name of the json file" )
-        ( prefixvm( prefix,"journal.enable.mesh" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
-        ( prefixvm( prefix,"journal.enable.functionspace" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable simulation info" )
-        ( prefixvm( prefix,"journal.enable.timer" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable timer stats" )
-        ( prefixvm( prefix,"journal.enable.hwsys" ).c_str(), Feel::po::value<bool>()->default_value(true), "enable hardware info" )
+    po::options_description options( "Journal " + prefix + " options" );
+    options.add_options()
+        ( prefixvm( prefix,"journal.enable" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
+        ( prefixvm( prefix,"journal.filename" ).c_str(), Feel::po::value<std::string>()->default_value("Simulation.info.json"), "name of the json file" )
+        ( prefixvm( prefix,"journal.enable.mesh" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
+        ( prefixvm( prefix,"journal.enable.functionspace" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable simulation info" )
+        ( prefixvm( prefix,"journal.enable.timer" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable timer stats" )
+        ( prefixvm( prefix,"journal.enable.hwsys" ).c_str(), Feel::po::value<bool>()->default_value(true), "Enable hardware info" )
+        ( prefixvm( prefix,"journal.database" ).c_str(), Feel::po::value<bool>()->default_value(false), "Enable database usage" )
+        ( prefixvm( prefix,"journal.database.name" ).c_str(), Feel::po::value<std::string>()->default_value("feelpp"), "Database name (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.host" ).c_str(), Feel::po::value<std::string>()->default_value("localhost"), "Database host or IP (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.port" ).c_str(), Feel::po::value<std::string>()->default_value("27017"), "Database port (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.user" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Database username (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.password" ).c_str(), Feel::po::value<std::string>()->default_value(""), "Database password (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.authsrc" ).c_str(), Feel::po::value<std::string>()->default_value("admin"), "Database authenticate source collection [admin] (MongoDB)" )
+        ( prefixvm( prefix,"journal.database.collection" ).c_str(), Feel::po::value<std::string>()->default_value("journal"), "Database journal collection [journal] (MongoDB)" )
         ;
-    return _options;
+    return options;
 }
 
 po::options_description

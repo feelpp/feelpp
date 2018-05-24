@@ -488,19 +488,6 @@ Environment::Environment( int argc, char** argv,
 #if defined( FEELPP_HAS_GMSH_H )
     GmshInitialize();
 #endif
-#if defined(FEELPP_HAS_MONGOCXX )
-    if ( !S_mongocxxInstance )
-        S_mongocxxInstance = std::make_unique<mongocxx::instance>();
-#endif
-    if ( not S_hwSysInstance )
-    {
-#if defined(FEELPP_HAS_KWSYS )
-        // Use kwsys library.
-        S_hwSysInstance = std::make_unique<Sys::KWSys>();
-#else
-        S_hwSysInstance = std::make_unique<Sys::HWSys>();
-#endif
-    }
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -520,7 +507,50 @@ Environment::Environment( int argc, char** argv,
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
-    
+#if defined(FEELPP_HAS_MONGOCXX )
+    MongoConfig journaldbconf;
+    if( S_vm.count( "journal.database.name" ) )
+       journaldbconf.name = S_vm["journal.database.name"].as<std::string>();
+    if( S_vm.count( "journal.database.host" ) )
+       journaldbconf.host = S_vm["journal.database.host"].as<std::string>();
+    if( S_vm.count( "journal.database.port" ) )
+       journaldbconf.port = S_vm["journal.database.port"].as<std::string>();
+    if( S_vm.count( "journal.database.user" ) )
+       journaldbconf.user = S_vm["journal.database.user"].as<std::string>();
+    if( S_vm.count( "journal.database.password" ) )
+    {
+        std::string password = S_vm["journal.database.password"].as<std::string>();
+        if( S_vm["journal.database"].as<bool>() )
+        {
+            if( password == "?" )
+            {
+ //               if ( Environment::isMasterRank() )
+ //               {
+                    password = askPassword("Enter your mongodb password:");
+                    //mpi::broadcast( Environment::worldComm().globalComm(), password, 0 );
+ //               }        
+            }
+            journaldbconf.password = password;
+        }
+    }
+    if( S_vm.count( "journal.database.authsrc" ) )
+        journaldbconf.authsrc = S_vm["journal.database.authsrc"].as<std::string>();
+    if( S_vm.count( "journal.database.collection" ) )
+        journaldbconf.collection = S_vm["journal.database.collection"].as<std::string>();
+    Environment::journalDBConfig( journaldbconf ); 
+    if( !S_mongocxxInstance )
+        S_mongocxxInstance = Feel::MongoCxx::instance();
+#endif
+
+    if ( not S_hwSysInstance )
+    {
+#if defined(FEELPP_HAS_KWSYS )
+        // Use kwsys library.
+        S_hwSysInstance = std::make_unique<Sys::KWSys>();
+#else
+        S_hwSysInstance = std::make_unique<Sys::HWSys>();
+#endif
+    }
 
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
@@ -528,8 +558,6 @@ Environment::Environment( int argc, char** argv,
     //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
-
-
 
     // make sure that we pass the proper verbosity level to glog
     if ( S_vm.count( "v" ) )
@@ -584,14 +612,6 @@ Environment::~Environment()
     double t = toc("env");
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
-
-    if( boption("journal.enable") )
-    {
-        // Merge simulation info (map) into one ptree.
-//        Environment::journalPull();
-//        // This will save the ptree into a json file.
-//        Environment::journalSave();
-    }
 
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
@@ -2315,9 +2335,11 @@ Environment::timers()
 }
 
 void
-Environment::addTimer( std::string const& msg, std::pair<double,int> const& t )
+Environment::addTimer( std::string const& msg,
+                       std::pair<double,int> const& t,
+                       std::string const& uiname = "" )
 {
-    S_timers->add( msg, t );
+    S_timers->add( msg, t, uiname );
 }
 
 void
