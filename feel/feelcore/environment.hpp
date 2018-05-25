@@ -672,7 +672,7 @@ public:
     static MemoryUsage logMemoryUsage( std::string const& message );
 
     //! Return the timerstable pointer.
-    static boost::shared_ptr<TimerTable> timers();
+//    static std::unique_ptr<TimerTable> timers();
 
     /**
      * add timer to a map of timers that can be shown using \c displayTimers()
@@ -879,7 +879,7 @@ private:
 #if defined(FEELPP_HAS_HARTS)
     static hwloc_topology_t S_hwlocTopology;
 #endif
-    static boost::shared_ptr<TimerTable> S_timers;
+    static std::unique_ptr<TimerTable> S_timers;
 
 #if defined(FEELPP_HAS_MONGOCXX )
     static std::unique_ptr<mongocxx::instance> S_mongocxxInstance;

@@ -460,7 +460,7 @@ Environment::Environment( int argc, char** argv,
     S_desc = boost::make_shared<po::options_description>();
     S_desc->add( *S_desc_app );
 
-    S_timers = boost::make_shared<TimerTable>();
+    S_timers = std::make_unique<TimerTable>();
 
     // try to see if the feel++ lib options are already in S_desc_app, if yes then we do not add S_desc_lib
     // otherwise we will have duplicated options
@@ -734,6 +734,10 @@ Environment::~Environment()
 
         stopLogging();
         generateSummary( S_about.appName(), "end", true );
+        S_timers.reset();
+        // Journal manager must destruct object last!
+        Observer::JournalManagerBase<>::~JournalManagerBase<>();
+
         // make sure everybody is here
         Environment::worldComm().barrier();
         if ( Environment::isMasterRank() && S_vm.count("rm") )
@@ -2328,11 +2332,11 @@ Environment::expand( std::string const& expr )
     return res;
 }
 
-boost::shared_ptr<TimerTable>
-Environment::timers()
-{
-    return S_timers;
-}
+//std::unique_ptr<TimerTable>
+//Environment::timers()
+//{
+//    return S_timers;
+//}
 
 void
 Environment::addTimer( std::string const& msg,
@@ -2398,7 +2402,7 @@ std::vector<std::string> Environment::olAutoloadFiles;
 hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
-boost::shared_ptr<TimerTable> Environment::S_timers;
+std::unique_ptr<TimerTable> Environment::S_timers;
 
 #if defined(FEELPP_HAS_MONGOCXX )
 std::unique_ptr<mongocxx::instance> Environment::S_mongocxxInstance;
