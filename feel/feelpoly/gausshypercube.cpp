@@ -140,7 +140,7 @@ public :
                         // computes the weight of the k-th node
                         p->q[(D+1)*k] = px[i];
                         p->q[(D+1)*k+1] = px[j];
-                        p->q[(D+1)*k+2] = px[j];
+                        p->q[(D+1)*k+2] = px[l];
                         p->q[(D+1)*k+3] = wx[ i ] * wx[ j ] * wx[ l ];
                     }
                 }
