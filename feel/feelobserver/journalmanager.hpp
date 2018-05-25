@@ -94,7 +94,12 @@ public:
         }
 
         //! @}
-        //
+
+        //! @{
+        //! Destructor
+        virtual ~JournalManagerBase() = default;
+        //! @}
+
         //! Setters
         //! @{
 
