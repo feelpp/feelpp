@@ -58,8 +58,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto the_im = im<typename vf::detail::integrate_type<Args>::_quad_type>(quad);
+    auto the_im1 = im<typename vf::detail::integrate_type<Args>::_quad1_type>(quad1);
+    auto ret =  integrate_impl( range, the_im , expr, geomap, the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {

@@ -39,6 +39,11 @@ namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
+//!
+//! base class for point sets, to be used eg with SFINAE
+//!
+class PointSetBase {};
+
 /** @class PointSet
  *  @brief  Class of all PointSet on a Convex.
  *  @author Gilles Steiner
@@ -51,7 +56,7 @@ namespace ublas = boost::numeric::ublas;
 
 
 template<class Convex, typename T>
-class PointSet : public VisitableBase<>
+class PointSet : public VisitableBase<>, public PointSetBase
 {
     typedef VisitableBase<> super;
 

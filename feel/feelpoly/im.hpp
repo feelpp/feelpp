@@ -141,6 +141,50 @@ public:
         }
 };
 
+//!
+//! type of quadrature
+//!
+template<typename ConvexT, typename T = double>
+using im_t = typename mpl::if_<mpl::bool_<ConvexT::is_simplex>,
+                               mpl::identity<IMGeneral<ConvexT::nDim, T, Simplex> >,
+                               mpl::identity<IMGeneral<ConvexT::nDim, T, Hypercube> > >::type::type;
+
+//!
+//! instantiate a quadrature on convex @p ConvexT to integrate up to order @p O
+//!
+template<typename ConvexT,typename T = double>
+im_t<ConvexT,T> im( uint16_type O )
+{
+    return im_t<ConvexT,T>{ O };
+}
+
+template<typename IMT>
+IMT im( uint16_type O, std::enable_if_t<std::is_base_of<PointSetBase,IMT>::value>* = nullptr )
+{
+    return IMT{ O };
+}
+
+template<typename IMT>
+IMT&& im( IMT && the_im, std::enable_if_t<std::is_base_of<PointSetBase,IMT>::value>* = nullptr )
+{
+    return std::forward<IMT>( the_im );
+}
+
+template<typename IMT>
+IMT const& im( IMT const& the_im, std::enable_if_t<std::is_base_of<PointSetBase,IMT>::value>* = nullptr )
+{
+    return the_im;
+}
+
+//!
+//! build a quadrature formula from a @p mesh and a polynomial order @p O to integrate exactly
+//!
+template<typename MeshT,typename T = double>
+im_t<typename MeshT::element_type,T> im( boost::shared_ptr<MeshT> mesh, uint16_type O )
+{
+    return im_t<typename MeshT::element_type,T>{ O };
+}
+
 template<int DIM,
          int IMORDER,
          typename T = double,
