@@ -42,7 +42,7 @@
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-
+struct _QBase {};
 /**
  * degree policy that defines the integration method that used jacobi
  * polynomials of degree N. It computes also the exactness (2*N-1)
@@ -161,7 +161,14 @@ im_t<ConvexT,T> im( uint16_type O )
 template<typename IMT>
 IMT im( uint16_type O, std::enable_if_t<std::is_base_of<PointSetBase,IMT>::value>* = nullptr )
 {
+    CHECK( O != invalid_uint16_type_value ) << "Invalid integration order";
     return IMT{ O };
+}
+
+template<typename IMT, typename QT>
+IMT im( QT the_q, std::enable_if_t<std::is_base_of<_QBase,QT>::value>* = nullptr )
+{
+    return IMT{ the_q.order() };
 }
 
 template<typename IMT>
@@ -212,9 +219,10 @@ public:
     IM& operator=( IM && ) = default;
 };
 
+
 template<uint16_type IMORDER = invalid_uint16_type_value,
          template<class Convex, uint16_type O, typename T2> class QPS = Gauss>
-struct _Q
+struct _Q : public _QBase
 {
     //static const int order = IMORDER;
     static const uint16_type CompileTimeOrder = IMORDER;
