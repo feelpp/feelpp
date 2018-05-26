@@ -88,11 +88,7 @@ public :
 #endif
     //--------------------------------------------------------------------------------------//
 
-    typedef typename mpl::if_<mpl::bool_<geoelement_type::is_simplex>,
-                              mpl::identity<typename Im::template ApplyIMGeneral<geoelement_type::nDim, value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template ApplyIMGeneral<geoelement_type::nDim, value_type, Hypercube>::type >
-                              >::type::type im_type;
-
+    using im_type = im_t<geoelement_type,value_type>;
     typedef typename im_type::face_quadrature_type im_face_type;
 
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;

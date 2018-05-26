@@ -81,7 +81,7 @@ public :
 
     PointSetQuadrature( const PointSetQuadrature& Qp ) = default;
 
-    PointSetQuadrature( uint16_type order )
+    explicit PointSetQuadrature( uint16_type order )
         : super( order ), 
           M_order( order ),
           M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
