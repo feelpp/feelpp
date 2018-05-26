@@ -6544,8 +6544,13 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      using im_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
      typedef typename clean2_type<Args,tag::quad, im_type>::type __quad_type;
      typedef typename clean2_type<Args,tag::quad1, im_type >::type __quad1_type;
-     using _quad_type = typename mpl::if_<std::is_integral<__quad_type>, mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad_type>> >::type::type;
-     using _quad1_type = typename mpl::if_<std::is_integral<__quad1_type>, mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
+     using _quad_type = typename mpl::if_<mpl::or_<std::is_integral<__quad_type>,
+                                                   std::is_base_of<_QBase,__quad_type>>,
+                                          mpl::identity<im_type>,
+                                          mpl::identity<std::remove_const_t<__quad_type>> >::type::type;
+     using _quad1_type = typename mpl::if_<mpl::or_<std::is_integral<__quad1_type>,
+                                                    std::is_base_of<_QBase,__quad1_type>>,
+                                           mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
      typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
      typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
