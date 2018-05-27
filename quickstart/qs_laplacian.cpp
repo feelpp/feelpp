@@ -29,6 +29,7 @@ int main(int argc, char**argv )
     // tag::env[]
     using namespace Feel;
     using Feel::cout;
+
 	po::options_description laplacianoptions( "Laplacian options" );
 	laplacianoptions.add_options()
         ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
@@ -48,10 +49,6 @@ int main(int argc, char**argv )
 
     tic();
     auto Vh = Pch<2>( mesh );
-    auto Vh2 = Pdh<0>( mesh );
-
-    Environment::journalSave();
-
     auto u = Vh->element("u");
     auto mu = expr(soption(_name="functions.mu")); // diffusion term
     auto f = expr( soption(_name="functions.f"), "f" );
@@ -60,6 +57,7 @@ int main(int argc, char**argv )
     auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
     auto solution = expr( checker().solution(), "solution" );
     auto g = checker().check()?solution:expr( soption(_name="functions.g"), "g" );
+    auto g_str = checker().check()? checker().solution():soption(_name="functions.g");
     // tag::v[]
     auto v = Vh->element( g, "g" );
     // end::v[]
@@ -128,21 +126,15 @@ int main(int argc, char**argv )
     int status = checker().runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
     // end::check[]
 
-    double l2 = normL2( _range=elements(mesh), _expr=idv(u)-expr(checker().solution()) );
-    double h1 = normH1( _range=elements(mesh), _expr=idv(u)-expr(checker().solution() ), _grad_expr=gradv(u)-grad<2>(expr(checker().solution())) );
-
+    auto errors = norms( g_str );
     // tag::journal[]
     // Add a watcher functor for the journal system.
-    Observer::JournalFeed mj{
-        {"error.norm.L2", l2},
-        {"error.norm.H1", h1}
+    Observer::JournalFeed journal_entry{
+        {"error.norm.L2", errors.at("L2")},
+        {"error.norm.H1", errors.at("H1")}
     };
 
-    //    // This will merge simulation info (map) into one ptree.
-    Environment::journalPull();
-    //    // This will save the ptree into a json file.
-    Environment::journalSave();
-    // end::journal[]
+    Environment::finalize();
 
     // exit status = 0 means no error
     return !status;
