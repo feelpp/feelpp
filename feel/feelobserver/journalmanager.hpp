@@ -128,8 +128,11 @@ public:
         static void
         journalSave( const std::string& filename = "journal" )
         {
-            journalJSONSave( filename );
-            journalDBSave( filename );
+            if( Env::isMasterRank() )
+            {
+                journalJSONSave( filename );
+                journalDBSave( filename );
+            }
         }
 
         //! @}
@@ -226,7 +229,7 @@ private:
                 mongocxx::client client(uri);
                 mongocxx::database journaldb = client[M_journal_db_config.name];
                 auto journal = journaldb[M_journal_db_config.collection];
-                auto builder = bsoncxx::builder::stream::document{};
+                //auto builder = bsoncxx::builder::stream::document{};
                 std::ifstream json( filename + ".json");
                 std::stringstream jsonbuff;
                 jsonbuff << json.rdbuf();
