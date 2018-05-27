@@ -125,7 +125,10 @@ public :
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
             if ( this == &a )
+            {
+                M_matrix->scale( 2.0 );
                 return *this;
+            }
 
             M_matrix->addMatrix( 1.0, a.M_matrix );
 
