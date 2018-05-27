@@ -791,3 +791,47 @@ macro( genLibHeatFluid )
   endif()
 
 endmacro(genLibHeatFluid)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibMaxwell )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;P_ORDER;GEO_ORDER;"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(MAXWELL_DIM ${FEELMODELS_APP_DIM})
+  set(MAXWELL_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
+  set(MAXWELL_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  set(MAXWELL_LIB_VARIANTS ${MAXWELL_DIM}dP${MAXWELL_ORDERPOLY}G${MAXWELL_ORDERGEO} )
+  set(MAXWELL_LIB_NAME feelpp_toolbox_maxwell_lib_${MAXWELL_LIB_VARIANTS})
+
+  if ( NOT TARGET ${MAXWELL_LIB_NAME} )
+    # configure the lib
+    set(MAXWELL_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/maxwell/${MAXWELL_LIB_VARIANTS})
+    set(MAXWELL_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/maxwell/maxwell_inst.cpp )
+    set(MAXWELL_CODEGEN_SOURCES
+      ${MAXWELL_LIB_DIR}/maxwell_inst.cpp )
+    set(MAXWELL_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${FEELPP_LIBRARIES} )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${MAXWELL_LIB_NAME}
+      LIB_DIR ${MAXWELL_LIB_DIR}
+      LIB_DEPENDS ${MAXWELL_LIB_DEPENDS}
+      FILES_TO_COPY ${MAXWELL_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${MAXWELL_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/maxwell/maxwellconfig.h.in
+      )
+  endif()
+endmacro(genLibMaxwell)
+

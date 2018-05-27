@@ -36,7 +36,7 @@ if( ${FEELPP_MESH_MAX_ORDER} GREATER 1 )
     math(EXPR _T_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}')
     feelpp_max( MAX_ORDER 1 ${_T_ORDER})
     message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNG2 N=2..${MAX_ORDER}")
-    foreach( _T_ORDER RANGE 1 ${MAX_ORDER} )
+    foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
       genLibThermoelectric(
         DIM     ${_DIM}
         T_ORDER ${_T_ORDER}

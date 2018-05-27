@@ -1,0 +1,25 @@
+#undef MAXWELL_DIM
+#undef MAXWELL_ORDERGEO
+#undef MAXWELL_ORDERPOLY
+
+#define MAXWELL_DIM @MAXWELL_DIM@
+#define MAXWELL_ORDERGEO @MAXWELL_ORDERGEO@
+#define MAXWELL_ORDERPOLY @MAXWELL_ORDERPOLY@
+
+
+#define MAXWELL_POTENTIAL_INTERPOLATIONPOINTS PointSetFekete
+
+#define MAXWELL_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType/*, typename BasisPotentialType*/> \
+        /**/
+#define MAXWELL_CLASS_TEMPLATE_TYPE \
+    Maxwell<ConvexType/*,BasisPotentialType*/>  \
+        /**/
+#define MAXWELL_CLASS_TYPE \
+    Maxwell< Simplex<MAXWELL_DIM,MAXWELL_ORDERGEO,MAXWELL_DIM>/*,*/     \
+        /*Lagrange<MAXWELL_ORDERPOLY, Vectorial,Continuous,MAXWELL_POTENTIAL_INTERPOLATIONPOINTS >*/ \
+        >                                                              \
+    /**/
+#define MAXWELL_CLASS_INSTANTIATION \
+    template class MAXWELL_CLASS_TYPE ;  \
+    /**/
