@@ -1564,7 +1564,7 @@ private:
 template<typename T>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 1>* )  
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 1>* )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1605,7 +1605,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 template<typename T>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<decltype(hana::size(e.functionSpace()))::value == 2>* )
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 2>* )
 {
     using Feel::cout;
     cout << tc::red << "WARNING!! localSolve with function space of size 2 is not implemented yet!"
