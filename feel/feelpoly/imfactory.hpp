@@ -97,9 +97,12 @@ using IMFactory = Feel::Singleton< Feel::Factory< IMBase<T>, std::string > >;
     BOOST_PP_STRINGIZE(im BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_RPAREN())
 
 # define FACTORY1(LDIM,LORDER,LSHAPE )                                  \
-    const bool BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER)  = \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER)  =     \
         IMFactory<double>::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-    *new Feel::detail::BOOST_PP_CAT(IM,BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
+        *new Feel::detail::BOOST_PP_CAT(IM,BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) ); \
+    const bool BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER)  =        \
+         IMFactory<float>::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
+         *new Feel::detail::BOOST_PP_CAT(IM,BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)(LDIM,LORDER) );
 
 # define FACTORY1_OP(_, GDO) FACTORY1 GDO
 

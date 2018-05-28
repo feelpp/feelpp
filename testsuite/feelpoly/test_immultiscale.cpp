@@ -120,7 +120,8 @@ public:
     {
         using namespace Feel;
 
-        IMGeneral<D, T, Hypercube, MultiScaleQuadrature> im( N );
+        //IMGeneral<D, T, Hypercube, MultiScaleQuadrature> im( N );
+        IMGeneral<D, T, Hypercube> im( N );
 
         value_type res = math::abs( im.integrateAtPoints( M_func ) - M_res );
 
