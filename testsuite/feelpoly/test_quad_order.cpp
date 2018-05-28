@@ -89,16 +89,16 @@ void QK_find_N_opt()
 {
     using namespace Feel;
     typedef T value_type;
+    
+    auto the_im = im<Hypercube<2,1>>( N ); 
 
-    Gauss<Hypercube<2,1>, N ,value_type > im;
-
-    ublas::vector<value_type> x_i( ublas::row( im.points(),0 ) );
-    ublas::vector<value_type> y_i( ublas::row( im.points(),1 ) );
+    ublas::vector<value_type> x_i( ublas::row( the_im.points(),0 ) );
+    ublas::vector<value_type> y_i( ublas::row( the_im.points(),1 ) );
     const value_type tol = value_type( 7.0 )*type_traits<value_type>::epsilon();
 
     /* 1D number of Nodes */
     //@{
-    uint16_type Q = ( uint16_type )sqrt( im.nPoints() );
+    uint16_type Q = ( uint16_type )sqrt( the_im.nPoints() );
     //@}
 
     value_type error = 0.0;
@@ -106,7 +106,7 @@ void QK_find_N_opt()
     uint16_type i=1;
     value_type sum=0.0;
 
-    ost << "Nbre of Points on the Quadrangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
+    ost << "Nbre of Points on the Quadrangle : " << Q << "^2 = "<< the_im.nPoints() <<  std::endl;
 
     do
     {
@@ -120,7 +120,7 @@ void QK_find_N_opt()
 
         for ( uint16_type l=0; l< x_i.size(); ++l )
         {
-            sum += pow( x_i( l ),i )*pow( y_i( l ),i )*im.weight( l );
+            sum += pow( x_i( l ),i )*pow( y_i( l ),i )*the_im.weight( l );
         }
 
         error = math::abs( sum - res );
