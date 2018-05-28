@@ -381,7 +381,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     {
         M_fluidModel->solve();
         M_heatModel->setFieldVelocityConvectionIsUsed( true );
-        M_heatModel->updateFieldVelocityConvection( idv(M_fluidModel->fieldVelocity()) );
+        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+        {
+            auto const& range = rangeData.second;
+            M_heatModel->updateFieldVelocityConvection( range,idv(M_fluidModel->fieldVelocity()) );
+        }
         M_heatModel->solve();
     }
     else
