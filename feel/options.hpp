@@ -143,5 +143,8 @@ po::options_description fit_options( std::string const& prefix="" );
 //! \p prefix to create new checkers when there is a need for several checkers in an application
 //!
 po::options_description checker_options( std::string const& prefix="" );
+
+//! ptree options
+po::options_description ptree_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP

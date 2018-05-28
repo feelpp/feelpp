@@ -39,11 +39,6 @@ namespace Feel
 namespace FeelModels
 {
 
-enum class ElectricPostProcessFieldExported
-{
-    Temperature = 0, ElectricPotential, ElectricField, Pid
-};
-
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                        public MarkerManagementDirichletBC,
@@ -146,6 +141,8 @@ public :
     space_electricfield_ptrtype const& spaceElectricField() const { return M_XhElectricField; }
     element_electricfield_ptrtype const& fieldElectricFieldPtr() const { return M_fieldElectricField; }
     element_electricfield_type const& fieldElectricField() const { return *M_fieldElectricField; }
+    element_electricfield_ptrtype const& fieldCurrentDensityPtr() const { return M_fieldCurrentDensity; }
+    element_electricfield_type const& fieldCurrentDensity() const { return *M_fieldCurrentDensity; }
 
     electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
 
@@ -161,19 +158,26 @@ public :
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
     void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
-    void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
     void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-    void updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
     void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
-    void updateResidualStrongDirichletBC( vector_ptrtype& R ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
 
     //___________________________________________________________________________________//
     void updateElectricField();
+    void updateCurrentDensity();
+
+    template<typename ExprT>
+    void updateCurrentDensity( Expr<ExprT> const& expr, elements_reference_wrapper_t<mesh_type> range )
+        {
+            M_fieldCurrentDensity->on(_range=range, _expr=expr );
+        }
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -185,6 +189,8 @@ private :
     element_electricpotential_ptrtype M_fieldElectricPotential;
     space_electricfield_ptrtype M_XhElectricField;
     element_electricfield_ptrtype M_fieldElectricField;
+    element_electricfield_ptrtype M_fieldCurrentDensity;
+
     // physical parameter
     electricproperties_ptrtype M_electricProperties;
     // boundary conditions
@@ -198,8 +204,6 @@ private :
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
-    // start dof index fields in matrix (temperature,electric-potential,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 
     // post-process
     export_ptrtype M_exporter;

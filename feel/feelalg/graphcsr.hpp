@@ -451,7 +451,7 @@ private :
         M_mapCol = boost::make_shared<Feel::DataMap>( map_col );
     }
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 protected:
 

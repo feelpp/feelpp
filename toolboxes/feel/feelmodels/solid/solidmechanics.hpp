@@ -507,13 +507,18 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const;
     graph_ptrtype buildMatrixGraph() const;
     int nBlockMatrixGraph() const;
-    std::map<std::string,size_type> const& startBlockIndexFieldsInMatrix() const { return M_startBlockIndexFieldsInMatrix; }
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     void updateBlockVectorSolution();
 
     model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
     model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
+
+    void updateMassMatrixLumped();
+    bool useMassMatrixLumped() const { return M_useMassMatrixLumped; }
+    void setUseMassMatrixLumped( bool b ) { M_useMassMatrixLumped = b; }
+    sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
+    vector_ptrtype const& vecDiagMassMatrixLumped() const { return M_vecDiagMassMatrixLumped; }
 
     //-----------------------------------------------------------------------------------//
     // 1d reduced model
@@ -571,11 +576,6 @@ public :
     void updateSubMeshDispFSIFromPrevious();
 
     std::list<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
-    double gammaNitschFSI() const { return M_gammaNitschFSI; }
-    void gammaNitschFSI(double d) { M_gammaNitschFSI=d; }
-    double muFluidFSI() const { return M_muFluidFSI; }
-    void muFluidFSI(double d) { M_muFluidFSI=d; }
-
 
     void updateNormalStressFromStruct();
     void updateStressCriterions();
@@ -703,8 +703,11 @@ protected:
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
     std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+
+    bool M_useMassMatrixLumped;
+    sparse_matrix_ptrtype M_massMatrixLumped;
+    vector_ptrtype M_vecDiagMassMatrixLumped;
 
     // trace mesh
     space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
@@ -780,8 +783,6 @@ protected:
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    double M_gammaNitschFSI;
-    double M_muFluidFSI;
     boost::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json

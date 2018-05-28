@@ -2010,7 +2010,7 @@ public:
             //LOG(INFO)<<"add point\n";
 
             //rank of the current processor
-            rank_type proc_number = this->functionSpace()->worldComm().globalRank();
+            rank_type procId = this->functionSpace()->worldComm().globalRank();
             //total number of processors
             rank_type nprocs = this->functionSpace()->worldComm().globalSize();
 
@@ -2046,20 +2046,33 @@ public:
             auto found_points = analysis.template get<0>();
             bool found = found_points[0];
 
-            std::vector<int> found_pt( nprocs, 0 );
-            std::vector<int> global_found_pt( nprocs, 0 );
+            std::vector<uint8_type> found_pt( nprocs, 0 );
+            if ( found )
+                found_pt[procId] = 1;
 
-            if( found ) //we are on the proc that have the searched point
+            std::vector<uint8_type> global_found_pt( nprocs, 0 );
+            if ( nprocs > 1 )
+                mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<uint8_type>() );
+            else
+                global_found_pt[ procId ] = found_pt[ procId ];
+            // only one proc has the point
+            bool findOneProcess = false;
+            for ( rank_type p=0;p<nprocs;++p )
             {
+                if ( findOneProcess )
+                    global_found_pt[p] = 0;
+                if ( global_found_pt[p] == 1 )
+                    findOneProcess=true;
+            }
 
-                found_pt[proc_number]=1;
-
+            if ( global_found_pt[ procId ] == 1 ) //we are on the proc that have the searched point
+            {
                 auto it = loc->result_analysis_begin();
                 auto en = loc->result_analysis_end();
                 DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
                 auto eid = it->first;
                 auto xref = boost::get<1>( *(it->second.begin()) );
-                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<< procId <<"\n";
                 DVLOG(2) << "  - reference coordinates " << xref << "\n";
 
                 typename basis_type::points_type p(mesh_type::nDim,1);
@@ -2083,24 +2096,13 @@ public:
                 ret = this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
-                if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
-                else
-                    global_found_pt[ 0 ] = found_pt[ 0 ];
-
             }//if( found )
-            else
-            {
-                if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
-
-            }//not found case
 
             //verify that the point is on a proc
             bool found_on_a_proc = false;
             for (int i = 0 ; i < global_found_pt.size(); ++i )
             {
-                if ( global_found_pt[i] != 0 )
+                if ( global_found_pt[i] == 1 )
                 {
                     DVLOG(2) << "processor " << i << " has the point " << t << "\n";
                     found_on_a_proc = true;

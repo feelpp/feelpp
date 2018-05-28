@@ -159,7 +159,11 @@ MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
 # enable instantiation
 MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
 IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
-  SET( FEELPP_INSTANTIATION_MODE 1 )
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET( FEELPP_INSTANTIATION_MODE 1 )
+  else()
+    SET( FEELPP_INSTANTIATION_MODE 1 )
+  endif()
 ENDIF()
 SET(FEELPP_MESH_MAX_ORDER "2" CACHE STRING "maximum geometrical order in templates to instantiate up to 5 in 2D and 4 in 3D" )
 
@@ -526,7 +530,7 @@ SET(BOOST_MIN_VERSION "1.61.0")
 
 
 # Then we try to find rest of the Boost components
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     add_definitions(-DBOOST_RESULT_OF_USE_TR1)
@@ -1303,6 +1307,21 @@ if( FEELPP_ENABLE_FMILIB )
   include( feelpp.module.fmilib )
 endif()
 
+option( FEELPP_ENABLE_LIBCURL "Enable libcurl in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+if ( FEELPP_ENABLE_LIBCURL )
+  find_package( CURL )
+  #message( "CURL_FOUND=${CURL_FOUND}" )
+  #message( "CURL_INCLUDE_DIRS=${CURL_INCLUDE_DIRS}" )
+  #message( "CURL_LIBRARIES=${CURL_LIBRARIES}" )
+  #message( "CURL_VERSION_STRING=${CURL_VERSION_STRING}" )
+  if( CURL_FOUND )
+    include_directories( ${CURL_INCLUDE_DIRS} )
+    set( FEELPP_HAS_LIBCURL 1 )
+    set( FEELPP_LIBRARIES ${CURL_LIBRARIES} ${FEELPP_LIBRARIES} )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} libcurl/${CURL_VERSION_STRING}" )
+  endif()
+endif()
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
@@ -1411,7 +1430,7 @@ set(FEELPP_BOOST_TEXT "
 set (Boost_MAJOR_VERSION \"${Boost_MAJOR_VERSION}\")
 set (Boost_MINOR_VERSION \"${Boost_MINOR_VERSION}\")
 ")
-foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization )
+foreach( _c date_time filesystem system program_options unit_test_framework signals ${FEELPP_BOOST_MPI} regex serialization iostreams )
   string(TOUPPER ${_c} _BOOST_LIB)
   set(FEELPP_BOOST_TEXT
     "${FEELPP_BOOST_TEXT}

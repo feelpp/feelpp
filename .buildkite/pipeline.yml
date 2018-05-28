@@ -8,11 +8,6 @@ steps:
      CXX: clang++-4.0
      CC: clang-4.0
      TARGET: ubuntu:16.04
- # - name: ':mac: using homebrew :beer:'
- #   command: tools/scripts/buildkite/build-osx.sh
- #   branches: develop
- #   agents:
- #     osx: true
  - wait
  - name: ':ubuntu: 16.04,clang-4.0  feelpp-base :hammer:'
    command: tools/scripts/buildkite/install-feelpp.sh base

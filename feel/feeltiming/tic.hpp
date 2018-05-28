@@ -35,6 +35,7 @@
 
 namespace Feel
 {
+
 namespace details
 {
 struct FEELPP_NO_EXPORT SecondBasedTimer

@@ -47,7 +47,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/kdtree.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 #include <feel/feelcore/hashtables.hpp>
 
@@ -142,7 +142,7 @@ public:
                 this->resize( e.size() );
                 super::operator=( e );
                 M_space = e.M_space;
-                
+
                 return *this;
             }
 
