@@ -68,9 +68,10 @@ namespace FeelModels
         typedef model_type::indexsplit_ptrtype indexsplit_ptrtype;
 
 
-        typedef boost::function<void ( sparse_matrix_ptrtype& A,vector_ptrtype& F )> linearAssembly_function_type;
-        typedef boost::function<void ( vector_ptrtype const& U, sparse_matrix_ptrtype& J )> jacobianAssembly_function_type;
-        typedef boost::function<void ( vector_ptrtype const& U, vector_ptrtype& R )> residualAssembly_function_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
+        typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
+        typedef boost::function<void ( vector_ptrtype& )> function_newton_initial_guess_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
@@ -179,10 +180,14 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        linearAssembly_function_type addFunctionLinearPostAssembly;
-        linearAssembly_function_type addFunctionLinearPreAssemblyNonCst;
-        jacobianAssembly_function_type addFunctionJacobianPreAssembly;
-        residualAssembly_function_type addFunctionResidualPreAssembly;
+        void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func, std::string const& key = "" );
+        void addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
+        void addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualPostAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
+
     private :
 
         void
@@ -213,6 +218,14 @@ namespace FeelModels
         bool M_hasBuildLinearJacobian;
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
+
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearPostAssembly;
+        std::map<std::string,function_newton_initial_guess_type> M_addFunctionNewtonInitialGuess;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianAssembly;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualAssembly;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
     };
 
 
