@@ -175,10 +175,11 @@ Checker::Checker()
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
-
+}
 Checker::Checker( std::string const& s )
     :
     M_check( boption("checker.check") ),
+    M_verbose( boption("checker.verbose" ) ),
     M_solution( s ),
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
@@ -186,6 +187,6 @@ Checker::Checker( std::string const& s )
     
 }
 
-}
+
 
 }

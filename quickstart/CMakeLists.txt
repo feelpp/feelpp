@@ -53,7 +53,7 @@ add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D}  )
 add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_3D} )
 
 
-feelpp_add_application( ginac SRCS qs_ginac.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 INSTALL )
+# feelpp_add_application( ginac SRCS qs_ginac.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 INSTALL )
 
 
 #
