@@ -711,7 +711,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         _name = fs::path( nameMshOutput ).stem();
 #endif
         fs::path directory = fs::path(nameMshOutput).parent_path();
-        if ( !fs::exists(directory) )
+        if ( !directory.empty() && !fs::exists(directory) )
             fs::create_directories( directory );
 
         CTX _backup = *(CTX::instance());

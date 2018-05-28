@@ -434,6 +434,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_blockVectorSolutionMonolithic.localize();
 
         M_electricModel->updateElectricField();
+        this->updateCurrentDensity();
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -769,6 +770,43 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 {
     M_heatModel->updateResidualDofElimination( data );
     M_electricModel->updateResidualDofElimination( data );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void  
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
+{
+    auto const& v = M_electricModel->fieldElectricPotential();
+    auto const& t = M_heatModel->fieldTemperature();
+
+    for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            double sigma = electricConductivity.value();
+            auto cd = -sigma*trans(gradv(v));
+            M_electricModel->updateCurrentDensity( cd, range );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            std::string symbolStr = "heat_T";
+            if ( sigma.expression().hasSymbol( symbolStr ) )
+            {
+                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
+                auto cd = -sigma*trans(gradv(v));
+                M_electricModel->updateCurrentDensity( cd, range );
+            }
+            else
+            {
+                auto cd = -sigma*trans(gradv(v));
+                M_electricModel->updateCurrentDensity( cd, range );
+            }
+        }
+    }
 }
 
 } // end namespace FeelModels
