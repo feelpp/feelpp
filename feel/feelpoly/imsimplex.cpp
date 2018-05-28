@@ -8389,6 +8389,53 @@ const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,2
 const bool im321simplex = IMFactory<double>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,double>() );
 
 
+const bool im20simplexf = IMFactory<float>::instance().registerProduct( "im(2,0,simplex)", Feel::detail::IMTriangle< 0 ,float>() );
+const bool im21simplexf = IMFactory<float>::instance().registerProduct( "im(2,1,simplex)", Feel::detail::IMTriangle< 1 ,float>() );
+const bool im22simplexf = IMFactory<float>::instance().registerProduct( "im(2,2,simplex)", Feel::detail::IMTriangle< 2 ,float>() );
+const bool im23simplexf = IMFactory<float>::instance().registerProduct( "im(2,3,simplex)", Feel::detail::IMTriangle< 3 ,float>() );
+const bool im24simplexf = IMFactory<float>::instance().registerProduct( "im(2,4,simplex)", Feel::detail::IMTriangle< 4 ,float>() );
+const bool im25simplexf = IMFactory<float>::instance().registerProduct( "im(2,5,simplex)", Feel::detail::IMTriangle< 5 ,float>() );
+const bool im26simplexf = IMFactory<float>::instance().registerProduct( "im(2,6,simplex)", Feel::detail::IMTriangle< 6 ,float>() );
+const bool im27simplexf = IMFactory<float>::instance().registerProduct( "im(2,7,simplex)", Feel::detail::IMTriangle< 7 ,float>() );
+const bool im28simplexf = IMFactory<float>::instance().registerProduct( "im(2,8,simplex)", Feel::detail::IMTriangle< 8 ,float>() );
+const bool im29simplexf = IMFactory<float>::instance().registerProduct( "im(2,9,simplex)", Feel::detail::IMTriangle< 9 ,float>() );
+const bool im210simplexf = IMFactory<float>::instance().registerProduct( "im(2,10,simplex)", Feel::detail::IMTriangle< 10 ,float>() );
+const bool im211simplexf = IMFactory<float>::instance().registerProduct( "im(2,11,simplex)", Feel::detail::IMTriangle< 11 ,float>() );
+const bool im212simplexf = IMFactory<float>::instance().registerProduct( "im(2,12,simplex)", Feel::detail::IMTriangle< 12 ,float>() );
+const bool im213simplexf = IMFactory<float>::instance().registerProduct( "im(2,13,simplex)", Feel::detail::IMTriangle< 13 ,float>() );
+const bool im214simplexf = IMFactory<float>::instance().registerProduct( "im(2,14,simplex)", Feel::detail::IMTriangle< 14 ,float>() );
+const bool im215simplexf = IMFactory<float>::instance().registerProduct( "im(2,15,simplex)", Feel::detail::IMTriangle< 15 ,float>() );
+const bool im216simplexf = IMFactory<float>::instance().registerProduct( "im(2,16,simplex)", Feel::detail::IMTriangle< 16 ,float>() );
+const bool im217simplexf = IMFactory<float>::instance().registerProduct( "im(2,17,simplex)", Feel::detail::IMTriangle< 17 ,float>() );
+const bool im218simplexf = IMFactory<float>::instance().registerProduct( "im(2,18,simplex)", Feel::detail::IMTriangle< 18 ,float>() );
+const bool im219simplexf = IMFactory<float>::instance().registerProduct( "im(2,19,simplex)", Feel::detail::IMTriangle< 19 ,float>() );
+const bool im220simplexf = IMFactory<float>::instance().registerProduct( "im(2,20,simplex)", Feel::detail::IMTriangle< 20 ,float>() );
+
+// tetrahedron
+const bool im30simplexf = IMFactory<float>::instance().registerProduct( "im(3,0,simplex)", Feel::detail::IMTetrahedra< 0 ,float>() );
+const bool im31simplexf = IMFactory<float>::instance().registerProduct( "im(3,1,simplex)", Feel::detail::IMTetrahedra< 1 ,float>() );
+const bool im32simplexf = IMFactory<float>::instance().registerProduct( "im(3,2,simplex)", Feel::detail::IMTetrahedra< 2 ,float>() );
+const bool im33simplexf = IMFactory<float>::instance().registerProduct( "im(3,3,simplex)", Feel::detail::IMTetrahedra< 3 ,float>() );
+const bool im34simplexf = IMFactory<float>::instance().registerProduct( "im(3,4,simplex)", Feel::detail::IMTetrahedra< 4 ,float>() );
+const bool im35simplexf = IMFactory<float>::instance().registerProduct( "im(3,5,simplex)", Feel::detail::IMTetrahedra< 5 ,float>() );
+const bool im36simplexf = IMFactory<float>::instance().registerProduct( "im(3,6,simplex)", Feel::detail::IMTetrahedra< 6 ,float>() );
+const bool im37simplexf = IMFactory<float>::instance().registerProduct( "im(3,7,simplex)", Feel::detail::IMTetrahedra< 7 ,float>() );
+const bool im38simplexf = IMFactory<float>::instance().registerProduct( "im(3,8,simplex)", Feel::detail::IMTetrahedra< 8 ,float>() );
+const bool im39simplexf = IMFactory<float>::instance().registerProduct( "im(3,9,simplex)", Feel::detail::IMTetrahedra< 9 ,float>() );
+const bool im310simplexf = IMFactory<float>::instance().registerProduct( "im(3,10,simplex)", Feel::detail::IMTetrahedra< 10 ,float>() );
+const bool im311simplexf = IMFactory<float>::instance().registerProduct( "im(3,11,simplex)", Feel::detail::IMTetrahedra< 11 ,float>() );
+const bool im312simplexf = IMFactory<float>::instance().registerProduct( "im(3,12,simplex)", Feel::detail::IMTetrahedra< 12 ,float>() );
+const bool im313simplexf = IMFactory<float>::instance().registerProduct( "im(3,13,simplex)", Feel::detail::IMTetrahedra< 13 ,float>() );
+const bool im314simplexf = IMFactory<float>::instance().registerProduct( "im(3,14,simplex)", Feel::detail::IMTetrahedra< 14 ,float>() );
+const bool im315simplexf = IMFactory<float>::instance().registerProduct( "im(3,15,simplex)", Feel::detail::IMTetrahedra< 15 ,float>() );
+const bool im316simplexf = IMFactory<float>::instance().registerProduct( "im(3,16,simplex)", Feel::detail::IMTetrahedra< 16 ,float>() );
+const bool im317simplexf = IMFactory<float>::instance().registerProduct( "im(3,17,simplex)", Feel::detail::IMTetrahedra< 17 ,float>() );
+const bool im318simplexf = IMFactory<float>::instance().registerProduct( "im(3,18,simplex)", Feel::detail::IMTetrahedra< 18 ,float>() );
+const bool im319simplexf = IMFactory<float>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,float>() );
+const bool im320simplexf = IMFactory<float>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,float>() );
+const bool im321simplexf = IMFactory<float>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,float>() );
+
+
 } // Feel
 
 

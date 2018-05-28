@@ -91,7 +91,7 @@ public :
             DLOG(INFO) << "Quad name: " << M_name << std::endl;
             if ( nDim > 0 )
             {
-                M_quad = *IMFactory<double>::instance().createObject( M_name );
+                M_quad = *IMFactory<value_type>::instance().createObject( M_name );
                 M_w.resize(M_quad.numberOfPoints());
                 M_prod.resize( M_quad.numberOfPoints() );
                 M_exprq.resize( M_quad.numberOfPoints() );
@@ -125,7 +125,7 @@ public :
         {
             M_order = order;
             M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str();
-            M_quad = *IMFactory<double>::instance().createObject( M_name );
+            M_quad = *IMFactory<T>::instance().createObject( M_name );
             this->M_npoints = M_quad.numberOfPoints();
             this->M_points.resize( nDim, M_quad.numberOfPoints() );
             this->M_w.resize( M_quad.numberOfPoints() );

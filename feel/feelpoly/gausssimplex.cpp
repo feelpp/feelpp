@@ -101,4 +101,37 @@ const bool im126gausssimplex = IMFactory<double>::instance().registerProduct( "i
 
 
 #endif
+
+const bool im10gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,0,simplex)", Feel::detail::GaussSimplex< 1 ,float>(0) );
+const bool im11gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,1,simplex)", Feel::detail::GaussSimplex< 1 ,float>(1) );
+const bool im12gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,2,simplex)", Feel::detail::GaussSimplex< 1 ,float>(2) );
+const bool im13gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,3,simplex)", Feel::detail::GaussSimplex< 1 ,float>(3) );
+const bool im14gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,4,simplex)", Feel::detail::GaussSimplex< 1 ,float>(4) );
+const bool im15gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,5,simplex)", Feel::detail::GaussSimplex< 1 ,float>(5) );
+const bool im16gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,6,simplex)", Feel::detail::GaussSimplex< 1 ,float>(6) );
+const bool im17gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,7,simplex)", Feel::detail::GaussSimplex< 1 ,float>(7) );
+const bool im18gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,8,simplex)", Feel::detail::GaussSimplex< 1 ,float>(8) );
+const bool im19gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,9,simplex)", Feel::detail::GaussSimplex< 1 ,float>(9) );
+const bool im110gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,10,simplex)", Feel::detail::GaussSimplex< 1 ,float>(10) );
+const bool im111gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,11,simplex)", Feel::detail::GaussSimplex< 1 ,float>(11) );
+const bool im112gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,12,simplex)", Feel::detail::GaussSimplex< 1 ,float>(12) );
+const bool im113gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,13,simplex)", Feel::detail::GaussSimplex< 1 ,float>(13) );
+const bool im114gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,14,simplex)", Feel::detail::GaussSimplex< 1 ,float>(14) );
+const bool im115gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,15,simplex)", Feel::detail::GaussSimplex< 1 ,float>(15) );
+const bool im116gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,16,simplex)", Feel::detail::GaussSimplex< 1 ,float>(16) );
+const bool im117gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,17,simplex)", Feel::detail::GaussSimplex< 1 ,float>(17) );
+const bool im118gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,18,simplex)", Feel::detail::GaussSimplex< 1 ,float>(18) );
+const bool im119gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,19,simplex)", Feel::detail::GaussSimplex< 1 ,float>(19) );
+const bool im120gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,20,simplex)", Feel::detail::GaussSimplex< 1 ,float>(20) );
+#if 1
+const bool im121gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,21,simplex)", Feel::detail::GaussSimplex< 1 ,float>(21) );
+const bool im122gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,22,simplex)", Feel::detail::GaussSimplex< 1 ,float>(22) );
+const bool im123gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,23,simplex)", Feel::detail::GaussSimplex< 1 ,float>(23) );
+const bool im124gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,24,simplex)", Feel::detail::GaussSimplex< 1 ,float>(24) );
+const bool im125gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,25,simplex)", Feel::detail::GaussSimplex< 1 ,float>(25) );
+const bool im126gausssimplexf = IMFactory<float>::instance().registerProduct( "im(1,26,simplex)", Feel::detail::GaussSimplex< 1 ,float>(26) );
+
+
+#endif
+
 }
