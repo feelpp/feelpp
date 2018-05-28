@@ -28,6 +28,7 @@
  */
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelcore/remotedata.hpp>
 
 namespace Feel
 {
@@ -64,6 +65,19 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, WorldComm const& 
         if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
         {
             std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+            RemoteData rdTool( meshfile, this->worldComm() );
+            if ( rdTool.canDownload() )
+            {
+                auto dowloadedData = rdTool.download( (fs::path(Environment::downloadsRepository())/fs::path(this->prefix())/fs::path("meshes")).string() );
+                CHECK( dowloadedData.size() > 0 ) << "no data download";
+                meshfile = dowloadedData[0];
+                if ( dowloadedData.size() == 2 )
+                {
+                    if ( fs::path( dowloadedData[0] ).extension() == ".h5" && fs::path( dowloadedData[1] ).extension() == ".json" )
+                        meshfile = dowloadedData[1];
+                }
+            }
+
             if ( fs::path( meshfile ).extension() == ".geo" )
                 M_geoFile = meshfile;
             else

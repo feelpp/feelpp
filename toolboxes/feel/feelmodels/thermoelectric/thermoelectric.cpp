@@ -212,16 +212,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearHeat )
     {
         M_heatModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
-                                                                                                   boost::ref( *this ), _1, _2 );
-        M_heatModel->algebraicFactory()->addFunctionResidualPreAssembly = boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
-                                                                                               boost::ref( *this ), _1, _2 );
+        M_heatModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearPreAssemblyJouleLaw,
+                                                                                 boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidualPreAssemblyJouleLaw,
+                                                                                   boost::ref( *this ), _1 ) );
     }
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearElectric )
     {
         M_electricModel->initAlgebraicFactory();
-        M_electricModel->algebraicFactory()->addFunctionLinearPreAssemblyNonCst = boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
-                                                                                               boost::ref( *this ), _1, _2 );
+        M_electricModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearElectricDependingOnTemperature,
+                                                                                     boost::ref( *this ), _1 ) );
     }
 
 
@@ -434,6 +434,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_blockVectorSolutionMonolithic.localize();
 
         M_electricModel->updateElectricField();
+        this->updateCurrentDensity();
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -456,9 +457,15 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const
 {
     this->log("ThermoElectric","updateLinearElectricDependingOnTemperature","start" );
+
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    if ( !buildNonCstPart )
+        return;
+    sparse_matrix_ptrtype& A = data.matrix();
 
     auto mesh = this->mesh();
     auto XhV = M_electricModel->spaceElectricPotential();
@@ -494,14 +501,23 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearElectricDependingOnTemperature( 
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const
 {
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+    if ( !buildNonCstPart )
+        return;
+    vector_ptrtype& F = data.rhs();
     this->updateGenericPreAssemblyJouleLaw( F, false );
 }
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualPreAssemblyJouleLaw( vector_ptrtype const& U, vector_ptrtype& R ) const
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const
 {
+    bool buildCstPart = data.buildCstPart();
+    if  ( !buildCstPart )
+        return;
+    vector_ptrtype& R = data.residual();
     this->updateGenericPreAssemblyJouleLaw( R, true );
 }
 
@@ -572,7 +588,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateJacobian", "start"+sc);
@@ -661,15 +676,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
 
     DataUpdateJacobian dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatModel->updateJacobian( dataSubPhysics );
     M_electricModel->updateJacobian( dataSubPhysics );
 
-    if ( buildNonCstPart && doBCStrongDirichlet )
-    {
-        M_heatModel->updateJacobianStrongDirichletBC( J,RBis );
-        M_electricModel->updateJacobianStrongDirichletBC( J,RBis );
-    }
     this->log("ThermoElectric","updateJacobian", "finish"+sc);
 }
 
@@ -682,7 +691,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
     bool useJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("ThermoElectric","updateResidual", "start"+sc);
@@ -693,7 +701,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto mesh = this->mesh();
 
     DataUpdateResidual dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
     M_heatModel->updateResidual( dataSubPhysics );
     M_electricModel->updateResidual( dataSubPhysics );
 
@@ -746,16 +753,61 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
     }
 
-    if ( !buildCstPart && doBCStrongDirichlet &&
-         ( M_heatModel->hasMarkerDirichletBCelimination() || M_electricModel->hasMarkerDirichletBCelimination() ) )
-    {
-        R->close();
-        M_heatModel->updateResidualStrongDirichletBC( R );
-        M_electricModel->updateResidualStrongDirichletBC( R );
-    }
     this->log("ThermoElectric","updateResidual", "finish"+sc);
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{
+    M_heatModel->updateJacobianDofElimination( data );
+    M_electricModel->updateJacobianDofElimination( data );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    M_heatModel->updateResidualDofElimination( data );
+    M_electricModel->updateResidualDofElimination( data );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void  
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
+{
+    auto const& v = M_electricModel->fieldElectricPotential();
+    auto const& t = M_heatModel->fieldTemperature();
+
+    for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            double sigma = electricConductivity.value();
+            auto cd = -sigma*trans(gradv(v));
+            M_electricModel->updateCurrentDensity( cd, range );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            std::string symbolStr = "heat_T";
+            if ( sigma.expression().hasSymbol( symbolStr ) )
+            {
+                auto sigma = electricConductivity.expr( symbolStr, idv(t) );
+                auto cd = -sigma*trans(gradv(v));
+                M_electricModel->updateCurrentDensity( cd, range );
+            }
+            else
+            {
+                auto cd = -sigma*trans(gradv(v));
+                M_electricModel->updateCurrentDensity( cd, range );
+            }
+        }
+    }
+}
 
 } // end namespace FeelModels
 } // end namespace Feel

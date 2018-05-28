@@ -58,6 +58,8 @@ file_options( std::string const& appname )
         ( "mod-file", po::value<std::string>()->default_value(appname+".mod"), "specify model (.mod) file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ( "case", po::value<std::string>(), "specify a case directory" )
+        ( "case.config-file", po::value<std::string>(), "specify the config-file in the case directory" )
         ;
     return file;
 }
@@ -936,6 +938,7 @@ checker_options( std::string const& prefix )
         ( prefixvm( prefix,"checker.tolerance.order" ).c_str(), Feel::po::value<double>()->default_value(1e-1), "tolerance for order check" )
         ( prefixvm( prefix,"checker.name" ).c_str(), Feel::po::value<std::string>()->default_value("checker"), "name of the test" )
         ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("$cfgdir/checker.json"), "name of the test" )
+        ( prefixvm( prefix,"checker.verbose" ).c_str(), Feel::po::value<bool>()->default_value(false), "checker prints more information" )
         ;
     return _options;
 }
@@ -961,6 +964,15 @@ fmu_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+ptree_options( std::string const& prefix )
+{
+    po::options_description _options( "Ptree " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json-editions" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of entries to modified in json. format= key:value " )
+        ;
+    return _options;
+}
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -1046,6 +1058,7 @@ feel_options( std::string const& prefix  )
         .add (fit_options(prefix))
         .add (checker_options(prefix))
         .add( fmu_options(prefix) )
+        .add( ptree_options( prefix ) )
         ;
 
     return opt;

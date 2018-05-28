@@ -137,7 +137,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if ( this->useDisplacementPressureFormulation() && !BuildCstPart)
     {
         // define pressure field
-        size_type blockIndexPressure = rowStartInVector+this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+        size_type blockIndexPressure = rowStartInVector+this->startSubBlockSpaceIndex("pressure");
         auto const p = M_XhPressure->element(X, blockIndexPressure);
         // assemble
         this->updateResidualIncompressibilityTerms(u,p,R);
@@ -160,18 +160,57 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         if (!BuildCstPart && !UseJacobianLinearTerms)
         {
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
-                           _geomap=this->geomap() );
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = u;
+                    myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    CHECK( false ) << "TODO";
+                }
+            }
         }
         if (BuildCstPart)
         {
             auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
-            linearFormDisplacement +=
-                integrate( _range=elements(mesh),
-                           _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
-                           _geomap=this->geomap() );
+            if ( !this->useMassMatrixLumped() )
+            {
+                linearFormDisplacement +=
+                    integrate( _range=elements(mesh),
+                               _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _geomap=this->geomap() );
+            }
+            else
+            {
+                if ( this->massMatrixLumped()->size1() == R->size() )
+                {
+                    auto myvec = this->backend()->newVector(M_XhDisplacement);
+                    *myvec = polySecondDerivDisp;
+                    myvec->scale(-1.0);
+                    R->close();
+                    R->addVector( myvec, this->massMatrixLumped() );
+                }
+                else
+                {
+                    R->close();
+                    auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                    uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                }
+            }
         }
     }
     //--------------------------------------------------------------------------------------------------//
@@ -187,6 +226,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     }
 
     //--------------------------------------------------------------------------------------------------//
+#if 0
     // fsi bc
     if (this->markerNameFSI().size()>0)
     {
@@ -253,6 +293,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         } // robin-robin fsi
 
     }
+#endif
 
     //--------------------------------------------------------------------------------------------------//
     // robin boundary condition (used in wavePressure3d as external tissue for arterial wall)
@@ -307,7 +348,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
      double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);*/
 
     size_type rowStartInVector = this->rowStartInVector();
-    size_type blockIndexPressure = this->startBlockIndexFieldsInMatrix().find("pressure")->second;
+    size_type blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     auto linearFormDisplacement = form1( _test=M_XhDisplacement, _vector=R,
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,

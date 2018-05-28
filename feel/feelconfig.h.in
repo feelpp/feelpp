@@ -261,4 +261,7 @@
 
 #define FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS}"
 
+/* Define to 1 if you have libcurl support. */
+#cmakedefine FEELPP_HAS_LIBCURL
+
 #endif

@@ -98,6 +98,8 @@ densityviscosity_options(std::string const& prefix)
         (prefixvm(prefix,"viscosity.law").c_str(), Feel::po::value< std::string >()->default_value("newtonian"), "newtonian, power_law, walburn-schneck_law, carreau_law, carreau-yasuda_law ")
         (prefixvm(prefix,"viscosity.zero_shear").c_str(), Feel::po::value< double >()->default_value( 0.056 ), "parameter mu_0 for generalized Newtonian [ Pa.s ]  ")
         (prefixvm(prefix,"viscosity.infinite_shear").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "parameter mu_inf for generalized Newtonian [ Pa.s ] ")
+        (prefixvm(prefix,"viscosity.min").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "min viscosity with power law [ Pa.s ]  ")
+        (prefixvm(prefix,"viscosity.max").c_str(), Feel::po::value< double >()->default_value( 0.056 ), "max viscosity with power law [ Pa.s ] ")
         (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
         (prefixvm(prefix,"power_law.n").c_str(), Feel::po::value< double >()->default_value( 0.6 ), "parameter n in power_law ")
         (prefixvm(prefix,"power_law.k").c_str(), Feel::po::value< double >()->default_value( 0.035 ), "parameter k in power_law [ Pa.s^n ] ")
@@ -285,10 +287,10 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-nitsche-family.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-nitsche-family.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
         // coupling-robin-neumann-generalized
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-interface-operator").c_str(), Feel::po::value<bool>()->default_value( true ),"use-interface-operator")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.manual-scaling").c_str(), Feel::po::value<double>()->default_value( 1.0 ),"manual-scaling")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid").c_str(), Feel::po::value<bool>()->default_value( true ),"use-mass-matrix-lumped-in-solid")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-proportional-to-identity").c_str(), Feel::po::value<bool>()->default_value( false ),"use-operator-proportional-to-identity")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.without-interface-operator.precompute-mass-matrix").c_str(), Feel::po::value<bool>()->default_value( true ),"precompute-mass-matrix")
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-precompute-bc").c_str(), Feel::po::value<bool>()->default_value( true ),"use-precompute-bc")
 
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")
@@ -329,6 +331,16 @@ electricity_options(std::string const& prefix)
         (prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
         ;
     return electricityOptions.add( modelnumerical_options( prefix ) );
+}
+Feel::po::options_description
+maxwell_options(std::string const& prefix)
+{
+    Feel::po::options_description maxwellOptions("Maxwell options");
+    maxwellOptions.add_options()
+        (prefixvm(prefix,"magnetic-permeability").c_str(), Feel::po::value<double>()->default_value( 1 ), "magnetic-permeability")
+        (prefixvm(prefix,"regularization-epsilon").c_str(), Feel::po::value<double>()->default_value( 1e-5), "regularization parameter")
+        ;
+    return maxwellOptions.add( modelnumerical_options( prefix ) );
 }
 Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
@@ -546,10 +558,8 @@ alemesh_options(std::string const& prefix)
         //(prefixvm(prefix,"alemesh.verbose_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
         (prefixvm(prefix,"alemesh.verbose_solvertimer").c_str(), Feel::po::value<bool>()->default_value( true ), "true or false to view verbose")
         (prefixvm(prefix,"alemesh.verbose_solvertimer_allproc").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to view verbose for all proc")
-        (prefixvm(prefix,"alemesh.winslow.solver").c_str(), Feel::po::value<std::string>()->default_value( "newton" ), "solver : linear, ptfixe, newton")
-        (prefixvm(prefix,"alemesh.winslow.ptfixe.niter").c_str(), Feel::po::value<int>()->default_value( 10 ), "nb max iteration of point fixe")
-        (prefixvm(prefix,"alemesh.winslow.ptfixe.tol").c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "tol point fixe")
-        (prefixvm(prefix,"alemesh.winslow.aitken.initialtheta").c_str(), Feel::po::value<double>()->default_value( 0.3 ), "initial theta of aitken relax")
+        (prefixvm(prefix,"alemesh.winslow.solver").c_str(), Feel::po::value<std::string>()->default_value( "Newton" ), "solver : Picard, Newton, Picard-Newton")
+        (prefixvm(prefix,"alemesh.winslow.Picard-Newton.maxit-Picard").c_str(), Feel::po::value<int>()->default_value( 3 ), "nb max iteration of point fixe")
         (prefixvm(prefix,"alemesh.harmonic.use_adaptive_penalisation").c_str(), Feel::po::value<bool>()->default_value( true ), "use tau penalisation in low formulation")
         (prefixvm(prefix,"alemesh.apply-ho-correction").c_str(), Feel::po::value<bool>()->default_value( true ), "do apply ho correction")
         //(prefixvm(prefix,"alemesh.export").c_str(), Feel::po::value<bool>()->default_value( false ), "true or false to export")
@@ -562,6 +572,8 @@ alemesh_options(std::string const& prefix)
         .add( modelalgebraic_options( prefixvm(prefix,"alemesh.harmonic") ) )
         .add( modelalgebraic_options( prefixvm(prefix,"alemesh.winslow") ) )
         .add( backend_options( prefixvm(prefix,"alemesh.winslow.l2proj") ) )
+        .add( backend_options( prefixvm(prefix,"alemesh.winslow.metric-derivative") ) )
+        .add( backend_options( prefixvm(prefix,"alemesh.winslow") ) )
         .add( backend_options( prefixvm(prefix,"alemesh.ho") ) );
 }
 
@@ -593,6 +605,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(thermoElectric_options("thermo-electric"));
     else if (type == "heat-fluid")
         toolboxesOptions.add(heatFluid_options("heat-fluid"));
+    else if (type == "maxwell")
+        toolboxesOptions.add(maxwell_options("maxwell"));
     else
         CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
 
