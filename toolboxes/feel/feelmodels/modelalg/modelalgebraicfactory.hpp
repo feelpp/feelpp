@@ -134,21 +134,25 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        //! return the model used by the algebraic factory
         model_ptrtype
         model() const { return M_model.lock(); }
 
-        backend_ptrtype
-        backend() { return M_backend; }
-
+        //! return the backend
         backend_ptrtype const&
         backend() const { return M_backend; }
 
-        preconditioner_ptrtype
-        preconditionerTool() { return M_PrecondManage; }
+        //! return matrix used for assembly linear system or the jacobian
+        sparse_matrix_ptrtype matrix() const { return M_J; }
 
+        //! return vector used for assembly rhs in linear system or the residual
+        vector_ptrtype rhs() const { return M_R; }
+
+        //! return the preconditioner
         preconditioner_ptrtype const&
         preconditionerTool() const { return M_PrecondManage; }
 
+        //! return sparsity matrix graph
         graph_ptrtype const&
         sparsityMatrixGraph() const { CHECK(M_J) << "no matrix register"; return M_J->graph(); }
 
