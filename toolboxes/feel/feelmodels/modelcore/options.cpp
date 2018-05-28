@@ -333,6 +333,16 @@ electricity_options(std::string const& prefix)
     return electricityOptions.add( modelnumerical_options( prefix ) );
 }
 Feel::po::options_description
+maxwell_options(std::string const& prefix)
+{
+    Feel::po::options_description maxwellOptions("Maxwell options");
+    maxwellOptions.add_options()
+        (prefixvm(prefix,"magnetic-permeability").c_str(), Feel::po::value<double>()->default_value( 1 ), "magnetic-permeability")
+        (prefixvm(prefix,"regularization-epsilon").c_str(), Feel::po::value<double>()->default_value( 1e-5), "regularization parameter")
+        ;
+    return maxwellOptions.add( modelnumerical_options( prefix ) );
+}
+Feel::po::options_description
 thermoElectric_options(std::string const& prefix)
 {
     Feel::po::options_description thermoElectricOptions("ThermoElectric options");
@@ -595,6 +605,8 @@ toolboxes_options(std::string const& type)
         toolboxesOptions.add(thermoElectric_options("thermo-electric"));
     else if (type == "heat-fluid")
         toolboxesOptions.add(heatFluid_options("heat-fluid"));
+    else if (type == "maxwell")
+        toolboxesOptions.add(maxwell_options("maxwell"));
     else
         CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
 

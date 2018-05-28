@@ -223,10 +223,15 @@ class Heat : public ModelNumerical,
         template < typename ExprT >
         void updateFieldVelocityConvection( vf::Expr<ExprT> const& expr )
         {
+            this->updateFieldVelocityConvection( elements(this->mesh()), expr );
+        }
+        template < typename ExprT >
+        void updateFieldVelocityConvection( elements_reference_wrapper_t<mesh_type> const& range, vf::Expr<ExprT> const& expr )
+        {
             if ( !M_fieldVelocityConvection )
                 this->updateForUseFunctionSpacesVelocityConvection();
             M_exprVelocityConvection.reset();// symbolic expression is remove
-            M_fieldVelocityConvection->on(_range=elements(this->mesh()), _expr=expr );
+            M_fieldVelocityConvection->on(_range=range, _expr=expr );
         }
 
     protected :

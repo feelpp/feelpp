@@ -136,6 +136,9 @@ public :
     void updateResidual( DataUpdateResidual & data ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
+    //___________________________________________________________________________________//
+    void updateCurrentDensity();
+
 private :
     heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;

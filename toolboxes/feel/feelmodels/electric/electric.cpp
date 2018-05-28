@@ -150,6 +150,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
+    M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
 
     this->initBoundaryConditions();
 
@@ -241,6 +242,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> co
             res.insert( "electric-field" );
         if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
             res.insert( "conductivity" );
+        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
+            res.insert( "current-density" );
         if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
             res.insert( "pid" );
     }
@@ -382,6 +385,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
                                      M_electricProperties->fieldElectricConductivity() );
         hasFieldToExport = true;
     }
+    if ( fields.find( "current-density" ) != fields.end() )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
+                                     *M_fieldCurrentDensity );
+        hasFieldToExport = true;
+    }
     if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
@@ -409,6 +419,32 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
                                  _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
+{
+    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            double sigma = electricConductivity.value();
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            if ( sigma.expression().hasSymbol( "heat_T" ) )
+                continue;
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
+        }
+    }
 }
 
 
@@ -444,6 +480,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.localize();
 
     this->updateElectricField();
+    this->updateCurrentDensity();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
