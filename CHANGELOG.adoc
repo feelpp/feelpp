@@ -5,6 +5,28 @@
 :toc-title: Releases
 :toclevels: 2
 
+[[v0.105.0-2018-06-xx]]
+== v0.105.0 (unreleased)
+// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-xx)
+
+https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
+
+=== Features
+
+* [**feel/**] remote data handling via github and girder, support testcase by directory, see  issues #1116 #1121 and PR #1164. See
+* [**feel/**] dynamic quadrature, see issue #571 and PR #747, see link:http://docs.feelpp.org/dev/0.105/reference/Integrals/README/[documentation]
+* [**toolbox/**] continued effort on toolboxes refactoring, see link:https://github.com/feelpp/feelpp/pull/1165[PR]
+** add new user functions for assembly process of matrix/rhs in order to add specific terms in multiphics toolboxes
+** up fluid : add non-Newtonian properties in json + fix power law with min/max viscosity values
+** major up of fsi toolbox :
+*** start code refactoring (work in progress)
+*** fix coupling type Nitsche, robin-robin and variants
+*** major changes/improvements of fsi coupling robin-neumann generalized
+
+=== Fixes
+
+* [**feel/**] Fix newmark restart if a frequency is used
+
 [[v0.104.1-2018-05-xx]]
 == v0.104.1 (unreleased)
 // https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
