@@ -221,7 +221,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
-    M_gammaNitschFSI = 2500;
 
     M_isHOVisu = nOrderGeo > 1;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
@@ -281,6 +280,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
     M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
+
+    M_useMassMatrixLumped = false;
 
     // axi-sym
     M_thickness_1dReduced = doption(_name="1dreduced-thickness",_prefix=this->prefix());
@@ -941,12 +942,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     // update block vector (index + data struct)
     if (this->isStandardModel())
     {
-        // define start dof index ( lm , windkessel )
-        size_type currentStartIndex = 1;
+        // define start dof index
+        size_type currentStartIndex = 0;
+        this->setStartSubBlockSpaceIndex( "displacement", currentStartIndex++ );
         if ( M_useDisplacementPressureFormulation )
-        {
-            M_startBlockIndexFieldsInMatrix["pressure"] = currentStartIndex++;
-        }
+            this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
+
         // prepare block vector
         int nBlock = this->nBlockMatrixGraph();
         M_blockVectorSolution.resize( nBlock );

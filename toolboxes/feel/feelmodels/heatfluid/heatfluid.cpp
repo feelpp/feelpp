@@ -189,7 +189,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->initAlgebraicFactory();
     }
 
-    for ( auto const& rangeData : M_fluidModel->densityViscosityModel()->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
@@ -445,17 +445,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateJacobian", "start"+sc);
 
     auto mesh = this->mesh();
 
-    DataUpdateJacobian dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
-    M_heatModel->updateJacobian( dataSubPhysics );
-    M_fluidModel->updateJacobian( dataSubPhysics );
+    M_heatModel->updateJacobian( data );
+    M_fluidModel->updateJacobian( data );
 
     if ( buildNonCstPart )
     {
@@ -504,11 +501,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         }
     }
 
-    if ( buildNonCstPart && doBCStrongDirichlet )
-    {
-        M_heatModel->updateJacobianStrongDirichletBC( J,RBis );
-        M_fluidModel->updateJacobianStrongDirichletBC( J,RBis );
-    }
     this->log("HeatFluid","updateJacobian", "finish"+sc);
 
 }
@@ -522,17 +514,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
     bool useJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateResidual", "start"+sc);
 
     auto mesh = this->mesh();
 
-    DataUpdateResidual dataSubPhysics( data );
-    dataSubPhysics.setDoBCStrongDirichlet( false );
-    M_heatModel->updateResidual( dataSubPhysics );
-    M_fluidModel->updateResidual( dataSubPhysics );
+    M_heatModel->updateResidual( data );
+    M_fluidModel->updateResidual( data );
 
     if ( buildNonCstPart )
     {
@@ -583,16 +572,23 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     }
 
-    if ( buildNonCstPart && doBCStrongDirichlet &&
-         ( M_heatModel->hasMarkerDirichletBCelimination() || M_fluidModel->hasStrongDirichletBC() ) )
-    {
-        R->close();
-        if ( M_heatModel->hasMarkerDirichletBCelimination() )
-            M_heatModel->updateResidualStrongDirichletBC( R );
-        if ( M_fluidModel->hasStrongDirichletBC() )
-            M_fluidModel->updateResidualStrongDirichletBC( R );
-    }
     this->log("HeatFluid","updateResidual", "finish"+sc);
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{
+    M_heatModel->updateJacobianDofElimination( data );
+    M_fluidModel->updateJacobianDofElimination( data );
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    M_heatModel->updateResidualDofElimination( data );
+    M_fluidModel->updateResidualDofElimination( data );
 }
 
 

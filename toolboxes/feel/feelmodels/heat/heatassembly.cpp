@@ -142,7 +142,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Heat","updateLinearPDE", "start"+sc);
@@ -323,8 +322,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
     // update bc
     this->updateLinearPDEWeakBC( A,F,buildCstPart );
-    if ( !buildCstPart && _doBCStrongDirichlet)
-        this->updateLinearPDEStrongDirichletBC( A,F );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Heat","updateLinearPDE",
@@ -363,7 +360,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     sparse_matrix_ptrtype& J = data.jacobian();
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool _BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
@@ -490,12 +486,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     }
 
     this->updateJacobianRobinBC( J,buildCstPart );
-
-    if ( buildNonCstPart && _doBCStrongDirichlet )
-    {
-        this->updateJacobianStrongDirichletBC( J,RBis );
-    }
-
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -505,7 +495,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     vector_ptrtype& R = data.residual();
     bool _BuildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
@@ -637,23 +626,19 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     this->updateResidualNeumannBC( R,buildCstPart );
     this->updateResidualRobinBC( u,R,buildCstPart );
 
-    if ( buildNonCstPart && _doBCStrongDirichlet && this->hasMarkerDirichletBCelimination() )
-    {
-        R->close();
-        this->updateResidualStrongDirichletBC( R );
-    }
-
     this->log("Heat","updateResidual", "finish");
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( !this->hasMarkerDirichletBCelimination() ) return;
+    //if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Heat","updateBCDirichletStrongResidual","start" );
+    this->log("Heat","updateResidualDofElimination","start" );
 
+    vector_ptrtype& R = data.residual();
     auto mesh = this->mesh();
     auto u = this->spaceTemperature()->element( R,this->rowStartInVector() );
     auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("temperature");
@@ -662,7 +647,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) c
         u.set( thedof,0. );
     sync( u, "=", dofsWithValueImposedTemperature );
 
-    this->log("Heat","updateBCDirichletStrongResidual","finish" );
+    this->log("Heat","updateResidualDofElimination","finish" );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -746,11 +731,15 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidualSourceTerm( vector_ptrtype& R, bool buil
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC(sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( !this->hasMarkerDirichletBCelimination() ) return;
+    //if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Heat","updateBCStrongDirichletJacobian","start" );
+    this->log("Heat","updateJacobianDofElimination","start" );
+
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -767,7 +756,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC(sparse_matrix_ptrtype&
                 _element=u,_rhs=RBis,_expr=cst(0.) );
     }
 
-    this->log("Heat","updateBCStrongDirichletJacobian","finish" );
+    this->log("Heat","updateJacobianDofElimination","finish" );
 
 }
 
@@ -799,12 +788,15 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobianRobinBC( sparse_matrix_ptrtype& J, bool 
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const 
 {
-    if ( this->M_bcDirichlet.empty() ) return;
+    if ( !this->hasMarkerDirichletBCelimination() ) return;
+    //if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Heat","updateBCStrongDirichletLinearPDE","start" );
+    this->log("Heat","updateLinearPDEDofElimination","start" );
 
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
     auto const& u = this->fieldTemperature();
@@ -820,7 +812,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC(sparse_matrix_ptrtype
                 _element=u,_rhs=F,_expr=expression(d) );
     }
 
-    this->log("Heat","updateBCStrongDirichletLinearPDE","finish" );
+    this->log("Heat","updateLinearPDEDofElimination","finish" );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

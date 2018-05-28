@@ -56,6 +56,8 @@ struct FEELPP_EXPORT ModelMaterial
     std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
     std::set<std::string> const& physics() const { return M_physics; }
     std::string const physic() const { return M_physics.empty() ? "" : *(M_physics.begin()); }
+    //! return the property tree
+    pt::ptree const& pTree() const { return M_p; }
     /*! Set Name
      */
     void setName( std::string const& name ) { M_name = name; }
