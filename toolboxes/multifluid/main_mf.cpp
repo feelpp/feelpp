@@ -2,7 +2,7 @@
 
 namespace Feel {
 
-template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1, uint16_type OrderPNLevelset = 2>
+template< uint16_type OrderVelocity, uint16_type OrderPressure, uint16_type OrderLevelset = 1, uint16_type OrderPNLevelset = 3>
 void
 runApplicationMultiFluid()
 {
