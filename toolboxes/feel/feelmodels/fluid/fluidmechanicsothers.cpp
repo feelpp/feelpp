@@ -22,7 +22,7 @@
 #include <feel/feelpde/operatorpcd.hpp>
 
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 
 namespace Feel
 {
@@ -823,9 +823,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::string const& field = ppNorm.field();
+        auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
+        std::map<std::string,double> resPpNorms;
+        if ( field == "velocity" )
+            measureNormEvaluation( range, this->fieldVelocity(), ppNorm, resPpNorms );
+        else if ( field == "pressure" )
+            measureNormEvaluation( range, this->fieldPressure(), ppNorm, resPpNorms );
+        else
+            CHECK( false ) << "invalid field : " << field << " (should be : velocity, pressure)";
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
     if ( hasMeasure )
     {
-        this->postProcessMeasuresIO().setParameter( "time", time );
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
     }
 }
