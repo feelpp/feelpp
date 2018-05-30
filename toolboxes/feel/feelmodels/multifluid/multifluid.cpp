@@ -87,10 +87,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::build()
                 new levelset_type( levelset_prefix, this->worldComm(), "", this->rootRepositoryWithoutNumProc() )
                 );
         M_levelsets[i]->build(
-                _space=M_globalLevelset->functionSpace(),
-                _space_vectorial=M_globalLevelset->functionSpaceVectorial(),
-                _space_markers=M_globalLevelset->functionSpaceMarkers(),
-                _space_tensor2symm=M_globalLevelset->functionSpaceTensor2Symm(),
+                _space_manager=M_globalLevelset->functionSpaceManager(),
                 _reinitializer=M_globalLevelset->reinitializer(),
                 _projectorL2=M_globalLevelset->projectorL2(),
                 _projectorL2_vectorial=M_globalLevelset->projectorL2Vectorial(),
