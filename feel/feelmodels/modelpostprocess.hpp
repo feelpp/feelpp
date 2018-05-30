@@ -29,7 +29,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-#include <feel/feelvf/ginac.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 
 namespace Feel {
 
@@ -162,7 +162,7 @@ public :
     std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
 
     void setName( std::string const& s ) { M_name = s; }
-    void setType( std::string const& s ) { CHECK(s == "max" || s=="min" ) << "invalid type " << s; M_type = s; }
+    void setType( std::string const& s ) { CHECK(s == "max" || s=="min" || s=="mean" ) << "invalid type " << s; M_type = s; }
     void addMarker( std::string const& mark )
         {
             if ( std::find( M_meshMarkers.begin(),M_meshMarkers.end(), mark ) == M_meshMarkers.end() )
@@ -204,7 +204,41 @@ private:
     std::string M_directoryLibExpr;
 };
 
-class FEELPP_EXPORT ModelPostprocess//: public std::map<std::string,std::vector<std::string>>
+class FEELPP_EXPORT ModelPostprocessNorm
+{
+public :
+    ModelPostprocessNorm( WorldComm const& world = Environment::worldComm() )
+        :
+        M_worldComm( world )
+        {}
+    ModelPostprocessNorm( ModelPostprocessNorm const& ) = default;
+    ModelPostprocessNorm( ModelPostprocessNorm&& ) = default;
+    ModelPostprocessNorm& operator=( ModelPostprocessNorm const& ) = default;
+    ModelPostprocessNorm& operator=( ModelPostprocessNorm && ) = default;
+
+    std::string const& name() const { return M_name; }
+    std::set<std::string> const& types() const { return M_types; }
+    std::string const& field() const { return M_field; }
+    std::set<std::string> const& markers() const { return M_markers; }
+    ModelExpression const& solution() const { return M_solution; }
+    ModelExpression const& gradSolution() const { return M_gradSolution; }
+
+    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+private:
+    void setup( std::string const& name );
+private:
+    WorldComm const& M_worldComm;
+    pt::ptree M_p;
+    std::string M_directoryLibExpr;
+    std::string M_name, M_field;
+    std::set<std::string> M_types, M_markers;
+    ModelExpression M_solution, M_gradSolution;
+};
+
+class FEELPP_EXPORT ModelPostprocess
 {
 public:
 
@@ -217,13 +251,15 @@ public:
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
-    std::map<std::string,std::vector<ModelPostprocessExtremum> > const& allMeasuresExtremum() const { return M_measuresExtremum; }
+    std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     bool hasExports( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresExtremum( std::string const& name = "" ) const;
+    bool hasMeasuresNorm( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessExtremum> const& measuresExtremum( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -250,9 +286,11 @@ private:
     std::map<std::string,ModelPostprocessExports> M_exports;
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessExtremum > > M_measuresExtremum;
+    std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
     ModelPostprocessExports M_emptyExports;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessExtremum > M_emptyMeasuresExtremum;
+    std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
     std::string M_directoryLibExpr;
 };
 
