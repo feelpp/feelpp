@@ -36,6 +36,7 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 
 namespace Feel
 {
@@ -276,6 +277,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+    }
+
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("Electric","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
@@ -404,6 +413,31 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
+    std::string modelName = "electric";
+    bool hasMeasure = false;
+
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::string const& field = ppNorm.field();
+        auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
+        std::map<std::string,double> resPpNorms;
+        if ( field == "electric-potential" )
+            measureNormEvaluation( range, this->fieldElectricPotential(), ppNorm, resPpNorms );
+        else
+            CHECK( false ) << "invalid field : " << field << " (should be : electric-potential)";
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
 
 }
 
