@@ -449,7 +449,8 @@ levelset_options(std::string const& prefix)
 
         (prefixvm(prefix,"reinit-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "reinitialize levelset after setting initial value")
 
-        (prefixvm(prefix,"curvature-method").c_str(), Feel::po::value<std::string>()->default_value( "smooth-projection" ), "method to compute curvature (nodal-projection, l2-projection, smooth-projection, diffusion-o1, diffusion-o2)")
+        (prefixvm(prefix,"gradphi-method").c_str(), Feel::po::value<std::string>()->default_value( "l2-projection" ), "method to compute gradphi (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
+        (prefixvm(prefix,"curvature-method").c_str(), Feel::po::value<std::string>()->default_value( "smooth-projection" ), "method to compute curvature (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
         (prefixvm(prefix,"smooth-gradient").c_str(), Feel::po::value<bool>()->default_value( false ), "smooth gradient (with smoother-vec)")
         (prefixvm(prefix,"smoother.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
         (prefixvm(prefix,"smoother-vec.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.3), "smoothing coefficient for curvature smoothing")
