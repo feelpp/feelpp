@@ -1505,8 +1505,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    bool hasMeasure = false;
-
     M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
     // init exporter
     if ( !M_postProcessFieldExported.empty() )
@@ -1558,9 +1556,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                     myPpForces.setName( marker );
                     std::string name = myPpForces.name();
                     M_postProcessMeasuresForces.push_back( myPpForces );
-                    this->postProcessMeasuresIO().setMeasure("drag_"+name,0.);
-                    this->postProcessMeasuresIO().setMeasure("lift_"+name,0.);
-                    hasMeasure = true;
                 }
             }
             else if ( ptreeLevel1Name == "FlowRate" )
@@ -1571,26 +1566,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                     std::string name = ptreeLevel2.first;
                     myPpFlowRate.setup( ptreeLevel2.second, name );
                     M_postProcessMeasuresFlowRate.push_back( myPpFlowRate );
-                    this->postProcessMeasuresIO().setMeasure("flowrate_"+name,0.);
-                    hasMeasure = true;
                 }
             }
             else if ( ptreeLevel1Name == "Pressure" )
             {
                 // this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "Pressure" );
                 M_postProcessMeasuresFields["pressure"] = "";
-                this->postProcessMeasuresIO().setMeasure("pressure_sum",0.);
-                this->postProcessMeasuresIO().setMeasure("pressure_mean",0.);
-                hasMeasure = true;
             }
             else if ( ptreeLevel1Name == "VelocityDivergence" )
             {
                 M_postProcessMeasuresFields["velocity-divergence"] = "";
-                // this->modelProperties().postProcess().operator[](ppTypeMeasures).push_back( "VelocityDivergence" );
-                this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",0.);
-                this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",0.);
-                this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",0.);
-                hasMeasure = true;
             }
         }
     }
@@ -1614,12 +1599,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextVelocity->add( ptCoord );
                 std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add("velocity", ctxId, ptNameExport );
-
-                std::vector<double> vecValues = { 0. };
-                if ( nDim > 1 ) vecValues.push_back( 0. );
-                if ( nDim > 2 ) vecValues.push_back( 0. );
-                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
-                hasMeasure = true;
             }
             else if ( field == "pressure" )
             {
@@ -1629,21 +1608,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextPressure->add( ptCoord );
                 std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
-
-                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
-                hasMeasure = true;
             }
         }
     }
 
-    if ( hasMeasure )
+    if ( !this->isStationary() )
     {
-        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        // start or restart measure file
-        if (!this->doRestart())
-            this->postProcessMeasuresIO().start();
-        else if ( !this->isStationary() )
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 }
 
