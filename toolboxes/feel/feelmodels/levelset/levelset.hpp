@@ -62,6 +62,7 @@ namespace Feel {
     // LevelSet::build parameters
     BOOST_PARAMETER_NAME(space_markers_extended_doftable)
 
+    BOOST_PARAMETER_NAME(space_manager)
     BOOST_PARAMETER_NAME(space_vectorial)
     BOOST_PARAMETER_NAME(space_markers)
     BOOST_PARAMETER_NAME(space_tensor2symm)
@@ -282,32 +283,30 @@ public:
     BOOST_PARAMETER_MEMBER_FUNCTION( 
             (void), build, tag,
             ( required
-              ( space, (space_levelset_ptrtype) )
+              ( space_manager, (levelset_space_manager_ptrtype) )
             )
             ( optional
-              ( space_vectorial, (space_vectorial_ptrtype), space_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              ( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
-              ( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
               ( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
-              ( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
-              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
+              ( projectorL2, (projector_levelset_ptrtype), projector_levelset_ptrtype() )
+              ( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), projector_levelset_vectorial_ptrtype() )
               ( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
-              ( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
-              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              ( smoother, (projector_levelset_ptrtype), projector_levelset_ptrtype() )
+              ( smoother_vectorial, (projector_levelset_vectorial_ptrtype), projector_levelset_vectorial_ptrtype() )
             )
             )
     {
-        M_advectionToolbox->build( space );
-        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
-        // createFunctionSpaces
-        M_spaceVectorial = space_vectorial;
-        M_spaceMarkers = space_markers;
-        if( M_useCauchyAugmented )
+        if( !space_manager )
         {
-            if( !space_tensor2symm )
-                space_tensor2symm = self_type::space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-            M_spaceTensor2Symm = space_tensor2symm;
+            return this->build();
         }
+        
+        M_spaceManager = space_manager;
+
+        // Function spaces
+        this->createFunctionSpaces();
+        // Advection toolbox
+        M_advectionToolbox->build( this->functionSpace() );
+        M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
         // createInterfaceQuantities
         this->createInterfaceQuantities();
         // createReinitialization
@@ -316,24 +315,109 @@ public:
             M_reinitializer = reinitializer;
         }
         this->createReinitialization();
+
         // createOthers
-        M_projectorL2 = projectorL2;
-        M_projectorL2Vec = projectorL2_vectorial;
+        if( projectorL2 )
+            M_projectorL2 = projectorL2;
+        else
+            M_projectorL2 = Feel::projector(
+                    this->functionSpace(), this->functionSpace(), 
+                    backend(_name=prefixvm(this->prefix(),"projector-l2"))
+                    );
+
+        if( projectorL2_vectorial )
+            M_projectorL2Vec = projectorL2_vectorial;
+        else
+            M_projectorL2Vec = Feel::projector(this->functionSpaceVectorial(), this->functionSpaceVectorial(), backend(_name=prefixvm(this->prefix(),"projector-l2-vec")));
+
         if( M_useCauchyAugmented )
         {
-            if( !projectorL2_tensor2symm )
-                projectorL2_tensor2symm = Feel::projector(
+            if( projectorL2_tensor2symm )
+                M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
+            else
+                M_projectorL2Tensor2Symm = Feel::projector(
                         this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
                         backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
                         );
-            M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
         }
-        M_smoother = smoother;
-        M_smootherVectorial = smoother_vectorial;
+
+        if( smoother )
+            M_smoother = smoother;
+        else
+            M_smoother = Feel::projector(
+                    this->functionSpace(), this->functionSpace(), 
+                    backend(_name=prefixvm(this->prefix(),"smoother")), 
+                    DIFF, this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30
+                    );
+
+        if( smoother_vectorial )
+            M_smootherVectorial = smoother_vectorial;
+        else 
+            M_smootherVectorial = Feel::projector(
+                    this->functionSpaceVectorial(), this->functionSpaceVectorial(), 
+                    backend(_name=prefixvm(this->prefix(),"smoother-vec")), 
+                    DIFF, this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30
+                    );
 
         // Create exporters
         this->createExporters();
     }
+
+    //BOOST_PARAMETER_MEMBER_FUNCTION( 
+            //(void), build, tag,
+            //( required
+              //( space, (space_levelset_ptrtype) )
+            //)
+            //( optional
+              //( space_vectorial, (space_vectorial_ptrtype), space_vectorial_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              //( space_markers, (space_markers_ptrtype), space_markers_type::New(_mesh=space->mesh(), _worldscomm=this->worldsComm()) )
+              //( space_tensor2symm, (space_tensor2symm_ptrtype), space_tensor2symm_ptrtype() )
+              //( reinitializer, *( boost::is_convertible<mpl::_, reinitializer_ptrtype> ), reinitializer_ptrtype() )
+              //( projectorL2, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"projector-l2"))) )
+              //( projectorL2_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"projector-l2-vec"))) )
+              //( projectorL2_tensor2symm, (projector_tensor2symm_ptrtype), projector_tensor2symm_ptrtype() )
+              //( smoother, (projector_levelset_ptrtype), Feel::projector(space, space, backend(_name=prefixvm(this->prefix(),"smoother")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+              //( smoother_vectorial, (projector_levelset_vectorial_ptrtype), Feel::projector(space_vectorial, space_vectorial, backend(_name=prefixvm(this->prefix(),"smoother-vec")), DIFF, space->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=this->prefix())/Order, 30) )
+            //)
+            //)
+    //{
+        //M_advectionToolbox->build( space );
+        //M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+        //// createFunctionSpaces
+        //M_spaceVectorial = space_vectorial;
+        //M_spaceMarkers = space_markers;
+        //if( M_useCauchyAugmented )
+        //{
+            //if( !space_tensor2symm )
+                //space_tensor2symm = self_type::space_tensor2symm_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+            //M_spaceTensor2Symm = space_tensor2symm;
+        //}
+        //// createInterfaceQuantities
+        //this->createInterfaceQuantities();
+        //// createReinitialization
+        //if( reinitializer )
+        //{
+            //M_reinitializer = reinitializer;
+        //}
+        //this->createReinitialization();
+        //// createOthers
+        //M_projectorL2 = projectorL2;
+        //M_projectorL2Vec = projectorL2_vectorial;
+        //if( M_useCauchyAugmented )
+        //{
+            //if( !projectorL2_tensor2symm )
+                //projectorL2_tensor2symm = Feel::projector(
+                        //this->functionSpaceTensor2Symm(), this->functionSpaceTensor2Symm(), 
+                        //backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
+                        //);
+            //M_projectorL2Tensor2Symm = projectorL2_tensor2symm;
+        //}
+        //M_smoother = smoother;
+        //M_smootherVectorial = smoother_vectorial;
+
+        //// Create exporters
+        //this->createExporters();
+    //}
 
     //--------------------------------------------------------------------//
     // Initialization
