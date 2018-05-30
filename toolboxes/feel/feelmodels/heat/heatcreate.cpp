@@ -705,6 +705,8 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         std::map<std::string,double> resPpNorms;
         if ( field == "temperature" )
             measureNormEvaluation( range, this->fieldTemperature(), ppNorm, resPpNorms );
+        else
+            CHECK( false ) << "invalid field : " << field << " (should be : temperature)";
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
