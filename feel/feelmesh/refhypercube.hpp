@@ -6,6 +6,7 @@
        Date: 2010-05-06
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2016 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-05-06
  */
-#ifndef __refhypercube_H
-#define __refhypercube_H 1
+#ifndef FEELPP_REFHYPERCUBE_HPP
+#define FEELPP_REFHYPERCUBE_HPP 1
 
 #include <feel/feelmesh/marker.hpp>
 
@@ -336,6 +337,7 @@ public:
         {
             switch ( nDim )
             {
+            case 0:
             case 1:
             case 3:
                 ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
@@ -947,6 +949,10 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
         //double factor = 1;
         switch ( nDim )
         {
+        case 0:
+            M_meas=0;
+            break;
+
         case 1:
             M_meas = 2;
             break;
