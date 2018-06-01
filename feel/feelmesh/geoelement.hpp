@@ -138,7 +138,7 @@ public:
         M_element1( 0, invalid_uint16_type_value )
     {
     }
-    SubFaceOf( SubFaceOfNone<0> const& /*sf*/ )
+    explicit SubFaceOf( SubFaceOfNone<0> const& /*sf*/ )
         :
         M_element0( 0, invalid_uint16_type_value ),
         M_element1( 0, invalid_uint16_type_value )
@@ -537,14 +537,14 @@ public:
         :
         super( id, boundary ),
         super2()
-        //M_facept()
+        M_facept( nullptr )
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
         super2()
-        //M_facept()
+        M_facept( nullptr )
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -553,13 +553,14 @@ public:
         :
         super( id, x, y, z, boundary ),
         super2()
-        //M_facept()
+        M_facept( nullptr )
     {}
 
-    GeoElement0D( geo0d_type const& p )
+    explicit GeoElement0D( geo0d_type const& p )
         :
         super( p ),
-        super2()
+        super2(),
+        M_facept( nullptr )
         {}
     GeoElement0D( GeoElement0D const & g ) = default;
     GeoElement0D( GeoElement0D && g ) = default;

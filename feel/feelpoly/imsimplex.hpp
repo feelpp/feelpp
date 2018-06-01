@@ -92,7 +92,7 @@ public:
     /**
      * build quadrature to intergrate polynomial up to degree \c order
      */
-    IMSimplex( uint16_type order ): super( order ) 
+    explicit IMSimplex( uint16_type order ): super( order ) 
         {
             auto gm = makeGeometricTransformation<convex_type,T>();
             auto face_qr = boost::make_shared<face_quad_type>(order);
