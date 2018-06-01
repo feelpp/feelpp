@@ -289,7 +289,7 @@ public:
         M_QPL( qpl )
     {
         DLOG(INFO) << "Integrator constructor from expression\n";
-        if ( elts.size() )
+        if ( !elts.empty() )
         {
             M_eltbegin = elts.begin()->template get<1>();
             M_eltend = elts.begin()->template get<2>();

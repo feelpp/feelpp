@@ -88,7 +88,7 @@ public :
         :
         M_mesh( nullptr )
         {}
-    GeoNDCommon( MeshBase const* mesh )
+    explicit GeoNDCommon( MeshBase const* mesh )
         :
         M_mesh( mesh )
         {}
@@ -243,6 +243,7 @@ public:
         :
         super( std::move(e) ),
         M_points( std::move( e.M_points ) ),
+        M_measures( std::move( e.M_measures ) ),
         M_neighbors( std::move( e.M_neighbors ) ),
         M_markers( std::move( e.M_markers ) ),
         M_commonData( std::move( e.M_commonData ) )
@@ -258,6 +259,7 @@ public:
             M_neighbors = std::move( e.M_neighbors );
             M_markers = std::move( e.M_markers );
             M_commonData = std::move( e.M_commonData );
+            M_measures = std::move( e.M_measures );
             //std::cout << "GeoND move assign\n";
             return *this;
         }

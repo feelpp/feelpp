@@ -109,7 +109,7 @@ public :
     //--------------------------------------------------------------------------------------//
 
 
-    QuadPtLocalization( IteratorRange const& elts )
+    explicit QuadPtLocalization( IteratorRange const& elts )
         :
         M_listRange(),
         M_im( ),
@@ -130,8 +130,8 @@ public :
         {
             M_listRange.push_back( elts );
         }
-
-    QuadPtLocalization( std::list<IteratorRange> const& elts )
+    
+    explicit QuadPtLocalization( std::list<IteratorRange> const& elts )
         :
         M_listRange( elts ),
         M_im( ),
