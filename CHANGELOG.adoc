@@ -14,6 +14,7 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.104.1[Full Changelog]
 === Features
 
 * [**quickstart/**] Add cantilever example for quickstart elasticity code in 2D
+* [**quickstart/**] Fix Laplacian example in 3D
 
 === Fixes
 
