@@ -88,11 +88,7 @@ public :
 #endif
     //--------------------------------------------------------------------------------------//
 
-    typedef typename mpl::if_<mpl::bool_<geoelement_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_type::nDim, value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_type::nDim, value_type, Hypercube>::type >
-                              >::type::type im_type;
-
+    using im_type = im_t<geoelement_type,value_type>;
     typedef typename im_type::face_quadrature_type im_face_type;
 
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
@@ -113,7 +109,7 @@ public :
     //--------------------------------------------------------------------------------------//
 
 
-    QuadPtLocalization( IteratorRange const& elts /*, im_type const& *//*__im*/ )
+    explicit QuadPtLocalization( IteratorRange const& elts )
         :
         M_listRange(),
         M_im( ),
@@ -124,7 +120,18 @@ public :
         M_listRange.push_back( elts );
     }
 
-    QuadPtLocalization( std::list<IteratorRange> const& elts )
+    QuadPtLocalization( IteratorRange const& elts, im_type const& _im )
+        :
+        M_listRange(),
+        M_im( _im ),
+        M_qm( ),
+        M_ppts( M_qm( this->im() ) ),
+        M_hasPrecompute(false)
+        {
+            M_listRange.push_back( elts );
+        }
+    
+    explicit QuadPtLocalization( std::list<IteratorRange> const& elts )
         :
         M_listRange( elts ),
         M_im( ),
@@ -132,6 +139,15 @@ public :
         M_ppts( M_qm( this->im() ) ),
         M_hasPrecompute(false)
     {}
+
+    QuadPtLocalization( std::list<IteratorRange> const& elts, im_type const& _im )
+        :
+        M_listRange( elts ),
+        M_im( _im ),
+        M_qm( ),
+        M_ppts( M_qm( this->im() ) ),
+        M_hasPrecompute(false)
+        {}
 
 
     /**
@@ -1340,10 +1356,14 @@ struct quadptlocrangetype
 
 template<typename MeshTestType, typename MeshTrialType, typename IteratorRange,typename Im,typename Expr>
 boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
-quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest, boost::shared_ptr<MeshTrialType> meshTrial, IteratorRange const& elts,Im const& im,Expr const& expr )
+quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest,
+              boost::shared_ptr<MeshTrialType> meshTrial,
+              IteratorRange const& elts,
+              Im const& im,
+              Expr const& expr )
 {
     typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
-    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts) );
+    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts, im) );
     res->update( meshTest,meshTrial );
     return res;
 }
@@ -1353,7 +1373,7 @@ boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<I
 quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest, IteratorRange const& elts,Im const& im,Expr const& expr )
 {
     typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
-    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts) );
+    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts,im) );
     res->update( meshTest );
     return res;
 }
