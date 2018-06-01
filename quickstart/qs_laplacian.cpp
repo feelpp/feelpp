@@ -116,7 +116,7 @@ int main(int argc, char**argv )
             double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
             toc("L2 error norm");
             tic();
-            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<2>(expr(solution)) );
+            double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad<FEELPP_DIM>(expr(solution)) );
             toc("H1 error norm");
             return { { "L2", l2 }, {  "H1", h1 } };
         };
