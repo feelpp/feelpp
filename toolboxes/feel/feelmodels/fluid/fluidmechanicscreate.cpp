@@ -25,7 +25,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
     :
     super_type( prefix,worldComm,subPrefix, modelRep ),
     M_isUpdatedForUse(false ),
-    M_densityViscosityModel( new densityviscosity_model_type( prefix ) )
+    M_materialProperties( new material_properties_type( prefix ) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -152,11 +152,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     // fsi options
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
-    M_couplingFSI_Nitsche_gamma = 2500;
-    M_couplingFSI_Nitsche_gamma0 = 1;
-    M_couplingFSI_Nitsche_alpha = 1;
-    M_couplingFSI_RNG_useInterfaceOperator = false;
-    M_couplingFSI_solidIs1dReduced=false;
 
     //--------------------------------------------------------------//
     // start solver options
@@ -304,10 +299,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     // update rho, mu, nu,...
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_densityViscosityModel->updateForUse( this->mesh(), this->modelProperties().materials(), hasExtendedDofTable );
+    M_materialProperties->updateForUse( this->mesh(), this->modelProperties().materials(), hasExtendedDofTable );
 
     // fluid mix space : velocity and pressure
-    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+    if ( M_materialProperties->isDefinedOnWholeMesh() )
     {
         M_rangeMeshElements = elements(this->mesh());
         M_Xh = space_fluid_type::New( _mesh=M_mesh,
@@ -315,7 +310,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     }
     else
     {
-        M_rangeMeshElements = markedelements(this->mesh(), M_densityViscosityModel->markers());
+        M_rangeMeshElements = markedelements(this->mesh(), M_materialProperties->markers());
         M_Xh = space_fluid_type::New( _mesh=M_mesh,
                                       _extended_doftable=extendedDT, _range=M_rangeMeshElements );
     }
@@ -759,7 +754,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
 {
     if ( M_XhNormalBoundaryStress ) return;
 
-    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+    if ( M_materialProperties->isDefinedOnWholeMesh() )
         M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
     else
         M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
@@ -777,7 +772,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 {
-    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+    if ( M_materialProperties->isDefinedOnWholeMesh() )
         M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
     else
         M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
@@ -791,7 +786,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
-    if ( M_densityViscosityModel->isDefinedOnWholeMesh() )
+    if ( M_materialProperties->isDefinedOnWholeMesh() )
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm() );
     else
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm(),
@@ -1656,25 +1651,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
-    size_type currentStartIndex = 2;// velocity and pressure before
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
+    currentStartIndex += 2;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        M_startBlockIndexFieldsInMatrix["define-pressure-cst-lm"] = currentStartIndex;
+        this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
         currentStartIndex += M_XhMeanPressureLM.size();
     }
     if (this->hasMarkerDirichletBClm())
     {
-        M_startBlockIndexFieldsInMatrix["dirichletlm"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "dirichletlm", currentStartIndex++ );
     }
     if ( this->hasMarkerPressureBC() )
     {
-        M_startBlockIndexFieldsInMatrix["pressurelm1"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "pressurelm1", currentStartIndex++ );
         if ( nDim == 3 )
-            M_startBlockIndexFieldsInMatrix["pressurelm2"] = currentStartIndex++;
+            this->setStartSubBlockSpaceIndex( "pressurelm2", currentStartIndex++ );
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        M_startBlockIndexFieldsInMatrix["windkessel"] = currentStartIndex++;
+        this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
     return currentStartIndex;
@@ -1737,9 +1734,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
     {
         auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
         auto const& u = this->fieldVelocity();
-        double coeff = this->densityViscosityModel()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
-        if ( this->isStationaryModel() ) coeff=1.;
-        massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        if ( this->isStationaryModel() )
+            massbf += integrate( _range=elements( this->mesh() ), _expr=inner( idt(u),id(u) ) );
+        else
+        {
+            //double coeff = this->materialProperties()->cstRho()*this->timeStepBDF()->polyDerivCoefficient(0);
+            auto coeff = idv(this->materialProperties()->fieldDensity())*this->timeStepBDF()->polyDerivCoefficient(0);
+            massbf += integrate( _range=elements( this->mesh() ), _expr=coeff*inner( idt(u),id(u) ) );
+        }
         massbf.matrixPtr()->close();
         this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
     }

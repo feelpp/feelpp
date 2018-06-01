@@ -55,7 +55,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     auto p = U.template element<1>();
     auto q = V.template element<1>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
@@ -221,7 +221,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     auto p = U.template element<1>();
     auto q = U.template element<1>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -402,7 +402,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     auto p = U.template element<1>();
     auto q = U.template element<1>();
     // dynamic viscosity
-    auto const& mu = this->densityViscosityModel()->fieldMu();
+    auto const& mu = this->materialProperties()->fieldMu();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();

@@ -1522,7 +1522,7 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 template <typename T>
 inline
 void
-MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
+MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in, Feel::MatrixStructure matStruc )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
 
@@ -1550,7 +1550,7 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in )
         ierr = MatAXPY( &a,  matPetscIn->M_mat, M_mat, MatStructure::SAME_NONZERO_PATTERN );
         // 2.3.x & newer
 #else
-        ierr = MatAXPY(M_mat, a, matPetscIn->M_mat, MatStructure::SAME_NONZERO_PATTERN);
+        ierr = MatAXPY(M_mat, a, matPetscIn->M_mat, PetscGetMatStructureEnum( matStruc ) /*MatStructure::SAME_NONZERO_PATTERN*/);
         //ierr = MatAXPY(M_mat, a, X->M_mat, MatStructure::SUBSET_NONZERO_PATTERN );
         //ierr = MatAXPY( M_mat, a, X->M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
         //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&M_mat);
@@ -2834,7 +2834,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
 }
 
 //----------------------------------------------------------------------------------------------------//
-
+#if 0
 template <typename T>
 inline
 void
@@ -2854,7 +2854,7 @@ MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> const&X_in )
     super::addMatrix(a_in,X_in);
 #endif
 }
-
+#endif
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
