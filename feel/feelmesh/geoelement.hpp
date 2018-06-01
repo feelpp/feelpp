@@ -536,14 +536,14 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2()
+        super2(),
         M_facept( nullptr )
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2()
+        super2(),
         M_facept( nullptr )
     {}
 
@@ -552,7 +552,7 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2()
+        super2(),
         M_facept( nullptr )
     {}
 
