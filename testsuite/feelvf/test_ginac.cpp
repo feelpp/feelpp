@@ -444,18 +444,16 @@ void runTest3()
     auto u2 = Vh2->element(Py());
     auto u3 = Vh3->element(Px()*Px()*Py());
 
+    // scalar expressions
     auto exprA = expr("2*x*y+x*x*y:x:y");
     auto exprB = expr("2*u*y+x*x*y:u:x:y");
-    auto exprBvf = expr(exprB,"u",idv(u1) );
-
+    auto exprBvf = expr(exprB, symbolExpr("u",idv(u1)) );
     auto exprC = expr("2*u*v+x*x*y:u:v:x:y");
-    auto exprCvf = expr(exprC,"u",idv(u1), std::make_pair("v",idv(u2) ) );
-
+    auto exprCvf = expr(exprC,symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2)) );
     auto exprD = expr("2*u*v+w:u:v:w");
-    auto exprDvf = expr(exprD,"u",idv(u1), std::make_pair("v",idv(u2) ), std::make_pair("w",idv(u3) ) );
-
+    auto exprDvf = expr(exprD,symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u3) ) );
     auto exprE = expr("2*u*v+w:u:v:w");
-    auto exprEvf = expr(exprE,"u",idv(u1), std::make_pair("v",idv(u2) ), std::make_pair("w",idv(u1)*idv(u1)*idv(u2) ) );
+    auto exprEvf = expr(exprE, symbolsExpr( symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u1)*idv(u1)*idv(u2) ) ) );
 
     double intA = integrate(_range=elements(mesh),_expr=exprA,_quad=5).evaluate()(0,0);
     double intB = integrate(_range=elements(mesh),_expr=exprBvf,_quad=5).evaluate()(0,0);
@@ -467,6 +465,29 @@ void runTest3()
     BOOST_CHECK_CLOSE( intA, intC, 1e-8 );
     BOOST_CHECK_CLOSE( intA, intD, 1e-8 );
     BOOST_CHECK_CLOSE( intA, intE, 1e-8 );
+
+    // vectorial expressions
+    auto exprVecA = expr<2,1>("{2*x*y+x*x*y,4*x-y}:x:y");
+    auto exprVecAvf = expr(exprVecA);
+    auto exprVecB = expr<2,1>("{2*u*y+u*x*y,4*u-y}:u:x:y");
+    auto exprVecBvf = expr(exprVecB, symbolExpr( "u",idv(u1) ) );
+    auto exprVecC = expr<2,1>("{2*u*v+x*x*y,4*u-v}:u:v:x:y");
+    auto exprVecCvf = expr(exprVecC, symbolExpr( "u",idv(u1) ), symbolExpr("v",idv(u2) ) );
+    auto exprVecD = expr<2,1>("{2*u*v+w,4*u-v}:u:v:w");
+    auto exprVecDvf = expr(exprVecD, symbolExpr("u",idv(u1)), symbolExpr("v",idv(u2)), symbolExpr("w",idv(u3)) );
+    auto exprVecE = expr<2,1>("{2*u*v+w,4*u-v}:u:v:w");
+    auto exprVecEvf = expr(exprVecE,symbolsExpr( symbolExpr( "u",idv(u1) ), symbolExpr("v",idv(u2) ), symbolExpr("w",idv(u1)*idv(u1)*idv(u2) ) ) );
+
+    double intVecA = integrate(_range=elements(mesh),_expr=inner(exprVecA),_quad=5).evaluate()(0,0);
+    double intVecB = integrate(_range=elements(mesh),_expr=inner(exprVecBvf),_quad=5).evaluate()(0,0);
+    double intVecC = integrate(_range=elements(mesh),_expr=inner(exprVecCvf),_quad=5).evaluate()(0,0);
+    double intVecD = integrate(_range=elements(mesh),_expr=inner(exprVecDvf),_quad=5).evaluate()(0,0);
+    double intVecE = integrate(_range=elements(mesh),_expr=inner(exprVecEvf),_quad=5).evaluate()(0,0);
+
+    BOOST_CHECK_CLOSE( intVecA, intVecB, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecC, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecD, 1e-8 );
+    BOOST_CHECK_CLOSE( intVecA, intVecE, 1e-8 );
 }
 
 #if defined(USE_BOOST_TEST)
