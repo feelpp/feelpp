@@ -703,10 +703,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         std::string const& field = ppNorm.field();
         auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
         std::map<std::string,double> resPpNorms;
-        if ( field == "temperature" )
-            measureNormEvaluation( range, this->fieldTemperature(), ppNorm, resPpNorms );
-        else
-            CHECK( false ) << "invalid field : " << field << " (should be : temperature)";
+        measureNormEvaluation( range, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "temperature",this->fieldTemperature() ) );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -759,8 +756,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateBdf", "finish");
 }
-
-
 
 } // end namespace FeelModels
 } // end namespace Feel
