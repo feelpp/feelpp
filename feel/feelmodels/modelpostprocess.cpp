@@ -178,6 +178,12 @@ ModelPostprocessNorm::setup( std::string const& name )
 
     if ( auto itField = M_p.get_optional<std::string>("field") )
         M_field = * itField;
+    else if ( auto ptexpr = M_p.get_child_optional("expr") )
+    {
+        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        if ( auto ptgradexpr = M_p.get_child_optional("grad_expr") )
+            M_gradExpr.setExpr( "grad_expr", M_p, M_worldComm, M_directoryLibExpr );
+    }
 
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
     {
@@ -316,7 +322,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                 ModelPostprocessNorm ppNorm( M_worldComm );
                 ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
                 ppNorm.setPTree( ptreeNorm.second, ptreeNorm.first );
-                if ( !ppNorm.field().empty() )
+                if ( ppNorm.hasField() || ppNorm.hasExpr() )
                     M_measuresNorm[name].push_back( ppNorm );
             }
         }

@@ -59,6 +59,18 @@ public :
         else if ( M==3 && N==3 ) return this->hasExprMatrix33();
         else return false;
     }
+    template <int M,int N>
+    bool hasExpr() const
+    {
+        if ( M==1 && N == 1 ) return this->hasExprScalar();
+        else if ( M == 2 && N == 1 ) return this->hasExprVectorial2();
+        else if ( M == 3 && N == 1 ) return this->hasExprVectorial3();
+        else if ( M==2 && N==2 ) return this->hasExprMatrix22();
+        else if ( M==3 && N==3 ) return this->hasExprMatrix33();
+        else return false;
+    }
+
+    bool hasAtLeastOneExpr() const { return !M_values.empty() || this->hasExprScalar() || this->hasExprVectorial2() || this->hasExprVectorial3() || this->hasExprMatrix22() || this->hasExprMatrix33(); }
 
     bool isConstant() const { return this->isScalar() && this->hasValue() && !this->hasExprScalar(); }
     bool isScalar() const { return hasExprScalar() || (this->hasValue() && M_values.size() == 1); }

@@ -222,6 +222,11 @@ public :
     std::set<std::string> const& markers() const { return M_markers; }
     ModelExpression const& solution() const { return M_solution; }
     ModelExpression const& gradSolution() const { return M_gradSolution; }
+    ModelExpression const& expr() const { return M_expr; }
+    ModelExpression const& gradExpr() const { return M_gradExpr; }
+
+    bool hasExpr() const { return M_expr.hasAtLeastOneExpr(); }
+    bool hasField() const { return !M_field.empty(); }
 
     void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -235,7 +240,7 @@ private:
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
     std::set<std::string> M_types, M_markers;
-    ModelExpression M_solution, M_gradSolution;
+    ModelExpression M_solution, M_gradSolution, M_expr, M_gradExpr;
 };
 
 class FEELPP_EXPORT ModelPostprocess
