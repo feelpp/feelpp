@@ -127,6 +127,7 @@
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/feelassert.hpp>
+#include <feel/feelcore/feelmath.hpp>
 
 #include <feel/feelcore/flags.hpp>
 

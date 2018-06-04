@@ -358,6 +358,9 @@ public:
         {
             switch ( nDim )
             {
+            case 0:
+                
+                break;
             case 1:
             case 3:
                 ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
@@ -1115,6 +1118,9 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 
         switch ( nDim )
         {
+        case 0:
+            factor = 1;
+            break;
         case 1:
             ublas::column( M, 0 ) = this->vertex( 1 )-this->vertex( 0 );
             factor = 1;
@@ -1138,8 +1144,10 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
             factor = 6;
             break;
         }
-
-        M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) )/factor;
+        if ( nDim > 0 )
+            M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) )/factor;
+        else
+            M_meas = 0;
     }
 
     else

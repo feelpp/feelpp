@@ -484,9 +484,9 @@ private :
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
         static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        static const uint16_type quadOrder = thequad_type::order;
+        static const uint16_type quadOrder = thequad_type::CompileTimeOrder;
         static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
-        static const uint16_type quad1Order = thequad1_type::order;
+        static const uint16_type quad1Order = thequad1_type::CompileTimeOrder;
         static const uint16_type quad1OrderId = nOrderImageSpace;
 
         //auto uImage = this->dualImageSpace()->element();
@@ -519,10 +519,10 @@ private :
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
         static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        static const uint16_type quadOrder = thequad_type::order;
+        static const uint16_type quadOrder = thequad_type::CompileTimeOrder;
         static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
         static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
-        static const uint16_type quad1Order = thequad1_type::order;
+        static const uint16_type quad1Order = thequad1_type::CompileTimeOrder;
         static const uint16_type quad1OrderId = nOrderImageSpace;
         static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
 
