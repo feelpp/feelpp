@@ -86,11 +86,14 @@ protected:
     //! constructor from command line options
     CRBBlock( std::string const& name, truth_model_ptrtype const & model,
               crb::stage stage = crb::stage::online, std::string const& prefixExt = "" ) :
-        super( name, model, stage, prefixExt ),
-        M_subN( n_block, 0 )
+        super( name, model, stage, prefixExt )
         {
             for ( int i=0; i<n_block; i++ )
+            {
                 M_orthonormalize.push_back( boption("crb.block.orthonormalize"+std::to_string(i)) );
+                std::vector<int> vec(1,0);
+                M_subN.push_back( vec );
+            }
         }
 
 
@@ -106,7 +109,45 @@ public:
         }
 
     //! \return the number of basis vectors in space \p n_space
-    int& subN( int const& n_space ) { return M_subN[n_space]; }
+    int subN( int const& n_space ) const
+        {
+            return subN( n_space, this->M_N );
+        }
+    int subN( int const& n_space, int const& N ) const
+        {
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            return M_subN[n_space][N];
+        }
+    void setSubN( int const& n_space, int const& N, int const& size )
+        {
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            if ( M_subN[n_space].size()<N+1 )
+                M_subN[n_space].resize(N+1);
+            M_subN[n_space][N] = size;
+        }
+    void incrementSubN( int const& n_space, int const& N, int const& inc=1 )
+        {
+            CHECK( n_space<n_block ) <<"Invalid space number\n";
+            if ( M_subN[n_space].size()<N )
+            {
+                M_subN[n_space].resize(N+1);
+                M_subN[n_space][N]=0;
+            }
+            M_subN[n_space][N] += inc;
+        }
+
+    int dimension() const override
+        {
+            return dimension( this->M_N );
+        }
+    int dimension( int N ) const
+        {
+            int dim = 0;
+            for ( int n=0; n<n_block; n++ )
+                dim += subN(n,N);
+            return N;
+        }
+
 
     std::vector< std::vector< matrixN_type >>& blockAqm( int const& row, int const& col, bool dual=false )
         { return dual ? M_blockAqm_du[row][col]:M_blockAqm_pr[row][col]; }
@@ -147,6 +188,7 @@ protected:
 
     void buildRbMatrix( int number_of_added_elements, parameter_type& mu, element_ptrtype dual_initial_field ) override;
     void updateAffineDecompositionSize() override;
+    virtual void updateSpecificTerms(){}
     void initBlockMatrix();
     virtual void initRezMatrix() {}
 
@@ -155,7 +197,7 @@ protected:
     void serialize(Archive & __ar, const unsigned int __version );
 
 protected:
-    std::vector<int> M_subN;
+    std::vector<std::vector<int>> M_subN;
     std::vector<bool> M_orthonormalize;
 
     blockmatrixN_type M_blockTriqm_pr;
@@ -189,7 +231,7 @@ struct AddBasisByBlock
             tic();
             XN->addPrimalBasisElement( u );
             XN->addDualBasisElement( udu );
-            m_crb->subN( T::value )++;
+            m_crb->incrementSubN( T::value, m_crb->WNmuSize()+1 );
             toc("Add Basis Function in space "+std::to_string(T::value) );
 
             if ( m_crb->model()->addSupremizerInSpace(T::value) )
@@ -201,7 +243,7 @@ struct AddBasisByBlock
                 Us = model->supremizer( m_mu, m_Udu, T::value );
                 us = Us.template elementPtr<T::value>();
                 XN->addDualBasisElement( us );
-                m_crb->subN( T::value )++;
+                m_crb->incrementSubN( T::value, m_crb->WNmuSize()+1 );
                 toc("Add supremizer in space "+std::to_string(T::value) );
             }
         }
@@ -220,7 +262,7 @@ CRBBlock<TruthModelType>::addBasis( element_type& U, element_type& Udu, paramete
     Feel::AddBasisByBlock<self_type> b( U, Udu, mu, this );
     rangespace_type range;
     boost::fusion::for_each( range, b );
-     LOG(INFO) << "CRBBlock addBasis end\n";
+    LOG(INFO) << "CRBBlock addBasis end\n";
 } // addBasis
 
 
@@ -343,6 +385,8 @@ struct ExpansionByBlock
         m_dual( dual )
         {
             m_U = m_crb->model()->functionSpace()->element();
+            m_N = m_N>0 ? m_N:m_crb->WNmuSize();
+            CHECK( coeff.size()==m_crb->dimension(m_N) ) <<"Invalid coeff size="<<coeff.size()<<", when the dimension for N="<<m_N<<" is "<<m_crb->dimension(m_N)<<std::endl;
         }
 
     template <typename T>
@@ -350,10 +394,7 @@ struct ExpansionByBlock
         {
             auto XN = m_crb->model()->rBFunctionSpace()->template rbFunctionSpace<T::value>();
             auto WN = m_dual ? XN->dualRB() : XN->primalRB();
-            int Nwn = m_N>0 ? m_N:m_crb->dimension();
-            if ( m_crb->model()->addSupremizerInSpace(T::value) )
-                Nwn *= 2;
-            CHECK( Nwn<=WN.size() ) << "invalid expansion size\n";
+            int Nwn = m_crb->subN(T::value,m_N);
 
             CHECK( m_start+Nwn<=m_coeff.size() ) << "invalide expansion size\n";
             auto  coeff = m_coeff.segment( m_start, Nwn );
@@ -432,15 +473,13 @@ struct BuildRbMatrixByRow
                 auto ur = Ur.template element<R::value>();
                 auto uc = Uc.template element<C::value>();
 
-                int Nr = m_crb->subN(R::value);
-                int Nc = m_crb->subN(C::value);
+                int N = m_crb->WNmuSize();
+                int Nr = m_crb->subN(R::value,N);
+                int Nc = m_crb->subN(C::value,N);
 
-                int n_upr = m_n_added;
-                int n_upc = m_n_added;
-                if ( model->addSupremizerInSpace(R::value) )
-                    n_upr *= 2;
-                if ( model->addSupremizerInSpace(C::value) )
-                    n_upc *= 2;
+                int n_upr = Nr - m_crb->subN(R::value,N-1);
+                int n_upc = Nc - m_crb->subN(C::value,N-1);
+
                 if( ioption(_name="ser.rb-frequency")!=0 && !m_crb->rebuild() )
                 {
                     n_upr = Nr;
@@ -592,14 +631,6 @@ CRBBlock<TruthModelType>::initBlockMatrix()
     M_blockFqm_du.resize(n_block);
     M_blockLqm_du.resize(n_block);
 
-    int q_tri = this->M_model->QTri();
-    if ( q_tri )
-    {
-        M_blockTriqm_pr.resize( n_block );
-        for( int i = 0; i < n_block; i++ )
-            M_blockTriqm_pr[i].resize(n_block);
-
-    }
 }
 
 template<typename TruthModelType>
@@ -610,8 +641,8 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
         initBlockMatrix();
     int output_index = this->M_output_index;
 
-    for ( int n=0; n<n_block; n++ )
-        subN(n) = this->M_model->addSupremizerInSpace(n) ? 2*this->M_N:this->M_N;
+    //    for ( int n=0; n<n_block; n++ )
+    //    subN(n) = this->M_model->addSupremizerInSpace(n) ? 2*this->M_N:this->M_N;
 
     for (int r=0; r<n_block; r++ )
     {
@@ -645,13 +676,7 @@ CRBBlock<TruthModelType>::updateAffineDecompositionSize()
         }
     }
 
-    int q_tri = this->M_model->QTri();
-    if ( q_tri )
-    {
-        for (int r=0; r<n_block; r++ )
-            for ( int c=0; c<n_block; c++ )
-                M_blockTriqm_pr[r][c].resize(q_tri);
-    }
+    this->updateSpecificTerms();
 
     if ( this->M_error_type == CRB_RESIDUAL || this->M_error_type == CRB_RESIDUAL_SCM )
         initRezMatrix();
@@ -682,11 +707,8 @@ struct ExportBasisFunctionsByBlock
 
             for ( int index=0; index<u_vec.size(); index++ )
             {
-                int n = m_crb->model()->addSupremizerInSpace(T::value) ? index/2:index;
-                auto mu = m_crb->wnmu()->at( n );
-
                 std::string basis_name = ( boost::format("u%1%_pr_%2%_param")%T::value %index ).str();
-                std::string name = basis_name + mu.toString();
+                std::string name = basis_name;
                 m_e->add( name, unwrap_ptr( u_vec[index] ) );
             }
         }

@@ -560,6 +560,13 @@ public:
             return M_N;
         }
 
+    //! \return the current size of WNmu:
+    //! may differ from the dimension of XN for multiphysic problems
+    int WNmuSize() const
+        {
+            return M_N;
+        }
+
     //! \return the train sampling used to generate the reduced basis space
     sampling_ptrtype const& trainSampling() const
         {

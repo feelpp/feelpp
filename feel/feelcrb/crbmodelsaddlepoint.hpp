@@ -107,10 +107,10 @@ public :
                                                      element_type const& U )
     {
         sparse_matrix_ptrtype A;
-        // if ( this->isLinear() )
-        //     boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
-        // else
-        boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu,U);
+        if ( this->isLinear() && !this->isTrilinear() )
+             boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu);
+        else
+            boost::tie( boost::tuples::ignore, A, boost::tuples::ignore ) = this->update(mu,U);
 
         auto const& Xh0_indices = A->mapRow().dofIdToContainerId( 0 );
         auto const& Xh1_indices = A->mapRow().dofIdToContainerId( 1 );

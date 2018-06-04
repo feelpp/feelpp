@@ -145,8 +145,6 @@ public:
                 else
                 {
                     this->M_N=0;
-                    subN(0)=0;
-                    subN(1)=0;
                 }
             }
         }
@@ -337,8 +335,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
     bool is_linear = this->M_model->isLinear();
     double output=0;
     double increment = this->M_fixedpointIncrementTol;
-    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*N:N;
-    int N1 = N;
+    int N0 = this->subN( 0,N );
+    int N1 = this->subN( 1,N );
 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm;
@@ -403,13 +401,13 @@ CRBSaddlePoint<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type c
         do
         {
             previous_uN = uN[0];
-            // if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
-            //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-            //         this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-            // else
+            if ( this->M_useRbSpaceContextEim && this->M_hasRbSpaceContextEim )
+                boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
+                    this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+            else
                 boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
                     this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
-            A.setZero( N0+N1,N0+N1);
+            A.setZero( N0+N1,N0+N1 );
             for ( size_type q=0; q<Qa; q++ )
             {
                 for ( size_type m=0; m<mMaxA[q]; m++ )
@@ -490,8 +488,8 @@ CRBSaddlePoint<TruthModelType>::fixedPointDual(  size_type N, parameter_type con
                                                  std::vector< double > & output_vector,
                                                  int K ) const
 {
-    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*N:N;
-    int N1 = N;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
 
     bool is_linear = this->M_model->isLinear();
 
@@ -595,10 +593,11 @@ template< typename TruthModelType>
 double
 CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
 {
-    int N = uN[0].size();
-    int Ni = this->M_model->addSupremizerInSpace(0) ? N/3 : N/2;
-    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ni : Ni;
-    int N1 = Ni;
+    int N=0;
+    for ( int n=0; n<this->WNmuSize(); n++ )
+        N = uN[0].size()==this->dimension(n) ? n:0;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
 
     matrixN_type Aprdu ( N0+N1, N0+N1 ) ;
     vectorN_type Fdu ( N0+N1 );
@@ -619,11 +618,11 @@ CRBSaddlePoint<TruthModelType>::correctionTerms(parameter_type const& mu, std::v
         boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( mu/* ,time*/);
     else
     {
-        // if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
-        //     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
-        // else
+         if ( M_useRbSpaceContextEim && M_hasRbSpaceContextEim )
+             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = this->M_model->computeBetaQm( uN[0], mu/*, N*/ );
+         else
             boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) =
-                this->M_model->computeBetaQm( this->expansion( uN[0], Ni ), mu );
+                this->M_model->computeBetaQm( this->expansion( uN[0], N ), mu );
     }
     for(size_type q = 0;q < this->M_model->Ql(0); ++q)
     {
@@ -672,10 +671,10 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     auto XN1 = this->M_model->rBFunctionSpace()->template rbFunctionSpace<1>();
 
     bool optimize = boption(_name="crb.optimize-offline-residual") ;
-    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ncur:Ncur;
-    int N1 = Ncur;
-    int n_added0 = this->M_model->addSupremizerInSpace(0) ? 2*number_of_added_elements:number_of_added_elements;
-    int n_added1 = number_of_added_elements;
+    int N0 = this->subN(0,Ncur);
+    int N1 = this->subN(1,Ncur);
+    int n_added0 = N0 - this->subN(0,Ncur-1);
+    int n_added1 = N1 - this->subN(1,Ncur-1);
 
     int QLhs = this->M_model->Qa();
     int QRhs = this->M_model->Ql(0);
@@ -1034,8 +1033,8 @@ CRBSaddlePoint<TruthModelType>::onlineResidualSP( int Ncur, parameter_type const
                                                 vectorN_type Un, bool test ) const
 {
     using Feel::cout;
-    int N0 = this->M_model->addSupremizerInSpace(0) ? 2*Ncur:Ncur;
-    int N1 = Ncur;
+    int N0 = this->subN(0,Ncur);
+    int N1 = this->subN(1,Ncur);
 
     CHECK( Un.size() == N0 + N1 )
         << "invalide size of Un, vector can't be cut, Un.size="
