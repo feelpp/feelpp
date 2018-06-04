@@ -361,7 +361,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
         auto mapField = (*itField).second;
         auto itType = mapField.find( "Dirichlet" );
 
-    if ( itType != mapField.end() )
+    	if ( itType != mapField.end() )
         {
             Feel::cout << "Dirichlet: ";
             for ( auto const& exAtMarker : (*itType).second )
@@ -1589,7 +1589,7 @@ MixedPoisson<Dim,Order, G_Order,E_Order>::exportResults( double time, mesh_ptrty
                     //Feel::cout << "Integral value of potential(from pp) on " << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
 
                 }
-                auto itField = modelProperties().boundaryConditions().find("Exact solution");
+                auto itField = modelProperties().boundaryConditions().find("ExactSolution");
                 if ( itField != modelProperties().boundaryConditions().end() )
                 {
                     auto mapField = (*itField).second;

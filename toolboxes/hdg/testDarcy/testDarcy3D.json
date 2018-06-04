@@ -1,13 +1,13 @@
 {
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
-    "Model":"hdg",
+	"Models": { "equations":"hdg"},
     "Materials":
     {
         "omega":
         {
-            "name":"copper",
-            "cond":"-1"
+            "name":"simulation_domain",
+            "k":"1"
         }
     },
     "BoundaryConditions":
@@ -18,78 +18,67 @@
             {
                 "omega":
                 {
-                    "expr":"-sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
+                    "expr":"sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
                 }
             },
-            // "Dirichlet":
-            // {
-                // "top":
-                // {
-                //     "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-                // },
-                // "bottom":
-                // {
-                //     "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-                // }//,
-            //     "left":
-            //     {
-            //         "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-            //     },
-            //     "right":
-            //     {
-            //         "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-            //     },
-            //     "front":
-            //     {
-            //         "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-            //     },
-            //     "back":
-            //     {
-            //         "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
-            //     }
-            // },
-            "Neumann":
+            "Dirichlet":
             {
                 "top":
                 {
-                    "expr":"sin(Pi*x)*sin(Pi*y)/(3*Pi):x:y"
-                },
+                	"expr":"1/(3*Pi*Pi)*(sin(Pi*x)*sin(Pi*y)*sin(Pi*z)+2):x:y:z"
+                }
+			},
+            "Neumann":
+            {
                 "bottom":
                 {
-                    "expr":"-sin(Pi*x)*sin(Pi*y)/(3*Pi):x:y"
+            		"expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
                 },
                 "left":
                 {
-                    "expr":"-sin(Pi*y)*sin(Pi*z)/(3*Pi):y:z"
+            		"expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
                 },
                 "right":
                 {
-                    "expr":"sin(Pi*y)*sin(Pi*z)/(3*Pi):y:z"
+            		"expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
                 },
                 "front":
                 {
-                    "expr":"-sin(Pi*x)*sin(Pi*z)/(3*Pi):x:z"
+            		"expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
                 },
                 "back":
                 {
-                    "expr":"sin(Pi*x)*sin(Pi*z)/(3*Pi):x:z"
+            		"expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
                 }
             }
-        }
+        },	
+		"ExactSolution":
+		{
+			"p_exact":
+			{
+				"omega":
+				{
+            		"expr":"1/(3*Pi*Pi)*(sin(Pi*x)*sin(Pi*y)*sin(Pi*z)+2):x:y:z"
+				}
+			}		
+		}
     },
     "Functions":
     {
         "u":
         {
-            "expr":"{1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
+            "expr":"{-1/(3*Pi)*cos(Pi*x)*sin(Pi*y)*sin(Pi*z), -1/(3*Pi)*sin(Pi*x)*cos(Pi*y)*sin(Pi*z), -1/(3*Pi)*sin(Pi*x)*sin(Pi*y)*cos(Pi*z)}:x:y:z"
         },
         "p":
         {
-            "expr":"1/(3*Pi*Pi)*sin(Pi*x)*sin(Pi*y)*sin(Pi*z):x:y:z"
+            "expr":"1/(3*Pi*Pi)*(sin(Pi*x)*sin(Pi*y)*sin(Pi*z)+2):x:y:z"
         }
     },
     "PostProcess":
     {
-        "Fields":["potential","flux"]
-    }
+		"Exports":
+		{
+	        "fields":["potential","flux"]
+        }
+	}
 }
