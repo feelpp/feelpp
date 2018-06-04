@@ -2824,6 +2824,9 @@ public:
         return is_linear ;
     }
 
+    virtual bool isTrilinear() const
+        {return false;}
+
     void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
     {
         return initializationField( initial_field,mu,mpl::bool_<model_type::is_time_dependent>() );

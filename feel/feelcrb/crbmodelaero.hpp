@@ -79,6 +79,9 @@ public :
     std::vector<double> computeBetaTri( parameter_type const& mu )
         { return this->M_model->computeBetaTri(mu); }
 
+    bool isTrilinear cont override
+        { return true; }
+
     int sizeOfBilinearJ() const
         { return this->M_model->sizeOfBilinearJ()==-1 ? this->Qa():this->M_model->sizeOfBilinearJ(); }
     int sizeOfLinearR() const

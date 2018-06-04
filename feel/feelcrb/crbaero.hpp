@@ -104,6 +104,23 @@ private:
 
     virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu ) override;
 
+    void updateSpecificTerms() override
+        {
+            int q_tri = this->M_model->QTri();
+            if ( q_tri )
+            {
+                if ( this->M_blockTriqm_pr.size()==0 )
+                {
+                    this->M_blockTriqm_pr.resize( n_block );
+                    for( int i = 0; i < n_block; i++ )
+                        this->M_blockTriqm_pr[i].resize(n_block);
+                }
+                for (int r=0; r<n_block; r++ )
+                    for ( int c=0; c<n_block; c++ )
+                        this->M_blockTriqm_pr[r][c].resize(q_tri);
+            }
+        }
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version );
@@ -150,9 +167,6 @@ CRBAero<TruthModelType>::init()
             else
             {
                 this->M_N=0;
-                subN(0)=0;
-                subN(1)=0;
-                subN(2)=0;
             }
         }
     }
@@ -183,10 +197,11 @@ void
 CRBAero<TruthModelType>::buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu )
 {
     tic();
-    int N0 = this->subN(0);
-    int N2 = this->subN(2);
-    int n0 = this->M_model->addSupremizerInSpace(0) ? 2*number_of_added_elements:number_of_added_elements;
-    int n2 = number_of_added_elements;
+    int N = this->WNmuSize();
+    int N0 = this->subN(0,N);
+    int N2 = this->subN(2,N);
+    int n0 = N0 - this->subN(0,N-1);
+    int n2 = N2 - this->subN(2,N-1);
 
     auto model = this->M_model;
     auto XN0 = model->rBFunctionSpace()->template rbFunctionSpace<0>();
@@ -267,9 +282,9 @@ CRBAero<TruthModelType>::onlineSolve(  size_type N, parameter_type const& mu, st
 {
     tic();
     auto model = this->M_model;
-    int N0 = model->addSupremizerInSpace(0) ? 2*N:N;
-    int N1 = N;
-    int N2 = N;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
+    int N2 = this->subN(2,N);
     int sumN = N0+N1+N2;
 
     M_Jbil.resize( sumN, sumN );
@@ -361,9 +376,9 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
 {
     tic();
     auto model = this->M_model;
-    int N0 = model->addSupremizerInSpace(0) ? 2*N:N;
-    int N1 = N;
-    int N2 = N;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
+    int N2 = this->subN(2,N);
     beta_vector_type betaJqm;
 
     J.setZero();
@@ -424,9 +439,9 @@ CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, m
 {
     tic();
     auto model = this->M_model;
-    int N0 = model->addSupremizerInSpace(0) ? 2*N:N;
-    int N1 = N;
-    int N2 = N;
+    int N0 = this->subN(0,N);
+    int N1 = this->subN(1,N);
+    int N2 = this->subN(2,N);
     int sumN = N0+N1+N2;
     matrixN_type temp( sumN, sumN );
 
@@ -491,7 +506,7 @@ CRBAero<TruthModelType>::maxErrorBounds( size_type N ) const
     {
         parameter_type const& current_mu = this->M_WNmu_complement->at(k);
         auto o = this->lb( N, current_mu, uN, uNdu, uNold, uNduold );
-        double current_err;
+        double current_err=0;
         if( this->M_error_type == CRB_EMPIRICAL )
             current_err = empiricalError( N, current_mu, o.template get<0>() );
         if ( current_err > err )
