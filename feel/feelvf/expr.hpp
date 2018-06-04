@@ -750,10 +750,11 @@ struct ExpressionOrder
                      boost::mpl::int_<10> >::type::value;
 #else
     // this is a very rough approximation
-    static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const int value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
+    static const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
+    static const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 
+    ExpressionOrder() = default;
 };
 
 

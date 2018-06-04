@@ -41,9 +41,9 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( expr,   *, cst(1.0))
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type(vf::detail::integrate_type<Args>::exprOrder) )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type(vf::detail::integrate_type<Args>::exprOrder_1) )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )

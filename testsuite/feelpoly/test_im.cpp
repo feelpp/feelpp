@@ -31,6 +31,7 @@
 // Boost.Test
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelpoly/im.hpp>
@@ -246,9 +247,11 @@ public:
     template<int IMORDER> struct MyIm
             :
         public IM<D,N,T,Simplex>
-    {};
+    {
+        MyIm( uint16_type o ) : IM<D,N,T,Simplex>( o ) {}
+    };
     TestImPK( value_type res,
-              boost::function<value_type( arg_type const& )> const& func,
+              std::function<value_type( arg_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
         M_res( res ),
@@ -260,7 +263,7 @@ public:
     }
     TestImPK( int __face,
               value_type res,
-              boost::function<value_type( arg_type const& )> const& func,
+              std::function<value_type( arg_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
         M_res( res ),
@@ -274,7 +277,7 @@ public:
     {
 
 
-        MyIm<N> im;
+        MyIm<N> im(N);
         value_type res = 0.0;
         value_type integral = 0.0;
 
@@ -305,7 +308,7 @@ public:
     value_type M_res;
     value_type M_tol;
     int M_face;
-    boost::function<value_type( arg_type const& )> M_func;
+    std::function<value_type( arg_type const& )> M_func;
 };
 #define TESTS_XP( T )                                                          \
  test->add( BOOST_TEST_CASE( ( TestImPK<1,1, T>( 0.0         , xp<1,T> ) )  ) ); \
@@ -347,7 +350,7 @@ public:
     typedef T value_type;
     typedef typename Feel::node<T>::type node_type;
     TestImQK( value_type res,
-              boost::function<value_type( node_type const& )> const& func,
+              std::function<value_type( node_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
         M_res( res ),
@@ -375,7 +378,7 @@ public:
     }
     value_type M_res;
     value_type M_tol;
-    boost::function<value_type( node_type const& )> M_func;
+    std::function<value_type( node_type const& )> M_func;
 };
 #define TESTS_QK_COSCOS( T )                                                    \
  test->add( BOOST_TEST_CASE( ( TestImQK2D<40, T>( 4.0*sin(T(1.0))*sin(T(1.0)) , coscos<T>, 1.0E-14 ) )  ) );\
@@ -383,7 +386,7 @@ public:
 
 
 #if 1
-
+//FEELPP_ENVIRONMENT_NO_OPTIONS
 // automatically registered test cases could be organized in test suites
 BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
@@ -408,7 +411,7 @@ BOOST_AUTO_TEST_CASE( im1d_test4 )
 }
 BOOST_AUTO_TEST_CASE( im1d_test5 )
 {
-    TestImPK<1,50,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
+    TestImPK<1,20,double> t5( 2.0*sin( double( 1.0 ) )  , cost<double> );
     t5();
 }
 BOOST_AUTO_TEST_CASE( im1d_test6 )
@@ -895,9 +898,9 @@ void add_tests( test_suite* test )
 
 #if 1
 test_suite*
-init_unit_test_suite( int /*argc*/, char** /*argv*/ )
+init_unit_test_suite( int argc, char** argv )
 {
-
+    Environment env( argc, argv );
     test_suite* test = BOOST_TEST_SUITE( "Integration methods test suite" );
 
     add_tests<double>( test );
