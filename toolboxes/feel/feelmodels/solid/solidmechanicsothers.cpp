@@ -750,19 +750,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
-        std::string const& field = ppNorm.field();
-        auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
         std::map<std::string,double> resPpNorms;
-        if ( field == "displacement" )
-            measureNormEvaluation( range, this->fieldDisplacement(), ppNorm, resPpNorms );
-        else if ( field == "velocity" )
-            measureNormEvaluation( range, this->fieldVelocity(), ppNorm, resPpNorms );
-        else if ( field == "acceleration" )
-            measureNormEvaluation( range, this->fieldAcceleration(), ppNorm, resPpNorms );
-        else if ( field == "pressure" && M_useDisplacementPressureFormulation )
-            measureNormEvaluation( range, this->fieldPressure(), ppNorm, resPpNorms );
+        if ( !M_useDisplacementPressureFormulation )
+        {
+            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
+                                   std::make_pair( "displacement",this->fieldDisplacement() ),
+                                   std::make_pair( "velocity",this->fieldVelocity() ),
+                                   std::make_pair( "acceleration",this->fieldAcceleration() ) );
+        }
         else
-            CHECK( false ) << "invalid field : " << field << " (should be : displacement, velocity, acceleration, pressure (if use displacement-presure formulation)";
+        {
+            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
+                                   std::make_pair( "displacement",this->fieldDisplacement() ),
+                                   std::make_pair( "velocity",this->fieldVelocity() ),
+                                   std::make_pair( "acceleration",this->fieldAcceleration() ),
+                                   std::make_pair( "pressure",this->fieldPressure() ) );
+        }
+
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );

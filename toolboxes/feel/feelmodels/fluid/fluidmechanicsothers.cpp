@@ -825,15 +825,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
-        std::string const& field = ppNorm.field();
-        auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
         std::map<std::string,double> resPpNorms;
-        if ( field == "velocity" )
-            measureNormEvaluation( range, this->fieldVelocity(), ppNorm, resPpNorms );
-        else if ( field == "pressure" )
-            measureNormEvaluation( range, this->fieldPressure(), ppNorm, resPpNorms );
-        else
-            CHECK( false ) << "invalid field : " << field << " (should be : velocity, pressure)";
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
+                               std::make_pair( "velocity",this->fieldVelocity() ), std::make_pair( "pressure",this->fieldPressure() ) );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
