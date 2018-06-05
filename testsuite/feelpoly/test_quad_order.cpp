@@ -89,16 +89,16 @@ void QK_find_N_opt()
 {
     using namespace Feel;
     typedef T value_type;
+    
+    auto the_im = im<Hypercube<2,1>>( N ); 
 
-    Gauss<Hypercube<2,1>, N ,value_type > im;
-
-    ublas::vector<value_type> x_i( ublas::row( im.points(),0 ) );
-    ublas::vector<value_type> y_i( ublas::row( im.points(),1 ) );
+    ublas::vector<value_type> x_i( ublas::row( the_im.points(),0 ) );
+    ublas::vector<value_type> y_i( ublas::row( the_im.points(),1 ) );
     const value_type tol = value_type( 7.0 )*type_traits<value_type>::epsilon();
 
     /* 1D number of Nodes */
     //@{
-    uint16_type Q = ( uint16_type )sqrt( im.nPoints() );
+    uint16_type Q = ( uint16_type )sqrt( the_im.nPoints() );
     //@}
 
     value_type error = 0.0;
@@ -106,7 +106,7 @@ void QK_find_N_opt()
     uint16_type i=1;
     value_type sum=0.0;
 
-    ost << "Nbre of Points on the Quadrangle : " << Q << "^2 = "<< im.nPoints() <<  std::endl;
+    ost << "Nbre of Points on the Quadrangle : " << Q << "^2 = "<< the_im.nPoints() <<  std::endl;
 
     do
     {
@@ -120,7 +120,7 @@ void QK_find_N_opt()
 
         for ( uint16_type l=0; l< x_i.size(); ++l )
         {
-            sum += pow( x_i( l ),i )*pow( y_i( l ),i )*im.weight( l );
+            sum += pow( x_i( l ),i )*pow( y_i( l ),i )*the_im.weight( l );
         }
 
         error = math::abs( sum - res );
@@ -132,6 +132,7 @@ void QK_find_N_opt()
     if ( i-2 < 2*Q-1  )
         QK_log << "Q = " << Q << " ; i = " << i << " ; Error" << error << std::endl;
 
+    BOOST_TEST_MESSAGE( "Q=" << Q );
     BOOST_CHECK( i-2 >= 2*Q-1  );
 }
 
@@ -391,18 +392,28 @@ void PK_Monom_N_opt_3D()
 /*
  * Testsuite
  */
+#if 0
 typedef boost::mpl::list<boost::mpl::int_<2>,
         boost::mpl::int_<4>,
         boost::mpl::int_<8>,
         boost::mpl::int_<16>,
         boost::mpl::int_<32>,
         boost::mpl::int_<40> > test_types;
+#else
+typedef boost::mpl::list<boost::mpl::int_<2>//,
+                         //boost::mpl::int_<4>,
+                         //boost::mpl::int_<8>,
+                         //boost::mpl::int_<16>,
+                         //boost::mpl::int_<32>,
+                         //boost::mpl::int_<40>
+                         > test_types;
+#endif
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK_find_N_opt_double, T, test_types )
 {
     QK_find_N_opt<T::value,double>();
 }
-
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_QK_find_N_opt_3D_double, T, test_types )
 {
     QK_find_N_opt_3D<T::value,double>();
@@ -421,3 +432,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( PK_Monom_N_opt_3D_double, T, test_types )
 {
     PK_Monom_N_opt_3D<T::value,double>();
 }
+#endif

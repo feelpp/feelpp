@@ -86,10 +86,10 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
                               mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
+                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim>, T> >,
             typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone, T> >,
-                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone/*ElementType*/, T> > >::type>::type>::type::type element_type;
+                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim>, T> >,
+                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim>/*ElementType*/, T> > >::type>::type>::type::type element_type;
 
 
     typedef std::unordered_map<size_type,element_type> elements_type;

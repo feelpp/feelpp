@@ -55,7 +55,7 @@
 #include <feel/feelpoly/operations.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/functionals2.hpp>
-#include <feel/feelpoly/quadpoint.hpp>
+#include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 
@@ -174,7 +174,7 @@ public:
 #endif
 
         // x P_k \ P_{k-1}
-        IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
+        IMGeneral<convex_type::nDim, value_type> im( 2*nOrder );
         //VLOG(1) << "[RTPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 

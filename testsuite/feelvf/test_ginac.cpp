@@ -434,6 +434,41 @@ void runTest2()
 #endif
 }
 
+void runTest3()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh1 = Pch<1>( mesh );
+    auto Vh2 = Pch<2>( mesh );
+    auto Vh3 = Pch<3>( mesh );
+    auto u1 = Vh1->element(Px());
+    auto u2 = Vh2->element(Py());
+    auto u3 = Vh3->element(Px()*Px()*Py());
+
+    auto exprA = expr("2*x*y+x*x*y:x:y");
+    auto exprB = expr("2*u*y+x*x*y:u:x:y");
+    auto exprBvf = expr(exprB,"u",idv(u1) );
+
+    auto exprC = expr("2*u*v+x*x*y:u:v:x:y");
+    auto exprCvf = expr(exprC,"u",idv(u1), std::make_pair("v",idv(u2) ) );
+
+    auto exprD = expr("2*u*v+w:u:v:w");
+    auto exprDvf = expr(exprD,"u",idv(u1), std::make_pair("v",idv(u2) ), std::make_pair("w",idv(u3) ) );
+
+    auto exprE = expr("2*u*v+w:u:v:w");
+    auto exprEvf = expr(exprE,"u",idv(u1), std::make_pair("v",idv(u2) ), std::make_pair("w",idv(u1)*idv(u1)*idv(u2) ) );
+
+    double intA = integrate(_range=elements(mesh),_expr=exprA,_quad=5).evaluate()(0,0);
+    double intB = integrate(_range=elements(mesh),_expr=exprBvf,_quad=5).evaluate()(0,0);
+    double intC = integrate(_range=elements(mesh),_expr=exprCvf,_quad=5).evaluate()(0,0);
+    double intD = integrate(_range=elements(mesh),_expr=exprDvf,_quad=5).evaluate()(0,0);
+    double intE = integrate(_range=elements(mesh),_expr=exprEvf,_quad=5).evaluate()(0,0);
+
+    BOOST_CHECK_CLOSE( intA, intB, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intC, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intD, 1e-8 );
+    BOOST_CHECK_CLOSE( intA, intE, 1e-8 );
+}
+
 #if defined(USE_BOOST_TEST)
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
@@ -449,6 +484,10 @@ BOOST_AUTO_TEST_CASE( test_1 )
 BOOST_AUTO_TEST_CASE( test_2 )
 {
     runTest2();
+}
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    runTest3();
 }
 BOOST_AUTO_TEST_SUITE_END()
 
