@@ -416,15 +416,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     std::string modelName = "electric";
     bool hasMeasure = false;
 
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
     {
-        std::string const& field = ppNorm.field();
-        auto range = ppNorm.markers().empty()? M_rangeMeshElements : markedelements(this->mesh(),ppNorm.markers() );
         std::map<std::string,double> resPpNorms;
-        if ( field == "electric-potential" )
-            measureNormEvaluation( range, this->fieldElectricPotential(), ppNorm, resPpNorms );
-        else
-            CHECK( false ) << "invalid field : " << field << " (should be : electric-potential)";
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "electric-potential",this->fieldElectricPotential() ) );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );

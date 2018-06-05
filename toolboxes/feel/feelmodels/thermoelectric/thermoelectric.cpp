@@ -652,7 +652,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                 if ( sigma.expression().hasSymbol( symbolStr ) )
                 {
                     auto sigmaDiff = diff( electricConductivity.expr(),symbolStr,1,"",this->worldComm(),this->repository().expr());
-                    auto sigmaDiffEval = expr( sigmaDiff, symbolStr, idv(t) );
+                    auto sigmaDiffEval = expr( sigmaDiff, symbolExpr( symbolStr, idv(t) ) );
 
                     if ( M_modelUseJouleEffect )
                     {
