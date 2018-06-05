@@ -159,15 +159,8 @@ public:
         typedef typename boost::remove_const<const_t>::type the_face_element_type;
         typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
-        typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
-                mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Simplex>::type >,
-                    mpl::identity<typename Im::template apply<the_element_type::nDim, expression_value_type, Hypercube>::type >
-        >::type::type im_type;
-
-        typedef typename mpl::if_<mpl::bool_<the_element_type::is_simplex>,
-                mpl::identity<typename Im2::template apply<the_element_type::nDim, expression_value_type, Simplex>::type >,
-                    mpl::identity<typename Im2::template apply<the_element_type::nDim, expression_value_type, Hypercube>::type >
-        >::type::type im2_type;
+        using im_type = im_t<the_element_type,expression_value_type>;
+        using im2_type = im_t<the_element_type,expression_value_type>;
 
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
@@ -249,14 +242,19 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
+    Integrator( Elements const& elts,
+                Im const& __im,
+                expression_type const& __expr,
+                GeomapStrategyType gt,
+                Im2 const& __im2,
+                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
                 boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
         M_eltbegin( elts.template get<1>() ),
         M_eltend( elts.template get<2>() ),
-        M_im( ),
-        M_im2( ),
+        M_im( __im ),
+        M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
@@ -266,16 +264,22 @@ public:
         M_QPL( qpl )
     {
         M_elts.push_back( elts );
+        LOG(INFO) << "Compile Time order : " << M_im.order();
+        LOG(INFO) << "im : " << M_im.points() << " w:" << M_im.weights();
         DLOG(INFO) << "Integrator constructor from expression\n";
     }
 
-    Integrator( std::list<Elements> const& elts, Im const& /*__im*/, expression_type const& __expr,
-                GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
+    Integrator( std::list<Elements> const& elts,
+                Im const& __im,
+                expression_type const& __expr,
+                GeomapStrategyType gt,
+                Im2 const& __im2,
+                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
                 boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
-        M_im( ),
-        M_im2( ),
+        M_im( __im ),
+        M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
@@ -285,7 +289,7 @@ public:
         M_QPL( qpl )
     {
         DLOG(INFO) << "Integrator constructor from expression\n";
-        if ( elts.size() )
+        if ( !elts.empty() )
         {
             M_eltbegin = elts.begin()->template get<1>();
             M_eltend = elts.begin()->template get<2>();
@@ -322,8 +326,14 @@ public:
     struct Lambda
     {
         typedef typename expression_type::template Lambda<TheExpr...>::type expr_type;
+#if 0
         typedef _Q< ExpressionOrder<Elements,expr_type>::value > quad_type;
         typedef _Q< ExpressionOrder<Elements,expr_type>::value_1 > quad1_type;
+#else
+        using expr_order_t = ExpressionOrder<Elements,expr_type>;
+        using quad_type = im_t<typename expr_order_t::the_element_type,typename expr_type::value_type>;
+        using quad1_type = im_t<typename expr_order_t::the_element_type,typename expr_type::value_type>;
+#endif
         typedef Integrator<Elements, quad_type, expr_type, quad1_type> type;
     };
 
@@ -340,11 +350,14 @@ public:
             auto new_expr = M_expr(e...);
             typedef decltype(new_expr) expr_type;
             typedef typename Lambda<ExprT...>::expr_type e_type;
-            typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
-            typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
+            using expr_order_t = ExpressionOrder<Elements,e_type>;
+            using quad_type = im_t<typename expr_order_t::the_element_type,typename e_type::value_type>;
+            using quad1_type = im_t<typename expr_order_t::the_element_type,typename e_type::value_type>;
+            //typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
+            //typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
             typedef boost::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
-            quad_type quad;
-            quad1_type quad1;
+            quad_type quad( expr_order_t::value );
+            quad1_type quad1( expr_order_t::value_1 );
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
             auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
@@ -1844,38 +1857,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
     static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im1_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
+    using im1_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtest_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtest_type;
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtrial_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtrial_type;
-
-    im_range_type imRange;
-    im1_range_type im1Range;
-    im_formtest_type imTest;
-    im_formtrial_type imTrial;
-
+    im_range_type imRange( M_im.order() );
+    im1_range_type im1Range( M_im2.order() );
+    im_formtest_type imTest( M_im.order() );
+    im_formtrial_type imTrial( M_im.order() );
 
     // typedef on formcontext
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
@@ -2080,37 +2072,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
     static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im1_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
+    using im1_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtest_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtest_type;
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtrial_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtrial_type;
-
-    im_range_type imRange;
-    im1_range_type im1Range;
-    im_formtest_type imTest;
-    im_formtrial_type imTrial;
+    im_range_type imRange( M_im.order() );
+    im1_range_type im1Range( M_im2.order() );
+    im_formtest_type imTest( M_im.order() );
+    im_formtrial_type imTrial( M_im.order() );
+    
 
     // mortar context
     static const bool has_mortar_test = FormType::test_space_type::is_mortar;
@@ -2305,11 +2278,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 {
     LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
@@ -2362,7 +2331,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     auto const& eltInit = boost::unwrap_ref( *elt_it );
 
     //-----------------------------------------------//
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
@@ -2390,7 +2359,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest,meshTrial );
     }
 
@@ -2478,12 +2447,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                                  mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const
 {
     LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] (elements) mortar case";
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
@@ -2545,7 +2509,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     auto const& eltInit = boost::unwrap_ref( *elt_it );
 
     //-----------------------------------------------//
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(),eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
@@ -2595,7 +2559,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest,meshTrial );
     }
 
@@ -2709,10 +2673,7 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
+    using im_range_type = im_t<typename eval::the_element_type,expression_value_type>;
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -2758,7 +2719,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     //-----------------------------------------------//
 
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     pc_expr_ptrtype geopcExpr( new pc_expr_type( eltInit.gm(), imRange.points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( eltInit.gm(), eltInit, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
@@ -2784,7 +2745,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest );
     }
 
@@ -3609,37 +3570,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
     static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im1_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
+    using im1_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtest_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtest_type;
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtrial_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtrial_type;
-
-    im_range_type imRange;
-    im1_range_type im1Range;
-    im_formtest_type imTest;
-    im_formtrial_type imTrial;
+    im_range_type imRange( M_im.order() );
+    im1_range_type im1Range( M_im2.order() );
+    im_formtest_type imTest( M_im.order() );
+    im_formtrial_type imTrial( M_im.order() );
 
     //-----------------------------------------------------//
 
@@ -3968,37 +3909,17 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
     static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im1_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    using im_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
+    using im1_formtrial_type = im_t<geoelement_formTrial_type, expression_value_type>;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtest_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtest_type;
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtrial_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtrial_type;
-
-    im_range_type imRange;
-    im1_range_type im1Range;
-    im_formtest_type imTest;
-    im_formtrial_type imTrial;
+    im_range_type imRange( M_im.order() );
+    im1_range_type im1Range( M_im2.order() );
+    im_formtest_type imTest( M_im.order() );
+    im_formtrial_type imTrial( M_im.order() );
 
     //-----------------------------------------------------//
 
@@ -4320,26 +4241,14 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     static const uint16_type nDimRange = gm_expr_type::nDim;
     static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
 
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_range_type;
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_formtest_type;
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im1_formtest_type;
-    im_range_type imRange;
-    im1_range_type im1Range;
-    im_formtest_type imTest;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
+    using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
+    
+    
+    im_range_type imRange( M_im.order() );
+    im1_range_type im1Range( M_im2.order() );
+    im_formtest_type imTest( M_im.order() );
 
     //-----------------------------------------------------//
 
@@ -4521,11 +4430,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                                  mpl::int_<MESH_FACES> /**/,
                                                                  mpl::false_ ) const
 {
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -4593,7 +4498,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
     //typename QuadMapped<im_range_type>::permutation_points_type ppts( qm( im() ) );
 
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
     std::vector<face_im_type> face_ims( imRange.nFaces() );
 
@@ -4648,7 +4553,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest,meshTrial );
     }
 
@@ -4740,11 +4645,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                                  mpl::int_<MESH_FACES> /**/,
                                                                  mpl::true_ ) const
 {
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -4818,7 +4719,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
     //typename QuadMapped<im_range_type>::permutation_points_type ppts( qm( im() ) );
 
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
     std::vector<face_im_type> face_ims( imRange.nFaces() );
 
@@ -4893,7 +4794,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest,meshTrial );
     }
 
@@ -5014,12 +4915,7 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
-
-    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
-                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
-                              >::type::type im_range_type;
-
+    using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
@@ -5074,7 +4970,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
     //typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
 
-    im_range_type imRange;
+    im_range_type imRange( M_im.order() );
     std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
     std::vector<face_im_type> face_ims( imRange.nFaces() );
 
@@ -5134,7 +5030,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     if (!M_QPL)
     {
-        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts, M_im ) );
         M_QPL->update( meshTest );
     }
 
@@ -6106,8 +6002,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
     //typedef typename eval_expr_type::value_type value_type;
     //typedef typename Im::value_type value_type;
 
-    //BOOST_MPL_ASSERT_MSG( the_element_type::nDim > 1, INVALID_DIM, (mpl::int_<the_element_type::nDim>, mpl::int_<the_face_element_type::nDim>, mpl::identity<thise_face_element_type>, mpl::identity<the_element_type> ) );;
-
     QuadMapped<im_type> qm;
     typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
@@ -6613,24 +6507,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      return p0;
  }
  /// \endcond
-
-#if 0
- /**
-  * integrate an expression \c expr over a set of convexes \c elts
-  * using the integration rule \c im .
-  */
- template<typename Elts, typename Im, typename ExprT>
-     Expr<Integrator<Elts, Im, ExprT, Im> >
-     integrate( Elts const& elts,
-                Im const& im,
-                ExprT const& expr,
-                GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
- {
-     typedef Integrator<Elts, Im, ExprT, Im> expr_t;
-     return Expr<expr_t>( expr_t( elts, im, expr, gt, im ) );
- }
-#endif
-
  //Macro which get the good integration order
 # define VF_VALUE_OF_IM(O)                                              \
  boost::mpl::if_< boost::mpl::bool_< O::imIsPoly > ,                    \
@@ -6679,10 +6555,31 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
      typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
      static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
-
+     using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
+     
      //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
-     typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-     typedef typename clean2_type<Args,tag::quad1, _Q< ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+     static const uint16_type exprOrder = ExpressionOrder<_range_type,_expr_type>::value;
+     static const uint16_type exprOrder_1 = ExpressionOrder<_range_type,_expr_type>::value_1;
+     /**
+      * @return expression order
+      */
+     static constexpr uint16_type expressionOrder() { return exprOrder ; }
+     /**
+      * @return expression order in the context of an order 1 geometry
+      */
+     static constexpr uint16_type expressionOrderG1() { return exprOrder_1 ; }
+     using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
+     using _value_type = typename _expr_type::value_type;
+     using im_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
+     typedef typename clean2_type<Args,tag::quad, im_type>::type __quad_type;
+     typedef typename clean2_type<Args,tag::quad1, im_type >::type __quad1_type;
+     using _quad_type = typename mpl::if_<mpl::or_<std::is_integral<__quad_type>,
+                                                   std::is_base_of<_QBase,__quad_type>>,
+                                          mpl::identity<im_type>,
+                                          mpl::identity<std::remove_const_t<__quad_type>> >::type::type;
+     using _quad1_type = typename mpl::if_<mpl::or_<std::is_integral<__quad1_type>,
+                                                    std::is_base_of<_QBase,__quad1_type>>,
+                                           mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
      typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
      typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
@@ -6690,9 +6587,6 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  } // detail
 
  /// \endcond
-
-
-
 } // vf
 
 

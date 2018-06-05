@@ -24,17 +24,14 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file pointsetquadrature.hpp
-   \author Gilles Steiner <gilles.steiner@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- */
-#ifndef __Quadpoint_H
-#define __Quadpoint_H 1
+#ifndef FEELPP_POINTSETQUADRATURE_HPP
+#define FEELPP_POINTSETQUADRATURE_HPP 1
 
 #include <feel/feelmesh/pointset.hpp>
+#include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/geomap.hpp>
+#include <feel/feelpoly/imfactory.hpp>
 
 namespace Feel
 {
@@ -54,7 +51,6 @@ enum IntegrationFaceEnum
     FACE_8
 };
 
-const uint16_type DynamicDegree = invalid_uint16_type_value;
 /**
  * @brief Quadrature point set base class
  *
@@ -62,13 +58,10 @@ const uint16_type DynamicDegree = invalid_uint16_type_value;
  * @author Gilles Steiner <gilles.steiner@epfl.ch>
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<class Convex, uint16_type Integration_Degree, typename T>
+template<class Convex, typename T>
 class PointSetQuadrature : public PointSet<Convex,T>
 {
 public :
-
-    // true if Integration Degree is known at compile time, false otherwise
-    static constexpr bool IntegrationDegreeAtCompileTime = Integration_Degree!=DynamicDegree;
 
     static const bool is_face_im = false;
     typedef T value_type;
@@ -78,18 +71,33 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef ublas::vector<value_type> weights_type;
-
-    typedef PointSetQuadrature<Convex, Integration_Degree, T> self_type;
+    static const uint16_type nDim = Convex::nDim;
+    typedef PointSetQuadrature<Convex, T> self_type;
 
     typedef self_type parent_quadrature_type;
+    using quad_type = IMBase<value_type>;
 
-    PointSetQuadrature(): super(), M_w(), M_prod(), M_exprq() {}
+    PointSetQuadrature(): super(), M_quad(), M_w(), M_prod(), M_exprq() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp ) = default;
 
-    PointSetQuadrature( uint32_type Npoints )
-        : super( Npoints ), M_w( Npoints ), M_prod( Npoints ), M_exprq( Npoints )
-    {}
+    explicit PointSetQuadrature( uint16_type order )
+        : super( order ), 
+          M_order( order ),
+          M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
+          M_quad(),
+          M_w(), M_prod(), M_exprq()
+        {
+            DLOG(INFO) << "Quad name: " << M_name << std::endl;
+            if ( nDim > 0 )
+            {
+                M_quad = *IMFactory<value_type>::instance().createObject( M_name );
+                M_w.resize(M_quad.numberOfPoints());
+                M_prod.resize( M_quad.numberOfPoints() );
+                M_exprq.resize( M_quad.numberOfPoints() );
+                create( order );
+            }
+        }
 
     PointSetQuadrature( weights_type Wts )
         :
@@ -99,13 +107,39 @@ public :
         M_exprq( Wts.size() )
     {}
 
-
+    
     virtual ~PointSetQuadrature() = default;
 
-    virtual bool isFaceIm() const
+    virtual bool isFaceIm() const noexcept
     {
         return is_face_im;
     }
+    constexpr uint16_type order() const noexcept { return M_order; }
+
+    std::string const& name() const noexcept { return M_name; }
+
+    /**
+     * build a quadrature rule that integrates up to polynomial \c order included.
+     */
+    virtual void create( uint16_type order ) 
+        {
+            M_order = order;
+            M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str();
+            M_quad = *IMFactory<T>::instance().createObject( M_name );
+            this->M_npoints = M_quad.numberOfPoints();
+            this->M_points.resize( nDim, M_quad.numberOfPoints() );
+            this->M_w.resize( M_quad.numberOfPoints() );
+            for ( size_type i=0; i< M_quad.numberOfPoints(); i++ )
+            {
+                
+                for ( int j = 0; j < nDim; ++j )
+                {
+                    this->M_points( j, i ) = M_quad.q[( nDim+1 )*i+j];
+                }
+                
+                this->M_w( i ) = M_quad.q[( nDim+1 )*i+nDim];
+            }
+        }
 
     self_type& operator=( self_type const& q ) = default;
 
@@ -437,20 +471,13 @@ public :
 
     class Face
         :
-    public PointSetQuadrature<typename Convex::topological_face_type,
-        Integration_Degree,
-        T>
+    public PointSetQuadrature<typename Convex::topological_face_type,T>
     {
-        typedef PointSetQuadrature<typename Convex::topological_face_type,
-                Integration_Degree,
-                T> super;
+        using super = PointSetQuadrature<typename Convex::topological_face_type,T>;
     public:
         using parent_quadrature_type = super;
-
-        // true if Integration Degree is known at compile time, false otherwise
-        static constexpr bool IntegrationDegreeAtCompileTime = Integration_Degree!=DynamicDegree;
-
         static const bool is_face_im = true;
+
         Face()
             :
             super(),
@@ -459,12 +486,13 @@ public :
         }
         Face( self_type const& quad_elt, uint16_type f = 0 )
             :
-            super(),
+            super( quad_elt.order() ),
             M_f( f )
         {
+            VLOG(2) << "Quadrature face: " << quad_elt;
             this->setPoints( quad_elt.fpoints( f ) );
             this->setWeights( quad_elt.weights( f ) );
-
+            
         }
         Face( Face const& f )
             :
@@ -482,11 +510,11 @@ public :
 
             return *this;
         }
-        bool isFaceIm() const
+        bool isFaceIm() const noexcept
         {
             return is_face_im;
         }
-        uint16_type face() const
+        uint16_type face() const noexcept
         {
             return M_f;
         }
@@ -528,7 +556,7 @@ protected:
 
         typedef typename Elem::permutation_type permutation_type;
         DCHECK(permutation_type::N_PERMUTATIONS==2) << " number of permutation must be equal to 2 here\n";
-        BOOST_STATIC_ASSERT( Elem::nDim == 1 );
+        //BOOST_STATIC_ASSERT( Elem::nDim == 1 );
 
         M_n_face.resize( Elem::numTopologicalFaces );
         M_w_face.resize( Elem::numTopologicalFaces );
@@ -593,6 +621,13 @@ protected:
 
 protected:
 
+    uint16_type M_order;
+
+    std::string M_name;
+
+    //std::unique_ptr<quad_type> M_quad;
+    quad_type M_quad;
+
     weights_type M_w;
 
     std::vector<std::map<uint16_type,weights_type> > M_w_face;
@@ -604,12 +639,15 @@ protected:
     vector_type M_prod;
     mutable vector_type M_exprq;
 
-};
 
-template<class Convex, uint16_type Integration_Degree, typename T>
+};
+template<class Convex, typename T>
+const uint16_type PointSetQuadrature<Convex,T>::nDim;
+
+template<class Convex, typename T>
 template<typename Elem, typename GM, typename IM>
 void
-PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& ref_convex,
+PointSetQuadrature<Convex,T>::constructQROnFace( Elem const& ref_convex,
         boost::shared_ptr<GM> const& __gm,
         boost::shared_ptr<IM> const& __qr_face,
         mpl::bool_<true>  )
@@ -624,7 +662,7 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
     typedef typename GM::face_gm_type::precompute_type face_pc_type;
     typedef typename GM::face_gm_type::precompute_ptrtype face_pc_ptrtype;
     face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(),__qr_face->points() ) );
-
+    
     for ( uint16_type __f = 0; __f < Elem::numTopologicalFaces; ++__f )
     {
         for ( permutation_type __p( permutation_type::IDENTITY );
@@ -676,11 +714,11 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
 }
 
 
-template<class Convex, uint16_type Integration_Degree, typename T>
+template<class Convex, typename T>
 template<typename Elem, typename GM, typename IM>
 void
-PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnEdge( Elem const& ref_convex,
-                                                                    boost::shared_ptr<GM> const& __gm,
+PointSetQuadrature<Convex,T>::constructQROnEdge( Elem const& ref_convex,
+                                                 boost::shared_ptr<GM> const& __gm,
                                                                     boost::shared_ptr<IM> const& __qr_edge,
                                                                     mpl::bool_<true>  )
 {
@@ -748,9 +786,8 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnEdge( Elem const& 
 
 namespace std
 {
-template<class Convex, Feel::uint16_type Integration_Degree, typename T>
-std::ostream& operator<<( std::ostream& os,
-                          Feel::PointSetQuadrature<Convex,Integration_Degree,T> const& qps )
+template<class Convex, typename T>
+std::ostream& operator<<( std::ostream& os, Feel::PointSetQuadrature<Convex,T> const& qps )
 {
     os << "quadrature point set:\n"
        << "number of points: " << qps.nPoints() << "\n"
@@ -769,4 +806,4 @@ std::ostream& operator<<( std::ostream& os,
 
 }
 
-#endif /* _QuadPoint_H */
+#endif /* FEELPP_POINTSETQUADRATURE_HPP */
