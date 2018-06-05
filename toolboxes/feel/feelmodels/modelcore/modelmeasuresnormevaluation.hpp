@@ -204,6 +204,30 @@ measureNormEvaluation( RangeType const& range,
     }
 }
 
+
+template<typename MeshType, typename RangeType, typename SymbolsExpr, typename... Args >
+void
+measureNormEvaluation( boost::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
+                       ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
+                       SymbolsExpr const& symbolsExpr, Args... args )
+{
+    auto meshMarkers = ppNorm.markers();
+    if ( meshMarkers.empty() )
+        measureNormEvaluation( defaultRange,ppNorm,res,symbolsExpr,args... );
+    else
+    {
+        std::string firstMarker = *meshMarkers.begin();
+        if ( mesh->hasElementMarker( firstMarker ) )
+            measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,args... );
+        else if ( mesh->hasFaceMarker( firstMarker ) )
+            measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,args... );
+        else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
+            CHECK( false ) << "not implemented for edges/points";
+        else if ( !mesh->hasMarker( firstMarker ) )
+            CHECK( false ) << "marker " << firstMarker << " not present in mesh";
+    }
+}
+
 } // namespace FeelModels
 } // namespace Feel
 
