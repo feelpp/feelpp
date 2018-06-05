@@ -127,10 +127,10 @@ public :
     }
 
     template<typename ExprT>
-    Expr< GinacExVF<ExprT,expr_order> >
+    constexpr auto //Expr< GinacExVF<ExprT,expr_order> >
     exprScalar( std::string const& symb, ExprT const& e ) const
     {
-        return Feel::vf::expr( this->exprScalar(), symb, e );
+        return Feel::vf::expr( this->exprScalar(), symbolExpr(symb, e) );
     }
 
 private :
@@ -165,7 +165,7 @@ public :
     void setParameterValues( std::map<std::string,double> const& mp ) { super_type::setParameterValues( mp ); }
 
     template<typename ExprT>
-    Expr< GinacExVF<ExprT,expr_order> >
+    constexpr auto //Expr< GinacExVF<ExprT,expr_order> >
     expr( std::string const& symb, ExprT const& e ) const
     {
         return this->exprScalar( symb,e );
