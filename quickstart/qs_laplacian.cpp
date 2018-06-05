@@ -67,17 +67,17 @@ int main(int argc, char**argv )
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=f*id(v));
-    l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*id(v),_quad=4);
-    l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*id(v),_quad=_Q<3>());
+    l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*id(v));
+    l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*id(v));
     toc("l");
 
     tic();
     auto a = form2( _trial=Vh, _test=Vh);
     tic();
     a = integrate(_range=elements(mesh),
-                  _expr=mu*inner(gradt(u),grad(v)),_quad=_Q<>(3) );
+                  _expr=mu*inner(gradt(u),grad(v)));
     toc("a");
-    a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v),_quad=im(mesh,4));
+    a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
     a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
     //! if no markers Robin Neumann or Dirichlet are present in the mesh then
     //! impose Dirichlet boundary conditions over the entire boundary
