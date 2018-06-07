@@ -37,25 +37,29 @@ struct NormEvalExpr
 template<typename RangeType, typename ExprType, typename GradExprType, typename SymbolsExpr>
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res,
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
                          typename std::enable_if< NormEvalExpr<RangeType,ExprType>::shape::is_scalar>::type* = nullptr )
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrderError = ppNorm.quadOrder();
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
     double normComputed = 0;
     if ( normType == "H1" )
-        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr );
+        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
     else if ( normType == "SemiH1" )
-        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr );
+        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
     else if ( normType == "H1-error" )
         normComputed = normH1(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
                               _grad_expr= gradExpr -  trans( expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ) ),
-                              _quad=_Q<10>(),_quad1=_Q<10>() );
+                              _quad=quadOrderError,_quad1=quad1OrderError );
     else if ( normType == "SemiH1-error" )
         normComputed = normSemiH1(_range=range,_grad_expr= gradExpr - trans( expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(),symbolsExpr ) ),
-                                  _quad=_Q<10>(),_quad1=_Q<10>() );
+                                  _quad=quadOrderError,_quad1=quad1OrderError );
     else
         CHECK( false ) << "not a H1 norm type";
     res[normNameOutput] = normComputed;
@@ -64,25 +68,29 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
 template<typename RangeType, typename ExprType, typename GradExprType, typename SymbolsExpr>
 void
 measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExprType const& gradExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res,
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true,
                          typename std::enable_if< NormEvalExpr<RangeType,ExprType>::shape::is_vectorial>::type* = nullptr )
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrderError = ppNorm.quadOrder();
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
     double normComputed = 0;
     if ( normType == "H1" )
-        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr );
+        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
     else if ( normType == "SemiH1" )
-        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr );
+        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
     else if ( normType == "H1-error" )
         normComputed = normH1(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
                               _grad_expr= gradExpr - expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ),
-                              _quad=_Q<10>(),_quad1=_Q<10>() );
+                              _quad=quadOrderError,_quad1=quad1OrderError );
     else if ( normType == "SemiH1-error" )
         normComputed = normSemiH1(_range=range,_grad_expr= gradExpr - expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ),
-                                  _quad=_Q<10>(),_quad1=_Q<10>() );
+                                  _quad=quadOrderError,_quad1=quad1OrderError );
     else
         CHECK( false ) << "not a H1 norm type";
     res[normNameOutput] = normComputed;
@@ -91,18 +99,22 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
 template<typename RangeType, typename ExprType, typename SymbolsExpr>
 void
 measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::string const& normType,
-                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res )
+                         ModelPostprocessNorm const& ppNorm, SymbolsExpr const& symbolsExpr, std::map<std::string,double> & res, bool useQuadOrder = true )
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrderError = ppNorm.quadOrder();
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
     double normComputed = 0;
     if ( normType == "L2" )
-        normComputed = normL2(_range=range,_expr=idExpr );
+        normComputed = normL2(_range=range,_expr=idExpr,_quad=quadOrder,_quad1=quad1Order );
     else if ( normType == "L2-error" )
         normComputed = normL2(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
-                              _quad=_Q<10>(),_quad1=_Q<10>() );
+                              _quad=quadOrderError,_quad1=quad1OrderError );
     else
         CHECK( false ) << "not a L2 norm type";
     res[normNameOutput] = normComputed;
@@ -117,7 +129,7 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
     if ( normType == "L2" || normType == "L2-error" )
         measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res );
     else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
-        measureNormEvaluationH1( range, idv(field), gradv(field), normType, ppNorm, symbolsExpr, res );
+        measureNormEvaluationH1( range, idv(field), gradv(field), normType, ppNorm, symbolsExpr, res, false );
     else
         CHECK( false ) << "invalid norm type : " << normType;
 }
@@ -129,7 +141,7 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
                             typename std::enable_if< FieldType::is_tensor2 || FieldType::is_tensor2symm >::type* = nullptr )
 {
     if ( normType == "L2" || normType == "L2-error" )
-        measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res );
+        measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res, false );
     else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
         CHECK( false ) << "normType " << normType << " is not implemented with tensor field";
     else
