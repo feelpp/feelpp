@@ -11,6 +11,8 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -336,8 +338,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    bool hasMeasure = false;
-
     pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     //  heat flux measures
     std::string ppTypeMeasures = "Measures";
@@ -374,8 +374,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
                     //std::cout << "add ppHeatFlux with name " << marker<<"\n";
                     std::string name = myPpForces.name();
                     M_postProcessMeasuresForces.push_back( myPpForces );
-                    this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,0.);
-                    hasMeasure = true;
                 }
             }
         }
@@ -400,22 +398,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextTemperature->add( ptCoord );
                 std::string ptNameExport = (boost::format("temperature_%1%")%ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add("temperature", ctxId, ptNameExport );
-                this->postProcessMeasuresIO().setMeasure( ptNameExport, 0. );
-                hasMeasure = true;
             }
         }
     }
 
 
-    if ( hasMeasure )
+    if ( !this->isStationary() )
     {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        // start or restart measure file
-        if (!this->doRestart())
-            this->postProcessMeasuresIO().start();
-        else if ( !this->isStationary() )
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
@@ -705,11 +698,21 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "temperature",this->fieldTemperature() ) );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
 
     if ( hasMeasure )
     {
         if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setParameter( "time", time );
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
     }
 }
@@ -751,8 +754,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateBdf", "finish");
 }
-
-
 
 } // end namespace FeelModels
 } // end namespace Feel
