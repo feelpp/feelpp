@@ -140,7 +140,37 @@ Winslow<MeshType,Order>::init()
                      _expr=inner(idt(u),id(u)) );
     M_matrixMetricDerivative->close();
 
+    M_useMeshAdapation = boption(_name="mesh-adaptation",_prefix=this->prefix() );
+    M_useMeshAdapationScalar = boption(_name="mesh-adaptation.scalar-weight",_prefix=this->prefix() );
 
+    M_weightFunctionScalar.reset( new element_p0_type( M_XhScalP0Disc ) );
+    M_weightFunctionScalar->on(_range=elements(mesh),_expr=cst(1.));
+    if ( M_useMeshAdapation && !M_useMeshAdapationScalar )
+    {
+        M_XhTensor2P0Disc = space_p0_tensor2_type::New(_mesh=mesh);
+        M_weightFunctionTensor2.reset( new element_p0_tensor2_type( M_XhTensor2P0Disc ) );
+        M_weightFunctionTensor2->on(_range=elements(mesh),_expr=Id<mesh_type::nDim>());
+    }
+
+#if 0
+    M_hMinRadius.reset( new element_p0_type(M_XhScalP0Disc));
+    for ( auto const& eltWrap : elements(mesh) )
+    {
+        double dmin = 1e10;
+        auto const& elt = unwrap_ref( eltWrap );
+        auto bary = elt.barycenter();
+        em_node_type<double> bary2( bary.data().begin(), bary.size() );
+        for( uint16_type p = 0; p < elt.numVertices; ++p ) {
+            auto const& pt = elt.point( p ).node();
+            em_node_type<double> pt2( const_cast<double *>(pt.data().begin()), pt.size() );
+            dmin = std::min(dmin,(bary2-pt2).norm());
+        }
+        for ( auto const& ldof : M_XhScalP0Disc->dof()->localDof( elt.id() ) )
+        {
+            M_hMinRadius->set( ldof.second.index(), dmin );
+        }
+    }
+#endif
     this->log("Winslow","init", "finish" );
 }
 
@@ -152,7 +182,9 @@ Winslow<MeshType,Order>::getInfo() const
 
     *_ostr << "\n   Winslow "
            << "\n     -- solver type : " << M_solverType
-        ;
+           <<  "\n    -- mesh adaptation : " << M_useMeshAdapation;
+    if ( M_useMeshAdapation )
+        *_ostr <<  "\n       + type : " << ( ( M_useMeshAdapationScalar)? "Scalar" : "Tensor2" );
 
     return _ostr;
 }
@@ -164,6 +196,9 @@ void
 Winslow<MeshType,Order>::solve()
 {
     this->log("Winslow","solve", "start" );
+
+    if ( M_useMeshAdapation )
+        this->updateMeshAdaptation();
 
     if ( M_solverType=="Picard" || M_solverType == "FixPoint" )
     {
@@ -192,6 +227,144 @@ Winslow<MeshType,Order>::solve()
     *M_displacement -= *M_identity;
 
     this->log("Winslow","solve", "finish" );
+}
+
+
+//----------------------------------------------------------------------------//
+
+template< typename MeshType,int Order >
+void
+Winslow<MeshType,Order>::updateMeshAdaptation()
+{
+#if 0
+    auto curMapBB = M_Xh->element(M_vectorSolution);
+    auto curDispBB = M_Xh->element( idv(curMapBB)-idv(M_identity) );
+    auto curMinRadius = M_XhScalP0Disc->element();
+    auto newBary = M_XhTensor2P0Disc->element();
+    auto newBaryx = newBary.comp(Component::X,Component::X);
+    auto newBaryy = newBary.comp(Component::Y,Component::Y);
+    newBaryx.on(_range=elements(M_Xh->mesh()),_expr=Cx()+idv(curDispBB)(0,0));
+    newBaryy.on(_range=elements(M_Xh->mesh()),_expr=Cy()+idv(curDispBB)(1,0));
+    for ( auto const& eltWrap : elements(M_Xh->mesh()) )
+    {
+        double dmin = 1e10;
+        auto const& elt = unwrap_ref( eltWrap );
+        size_type index = M_XhScalP0Disc->dof()->localToGlobal( elt.id(),0,0 ).index();
+        double baryX = newBaryx(index);double baryY = newBaryy(index);
+        for( uint16_type p = 0; p < elt.numVertices; ++p ) {
+            double ptX = curMapBB( M_Xh->dof()->localToGlobal( elt.id(),p,0 ).index() );
+            double ptY = curMapBB( M_Xh->dof()->localToGlobal( elt.id(),p,1 ).index() );
+            dmin = std::min(dmin,std::sqrt(std::pow(ptX-baryX,2)+std::pow(ptY-baryY,2)));
+        }
+        curMinRadius.set( index, dmin );
+    }
+#endif
+
+
+#if 0
+    auto wfxx = M_weightFunction->comp(Component::X,Component::X);
+    auto wfyy = M_weightFunction->comp(Component::Y,Component::Y);
+    auto exprg = expr(soption(_name="functions.g") );
+    auto exprh = expr(soption(_name="functions.h") );
+    std::map<std::string,double> mp;mp["k"]=M_weigthFunctionScaling;
+    exprg.setParameterValues( mp );
+    exprh.setParameterValues( mp );
+
+    wfxx.on(_range=elements(M_Xh->mesh()),_expr=exprg );
+    wfyy.on(_range=elements(M_Xh->mesh()),_expr=exprh );
+#elif 1
+    auto Xh = this->functionSpace();
+    auto mesh = this->functionSpace()->mesh();
+    auto const& u = *M_displacement;
+    auto aa = form2( _trial=Xh, _test=Xh);
+    aa = integrate(_range=elements(mesh),
+                  _expr=inner(gradt(u),grad(u)) );
+    auto ll = form1( _test=Xh );
+    ll = integrate(_range=elements(mesh),
+                   _expr=0*inner(one(),id(u)));
+    if ( this->hasFlagSet("moving" ) )
+    {
+        aa +=
+            on( _range=markedfaces( mesh, this->flagSet("moving") ),
+                _element=u, _rhs=ll,
+                _expr=idv( this->dispImposedOnBoundary() ) );
+    }
+    if ( this->hasFlagSet("fixed" ) )
+    {
+        aa +=
+            on( _range=markedfaces(mesh, this->flagSet("fixed") ),
+                _element=u, _rhs=ll,
+                _expr=0*idv(this->identity())/*, ON_ELIMINATION*/ );
+
+    }
+    auto uHarmonic = Xh->element();
+    aa.solve(_rhs=ll,_solution=uHarmonic);
+
+    auto uHarmonicMagnitude = Xh->compSpace()->element( sqrt(inner(idv(uHarmonic)) ));
+#if 0
+    auto wfx = (*M_weightFunction)[Component::X];
+    auto Volume = integrate( elements(this->functionSpace()->mesh()), cst(1.) ).broken( XhP0 );
+    //auto Volume = integrate( elements(this->functionSpace()->mesh()), det( gradv(u) ) ).broken( XhP0 );
+    double Vmin = Volume.min();
+    double Vmax = Volume.max();
+#endif
+
+#if 0
+    double gf=doption(_name="parameters.a");//1.4;
+    double nLayers=doption(_name="parameters.b");//2;
+    //auto dispMag = sqrt(inner(idv(uHarmonic)));
+    double uMax = uHarmonicMagnitude.max();
+    double uMin = uMax-uMax/2.;
+    //auto myweight = max(cst(1.),pow(gf,nLayers*idv(uHarmonicMagnitude)/uMax) );
+    auto myweight = max(cst(1.),pow(cst(gf),nLayers*(idv(uHarmonicMagnitude)-uMin)/(uMax-uMin) ) );
+    M_weightFunctionScalar->on(_range=elements(M_Xh->mesh()),_expr=myweight);
+#endif
+
+
+#if 1
+#if 1
+    //auto curDisp = uHarmonic;//uHarmonicMagnitude;
+    auto curDisp = Xh->element();
+    curDisp.on(_range=elements(mesh),_expr=idv(uHarmonic)*exp(inner(idv(uHarmonic))));
+    //double newArea = integrate(_range=elements(mesh),_expr=det(Id<mesh_type::nDim>()+gradv(uHarmonic)) ).evaluate()(0,0);
+#else
+    auto curMap = M_Xh->element(M_vectorSolution);
+    //auto uHarmonicMagnitude = M_Xh->compSpace()->element( sqrt(inner(idv(curMap)-idv(M_identity)) ));
+    auto curDisp = M_Xh->element( idv(curMap)-idv(M_identity) );
+#endif
+
+    double alpha = integrate(_range=elements(M_Xh->mesh()),_expr=pow(inner(gradv(curDisp)),cst(1./2.) )).evaluate()(0,0);
+    alpha /= M_Xh->mesh()->measure();
+    //alpha /= newArea;
+    alpha = std::pow( alpha,2);
+    //alpha *= doption(_name="parameters.a");
+    //std::cout << "\n\nalpha="<<alpha<<"\n\n";
+    auto sqrtofg = sqrt(cst(1.)+ (1./alpha)*inner(gradv(curDisp)));
+
+    if ( M_useMeshAdapationScalar )
+    {
+        if ( alpha > 1e-8 )
+        {
+            //auto newScaling = idv(curMinRadius)/idv(M_hMinRadius);
+            auto scalarMatrixCoeff = sqrt(cst(1.)+(1./alpha)*inner(gradv(curDisp)));
+            M_weightFunctionScalar->on(_range=elements(M_Xh->mesh()),_expr=scalarMatrixCoeff);
+        }
+        else
+            M_weightFunctionScalar->on(_range=elements(M_Xh->mesh()),_expr=cst(1.));
+    }
+    else
+    {
+        if ( alpha > 1e-8 )
+        {
+            auto blabla = Id<mesh_type::nDim>()+(1./alpha)*(gradv(curDisp)*trans(gradv(curDisp)));
+            auto blablaRootSquare=(1./sqrt(trace(blabla)+2*sqrt(det(blabla))))*(blabla+sqrt(det(blabla))*Id<mesh_type::nDim>());
+            M_weightFunctionTensor2->on(_range=elements(M_Xh->mesh()),_expr=(1./sqrt(det(blablaRootSquare)))*blablaRootSquare);
+        }
+        else
+            M_weightFunctionTensor2->on(_range=elements(M_Xh->mesh()),_expr=Id<mesh_type::nDim>());
+    }
+#endif
+#endif
 }
 
 //----------------------------------------------------------------------------//
@@ -550,6 +723,7 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
         return;
     }
 
+
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     auto Xh = this->functionSpace();
@@ -572,13 +746,27 @@ Winslow<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) const
     //M_vectorMetricDerivative->close();
     M_backendMetricDerivative->solve(_matrix=M_matrixMetricDerivative,_solution=*M_fieldMetricDerivative,_rhs=M_vectorMetricDerivative);
 
-    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-        integrate( _range=elements(mesh),
-                   _expr= inner(invG*trans(gradt(u)),trans(grad(u))) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-        integrate( _range=elements(mesh),
-                   _expr=-inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
+    if ( M_useMeshAdapation && !M_useMeshAdapationScalar )
+    {
+        auto tau = idv(M_weightFunctionTensor2);
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            integrate( _range=elements(mesh),
+                       _expr= inner(invG*trans(tau*gradt(u)),trans(grad(u))) );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            integrate( _range=elements(mesh),
+                   _expr=-inner(tau*gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
+    }
+    else
+    {
+        auto tau = idv( M_weightFunctionScalar );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            integrate( _range=elements(mesh),
+                       _expr= (tau)*inner(invG*trans(gradt(u)),trans(grad(u))) );
+        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
+            integrate( _range=elements(mesh),
+                       _expr=-(tau)*inner(gradt(u)*idv(M_fieldMetricDerivative),id(u)) );
+    }
 }
 
 template< typename MeshType, int Order >
