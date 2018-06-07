@@ -8,8 +8,8 @@
 :uri-pull: https://github.com/feelpp/feelpp/pull
 
 [[v0.105.0-2018-06-xx]]
-== v0.105.0 (unreleased)
-// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-xx)
+== v0.105.0 (rc.1)
+// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-07)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 
@@ -25,10 +25,15 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 *** start code refactoring (work in progress)
 *** fix coupling type Nitsche, robin-robin and variants
 *** major changes/improvements of fsi coupling robin-neumann generalized
+* [**toolbox/**] support norm computation in json files in PostProcessing section see   {uri-issue}/1172[#1172]
+* [**toolbox/**] export matrices and vectors from toolboxes {uri-issue}/1169[#1169]
+* [**quickstart/**] Add pure traction elasticity example using Lagrange Multiplier
 
 === Fixes
 
 * [**feel/**] Fix newmark restart if a frequency is used
+* [**feel/**] Update MeshMover on ghost element see {uri-issue}/1173[#1173]
+
 
 [[v0.104.1-2018-05-xx]]
 == v0.104.1 (unreleased)
