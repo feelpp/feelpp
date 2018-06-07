@@ -264,8 +264,9 @@ public:
         M_QPL( qpl )
     {
         M_elts.push_back( elts );
-        LOG(INFO) << "Compile Time order : " << M_im.order();
-        LOG(INFO) << "im : " << M_im.points() << " w:" << M_im.weights();
+        DLOG(INFO) << "im quad order : " << M_im.order();
+        DLOG(INFO) << "im quad1 order : " << M_im2.order();
+        DLOG(INFO) << "im : " << M_im.points() << " w:" << M_im.weights();
         DLOG(INFO) << "Integrator constructor from expression\n";
     }
 
@@ -5129,7 +5130,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         auto gm1 = eltInit.gm1();
 
         auto geopc = gm->preCompute( this->im().points() );
-        auto geopc1 = gm1->preCompute( this->im().points() );
+        auto geopc1 = gm1->preCompute( this->im2().points() );
         auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
         auto ctx = gm->template context<context|vm::JACOBIAN>( eltInit, geopc );
         auto ctx1 = gm1->template context<context|vm::JACOBIAN>( eltInit, geopc1 );
@@ -5138,6 +5139,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
         static const int inputDataDim = M;
         auto expr_= detail_integrator::generateLambdaExpr( expression(), cst_ref(x), cst_ref(y), cst_ref(z), mpl::int_<inputDataDim>() );
         auto expr_evaluator = expr_.evaluator( mapgmc(ctx) );
+        auto expr_evaluator1 = expr_.evaluator( mapgmc(ctx1) );
 
         for ( ; it != en; ++it )
         {
@@ -5172,8 +5174,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
             case GeomapStrategyType::GEOMAP_O1:
             {
                 ctx1->update( eltCur );
-                expr_evaluator.update( mapgmc(ctx) );
-                M_im.update( *ctx1 );
+                expr_evaluator1.update( mapgmc(ctx1) );
+                M_im2.update( *ctx1 );
 
                 int i = 0;
                 for( auto const& e : v )
@@ -5187,7 +5189,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                         {
-                            res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
+                            res[i]( (int)c1,(int)c2 ) += M_im2( expr_evaluator1, c1, c2 );
                         }
                     ++i;
                 }
@@ -5226,8 +5228,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                 else
                 {
                     ctx1->update( eltCur );
-                    expr_evaluator.update( mapgmc(ctx) );
-                    M_im.update( *ctx1 );
+                    expr_evaluator1.update( mapgmc(ctx1) );
+                    M_im2.update( *ctx1 );
 
                     int i = 0;
                     for( auto const& e : v )
@@ -5241,7 +5243,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
                         for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                             for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                             {
-                                res[i]( (int)c1,(int)c2 ) += M_im( expr_evaluator, c1, c2 );
+                                res[i]( (int)c1,(int)c2 ) += M_im2( expr_evaluator1, c1, c2 );
                             }
                         ++i;
                     }
@@ -5815,44 +5817,23 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                         //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
                         typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
                                                                                            this->im().points() ) );
-                        //std::cout << "1" << std::endl;
                         typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( gm1,
-                                                                                              this->im().points() ) );
-
-                        //std::cout << "2" << std::endl;
-                        //it = this->beginElement();
-
-                        // wait for all the guys
-#ifdef FEELPP_HAS_MPI
-                        auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
-#if 0
-                        if ( worldComm.localSize() > 1 )
-                        {
-                            worldComm.localComm().barrier();
-                        }
-#endif
-#endif
+                                                                                              this->im2().points() ) );
 
                         // possibly high order
                         gmc_ptrtype __c( new gmc_type( gm, eltInit, __geopc ) );
                         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                        //std::cout << "3" << std::endl;
                         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
                         eval_expr_type expr( expression(), mapgmc );
                         typedef typename eval_expr_type::shape shape;
-                        //std::cout << "4" << std::endl;
 
                         // order 1
                         gmc1_ptrtype __c1( new gmc1_type( gm1, eltInit, __geopc1 ) );
                         typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
                         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                        //std::cout << "5" << std::endl;
                         typedef typename expression_type::template tensor<map_gmc1_type> eval_expr1_type;
                         eval_expr1_type expr1( expression(), mapgmc1 );
-
-                        //std::cout << "6" << std::endl;
-
 
                         //value_type res1 = 0;
                         for ( ; it != en; ++it )
@@ -5863,15 +5844,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                             default:
                             case  GeomapStrategyType::GEOMAP_HO :
                             {
-#if 1
                                 __c->update( eltCur );
-                                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                                 expr.update( mapgmc );
-                                const gmc_type& gmc = *__c;
-
-                                M_im.update( gmc );
-#endif
-
+                                M_im.update( *__c );
 
                                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
@@ -5883,20 +5858,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                             case GeomapStrategyType::GEOMAP_O1:
                             {
-#if 1
                                 //DDLOG(INFO) << "geomap o1" << "\n";
                                 __c1->update( eltCur );
-                                map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                                expr1.update( mapgmc );
-                                const gmc1_type& gmc = *__c1;
-
-                                M_im.update( gmc );
-#endif
+                                expr1.update( mapgmc1 );
+                                M_im2.update( *__c1 );
 
                                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                                     {
-                                        res( c1,c2 ) += M_im( expr1, c1, c2 );
+                                        res( c1,c2 ) += M_im2( expr1, c1, c2 );
                                     }
                             }
                             break;
@@ -5906,20 +5876,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                                 //DDLOG(INFO) << "geomap opt" << "\n";
                                 if ( eltCur.isOnBoundary() )
                                 {
-#if 1
                                     //DDLOG(INFO) << "boundary element using ho" << "\n";
                                     __c->update( eltCur );
-                                    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                                     expr.update( mapgmc );
-                                    const gmc_type& gmc = *__c;
-
-                                    M_im.update( gmc );
-#endif
-
+                                    M_im.update( *__c );
 
                                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-
                                         {
                                             res( c1,c2 ) += M_im( expr, c1, c2 );
                                         }
@@ -5927,29 +5890,25 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                                 else
                                 {
-#if 1
                                     //DDLOG(INFO) << "interior element using order 1" << "\n";
                                     __c1->update( eltCur );
-                                    map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                                    expr1.update( mapgmc );
-                                    const gmc1_type& gmc = *__c1;
+                                    expr1.update( mapgmc1 );
+                                    M_im2.update( *__c1 );
 
-                                    M_im.update( gmc );
-#endif
                                     for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                                         for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                                         {
-                                            res( c1,c2 ) += M_im( expr1, c1, c2 );
+                                            res( c1,c2 ) += M_im2( expr1, c1, c2 );
                                         }
                                 }
                             }
-
-                            //break;
+                            break;
                             }
                         }
                     }
 #if defined(FEELPP_HAS_HARTS)
                     perf_mng.stop("total") ;
+                    auto const& worldComm = const_cast<MeshBase*>( eltInit.mesh() )->worldComm();
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
@@ -6554,6 +6513,49 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
 
      typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
+
+     template <typename QuadType,typename Quad1Type>
+     static
+     std::pair<_quad_type,_quad1_type>
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+         {
+             if ( thequad == invalid_uint16_type_value && thequad1 == invalid_uint16_type_value )
+                 return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( exprOrder_1 ) );
+             else if ( thequad == invalid_uint16_type_value )
+                 return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
+             else if ( thequad1 == invalid_uint16_type_value )
+                 return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
+             else
+                 return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
+         }
+     template <typename QuadType,typename Quad1Type>
+     static
+     std::pair<_quad_type,_quad1_type>
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+         {
+             if ( thequad == invalid_uint16_type_value )
+                 return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
+             else
+                 return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
+         }
+     template <typename QuadType,typename Quad1Type>
+     static
+     std::pair<_quad_type,_quad1_type>
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+         {
+             if ( thequad1 == invalid_uint16_type_value )
+                 return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
+             else
+                 return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
+         }
+
+     template <typename QuadType,typename Quad1Type>
+     static
+     std::pair<_quad_type,_quad1_type>
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+         {
+             return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
+         }
  };
  } // detail
 
