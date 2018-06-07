@@ -177,7 +177,7 @@ ModelPostprocessNorm::setup( std::string const& name )
     M_name = name;
 
     if ( auto itField = M_p.get_optional<std::string>("field") )
-        M_field = * itField;
+        M_field = *itField;
     else if ( auto ptexpr = M_p.get_child_optional("expr") )
     {
         M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
@@ -206,6 +206,17 @@ ModelPostprocessNorm::setup( std::string const& name )
 
     if ( auto itSol = M_p.get_optional<std::string>("grad_solution") )
         M_gradSolution.setExpr( "grad_solution", M_p, M_worldComm, M_directoryLibExpr );
+
+    if ( auto itQuad = M_p.get_optional<int>("quad") )
+    {
+        M_quadOrder = *itQuad;
+        if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
+            M_quad1Order = *itQuad1;
+        else
+            M_quad1Order = M_quadOrder;
+    }
+    else if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
+        M_quad1Order = *itQuad1;
 }
 
 void

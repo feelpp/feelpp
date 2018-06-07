@@ -204,28 +204,45 @@ private:
     std::string M_directoryLibExpr;
 };
 
+//! store informations require by the postprocessing Norm
 class FEELPP_EXPORT ModelPostprocessNorm
 {
 public :
     ModelPostprocessNorm( WorldComm const& world = Environment::worldComm() )
         :
-        M_worldComm( world )
+        M_worldComm( world ),
+        M_quadOrder( 5 ),
+        M_quad1Order( 5 )
         {}
     ModelPostprocessNorm( ModelPostprocessNorm const& ) = default;
     ModelPostprocessNorm( ModelPostprocessNorm&& ) = default;
     ModelPostprocessNorm& operator=( ModelPostprocessNorm const& ) = default;
     ModelPostprocessNorm& operator=( ModelPostprocessNorm && ) = default;
 
+    //! name given to a Norm postprocessing
     std::string const& name() const { return M_name; }
+    //! set of norm types (L2,H1,...) that the postprocessing compute
     std::set<std::string> const& types() const { return M_types; }
+    //! name of fe field for which norms is computed (not require if expr is given)
     std::string const& field() const { return M_field; }
+    //! mesh markers where norms is computed
     std::set<std::string> const& markers() const { return M_markers; }
+    //! an expression represented an analytical solution
     ModelExpression const& solution() const { return M_solution; }
+    //! expression of the gradient of the solution
     ModelExpression const& gradSolution() const { return M_gradSolution; }
+    //! an expression for which norms is computed (not require if field is given)
     ModelExpression const& expr() const { return M_expr; }
+    //! expression of the gradient of the expression
     ModelExpression const& gradExpr() const { return M_gradExpr; }
+    //! quad order used in norms computations (not use if the quadrature can be exact)
+    uint16_type quadOrder() const { return M_quadOrder; }
+    //! quad1 order used with ho geometry and the optimized geomap
+    uint16_type quad1Order() const { return M_quad1Order; }
 
+    //! return true if an expression has been given
     bool hasExpr() const { return M_expr.hasAtLeastOneExpr(); }
+    //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
     void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
@@ -241,6 +258,7 @@ private:
     std::string M_name, M_field;
     std::set<std::string> M_types, M_markers;
     ModelExpression M_solution, M_gradSolution, M_expr, M_gradExpr;
+    uint16_type M_quadOrder, M_quad1Order;
 };
 
 class FEELPP_EXPORT ModelPostprocess
