@@ -6519,11 +6519,11 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      std::pair<_quad_type,_quad1_type>
      im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
          {
-             if ( thequad == invalid_uint16_type_value && thequad1 == invalid_uint16_type_value )
+             if ( thequad == quad_order_from_expression && thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( exprOrder_1 ) );
-             else if ( thequad == invalid_uint16_type_value )
+             else if ( thequad == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
-             else if ( thequad1 == invalid_uint16_type_value )
+             else if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
              else
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
@@ -6533,7 +6533,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      std::pair<_quad_type,_quad1_type>
      im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
          {
-             if ( thequad == invalid_uint16_type_value )
+             if ( thequad == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
              else
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
@@ -6543,7 +6543,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      std::pair<_quad_type,_quad1_type>
      im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
          {
-             if ( thequad1 == invalid_uint16_type_value )
+             if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
              else
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );

@@ -46,9 +46,9 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( parallel,   ( bool ), true )
-      ( quad,   *, invalid_uint16_type_value )
+      ( quad,   *, quad_order_from_expression )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, invalid_uint16_type_value )
+      ( quad1,   *, quad_order_from_expression )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
