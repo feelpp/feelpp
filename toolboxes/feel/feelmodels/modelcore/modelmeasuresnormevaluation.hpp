@@ -42,9 +42,9 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
-    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
-    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
     uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
@@ -73,9 +73,9 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
-    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
-    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
     uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
@@ -103,9 +103,9 @@ measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::st
 {
     typedef typename NormEvalExpr<RangeType,ExprType>::shape shape_type;
     typedef typename NormEvalExpr<RangeType,ExprType>::element_type element_type;
-    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : invalid_uint16_type_value;
+    uint16_type quadOrder = (useQuadOrder)? ppNorm.quadOrder() : quad_order_from_expression;
     uint16_type quadOrderError = ppNorm.quadOrder();
-    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : invalid_uint16_type_value;
+    uint16_type quad1Order = (useQuadOrder)? ppNorm.quad1Order() : quad_order_from_expression;
     uint16_type quad1OrderError = ppNorm.quad1Order();
 
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
