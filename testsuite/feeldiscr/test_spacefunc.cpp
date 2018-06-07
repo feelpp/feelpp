@@ -25,6 +25,7 @@
 #include <testsuite.hpp>
 
 #include <feel/feelfilters/unitcircle.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -54,20 +55,23 @@ BOOST_AUTO_TEST_CASE( element_component_vectorial )
     v[Component::Y].on( _range=elements(mesh), _expr=cst(0) );
     s = v[Component::X].sum();
     CHECK( s == 3*mesh->numGlobalElements() ) << "Invalid sum result = " << s << " should be " << 3*mesh->numGlobalElements();
-    v[Component::X].on( _range=elements(mesh), _expr=Px() );
-    v[Component::Y].on( _range=elements(mesh), _expr=Py() );
-    auto r = normL2( _range=elements(mesh), _expr=idv(v)-vec(Px(),Py()));
-    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
-    v.on(_range=elements(mesh),_expr=vec(3.1*Py(),-2*Px()) );
-    r = normL2( _range=elements(mesh), _expr=idv(v[Component::X])-3.1*Py());
-    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
-    r = normL2( _range=elements(mesh), _expr=idv(v[Component::Y])+2*Px());
-    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
 
     v[Component::X].on( _range=elements(mesh), _expr=cst(0) );
     v[Component::Y].on( _range=elements(mesh), _expr=cst(4.) );
     s = v[Component::Y].sum();
     CHECK( s == 4*mesh->numGlobalElements() ) << "Invalid sum result = " << s << " should be " << 4*mesh->numGlobalElements();
+
+    auto Xh2 = Pchv<1>(mesh);
+    auto v2 = Xh2->element();
+    v2[Component::X].on( _range=elements(mesh), _expr=Px() );
+    v2[Component::Y].on( _range=elements(mesh), _expr=Py() );
+    auto r = normL2( _range=elements(mesh), _expr=idv(v2)-vec(Px(),Py()));
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
+    v2.on(_range=elements(mesh),_expr=vec(3.1*Py(),-2*Px()) );
+    r = normL2( _range=elements(mesh), _expr=idv(v2[Component::X])-3.1*Py());
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
+    r = normL2( _range=elements(mesh), _expr=idv(v2[Component::Y])+2*Px());
+    CHECK( r < 1e-12 ) << "invalid L2 error norm " << r << " should be 0";
 }
 
 BOOST_AUTO_TEST_SUITE_END()
