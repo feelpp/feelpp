@@ -408,13 +408,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
             {
                 if ( buildNonCstPart )
                 {
-                    auto kappaEval = expr( kappa, symbolStr, idv(u) );
+                    auto kappaEval = expr( kappa, symbolExpr(symbolStr, idv(u)) );
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
                                    _expr= kappaEval*inner(gradt(u),grad(v)),
                                    _geomap=this->geomap() );
                     auto kappaDiff = diff( kappa,symbolStr,1,"",this->worldComm(),this->repository().expr());
-                    auto kappaDiffEval = expr( kappaDiff, symbolStr, idv(u) );
+                    auto kappaDiffEval = expr( kappaDiff, symbolExpr( symbolStr, idv(u) ) );
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
                                    _expr= kappaDiffEval*idt(u)*inner(gradv(u),grad(v)),
@@ -538,7 +538,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
             {
                 if ( buildNonCstPart )
                 {
-                    auto kappaEval = expr( kappa, symbolStr, idv(u) );
+                    auto kappaEval = expr( kappa, symbolExpr( symbolStr, idv(u) ) );
                     myLinearForm +=
                         integrate( _range=range,
                                    _expr= kappaEval*inner(gradv(u),grad(v)),

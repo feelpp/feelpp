@@ -128,7 +128,7 @@ public :
     bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
 
     void updateParameterValues();
-
+    constexpr auto symbolsExpr() const { return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ) ); }
     //___________________________________________________________________________________//
 
     mesh_ptrtype const& mesh() const { return M_mesh; }

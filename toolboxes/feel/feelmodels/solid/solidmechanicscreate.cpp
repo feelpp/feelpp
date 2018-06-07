@@ -1196,7 +1196,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         this->restartExporters( this->timeInitial() );
 
 
-    bool hasMeasure = false;
     auto const& ptree = this->modelProperties().postProcess().pTree( modelName );
 
     // volume variation
@@ -1217,8 +1216,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 if ( !markers.empty() )
                 {
                     M_postProcessVolumeVariation[vvname] = markers;
-                    this->postProcessMeasuresIO().setMeasure(vvname,0.);
-                    hasMeasure = true;
                 }
             }
         }
@@ -1247,12 +1244,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextDisplacement->add( ptCoord );
                 std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-
-                std::vector<double> vecValues = { 0. };
-                if ( nDim > 1 ) vecValues.push_back( 0. );
-                if ( nDim > 2 ) vecValues.push_back( 0. );
-                this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
-                hasMeasure = true;
             }
             else if ( field == "pressure" )
             {
@@ -1264,9 +1255,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextPressure->add( ptCoord );
                 std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add("pressure", ctxId, ptNameExport );
-
-                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
-                hasMeasure = true;
             }
             else if ( fieldNameStressScalar.find( field ) != fieldNameStressScalar.end() )
             {
@@ -1277,39 +1265,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 M_postProcessMeasuresContextStressScalar->add( ptCoord );
                 std::string ptNameExport = (boost::format("%1%_%2%")%field %ptPos.name()).str();
                 this->postProcessMeasuresEvaluatorContext().add( field, ctxId, ptNameExport );
-                this->postProcessMeasuresIO().setMeasure(ptNameExport,0.);
-                hasMeasure = true;
             }
 
         }
     }
 
-    // extremum evaluation
-    for ( auto const& measureExtremum : this->modelProperties().postProcess().measuresExtremum( modelName ) )
+    if ( !this->isStationary() )
     {
-        auto const& fields = measureExtremum.fields();
-        std::string const& name = measureExtremum.extremum().name();
-        std::string const& type = measureExtremum.extremum().type();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "displacement" || field == "velocity" || field == "acceleration" )
-            {
-                std::string nameExport = (boost::format("%1%_magnitude_%2%_%3%")%field %type %name).str();
-                this->postProcessMeasuresIO().setMeasure( nameExport,0. );
-                hasMeasure = true;
-            }
-        }
-    }
-
-
-    if ( hasMeasure )
-    {
-        this->postProcessMeasuresIO().setParameter( "time", this->timeInitial() );
-        // start or restart measure file
-        if (!this->doRestart())
-            this->postProcessMeasuresIO().start();
-        else if ( !this->isStationary() )
+        if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 
 }
