@@ -500,6 +500,8 @@ public :
     element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
+    // symbols expression
+    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
@@ -639,6 +641,22 @@ public :
 
 private :
     void updateBoundaryConditionsForUse();
+
+    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
+                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          );
+        }
+    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
+                                          symbolExpr("fluid_Dy",idv(this->fieldDisplacement())(1,0) ),
+                                          symbolExpr("fluid_Dz",idv(this->fieldDisplacement())(2,0) ),
+                                          symbolExpr("fluid_D_magnitude",inner(idv(this->fieldDisplacement())) )
+                                          );
+        }
 
 protected:
 

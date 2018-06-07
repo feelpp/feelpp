@@ -36,13 +36,13 @@ namespace Feel {
 ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
     :
     M_worldComm( world ),
+    M_prefix( prefix ),
     M_params( world ),
     M_mat( world ),
     M_bc( world, false ),
     M_ic( world, false ),
     M_postproc( world ),
-    M_outputs( world ),
-    M_prefix( prefix )
+    M_outputs( world )
 {
     if ( !fs::exists( filename ) )
     {
