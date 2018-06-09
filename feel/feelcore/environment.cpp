@@ -1402,6 +1402,12 @@ Environment::doOptions( int argc, char** argv,
                        << "Warning: the .cfg file or some options may not have been read properly\n";
     }
 
+    catch ( pt::ptree_error & e )
+    {
+        LOG(ERROR) << "Error parsing json config in case option " << e.what() << std::endl;
+        throw;
+    }
+
     // catches program_options exceptions
     catch ( std::exception& e )
     {
