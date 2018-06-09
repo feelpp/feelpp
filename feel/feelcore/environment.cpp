@@ -1280,7 +1280,7 @@ Environment::doOptions( int argc, char** argv,
                 dirName = fscaseDir.parent_path().filename().string();
             std::string caseConfigFile = dirName + ".cfg";
             if ( S_vm.count( "case.config-file" ) )
-                caseConfigFile = S_vm["case.config-file"].as<std::string>();
+                caseConfigFile = fs::path(S_vm["case.config-file"].as<std::string>()).filename().string();
 
             fs::directory_iterator end_itr;
             for ( fs::directory_iterator itr( fscaseDir ); itr != end_itr; ++itr )
