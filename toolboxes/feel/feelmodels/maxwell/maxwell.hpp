@@ -82,15 +82,9 @@ public:
     typedef typename space_magneticpotential_type::element_external_storage_type element_magneticpotential_external_storage_type;
 
     // function space magnetic-field
-    // typedef Lagrange<nOrderPolyMagneticPotential-1, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_magneticfield_type;
-// #if FEELPP_DIM==3
     using basis_magneticfield_type = typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
                                                        RaviartThomas<0>,
                                                        Lagrange<0, Scalar, Discontinuous> >::type;
-    // using basis_magneticfield_type = RaviartThomas<0>;
-// #else
-//     using basis_magneticfield_type = Lagrange<0, Scalar, Discontinuous>;
-// #endif
     typedef FunctionSpace<mesh_type, bases<basis_magneticfield_type> > space_magneticfield_type;
     typedef boost::shared_ptr<space_magneticfield_type> space_magneticfield_ptrtype;
     typedef typename space_magneticfield_type::element_type element_magneticfield_type;
@@ -115,6 +109,7 @@ public:
     typedef typename space_magneticpotential_type::Context context_magneticpotential_type;
     typedef boost::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
 
+    using map_dirichlet_mat = std::map<std::string, std::string>;
     using map_dirichlet_field = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
                                                    map_vector_field<nDim>,
                                                    map_scalar_field<2> >::type;
@@ -137,6 +132,7 @@ private :
     void initDirichlet(std::enable_if_t<convex::nDim==2>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getScalarFields<nDim>( "magnetic-potential", "Dirichlet" ); }
     template<typename convex = convex_type>
     void initDirichlet(std::enable_if_t<convex::nDim==3>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" ); }
+    void initDirichletMaterial();
     void initPostProcess();
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
@@ -217,6 +213,7 @@ private :
     maxwellproperties_ptrtype M_maxwellProperties;
     // boundary conditions
     map_dirichlet_field M_bcDirichlet;
+    map_dirichlet_mat M_matDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
     map_vector_field<nDim> M_volumicForcesProperties;
