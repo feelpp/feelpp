@@ -302,7 +302,7 @@ namespace FeelModels
     void
     ModelAlgebraicFactory::solve( std::string const& type,vector_ptrtype& sol )
     {
-        if ( type == "LinearSystem" )
+        if ( type == "Linear" || type == "LinearSystem" )
         {
             this->solveLinear( sol );
         }
@@ -325,6 +325,7 @@ namespace FeelModels
     void
     ModelAlgebraicFactory::solveLinear( vector_ptrtype& U )
     {
+        auto model = this->model();
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
                                                             this->model()->worldComm(),this->model()->verboseAllProc());
 
@@ -407,11 +408,16 @@ namespace FeelModels
 
         this->model()->updateInHousePreconditioner( M_J, U );
 
+        pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
+        post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
+
         // solve linear system
         auto const solveStat = M_backend->solve( _matrix=M_J,
                                                  _solution=U,
                                                  _rhs=M_R,
-                                                 _prec=M_PrecondManage );
+                                                 _prec=M_PrecondManage,
+                                                 _pre=pre_solve,
+                                                 _post=post_solve );
 
         if ( this->model()->errorIfSolverNotConverged() )
             CHECK( solveStat.isConverged() ) << "the linear solver has not converged in "
