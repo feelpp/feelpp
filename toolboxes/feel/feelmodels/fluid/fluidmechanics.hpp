@@ -802,6 +802,8 @@ public :
     void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
     void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
     //___________________________________________________________________________________//
 
     void initInHousePreconditioner();
