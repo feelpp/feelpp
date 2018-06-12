@@ -1,4 +1,4 @@
-h = 5*10^(-8);
+h = 1e-07;
 
 Lx = DefineNumber[480*10^(-9), Name "x Lenght"];
 Ly = DefineNumber[320*10^(-9), Name "y Lenght"];
