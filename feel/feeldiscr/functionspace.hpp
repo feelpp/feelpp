@@ -1951,7 +1951,7 @@ public:
                 auto const& ptRegister = M_t[ptIdInCtx];
                 bool ptsAreIdentical = true;
                 for (uint16_type d=0;d<mesh_type::nRealDim;++d)
-                    ptsAreIdentical = ptsAreIdentical && (std::abs( ptRegister[d]-t[d] )<1e-9);
+                    ptsAreIdentical = ptsAreIdentical && (std::abs( ptRegister[d]-t[d] )<1e-15);
                 // if pt are identical, do nothing and keep the context
                 auto itFindCtx = this->find( ptIdInCtx );
                 if ( ptsAreIdentical )
