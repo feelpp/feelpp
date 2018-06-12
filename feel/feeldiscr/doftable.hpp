@@ -841,7 +841,7 @@ public:
         {
             double dotVec= ublas::inner_prod( ublas::column(eltTest.G(),1)  - ublas::column(eltTest.G(),0),
                                               ublas::column(eltTrial.G(),1) - ublas::column(eltTrial.G(),0) );
-            CHECK( std::abs( dotVec ) > 1e-9 ) << " inner_prod is null " << dotVec << "\n";
+            CHECK( std::abs( dotVec ) > 1e-15 ) << " inner_prod is null " << dotVec << "\n";
 
             if ( dotVec > 0 ) // identity permutation
                 return M_localIndicesIdentity;
@@ -2920,7 +2920,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     bool find2=true;
                     for (uint16_type d=0;d< nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( dofpointFromGmc[d]-dofpointStored[d] )<1e-9);
+                        find2 = find2 && (std::abs( dofpointFromGmc[d]-dofpointStored[d] )<1e-15);
                     }
                     CHECK(find2) << " error localToGlobal for "<< ldofParentId <<" with " << dofpointFromGmc << " and " << dofpointStored <<"\n" ;
                 }

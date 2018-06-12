@@ -796,7 +796,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                         bool find2=true;
                         for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && (std::abs( thedofPt[d]-nodeDofRecv[d] )<1e-9);
+                            find2 = find2 && (std::abs( thedofPt[d]-nodeDofRecv[d] )<1e-15);
                         }
                         // if find else save local dof
                         if (find2) { locDof = itdofpt->second.template get<1>();find=true; }
@@ -825,7 +825,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-15);
                     }
                     // if find else save local dof
                     if (find2)
@@ -1090,7 +1090,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-15);
                     }
                     // if find else save local dof
                     if (find2)
@@ -1821,7 +1821,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-15);
                     }
                     // if find else save local dof
                     if (find2)
@@ -2242,7 +2242,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                     {
-                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-9);
+                        find2 = find2 && (std::abs( thedofPtInElt[d]-nodeDofRecv[d] )<1e-15);
                     }
                     // if find else save local dof
                     if (find2)

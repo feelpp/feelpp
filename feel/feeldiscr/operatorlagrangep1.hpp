@@ -233,7 +233,7 @@ public:
 
             bool isSamePoints=true;
             for ( uint16_type d=0;d<domain_fe_type::nRealDim && isSamePoints;++d )
-                isSamePoints = isSamePoints && (std::abs( ptDof[d]-ptRealMesh[d] )<1e-9);
+                isSamePoints = isSamePoints && (std::abs( ptDof[d]-ptRealMesh[d] )<1e-15);
 
             if ( isSamePoints )
             {
@@ -451,7 +451,7 @@ OperatorLagrangeP1<space_type>::buildReferenceMesh( bool rebuild, std::string pa
 
     VLOG(2) << "[P1 Lagrange] load mesh done Pointset";
 
-    double tolPtsDiff = (useMeshInDataBase)?1e-9:1e-4;
+    double tolPtsDiff = (useMeshInDataBase)?1e-15:1e-4;
     // compute relation (ref mesh / ref dof)
     auto itl = M_p2m.mesh()->beginPoint();
     auto const enl = M_p2m.mesh()->endPoint();

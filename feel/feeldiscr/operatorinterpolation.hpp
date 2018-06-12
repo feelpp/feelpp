@@ -970,7 +970,7 @@ domainLocalDofFromImageLocalDof(boost::shared_ptr<DomainDofType> const& domaindo
         bool find2=true;
         for (uint16_type d=0;d< DomainDofType::nRealDim;++d)
         {
-            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-9);
+            find2 = find2 && (std::abs( imageGlobDofPt[d]-domainGlobDofPt[d] )<1e-15);
         }
         if (find2) { thelocDofToFind=jloc;find=true;break; }
     }
