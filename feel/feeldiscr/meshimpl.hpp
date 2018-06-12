@@ -2235,7 +2235,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-15 );
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
 
@@ -2265,7 +2265,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-15 );
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
                 }
@@ -2369,7 +2369,7 @@ updateEntitiesCoDimensionTwoGhostCell_step2( MeshType & mesh, typename MeshType:
             // compare barycenter
             bool find2=true;
             for (uint16_type d=0;d<MeshType::nRealDim;++d)
-                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-15 );
+                find2 = find2 && ( std::abs( baryEdge[d]-baryEdgeRecv[d] )<1e-9 );
             if (find2) { hasFind=true;jBis=j2; }
         }
         CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
@@ -2711,7 +2711,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-15 );
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
 
@@ -2752,7 +2752,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
                     bool find2=true;
                     for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-15 );
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
                         }
                     if (find2) { hasFind=true;jBis=j2; }
                 }
