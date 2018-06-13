@@ -341,6 +341,22 @@ public:
                         );
         }
 
+        if( M_useSpaceIsoPN )
+        {
+            M_projectorL2PN = projector( 
+                    this->functionSpaceManager()->functionSpaceScalarPN(), this->functionSpaceManager()->functionSpaceScalarPN(),
+                    backend(_name=prefixvm(this->prefix(),"projector-l2-pn"), _worldcomm=this->worldComm())
+                    );
+            M_projectorL2PNVec = projector( 
+                    this->functionSpaceManager()->functionSpaceVectorialPN(), this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
+                    );
+            //M_projectorL2P1PN = projector( 
+            //this->functionSpace(), this->functionSpaceManager()->functionSpaceScalarPN(),
+            //backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
+            //);
+        }
+
         if( smoother )
             M_smoother = smoother;
         else
@@ -722,6 +738,10 @@ private:
     projector_levelset_ptrtype M_projectorL2;
     projector_levelset_vectorial_ptrtype M_projectorL2Vec;
     projector_tensor2symm_ptrtype M_projectorL2Tensor2Symm;
+    boost::shared_ptr<Projector<space_levelset_PN_type, space_levelset_PN_type>> M_projectorL2PN;
+    boost::shared_ptr<Projector<space_levelset_type, space_levelset_PN_type>> M_projectorL2P1PN;
+    typedef typename levelset_space_manager_type::space_vectorial_PN_type space_vectorial_PN_type;
+    boost::shared_ptr<Projector<space_vectorial_PN_type, space_vectorial_PN_type>> M_projectorL2PNVec;
 
     mutable projector_levelset_ptrtype M_smoother;
     mutable projector_levelset_vectorial_ptrtype M_smootherVectorial;
