@@ -21,7 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(SRC discontinuous.cpp imsimplex.cpp)
+
+set(SRC discontinuous.cpp imsimplex.cpp gausssimplex.cpp gausshypercube.cpp)
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelpoly "${SRC};${HDR}")

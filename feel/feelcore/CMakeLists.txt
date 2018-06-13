@@ -36,8 +36,9 @@ set(SRC
   worldcomm.cpp
   debug.cpp
   utility.cpp
-  removecomments.cpp
+  ptreetools.cpp
   checker.cpp
+  remotedata.cpp
   )
 if(FEELPP_HAS_HDF5)
     set(SRC hdf5.cpp ${SRC})

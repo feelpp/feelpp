@@ -26,18 +26,29 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
-#define FEELPP_MESH_IMPL_NOEXTERN 1
+#include <feel/feelconfig.h>
+
+
+#define FEELPP_MESH_IMPL_NOEXTERN_1D 1
 #include <feel/feeldiscr/meshimpl.hpp>
 
 namespace Feel
 {
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nDim;
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nOrder;
+
 //
 // Explicit instatiations
 //
 #if defined( FEELPP_INSTANTIATION_MODE )
 
 
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
+// simplex
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_SIMPLEX_OP, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( 2, ORDERS1 ), RDIMS1 ) )
+
+// hypercube
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP, 3, ( DIMS1, BOOST_PP_LIST_FIRST_N( FEELPP_MESH_MAX_ORDER, ORDERS1 ), RDIMS1 ) )
 
 

@@ -69,6 +69,8 @@ public :
                 M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
         }
 
+    ~MeshSupport() = default;
+    
     bool isFullSupport() const override { return M_isFullSupport; }
     bool isPartialSupport() const override { return !M_isFullSupport; }
 

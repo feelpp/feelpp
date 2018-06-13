@@ -30,6 +30,7 @@
 #if defined( FEELPP_HAS_FFTW )
 #include <boost/multi_array.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
+
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/shape.hpp>
 #include <unsupported/Eigen/Splines>
@@ -49,9 +50,7 @@ namespace Feel
 {
 namespace vf
 {
-
-
-    /// \cond DETAIL
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -111,6 +110,7 @@ public:
     typedef value_type evaluate_type;
 
     using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -231,6 +231,7 @@ public:
             update( geom );
             
         }
+
         void update( Geo_t const& geom)
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
@@ -321,8 +322,6 @@ msi( Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> const& f, in
 {
     return Expr<vf::detail::MSI<T,Options> >( vf::detail::MSI<T,Options>(f,level ));
 }
-
-
 
 } // vf
 } // Feel

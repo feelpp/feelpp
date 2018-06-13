@@ -139,7 +139,6 @@ struct is_point : mpl::bool_<(decay_type<T>::nDim == 0)> {};
 
 template<typename T>
 struct is_convex : std::is_convertible<T,ConvexBase>::type {};
-
 template<typename T>
 struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
 template<typename T>

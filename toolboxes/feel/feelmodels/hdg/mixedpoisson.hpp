@@ -156,13 +156,13 @@ class MixedPoisson : public ModelNumerical
     MixedPoisson( std::string const& prefix = "mixedpoisson",
                   WorldComm const& _worldComm = Environment::worldComm(),
                   std::string const& subPrefix = "",
-                  std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+	              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "mixedpoisson",
                              WorldComm const& worldComm = Environment::worldComm(),
                              std::string const& subPrefix = "",
-                             std::string const& rootRepository = ModelBase::rootRepositoryByDefault() );
+							 ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
@@ -261,8 +261,8 @@ template <int Dim, int Order, int G_Order, int E_Order>
 MixedPoisson<Dim, Order, G_Order, E_Order>::MixedPoisson( std::string const& prefix,
                                                           WorldComm const& worldComm,
                                                           std::string const& subPrefix,
-                                                          std::string const& rootRepository )
-    : super_type( prefix, worldComm, subPrefix, rootRepository ),
+                                                          ModelBaseRepository const& modelRep )
+    : super_type( prefix, worldComm, subPrefix, modelRep ),
       M_useUserIBC( false )
 {
     if ( this->verbose() ) Feel::FeelModels::Log( this->prefix() + ".MixedPoisson", "constructor", "start",
@@ -292,9 +292,9 @@ template <int Dim, int Order, int G_Order, int E_Order>
 typename MixedPoisson<Dim, Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim, Order, G_Order, E_Order>::New( std::string const& prefix,
                                                  WorldComm const& worldComm, std::string const& subPrefix,
-                                                 std::string const& rootRepository )
+                                                 ModelBaseRepository const& modelRep )
 {
-    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, rootRepository );
+    return boost::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
@@ -461,7 +461,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::initModel()
     else
         M_integralCondition = M_IBCList.size();
 
-    if ( boost::icontains( modelProperties().model(), "picard" ) )
+	if ( boost::icontains(modelProperties().models().model().equations(),"picard") )
         M_isPicard = true;
     else
         M_isPicard = false;

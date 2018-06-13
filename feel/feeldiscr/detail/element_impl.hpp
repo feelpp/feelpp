@@ -599,19 +599,14 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -645,8 +640,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -936,19 +931,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     gm_ptrtype __gm = this->functionSpace()->gm();
 
@@ -977,8 +967,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1117,19 +1107,14 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, div_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1161,8 +1146,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1318,20 +1303,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1364,8 +1343,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1415,20 +1394,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1461,8 +1434,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1511,20 +1484,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1556,8 +1523,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1606,20 +1573,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1651,8 +1612,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1741,20 +1702,14 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
-
     // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
+    auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
         __loc->run_analysis( __ptsReal,invalid_size_type_value, setPointsConf, mpl::int_<1>() );
     else
         __loc->run_analysis( __ptsReal,invalid_size_type_value );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
-    analysis_output_iterator_type itL,itL_end;
+    auto it = __loc->result_analysis_begin();
+    auto it_end = __loc->result_analysis_end();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1786,8 +1741,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
         nbPtsElt = it->second.size();
 
         //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+        auto itL=it->second.begin();
+        auto itL_end=it->second.end();
 
         //compute a point matrix with the list of point
         pts= matrix_node_type( nbCoord, nbPtsElt );
@@ -1823,9 +1778,9 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
+    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
+    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
@@ -1904,9 +1859,9 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
+    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
+    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
@@ -2036,9 +1991,9 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
+    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
+    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
@@ -2206,9 +2161,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
                                                                           bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
-    typedef typename mesh_type::Localization::localization_ptrtype localization_ptrtype;
-    typedef typename mesh_type::Localization::container_search_iterator_type analysis_iterator_type;
-    typedef typename mesh_type::Localization::container_output_iterator_type analysis_output_iterator_type;
+    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
+    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
+    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
