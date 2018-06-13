@@ -1065,23 +1065,20 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsIBC( int i, std::str
                 d = exAtMarker.data( 0.1 );
 
             // Scale entries if necessary
-            auto postProcess = modelProperties().postProcess();
-            auto itField = postProcess.find( "Fields" );
-            if ( itField != postProcess.end() )
-            {
-                for ( auto const& field : ( *itField ).second )
-                {
-                    if ( field == "scaled_flux" )
-                    {
-                        for ( auto const& pairMat : modelProperties().materials() )
-                        {
-                            auto material = pairMat.second;
-                            double kk = material.getDouble( "scale_integral_file" );
-                            d = kk * d;
-                        }
-                    }
-                }
-            }
+    		{
+                for ( auto const& field : modelProperties().postProcess().exports().fields() )
+        		{
+            		if ( field == "scaled_flux" )
+					{
+            			for( auto const& pairMat : modelProperties().materials() )
+            			{
+                			auto material = pairMat.second;
+                			double kk = material.getDouble( "scale_integral_file" );
+							d = kk*d;
+						}
+					}
+				}
+			}
             LOG( INFO ) << "use g=" << d << std::endl;
             Feel::cout << "g=" << d << std::endl;
 
@@ -1326,11 +1323,8 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::exportResults( double time, mes
     }
 
     // Export computed solutions
-    auto postProcess = modelProperties().postProcess();
-    auto itField = postProcess.find( "Fields" );
-    if ( itField != postProcess.end() )
     {
-        for ( auto const& field : ( *itField ).second )
+        for ( auto const& field : modelProperties().postProcess().exports().fields() )  
         {
             if ( field == "flux" )
             {
