@@ -47,9 +47,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type(vf::detail::integrate_type<Args>::exprOrder) )
-      ( geomap, *, (vf::detail::integrate_type<Args>::geoOrder > 1 )?GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type(vf::detail::integrate_type<Args>::exprOrder_1) )
+      ( quad,   *, quad_order_from_expression )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, quad_order_from_expression )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
@@ -59,9 +59,15 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    auto the_im = im<typename vf::detail::integrate_type<Args>::_quad_type>(quad);
-    auto the_im1 = im<typename vf::detail::integrate_type<Args>::_quad1_type>(quad1);
-    auto ret =  integrate_impl( range, the_im , expr, geomap, the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    GeomapStrategyType thegeomap = geomap;
+    if ( vf::detail::integrate_type<Args>::geoOrder == 1 ) // force ho_geomap with geoOrder==1
+        thegeomap = GeomapStrategyType::GEOMAP_HO;
+
+    auto the_ims = vf::detail::integrate_type<Args>::im( quad,quad1,expr );
+    auto const& the_im = the_ims.first;
+    auto const& the_im1 = the_ims.second;
+
+    auto ret =  integrate_impl( range, the_im , expr, thegeomap, the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {

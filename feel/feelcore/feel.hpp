@@ -439,6 +439,11 @@ const rank_type invalid_rank_type_value = rank_type( -1 );
  */
 const size_type invalid_size_type_value = size_type( -1 );
 
+/**
+ * Quadrature order deduced from the expression to integrate
+ */
+const uint16_type quad_order_from_expression = invalid_uint16_type_value;
+
 //@}
 
 //!

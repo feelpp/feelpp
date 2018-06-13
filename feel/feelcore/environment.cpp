@@ -1296,7 +1296,7 @@ Environment::doOptions( int argc, char** argv,
                 dirName = fscaseDir.parent_path().filename().string();
             std::string caseConfigFile = dirName + ".cfg";
             if ( S_vm.count( "case.config-file" ) )
-                caseConfigFile = S_vm["case.config-file"].as<std::string>();
+                caseConfigFile = fs::path(S_vm["case.config-file"].as<std::string>()).filename().string();
 
             fs::directory_iterator end_itr;
             for ( fs::directory_iterator itr( fscaseDir ); itr != end_itr; ++itr )
@@ -1416,6 +1416,13 @@ Environment::doOptions( int argc, char** argv,
         } );
         LOG( WARNING ) << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
+    }
+
+    catch ( pt::ptree_error & e )
+    {
+        LOG(ERROR) << "Error parsing the JSON file. Please check the JSON for syntax errors, missing commas..." << std::endl;
+        LOG(ERROR) << "We suggest using 'yamllint' or 'jsonlint' available in docker or singularity images to check json files." << std::endl;
+        throw;
     }
 
     // catches program_options exceptions

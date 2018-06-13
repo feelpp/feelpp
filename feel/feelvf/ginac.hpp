@@ -181,6 +181,7 @@ parse( std::string const& str, std::string const& seps=":", std::vector<symbol> 
 
 } // GiNaC namespace
 
+#include <feel/feelvf/symbolsexpr.hpp>
 #include <feel/feelvf/ginacbase.hpp>
 #include <feel/feelvf/detail/ginacbuildlibrary.hpp>
 #include <feel/feelvf/detail/ginacex.hpp>
@@ -509,7 +510,8 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
 
 template<typename ExprT,int Order,typename... ExprT2>
 inline
-Expr< GinacExVF<ExprT,Order,ExprT2...> >
+FEELPP_DEPRECATED
+Expr< GinacExVF<ExprT,Order,SymbolsExpr<ExprT2...> > >
 expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e, const ExprT2&... expr2 )
 {
     auto const& symbexpr = s.expression();
@@ -518,7 +520,31 @@ expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e, cons
     CHECK( it != symbexpr.symbols().end() ) << "invalid symbol " << se << " in expression ";// << s;
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
-    auto res = Expr< GinacExVF<ExprT,Order,ExprT2...> >(  GinacExVF<ExprT,Order,ExprT2...>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc(), expr2... ) );
+    auto res = Expr< GinacExVF<ExprT,Order,SymbolsExpr<ExprT2...> > >(  GinacExVF<ExprT,Order,SymbolsExpr<ExprT2...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc(), symbolsExpr(expr2...) ) );
+    res.expression().setParameterValues( symbexpr.parameterValue() );
+    return res;
+}
+
+template<int Order,typename... ExprT>
+inline
+Expr< GinacExVF<Expr<GinacEx<Order>>,Order,SymbolsExpr<ExprT...> > >
+expr( Expr<GinacEx<Order>> const& s, const ExprT&... expr )
+{
+    typedef Expr<GinacEx<Order>> ExprTB;
+    auto const& symbexpr = s.expression();
+    std::vector< std::pair<GiNaC::symbol,ExprTB> > VFmap;
+    auto res = Expr< GinacExVF<ExprTB,Order,SymbolsExpr<ExprT...> > >(  GinacExVF<ExprTB,Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc(), symbolsExpr(expr...) ) );
+    res.expression().setParameterValues( symbexpr.parameterValue() );
+    return res;
+}
+
+template<int M, int N, int Order,typename... ExprT>
+inline
+Expr< GinacMatrix<M,N,Order,SymbolsExpr<ExprT...> > >
+expr( Expr<GinacMatrix<M,N,Order>> const& s, const ExprT&... expr )
+{
+    auto const& symbexpr = s.expression();
+    auto res = Expr< GinacMatrix<M,N,Order,SymbolsExpr<ExprT...> > >( GinacMatrix<M,N,Order,SymbolsExpr<ExprT...>>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), symbexpr.exprDesc(), symbolsExpr(expr...) ) );
     res.expression().setParameterValues( symbexpr.parameterValue() );
     return res;
 }

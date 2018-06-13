@@ -1360,8 +1360,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::exportResults( double time, mes
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr( material.getScalar( "scale_flux" ) );
-
+                    auto kk = material.getScalar( "scale_flux" );
                     scaled_flux.on( _range = markedelements( M_mesh, marker ), _expr = kk * idv( M_up ) );
                 }
 
@@ -1448,7 +1447,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::exportResults( double time, mes
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr( material.getScalar( "scale_potential" ) );
+                    auto kk = material.getScalar( "scale_potential" );
 
                     scaled_potential.on( _range = markedelements( M_mesh, marker ), _expr = kk * idv( M_pp ) );
                 }
@@ -1461,7 +1460,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::exportResults( double time, mes
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
-                        auto kk_ibc = expr(material.getScalar( "scale_potential" ) ).evaluate();
+                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate();
                         scaled_ibc = scaled_ibc * kk_ibc;
                     }                    
                     

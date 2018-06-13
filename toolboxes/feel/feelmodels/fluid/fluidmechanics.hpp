@@ -580,6 +580,9 @@ public :
         M_pmmNeedUpdate = true;
     }
     //___________________________________________________________________________________//
+    // symbols expression
+    constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
+    //___________________________________________________________________________________//
     // boundary conditions + body forces
     void updateParameterValues();
 
@@ -841,6 +844,24 @@ public :
 
 private :
     void updateBoundaryConditionsForUse();
+
+    constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          );
+        }
+    constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(this->fieldVelocity())(0,0) ),
+                                          symbolExpr("fluid_Uy",idv(this->fieldVelocity())(1,0) ),
+                                          symbolExpr("fluid_Uz",idv(this->fieldVelocity())(2,0) ),
+                                          symbolExpr("fluid_P",idv(this->fieldPressure()) ),
+                                          symbolExpr("fluid_U_magnitude",inner(idv(this->fieldVelocity())) )
+                                          );
+            }
 
 protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();

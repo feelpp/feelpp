@@ -31,6 +31,7 @@
 #include <feel/feeldiscr/projector.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/projectors.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
@@ -78,10 +79,18 @@ public :
     typedef typename space_p0_type::element_type element_p0_type;
     typedef boost::shared_ptr<element_p0_type> element_p0_ptrtype;
 
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Tensor2,Discontinuous> > > space_p0_tensor2_type;
+    typedef boost::shared_ptr<space_p0_tensor2_type> space_p0_tensor2_ptrtype;
+    typedef typename space_p0_tensor2_type::element_type element_p0_tensor2_type;
+    typedef boost::shared_ptr<element_p0_tensor2_type> element_p0_tensor2_ptrtype;
+
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
     typedef boost::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
 
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
+
+    typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
+    typedef boost::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
              WorldComm const& worldcomm = Environment::worldComm(), bool useGhostEltFromExtendedStencil=false,
@@ -129,6 +138,8 @@ public :
     void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
 private :
+    void updateMeshAdaptation();
+
     void updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const;
     void updateLinearPDE( DataUpdateLinear & data, mpl::int_<3> /**/ ) const;
     void updateJacobian( DataUpdateJacobian & data, mpl::int_<2> /**/ ) const;
@@ -158,12 +169,19 @@ private :
     space_scal_m1_ptrtype M_XhScalM1;
     space_p0_ptrtype M_XhScalP0Disc;
 
+    space_p0_tensor2_ptrtype M_XhTensor2P0Disc;
+
     projector_scal_m1_ptrtype M_l2projector;
 
     backend_ptrtype M_backendMetricDerivative;
     sparse_matrix_ptrtype M_matrixMetricDerivative;
     vector_ptrtype M_vectorMetricDerivative;
     element_ptrtype M_fieldMetricDerivative;
+
+    bool M_useMeshAdapation, M_useMeshAdapationScalar;
+    element_p0_ptrtype M_weightFunctionScalar;
+    element_p0_tensor2_ptrtype M_weightFunctionTensor2;
+    element_p0_ptrtype M_hMinRadius;
 
 
 }; // class Winslow

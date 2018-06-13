@@ -55,7 +55,7 @@ public :
 
     std::pair<double,int> toc( std::string const& msg, bool display ) const
     {
-        LOG_IF(WARNING, !empty()) << "Unbalanced timing calls : " << msg;
+        LOG_IF(WARNING, empty()) << "Unbalanced timing calls : " << msg;
         if ( empty() )
             return {-1,-1};
         std::chrono::duration<double> t = std::chrono::duration_cast<std::chrono::duration<double>>(time()-times().top());

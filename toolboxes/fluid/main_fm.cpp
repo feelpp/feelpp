@@ -5,13 +5,13 @@
 namespace Feel
 {
 
-template <uint16_type OrderVelocity,uint16_type OrderPressure, uint16_type OrderGeo = 1>
+template <int nDim,uint16_type OrderVelocity,uint16_type OrderPressure, uint16_type OrderGeo = 1>
 void
 runApplicationFluid()
 {
     using namespace Feel;
 
-    typedef FeelModels::FluidMechanics< Simplex<FEELPP_DIM,OrderGeo>,
+    typedef FeelModels::FluidMechanics< Simplex<nDim,OrderGeo>,
                                         Lagrange<OrderVelocity, Vectorial,Continuous,PointSetFekete>,
                                         Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
     auto FM = model_type::New("fluid");
@@ -54,7 +54,8 @@ main( int argc, char** argv )
 	po::options_description fluidmecoptions( "application fluid-mechanics options" );
     fluidmecoptions.add( toolboxes_options("fluid") );
     fluidmecoptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P2P1" ), "fe-approximation : P2P1,P1P1 ")
+        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P2P1G1" ), "discretization : P2P1G1,P2P1G2")
         ;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -63,18 +64,25 @@ main( int argc, char** argv )
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
 
-    std::string feapprox = soption(_name="fe-approximation");
-    if ( feapprox == "P2P1" || feapprox == "P2P1G1" )
-        runApplicationFluid<2,1>();
-#if 0// FEELPP_DIM == 2
-    else if ( feapprox == "P1P1" || feapprox == "P1P1G1" )
-        runApplicationFluid<1,1>();
-#endif
-#if 1
-    else if ( feapprox == "P2P1G2" )
-        runApplicationFluid<2,1,2>();
-#endif
-    else CHECK( false ) << "invalid feapprox " << feapprox;
+    int dimension = ioption(_name="case.dimension");
+    std::string discretization = soption(_name="case.discretization");
+    if ( discretization == "P2P1" )
+        discretization = "P2P1G1";
 
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P2P1G1", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<1>) ),
+                                             hana::make_tuple("P2P1G2", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<2>) ) );
+
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+                    {
+                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                        constexpr int _uorder = std::decay_t<decltype(hana::at_c<0>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
+                        constexpr int _porder = std::decay_t<decltype(hana::at_c<1>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
+                        constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
+                        if ( dimension == _dim && discretization == _discretization )
+                            runApplicationFluid<_dim,_uorder,_porder,_gorder>();
+                    } );
     return 0;
 }
