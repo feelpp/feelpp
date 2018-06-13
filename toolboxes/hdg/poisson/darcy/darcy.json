@@ -1,6 +1,7 @@
 {
     "Name": "HDG method for Darcy ",
     "ShortName":"HDG-Darcy",
+    "Models":{"equations":"hdg"},
     "Parameters":
     {
         "Pa":"30",

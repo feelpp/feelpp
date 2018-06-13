@@ -1,7 +1,7 @@
 {
     "Name": "HDG-Mixed-Poisson for lamina cribrosa",
     "ShortName":"MP_LC",
-    "Model":"hdg",
+    "Models":{"equations":"hdg"},
     "Materials":
     {
         "Lamina":
