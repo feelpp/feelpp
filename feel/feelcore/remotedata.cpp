@@ -331,7 +331,7 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
     if ( auto it = pt.get_optional<std::string>("branch") )
         M_branch = *it;
     if ( auto it = pt.get_optional<std::string>("path") )
-        M_path = *it;
+        M_path = fs::path(*it).remove_trailing_separator().remove_trailing_separator().string();
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
     // if token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN
