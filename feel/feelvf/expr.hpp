@@ -422,7 +422,7 @@ public:
         }
 
     template<typename ExprTT>
-    Expr( ExprTT const& )
+    explicit Expr( ExprTT const& )
         {
             
         }
