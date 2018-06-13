@@ -6,11 +6,11 @@
 namespace Feel
 {
 
-template <uint16_type OrderDisp>
+template <int nDim,uint16_type OrderDisp>
 void
 runApplicationSolid()
 {
-    typedef FeelModels::SolidMechanics< Simplex<FEELPP_DIM,1>,
+    typedef FeelModels::SolidMechanics< Simplex<nDim,1>,
                                         Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
     auto SM = model_type::New("solid");
 
@@ -137,7 +137,8 @@ main( int argc, char** argv )
 	po::options_description solidmecoptions( "application solid-mechanics options" );
     solidmecoptions.add( toolboxes_options("solid") );
     solidmecoptions.add_options()
-        ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P1,P2 ")
+        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2")
         ("save-solution", Feel::po::value<bool>()->default_value(true), "save-solution")
 #ifdef FEELPP_HAS_HDF5
         ("save-solution.file-format", Feel::po::value<std::string>()->default_value("hdf5"), "save-solution.file-format")
@@ -157,17 +158,29 @@ main( int argc, char** argv )
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=solidmecoptions,
-                     _about=about(_name="application_solid",
+                     _about=about(_name="feelpp_toolbox_solid",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    std::string feapprox = soption(_name="fe-approximation");
-    if ( feapprox == "P1" )
-        runApplicationSolid<1>();
-    else if ( feapprox == "P2" )
-        runApplicationSolid<2>();
-    else CHECK( false ) << "invalid feapprox " << feapprox;
+    int dimension = ioption(_name="case.dimension");
+    std::string discretization = soption(_name="case.discretization");
 
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+#if FEELPP_INSTANTIATION_ORDER_MAX >= 2
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2> ) );
+#else
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+#endif
+
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+                    {
+                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                        constexpr int _dorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                        if ( dimension == _dim && discretization == _discretization )
+                            runApplicationSolid<_dim,_dorder>();
+                    } );
 
     return 0;
 }

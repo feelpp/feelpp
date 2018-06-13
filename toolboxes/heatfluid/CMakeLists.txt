@@ -22,19 +22,11 @@
 #
 #
 
-feelpp_add_application( heatfluid_2d SRCS main_heatfluid.cpp
+feelpp_add_application( heatfluid SRCS main_heatfluid.cpp
   LINK_LIBRARIES
   #feelpp_toolbox_heatfluid_lib
   feelpp_toolbox_heatfluid_lib_2dP1G1_2dP2P1G1
-  DEFS FEELPP_DIM=2
-  INSTALL
-  )
-
-feelpp_add_application( heatfluid_3d SRCS main_heatfluid.cpp
-  LINK_LIBRARIES
-  #feelpp_toolbox_heatfluid_lib
   feelpp_toolbox_heatfluid_lib_3dP1G1_3dP2P1G1
-  DEFS FEELPP_DIM=3
   INSTALL
   )
 

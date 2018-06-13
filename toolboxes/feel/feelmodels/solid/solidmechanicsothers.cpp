@@ -4,7 +4,7 @@
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 #include <feel/feelmodels/modelvf/solidmecincompressibility.hpp>
-
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 
 namespace Feel
 {
@@ -748,10 +748,36 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        if ( !M_useDisplacementPressureFormulation )
+        {
+            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
+                                   std::make_pair( "displacement",this->fieldDisplacement() ),
+                                   std::make_pair( "velocity",this->fieldVelocity() ),
+                                   std::make_pair( "acceleration",this->fieldAcceleration() ) );
+        }
+        else
+        {
+            measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(),
+                                   std::make_pair( "displacement",this->fieldDisplacement() ),
+                                   std::make_pair( "velocity",this->fieldVelocity() ),
+                                   std::make_pair( "acceleration",this->fieldAcceleration() ),
+                                   std::make_pair( "pressure",this->fieldPressure() ) );
+        }
+
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
 
     if ( hasMeasure )
     {
-        this->postProcessMeasuresIO().setParameter( "time", time );
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
     }
 
