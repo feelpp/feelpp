@@ -1,5 +1,5 @@
 
-set(FEELPP_MODELS_LEVELSET_PN_ORDER "3" CACHE STRING "order of isoPN basis in levelset toolbox" )
+set(FEELPP_MODELS_LEVELSET_PN_ORDER "2" CACHE STRING "order of isoPN basis in levelset toolbox" )
 
 # geo order 1 (non-periodic)
 foreach(_DIM 2 3)

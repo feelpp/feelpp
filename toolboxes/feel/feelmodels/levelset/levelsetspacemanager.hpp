@@ -289,17 +289,17 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     if( !M_spaceScalarPN )
     {
         M_spaceScalarPN = space_scalar_PN_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _mesh=this->mesh()
+                //_worldscomm=this->worldsComm(),
+                //_periodicity=this->periodicity()
                 );
     }
     if( !M_spaceVectorialPN )
     {
         M_spaceVectorialPN = space_vectorial_PN_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _mesh=this->mesh() 
+                //_worldscomm=this->worldsComm(),
+                //_periodicity=this->periodicity()
                 );
     }
     if( !M_meshIsoPN )
@@ -308,32 +308,33 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
                 _space=this->M_spaceScalarPN
                 );
         M_meshIsoPN = M_opLagrangeP1isoPN->mesh();
+        M_rangeMeshIsoPNElements = elements( M_meshIsoPN );
     }
     if( !M_spaceScalarIsoPN )
     {
         std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
         M_spaceScalarIsoPN = space_scalar_type::New(
-                _mesh=this->meshIsoPN(), 
-                _worldscomm=this->worldsComm(),
-                _extended_doftable=extendedDT,
-                _periodicity=this->periodicity()
+                _mesh=this->meshIsoPN()
+                //_worldscomm=this->worldsComm(),
+                //_extended_doftable=extendedDT,
+                //_periodicity=this->periodicity()
                 );
     }
     if( !M_spaceVectorialIsoPN )
     {
         M_spaceVectorialIsoPN = space_vectorial_type::New( 
-                _mesh=this->meshIsoPN(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _mesh=this->meshIsoPN()
+                //_worldscomm=this->worldsComm(),
+                //_periodicity=this->periodicity()
                 );
     }
     if( !M_spaceMarkersIsoPN )
     {
         M_spaceMarkersIsoPN = space_markers_type::New( 
-                _mesh=this->meshIsoPN(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity(),
-                _extended_doftable=std::vector<bool>(1, true)
+                _mesh=this->meshIsoPN()
+                //_worldscomm=this->worldsComm(),
+                //_periodicity=this->periodicity(),
+                //_extended_doftable=std::vector<bool>(1, true)
                 );
     }
 

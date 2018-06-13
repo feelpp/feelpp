@@ -639,6 +639,22 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createOthers()
                 backend(_name=prefixvm(this->prefix(),"projector-l2-tensor2symm"), _worldcomm=this->worldComm())
                 );
     }
+
+    if( this->M_useSpaceIsoPN )
+    {
+        M_projectorL2PN = projector( 
+        this->functionSpaceManager()->functionSpaceScalarPN(), this->functionSpaceManager()->functionSpaceScalarPN(),
+        backend(_name=prefixvm(this->prefix(),"projector-l2-pn"), _worldcomm=this->worldComm())
+        );
+        M_projectorL2PNVec = projector( 
+        this->functionSpaceManager()->functionSpaceVectorialPN(), this->functionSpaceManager()->functionSpaceVectorialPN(),
+        backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
+        );
+        //M_projectorL2P1PN = projector( 
+        //this->functionSpace(), this->functionSpaceManager()->functionSpaceScalarPN(),
+        //backend(_name=prefixvm(this->prefix(),"projector-l2-pn-vec"), _worldcomm=this->worldComm())
+        //);
+    }
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1051,7 +1067,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
             break;
         case DerivationMethod::L2_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform L2 projection");
-            *M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+            //*M_levelsetGradPhi = this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+            *M_levelsetGradPhi = this->projectorL2Vectorial()->derivate( idv(phi) );
             break;
         case DerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform smooth projection");
@@ -1060,9 +1077,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateGradPhi()
         case DerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSet", "updateGradPhi", "perform PN-nodal projection");
             auto phiPN = this->phiPN();
-            auto gradPhiPN = vf::project(
-                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
-                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
+            //auto gradPhiPN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=trans(gradv(phiPN))
+                    //);
+            auto gradPhiPN = M_projectorL2PNVec->project(
                     _expr=trans(gradv(phiPN))
                     );
             this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *M_levelsetGradPhi );
@@ -1238,6 +1258,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updatePhiPN()
 
     auto phi = this->phi();
     this->functionSpaceManager()->opInterpolationScalarToPN()->apply( *phi, *M_levelsetPhiPN );
+    //*M_levelsetPhiPN = M_projectorL2P1PN->project(
+            //_expr=idv(phi)
+            //);
 
     M_doUpdatePhiPN = false;
 
@@ -1252,7 +1275,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateNormal()
     this->log("LevelSet", "updateNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    //auto phi = this->phi();
+    auto phi = this->phi();
     //*M_levelsetNormal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
     auto gradPhi = this->gradPhi();
     *M_levelsetNormal = vf::project( 
@@ -1283,26 +1306,53 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
             break;
         case DerivationMethod::L2_PROJECTION:
             this->log("LevelSet", "updateCurvature", "perform L2 projection");
-            *M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
+            //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
+            *M_levelsetCurvature = this->projectorL2()->derivate( trans(idv(this->normal())) );
             break;
         case DerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
             *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
             break;
         case DerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSet", "updateGradPhi", "perform PN-nodal projection");
+            this->log("LevelSet", "updateCurvature", "perform PN-nodal projection");
             auto phiPN = this->phiPN();
+            //auto normalPN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                    //);
+            //auto curvaturePN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=divv(normalPN)
+                    //);
+            auto gradPhiPN = M_projectorL2PNVec->project(
+                    _expr=trans(gradv(phiPN))
+                    );
             auto normalPN = vf::project(
                     _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
                     _range=this->functionSpaceManager()->rangeMeshPNElements(),
-                    _expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                    _expr=idv(gradPhiPN) / sqrt(trans(idv(gradPhiPN))*idv(gradPhiPN))
                     );
+            //auto normalPN = M_projectorL2PNVec->project(
+                    //_expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                    //);
+
+            //auto phi = this->phi();
+            //auto normal = M_projectorL2Vec->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
+            //auto normalPN = this->functionSpaceManager()->opInterpolationVectorialToPN()->operator()( normal );
+            //M_levelsetCurvature->on( _range=elements(this->mesh()), _expr=divv(normalPN) );
+
+            //auto curvaturePN = M_projectorL2PN->project(
+                    //_expr=divv(normalPN)
+                    //);
             auto curvaturePN = vf::project(
                     _space=this->functionSpaceManager()->functionSpaceScalarPN(),
                     _range=this->functionSpaceManager()->rangeMeshPNElements(),
                     _expr=divv(normalPN)
                     );
             this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
+            //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(normalPN) );
             break;
     }
 
@@ -2487,6 +2537,59 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
     this->M_exporter->step( time )->add( prefixvm(this->prefix(),"Curvature"),
                                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Curvature")),
                                    *this->curvature() );
+
+    if( M_useSpaceIsoPN )
+    {
+        auto phiPN = this->phiPN();
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"PhiPN"),
+                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"PhiPN")),
+                phiPN );
+        auto normalPN = vf::project(
+                _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                _range=this->functionSpaceManager()->rangeMeshPNElements(),
+                _expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                );
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"NormalPN"),
+                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"NormalPN")),
+                normalPN );
+
+        auto curvaturePN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( *this->curvature() );
+        //auto curvaturePN = vf::project(
+                //_space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                //_expr=divv(normalPN)
+                //);
+        //auto gradKPN = vf::project(
+                //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                //_expr=trans(gradv(curvaturePN))
+                //);
+        auto gradKPN = M_projectorL2PNVec->project(
+                _expr=trans(gradv(curvaturePN))
+                );
+        auto gradK_tmp = this->functionSpaceManager()->opInterpolationVectorialFromPN()->operator()( gradKPN );
+        auto gradK = vf::project(
+                _space=this->functionSpaceVectorial(),
+                _range=elements(this->mesh()),
+                _expr=idv(gradK_tmp)*idv(this->interfaceRectangularFunction())
+                );
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"gradKPN"),
+                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"gradKPN")),
+                gradK );
+    }
+    else
+    {
+        //auto gradK = this->projectorL2Vectorial()->project( _expr=trans(gradv(this->curvature()))*idv(this->interfaceRectangularFunction()) );
+        auto gradK_tmp = this->projectorL2Vectorial()->derivate( idv(this->curvature()) );
+        auto gradK = vf::project(
+                _space=this->functionSpaceVectorial(),
+                _range=elements(this->mesh()),
+                _expr=idv(gradK_tmp)*idv(this->interfaceRectangularFunction())
+                );
+        this->M_exporter->step( time )->add( prefixvm(this->prefix(),"gradK"),
+                prefixvm(this->prefix(),prefixvm(this->subPrefix(),"gradK")),
+                gradK );
+    }
 
     if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::GradPhi ) )
     {
