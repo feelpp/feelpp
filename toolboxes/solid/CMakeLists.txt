@@ -1,17 +1,10 @@
 
-feelpp_add_application( solid_2d SRCS main_sm.cpp
+feelpp_add_application( solid SRCS main_sm.cpp
   LINK_LIBRARIES
   feelpp_toolbox_solid_lib_2dP1G1
   feelpp_toolbox_solid_lib_2dP2G1
-  DEFS FEELPP_DIM=2
-  INSTALL
- )
-
-feelpp_add_application( solid_3d SRCS main_sm.cpp
-  LINK_LIBRARIES
   feelpp_toolbox_solid_lib_3dP1G1
   feelpp_toolbox_solid_lib_3dP2G1
-  DEFS FEELPP_DIM=3
   INSTALL
  )
 
