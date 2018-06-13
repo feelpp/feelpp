@@ -172,6 +172,22 @@ class Heat : public ModelNumerical,
         void initBoundaryConditions();
         void initTimeStep();
         void initPostProcess();
+
+        constexpr auto symbolsExpr( hana::int_<2> /**/ ) const
+            {
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) )
+                                              );
+            }
+        constexpr auto symbolsExpr( hana::int_<3> /**/ ) const
+            {
+                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dxT",dxv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dyT",dyv(this->fieldTemperature()) ),
+                                              symbolExpr("heat_dzT",dzv(this->fieldTemperature()) )
+                                              );
+            }
     public :
         void initAlgebraicFactory();
 
@@ -193,7 +209,7 @@ class Heat : public ModelNumerical,
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
-
+        constexpr auto symbolsExpr() const { return this->symbolsExpr( hana::int_<nDim>() ); }
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver

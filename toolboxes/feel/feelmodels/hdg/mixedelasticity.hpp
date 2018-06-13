@@ -914,9 +914,9 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
     for( auto const& pairMat : M_modelProperties->materials() )
     {
 		auto material = pairMat.second;
-		auto lambda = expr(material.getScalar("lambda"));
+		auto lambda = material.getScalar("lambda");
 		Feel::cout << "Lambda: " << lambda << std::endl;
-		auto mu = expr(material.getScalar("mu"));
+		auto mu = material.getScalar("mu");
 		Feel::cout << "Mu: " << mu << std::endl;
 		auto c1 = cst(0.5)/mu; 
     	auto c2 = -lambda/(cst(2.) * mu * (cst(Dim)*lambda + cst(2.)*mu)); 
@@ -953,8 +953,8 @@ MixedElasticity<Dim, Order, G_Order, E_Order>::assembleSTD()
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
 			auto material = pairMat.second;
-			auto rho = expr(material.getScalar("rho"));
-			// M_a( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+			auto rho = material.getScalar("rho");
+
         	//                              _expr = this->timeStepNM()->polySecondDerivCoefficient()*rho*inner(idt(u),id(w)) );
 			M_a( 1_c, 1_c ) += integrate(_quad=_Q<expr_order>(),_range=elements(M_mesh),
             	                         _expr = -rho*inner(idt(u),id(w))/(dt*dt) );
@@ -1158,8 +1158,8 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 				    auto gradu_exact = grad( g );
 				    auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
 			        auto material = pairMat.second;
-				    auto lambda = expr(material.getScalar("lambda"));
-				    auto mu = expr(material.getScalar("mu"));
+				    auto lambda = material.getScalar("lambda");
+				    auto mu = material.getScalar("mu");
 				    auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 	    			cout << "Neumann condition computed from displacement on " << marker << std::endl;
@@ -1195,7 +1195,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
     	for( auto const& pairMat : M_modelProperties->materials() )
     	{
 			auto material = pairMat.second;
-			auto rho = expr(material.getScalar("rho"));
+			auto rho = material.getScalar("rho");
 			auto u = this->timeStepNM()->previousUnknown(0);
 			auto u1 = this->timeStepNM()->previousUnknown(1);
 			auto dt = this-> timeStep();
@@ -1316,7 +1316,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_displacement" ) );
+                    auto kk = material.getScalar( "scale_displacement" );
 
                     scaled_displ.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
                 }
@@ -1333,7 +1333,7 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
                 {
                     auto marker = pairMat.first;
                     auto material = pairMat.second;
-                    auto kk = expr(material.getScalar( "scale_stress" ) );
+                    auto kk = material.getScalar( "scale_stress" );
 
                     scaled_stress.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
                 }
@@ -1444,8 +1444,8 @@ MixedElasticity<Dim,Order, G_Order, E_Order>::exportResults( double time, mesh_p
 								for( auto const& pairMat : M_modelProperties->materials() )
 								{
 									auto material = pairMat.second;
-									auto lambda = expr(material.getScalar("lambda"));
-									auto mu = expr(material.getScalar("mu"));
+									auto lambda = material.getScalar("lambda");
+									auto mu = material.getScalar("mu");
 									auto sigma_exact = lambda * trace(eps_exact) * eye<Dim>() + cst(2.) * mu * eps_exact;
 
 									// EXPORT SIGMA EXACT

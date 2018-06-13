@@ -8,16 +8,24 @@
 :uri-pull: https://github.com/feelpp/feelpp/pull
 
 [[v0.105.0-2018-06-xx]]
-== v0.105.0 (unreleased)
-// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-xx)
+== v0.105.0 (rc.1)
+// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-07)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 
 === Features
 
+* [**feel/**] augment `case` section options for application, `case.dimension`, `case.discretization`, `case.config-file`.
 * [**feel/**] remote data handling via github and girder, support testcase by directory, see  issues {uri-issue}/1116[#1116] {uri-issue}/1121[#1121] and {uri-pull}/1164[PR #1164].
 * [**feel/**] dynamic quadrature, see issue {uri-issue}/571[#571] and {uri-pull}/747[PR #747], see link:http://docs.feelpp.org/dev/0.105/reference/Integrals/README/[documentation]
 * [**feel/**] support for arbitrary number of expressions defined as symbols in symbolic expressions, see {uri-issue}/1174[#1174]
+* [**quickstart/**] Add pure traction elasticity example using Lagrange Multiplier
+* [**toolbox/**] some toolboxes have now only one executable supporting 2d and 3d, use `case.dimension=2|3` to indicate the dimension. The list is here:
+** `fluid`
+** `solid`
+** `heat`
+** `heatfluid`
+** `thermoelectric`
 * [**toolbox/**] continued effort on toolboxes refactoring, see {uri-pull}/1165[PR 1165]
 ** add new user functions for assembly process of matrix/rhs in order to add specific terms in multiphics toolboxes
 ** up fluid : add non-Newtonian properties in json + fix power law with min/max viscosity values
@@ -25,10 +33,16 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 *** start code refactoring (work in progress)
 *** fix coupling type Nitsche, robin-robin and variants
 *** major changes/improvements of fsi coupling robin-neumann generalized
+* [**toolbox/**] support norm computation in json files in PostProcessing section see   {uri-issue}/1172[#1172]
+* [**toolbox/**] export matrices and vectors from toolboxes {uri-issue}/1169[#1169]
+
 
 === Fixes
 
 * [**feel/**] Fix newmark restart if a frequency is used
+* [**feel/**] Update MeshMover on ghost element see {uri-issue}/1173[#1173]
+* [**feel/**] Fix partitioner crash in Gmsh with number of partitions is set to 1
+
 
 [[v0.104.1-2018-05-xx]]
 == v0.104.1 (unreleased)

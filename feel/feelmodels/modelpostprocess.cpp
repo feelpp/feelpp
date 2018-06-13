@@ -169,8 +169,61 @@ ModelPostprocessExtremum::setup( std::string const& name )
         //std::cout << "add extremum marker = " << marker << " (with name " << name << ")\n";
         this->extremum().addMarker( marker );
     }
+}
 
+void
+ModelPostprocessNorm::setup( std::string const& name )
+{
+    M_name = name;
 
+    if ( auto itField = M_p.get_optional<std::string>("field") )
+        M_field = *itField;
+    else if ( auto ptexpr = M_p.get_child_optional("expr") )
+    {
+        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        if ( auto ptgradexpr = M_p.get_child_optional("grad_expr") )
+            M_gradExpr.setExpr( "grad_expr", M_p, M_worldComm, M_directoryLibExpr );
+    }
+
+    if ( auto ptmarkers = M_p.get_child_optional("markers") )
+    {
+        for( auto const& item : M_p.get_child("markers") )
+            M_markers.insert(item.second.template get_value<std::string>());
+        if( M_markers.empty() )
+            M_markers.insert(M_p.get<std::string>("markers") );
+    }
+
+    if ( auto pttype = M_p.get_child_optional("type") )
+    {
+        for( auto const& item : M_p.get_child("type") )
+            M_types.insert(item.second.template get_value<std::string>());
+        if( M_types.empty() )
+            M_types.insert(M_p.get<std::string>("type") );
+    }
+
+    if ( auto itSol = M_p.get_optional<std::string>("solution") )
+        M_solution.setExpr( "solution", M_p, M_worldComm, M_directoryLibExpr );
+
+    if ( auto itSol = M_p.get_optional<std::string>("grad_solution") )
+        M_gradSolution.setExpr( "grad_solution", M_p, M_worldComm, M_directoryLibExpr );
+
+    if ( auto itQuad = M_p.get_optional<int>("quad") )
+    {
+        M_quadOrder = *itQuad;
+        if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
+            M_quad1Order = *itQuad1;
+        else
+            M_quad1Order = M_quadOrder;
+    }
+    else if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
+        M_quad1Order = *itQuad1;
+}
+
+void
+ModelPostprocessNorm::setParameterValues( std::map<std::string,double> const& mp )
+{
+    M_solution.setParameterValues( mp );
+    M_gradSolution.setParameterValues( mp );
 }
 
 
@@ -227,43 +280,6 @@ ModelPostprocess::setup()
 void
 ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 {
-#if 0
-    auto fields = M_p.get_child_optional("Fields");
-    if ( fields )
-    {
-        
-        for (auto i : as_vector<std::string>(M_p, "Fields"))
-        {
-            this->operator[]("Fields").push_back( i );
-            LOG(INFO) << "add to postprocess field  " << i;
-        }
-        
-    }
-    auto forces = M_p.get_child_optional("Force");
-    if ( forces )
-    {
-        
-        for (auto i : as_vector<std::string>(M_p, "Force"))
-        {
-            this->operator[]("Force").push_back( i );
-            LOG(INFO) << "add to postprocess force  " << i;
-            
-        }
-        
-    }
-    auto stresses = M_p.get_child_optional("Stresses");
-    if ( stresses )
-    {
-        
-        for (auto i : as_vector<std::string>(M_p, "Stresses"))
-        {
-            this->operator[]("Stresses").push_back( i );
-            LOG(INFO) << "add to postprocess stresses  " << i;
-            
-        }
-        
-    }
-#endif
     if ( auto exports = p.get_child_optional("Exports") )
     {
         ModelPostprocessExports ppexports;
@@ -287,7 +303,7 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
             }
         }
 
-        for ( std::string const& extremumType : std::vector<std::string>( { "Maximum","Minimum" } ) )
+        for ( std::string const& extremumType : std::vector<std::string>( { "Maximum","Minimum","Mean" } ) )
         {
             auto measuresExtremum = measures->get_child_optional( extremumType );
             if ( measuresExtremum )
@@ -297,8 +313,10 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     ModelPostprocessExtremum myPpExtremum( M_worldComm );
                     if ( extremumType == "Maximum" )
                         myPpExtremum.extremum().setType( "max" );
-                    else
+                    else if ( extremumType == "Minimum" )
                         myPpExtremum.extremum().setType( "min" );
+                    else if ( extremumType == "Mean" )
+                        myPpExtremum.extremum().setType( "mean" );
                     myPpExtremum.setDirectoryLibExpr( M_directoryLibExpr );
                     myPpExtremum.setPTree( measureExtremum.second, measureExtremum.first );
                     if ( !myPpExtremum.fields().empty() )
@@ -306,6 +324,20 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                 }
             }
         }
+
+        auto ptreeNorms = measures->get_child_optional("Norm");
+        if ( ptreeNorms )
+        {
+            for( auto const& ptreeNorm : *ptreeNorms )
+            {
+                ModelPostprocessNorm ppNorm( M_worldComm );
+                ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
+                ppNorm.setPTree( ptreeNorm.second, ptreeNorm.first );
+                if ( ppNorm.hasField() || ppNorm.hasExpr() )
+                    M_measuresNorm[name].push_back( ppNorm );
+            }
+        }
+
     }
 }
 
@@ -335,6 +367,10 @@ ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
     for( auto & p : M_measuresPoint )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
+
+    for( auto & p : M_measuresNorm )
+        for( auto & p2 : p.second )
+            p2.setParameterValues( mp );
 }
 
 bool
@@ -354,6 +390,12 @@ ModelPostprocess::hasMeasuresExtremum( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
     return M_measuresExtremum.find( nameUsed ) != M_measuresExtremum.end();
+}
+bool
+ModelPostprocess::hasMeasuresNorm( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_measuresNorm.find( nameUsed ) != M_measuresNorm.end();
 }
 ModelPostprocessExports const&
 ModelPostprocess::exports( std::string const& name ) const
@@ -384,6 +426,16 @@ ModelPostprocess::measuresExtremum( std::string const& name ) const
         return M_measuresExtremum.find( nameUsed )->second;
     else
         return M_emptyMeasuresExtremum;
+}
+std::vector<ModelPostprocessNorm> const&
+ModelPostprocess::measuresNorm( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasMeasuresNorm( nameUsed ) ) << "no measures norm with name:"<<name;
+    if ( this->hasMeasuresNorm( nameUsed ) )
+        return M_measuresNorm.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresNorm;
 }
 
 

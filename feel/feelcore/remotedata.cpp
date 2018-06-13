@@ -334,6 +334,16 @@ RemoteData::Github::Github( std::string const& desc, WorldComm const& worldComm 
         M_path = *it;
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
+    // if token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN
+    if ( M_token.empty() )
+    {
+        char* env;
+        env = getenv( "FEELPP_GITHUB_TOKEN" );
+        if ( env != NULL && env[0] != '\0' )
+        {
+            M_token = env;
+        }
+    }
 #endif
 
     if ( M_owner.empty() )
