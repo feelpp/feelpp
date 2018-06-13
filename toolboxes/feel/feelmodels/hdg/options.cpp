@@ -46,7 +46,7 @@ makeMixedPoissonOptions( std::string prefix )
         ( prefixvm( prefix, "model_json").c_str(), po::value<std::string>()->default_value("model.json"), "json file for the model")
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add ( backend_options( prefixvm(prefix,"sc" ) ) );
     return mpOptions;
 }
@@ -76,7 +76,7 @@ makeMixedElasticityOptions( std::string prefix )
         ( prefixvm( prefix, "use-sc").c_str(), po::value<bool>()->default_value(true), "use static condensation")           
         ( prefixvm( prefix, "nullspace").c_str(), po::value<bool>()->default_value( false ), "add null space" )
         ;
-    mpOptions.add ( envfeelmodels_options( prefix ) ).add( modelnumerical_options( prefix ) );
+    mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add( backend_options( prefixvm(prefix, "sc") ) );
     return mpOptions;
 }
