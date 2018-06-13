@@ -219,7 +219,7 @@ public:
         NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION
     };
     typedef boost::bimap<std::string, CurvatureMethod> curvaturemethod_maptype;
-    static curvaturemethod_maptype CurvatureMethodMap;
+    static const curvaturemethod_maptype CurvatureMethodMap;
 
     //--------------------------------------------------------------------//
     // ModGradPhi advection

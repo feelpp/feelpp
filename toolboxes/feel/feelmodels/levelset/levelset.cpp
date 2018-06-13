@@ -737,7 +737,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_doSmoothGradient = boption( _name="smooth-gradient", _prefix=this->prefix() );
 
     const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
-    CHECK(CurvatureMethod.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature computation methods\n";
+    CHECK(CurvatureMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature computation methods\n";
     M_curvatureMethod = CurvatureMethodMap.left.at(curvatureMethod);
 
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
