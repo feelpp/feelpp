@@ -507,10 +507,10 @@ expr( std::string const& s, std::vector<std::string> const& se, std::vector<Expr
     return Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( g.first, g.second, s, VFmap, filename, world ) );
 }
 
-template<typename ExprT,int Order>
+template<typename ExprT,int Order,typename... ExprT2>
 inline
-Expr< GinacExVF<ExprT,Order> >
-expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e )
+Expr< GinacExVF<ExprT,Order,ExprT2...> >
+expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e, const ExprT2&... expr2 )
 {
     auto const& symbexpr = s.expression();
     auto it = std::find_if( symbexpr.symbols().begin(), symbexpr.symbols().end(),
@@ -518,7 +518,7 @@ expr( Expr<GinacEx<Order>> const& s, std::string const& se, ExprT const& e )
     CHECK( it != symbexpr.symbols().end() ) << "invalid symbol " << se << " in expression ";// << s;
     std::vector< std::pair<GiNaC::symbol,ExprT> > VFmap;
     VFmap.push_back(std::make_pair(*it, e));
-    auto res = Expr< GinacExVF<ExprT,Order> >(  GinacExVF<ExprT,Order>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc() ) );
+    auto res = Expr< GinacExVF<ExprT,Order,ExprT2...> >(  GinacExVF<ExprT,Order,ExprT2...>( symbexpr.expression(), symbexpr.symbols(), symbexpr.fun(), VFmap, symbexpr.exprDesc(), expr2... ) );
     res.expression().setParameterValues( symbexpr.parameterValue() );
     return res;
 }

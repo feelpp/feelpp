@@ -24,6 +24,10 @@
 #if !defined( FEELPP_VF_DETAIL_GINACEXVF_HPP )
 #define FEELPP_VF_DETAIL_GINACEXVF_HPP 1
 
+#include <boost/hana/transform.hpp>
+#include <boost/hana/tuple.hpp>
+#include <boost/hana/type.hpp>
+
 namespace Feel{
 namespace vf{
 ///\cond detail
@@ -34,7 +38,7 @@ namespace vf{
  * @author Christophe Prud'homme
  * @see
  */
-template<typename ExprT,int Order=2>
+template<typename ExprT,int Order=2, typename... ExprT2>
 class FEELPP_EXPORT GinacExVF : public Feel::vf::GiNaCBase
 {
 public:
@@ -45,8 +49,40 @@ public:
     //@{
     typedef Feel::vf::GiNaCBase super;
     typedef ExprT expression_type;
+    typedef hana::tuple<ExprT2...> tuple_expression2_type;
 
-    static const size_type context = vm::POINT|expression_type::context;
+    struct FunctorsVariadicExpr
+    {
+        struct Context
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<size_type, T1::value | T2::second_type::context >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTestFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value && T2::second_type::template HasTestFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value && T2::second_type::template HasTrialFunction<Funct>::result >{};
+                }
+        };
+    };
+    //static const size_type context = vm::POINT|expression_type::context;
+    static const size_type context =  std::decay_t<decltype( hana::fold( tuple_expression2_type{}, hana::integral_constant<size_type,vm::POINT|expression_type::context>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+
     static const bool is_terminal = false;
     static const uint16_type imorder = expression_type::imorder+Order;
     static const bool imIsPoly = false;
@@ -54,12 +90,18 @@ public:
     template<typename Funct>
     struct HasTestFunction
     {
-        static const bool result = expression_type::template HasTestFunction<Funct>::result;
+        //static const bool result = expression_type::template HasTestFunction<Funct>::result;
+        static const bool result =  std::decay_t<decltype( hana::fold( tuple_expression2_type{},
+                                                                       hana::integral_constant<bool,expression_type::template HasTestFunction<Funct>::result>{},
+                                                                       typename FunctorsVariadicExpr::template HasTestFunction<Funct>{} ) )>::value;
     };
     template<typename Funct>
     struct HasTrialFunction
     {
-        static const bool result = expression_type::template HasTrialFunction<Funct>::result;
+        //static const bool result = expression_type::template HasTrialFunction<Funct>::result;
+        static const bool result =  std::decay_t<decltype( hana::fold( tuple_expression2_type{},
+                                                                       hana::integral_constant<bool,expression_type::template HasTrialFunction<Funct>::result>{},
+                                                                       typename FunctorsVariadicExpr::template HasTrialFunction<Funct>{} ) )>::value;
     };
     template<typename Func>
     static const bool has_test_basis = expression_type::template has_test_basis<Func>;
@@ -69,7 +111,7 @@ public:
     using trial_basis = typename expression_type::trial_basis;
 
     typedef GiNaC::ex ginac_expression_type;
-    typedef GinacExVF<ExprT> this_type;
+    typedef GinacExVF<ExprT,Order,ExprT2...> this_type;
     typedef double value_type;
     typedef value_type evaluate_type;
 
@@ -95,14 +137,16 @@ public:
                         std::string const& exprDesc,
                         std::vector< std::pair<GiNaC::symbol, expression_type> >const& expr,
                         std::string filename="",
-                        WorldComm const& world=Environment::worldComm() )
+                        WorldComm const& world=Environment::worldComm(),
+                        const ExprT2&... expr2 )
         :
         super( syms ),
         M_fun( fun ),
         M_expr( expr ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
-        M_exprDesc( exprDesc )
+        M_exprDesc( exprDesc ),
+        M_expr2( expr2... )
         {
             std::string filenameExpanded = Environment::expand( filename );
             M_filename = (filenameExpanded.empty() || fs::path(filenameExpanded).is_absolute())? filenameExpanded : (fs::path(Environment::exprRepository())/filenameExpanded).string();
@@ -126,13 +170,15 @@ public:
                         std::vector<GiNaC::symbol> const& syms,
                         GiNaC::FUNCP_CUBA const& cfun,
                         std::vector< std::pair<GiNaC::symbol, expression_type> >const& expr,
-                        std::string const& exprDesc )
+                        std::string const& exprDesc,
+                        const ExprT2&... expr2 )
         :
         super( syms ),
         M_fun( fun ),
         M_expr( expr ),
         M_cfun( new GiNaC::FUNCP_CUBA( cfun ) ),
-        M_exprDesc( exprDesc )
+        M_exprDesc( exprDesc ),
+        M_expr2( expr2... )
         {}
 
     GinacExVF( GinacExVF const & fun ) = default;
@@ -144,8 +190,18 @@ public:
      */
     //@{
 
-    this_type& operator=( this_type const& ) = default;
-    this_type& operator=( this_type && ) = default;
+    this_type& operator=( this_type const& t )
+    {
+        if ( this == &t )
+            return *this;
+        M_fun = t.M_fun;
+        M_expr = t.M_expr;
+        M_cfun = t.M_cfun;
+        M_exprDesc = t.M_exprDesc;
+        M_expr2 = t.M_expr2;
+        return *this;
+    }
+    //this_type& operator=( this_type && ) = default;
 
     //@}
 
@@ -195,6 +251,18 @@ public:
             }
         return -1;
     }
+
+    uint16_type index( std::string const& sname ) const
+    {
+        auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                [=]( GiNaC::symbol const& s ) { return s.get_name() == sname; } );
+        if ( it != M_syms.end() )
+            {
+                return it-M_syms.begin();
+            }
+        return invalid_uint16_type_value;
+    }
+
     const std::vector<int> indices() const
     {
         std::vector<int> indices_vec;
@@ -203,9 +271,21 @@ public:
         return indices_vec;
     }
 
+    const std::vector<uint16_type> indices2() const
+    {
+        std::vector<uint16_type> indices_vec;
+        hana::for_each( M_expr2, [&]( auto const& e )
+                        {
+                            indices_vec.push_back( this->index( e.first ) );
+                            //std::cout << "ana::for_each " << e.first << "\n";
+                        });
+        return indices_vec;
+    }
     bool isZero() const { return M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
+
+    tuple_expression2_type const& expression2() const { return M_expr2; }
     //@}
 
 
@@ -213,6 +293,38 @@ public:
     struct tensor
     {
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
+
+        struct TransformExprToTensor
+        {
+            template <typename T>
+            struct apply {
+                using type = typename T::second_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+            };
+
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    return typename TransformExprToTensor::apply<T>::type( t.second,Geo_t{} );
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
+                {
+                    return typename TransformExprToTensor::apply<T>::type( t.second,geom,fev,feu );
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
+                {
+                    return typename TransformExprToTensor::apply<T>::type( t.second,geom,fev );
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom ) const
+                {
+                    return typename TransformExprToTensor::apply<T>::type( t.second,geom );
+                }
+        };
+
+        using tuple_tensor_expr2_type = std::decay_t<decltype( hana::transform( tuple_expression2_type{}, TransformExprToTensor{} ) ) >;
+
         typedef typename tensor_expr_type::value_type value_type;
 
         using key_type = key_t<Geo_t>;
@@ -240,6 +352,8 @@ public:
             M_t_expr(std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_is_zero( expr.isZero() ),
+            M_t_expr2( hana::transform( expr.expression2(), [&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{}(t,geom,fev,feu); } ) ),
+            M_t_expr2_index( expr.indices2() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
@@ -260,6 +374,8 @@ public:
             M_t_expr(std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_is_zero( expr.isZero() ),
+            M_t_expr2( hana::transform( expr.expression2(), [&geom,&fev](auto const& t) { return TransformExprToTensor{}(t,geom,fev); } ) ),
+            M_t_expr2_index( expr.indices2() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
@@ -279,6 +395,8 @@ public:
             M_t_expr( std::vector<tensor_expr_type>() ),
             M_t_expr_index( std::vector<int>(expr.indices()) ),
             M_is_zero( expr.isZero() ),
+            M_t_expr2( hana::transform( expr.expression2(), [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) ),
+            M_t_expr2_index( expr.indices2() ),
             M_gmc( fusion::at_key<key_type>( geom ).get() ),
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
@@ -312,6 +430,14 @@ public:
                         if ( M_t_expr_index[i] != -1 )
                             M_x[M_t_expr_index[i]] = M_t_expr[i].evalq( 0, 0, q );
                     }
+                    uint16_type k=0;
+                    hana::for_each( M_t_expr2, [&k,&q,this]( auto const& e )
+                                    {
+                                        uint16_type idx = M_t_expr2_index[k];
+                                        if ( idx != invalid_uint16_type_value )
+                                            M_x[idx] = e.evalq( 0, 0, q );
+                                        ++k;
+                                    });
                     M_fun(&ni,M_x.data(),&no,&M_y[q]);
                 }
             }
@@ -322,6 +448,13 @@ public:
             for(int i=0; i<M_t_expr.size(); i++)
                 if ( M_t_expr_index[i] != -1 )
                     M_t_expr[i].update( geom, fev, feu );
+            uint16_type k=0;
+            hana::for_each( M_t_expr2, [&k,&geom,&fev,feu,this]( auto & e )
+                            {
+                                if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                    e.update( geom,fev,feu );
+                                ++k;
+                            });
             updateFun( geom );
 
         }
@@ -332,6 +465,13 @@ public:
                 for(int i=0; i<M_t_expr.size(); i++)
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom, fev );
+                uint16_type k=0;
+                hana::for_each( M_t_expr2, [&k,&geom,&fev,this]( auto & e )
+                                {
+                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                        e.update( geom,fev );
+                                    ++k;
+                                });
                 updateFun( geom );
             }
         void update( Geo_t const& geom )
@@ -341,6 +481,13 @@ public:
                 for(int i=0; i<M_t_expr.size(); i++)
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom );
+                uint16_type k=0;
+                hana::for_each( M_t_expr2, [&k,&geom,this]( auto & e )
+                                {
+                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                        e.update( geom );
+                                    ++k;
+                                });
                 updateFun( geom );
             }
 
@@ -351,6 +498,13 @@ public:
                 for(int i=0; i<M_t_expr.size(); i++)
                     if ( M_t_expr_index[i] != -1 )
                         M_t_expr[i].update( geom, face );
+                uint16_type k=0;
+                hana::for_each( M_t_expr2, [&k,&geom,&face,this]( auto & e )
+                                {
+                                    if ( M_t_expr2_index[k] != invalid_uint16_type_value )
+                                        e.update( geom, face );
+                                    ++k;
+                                });
                 updateFun( geom );
             }
 
@@ -394,6 +548,8 @@ public:
         std::vector<tensor_expr_type> M_t_expr;
         const std::vector<int> M_t_expr_index;
         const bool M_is_zero;
+        tuple_tensor_expr2_type M_t_expr2;
+        const std::vector<uint16_type> M_t_expr2_index;
         gmc_ptrtype M_gmc;
 
         int M_nsyms;
@@ -419,6 +575,7 @@ private:
     boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
     std::string M_filename;
     std::string M_exprDesc;
+    tuple_expression2_type M_expr2;
 };
 
 ///\endcond detail

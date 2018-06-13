@@ -35,6 +35,8 @@
 
 namespace Feel {
 
+extern template class Mesh<Simplex<1>>;
+
 boost::shared_ptr<Mesh<Simplex<1> > >
 unitSegment( double h, std::string prefix, WorldComm const& wc )
 {

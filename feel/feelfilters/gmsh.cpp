@@ -149,11 +149,6 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_gmodel( new GModel() )
 {
     this->setReferenceDomain();
-    setX( std::make_pair( 0., 1.) );
-    if ( nDim > 1 )
-        setY( std::make_pair( 0., 1.) );
-    if ( nDim > 2 )
-        setZ( std::make_pair( 0., 1.) );
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :
@@ -716,7 +711,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         _name = fs::path( nameMshOutput ).stem();
 #endif
         fs::path directory = fs::path(nameMshOutput).parent_path();
-        if ( !fs::exists(directory) )
+        if ( !directory.empty() && !fs::exists(directory) )
             fs::create_directories( directory );
 
         CTX _backup = *(CTX::instance());

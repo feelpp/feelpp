@@ -360,6 +360,7 @@ public:
         {
             switch ( nDim )
             {
+            case 0:
             case 1:
             case 3:
                 ublas::column( v, p ) = ublas::column( M_vertices, face_to_point_t::f2p( f,p ) );
@@ -584,21 +585,23 @@ public:
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<1> ) const
     {
-        return (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10);
+        bool ptIsIn = (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10);
+        return boost::make_tuple( ptIsIn, value_type(0.) ); // TODO : compute distance
     }
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<2> ) const
     {
-        return ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
-                 (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) );
-
+        bool ptIsIn = ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
+                        (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) );
+        return boost::make_tuple( ptIsIn, value_type(0.) ); // TODO : compute distance
     }
     boost::tuple<bool, value_type>
     isIn( typename node<value_type>::type const& pt, mpl::int_<3> ) const
     {
-        return ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
-                 (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) &&
-                 (pt[2] >= -1-1e-10) && (pt[2] <= 1+1e-10) );
+        bool ptIsIn = ( (pt[0] >= -1-1e-10) && (pt[0] <= 1+1e-10) &&
+                        (pt[1] >= -1-1e-10) && (pt[1] <= 1+1e-10) &&
+                        (pt[2] >= -1-1e-10) && (pt[2] <= 1+1e-10) );
+        return boost::make_tuple( ptIsIn, value_type(0.) ); // TODO : compute distance
     }
 
     points_type makePoints( uint16_type topo_dim, uint16_type __id, int interior = 1 ) const
@@ -969,6 +972,10 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
         //double factor = 1;
         switch ( nDim )
         {
+        case 0:
+            M_meas=0;
+            break;
+
         case 1:
             M_meas = 2;
             break;

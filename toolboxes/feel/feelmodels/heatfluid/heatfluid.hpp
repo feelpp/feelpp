@@ -122,7 +122,9 @@ public :
 
     void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     void updateJacobian( DataUpdateJacobian & data ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     void updateResidual( DataUpdateResidual & data ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const;
 
 private :
 

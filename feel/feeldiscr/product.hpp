@@ -208,6 +208,7 @@ public:
     {
     public:
         using super = BlocksBaseVector<double>;
+        static const int nspaces = sizeof...(SpaceList);
         Element() = default;
         Element( Element const& ) = default;
         Element( Element && ) = default;
@@ -289,6 +290,8 @@ public:
     {
     public:
         using super = BlocksBaseVector<double>;
+        static const int nspaces = sizeof...(SpaceList)+1;
+
         Element() = default;
         Element( Element const& ) = default;
         Element( Element && ) = default;

@@ -2,7 +2,7 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 //#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmesh/intersect.hpp>
@@ -165,9 +165,9 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
     auto const& BetaU = ( fluidmec.solverName() == "Oseen" )? fluidmec.timeStepBDF()->poly() : *fielCurrentPicardSolution;
     auto betaU = BetaU.template element<0>();
 
-    auto const& rho = fluidmec.densityViscosityModel()->fieldRho();
-    auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(betaU,p,*fluidmec.densityViscosityModel());
-    //auto myViscosity = idv(fluidmec.densityViscosityModel()->fieldMu());
+    auto const& rho = fluidmec.materialProperties()->fieldRho();
+    //auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(betaU,p,*fluidmec.materialProperties());
+    auto myViscosity = idv(fluidmec.materialProperties()->fieldMu());
 
     auto uconv = idv(rho)*idv(betaU);
 #if 0
@@ -315,8 +315,9 @@ updateLinearPDEStabilizationGLSStokes( FluidMechanicsType const& fluidmec, Model
                                _rowstart=fluidmec.rowStartInVector() );
 
 
-    auto rho = idv(fluidmec.densityViscosityModel()->fieldRho());
-    auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.densityViscosityModel());
+    auto rho = idv(fluidmec.materialProperties()->fieldRho());
+    //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+    auto mu = idv(fluidmec.materialProperties()->fieldMu());
     auto uconv = zero<FluidMechanicsType::nRealDim,1>();
     //auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr<false>( *fluidmec.stabilizationGLSParameter(), uconv, mu );
     auto rangeEltPressure = fluidmec.stabilizationGLSEltRangePressure();
@@ -403,8 +404,10 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     auto u = U.template element<0>();
     auto p = U.template element<1>();
 
-    auto const& rho = fluidmec.densityViscosityModel()->fieldRho();
-    auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.densityViscosityModel());
+    auto const& rho = fluidmec.materialProperties()->fieldRho();
+    //auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+    auto myViscosity = idv(fluidmec.materialProperties()->fieldMu());
+
     auto uconv = idv(rho)*idv(u);
     //auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameter(), uconv, myViscosity );
     bool hasUpdatedTauForConvectionDiffusion = false;
@@ -522,8 +525,9 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
     auto u = U.template element<0>();
     auto p = U.template element<1>();
 
-    auto const& rho = fluidmec.densityViscosityModel()->fieldRho();
-    auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.densityViscosityModel());
+    auto const& rho = fluidmec.materialProperties()->fieldRho();
+    //auto myViscosity = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+    auto myViscosity = idv(fluidmec.materialProperties()->fieldMu());
     auto uconv = idv(rho)*idv(u);
     //auto tau = Feel::vf::FeelModels::stabilizationGLSParameterExpr( *fluidmec.stabilizationGLSParameter(), uconv, myViscosity );
 

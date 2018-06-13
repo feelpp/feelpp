@@ -201,10 +201,19 @@ void
 ModelAlgebraic::updateJacobian( DataUpdateJacobian & data ) const
 {}
 void
+ModelAlgebraic::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{}
+void
 ModelAlgebraic::updateResidual( DataUpdateResidual & data ) const
 {}
 void
+ModelAlgebraic::updateResidualDofElimination( DataUpdateResidual & data ) const
+{}
+void
 ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
+{}
+void
+ModelAlgebraic::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {}
 void
 ModelAlgebraic::updatePicard( DataUpdateLinear & data ) const

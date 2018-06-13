@@ -47,9 +47,9 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type(vf::detail::integrate_type<Args>::exprOrder) )
       ( geomap, *, (vf::detail::integrate_type<Args>::geoOrder > 1 )?GeomapStrategyType::GEOMAP_OPT:GeomapStrategyType::GEOMAP_HO )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type(vf::detail::integrate_type<Args>::exprOrder_1) )
       ( use_tbb,   ( bool ), false )
       ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
@@ -59,8 +59,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto the_im = im<typename vf::detail::integrate_type<Args>::_quad_type>(quad);
+    auto the_im1 = im<typename vf::detail::integrate_type<Args>::_quad1_type>(quad1);
+    auto ret =  integrate_impl( range, the_im , expr, geomap, the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {

@@ -31,18 +31,15 @@
 
 int main( int argc, char** argv )
 {
+    
     using namespace Feel;
+    Environment env( argc, argv );
 
-    IMSimplex<2,1,double> im21;
-    IMSimplex<2,2,double> im22;
-    IMSimplex<2,4,double> im24;
-    IMSimplex<2,6,double> im26;
+    IMSimplex<2,double> im2;
+    for( int q = 0; q < 20; q++ )
+        im2.create(q);
 
-    IMSimplex<3,1,double> im31;
-    IMSimplex<3,2,double> im32;
-    IMSimplex<3,4,double> im34;
-
-    IMSimplex<2,1,double> im212;
-    IMSimplex<3,1,double> im312;
-
+    IMSimplex<3,double> im3;
+    for( int q = 0; q < 20; q++ )
+        im3.create(q);
 }

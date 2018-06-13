@@ -342,6 +342,7 @@ private :
     holo3_image<value_type>** gradFFTY;
     // level we work on 
     int level;
+
 };
 
 } // Feel
