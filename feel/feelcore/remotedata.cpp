@@ -35,12 +35,111 @@ extern "C" {
 namespace Feel
 {
 
+// database taken from : https://code.msdn.microsoft.com/windowsapps/Get-Mimetype-from-a-cd7890af
+const std::map<std::string,std::string> mimeTypes =
+{
+    //{"***",    "application/octet-stream"},
+    {".csv",    "text/csv"},
+    {".tsv",    "text/tab-separated-values"},
+    {".tab",    "text/tab-separated-values"},
+    {".html",    "text/html"},
+    {".htm",    "text/html"},
+    {".doc",    "application/msword"},
+    {".docx",    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {".ods",    "application/x-vnd.oasis.opendocument.spreadsheet"},
+    {".odt",    "application/vnd.oasis.opendocument.text"},
+    {".rtf",    "application/rtf"},
+    {".sxw",    "application/vnd.sun.xml.writer"},
+    {".txt",    "text/plain"},
+    {".xls",    "application/vnd.ms-excel"},
+    {".xlsx",    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    {".pdf",    "application/pdf"},
+    {".ppt",    "application/vnd.ms-powerpoint"},
+    {".pps",    "application/vnd.ms-powerpoint"},
+    {".pptx",    "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    {".wmf",    "image/x-wmf"},
+    {".atom",    "application/atom+xml"},
+    {".xml",    "application/xml"},
+    {".json",    "application/json"},
+    {".js",    "application/javascript"},
+    {".ogg",    "application/ogg"},
+    {".ps",    "application/postscript"},
+    {".woff",    "application/x-woff"},
+    {".xhtml","application/xhtml+xml"},
+    {".xht",    "application/xhtml+xml"},
+    {".zip",    "application/zip"},
+    {".gz",    "application/x-gzip"},
+    {".rar",    "application/rar"},
+    {".rm",    "application/vnd.rn-realmedia"},
+    {".rmvb",    "application/vnd.rn-realmedia-vbr"},
+    {".swf",    "application/x-shockwave-flash"},
+    {".au",        "audio/basic"},
+    {".snd",    "audio/basic"},
+    {".mid",    "audio/mid"},
+    {".rmi",        "audio/mid"},
+    {".mp3",    "audio/mpeg"},
+    {".aif",    "audio/x-aiff"},
+    {".aifc",    "audio/x-aiff"},
+    {".aiff",    "audio/x-aiff"},
+    {".m3u",    "audio/x-mpegurl"},
+    {".ra",    "audio/vnd.rn-realaudio"},
+    {".ram",    "audio/vnd.rn-realaudio"},
+    {".wav",    "audio/x-wave"},
+    {".wma",    "audio/x-ms-wma"},
+    {".m4a",    "audio/x-m4a"},
+    {".bmp",    "image/bmp"},
+    {".gif",    "image/gif"},
+    {".jpe",    "image/jpeg"},
+    {".jpeg",    "image/jpeg"},
+    {".jpg",    "image/jpeg"},
+    {".jfif",    "image/jpeg"},
+    {".png",    "image/png"},
+    {".svg",    "image/svg+xml"},
+    {".tif",    "image/tiff"},
+    {".tiff",    "image/tiff"},
+    {".ico",    "image/vnd.microsoft.icon"},
+    {".css",    "text/css"},
+    {".bas",    "text/plain"},
+    {".c",        "text/plain"},
+    {".h",        "text/plain"},
+    {".rtx",    "text/richtext"},
+    {".mp2",    "video/mpeg"},
+    {".mpa",    "video/mpeg"},
+    {".mpe",    "video/mpeg"},
+    {".mpeg",    "video/mpeg"},
+    {".mpg",    "video/mpeg"},
+    {".mpv2",    "video/mpeg"},
+    {".mov",    "video/quicktime"},
+    {".qt",    "video/quicktime"},
+    {".lsf",    "video/x-la-asf"},
+    {".lsx",    "video/x-la-asf"},
+    {".asf",    "video/x-ms-asf"},
+    {".asr",    "video/x-ms-asf"},
+    {".asx",    "video/x-ms-asf"},
+    {".avi",    "video/x-msvideo"},
+    {".3gp",    "video/3gpp"},
+    {".3gpp",    "video/3gpp"},
+    {".3g2",    "video/3gpp2"},
+    {".movie","video/x-sgi-movie"},
+    {".mp4",    "video/mp4"},
+    {".wmv",    "video/x-ms-wmv"},
+    {".webm","video/webm"},
+    {".m4v",    "video/x-m4v"},
+    {".flv",    "video/x-flv"}
+};
+
 static size_t write_data(char/*void*/ *ptr, size_t size, size_t nmemb, void *stream)
 {
     //size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
     //((std::ofstream * ) stream)->write(ptr,nmemb);
     ((std::ostream * ) stream)->write(ptr,nmemb);
     return nmemb/*written*/;
+}
+
+static size_t read_data(char/*void*/ *ptr, size_t size, size_t nmemb, void *stream) {
+    ((std::istream * ) stream)->read(ptr,nmemb);
+    return nmemb/*written*/;
+
 }
 
 void requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
@@ -70,6 +169,87 @@ void requestHTTPGET( std::string const& url, std::vector<std::string> const& hea
     curl_easy_cleanup(curl_handle);
 
     curl_global_cleanup();
+#else
+    CHECK( false ) << "LIBCURL is not detected";
+#endif
+}
+
+void requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+{
+#if defined(FEELPP_HAS_LIBCURL)
+    curl_global_init(CURL_GLOBAL_ALL);
+    CURL *curl_handle;
+    curl_handle = curl_easy_init();
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+
+    struct curl_slist *list = NULL;
+    for ( std::string const& header : headers )
+        list = curl_slist_append(list, header.c_str() );
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+
+    long fsize = 0;
+    char * postthis = nullptr;
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+
+    /* send all data to this function  */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    /* write the page body to this file handle */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+
+    /* get it! */
+    curl_easy_perform(curl_handle);
+
+    /* cleanup curl stuff */
+    curl_easy_cleanup(curl_handle);
+
+    curl_global_cleanup();
+#else
+    CHECK( false ) << "LIBCURL is not detected";
+#endif
+}
+
+void requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::istream & ifile, long fsize, std::ostream & ofile )
+{
+#if defined(FEELPP_HAS_LIBCURL)
+    curl_global_init(CURL_GLOBAL_ALL);
+    CURL *curl_handle;
+    curl_handle = curl_easy_init();
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+
+#if 0
+    char * postthis = new char [fsize];
+    ifile.read( postthis,fsize );
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
+#else
+    curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_READDATA, &ifile);
+    curl_easy_setopt(curl_handle, CURLOPT_READFUNCTION, read_data);
+#endif
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
+
+    struct curl_slist *list = NULL;
+    for ( std::string const& header : headers )
+        list = curl_slist_append(list, header.c_str() );
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+
+    /* send all data to this function  */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    /* write the page body to this file handle */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+
+    /* get it! */
+    curl_easy_perform(curl_handle);
+
+    /* cleanup curl stuff */
+    curl_easy_cleanup(curl_handle);
+
+    curl_global_cleanup();
+
+    //delete [] postthis;
 #else
     CHECK( false ) << "LIBCURL is not detected";
 #endif
@@ -483,6 +663,13 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
         if ( M_fileIds.empty() )
             M_fileIds.insert( pt.get<std::string>("file") );
     }
+    if ( auto it = pt.get_child_optional("folder") )
+    {
+        for( auto const& item : pt.get_child("folder") )
+            M_folderIds.insert( item.second.get_value<std::string>() );
+        if ( M_folderIds.empty() )
+            M_folderIds.insert( pt.get<std::string>("folder") );
+    }
 
     if ( M_url.empty() )
         M_url = "https://girder.math.unistra.fr";
@@ -571,4 +758,109 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     return downloadedFile;
 }
 
+void
+RemoteData::Girder::upload( std::string const& dataPath ) const
+{
+    CHECK( !M_folderIds.empty() ) << "upload require a folder id";
+    std::string parentId = *M_folderIds.begin();
+    std::string token = M_token;
+
+    fs::path dataFsPath( dataPath );
+    if( fs::is_directory( dataFsPath ) )
+    {
+        if ( dataFsPath.filename().filename_is_dot() )
+        {
+            fs::directory_iterator end_itr;
+            for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
+                this->uploadRecursively( itr->path().string(), parentId, token );
+            return;
+        }
+    }
+
+    this->uploadRecursively( dataPath, parentId, token );
+}
+
+void
+RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const
+{
+    fs::path dataFsPath( dataPath );
+    if( fs::is_directory( dataFsPath ) )
+    {
+        std::string folderName = dataFsPath.filename().string();
+        std::string newParentId = this->createFolder( folderName, parentId, token );
+
+        fs::directory_iterator end_itr;
+        for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
+            this->uploadRecursively( itr->path().string(), newParentId, token );
+    }
+    else if ( fs::is_regular_file( dataFsPath ) )
+    {
+        this->uploadFile( dataPath, parentId, token );
+    }
+}
+
+void
+RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& parentId, std::string const& token ) const
+{
+    std::string filename = fs::path(filepath).filename().string();
+    std::string fileExtension = fs::path(filepath).extension().string();
+
+    std::ifstream imemfile( filepath, std::ios::binary );
+    // get length of file
+    imemfile.seekg( 0, imemfile.end );
+    long fsize = imemfile.tellg();
+    imemfile.seekg( 0, imemfile.beg );
+
+    std::string urlFileUpload = M_url+"/api/v1/file?parentType=folder&parentId=" + parentId;
+    urlFileUpload += "&name="+filename;
+    urlFileUpload += "&size="+(boost::format("%1%")%fsize).str();
+    std::string mimeType;
+    auto itFindMimeType = mimeTypes.find( fileExtension );
+    if ( itFindMimeType != mimeTypes.end() )
+    {
+        std::vector<std::string> exprSplitted;
+        boost::split( exprSplitted, itFindMimeType->second, boost::is_any_of("/"), boost::token_compress_on );
+        mimeType = exprSplitted[0];
+        for ( int k=1;k<exprSplitted.size();++k )
+            mimeType += "%2F" + exprSplitted[k];
+    }
+    if ( !mimeType.empty() )
+        urlFileUpload += "&mimeType="+mimeType;
+
+    std::vector<std::string> headersFileInfo;
+    headersFileInfo.push_back("Accept: application/json");
+    headersFileInfo.push_back("Content-Type: application/form-data");
+    CHECK( !token.empty() ) << "a token is required for upload";
+    headersFileInfo.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsize, omemfile );
+}
+
+
+std::string
+RemoteData::Girder::createFolder( std::string const& folderName, std::string const& parentId, std::string const& token ) const
+{
+    std::string urlCreateFolder = M_url+"/api/v1/folder?parentType=folder&parentId=" + parentId;
+    urlCreateFolder += "&name="+ folderName;
+    urlCreateFolder += "&reuseExisting=true";
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    headers.push_back("Content-Type: application/x-www-form-urlencoded");
+    CHECK( !token.empty() ) << "a token is required for upload";
+    headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    requestHTTPPOST( urlCreateFolder, headers, omemfile );
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+
+    std::string folderIdCreated;
+    if ( auto it = pt.get_optional<std::string>("_id") )
+        folderIdCreated = *it;
+    return folderIdCreated;
+}
 } // namespace Feel
