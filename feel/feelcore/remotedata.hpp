@@ -114,12 +114,17 @@ struct RemoteData
         //! @param dir : the directory where the file is downloaded
         //! @return : vector of path of the downloaded file or the path of downloaded folder
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
+
+        void upload( std::string const& dataPath ) const;
+        std::string createFolder( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
     private :
         std::string downloadFile( std::string const& fileId, std::string const& dir ) const;
+        void uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
+        void uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
     private :
         WorldComm const& M_worldComm;
         std::string M_url, M_token;
-        std::set<std::string> M_fileIds;//, M_folderId, M_itemId;
+        std::set<std::string> M_fileIds, M_folderIds;//, M_itemId;
     private :
     };
 
