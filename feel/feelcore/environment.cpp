@@ -1404,7 +1404,8 @@ Environment::doOptions( int argc, char** argv,
 
     catch ( pt::ptree_error & e )
     {
-        LOG(ERROR) << "Error parsing json config in case option " << e.what() << std::endl;
+        LOG(ERROR) << "Error parsing the JSON file. Please check the JSON for syntax errors, missing commas..." << std::endl;
+        LOG(ERROR) << "We suggest using 'yamllint' or 'jsonlint' available in docker or singularity images to check json files." << std::endl;
         throw;
     }
 
