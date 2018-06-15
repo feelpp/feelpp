@@ -43,11 +43,18 @@ struct RemoteData
     //! return true if enough information are available for download a file
     bool canDownload() const;
 
+    //! return true if enough information are available for upload data
+    bool canUpload() const;
+
     //! download the file
     //! @param dir : the directory where the file is downloaded
     //! @param filename : the filename of the downloaded file
     //! @return : the path of the downloaded file
     std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
+
+    //! upload data on a remote storage
+    //! @param dataPath : a path of a file or a folder
+    void upload( std::string const& dataPath ) const;
 
     class URL
     {
@@ -104,28 +111,39 @@ struct RemoteData
         Girder( Girder const& ) = default;
         Girder( Girder && ) = default;
 
+        //! set folder ids to only one folder id
+        void setFolderIds( std::string const& folderId );
+
         //! return true if the github is initialized from a desc
         bool isInit() const;
 
         //! return true if enough information are available for download a file
         bool canDownload() const;
 
+        //! return true if enough information are available for upload data
+        bool canUpload() const;
+
         //! download file/folder from the girder desc
         //! @param dir : the directory where the file is downloaded
         //! @return : vector of path of the downloaded file or the path of downloaded folder
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! upload data on Girder
+        //! @param dataPath : a path of a file or a folder
         void upload( std::string const& dataPath ) const;
-        std::string createFolder( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
+
     private :
         std::string downloadFile( std::string const& fileId, std::string const& dir ) const;
         void uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         void uploadFile( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
+        std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
+        std::string createToken( int duration = 1 ) const;
+        void removeToken( std::string const& token ) const;
+
     private :
         WorldComm const& M_worldComm;
-        std::string M_url, M_token;
+        std::string M_url, M_apiKey, M_token;
         std::set<std::string> M_fileIds, M_folderIds;//, M_itemId;
-    private :
     };
 
 private :
