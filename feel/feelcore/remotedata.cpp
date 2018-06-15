@@ -220,11 +220,12 @@ void requestHTTPPOST( std::string const& url, std::vector<std::string> const& he
 
     curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
 
-#if 0
+#if 1
     char * postthis = new char [fsize];
     ifile.read( postthis,fsize );
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
 #else
+    // very slow (need to understand)
     curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_READDATA, &ifile);
     curl_easy_setopt(curl_handle, CURLOPT_READFUNCTION, read_data);
@@ -249,7 +250,40 @@ void requestHTTPPOST( std::string const& url, std::vector<std::string> const& he
 
     curl_global_cleanup();
 
-    //delete [] postthis;
+    delete [] postthis;
+#else
+    CHECK( false ) << "LIBCURL is not detected";
+#endif
+}
+
+void requestHTTPDELETE( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+{
+#if defined(FEELPP_HAS_LIBCURL)
+    curl_global_init(CURL_GLOBAL_ALL);
+    CURL *curl_handle;
+    curl_handle = curl_easy_init();
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
+
+    curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+
+    struct curl_slist *list = NULL;
+    for ( std::string const& header : headers )
+        list = curl_slist_append(list, header.c_str() );
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
+
+    /* send all data to this function  */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+    /* write the page body to this file handle */
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
+
+    /* get it! */
+    curl_easy_perform(curl_handle);
+
+    /* cleanup curl stuff */
+    curl_easy_cleanup(curl_handle);
+
+    curl_global_cleanup();
 #else
     CHECK( false ) << "LIBCURL is not detected";
 #endif
@@ -290,6 +324,15 @@ RemoteData::canDownload() const
         return true;
     return false;
 }
+
+bool
+RemoteData::canUpload() const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return true;
+    return false;
+}
+
 std::vector<std::string>
 RemoteData::download( std::string const& dir, std::string const& filename ) const
 {
@@ -303,8 +346,12 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
     return downloadedData;
 }
 
-
-
+void
+RemoteData::upload( std::string const& dataPath ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        M_girder->upload( dataPath );
+}
 
 RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
     :
@@ -654,6 +701,8 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
 
     if ( auto it = pt.get_optional<std::string>("url") )
         M_url = *it;
+    if ( auto it = pt.get_optional<std::string>("api_key") )
+        M_apiKey = *it;
     if ( auto it = pt.get_optional<std::string>("token") )
         M_token = *it;
     if ( auto it = pt.get_child_optional("file") )
@@ -674,12 +723,39 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm const& worldComm 
     if ( M_url.empty() )
         M_url = "https://girder.math.unistra.fr";
 
+    if ( M_apiKey.empty() )
+    {
+        char* env;
+        env = getenv( "FEELPP_GIRDER_API_KEY" );
+        if ( env != NULL && env[0] != '\0' )
+        {
+            M_apiKey = env;
+        }
+    }
+
+    if ( M_token.empty() )
+    {
+        char* env;
+        env = getenv( "FEELPP_GIRDER_TOKEN" );
+        if ( env != NULL && env[0] != '\0' )
+        {
+            M_token = env;
+        }
+    }
+
 #if 0
     std::cout << "url: " << M_url << "\n";
     for ( std::string const& fileId : M_fileIds )
         std::cout << "file id: " << fileId << "\n";
 #endif
 
+}
+
+void
+RemoteData::Girder::setFolderIds( std::string const& folderId )
+{
+    M_folderIds.clear();
+    M_folderIds.insert( folderId );
 }
 
 bool
@@ -692,7 +768,11 @@ RemoteData::Girder::canDownload() const
 {
     return this->isInit() && !M_fileIds.empty();
 }
-
+bool
+RemoteData::Girder::canUpload() const
+{
+    return this->isInit() && !M_folderIds.empty() && ( !M_token.empty() || !M_apiKey.empty() );
+}
 
 std::vector<std::string>
 RemoteData::Girder::download( std::string const& dir ) const
@@ -761,23 +841,36 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
 void
 RemoteData::Girder::upload( std::string const& dataPath ) const
 {
+    CHECK( !M_token.empty() || !M_apiKey.empty() ) << "no authentication impossible";
     CHECK( !M_folderIds.empty() ) << "upload require a folder id";
-    std::string parentId = *M_folderIds.begin();
-    std::string token = M_token;
 
-    fs::path dataFsPath( dataPath );
-    if( fs::is_directory( dataFsPath ) )
+    if ( M_worldComm.isMasterRank() )
     {
-        if ( dataFsPath.filename().filename_is_dot() )
+        std::string token = M_token;
+        if ( M_token.empty() )
+        {
+            token = this->createToken();
+            std::cout << "My New Token :  " << token << "\n";
+        }
+
+        std::string parentId = *M_folderIds.begin();
+
+        fs::path dataFsPath( dataPath );
+        if( fs::is_directory( dataFsPath ) && dataFsPath.filename().filename_is_dot() )
         {
             fs::directory_iterator end_itr;
             for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
                 this->uploadRecursively( itr->path().string(), parentId, token );
-            return;
+        }
+        else
+            this->uploadRecursively( dataPath, parentId, token );
+
+        if ( M_token.empty() && !token.empty() )
+        {
+            this->removeToken( token );
         }
     }
-
-    this->uploadRecursively( dataPath, parentId, token );
+    M_worldComm.barrier();
 }
 
 void
@@ -787,7 +880,7 @@ RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string 
     if( fs::is_directory( dataFsPath ) )
     {
         std::string folderName = dataFsPath.filename().string();
-        std::string newParentId = this->createFolder( folderName, parentId, token );
+        std::string newParentId = this->createFolderImpl( folderName, parentId, token );
 
         fs::directory_iterator end_itr;
         for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
@@ -839,7 +932,7 @@ RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& 
 
 
 std::string
-RemoteData::Girder::createFolder( std::string const& folderName, std::string const& parentId, std::string const& token ) const
+RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const
 {
     std::string urlCreateFolder = M_url+"/api/v1/folder?parentType=folder&parentId=" + parentId;
     urlCreateFolder += "&name="+ folderName;
@@ -863,4 +956,47 @@ RemoteData::Girder::createFolder( std::string const& folderName, std::string con
         folderIdCreated = *it;
     return folderIdCreated;
 }
+
+std::string
+RemoteData::Girder::createToken( int duration ) const
+{
+    std::string urlCreateToken = M_url+"/api/v1/api_key/token";
+    urlCreateToken += "?key=" + M_apiKey;
+    urlCreateToken += "&duration=" + std::to_string( duration );
+
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    headers.push_back("Content-Type: application/json");
+
+    std::ostringstream omemfile;
+    requestHTTPPOST( urlCreateToken, headers, omemfile );
+
+    // convert to property tree
+    std::istringstream istr( omemfile.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+
+    std::string tokenCreated;
+    if ( auto it = pt.get_child_optional( "authToken" ) )
+    {
+        if ( auto it2 = it->get_optional<std::string>("token") )
+            tokenCreated = *it2;
+    }
+    return tokenCreated;
+}
+
+void
+RemoteData::Girder::removeToken( std::string const& token ) const
+{
+    std::string urlRemoveToken = M_url+"/api/v1/token/session";
+    std::vector<std::string> headers;
+    headers.push_back("Accept: application/json");
+    CHECK( !token.empty() ) << "a token is required for upload";
+    headers.push_back( "Girder-Token: "+token );
+
+    std::ostringstream omemfile;
+    requestHTTPDELETE( urlRemoveToken, headers, omemfile );
+}
+
+
 } // namespace Feel
