@@ -132,6 +132,13 @@ struct RemoteData
         //! @param dataPath : a path of a file or a folder
         void upload( std::string const& dataPath ) const;
 
+        //! create folders hierarchy on Girder
+        //! @param folderPath : the folder hierarchy
+        //! @param parentId : id where folder are created, empty say to use folder id in the desc
+        //! @return : vector of (subdir name, subdir id)
+        std::vector<std::pair<std::string,std::string>>
+        createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
+
     private :
         std::string downloadFile( std::string const& fileId, std::string const& dir ) const;
         void uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;

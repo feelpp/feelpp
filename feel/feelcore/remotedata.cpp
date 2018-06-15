@@ -841,7 +841,7 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
 void
 RemoteData::Girder::upload( std::string const& dataPath ) const
 {
-    CHECK( !M_token.empty() || !M_apiKey.empty() ) << "no authentication impossible";
+    CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
     CHECK( !M_folderIds.empty() ) << "upload require a folder id";
 
     if ( M_worldComm.isMasterRank() )
@@ -850,7 +850,6 @@ RemoteData::Girder::upload( std::string const& dataPath ) const
         if ( M_token.empty() )
         {
             token = this->createToken();
-            std::cout << "My New Token :  " << token << "\n";
         }
 
         std::string parentId = *M_folderIds.begin();
@@ -872,6 +871,43 @@ RemoteData::Girder::upload( std::string const& dataPath ) const
     }
     M_worldComm.barrier();
 }
+
+std::vector<std::pair<std::string,std::string> >
+RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId ) const
+{
+    CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
+    std::string currentParentId = parentId;
+    if ( parentId.empty() && !M_folderIds.empty() )
+        currentParentId = *M_folderIds.begin();
+    CHECK( !currentParentId.empty() ) << "a parentId is require";
+
+    std::vector<boost::tuple<std::string,std::string> > foldersInfo;
+    if ( M_worldComm.isMasterRank() )
+    {
+        std::string token = M_token;
+        if ( M_token.empty() )
+            token = this->createToken();
+
+        fs::path folderFsPath( folderPath );
+        for ( auto const& subdir : folderFsPath )
+        {
+            if ( !subdir.filename_is_dot() )
+            {
+                foldersInfo.push_back( boost::make_tuple( subdir.string(), currentParentId ) );
+                currentParentId = this->createFolderImpl( subdir.string(), currentParentId, token );
+            }
+        }
+
+        if ( M_token.empty() && !token.empty() )
+            this->removeToken( token );
+    }
+    mpi::broadcast( M_worldComm.globalComm(), foldersInfo, M_worldComm.masterRank() );
+    std::vector<std::pair<std::string,std::string> > res;
+    for ( auto const& folderInfo : foldersInfo )
+        res.push_back( std::make_pair( boost::get<0>( folderInfo ), boost::get<1>( folderInfo ) ) );
+    return res;
+}
+
 
 void
 RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const
@@ -929,7 +965,6 @@ RemoteData::Girder::uploadFile( std::string const& filepath, std::string const& 
     std::ostringstream omemfile;
     requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsize, omemfile );
 }
-
 
 std::string
 RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const
