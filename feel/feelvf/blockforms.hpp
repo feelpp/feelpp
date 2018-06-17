@@ -127,6 +127,16 @@ public :
                                                              std::forward<BackendT>(b),
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
+    template<typename T, typename BackendT>
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns,
+                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+        :
+        M_ps(std::forward<T>(ps)),
+        M_matrix( boost::make_shared<condensed_matrix_type>( s,
+                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
+                                                             std::forward<BackendT>(b),
+                                                             (s>=solve::strategy::static_condensation)?false:true )  )
+        {}
 
     BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype & m)
         :
@@ -227,6 +237,14 @@ public :
         {
             M_matrix =  boost::make_shared<condensed_matrix_type>( s,
                                                                    csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                                   std::forward<BackendT>(b),
+                                                                   (s>=solve::strategy::static_condensation)?false:true );
+        }
+    template<typename BackendT>
+    void setStrategy( solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
+        {
+            M_matrix =  boost::make_shared<condensed_matrix_type>( s,
+                                                                   csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
                                                                    std::forward<BackendT>(b),
                                                                    (s>=solve::strategy::static_condensation)?false:true );
         }
@@ -452,6 +470,70 @@ public :
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
                 solution(3_c,i)=U(1_c,i);
+#if 0
+            S.matrixPtr()->printMatlab("S.m");
+            V.vectorPtr()->printMatlab("g.m");
+            e3.printMatlab("phat1.m");
+            e1.printMatlab("u.m");
+            e2.printMatlab("p.m");
+#endif
+            tic();
+            cout << " . starting local Solve" << std::endl;
+            sc->setDim4( M_ps[3_c]->numberOfSpaces());
+            sc->localSolve ( rhs.vectorPtr()->sc(), solution );
+            cout << " . local Solve done" << std::endl;
+            toc("blockform.sc.localsolve",FLAGS_v>0);
+#if 0
+            e1.printMatlab("u1.m");
+            e2.printMatlab("p1.m"); 
+#endif
+
+            return r;
+        }
+ 
+    //!
+    //! solve using static condensation in the case of 2 trace spaces
+    //!
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,5>,
+                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+        {
+            //auto& e4 = solution(3_c,0);
+            auto& e3 = solution(2_c);
+            auto& e2 = solution(1_c);
+            auto& e1 = solution(0_c);
+
+            auto sc = M_matrix->sc();
+
+            auto Th = product2( M_ps[3_c], ps[2_c], M_ps[4_c] );
+            std::vector<size_type> patterns = {Pattern::HDG,Pattern::HDG,Pattern::COUPLED,
+                                               Pattern::HDG,Pattern::HDG,Pattern::ZERO,
+                                               Pattern::COUPLED,Pattern::ZERO,Pattern::COUPLED};
+            auto S = blockform2(Th, solve::strategy::monolithic, backend(), patterns);
+            auto V = blockform1(Th, solve::strategy::monolithic, backend() );
+            //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+            auto U = Th.element();
+            //e3.printMatlab("phat.m");
+            tic();
+            this->syncLocalMatrix();
+            sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
+            toc("blockform.sc.condense", FLAGS_v>0);
+            S.close();V.close();
+            cout << " . Condensation done" << std::endl;
+            tic();
+            cout << " . starting Solve" << std::endl;
+
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
+
+            cout << " . Solve done" << std::endl;
+            toc("blockform.sc.solve", FLAGS_v>0);
+
+            solution(2_c)=U(0_c);
+            for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
+                solution(3_c,i)=U(1_c,i);
+            solution(4_c) = U(4_c);
 #if 0
             S.matrixPtr()->printMatlab("S.m");
             V.vectorPtr()->printMatlab("g.m");
