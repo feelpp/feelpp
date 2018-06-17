@@ -142,7 +142,7 @@ public:
     
     template<typename E, typename M_ptrtype, typename V_ptrtype>
     void condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                   std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
+                   std::enable_if_t<std::decay_t<E>::nspaces >= 4>* = nullptr );
 
     template<typename E>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
@@ -158,7 +158,7 @@ public:
 
     template<typename E>
     void localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
+                     std::enable_if_t<std::decay_t<E>::nspaces >= 4>* = nullptr );
 
     void addLocalMatrix( int* rows, int nrows,
                          int* cols, int ncols,
@@ -1105,7 +1105,7 @@ template<typename T>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
 void
 StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
-                                 std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
+                                 std::enable_if_t<std::decay_t<E>::nspaces >= 4>* ) 
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1136,6 +1136,7 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
     auto const& A13K = M_local_matrices[std::make_pair(1,3)];
     //LOG(INFO) << "A21K.size=" << A21K.size();
     auto const& A33K = M_local_matrices[std::make_pair(3,3)];
+    
     //LOG(INFO) << "A22K.size=" << A22K.size();
     auto A4K = [this]( int i, int j ) { return this->M_local_matrices[std::make_pair(i,j)]; };
     auto const& F0K = rhs->M_local_vectors[0];
@@ -1468,10 +1469,44 @@ StaticCondensation<T>::condense( boost::shared_ptr<StaticCondensation<T>> const&
             S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_size_type_value, invalid_size_type_value );
             //S.matrixPtr()->printMatlab("S3.m");
             S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_size_type_value, invalid_size_type_value );
+            
             //S.matrixPtr()->printMatlab("S4.m");
             V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_size_type_value, invalid_size_type_value );
             //V.vectorPtr()->printMatlab("g1.m");
             V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_size_type_value, invalid_size_type_value );
+
+#if 0
+            if ( std::decay_t<E>:nspaces == 5 )
+            {
+                auto const& A34 = M_local_matrices[std::make_pair(3,4)];
+                auto const& A43 = M_local_matrices[std::make_pair(4,3)];
+                auto const& A44 = M_local_matrices[std::make_pair(4,4)];
+                
+                auto const& V4 = rhs->M_local_vectors[4];
+
+                int n2 = 0;
+                std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
+                               {
+                                   //std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
+                                   auto key2 = std::make_pair(dKi, dKi);
+                                   
+                               });
+                auto dofs1 = e(3_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),1);
+                auto dofs2 = e(4_c).dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
+                
+                
+                decltype(dofs1) dofs( dofs1.size()+dofs2.size() );
+                std::copy(dofs1.begin(), dofs1.end(), dofs.begin() );
+                std::copy(dofs2.begin(), dofs2.end(), dofs.begin()+dofs1.size() );
+                
+                S(3_c,4_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A34.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                S(4_c,4_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A44.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                S(4_c,3_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), A43.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+
+                V(2_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), V4.at(key).data(), invalid_size_type_value, invalid_size_type_value );
+                
+            }
+#endif
             //V.vectorPtr()->printMatlab("g2.m");
             toc("sc.condense.globalassembly", FLAGS_v>0);
 
@@ -1666,7 +1701,7 @@ StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> cons
 template<typename T>
 template<typename E>
 void
-StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 4>*  )
+StaticCondensation<T>::localSolve( boost::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces >= 4>*  )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
