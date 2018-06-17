@@ -576,6 +576,15 @@ csrGraphBlocks( PS&& ps,
                 size_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
+    std::vector<size_type> p( ps.numberOfSpaces()*ps.numberOfSpaces(), pattern );
+    return csrGraphBlocks( ps, p );
+}
+template<typename PS>
+BlocksBaseGraphCSR
+csrGraphBlocks( PS&& ps,
+                std::vector<size_type> const& patterns,
+                std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
     int s = ps.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
 
@@ -602,7 +611,7 @@ csrGraphBlocks( PS&& ps,
                                                                                             g( r+i, c+j ) =
                                                                                                 stencil( _test=(*x)[i],
                                                                                                          _trial=(*y)[j],
-                                                                                                         _pattern=pattern,
+                                                                                                         _pattern=patterns[n],
                                                                                                      _diag_is_nonzero=false, _close=false)->graph();
                                                                                         }
                                                                                 },
@@ -613,7 +622,7 @@ csrGraphBlocks( PS&& ps,
                                                                                         g( r+i, c ) =
                                                                                             stencil( _test=(*x)[i],
                                                                                                      _trial=y,
-                                                                                                     _pattern=pattern,
+                                                                                                     _pattern=patterns[n],
                                                                                                      _diag_is_nonzero=false, _close=false)->graph();
                                                                                     }
                                                                                 })(xx,yy); },
@@ -625,7 +634,7 @@ csrGraphBlocks( PS&& ps,
                                                                                               g( r, c+i ) =
                                                                                                   stencil( _test=x,
                                                                                                            _trial=(*y)[i],
-                                                                                                           _pattern=pattern,
+                                                                                                           _pattern=patterns[n],
                                                                                                            _diag_is_nonzero=false, _close=false)->graph();
                                                                                           }
                                                                                       },
@@ -634,7 +643,7 @@ csrGraphBlocks( PS&& ps,
                                                                                           g( r, c ) =
                                                                                               stencil( _test=x,
                                                                                                        _trial=y,
-                                                                                                       _pattern=pattern,
+                                                                                                       _pattern=patterns[n],
                                                                                                        _diag_is_nonzero=false, _close=false)->graph();
                                                                                       })(xx,yy); })(test_space,trial_space);
 
@@ -651,14 +660,23 @@ csrGraphBlocks( PS&& ps,
                 size_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
+    std::vector<size_type> p( ps.numberOfSpaces()*ps.numberOfSpaces(), pattern );
+    return csrGraphBlocks( ps, p );
+}
+template<typename PS>
+BlocksBaseGraphCSR
+csrGraphBlocks( PS&& ps,
+                std::vector<size_type> const& patterns,
+                std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+{
     int s = ps.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
 
 
-    for( int i = 0; i < ps.numberOfSpaces(); ++i )
-        for( int j = 0; j < ps.numberOfSpaces(); ++j )
+    for( int i = 0, n = 0; i < ps.numberOfSpaces(); ++i )
+        for( int j = 0; j < ps.numberOfSpaces(); ++j, ++n )
         {
-            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
+            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=patterns[n], _diag_is_nonzero=false, _close=false)->graph();
             LOG(INFO) << "filling out stencil (" << i << "," << j << ")\n";
         }
     return g;
