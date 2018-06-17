@@ -62,7 +62,7 @@ public:
         }
     Interpolator( const Interpolator& ) = default;
     Interpolator( Interpolator&& ) = default;
-    ~Interpolator() = default;
+    virtual ~Interpolator() = default;
     /**
      *  Evaluate the interpolant
      */
