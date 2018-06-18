@@ -33,6 +33,15 @@ namespace Feel {
 
 namespace FeelModels {
 
+namespace ToolboxesDetail
+{
+void removeTrailingSlash( std::string & s )
+{
+    if ( fs::path( s ).filename().filename_is_dot() )
+        s = fs::path( s ).parent_path().string();
+}
+}
+
 ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
 {
     if ( rootDirWithoutNumProc.empty() )
@@ -51,7 +60,75 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
         M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
     }
 
+    ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithoutNumProc );
+    ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithNumProc );
+    ToolboxesDetail::removeTrailingSlash( M_exprRepository );
 }
+
+ModelBaseUpload::ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm )
+    :
+    M_basePath( basePath )
+{
+    if ( desc.empty() )
+        return;
+    M_remoteData.reset( new RemoteData( desc,worldComm ) );
+}
+
+bool
+ModelBaseUpload::isOperational() const
+{
+    if ( !M_remoteData )
+        return false;
+    return M_remoteData->canUpload();
+}
+
+void
+ModelBaseUpload::upload( std::string const& dataPath ) const
+{
+    if ( !this->isOperational() )
+        return;
+
+    std::string relDataPath = this->relativePath( dataPath );
+    CHECK( !relDataPath.empty() ) << "not relative path";
+
+    fs::path folder = fs::path( relDataPath ).parent_path();
+
+    std::string parentId;
+    auto itFindFolder = M_treeDataStructure.find( folder.string() );
+    if ( itFindFolder != M_treeDataStructure.end() )
+        parentId = itFindFolder->second.first;
+    else
+    {
+        auto newFolders = M_remoteData->createFolder( folder.string() );
+        std::string curFolderInTree;
+        for ( int k=0;k<newFolders.size();++k )
+        {
+            std::string curFolderName = newFolders[k].first;
+            std::string curFolderId = newFolders[k].second;
+            parentId = curFolderId;
+            curFolderInTree = (k==0)? curFolderName : (fs::path(curFolderInTree)/curFolderName).string();
+            auto itFindFolder2 = M_treeDataStructure.find( curFolderInTree );
+            if ( itFindFolder2 == M_treeDataStructure.end() )
+                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::vector<std::string>() );
+        }
+    }
+
+    M_treeDataStructure[folder.string()].second.push_back( fs::path( relDataPath ).filename().string() );
+    M_remoteData->upload( dataPath, parentId );
+}
+void
+ModelBaseUpload::createFolder( std::string const& folderPath, std::string const& parentId ) const
+{
+    if ( this->isOperational() )
+        M_remoteData->createFolder( folderPath, parentId );
+}
+std::string
+ModelBaseUpload::relativePath( std::string const& s ) const
+{
+    fs::path relPath = fs::relative( s,M_basePath );
+    return relPath.string();
+}
+
 
 ModelBase::ModelBase( std::string const& prefix,
                       WorldComm const& worldComm,
@@ -66,7 +143,7 @@ ModelBase::ModelBase( std::string const& prefix,
     M_modelRepository( modelRep ),
     M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
     M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"appli.info")) ),
+    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
     M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix()) ),
     M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix()) ),
     M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix()) ),
@@ -74,7 +151,8 @@ ModelBase::ModelBase( std::string const& prefix,
     M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix()) ),
     M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
-    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) )
+    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
+    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
 {
     if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
@@ -85,6 +163,14 @@ ModelBase::ModelBase( std::string const& prefix,
         M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
     else
         M_scalabilityFilename = this->prefix()+".scalibility";
+
+    if ( M_upload.isOperational() )
+    {
+        fs::path dirRelative = fs::relative( this->repository().rootWithNumProc(),
+                                             this->repository().rootWithoutNumProc() );
+        M_upload.createFolder( dirRelative.string() );
+    }
+
 }
 ModelBase::~ModelBase()
 {}
@@ -150,13 +236,15 @@ ModelBase::printInfo() const
 void
 ModelBase::saveInfo() const
 {
+    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
     if (this->worldComm().isMasterRank() )
     {
-        fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
         file.close();
     }
+
+    this->upload( thepath.string() );
 }
 void
 ModelBase::printAndSaveInfo() const
@@ -215,6 +303,14 @@ std::string
 ModelBase::scalabilityFilename() const { return M_scalabilityFilename; }
 void
 ModelBase::setScalabilityFilename( std::string const& s )  { M_scalabilityFilename=s; }
+
+void
+ModelBase::upload( std::string const& dataPath ) const
+{
+    if ( M_upload.isOperational() )
+        M_upload.upload( dataPath );
+}
+
 
 
 } // namespace FeelModels
