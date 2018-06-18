@@ -347,10 +347,19 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
 }
 
 void
-RemoteData::upload( std::string const& dataPath ) const
+RemoteData::upload( std::string const& dataPath, std::string const& parentId ) const
 {
     if ( M_girder && M_girder->canUpload() )
-        M_girder->upload( dataPath );
+        M_girder->upload( dataPath, parentId );
+}
+
+std::vector<std::pair<std::string,std::string>>
+RemoteData::createFolder( std::string const& folderPath, std::string const& parentId ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->createFolder( folderPath, parentId );
+    std::vector<std::pair<std::string,std::string>> res;
+    return res;
 }
 
 RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
@@ -771,7 +780,7 @@ RemoteData::Girder::canDownload() const
 bool
 RemoteData::Girder::canUpload() const
 {
-    return this->isInit() && !M_folderIds.empty() && ( !M_token.empty() || !M_apiKey.empty() );
+    return this->isInit() && ( !M_token.empty() || !M_apiKey.empty() );
 }
 
 std::vector<std::string>
@@ -839,35 +848,32 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
 }
 
 void
-RemoteData::Girder::upload( std::string const& dataPath ) const
+RemoteData::Girder::upload( std::string const& dataPath, std::string const& parentId ) const
 {
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
-    CHECK( !M_folderIds.empty() ) << "upload require a folder id";
+    std::string currentParentId = parentId;
+    if ( parentId.empty() && !M_folderIds.empty() )
+        currentParentId = *M_folderIds.begin();
+    CHECK( !currentParentId.empty() ) << "a parentId is required";
 
     if ( M_worldComm.isMasterRank() )
     {
         std::string token = M_token;
         if ( M_token.empty() )
-        {
             token = this->createToken();
-        }
-
-        std::string parentId = *M_folderIds.begin();
 
         fs::path dataFsPath( dataPath );
         if( fs::is_directory( dataFsPath ) && dataFsPath.filename().filename_is_dot() )
         {
             fs::directory_iterator end_itr;
             for ( fs::directory_iterator itr( dataFsPath ); itr != end_itr; ++itr )
-                this->uploadRecursively( itr->path().string(), parentId, token );
+                this->uploadRecursively( itr->path().string(), currentParentId, token );
         }
         else
-            this->uploadRecursively( dataPath, parentId, token );
+            this->uploadRecursively( dataPath, currentParentId, token );
 
         if ( M_token.empty() && !token.empty() )
-        {
             this->removeToken( token );
-        }
     }
     M_worldComm.barrier();
 }
@@ -879,7 +885,7 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
     std::string currentParentId = parentId;
     if ( parentId.empty() && !M_folderIds.empty() )
         currentParentId = *M_folderIds.begin();
-    CHECK( !currentParentId.empty() ) << "a parentId is require";
+    CHECK( !currentParentId.empty() ) << "a parentId is required";
 
     std::vector<boost::tuple<std::string,std::string> > foldersInfo;
     if ( M_worldComm.isMasterRank() )
@@ -893,8 +899,8 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
         {
             if ( !subdir.filename_is_dot() )
             {
-                foldersInfo.push_back( boost::make_tuple( subdir.string(), currentParentId ) );
                 currentParentId = this->createFolderImpl( subdir.string(), currentParentId, token );
+                foldersInfo.push_back( boost::make_tuple( subdir.string(), currentParentId ) );
             }
         }
 
