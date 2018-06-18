@@ -39,7 +39,6 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->setFilenameSaveInfo( prefixvm(this->prefix(),"Heat.info") );
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -590,7 +589,10 @@ HEAT_CLASS_TEMPLATE_TYPE::exportFields( double time )
 {
     bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
     if ( hasFieldToExport )
+    {
         M_exporter->save();
+        this->upload( M_exporter->path() );
+    }
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 bool
@@ -714,6 +716,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         if ( !this->isStationary() )
             this->postProcessMeasuresIO().setMeasure( "time", time );
         this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
 
