@@ -34,6 +34,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/remotedata.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
@@ -61,6 +62,25 @@ private :
     std::string M_exprRepository;
 };
 
+struct ModelBaseUpload
+{
+    ModelBaseUpload() = default;
+    ModelBaseUpload( std::string const& desc, std::string const& basePath, WorldComm const& worldComm );
+    ModelBaseUpload( ModelBaseUpload const& ) = default;
+    ModelBaseUpload( ModelBaseUpload && ) = default;
+
+    bool isOperational() const;
+
+    void upload( std::string const& dataPath ) const;
+    void createFolder( std::string const& folderPath, std::string const& parentId = "" ) const;
+
+    std::string relativePath( std::string const& s ) const;
+
+private :
+    std::shared_ptr<RemoteData> M_remoteData;
+    std::string M_basePath;
+    mutable std::map<std::string,std::pair<std::string,std::vector<std::string>>> M_treeDataStructure;
+};
 
 class ModelBase
 {
@@ -108,6 +128,9 @@ public :
     void setScalabilityPath(std::string const& s);
     std::string scalabilityFilename() const;
     void setScalabilityFilename(std::string const& s);
+    // upload
+    ModelBaseUpload const& upload() const { return M_upload; }
+    void upload( std::string const& dataPath ) const;
 
 private :
     // worldcomm
@@ -131,6 +154,8 @@ private :
     bool M_scalabilitySave, M_scalabilityReinitSaveFile;
     std::string M_scalabilityPath;
     std::string M_scalabilityFilename;
+
+    ModelBaseUpload M_upload;
 };
 
 // null application
