@@ -358,8 +358,7 @@ RemoteData::createFolder( std::string const& folderPath, std::string const& pare
 {
     if ( M_girder && M_girder->canUpload() )
         return M_girder->createFolder( folderPath, parentId );
-    std::vector<std::pair<std::string,std::string>> res;
-    return res;
+    return {};
 }
 
 RemoteData::URL::URL( std::string const& url, WorldComm const& worldComm )
