@@ -23,6 +23,9 @@ feelpp_build()
         if [ ! -d .git ]; then
             git init
         fi
+        if [ ! -f .lfsconfig ]; then 
+            git config -f .lfsconfig lfs.url http://github.com/feelpp/$1.git/info/lfs
+        fi 
         git pull https://${GITHUB_OAUTH}@github.com/feelpp/$1.git $3
         #git clone $2 $1
         # /tmp should only have the directory of our project
