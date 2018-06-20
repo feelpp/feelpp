@@ -1,13 +1,8 @@
 
-feelpp_add_application( heat_2d SRCS main_ht.cpp
-  LINK_LIBRARIES feelpp_toolbox_heat_lib_2dP1G1
-  DEFS FEELPP_DIM=2
-  INSTALL
-  )
-
-feelpp_add_application( heat_3d SRCS main_ht.cpp
-  LINK_LIBRARIES feelpp_toolbox_heat_lib_3dP1G1
-  DEFS FEELPP_DIM=3
+feelpp_add_application( heat SRCS main_ht.cpp
+  LINK_LIBRARIES
+  # feelpp_toolbox_heat_lib_2dP1G1
+  feelpp_toolbox_heat_lib
   INSTALL
   )
 

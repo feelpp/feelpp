@@ -85,8 +85,8 @@ public :
 
 private :
 
-    bool isIdenticalPoints(typename mesh1_type::point_type const & pt1,
-                           typename mesh1_type::point_type const & pt2,
+    bool isIdenticalPoints(typename mesh1_type::element_type::point_type::super const & pt1,
+                           typename mesh1_type::element_type::point_type::super const & pt2,
                            double tol = 1e-9 ) const;
 
     void buidGeoElementMap();
@@ -162,8 +162,8 @@ private :
 
 template< class SpaceType1,class SpaceType2 >
 bool
-DofRelationshipMap<SpaceType1,SpaceType2>::isIdenticalPoints( typename mesh1_type::point_type const & pt1,
-                                                              typename mesh1_type::point_type const & pt2,
+DofRelationshipMap<SpaceType1,SpaceType2>::isIdenticalPoints( typename mesh1_type::element_type::point_type::super const & pt1,
+                                                              typename mesh1_type::element_type::point_type::super const & pt2,
                                                               double tol ) const
 {
     bool res;

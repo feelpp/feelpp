@@ -629,7 +629,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
         auto efa = std::get<1>( rangeBoundaryFaces );
         for ( ; ifa!=efa; ++ifa )
         {
-            auto const& bface = boost::unwrap_ref( *ifa );
+            auto & bface = boost::unwrap_ref( *ifa );
             for ( uint16_type j = 0; j < face_type::numEdges; j++ )
             {
                 i1 = bface.point( face_type::eToP( j, 0 ) ).id();
@@ -657,7 +657,7 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                     edg.setOnBoundary( true, 0 );
                     edg.setProcessId( invalid_rank_type_value );
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
-                        edg.setPoint( k, bface.point( face_type::eToP( j, k ) ) );
+                        edg.setPoint( k, const_cast<Geo0D<nDim,T>&>(bface.point( face_type::eToP( j, k ) ) ) );
 
                     auto res = this->addEdge( edg );
                     auto & edgeInserted = res.first->second;
@@ -739,8 +739,8 @@ void Mesh3D<GEOSHAPE,T>::updateEntitiesCoDimensionTwo()
                 // number of points on the edge is 2 (number of
                 // vertices) plus the number of points in the
                 // interior of the edge
-                auto const& pt0 = elt.point( element_type::eToP( j, 0 ) );
-                auto const& pt1 = elt.point( element_type::eToP( j, 1 ) );
+                auto & pt0 = elt.point( element_type::eToP( j, 0 ) );
+                auto & pt1 = elt.point( element_type::eToP( j, 1 ) );
                 edg.setPoint( 0, pt0 );
                 edg.setPoint( 1, pt1 );
                 for ( uint16_type k = 2; k < 2 + element_type::nbPtsPerEdge; k++ )

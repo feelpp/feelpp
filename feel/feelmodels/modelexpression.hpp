@@ -59,6 +59,18 @@ public :
         else if ( M==3 && N==3 ) return this->hasExprMatrix33();
         else return false;
     }
+    template <int M,int N>
+    bool hasExpr() const
+    {
+        if ( M==1 && N == 1 ) return this->hasExprScalar();
+        else if ( M == 2 && N == 1 ) return this->hasExprVectorial2();
+        else if ( M == 3 && N == 1 ) return this->hasExprVectorial3();
+        else if ( M==2 && N==2 ) return this->hasExprMatrix22();
+        else if ( M==3 && N==3 ) return this->hasExprMatrix33();
+        else return false;
+    }
+
+    bool hasAtLeastOneExpr() const { return !M_values.empty() || this->hasExprScalar() || this->hasExprVectorial2() || this->hasExprVectorial3() || this->hasExprMatrix22() || this->hasExprMatrix33(); }
 
     bool isConstant() const { return this->isScalar() && this->hasValue() && !this->hasExprScalar(); }
     bool isScalar() const { return hasExprScalar() || (this->hasValue() && M_values.size() == 1); }
@@ -72,19 +84,23 @@ public :
     expr_matrix22_type const& exprMatrix22() const { CHECK( this->hasExprMatrix22() ) << "no Matrix22 expression"; return *M_exprMatrix22; }
     expr_matrix33_type const& exprMatrix33() const { CHECK( this->hasExprMatrix33() ) << "no Matrix33 expression"; return *M_exprMatrix33; }
 
-    expr_scalar_type const& expr() const { return this->exprScalar(); }
+    //expr_scalar_type const& expr() const { return this->exprScalar(); }
+
+    template <int M=1,int N=1>
+        expr_scalar_type const& expr( typename std::enable_if< M==1 && N == 1>::type* = nullptr ) const { return this->exprScalar(); }
+    template <int M=1,int N=1>
+        expr_vectorial2_type const& expr( typename std::enable_if< M==2 && N == 1>::type* = nullptr ) const { return this->exprVectorial2(); }
+    template <int M=1,int N=1>
+        expr_vectorial3_type const& expr( typename std::enable_if< M==3 && N == 1>::type* = nullptr ) const { return this->exprVectorial3(); }
+    template <int M=1,int N=1>
+        expr_matrix22_type const& expr( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) const { return this->exprMatrix22(); }
+    template <int M=1,int N=1>
+        expr_matrix33_type const& expr( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
+
     template <int M,int N>
-    expr_matrix22_type const& exprMatrix( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) const
-    {
-        CHECK( this->hasExprMatrix22() ) << "no Matrix22 expression";
-        return *M_exprMatrix22;
-    }
+        expr_matrix22_type const& exprMatrix( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) const { return this->exprMatrix22(); }
     template <int M,int N>
-    expr_matrix33_type const& exprMatrix( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const
-    {
-        CHECK( this->hasExprMatrix33() ) << "no Matrix22 expression";
-        return *M_exprMatrix33;
-    }
+        expr_matrix33_type const& exprMatrix( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
 
     void setValue( double val, int c = 0 ) { M_values[c] = val; }
     void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = boost::optional<expr_scalar_type>( expr ); }
@@ -92,6 +108,9 @@ public :
     void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr ); }
     void setExprMatrix22( expr_matrix22_type const& expr ) { M_exprMatrix22 = boost::optional<expr_matrix22_type>( expr ); }
     void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = boost::optional<expr_matrix33_type>( expr ); }
+
+    //! set an expression from a key of a ptree p
+    void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr );
 
     void setParameterValues( std::map<std::string,double> const& mp )
     {
@@ -108,10 +127,10 @@ public :
     }
 
     template<typename ExprT>
-    Expr< GinacExVF<ExprT,expr_order> >
+    constexpr auto //Expr< GinacExVF<ExprT,expr_order> >
     exprScalar( std::string const& symb, ExprT const& e ) const
     {
-        return Feel::vf::expr( this->exprScalar(), symb, e );
+        return Feel::vf::expr( this->exprScalar(), symbolExpr(symb, e) );
     }
 
 private :
@@ -146,7 +165,7 @@ public :
     void setParameterValues( std::map<std::string,double> const& mp ) { super_type::setParameterValues( mp ); }
 
     template<typename ExprT>
-    Expr< GinacExVF<ExprT,expr_order> >
+    constexpr auto //Expr< GinacExVF<ExprT,expr_order> >
     expr( std::string const& symb, ExprT const& e ) const
     {
         return this->exprScalar( symb,e );

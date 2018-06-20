@@ -128,6 +128,7 @@ class ModelNumerical : public ModelAlgebraic
                     return itFind->second;
                 return invalid_size_type_value;
             }
+        bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
         void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
         GeomapStrategyType geomap() const { return M_geomap; }

@@ -1,22 +1,22 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
+
  This file is part of the Feel++ library
- 
+
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 16 Mar 2015
- 
+
  Copyright (C) 2015 Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
+
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -27,7 +27,7 @@
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelmaterials.hpp>
-#include <feel/feelcore/removecomments.hpp>
+#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 
 namespace Feel {
@@ -176,57 +176,8 @@ ModelMaterial::setProperty( std::string const& property, double val )
 void
 ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
-    if( boost::optional<double> itvald = p.get_optional<double>( property ) )
-    {
-        double val = *itvald;
-        VLOG(1) << "set property " << property << " is constant : " << val;
-        M_materialProperties[property] = mat_property_expr_type();
-        M_materialProperties[property].setValue( val );
-    }
-    else if( boost::optional<std::string> itvals = p.get_optional<std::string>( property ) )
-    {
-        std::string feelExprString = *itvals;
-        auto parseExpr = GiNaC::parse( feelExprString );
-        auto const& exprSymbols = parseExpr.second;
-        auto ginacEvalm = parseExpr.first.evalm();
-
-        bool isLst = GiNaC::is_a<GiNaC::lst>( ginacEvalm );
-        int nComp = 1;
-        if ( isLst )
-            nComp = ginacEvalm.nops();
-
-        if ( nComp == 1 && ( exprSymbols.empty() || ( exprSymbols.size() == 1 && exprSymbols[0].get_name() == "0" ) ) )
-        {
-            std::string stringCstExpr = ( isLst )? str( ginacEvalm.op(0) ) :str( ginacEvalm );
-            double val = 0;
-            try
-            {
-                val = std::stod( stringCstExpr );
-            }
-            catch (std::invalid_argument& err)
-            {
-                CHECK( false ) << "cast fail from expr to double\n";
-            }
-            VLOG(1) << "set property " << property <<" is const from expr=" << val;
-            M_materialProperties[property] = mat_property_expr_type();
-            M_materialProperties[property].setValue( val );
-        }
-        else
-        {
-            VLOG(1) << "set property " << property << " build symbolic expr with nComp=" << nComp;
-            M_materialProperties[property] = mat_property_expr_type();
-            if ( nComp == 1 )
-                M_materialProperties[property].setExprScalar( expr<expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 2 )
-                M_materialProperties[property].setExprVectorial2( expr<2,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 3 )
-                M_materialProperties[property].setExprVectorial3( expr<3,1,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 4 )
-                M_materialProperties[property].setExprMatrix22( expr<2,2,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-            else if ( nComp == 9 )
-                M_materialProperties[property].setExprMatrix33( expr<3,3,expr_order>( feelExprString,"",*M_worldComm,M_directoryLibExpr ) );
-        }
-    }
+    M_materialProperties[property] = mat_property_expr_type();
+    M_materialProperties[property].setExpr( property,p,*M_worldComm,M_directoryLibExpr );
 }
 
 void
@@ -335,5 +286,3 @@ ModelMaterials::saveMD(std::ostream &os)
 }
 
 }
-
-

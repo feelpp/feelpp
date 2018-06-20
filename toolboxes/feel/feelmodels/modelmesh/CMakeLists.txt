@@ -25,18 +25,16 @@ INSTALL(TARGETS feelpp_modelmesh DESTINATION lib/ COMPONENT Libs EXPORT feelpp-t
 #######################################################
 if( FEELPP_MODELS_HAS_MESHALE )
   # harmonic extension src
-  if( FEELPP_MODELS_HAS_MESHALE_HARMONICEXTENSION )
+  if( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     set(HARMONICEXTENSION_SRC
       harmonicextension.cpp
       )
   endif()
   # winslow src
-  if( FEELPP_MODELS_HAS_MESHALE_WINSLOW )
-    set(WINSLOW_SRC 
-      winslowgen2d.cpp
-      winslowgen3d.cpp
-      winslowptfixe.cpp
-      winslownewton.cpp
+  if( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
+    set(WINSLOW_SRC
+      winslow_inst2d.cpp
+      winslow_inst3d.cpp
       )
   endif()
 

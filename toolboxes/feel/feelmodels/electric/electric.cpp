@@ -36,6 +36,7 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 
 namespace Feel
 {
@@ -150,6 +151,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
     M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
+    M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
 
     this->initBoundaryConditions();
 
@@ -160,7 +162,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldComm() );
 
     size_type currentStartIndex = 0;// velocity and pressure before
-    M_startBlockIndexFieldsInMatrix["potential-electric"] = currentStartIndex;
+    this->setStartSubBlockSpaceIndex( "potential-electric", currentStartIndex );
 
     // vector solution
     int nBlock = this->nBlockMatrixGraph();
@@ -241,6 +243,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> co
             res.insert( "electric-field" );
         if ( o == prefixvm(prefix,"conductivity") || o == prefixvm(prefix,"all") )
             res.insert( "conductivity" );
+        if ( o == prefixvm(prefix,"current-density") || o == prefixvm(prefix,"all") )
+            res.insert( "current-density" );
         if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
             res.insert( "pid" );
     }
@@ -271,6 +275,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
             if ( M_exporter->doExport() )
                 M_exporter->restart(this->timeInitial());
         }
+    }
+
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
@@ -382,6 +394,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporter, std
                                      M_electricProperties->fieldElectricConductivity() );
         hasFieldToExport = true;
     }
+    if ( fields.find( "current-density" ) != fields.end() )
+    {
+        exporter->step( time )->add( prefixvm(this->prefix(),"current-density"),
+                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),"current-density")),
+                                     *M_fieldCurrentDensity );
+        hasFieldToExport = true;
+    }
     if ( fields.find( "pid" ) != fields.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
@@ -394,6 +413,30 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
+    std::string modelName = "electric";
+    bool hasMeasure = false;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    {
+        std::map<std::string,double> resPpNorms;
+        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), std::make_pair( "electric-potential",this->fieldElectricPotential() ) );
+        for ( auto const& resPpNorm : resPpNorms )
+        {
+            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
+            hasMeasure = true;
+        }
+    }
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+    }
 
 }
 
@@ -409,6 +452,32 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
                                  _expr=-trans(gradv( this->fieldElectricPotential() ) ) );
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateCurrentDensity()
+{
+    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
+        if ( electricConductivity.isConstant() )
+        {
+            double sigma = electricConductivity.value();
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
+        }
+        else
+        {
+            auto sigma = electricConductivity.expr();
+            if ( sigma.expression().hasSymbol( "heat_T" ) )
+                continue;
+            auto cd = -sigma*trans(gradv( this->fieldElectricPotential() ));
+            this->updateCurrentDensity( cd, range );
+        }
+    }
 }
 
 
@@ -444,6 +513,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.localize();
 
     this->updateElectricField();
+    this->updateCurrentDensity();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -464,7 +534,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Electric","updateLinearPDE", "start"+sc);
@@ -528,11 +597,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
     // update bc
     this->updateLinearPDEWeakBC(A,F,buildCstPart);
-
-    if ( !buildCstPart && _doBCStrongDirichlet)
-    {
-        this->updateLinearPDEStrongDirichletBC( A,F );
-    }
 }
 
 
@@ -546,7 +610,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) cons
     this->log("Electric","updateNewtonInitialGuess","start" );
 
     auto mesh = this->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     for( auto const& d : M_bcDirichlet )
     {
@@ -568,14 +632,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     sparse_matrix_ptrtype& J = data.jacobian();
     vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool _BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
@@ -620,25 +683,23 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     }
 
     this->updateJacobianWeakBC( v,J,buildCstPart );
-
-    if ( buildNonCstPart && _doBCStrongDirichlet )
-    {
-        this->updateJacobianStrongDirichletBC( J,RBis );
-    }
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Electric","updateBCStrongDirichletJacobian","start" );
+    this->log("Electric","updateJacobianDofElimination","start" );
+
+    sparse_matrix_ptrtype& J = data.jacobian();
+    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
@@ -651,7 +712,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianStrongDirichletBC( sparse_matrix_ptr
                 _element=v,_rhs=RBis,_expr=cst(0.) );
     }
 
-    this->log("Electric","updateBCStrongDirichletJacobian","finish" );
+    this->log("Electric","updateJacobianDofElimination","finish" );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -664,7 +725,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( element_electricpotential_ex
     {
         auto XhV = this->spaceElectricPotential();
         auto mesh = XhV->mesh();
-        size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+        size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
         auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                                   _pattern=size_type(Pattern::COUPLED),
@@ -688,7 +749,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     vector_ptrtype& R = data.residual();
     bool _BuildCstPart = data.buildCstPart();
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     bool buildNonCstPart = !_BuildCstPart;
     bool buildCstPart = _BuildCstPart;
@@ -696,7 +756,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
 
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
@@ -755,26 +815,22 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     // weak bc
     this->updateResidualWeakBC( v,R,buildCstPart );
 
-    // strong Dirichlet bc
-    if ( !buildCstPart && _doBCStrongDirichlet && this->hasMarkerDirichletBCelimination() )
-    {
-        R->close();
-        this->updateResidualStrongDirichletBC( R );
-    }
     this->log("Electric","updateResidual", "finish"+sc);
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Electric","updateBCDirichletStrongResidual","start" );
+    this->log("Electric","updateResidualDofElimination","start" );
+
+    vector_ptrtype& R = data.residual();
 
     auto XhV = this->spaceElectricPotential();
     auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( R,this->rowStartInVector()+startBlockIndexElectricPotential );
     auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("electric-potential");
     auto const& dofsWithValueImposedElectricPotential = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
@@ -782,7 +838,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualStrongDirichletBC( vector_ptrtype& R
         v.set( thedof,0. );
     sync( v, "=", dofsWithValueImposedElectricPotential );
 
-    this->log("Electric","updateBCDirichletStrongResidual","finish" );
+    this->log("Electric","updateResidualDofElimination","finish" );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -793,7 +849,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_ex
 
     auto XhV = this->spaceElectricPotential();
     auto mesh = XhV->mesh();
-    size_type startBlockIndexElectricPotential = M_startBlockIndexFieldsInMatrix.find( "potential-electric" )->second;
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
 
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
@@ -829,12 +885,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( element_electricpotential_ex
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
     if ( this->M_bcDirichlet.empty() ) return;
 
-    this->log("Electric","updateBCStrongDirichletLinearPDE","start" );
+    this->log("Electric","updateLinearPDEDofElimination","start" );
 
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
     auto mesh = XhV->mesh();
@@ -850,7 +908,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEStrongDirichletBC( sparse_matrix_pt
                 _element=v,_rhs=F,_expr=expression(d) );
     }
 
-    this->log("Electric","updateBCStrongDirichletLinearPDE","finish" );
+    this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
 
 

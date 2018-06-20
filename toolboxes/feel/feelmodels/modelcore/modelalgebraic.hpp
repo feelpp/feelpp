@@ -244,8 +244,11 @@ public :
 
     virtual void updateNewtonInitialGuess( vector_ptrtype& U ) const;
     virtual void updateJacobian( DataUpdateJacobian & data ) const;
+    virtual void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
     virtual void updateResidual( DataUpdateResidual & data ) const;
+    virtual void updateResidualDofElimination( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
+    virtual void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
     virtual void updatePicard( DataUpdateLinear & data ) const;
     virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
