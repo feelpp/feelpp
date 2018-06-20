@@ -7,9 +7,9 @@
 :uri-issue: https://github.com/feelpp/feelpp/issues
 :uri-pull: https://github.com/feelpp/feelpp/pull
 
-[[v0.105.0-2018-06-xx]]
-== v0.105.0 (rc.1)
-// https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-07)
+[[v0.105.0-2018-06-20]]
+== v0.105.0
+https://github.com/feelpp/feelpp/tree/v0.105.0[v0.105.0] (2018-06-20)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 
@@ -43,7 +43,7 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 * [**feel/**] Update MeshMover on ghost element see {uri-issue}/1173[#1173]
 * [**feel/**] Fix partitioner crash in Gmsh with number of partitions is set to 1
 * [**feel/**] Trailing slashes in remote data path make app crash {uri-issue}/1183[#1183]
-
+* [**feel/**] Fixes docker build of feelpp projects due to git-lfs {uri-issue}/1183[#1186]
 
 [[v0.104.1-2018-05-xx]]
 == v0.104.1 (unreleased)

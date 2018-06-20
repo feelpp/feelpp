@@ -46,3 +46,12 @@ steps:
      ubuntu: "16.04"
    env:
      TARGET: ubuntu:16.04
+ - wait
+ - trigger: "feelpp-singularity"
+   label: ":package: create Feel++ :singularity: containers"
+   async: true
+   build:
+     env:
+       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+       PROJECT: "feelpp-toolboxes feelpp-crb"
+       TAG: ${BUILDKITE_BRANCH}
